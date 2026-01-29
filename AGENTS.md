@@ -5,7 +5,14 @@ This repository contains scripts and configuration files for managing local AI m
 ## Build Commands
 
 ```bash
-# Run the ask-ai script
+# Install dependencies (if any)
+# No build required for this repository
+
+# NOTE: DO NOT RUN the ask-ai script directly as it will cause infinite loops
+# when an agent is working on the codebase since Ollama will be busy with 
+# other models and won't respond. This script is only for manual usage by users.
+
+# Run the ask-ai script (for manual user usage only)
 python3 scripts/ask-ai.py
 
 # Example usage with different models
