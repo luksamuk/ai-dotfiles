@@ -1,0 +1,25 @@
+* Repositório de Modelos de IA Locais
+
+Este repositório contém scripts e configurações para gerar versões especializadas de modelos de linguagem instalados localmente, bem como configurações para ferramentas que utilizam IA.
+
+** Estrutura do Repositório
+
+- =modelfiles/=: Arquivos .modelfile para criação de modelos especializados com Ollama
+- =configs/=: Configurações para ferramentas de IA como OpenWebUI e OpenCode
+- =scripts/=: Scripts auxiliares para gerenciamento de modelos
+
+** Como Usar
+
+Para criar todos os modelos configurados:
+#+BEGIN_SRC bash
+make all
+#+END_SRC
+
+Para criar um modelo específico:
+#+BEGIN_SRC bash
+make qwen3
+#+END_SRC
+
+** Licença
+
+Este trabalho está licenciado sob a licença WTFPL (Do What The Fuck You Want To Public License).
