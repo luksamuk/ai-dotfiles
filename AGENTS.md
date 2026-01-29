@@ -5,9 +5,6 @@ This repository contains scripts and configuration files for managing local AI m
 ## Build Commands
 
 ```bash
-# Install dependencies (if any)
-# No build required for this repository
-
 # Run the ask-ai script
 python3 scripts/ask-ai.py
 
@@ -34,18 +31,30 @@ pylint scripts/ask-ai.py
 shellcheck scripts/*
 ```
 
-## Test Commands
+## Documentation Verification
+
+When working with configuration files, agents should:
+- Verify syntax compatibility with respective tools (ollama, opencode, etc.)
+- Check that configuration parameters match documented standards
+- Ensure file structure follows documented conventions
+- Validate that referenced models and paths exist and are accessible
+
+All documentation should be verified against official tool documentation available online, not through automated testing.
+
+## Lint Commands
 
 ```bash
-# Test the ask-ai script
-python3 -m pytest scripts/ask-ai.py
+# Lint Python scripts
+flake8 scripts/ask-ai.py
 
-# Run script with sample input
-echo "What is AI?" | python3 scripts/ask-ai.py
+# Check Python code style
+pylint scripts/ask-ai.py
 
-# Manual verification - check that Ollama is installed
-ollama --version
+# For shell scripts (if any)
+shellcheck scripts/*
 ```
+
+
 
 ## Code Style Guidelines
 
