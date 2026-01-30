@@ -31,4 +31,8 @@ qwen3:
 nomic:
 	ollama pull "nomic-embed-text-v2-moe:latest"
 
-all: glm lfm translategemma mistral devstral gpt qwen3 nomic
+zephyr:
+	ollama create "zephyr:7b-32k" -f zephyr.modelfile
+	ollama rm "zephyr:7b"
+
+all: glm lfm translategemma mistral devstral gpt qwen3 nomic zephyr

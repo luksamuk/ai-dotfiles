@@ -15,12 +15,13 @@ import subprocess
 
 MODEL_MAP = {
     "gpt": "gpt-oss:20b-32k",
+    "mistral": "mistral-small3.2:24b-32k",
+    "zephyr": "zephyr:7b-32k",
+    "lfm": "lfm2.5-thinking:1.2b-32k",
     "qwen": "qwen3-coder:30b-32k",
     "devstral": "devstral-small-2:24b-32k",
     "glm": "glm-4.7-flash:q4_K_M-64k",
-    "lfm": "lfm2.5-thinking:1.2b-32k",
     "translate": "translategemma:12b-32k",
-    "mistral": "mistral-small3.2:24b-32k",
 }
 
 
