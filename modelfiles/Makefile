@@ -25,7 +25,7 @@ gpt:
 	ollama rm "gpt-oss:20b"
 
 qwen3:
-	ollama create "qwen3-coder:30b-32k" -f qwen3-coder.modelfile
+	ollama create "qwen3-coder:30b-64k" -f qwen3-coder.modelfile
 	ollama rm "qwen3-coder:30b"
 
 nomic:
