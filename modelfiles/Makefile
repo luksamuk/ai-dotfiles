@@ -39,5 +39,8 @@ zephyr:
 	ollama create "zephyr:7b-32k" -f zephyr.modelfile
 	ollama rm "zephyr:7b"
 
+glm-ocr:
+	ollama pull "glm-ocr:bf16"
+
 extra: lfm zephyr devstral
 super: qwen3-coder-next
