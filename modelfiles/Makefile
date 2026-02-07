@@ -21,7 +21,7 @@ devstral:
 	ollama rm "devstral-small-2:24b"
 
 gpt:
-	ollama create "gpt-oss:20b-32k" -f gpt-oss.modelfile
+	ollama create "gpt-oss:20b-64k" -f gpt-oss.modelfile
 	ollama rm "gpt-oss:20b"
 
 qwen3-coder:
