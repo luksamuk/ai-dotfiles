@@ -1,4 +1,4 @@
-.PHONY: glm lfm translategemma mistral devstral gpt qwen3 nomic all
+all: glm translategemma mistral gpt qwen3-coder nomic
 
 glm:
 	ollama create "glm-4.7-flash:q4_K_M-64k" -f glm-4.7-flash.modelfile
@@ -24,9 +24,13 @@ gpt:
 	ollama create "gpt-oss:20b-32k" -f gpt-oss.modelfile
 	ollama rm "gpt-oss:20b"
 
-qwen3:
+qwen3-coder:
 	ollama create "qwen3-coder:30b-64k" -f qwen3-coder.modelfile
 	ollama rm "qwen3-coder:30b"
+
+qwen3-coder-next:
+	ollama create "qwen3-coder-next:q4_K_M-32k" -f qwen3-coder-next.modelfile
+	ollama rm "qwen3-coder-next:q4_K_M"
 
 nomic:
 	ollama pull "nomic-embed-text-v2-moe:latest"
@@ -35,4 +39,5 @@ zephyr:
 	ollama create "zephyr:7b-32k" -f zephyr.modelfile
 	ollama rm "zephyr:7b"
 
-all: glm lfm translategemma mistral devstral gpt qwen3 nomic zephyr
+extra: lfm zephyr devstral
+super: qwen3-coder-next
