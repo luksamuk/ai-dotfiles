@@ -10,16 +10,48 @@
             },
             "models": {
                 "qwen3-coder:30b-64k": {
-                    "name": "Qwen3-Coder"
+                    "name": "Qwen3-Coder (30B)",
+                    "reasoning": false,
+                    "limit": {
+                        "context": 65536,
+                        "output": 0,
+                    }
                 },
                 "devstral-small-2:24b-32k": {
-                    "name": "Devstral Small 2"
+                    "name": "Devstral Small 2 (24B)",
+                    "reasoning": false,
+                    "limit": {
+                        "context": 32768,
+                        "output": 0,
+                    }
                 },
                 "gpt-oss:20b-64k": {
-                    "name": "GPT-OSS"
+                    "name": "GPT-OSS (20B)",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 65536,
+                        "output": 0,
+                    },
+                    "variants": {
+                        "high": {
+                            "reasoningEffort": "high",
+                            "textVerbosity": "low",
+                            "reasoningSummary": "auto",
+                        },
+                        "low": {
+                            "reasoningEffort": "low",
+                            "textVerbosity": "low",
+                            "reasoningSummary": "auto",
+                        },
+                    }
                 },
                 "glm-4.7-flash:q4_K_M-64k": {
-                    "name": "GLM 4.7 Flash"
+                    "name": "GLM 4.7 Flash (30B)",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 65536,
+                        "output": 0,
+                    }
                 }
             }
         }
