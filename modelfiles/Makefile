@@ -1,10 +1,19 @@
-.PHONY: all glm lfm translategemma mistral devstral gpt \
-        qwen3-coder qwen3-coder-next nomic zephyr glm-ocr \
-        extra super
+.PHONY: all extra super \
+        glm-4.7-flash lfm2.5-thinking translategemma mistral-small3.2 \
+        devstral-small-2 gpt-oss qwen3-coder qwen3-coder-next nomic zephyr \
+        glm-ocr
 
-all: glm translategemma mistral gpt qwen3-coder nomic
+# must-have models
+all: glm-4.7-flash translategemma mistral-small3.2 gpt-oss qwen3-coder nomic \
+     devstral-small-2
 
-# macro genérica:
+# extra models
+extra: lfm2.5-thinking zephyr
+
+# super models that you probably can't even run
+super: qwen3-coder-next
+
+# generic macro for building targets:
 # $(call BUILD,<model-name>,<modelfile>)
 define BUILD
 	@set -e; \
@@ -16,22 +25,22 @@ define BUILD
 	ollama rm "$$base"
 endef
 
-glm:
+glm-4.7-flash:
 	$(call BUILD,glm-4.7-flash:q4_K_M-64k,glm-4.7-flash.modelfile)
 
-lfm:
+lfm2.5-thinking:
 	$(call BUILD,lfm2.5-thinking:1.2b-32k,lfm2.5-thinking.modelfile)
 
 translategemma:
 	$(call BUILD,translategemma:12b-32k,translategemma.modelfile)
 
-mistral:
+mistral-small3.2:
 	$(call BUILD,mistral-small3.2:24b-32k,mistral-small3.2.modelfile)
 
-devstral:
-	$(call BUILD,devstral-small-2:24b-32k,devstral-small-2.modelfile)
+devstral-small-2:
+	$(call BUILD,devstral-small-2:24b-64k,devstral-small-2.modelfile)
 
-gpt:
+gpt-oss:
 	$(call BUILD,gpt-oss:20b-64k,gpt-oss.modelfile)
 
 qwen3-coder:
@@ -39,6 +48,9 @@ qwen3-coder:
 
 qwen3-coder-next:
 	$(call BUILD,qwen3-coder-next:q4_K_M-32k,qwen3-coder-next.modelfile)
+
+zephyr:
+	$(call BUILD,zephyr:7b-32k,zephyr.modelfile)
 
 # pull-only targets
 
@@ -48,10 +60,3 @@ nomic:
 glm-ocr:
 	ollama pull "glm-ocr:bf16"
 
-# agregados
-
-zephyr:
-	$(call BUILD,zephyr:7b-32k,zephyr.modelfile)
-
-extra: lfm zephyr devstral
-super: qwen3-coder-next
