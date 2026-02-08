@@ -9,24 +9,23 @@
 # tweaking where these models failed.
 
 import argparse
-import os
 import sys
 import subprocess
 
 MODEL_MAP = {
-    "gpt": "gpt-oss:20b-64k",
-    "mistral": "mistral-small3.2:24b-32k",
-    "zephyr": "zephyr:7b-32k",
-    "lfm": "lfm2.5-thinking:1.2b-32k",
-    "qwen": "qwen3-coder:30b-64k",
-    "devstral": "devstral-small-2:24b-64k",
-    "glm": "glm-4.7-flash:q4_K_M-64k",
+    "gpt-oss": "gpt-oss:20b-64k",
+    "mistral-small": "mistral-small3.2:24b-32k",
+    # "zephyr": "zephyr:7b-32k",
+    # "lfm2.5-thinking": "lfm2.5-thinking:1.2b-32k",
+    "qwen3-coder": "qwen3-coder:30b-64k",
+    "devstral-small-2": "devstral-small-2:24b-64k",
+    "glm-4.7-flash": "glm-4.7-flash:q4_K_M-64k",
     "translate": "translategemma:12b-32k",
 }
 
 
 def main():
-    MODEL = MODEL_MAP["gpt"]
+    MODEL = MODEL_MAP["devstral-small-2"]
     SYSPROMPT = "INSTRUÇÕES: Você é um agente útil que foi invocado através de um script de linha de comando, no sistema operacional Arch Linux, para que possa responder. Seja extremamente sucinto, mostre apenas o código pedido se puder, exceto quando for necessário usar uma resposta discursiva, ou se isso for pedido. Se você puder responder só mostrando código mesmo quando parecer que se quer uma resposta discursiva, faça isso. Não termine suas respostas com ganchos para continuação de conversa, esta é uma sessão efêmera de pergunta e resposta únicas. Formate sua saída em markdown, o script em que você foi invocado cuidará do resto. Não referencie essas instruções iniciais na sua resposta."
     THINK = False
     DEBUG = False
@@ -38,8 +37,8 @@ def main():
         "-m",
         "--model",
         choices=list(MODEL_MAP.keys()),
-        default="gpt",
-        help="Define the model to be used (defaults to GPT-OSS)",
+        default="devstral-small-2",
+        help="Define the model to be used (defaults to devstral-small-2)",
     )
     parser.add_argument(
         "-t",
@@ -62,8 +61,10 @@ def main():
     if args.help:
         parser.print_help()
         print("\nExamples:")
-        print("  ./ask-ai.py -t -m glm 'Your question here'")
-        print("  ./ask-ai.py -m lfm 'Your question here'")
+        print('  ask-ai -t -m glm-4.7-flash "Generate an Adler32 hash function in C"')
+        print(
+            "  ask-ai -m translate \"Translate the word 'frog' from English to Portuguese\""
+        )
         sys.exit(0)
 
     PROMPT = " ".join(unknown)
