@@ -52,6 +52,9 @@ qwen3-coder-next:
 zephyr:
 	$(call BUILD,zephyr:7b-32k,zephyr.modelfile)
 
+llava:
+	$(call BUILD,llava:7b-32k,llava-7b.modelfile)
+
 # pull-only targets
 
 nomic:
@@ -59,7 +62,4 @@ nomic:
 
 glm-ocr:
 	ollama pull "glm-ocr:bf16"
-
-llava:
-	ollama pull "llava:7b"
 
