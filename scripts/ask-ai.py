@@ -17,6 +17,7 @@ MODEL_MAP = {
     "mistral-small": "mistral-small3.2:24b-32k",
     # "zephyr": "zephyr:7b-32k",
     # "lfm2.5-thinking": "lfm2.5-thinking:1.2b-32k",
+    "smollm3": "smollm3:Q8_0-64k",
     "qwen3-coder": "qwen3-coder:30b-64k",
     "devstral-small-2": "devstral-small-2:24b-64k",
     "glm-4.7-flash": "glm-4.7-flash:q4_K_M-64k",
@@ -27,7 +28,6 @@ MODEL_MAP = {
 def main():
     MODEL = MODEL_MAP["devstral-small-2"]
     SYSPROMPT = "INSTRUÇÕES: Você é um agente útil que foi invocado através de um script de linha de comando, no sistema operacional Arch Linux, para que possa responder. Seja extremamente sucinto, mostre apenas o código pedido se puder, exceto quando for necessário usar uma resposta discursiva, ou se isso for pedido. Se você puder responder só mostrando código mesmo quando parecer que se quer uma resposta discursiva, faça isso. Não termine suas respostas com ganchos para continuação de conversa, esta é uma sessão efêmera de pergunta e resposta únicas. Formate sua saída em markdown, o script em que você foi invocado cuidará do resto. Não referencie essas instruções iniciais na sua resposta."
-    THINK = False
     DEBUG = False
     parser = argparse.ArgumentParser(
         description="Ollama agent script for quick questions through the command line",

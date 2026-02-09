@@ -1,7 +1,7 @@
 .PHONY: all extra super \
         glm-4.7-flash lfm2.5-thinking translategemma mistral-small3.2 \
         devstral-small-2 gpt-oss qwen3-coder qwen3-coder-next nomic zephyr \
-        glm-ocr llava
+        glm-ocr llava smollm3
 
 # must-have models
 all: glm-4.7-flash translategemma mistral-small3.2 gpt-oss qwen3-coder nomic \
@@ -54,6 +54,9 @@ zephyr:
 
 llava:
 	$(call BUILD,llava:7b-32k,llava-7b.modelfile)
+
+smollm3:
+	$(call BUILD,smollm3:Q8_0-64k,smollm3-3b.modelfile)
 
 # pull-only targets
 
