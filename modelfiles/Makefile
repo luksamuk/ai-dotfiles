@@ -1,14 +1,14 @@
 .PHONY: all extra super \
         glm-4.7-flash lfm2.5-thinking translategemma mistral-small3.2 \
         devstral-small-2 gpt-oss qwen3-coder qwen3-coder-next nomic zephyr \
-        glm-ocr
+        glm-ocr llava
 
 # must-have models
 all: glm-4.7-flash translategemma mistral-small3.2 gpt-oss qwen3-coder nomic \
      devstral-small-2
 
 # extra models
-extra: lfm2.5-thinking zephyr
+extra: lfm2.5-thinking zephyr llava
 
 # super models that you probably can't even run
 super: qwen3-coder-next
@@ -59,4 +59,7 @@ nomic:
 
 glm-ocr:
 	ollama pull "glm-ocr:bf16"
+
+llava:
+	ollama pull "llava:7b"
 
