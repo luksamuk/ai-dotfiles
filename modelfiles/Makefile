@@ -5,10 +5,10 @@
 
 # must-have models
 all: glm-4.7-flash translategemma mistral-small3.2 gpt-oss qwen3-coder nomic \
-     devstral-small-2
+     devstral-small-2 sead
 
 # extra models
-extra: lfm2.5-thinking zephyr llava
+extra: lfm2.5-thinking zephyr llava smollm3
 
 # super models that you probably can't even run
 super: qwen3-coder-next
@@ -57,6 +57,9 @@ llava:
 
 smollm3:
 	$(call BUILD,smollm3:Q8_0-64k,smollm3-3b.modelfile)
+
+sead:
+	$(call BUILD,sead:14b-32k,sead-14b.modelfile)
 
 # pull-only targets
 

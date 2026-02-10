@@ -18,15 +18,18 @@ MODEL_MAP = {
     # "zephyr": "zephyr:7b-32k",
     # "lfm2.5-thinking": "lfm2.5-thinking:1.2b-32k",
     "smollm3": "smollm3:Q8_0-64k",
+    "sead": "sead:14b-32k",
     "qwen3-coder": "qwen3-coder:30b-64k",
     "devstral-small-2": "devstral-small-2:24b-64k",
     "glm-4.7-flash": "glm-4.7-flash:q4_K_M-64k",
     "translate": "translategemma:12b-32k",
 }
 
+DEFAULT_MODEL = "devstral-small-2"
+
 
 def main():
-    MODEL = MODEL_MAP["devstral-small-2"]
+    MODEL = MODEL_MAP[DEFAULT_MODEL]
     SYSPROMPT = "INSTRUÇÕES: Você é um agente útil que foi invocado através de um script de linha de comando, no sistema operacional Arch Linux, para que possa responder. Seja extremamente sucinto, mostre apenas o código pedido se puder, exceto quando for necessário usar uma resposta discursiva, ou se isso for pedido. Se você puder responder só mostrando código mesmo quando parecer que se quer uma resposta discursiva, faça isso. Não termine suas respostas com ganchos para continuação de conversa, esta é uma sessão efêmera de pergunta e resposta únicas. Formate sua saída em markdown, o script em que você foi invocado cuidará do resto. Não referencie essas instruções iniciais na sua resposta."
     DEBUG = False
     parser = argparse.ArgumentParser(
@@ -37,8 +40,8 @@ def main():
         "-m",
         "--model",
         choices=list(MODEL_MAP.keys()),
-        default="devstral-small-2",
-        help="Define the model to be used (defaults to devstral-small-2)",
+        default=DEFAULT_MODEL,
+        help=f"Define the model to be used (defaults to {DEFAULT_MODEL})",
     )
     parser.add_argument(
         "-t",
