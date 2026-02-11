@@ -1,14 +1,14 @@
 .PHONY: all extra super \
         glm-4.7-flash lfm2.5-thinking translategemma mistral-small3.2 \
         devstral-small-2 gpt-oss qwen3-coder qwen3-coder-next nomic zephyr \
-        glm-ocr llava smollm3
+        glm-ocr llava smollm3 llama3.2 pepe
 
 # must-have models
 all: glm-4.7-flash translategemma mistral-small3.2 gpt-oss qwen3-coder nomic \
-     devstral-small-2 sead
+     devstral-small-2 pepe
 
 # extra models
-extra: lfm2.5-thinking zephyr llava smollm3
+extra: lfm2.5-thinking zephyr llava smollm3 llama3.2 sead
 
 # super models that you probably can't even run
 super: qwen3-coder-next
@@ -60,6 +60,12 @@ smollm3:
 
 sead:
 	$(call BUILD,sead:14b-32k,sead-14b.modelfile)
+
+llama3.2:
+	$(call BUILD,llama3.2:3b-32k,llama3.2.modelfile)
+
+pepe:
+	$(call BUILD,pepe:8b-64k,assistant-pepe.modelfile)
 
 # pull-only targets
 
