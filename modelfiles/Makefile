@@ -5,10 +5,10 @@
 
 # must-have models
 all: glm-4.7-flash translategemma mistral-small3.2 gpt-oss qwen3-coder nomic \
-     devstral-small-2 pepe
+     pepe cloud-models
 
 # extra models
-extra: lfm2.5-thinking zephyr llava smollm3 llama3.2 sead
+extra: lfm2.5-thinking zephyr llava smollm3 llama3.2 sead devstral-small-2
 
 # super models that you probably can't even run
 super: qwen3-coder-next
@@ -74,4 +74,11 @@ nomic:
 
 glm-ocr:
 	ollama pull "glm-ocr:bf16"
+
+# cloud targets
+cloud-models:
+	ollama pull "glm-5:cloud"
+	ollama pull "minimax-m2.5:cloud"
+	ollama pull "qwen3-coder-next:cloud"
+	ollama pull "kimi-k2.5:cloud"
 
