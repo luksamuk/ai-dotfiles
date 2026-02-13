@@ -1,0 +1,29 @@
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: always
+    environment:
+      PORT: "3111"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - open-webui:/app/backend/data
+    network_mode: host
+
+  # Apache Tika server for OCR
+  apache-tika:
+    build:
+      context: .
+      dockerfile: tika.dockerfile
+    container_name: apache-tika
+    # ports:
+    #   - "9998:9998"
+    network_mode: host
+
+volumes:
+  open-webui:
+    # This is because the config is global to my machine.
+    # I moved this docker compose file here and there and
+    # I wanted to make this global because of that
+    external: true

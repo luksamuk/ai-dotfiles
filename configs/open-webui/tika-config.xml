@@ -1,0 +1,19 @@
+<properties>
+    <parsers>
+      <parser class="org.apache.tika.parser.OcrParser">
+        <params>
+          <timeout>3600000</timeout>
+        </params>
+      </parser>
+      <!-- <parser class="org.apache.tika.parser.ocr.TesseractOCRParser"> -->
+      <!--   <params> -->
+      <!--     <timeout>3600000</timeout> -->
+      <!--   </params> -->
+      <!-- </parser> -->
+    </parsers>
+    <server>
+      <params>
+        <taskTimeoutMillis>4000000</taskTimeoutMillis>
+      </params>
+    </server>
+</properties>
