@@ -12,14 +12,14 @@ services:
     network_mode: host
 
   # Apache Tika server for OCR
-  apache-tika:
-    build:
-      context: .
-      dockerfile: tika.dockerfile
-    container_name: apache-tika
-    # ports:
-    #   - "9998:9998"
-    network_mode: host
+  # apache-tika:
+  #   build:
+  #     context: .
+  #     dockerfile: tika.dockerfile
+  #   container_name: apache-tika
+  #   # ports:
+  #   #   - "9998:9998"
+  #   network_mode: host
 
 volumes:
   open-webui:
