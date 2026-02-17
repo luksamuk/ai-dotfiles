@@ -45,11 +45,11 @@
                         },
                     }
                 },
-                "glm-4.7-flash:q4_K_M-64k": {
-                    "name": "GLM 4.7 Flash (30B)",
+                "glm-4.7-flash:cloud": {
+                    "name": "GLM 4.7 Flash (Cloud)",
                     "reasoning": true,
                     "limit": {
-                        "context": 65536,
+                        "context": 202752,
                         "output": 0,
                     }
                 },
@@ -90,7 +90,7 @@
     },
     "mode": {
         "plan": {
-            "model": "ollama/glm-4.7-flash:q4_K_M-64k",
+            "model": "ollama/glm-5:cloud",
             "temperature": 0.7,
             "tools": {
                 "write": true,
@@ -99,7 +99,7 @@
             }
         },
         "build": {
-            "model": "ollama/qwen3-coder:30b-64k",
+            "model": "ollama/kimi-k2.5:cloud",
             "temperature": 0.3,
             "tools": {
                 "write": true,
@@ -108,7 +108,7 @@
             }
         },
         "research": {
-            "model": "ollama/glm-4.7-flash:q4_K_M-64k",
+            "model": "ollama/kimi-k2.5:cloud",
             "temperature": 0.7,
             "tools": {
                 "write": true,
@@ -117,7 +117,7 @@
             }
         },
         "brainstorm": {
-            "model": "ollama/glm-4.7-flash:q4_K_M-64k",
+            "model": "ollama/glm-5:cloud",
             "temperature": 1.0,
             "tools": {
                 "write": true,
