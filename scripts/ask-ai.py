@@ -8,6 +8,11 @@
 # done with a mix of Qwen3-Coder and GLM 4.7 Flash, but also required manual
 # tweaking where these models failed.
 
+# IMPORTANT NOTICE: THIS SCRIPT IS OBSOLETE!
+# I AM CURRENTLY WORKING ON A PROJECT IN RUST THAT IMPLEMENTS SOME OF THESE FEATURES
+# AND MUCH MORE.
+# ONCE I AM READY TO DISCLOSE THE SOURCE, I MIGHT UPDATE THIS FILE POINTING TO THE REPO.
+
 import argparse
 import sys
 import subprocess
