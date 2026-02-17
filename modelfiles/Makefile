@@ -4,11 +4,14 @@
         glm-ocr llava smollm3 llama3.2 pepe
 
 # must-have models
-all: glm-4.7-flash translategemma mistral-small3.2 gpt-oss qwen3-coder nomic \
+all: translategemma mistral-small3.2 gpt-oss qwen3-coder nomic \
      pepe cloud-models
 
 # extra models
 extra: lfm2.5-thinking zephyr llava smollm3 llama3.2 sead devstral-small-2
+
+# other models that you might not need to install
+other: glm-4.7-flash
 
 # super models that you probably can't even run
 super: qwen3-coder-next

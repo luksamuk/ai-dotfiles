@@ -21,7 +21,7 @@ MODEL_MAP = {
     "sead": "sead:14b-32k",
     "qwen3-coder": "qwen3-coder:30b-64k",
     "devstral-small-2": "devstral-small-2:24b-64k",
-    "glm-4.7-flash": "glm-4.7-flash:q4_K_M-64k",
+    #"glm-4.7-flash": "glm-4.7-flash:q4_K_M-64k",
     "translate": "translategemma:12b-32k",
     "pepe": "pepe:8b-64k",
 }
