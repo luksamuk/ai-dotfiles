@@ -4,7 +4,7 @@
         glm-ocr llava smollm3 llama3.2 pepe
 
 # must-have models
-all: translategemma mistral-small3.2 gpt-oss qwen3-coder nomic \
+all: translategemma mistral-small3.2 gpt-oss qwen3-coder nomic deepseek-coder-v2 \
      pepe cloud-models
 
 # extra models
@@ -69,6 +69,9 @@ llama3.2:
 
 pepe:
 	$(call BUILD,pepe:8b-64k,assistant-pepe.modelfile)
+
+deepseek-coder-v2:
+	$(call BUILD,deepseek-coder-v2:16b-32k,deepseek-coder-v2.modelfile)
 
 # pull-only targets
 
