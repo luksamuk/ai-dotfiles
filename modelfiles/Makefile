@@ -1,7 +1,7 @@
 .PHONY: all extra super \
         glm-4.7-flash lfm2.5-thinking translategemma mistral-small \
         devstral-small-2 gpt-oss qwen3-coder qwen3-coder-next nomic zephyr \
-        glm-ocr llava smollm3 llama3.2 llama3.1 assistant-pepe
+        glm-ocr llava smollm3 llama3.2 llama3.1 assistant-pepe nemotron-3-nano
 
 # must-have models
 all: translategemma gpt-oss qwen3-coder nomic assistant-pepe llama3.1 glm-ocr \
@@ -9,7 +9,7 @@ all: translategemma gpt-oss qwen3-coder nomic assistant-pepe llama3.1 glm-ocr \
 
 # extra models
 extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
-       devstral-small-2 deepseek-coder-v2 glm-4.7-flash
+       devstral-small-2 deepseek-coder-v2 glm-4.7-flash nemotron-3-nano
 
 # other models that you might not need to install
 other: glm-4.7-flash
@@ -83,6 +83,9 @@ assistant-pepe:
 
 deepseek-coder-v2:
 	$(call BUILD,deepseek-coder-v2:16b,deepseek-coder-v2.modelfile)
+
+nemotron-3-nano:
+	$(call BUILD,nemotron-3-nano:30b,nemotron-3-nano.modelfile)
 
 # pull-only targets
 
