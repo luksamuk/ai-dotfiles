@@ -1,0 +1,32 @@
+[model]
+default = "llama3.1"
+ollama_host = "127.0.0.1"
+ollama_port = 11434
+
+[model.query]
+model = "gpt-oss"
+thinking = true
+tools = true
+
+[model.summarize]
+model = "llama3.1"
+# thinking = false
+tools = false
+
+[model.code]
+model = "qwen3-coder"
+# thinking = false
+tools = true
+
+[tools]
+blacklist = []
+file_sandbox = true
+
+
+[output]
+plain_default = false
+debug_default = false
+
+[display]
+# Options: "dark", "light", or "mono" (for terminals without color)
+skin = "dark"
