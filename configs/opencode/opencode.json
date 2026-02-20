@@ -1,6 +1,6 @@
 {
     "$schema": "https://opencode.ai/config.json",
-    "model": "ollama/gpt-oss:20b-64k",
+    "model": "ollama/gpt-oss:20b",
     "provider": {
         "ollama": {
             "npm": "@ai-sdk/openai-compatible",
@@ -9,7 +9,7 @@
                 "baseURL": "http://127.0.0.1:11434/v1"
             },
             "models": {
-                "qwen3-coder:30b-64k": {
+                "qwen3-coder:30b": {
                     "name": "Qwen3-Coder (30B)",
                     "reasoning": false,
                     "limit": {
@@ -17,7 +17,7 @@
                         "output": 0,
                     }
                 },
-                "devstral-small-2:24b-64k": {
+                "devstral-small-2:24b": {
                     "name": "Devstral Small 2 (24B)",
                     "reasoning": false,
                     "limit": {
@@ -25,7 +25,7 @@
                         "output": 0,
                     }
                 },
-                "gpt-oss:20b-64k": {
+                "gpt-oss:20b": {
                     "name": "GPT-OSS (20B)",
                     "reasoning": true,
                     "limit": {

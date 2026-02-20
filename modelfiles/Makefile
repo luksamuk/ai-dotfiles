@@ -1,14 +1,15 @@
 .PHONY: all extra super \
-        glm-4.7-flash lfm2.5-thinking translategemma mistral-small3.2 \
+        glm-4.7-flash lfm2.5-thinking translategemma mistral-small \
         devstral-small-2 gpt-oss qwen3-coder qwen3-coder-next nomic zephyr \
-        glm-ocr llava smollm3 llama3.2 pepe
+        glm-ocr llava smollm3 llama3.2 llama3.1 assistant-pepe
 
 # must-have models
-all: translategemma mistral-small3.2 gpt-oss qwen3-coder nomic deepseek-coder-v2 \
-     pepe cloud-models
+all: translategemma gpt-oss qwen3-coder nomic assistant-pepe llama3.1 glm-ocr \
+     cloud-models
 
 # extra models
-extra: lfm2.5-thinking zephyr llava smollm3 llama3.2 sead devstral-small-2
+extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
+       devstral-small-2 deepseek-coder-v2 glm-4.7-flash
 
 # other models that you might not need to install
 other: glm-4.7-flash
@@ -23,55 +24,65 @@ define BUILD
 	base=$$(awk 'NR==1 && $$1=="FROM" {print $$2}' "$(2)"); \
 	test -n "$$base"; \
 	echo "==> create $(1)"; \
+	ollama create "$(1)" -f "$(2)";
+endef
+
+# generic macro for building targets:
+# $(call BUILD,<model-name>,<modelfile>)
+define BUILD_DELBASE
+	@set -e; \
+	base=$$(awk 'NR==1 && $$1=="FROM" {print $$2}' "$(2)"); \
+	test -n "$$base"; \
+	echo "==> create $(1)"; \
 	ollama create "$(1)" -f "$(2)"; \
 	echo "==> rm base $$base"; \
 	ollama rm "$$base"
 endef
 
 glm-4.7-flash:
-	$(call BUILD,glm-4.7-flash:q4_K_M-64k,glm-4.7-flash.modelfile)
+	$(call BUILD,glm-4.7-flash:q4_K_M,glm-4.7-flash.modelfile)
 
 lfm2.5-thinking:
-	$(call BUILD,lfm2.5-thinking:1.2b-32k,lfm2.5-thinking.modelfile)
+	$(call BUILD,lfm2.5-thinking:1.2b,lfm2.5-thinking.modelfile)
 
 translategemma:
-	$(call BUILD,translategemma:12b-32k,translategemma.modelfile)
+	$(call BUILD,translategemma:12b,translategemma.modelfile)
 
-mistral-small3.2:
-	$(call BUILD,mistral-small3.2:24b-32k,mistral-small3.2.modelfile)
+mistral-small:
+	$(call BUILD,mistral-small:24b,mistral-small.modelfile)
 
 devstral-small-2:
-	$(call BUILD,devstral-small-2:24b-64k,devstral-small-2.modelfile)
+	$(call BUILD,devstral-small-2:24b,devstral-small-2.modelfile)
 
 gpt-oss:
-	$(call BUILD,gpt-oss:20b-64k,gpt-oss.modelfile)
+	$(call BUILD,gpt-oss:20b,gpt-oss.modelfile)
 
 qwen3-coder:
-	$(call BUILD,qwen3-coder:30b-64k,qwen3-coder.modelfile)
+	$(call BUILD,qwen3-coder:30b,qwen3-coder.modelfile)
 
 qwen3-coder-next:
 	$(call BUILD,qwen3-coder-next:q4_K_M-32k,qwen3-coder-next.modelfile)
 
 zephyr:
-	$(call BUILD,zephyr:7b-32k,zephyr.modelfile)
+	$(call BUILD,zephyr:7b,zephyr.modelfile)
 
 llava:
-	$(call BUILD,llava:7b-32k,llava-7b.modelfile)
+	$(call BUILD,llava:7b,llava-7b.modelfile)
 
 smollm3:
-	$(call BUILD,smollm3:Q8_0-64k,smollm3-3b.modelfile)
+	$(call BUILD_DELBASE,smollm3:Q8_0,smollm3-3b.modelfile)
 
 sead:
-	$(call BUILD,sead:14b-32k,sead-14b.modelfile)
+	$(call BUILD_DELBASE,sead:14b,sead-14b.modelfile)
 
 llama3.2:
-	$(call BUILD,llama3.2:3b-32k,llama3.2.modelfile)
+	$(call BUILD,llama3.2:3b,llama3.2.modelfile)
 
-pepe:
-	$(call BUILD,pepe:8b-64k,assistant-pepe.modelfile)
+assistant-pepe:
+	$(call BUILD_DELBASE,assistant-pepe:8b,assistant-pepe.modelfile)
 
 deepseek-coder-v2:
-	$(call BUILD,deepseek-coder-v2:16b-32k,deepseek-coder-v2.modelfile)
+	$(call BUILD,deepseek-coder-v2:16b,deepseek-coder-v2.modelfile)
 
 # pull-only targets
 
@@ -80,6 +91,9 @@ nomic:
 
 glm-ocr:
 	ollama pull "glm-ocr:bf16"
+
+llama3.1:
+	ollama pull "llama3.1:8b"
 
 # cloud targets
 cloud-models:
