@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # ask-ai.py
 # Ollama agent script for quick questions through the command line
+# THIS SCRIPT IS DEPRECATED!!!! USE THE ask-ai-rs PROJECT INSTEAD.
 # Copyright (c) 2026 Lucas Vieira
 # This script is distributed under the WTFPL license.
 # This script was also primarily made in bash and then converted to Python
@@ -26,7 +27,7 @@ MODEL_MAP = {
     "sead": "sead:14b-32k",
     "qwen3-coder": "qwen3-coder:30b-64k",
     "devstral-small-2": "devstral-small-2:24b-64k",
-    #"glm-4.7-flash": "glm-4.7-flash:q4_K_M-64k",
+    # "glm-4.7-flash": "glm-4.7-flash:q4_K_M-64k",
     "translate": "translategemma:12b-32k",
     "pepe": "pepe:8b-64k",
 }
