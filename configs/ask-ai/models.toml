@@ -1,33 +1,14 @@
-# BEST FOR REASONING
-[models.mistral-small]
-model_id = "mistral-small:24b"
+# =======================================
+# Favorite models
+# =======================================
+[models.ministral]
+model_id = "ministral-3:14b"
 num_ctx = 32768
 temperature = 0.2
 top_k = 40
 top_p = 0.9
 repeat_penalty = 1.1
 
-
-# BEST FOR CODING. Apparently 1.5B is best for GENERAL too
-# [models."qwen2.5-coder:32b"]
-# model_id = "qwen2.5-coder:32b"
-
-
-# BEST FOR MULTIMODAL
-# [models.devstral-small-2]
-# model_id = "devstral-small-2:24b"
-# num_ctx = 32768
-# temperature = 0.15
-# top_k = 40
-# top_p = 0.9
-# repeat_penalty = 1.1
-
-
-# BEST FOR READING (1B. I am using 3B)
-# [models."llama3.2"]
-# model_id = "llama3.2:3b"
-
-# =======================================
 [models.qwen3-coder]
 model_id = "qwen3-coder:30b"
 num_ctx = 32768
@@ -43,38 +24,6 @@ temperature = 0.6
 top_p = 0.95
 thinking = true
 
-# [models.deepseek-coder-v2]
-# model_id = "deepseek-coder-v2:16b"
-# num_ctx = 32768
-# temperature = 0.15
-# top_k = 40
-# top_p = 0.85
-# repeat_penalty = 1.05
-
-[models.lfm]
-model_id = "lfm2.5-thinking:1.2b"
-num_ctx = 32768
-temperature = 0.1
-top_k = 50
-top_p = 0.1
-repeat_penalty = 1.05
-
-# [models.sead]
-# model_id = "sead:14b"
-# num_ctx = 32768
-# temperature = 0.2
-# top_k = 40
-# top_p = 0.9
-# repeat_penalty = 1.1
-
-# [models.smollm3]
-# model_id = "smollm3:Q8_0"
-# num_ctx = 32768
-# temperature = 0.2
-# top_k = 40
-# top_p = 0.9
-# repeat_penalty = 1.1
-
 [models.gpt-oss]
 model_id = "gpt-oss:20b"
 num_ctx = 32768
@@ -89,6 +38,8 @@ num_ctx = 65536
 temperature = 1.0
 repeat_penalty = 1.1
 
+# ======================================
+# Cloud models
 # ======================================
 
 [models.glm-5]
@@ -116,11 +67,59 @@ model_id = "qwen3-coder-next:cloud"
 num_ctx = 262144
 
 # ======================================
+# Miscellaneous models
+# ======================================
 
 [models.translate]
-model_id = "translategemma:12b"
-num_ctx = 4096
+model_id = "translategemma:4b"
+num_ctx = 0
 temperature = 0.2
 top_k = 40
 top_p = 0.9
 repeat_penalty = 1.1
+
+[models.moondream]
+model_id = "moondream:1.8b"
+num_ctx = 0
+temperature = 0.2
+top_k = 40
+top_p = 0.9
+repeat_penalty = 1.1
+
+# ========================================
+#  Recommended models by llm-checker
+# ========================================
+
+# [models.mistral-small]
+# model_id = "mistral-small:24b"
+# num_ctx = 32768
+# temperature = 0.2
+# top_k = 40
+# top_p = 0.9
+# repeat_penalty = 1.1
+
+
+# [models."qwen2.5-coder:32b"]
+# model_id = "qwen2.5-coder:32b"
+
+
+# [models.devstral-small-2]
+# model_id = "devstral-small-2:24b"
+# num_ctx = 32768
+# temperature = 0.15
+# top_k = 40
+# top_p = 0.9
+# repeat_penalty = 1.1
+
+
+# [models."llama3.2"]
+# model_id = "llama3.2:3b"
+
+
+# [models.deepseek-coder-v2]
+# model_id = "deepseek-coder-v2:16b"
+# num_ctx = 32768
+# temperature = 0.15
+# top_k = 40
+# top_p = 0.85
+# repeat_penalty = 1.05
