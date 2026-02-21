@@ -1,2 +1,6 @@
-FROM translategemma:12b
+FROM translategemma:4b
 PARAMETER num_ctx 32768
+PARAMETER temperature 0.2
+PARAMETER top_k 40
+PARAMETER top_p 0.9
+PARAMETER repeat_penalty 1.1

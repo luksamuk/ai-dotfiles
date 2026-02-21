@@ -48,7 +48,7 @@ lfm2.5-thinking:
 	$(call BUILD,lfm2.5-thinking:1.2b,lfm2.5-thinking.modelfile)
 
 translategemma:
-	$(call BUILD,translategemma:12b,translategemma.modelfile)
+	$(call BUILD,translategemma:4b,translategemma.modelfile)
 
 mistral-small:
 	$(call BUILD,mistral-small:24b,mistral-small.modelfile)
