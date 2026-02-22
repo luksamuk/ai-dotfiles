@@ -11,7 +11,7 @@ all: translategemma glm-ocr llama3.1 \
 
 # extra models
 extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
-       devstral-small-2 deepseek-coder-v2 glm-4.7-flash
+       devstral-small-2 deepseek-coder-v2 glm-4.7-flash cogito
 
 # other models that you might not need to install
 other: glm-4.7-flash
@@ -91,6 +91,9 @@ nemotron-3-nano:
 
 ministral:
 	$(call BUILD,ministral-3:14b,ministral.modelfile)
+
+cogito:
+	$(call BUILD,cogito:14b,cogito.modelfile)
 
 # pull-only targets
 
