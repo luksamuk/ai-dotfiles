@@ -32,11 +32,18 @@ top_k = 0
 top_p = 1.0
 thinking = true
 
-[models.pepe]
-model_id = "pepe:8b"
+[models.assistant-pepe]
+model_id = "assistant-pepe:8b"
 num_ctx = 65536
 temperature = 1.0
 repeat_penalty = 1.1
+
+[models.qwen3]
+model_id = "qwen3:8b"
+num_ctx = 32768
+temperature = 1.0
+repeat_penalty = 1.1
+thinking = true
 
 # ======================================
 # Cloud models
@@ -87,6 +94,14 @@ top_p = 0.9
 repeat_penalty = 1.1
 
 # ========================================
+# Tests
+# ========================================
+
+# [models.cogito]
+# model_id = "cogito:14b"
+# num_ctx = 32768
+
+# ========================================
 #  Recommended models by llm-checker
 # ========================================
 
@@ -101,6 +116,7 @@ repeat_penalty = 1.1
 
 # [models."qwen2.5-coder:32b"]
 # model_id = "qwen2.5-coder:32b"
+# num_ctx = 32768
 
 
 # [models.devstral-small-2]
