@@ -1,6 +1,7 @@
 # =======================================
 # Favorite models
 # =======================================
+
 [models.ministral]
 model_id = "ministral-3:14b"
 num_ctx = 32768
@@ -85,13 +86,24 @@ top_k = 40
 top_p = 0.9
 repeat_penalty = 1.1
 
+# ========================================
+# Vision models
+# ========================================
+
 [models.moondream]
 model_id = "moondream:1.8b"
-num_ctx = 0
-temperature = 0.2
-top_k = 40
-top_p = 0.9
-repeat_penalty = 1.1
+num_ctx = 8192
+temperature = 1.2
+
+[models.llava]
+model_id = "llava:13b"
+num_ctx = 8192
+temperature = 1.2
+
+[models."llama3.2-vision"]
+model_id = "llama3.2-vision:11b"
+num_ctx = 8192
+temperature = 0.9
 
 # ========================================
 # Tests
