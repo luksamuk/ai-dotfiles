@@ -46,31 +46,49 @@ temperature = 1.0
 repeat_penalty = 1.1
 thinking = true
 
+# TODO: Arch still unsupported, needs patch
+[models."qwen3.5"]
+model_id = "qwen3.5:35b"
+num_ctx = 16384
+temperature = 0.6
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+thinking = true
+
+# TODO: Next Ollama version
+[models."lfm2"]
+model_id = "lfm2:24b"
+num_ctx = 32768
+temperature = 0.1
+top_k = 50
+repeat_penalty = 1.05
+
 # ======================================
 # Cloud models
 # ======================================
 
-[models.glm-5]
+[models."glm-5:cloud"]
 model_id = "glm-5:cloud"
 num_ctx = 202752
 thinking = true
 
-[models."kimi-k2.5"]
+[models."kimi-k2.5:cloud"]
 model_id = "kimi-k2.5:cloud"
 num_ctx = 202144
 thinking = true
 
-[models."minimax-m2.5"]
+[models."minimax-m2.5:cloud"]
 model_id = "minimax-m2.5:cloud"
 num_ctx = 202752
 thinking = true
 
-[models."qwen3.5"]
+[models."qwen3.5:cloud"]
 model_id = "qwen3.5:cloud"
 num_ctx = 262144
 thinking = true
 
-[models."qwen3-coder-next"]
+[models."qwen3-coder-next:cloud"]
 model_id = "qwen3-coder-next:cloud"
 num_ctx = 262144
 
@@ -109,9 +127,9 @@ temperature = 0.9
 # Tests
 # ========================================
 
-# [models.cogito]
-# model_id = "cogito:14b"
-# num_ctx = 32768
+[models.cogito]
+model_id = "cogito:14b"
+num_ctx = 32768
 
 # ========================================
 #  Recommended models by llm-checker
