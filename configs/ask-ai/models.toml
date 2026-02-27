@@ -64,6 +64,20 @@ temperature = 0.1
 top_k = 50
 repeat_penalty = 1.05
 
+[models.nouscoder]
+model_id = "nouscoder:14b"
+num_ctx = 32768
+temperature = 1.0
+repeat_penalty = 1.1
+thinking = true
+
+[models.hermes4]
+model_id = "hermes4:14b"
+num_ctx = 32768
+temperature = 0.1
+repeat_penalty = 1.1
+thinking = true
+
 # ======================================
 # Cloud models
 # ======================================
@@ -130,6 +144,10 @@ temperature = 0.9
 [models.cogito]
 model_id = "cogito:14b"
 num_ctx = 32768
+
+# ========================================
+# Legacy Models
+# ========================================
 
 # ========================================
 #  Recommended models by llm-checker
