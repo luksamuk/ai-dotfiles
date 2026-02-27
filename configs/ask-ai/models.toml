@@ -46,9 +46,8 @@ temperature = 1.0
 repeat_penalty = 1.1
 thinking = true
 
-# TODO: Arch still unsupported, needs patch
 [models."qwen3.5"]
-model_id = "qwen3.5:35b"
+model_id = "qwen3.5:27b"
 num_ctx = 16384
 temperature = 0.6
 top_p = 0.95
@@ -56,7 +55,6 @@ top_k = 20
 min_p = 0.0
 thinking = true
 
-# TODO: Next Ollama version
 [models."lfm2"]
 model_id = "lfm2:24b"
 num_ctx = 32768

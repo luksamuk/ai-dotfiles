@@ -2,17 +2,17 @@
         glm-4.7-flash lfm2.5-thinking translategemma mistral-small \
         devstral-small-2 gpt-oss qwen3-coder qwen3-coder-next nomic zephyr \
         glm-ocr llava smollm3 llama3.2 llama3.1 assistant-pepe nemotron-3-nano \
-        ministral hermes3 nouscoder hermes4
+        ministral hermes3 nouscoder hermes4 qwen3.5 lfm2
 
 # must-have models
 all: translategemma glm-ocr llama3.1 \
-     ministral qwen3-coder nemotron-3-nano gpt-oss assistant-pepe  \
-     cloud-models nomic
+     ministral qwen3-coder gpt-oss assistant-pepe  \
+     cloud-models nomic qwen3.5 lfm2
 
 # extra models
 extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
        devstral-small-2 deepseek-coder-v2 glm-4.7-flash cogito hermes3 \
-       nouscoder hermes4
+       nouscoder hermes4 lfm2 nemotron-3-nano
 
 # other models that you might not need to install
 other: glm-4.7-flash
@@ -31,7 +31,7 @@ define BUILD
 endef
 
 # generic macro for building targets:
-# $(call BUILD,<model-name>,<modelfile>)
+# $(call BUILD_DELBASE,<model-name>,<modelfile>)
 define BUILD_DELBASE
 	@set -e; \
 	base=$$(awk 'NR==1 && $$1=="FROM" {print $$2}' "$(2)"); \
@@ -104,6 +104,12 @@ nouscoder:
 
 hermes4:
 	$(call BUILD_DELBASE,hermes4:14b,hermes4.modelfile)
+
+qwen3.5:
+	$(call BUILD,qwen3.5:27b,qwen3.5.modelfile)
+
+lfm2:
+	$(call BUILD,lfm2:24b,lfm2.modelfile)
 
 # pull-only targets
 
