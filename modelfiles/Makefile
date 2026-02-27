@@ -7,12 +7,12 @@
 # must-have models
 all: translategemma glm-ocr llama3.1 \
      ministral qwen3-coder gpt-oss assistant-pepe  \
-     cloud-models nomic qwen3.5 lfm2
+     cloud-models nomic lfm2 nemotron-3-nano2
 
 # extra models
 extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
        devstral-small-2 deepseek-coder-v2 glm-4.7-flash cogito hermes3 \
-       nouscoder hermes4 lfm2 nemotron-3-nano
+       nouscoder hermes4 lfm qwen3.5
 
 # other models that you might not need to install
 other: glm-4.7-flash
