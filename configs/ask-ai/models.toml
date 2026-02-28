@@ -2,6 +2,43 @@
 # Favorite models
 # =======================================
 
+# General use:
+#  - ministral-3:14b (Mistral Mini 3, Mistral)
+#  - hermes4:14b (Hermes 4, Nous Research)
+#  - gpt-oss:20b (GPT-OSS, OpenAI)
+#  - nemotron-3-nano:30b (Nemotron 3 Nano, NVIDIA)
+#  - qwen3.5:35b (Qwen 3.5, Alibaba)
+
+# Coding, tool calling:
+#  - nouscoder:14b (NousCoder, Nous Research)
+#  - gpt-oss:20b (GPT-OSS, OpenAI)
+#  - qwen3-coder:30b (Qwen3-Coder, Alibaba)
+#  - qwen3.5:35b (Qwen 3.5, Alibaba)
+
+# Summarization
+#  - lfm2:24b (LFM 2, Liquid AI)
+
+# ======================================
+# Small models
+# ======================================
+
+[models.qwen3]
+model_id = "qwen3:8b"
+num_ctx = 32768
+temperature = 1.0
+repeat_penalty = 1.1
+thinking = true
+
+[models.assistant-pepe]
+model_id = "assistant-pepe:8b"
+num_ctx = 65536
+temperature = 1.0
+repeat_penalty = 1.1
+
+# =======================================
+# Medium models
+# =======================================
+
 [models.ministral]
 model_id = "ministral-3:14b"
 num_ctx = 32768
@@ -9,6 +46,43 @@ temperature = 0.2
 top_k = 40
 top_p = 0.9
 repeat_penalty = 1.1
+
+[models.nouscoder]
+model_id = "nouscoder:14b"
+num_ctx = 32768
+temperature = 1.0
+repeat_penalty = 1.1
+thinking = true
+
+[models.hermes4]
+model_id = "hermes4:14b"
+num_ctx = 32768
+temperature = 0.1
+repeat_penalty = 1.1
+thinking = true
+
+# =======================================
+# Intermediate models
+# =======================================
+
+[models.gpt-oss]
+model_id = "gpt-oss:20b"
+num_ctx = 32768
+temperature = 1.0
+top_k = 0
+top_p = 1.0
+thinking = true
+
+[models."lfm2"]
+model_id = "lfm2:24b"
+num_ctx = 32768
+temperature = 0.1
+top_k = 50
+repeat_penalty = 1.05
+
+# =======================================
+# Bigger models
+# =======================================
 
 [models.qwen3-coder]
 model_id = "qwen3-coder:30b"
@@ -25,55 +99,13 @@ temperature = 0.6
 top_p = 0.95
 thinking = true
 
-[models.gpt-oss]
-model_id = "gpt-oss:20b"
-num_ctx = 32768
-temperature = 1.0
-top_k = 0
-top_p = 1.0
-thinking = true
-
-[models.assistant-pepe]
-model_id = "assistant-pepe:8b"
-num_ctx = 65536
-temperature = 1.0
-repeat_penalty = 1.1
-
-[models.qwen3]
-model_id = "qwen3:8b"
-num_ctx = 32768
-temperature = 1.0
-repeat_penalty = 1.1
-thinking = true
-
 [models."qwen3.5"]
-model_id = "qwen3.5:27b"
-num_ctx = 16384
+model_id = "qwen3.5:35b"
+num_ctx = 65536
 temperature = 0.6
 top_p = 0.95
 top_k = 20
 min_p = 0.0
-thinking = true
-
-[models."lfm2"]
-model_id = "lfm2:24b"
-num_ctx = 32768
-temperature = 0.1
-top_k = 50
-repeat_penalty = 1.05
-
-[models.nouscoder]
-model_id = "nouscoder:14b"
-num_ctx = 32768
-temperature = 1.0
-repeat_penalty = 1.1
-thinking = true
-
-[models.hermes4]
-model_id = "hermes4:14b"
-num_ctx = 32768
-temperature = 0.1
-repeat_penalty = 1.1
 thinking = true
 
 # ======================================
@@ -137,14 +169,6 @@ temperature = 0.9
 
 # ========================================
 # Tests
-# ========================================
-
-[models.cogito]
-model_id = "cogito:14b"
-num_ctx = 32768
-
-# ========================================
-# Legacy Models
 # ========================================
 
 # ========================================

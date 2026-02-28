@@ -2,7 +2,8 @@
         glm-4.7-flash lfm2.5-thinking translategemma mistral-small \
         devstral-small-2 gpt-oss qwen3-coder qwen3-coder-next nomic zephyr \
         glm-ocr llava smollm3 llama3.2 llama3.1 assistant-pepe nemotron-3-nano \
-        ministral hermes3 nouscoder hermes4 qwen3.5 lfm2
+        ministral hermes3 nouscoder hermes4 qwen3.5 lfm2 \
+        qwen2.5 mistral-nemo mistral
 
 # must-have models
 all: translategemma glm-ocr llama3.1 \
@@ -12,7 +13,7 @@ all: translategemma glm-ocr llama3.1 \
 # extra models
 extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
        devstral-small-2 deepseek-coder-v2 glm-4.7-flash cogito hermes3 \
-       nouscoder hermes4 lfm qwen3.5
+       nouscoder hermes4 lfm qwen3.5 qwen2.5 mistral-nemo mistral
 
 # other models that you might not need to install
 other: glm-4.7-flash
@@ -106,10 +107,19 @@ hermes4:
 	$(call BUILD_DELBASE,hermes4:14b,hermes4.modelfile)
 
 qwen3.5:
-	$(call BUILD,qwen3.5:27b,qwen3.5.modelfile)
+	$(call BUILD,qwen3.5:35b,qwen3.5.modelfile)
 
 lfm2:
 	$(call BUILD,lfm2:24b,lfm2.modelfile)
+
+qwen2.5:
+	$(call BUILD,qwen2.5:7b,qwen2.5.modelfile)
+
+mistral-nemo:
+	$(call BUILD,mistral-nemo:12b,mistral-nemo.modelfile)
+
+mistral:
+	$(call BUILD,mistral:7b,mistral.modelfile)
 
 # pull-only targets
 
@@ -128,4 +138,3 @@ cloud-models:
 	ollama pull "minimax-m2.5:cloud"
 	ollama pull "qwen3-coder-next:cloud"
 	ollama pull "kimi-k2.5:cloud"
-

@@ -4,18 +4,18 @@ ollama_host = "127.0.0.1"
 ollama_port = 11434
 
 [model.query]
-model = "ministral"
-thinking = false
+model = "hermes4"
+thinking = true
 tools = true
 
 [model.summarize]
-model = "qwen3"
+model = "lfm2"
 thinking = false
 tools = false
 
 [model.code]
-model = "qwen3-coder"
-# thinking = false
+model = "nouscoder"
+thinking = true
 tools = true
 
 [model.vision]
