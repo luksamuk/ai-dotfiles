@@ -107,7 +107,7 @@ hermes4:
 	$(call BUILD_DELBASE,hermes4:14b,hermes4.modelfile)
 
 qwen3.5:
-	$(call BUILD,qwen3.5:35b,qwen3.5.modelfile)
+	$(call BUILD_DELBASE,qwen3.5:35b,qwen3.5.modelfile)
 
 lfm2:
 	$(call BUILD,lfm2:24b,lfm2.modelfile)
