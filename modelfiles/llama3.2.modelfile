@@ -1,3 +1,6 @@
 FROM llama3.2:3b
 PARAMETER num_ctx 32768
-
+PARAMETER temperature 0.7
+PARAMETER top_p 0.95
+PARAMETER top_k 40
+PARAMETER repeat_penalty 1.1

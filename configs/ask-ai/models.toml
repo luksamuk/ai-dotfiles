@@ -20,6 +20,19 @@
 #  - lfm2:24b (LFM 2, Liquid AI)
 
 # ======================================
+# Tiny models
+# ======================================
+
+[models."llama3.2"]
+model_id = "llama3.2:3b"
+num_ctx = 32768
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+repeat_penalty = 1.1
+# BFCL estimate: ~50% | Size: 2GB | TESTED: Works! Tool calling OK (~17s)
+
+# ======================================
 # Small models
 # ======================================
 
@@ -30,6 +43,7 @@ temperature = 0.6
 top_p = 0.95
 top_k = 40
 repeat_penalty = 1.1
+# BFCL estimate: ~75% | Size: 4.7GB | TESTED: Works! Tool calling OK (~27s)
 
 [models.qwen3]
 model_id = "qwen3:8b"
@@ -37,6 +51,13 @@ num_ctx = 32768
 temperature = 1.0
 repeat_penalty = 1.1
 thinking = true
+
+[models."hermes3"]
+model_id = "hermes3:8b"
+num_ctx = 32768
+temperature = 0.8
+repeat_penalty = 1.1
+# BFCL estimate: ~70% | Size: ~5GB | Good tool calling
 
 # =======================================
 # Medium models
@@ -181,7 +202,7 @@ temperature = 1.0
 repeat_penalty = 1.1
 
 # ========================================
-#  Recommended models by llm-checker
+# Other models recommended by llm-checker
 # ========================================
 
 # [models.mistral-small]
@@ -207,10 +228,6 @@ repeat_penalty = 1.1
 # repeat_penalty = 1.1
 
 
-# [models."llama3.2"]
-# model_id = "llama3.2:3b"
-
-
 # [models.deepseek-coder-v2]
 # model_id = "deepseek-coder-v2:16b"
 # num_ctx = 32768
@@ -218,3 +235,4 @@ repeat_penalty = 1.1
 # top_k = 40
 # top_p = 0.85
 # repeat_penalty = 1.05
+
