@@ -16,11 +16,20 @@
 #  - qwen3.5:35b (Qwen 3.5, Alibaba)
 
 # Summarization
+#  - llama3.1:8b (Llama 3.1, Meta -- built-in config)
 #  - lfm2:24b (LFM 2, Liquid AI)
 
 # ======================================
 # Small models
 # ======================================
+
+[models."qwen2.5"]
+model_id = "qwen2.5:7b"
+num_ctx = 65536
+temperature = 0.6
+top_p = 0.95
+top_k = 40
+repeat_penalty = 1.1
 
 [models.qwen3]
 model_id = "qwen3:8b"
@@ -28,12 +37,6 @@ num_ctx = 32768
 temperature = 1.0
 repeat_penalty = 1.1
 thinking = true
-
-[models.assistant-pepe]
-model_id = "assistant-pepe:8b"
-num_ctx = 65536
-temperature = 1.0
-repeat_penalty = 1.1
 
 # =======================================
 # Medium models
@@ -168,8 +171,14 @@ num_ctx = 8192
 temperature = 0.9
 
 # ========================================
-# Tests
+# Roleplay (Really bad at tool calling)
 # ========================================
+
+[models.pepe]
+model_id = "assistant-pepe:8b"
+num_ctx = 65536
+temperature = 1.0
+repeat_penalty = 1.1
 
 # ========================================
 #  Recommended models by llm-checker

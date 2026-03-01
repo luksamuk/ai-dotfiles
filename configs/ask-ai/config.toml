@@ -4,24 +4,24 @@ ollama_host = "127.0.0.1"
 ollama_port = 11434
 
 [model.query]
-model = "hermes4"
-thinking = true
 tools = true
 
 [model.summarize]
 model = "lfm2"
-thinking = false
 tools = false
 
 [model.code]
 model = "nouscoder"
-thinking = true
 tools = true
 
 [model.vision]
 model = "moondream"
-thinking = false
 tools = false
+
+[model.chat]
+model = "qwen3"
+thinking = false
+tools    = true
 
 [tools]
 # Available tools include:
@@ -40,3 +40,7 @@ debug_default = false
 [display]
 # Options: "dark", "light", or "mono" (for terminals without color)
 skin = "dark"
+
+[led]
+ip = "192.168.3.21"
+port = 80
