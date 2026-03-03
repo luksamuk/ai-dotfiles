@@ -32,6 +32,14 @@ top_k = 40
 repeat_penalty = 1.1
 # BFCL estimate: ~50% | Size: 2GB | TESTED: Works! Tool calling OK (~17s)
 
+[models."jan-code"]
+model_id = "jan-code:4b"
+num_ctx = 65536
+temperature = 0.7
+top_p = 0.8
+top_k = 20
+thinking = true
+
 # ======================================
 # Small models
 # ======================================
@@ -58,6 +66,17 @@ num_ctx = 32768
 temperature = 0.8
 repeat_penalty = 1.1
 # BFCL estimate: ~70% | Size: ~5GB | Good tool calling
+
+[models."qwen3.5:9b"]
+model_id = "qwen3.5:9b"
+num_ctx = 65536
+temperature = 0.6
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+presence_penalty = 1.5
+repeat_penalty = 1.0
+thinking = true
 
 # =======================================
 # Medium models

@@ -3,12 +3,12 @@
         devstral-small-2 gpt-oss qwen3-coder qwen3-coder-next nomic zephyr \
         glm-ocr llava smollm3 llama3.2 llama3.1 assistant-pepe nemotron-3-nano \
         ministral hermes3 nouscoder hermes4 qwen3.5 lfm2 \
-        qwen2.5 mistral-nemo mistral hermes4.3 qwen3.5-9b
+        qwen2.5 mistral-nemo mistral hermes4.3 qwen3.5-9b jan-code
 
 # must-have models
 all: translategemma glm-ocr llama3.1 \
      ministral qwen3-coder gpt-oss assistant-pepe  \
-     cloud-models nomic lfm2 nemotron-3-nano2 qwen3.5-9b
+     cloud-models nomic lfm2 nemotron-3-nano2 qwen3.5-9b jan-code
 
 # extra models
 extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
@@ -126,6 +126,9 @@ hermes4.3:
 
 qwen3.5-9b:
 	$(call BUILD,qwen3.5:9b,qwen3.5-9b.modelfile)
+
+jan-code:
+	$(call BUILD,jan-code:4b,jan-code.modelfile)
 
 # pull-only targets
 
