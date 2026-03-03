@@ -3,12 +3,12 @@
         devstral-small-2 gpt-oss qwen3-coder qwen3-coder-next nomic zephyr \
         glm-ocr llava smollm3 llama3.2 llama3.1 assistant-pepe nemotron-3-nano \
         ministral hermes3 nouscoder hermes4 qwen3.5 lfm2 \
-        qwen2.5 mistral-nemo mistral hermes4.3
+        qwen2.5 mistral-nemo mistral hermes4.3 qwen3.5-9b
 
 # must-have models
 all: translategemma glm-ocr llama3.1 \
      ministral qwen3-coder gpt-oss assistant-pepe  \
-     cloud-models nomic lfm2 nemotron-3-nano2
+     cloud-models nomic lfm2 nemotron-3-nano2 qwen3.5-9b
 
 # extra models
 extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
@@ -123,6 +123,9 @@ mistral:
 
 hermes4.3:
 	$(call BUILD_DELBASE,hermes4.3:36b,hermes4.3.modelfile)
+
+qwen3.5-9b:
+	$(call BUILD,qwen3.5:9b,qwen3.5-9b.modelfile)
 
 # pull-only targets
 
