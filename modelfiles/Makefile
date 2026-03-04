@@ -8,12 +8,13 @@
 # must-have models
 all: translategemma glm-ocr llama3.1 \
      ministral qwen3-coder gpt-oss assistant-pepe  \
-     cloud-models nomic lfm2 nemotron-3-nano2 qwen3.5-9b jan-code
+     cloud-models nomic lfm2 qwen3.5 qwen3
 
 # extra models
 extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
        devstral-small-2 deepseek-coder-v2 glm-4.7-flash cogito hermes3 \
-       nouscoder hermes4 lfm qwen3.5 qwen2.5 mistral-nemo mistral hermes4.3
+       nouscoder hermes4 lfm qwen3.5-9b qwen2.5 mistral-nemo mistral hermes4.3 \
+       jan-code nemotron-3-nano
 
 # other models that you might not need to install
 other: glm-4.7-flash
@@ -60,6 +61,9 @@ devstral-small-2:
 
 gpt-oss:
 	$(call BUILD,gpt-oss:20b,gpt-oss.modelfile)
+
+qwen3:
+	$(call BUILD,qwen3:8b,qwen3-8b.modelfile)
 
 qwen3-coder:
 	$(call BUILD,qwen3-coder:30b,qwen3-coder.modelfile)

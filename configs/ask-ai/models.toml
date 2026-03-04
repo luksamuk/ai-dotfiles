@@ -32,13 +32,13 @@ top_k = 40
 repeat_penalty = 1.1
 # BFCL estimate: ~50% | Size: 2GB | TESTED: Works! Tool calling OK (~17s)
 
-[models."jan-code"]
-model_id = "jan-code:4b"
-num_ctx = 65536
-temperature = 0.7
-top_p = 0.8
-top_k = 20
-thinking = true
+# [models."jan-code"]
+# model_id = "jan-code:4b"
+# num_ctx = 65536
+# temperature = 0.7
+# top_p = 0.8
+# top_k = 20
+# thinking = true
 
 # ======================================
 # Small models
@@ -60,23 +60,23 @@ temperature = 1.0
 repeat_penalty = 1.1
 thinking = true
 
-[models."hermes3"]
-model_id = "hermes3:8b"
-num_ctx = 32768
-temperature = 0.8
-repeat_penalty = 1.1
-# BFCL estimate: ~70% | Size: ~5GB | Good tool calling
+# [models."hermes3"]
+# model_id = "hermes3:8b"
+# num_ctx = 32768
+# temperature = 0.8
+# repeat_penalty = 1.1
+# # BFCL estimate: ~70% | Size: ~5GB | Good tool calling
 
-[models."qwen3.5:9b"]
-model_id = "qwen3.5:9b"
-num_ctx = 65536
-temperature = 0.6
-top_p = 0.95
-top_k = 20
-min_p = 0.0
-presence_penalty = 1.5
-repeat_penalty = 1.0
-thinking = true
+# [models."qwen3.5:9b"]
+# model_id = "qwen3.5:9b"
+# num_ctx = 65536
+# temperature = 0.6
+# top_p = 0.95
+# top_k = 20
+# min_p = 0.0
+# presence_penalty = 1.5
+# repeat_penalty = 1.0
+# thinking = true
 
 # =======================================
 # Medium models
@@ -127,20 +127,20 @@ repeat_penalty = 1.05
 # Bigger models
 # =======================================
 
-[models.qwen3-coder]
-model_id = "qwen3-coder:30b"
-num_ctx = 32768
-temperature = 0.3
-top_k = 20
-top_p = 0.80
-repeat_penalty = 1.05
+# [models.qwen3-coder]
+# model_id = "qwen3-coder:30b"
+# num_ctx = 32768
+# temperature = 0.3
+# top_k = 20
+# top_p = 0.80
+# repeat_penalty = 1.05
 
-[models.nemotron]
-model_id = "nemotron-3-nano:30b"
-num_ctx = 32768
-temperature = 0.6
-top_p = 0.95
-thinking = true
+# [models.nemotron]
+# model_id = "nemotron-3-nano:30b"
+# num_ctx = 32768
+# temperature = 0.6
+# top_p = 0.95
+# thinking = true
 
 [models."qwen3.5"]
 model_id = "qwen3.5:35b"
@@ -149,6 +149,8 @@ temperature = 0.6
 top_p = 0.95
 top_k = 20
 min_p = 0.0
+presence_penalty = 1.5
+repeat_penalty = 1.0
 thinking = true
 
 # ======================================
@@ -175,17 +177,17 @@ model_id = "qwen3.5:cloud"
 num_ctx = 262144
 thinking = true
 
-[models."qwen3-coder-next:cloud"]
-model_id = "qwen3-coder-next:cloud"
-num_ctx = 262144
+# [models."qwen3-coder-next:cloud"]
+# model_id = "qwen3-coder-next:cloud"
+# num_ctx = 262144
 
 # ======================================
 # Miscellaneous models
 # ======================================
 
-[models.translate]
+[models.translategemma]
 model_id = "translategemma:4b"
-num_ctx = 0
+num_ctx = 4096
 temperature = 0.2
 top_k = 40
 top_p = 0.9
@@ -200,15 +202,15 @@ model_id = "moondream:1.8b"
 num_ctx = 8192
 temperature = 1.2
 
-[models.llava]
-model_id = "llava:13b"
-num_ctx = 8192
-temperature = 1.2
+# [models.llava]
+# model_id = "llava:13b"
+# num_ctx = 8192
+# temperature = 1.2
 
-[models."llama3.2-vision"]
-model_id = "llama3.2-vision:11b"
-num_ctx = 8192
-temperature = 0.9
+# [models."llama3.2-vision"]
+# model_id = "llama3.2-vision:11b"
+# num_ctx = 8192
+# temperature = 0.9
 
 # ========================================
 # Roleplay (Really bad at tool calling)
