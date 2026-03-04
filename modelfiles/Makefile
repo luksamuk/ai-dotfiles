@@ -128,7 +128,7 @@ qwen3.5-9b:
 	$(call BUILD,qwen3.5:9b,qwen3.5-9b.modelfile)
 
 jan-code:
-	$(call BUILD,jan-code:4b,jan-code.modelfile)
+	$(call BUILD_DELBASE,jan-code:4b,jan-code.modelfile)
 
 # pull-only targets
 
