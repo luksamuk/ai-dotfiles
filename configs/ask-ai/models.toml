@@ -55,8 +55,11 @@ repeat_penalty = 1.1
 
 [models.qwen3]
 model_id = "qwen3:8b"
-num_ctx = 32768
-temperature = 1.0
+num_ctx = 65536
+temperature = 0.6
+top_p = 0.96
+top_k = 20
+min_p = 0
 repeat_penalty = 1.1
 thinking = true
 
