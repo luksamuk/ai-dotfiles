@@ -3,11 +3,11 @@
 # =======================================
 
 # General use:
+#  - qwen3.5:9b (Qwen 3.5, Alibaba)
 #  - ministral-3:14b (Mistral Mini 3, Mistral)
 #  - hermes4:14b (Hermes 4, Nous Research)
 #  - gpt-oss:20b (GPT-OSS, OpenAI)
 #  - nemotron-3-nano:30b (Nemotron 3 Nano, NVIDIA)
-#  - qwen3.5:35b (Qwen 3.5, Alibaba)
 
 # Coding, tool calling:
 #  - nouscoder:14b (NousCoder, Nous Research)
@@ -23,14 +23,14 @@
 # Tiny models
 # ======================================
 
-[models."llama3.2"]
-model_id = "llama3.2:3b"
-num_ctx = 32768
-temperature = 0.7
-top_p = 0.95
-top_k = 40
-repeat_penalty = 1.1
-# BFCL estimate: ~50% | Size: 2GB | TESTED: Works! Tool calling OK (~17s)
+# [models."llama3.2"]
+# model_id = "llama3.2:3b"
+# num_ctx = 32768
+# temperature = 0.7
+# top_p = 0.95
+# top_k = 40
+# repeat_penalty = 1.1
+# # BFCL estimate: ~50% | Size: 2GB | TESTED: Works! Tool calling OK (~17s)
 
 # [models."jan-code"]
 # model_id = "jan-code:4b"
@@ -44,24 +44,24 @@ repeat_penalty = 1.1
 # Small models
 # ======================================
 
-[models."qwen2.5"]
-model_id = "qwen2.5:7b"
-num_ctx = 65536
-temperature = 0.6
-top_p = 0.95
-top_k = 40
-repeat_penalty = 1.1
-# BFCL estimate: ~75% | Size: 4.7GB | TESTED: Works! Tool calling OK (~27s)
+# [models."qwen2.5"]
+# model_id = "qwen2.5:7b"
+# num_ctx = 65536
+# temperature = 0.6
+# top_p = 0.95
+# top_k = 40
+# repeat_penalty = 1.1
+# # BFCL estimate: ~75% | Size: 4.7GB | TESTED: Works! Tool calling OK (~27s)
 
-[models.qwen3]
-model_id = "qwen3:8b"
-num_ctx = 65536
-temperature = 0.6
-top_p = 0.96
-top_k = 20
-min_p = 0
-repeat_penalty = 1.1
-thinking = true
+# [models.qwen3]
+# model_id = "qwen3:8b"
+# num_ctx = 65536
+# temperature = 0.6
+# top_p = 0.96
+# top_k = 20
+# min_p = 0
+# repeat_penalty = 1.1
+# thinking = true
 
 # [models."hermes3"]
 # model_id = "hermes3:8b"
@@ -70,16 +70,16 @@ thinking = true
 # repeat_penalty = 1.1
 # # BFCL estimate: ~70% | Size: ~5GB | Good tool calling
 
-# [models."qwen3.5:9b"]
-# model_id = "qwen3.5:9b"
-# num_ctx = 65536
-# temperature = 0.6
-# top_p = 0.95
-# top_k = 20
-# min_p = 0.0
-# presence_penalty = 1.5
-# repeat_penalty = 1.0
-# thinking = true
+[models."qwen3.5"]
+model_id = "qwen3.5:9b"
+num_ctx = 65536
+temperature = 0.6
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+presence_penalty = 1.5
+repeat_penalty = 1.0
+thinking = true
 
 # =======================================
 # Medium models
@@ -100,31 +100,31 @@ temperature = 1.0
 repeat_penalty = 1.1
 thinking = true
 
-[models.hermes4]
-model_id = "hermes4:14b"
-num_ctx = 32768
-temperature = 0.1
-repeat_penalty = 1.1
-thinking = true
+# [models.hermes4]
+# model_id = "hermes4:14b"
+# num_ctx = 32768
+# temperature = 0.1
+# repeat_penalty = 1.1
+# thinking = true
 
 # =======================================
 # Intermediate models
 # =======================================
 
-[models.gpt-oss]
-model_id = "gpt-oss:20b"
-num_ctx = 32768
-temperature = 1.0
-top_k = 0
-top_p = 1.0
-thinking = true
+# [models.gpt-oss]
+# model_id = "gpt-oss:20b"
+# num_ctx = 32768
+# temperature = 1.0
+# top_k = 0
+# top_p = 1.0
+# thinking = true
 
-[models."lfm2"]
-model_id = "lfm2:24b"
-num_ctx = 32768
-temperature = 0.1
-top_k = 50
-repeat_penalty = 1.05
+# [models."lfm2"]
+# model_id = "lfm2:24b"
+# num_ctx = 32768
+# temperature = 0.1
+# top_k = 50
+# repeat_penalty = 1.05
 
 # =======================================
 # Bigger models
@@ -145,16 +145,16 @@ repeat_penalty = 1.05
 # top_p = 0.95
 # thinking = true
 
-[models."qwen3.5"]
-model_id = "qwen3.5:35b"
-num_ctx = 65536
-temperature = 0.6
-top_p = 0.95
-top_k = 20
-min_p = 0.0
-presence_penalty = 1.5
-repeat_penalty = 1.0
-thinking = true
+# [models."qwen3.5:35b"]
+# model_id = "qwen3.5:35b"
+# num_ctx = 65536
+# temperature = 0.6
+# top_p = 0.95
+# top_k = 20
+# min_p = 0.0
+# presence_penalty = 1.5
+# repeat_penalty = 1.0
+# thinking = true
 
 # ======================================
 # Cloud models
@@ -200,10 +200,10 @@ repeat_penalty = 1.1
 # Vision models
 # ========================================
 
-[models.moondream]
-model_id = "moondream:1.8b"
-num_ctx = 8192
-temperature = 1.2
+# [models.moondream]
+# model_id = "moondream:1.8b"
+# num_ctx = 8192
+# temperature = 1.2
 
 # [models.llava]
 # model_id = "llava:13b"

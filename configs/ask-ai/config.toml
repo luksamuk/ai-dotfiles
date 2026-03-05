@@ -1,14 +1,14 @@
 [model]
-default = "ministral"
+default = "qwen3.5"
 ollama_host = "127.0.0.1"
 ollama_port = 11434
 
 [model.query]
-model = "qwen3"
+model = "qwen3.5"
 tools = true
 
 [model.summarize]
-model = "lfm2"
+model = "qwen3.5"
 tools = false
 
 [model.code]
@@ -16,13 +16,13 @@ model = "nouscoder"
 tools = true
 
 [model.vision]
-model = "moondream"
+model = "qwen3.5"
 tools = false
 
 [model.chat]
-model = "qwen3"
-thinking = true
-tools    = true
+model = "qwen3.5"
+tools = true
+thinking = false
 
 [model.translate]
 model = "translategemma"
