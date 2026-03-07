@@ -4,20 +4,27 @@
         glm-ocr llava smollm3 llama3.2 llama3.1 assistant-pepe nemotron-3-nano \
         ministral hermes3 nouscoder hermes4 qwen3.5-27b lfm2 \
         qwen2.5 mistral-nemo mistral hermes4.3 qwen3.5-9b jan-code \
-        qwen3.5-abliterated-9b qwen3.5-4b qwen3.5-0.8b
+        qwen3.5-abliterated-9b qwen3.5-4b qwen3.5-0.8b qwen3.5
+
+# Qwen 3.5 small variants
+qwen3.5-small: qwen3.5-9b qwen3.5-4b qwen3.5-0.8b
+qwen3.5-small-abliterated: qwen3.5-abliterated-9b qwen3.5-abliterated-4b qwen3.5-abliterated-2b qwen3.5-abliterated-0.8b
 
 # must-have models
-all: translategemma glm-ocr llama3.1 ministral assistant-pepe  \
-     nomic qwen3.5-27b qwen3.5-9b qwen3.5-abliterated-9b qwen3.5-4b \
-     qwen3.5-0.8b \
-     cloud-models
+all: essentials
+essentials: cloud-models \
+            nomic \
+            glm-ocr \
+            ministral hermes4 nouscoder \
+            qwen3.5-9b \
+            qwen3.5-abliterated-4b qwen3.5-abliterated-2b qwen3.5-abliterated-0.8b \
+            translategemma
 
 # extra models
 extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
        devstral-small-2 deepseek-coder-v2 glm-4.7-flash cogito hermes3 \
        nouscoder hermes4 lfm qwen3.5-9b qwen2.5 mistral-nemo mistral hermes4.3 \
-       jan-code nemotron-3-nano gpt-oss qwen3-coder qwen3 lfm2 \
-       qwen3.5-4b qwen3.5-0.8b
+       jan-code nemotron-3-nano gpt-oss qwen3-coder qwen3 lfm2 qwen3.5-27b
 
 # other models that you might not need to install
 other: glm-4.7-flash
@@ -128,11 +135,13 @@ mistral:
 hermes4.3:
 	$(call BUILD_DELBASE,hermes4.3:36b,hermes4.3.modelfile)
 
+jan-code:
+	$(call BUILD_DELBASE,jan-code:4b,jan-code.modelfile)
+
+# Qwen 3.5 Family
+
 qwen3.5-9b:
 	$(call BUILD,qwen3.5:9b,qwen3.5-9b.modelfile)
-
-qwen3.5-abliterated-9b:
-	$(call BUILD_DELBASE,qwen3.5-abliterated:9b,qwen3.5-9b-abliterated.modelfile)
 
 qwen3.5-4b:
 	$(call BUILD,qwen3.5:4b,qwen3.5-4b.modelfile)
@@ -143,8 +152,19 @@ qwen3.5-0.8b:
 qwen3.5-27b:
 	$(call BUILD,qwen3.5:27b,qwen3.5.modelfile)
 
-jan-code:
-	$(call BUILD_DELBASE,jan-code:4b,jan-code.modelfile)
+# Qwen 3.5 Family (Abliterated)
+
+qwen3.5-abliterated-9b:
+	$(call BUILD_DELBASE,qwen3.5-abliterated:9b,qwen3.5-9b-abliterated.modelfile)
+
+qwen3.5-abliterated-4b:
+	$(call BUILD_DELBASE,qwen3.5-abliterated:4b,qwen3.5-4b-abliterated.modelfile)
+
+qwen3.5-abliterated-2b:
+	$(call BUILD_DELBASE,qwen3.5-abliterated:2b,qwen3.5-2b-abliterated.modelfile)
+
+qwen3.5-abliterated-0.8b:
+	$(call BUILD_DELBASE,qwen3.5-abliterated:0.8b,qwen3.5-0.8b-abliterated.modelfile)
 
 # pull-only targets
 
