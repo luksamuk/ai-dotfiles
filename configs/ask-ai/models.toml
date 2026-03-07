@@ -13,11 +13,16 @@
 #  - nouscoder:14b (NousCoder, Nous Research)
 #  - gpt-oss:20b (GPT-OSS, OpenAI)
 #  - qwen3-coder:30b (Qwen3-Coder, Alibaba)
-#  - qwen3.5:35b (Qwen 3.5, Alibaba)
+#  - qwen3.5:27b (Qwen 3.5, Alibaba)
 
 # Summarization
+#  - qwen3.5:4b (Qwen 3.5, Alibaba)
 #  - llama3.1:8b (Llama 3.1, Meta -- built-in config)
 #  - lfm2:24b (LFM 2, Liquid AI)
+
+# Vision
+#  - qwen3.5:0.8b (Qwen 3.5, Alibaba)
+#  - moondream:1.8b (Moondream)
 
 # ======================================
 # Tiny models
@@ -70,7 +75,27 @@
 # repeat_penalty = 1.1
 # # BFCL estimate: ~70% | Size: ~5GB | Good tool calling
 
-[models."qwen3.5"]
+[models."qwen3.5:0.8b"]
+model_id = "qwen3.5:0.8b"
+num_ctx = 65536
+temperature = 1.0
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+thinking = true
+
+[models."qwen3.5:4b"]
+model_id = "qwen3.5:4b"
+num_ctx = 65536
+temperature = 1.0
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+presence_penalty = 1.5
+repeat_penalty = 1.0
+thinking = true
+
+[models."qwen3.5:9b"]
 model_id = "qwen3.5:9b"
 num_ctx = 65536
 temperature = 0.6
@@ -145,16 +170,16 @@ thinking = true
 # top_p = 0.95
 # thinking = true
 
-# [models."qwen3.5:35b"]
-# model_id = "qwen3.5:35b"
-# num_ctx = 65536
-# temperature = 0.6
-# top_p = 0.95
-# top_k = 20
-# min_p = 0.0
-# presence_penalty = 1.5
-# repeat_penalty = 1.0
-# thinking = true
+[models."qwen3.5:27b"]
+model_id = "qwen3.5:27b"
+num_ctx = 65536
+temperature = 0.6
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+presence_penalty = 1.5
+repeat_penalty = 1.0
+thinking = true
 
 # ======================================
 # Cloud models

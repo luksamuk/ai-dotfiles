@@ -2,19 +2,22 @@
         glm-4.7-flash lfm2.5-thinking translategemma mistral-small \
         devstral-small-2 gpt-oss qwen3-coder qwen3-coder-next nomic zephyr \
         glm-ocr llava smollm3 llama3.2 llama3.1 assistant-pepe nemotron-3-nano \
-        ministral hermes3 nouscoder hermes4 qwen3.5 lfm2 \
-        qwen2.5 mistral-nemo mistral hermes4.3 qwen3.5-9b jan-code
+        ministral hermes3 nouscoder hermes4 qwen3.5-27b lfm2 \
+        qwen2.5 mistral-nemo mistral hermes4.3 qwen3.5-9b jan-code \
+        qwen3.5-abliterated-9b qwen3.5-4b qwen3.5-0.8b
 
 # must-have models
 all: translategemma glm-ocr llama3.1 ministral assistant-pepe  \
-     nomic qwen3.5 qwen3.5-9b \
+     nomic qwen3.5-27b qwen3.5-9b qwen3.5-abliterated-9b qwen3.5-4b \
+     qwen3.5-0.8b \
      cloud-models
 
 # extra models
 extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
        devstral-small-2 deepseek-coder-v2 glm-4.7-flash cogito hermes3 \
        nouscoder hermes4 lfm qwen3.5-9b qwen2.5 mistral-nemo mistral hermes4.3 \
-       jan-code nemotron-3-nano gpt-oss qwen3-coder qwen3 lfm2
+       jan-code nemotron-3-nano gpt-oss qwen3-coder qwen3 lfm2 \
+       qwen3.5-4b qwen3.5-0.8b
 
 # other models that you might not need to install
 other: glm-4.7-flash
@@ -110,9 +113,6 @@ nouscoder:
 hermes4:
 	$(call BUILD_DELBASE,hermes4:14b,hermes4.modelfile)
 
-qwen3.5:
-	$(call BUILD,qwen3.5:27b,qwen3.5.modelfile)
-
 lfm2:
 	$(call BUILD,lfm2:24b,lfm2.modelfile)
 
@@ -130,6 +130,18 @@ hermes4.3:
 
 qwen3.5-9b:
 	$(call BUILD,qwen3.5:9b,qwen3.5-9b.modelfile)
+
+qwen3.5-abliterated-9b:
+	$(call BUILD_DELBASE,qwen3.5-abliterated:9b,qwen3.5-9b-abliterated.modelfile)
+
+qwen3.5-4b:
+	$(call BUILD,qwen3.5:4b,qwen3.5-4b.modelfile)
+
+qwen3.5-0.8b:
+	$(call BUILD,qwen3.5:0.8b,qwen3.5-0.8b.modelfile)
+
+qwen3.5-27b:
+	$(call BUILD,qwen3.5:27b,qwen3.5.modelfile)
 
 jan-code:
 	$(call BUILD_DELBASE,jan-code:4b,jan-code.modelfile)
