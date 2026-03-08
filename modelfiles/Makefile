@@ -7,18 +7,17 @@
         qwen3.5-abliterated-9b qwen3.5-4b qwen3.5-0.8b qwen3.5
 
 # Qwen 3.5 small variants
-qwen3.5-small: qwen3.5-9b qwen3.5-4b qwen3.5-0.8b
+qwen3.5-small: qwen3.5-9b qwen3.5-4b qwen3.5-2b qwen3.5-0.8b
 qwen3.5-small-abliterated: qwen3.5-abliterated-9b qwen3.5-abliterated-4b qwen3.5-abliterated-2b qwen3.5-abliterated-0.8b
 
 # must-have models
 all: essentials
-essentials: cloud-models \
-            nomic \
+essentials: nomic \
             glm-ocr \
+            qwen3.5-small \
+            translategemma \
             ministral hermes4 nouscoder \
-            qwen3.5-9b qwen3.5-abliterated-9b \
-            qwen3.5-abliterated-4b qwen3.5-abliterated-2b qwen3.5-abliterated-0.8b \
-            translategemma
+            cloud-models
 
 # extra models
 extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
@@ -141,14 +140,17 @@ jan-code:
 
 # Qwen 3.5 Family
 
-qwen3.5-9b:
-	$(call BUILD,qwen3.5:9b,qwen3.5-9b.modelfile)
+qwen3.5-0.8b:
+	$(call BUILD,qwen3.5:0.8b,qwen3.5-0.8b.modelfile)
+
+qwen3.5-2b:
+	$(call BUILD,qwen3.5:2b,qwen3.5-2b.modelfile)
 
 qwen3.5-4b:
 	$(call BUILD,qwen3.5:4b,qwen3.5-4b.modelfile)
 
-qwen3.5-0.8b:
-	$(call BUILD,qwen3.5:0.8b,qwen3.5-0.8b.modelfile)
+qwen3.5-9b:
+	$(call BUILD,qwen3.5:9b,qwen3.5-9b.modelfile)
 
 qwen3.5-27b:
 	$(call BUILD,qwen3.5:27b,qwen3.5.modelfile)

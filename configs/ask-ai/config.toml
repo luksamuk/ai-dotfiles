@@ -4,7 +4,7 @@ ollama_host = "127.0.0.1"
 ollama_port = 11434
 
 [model.query]
-model = "qwen3.5:4b"
+model = "qwen3.5:2b"
 tools = true
 
 [model.summarize]
@@ -14,13 +14,14 @@ tools = false
 [model.code]
 model = "nouscoder"
 tools = true
+thinking = false
 
 [model.vision]
 model = "qwen3.5:0.8b"
 tools = false
 
 [model.chat]
-model = "qwen3.5:27b"
+model = "qwen3.5:9b"
 tools = true
 
 [model.translate]
