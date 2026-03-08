@@ -16,7 +16,7 @@ essentials: cloud-models \
             nomic \
             glm-ocr \
             ministral hermes4 nouscoder \
-            qwen3.5-9b \
+            qwen3.5-9b qwen3.5-abliterated-9b \
             qwen3.5-abliterated-4b qwen3.5-abliterated-2b qwen3.5-abliterated-0.8b \
             translategemma
 
@@ -51,6 +51,7 @@ define BUILD_DELBASE
 	echo "==> create $(1)"; \
 	ollama create "$(1)" -f "$(2)"; \
 	echo "==> rm base $$base"; \
+	sleep 2; \
 	ollama rm "$$base"
 endef
 
