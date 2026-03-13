@@ -1,0 +1,78 @@
+# External tools configuration for ask-ai
+#
+# This file controls which external CLI tools the LLM can execute via run_command.
+# Only tools explicitly enabled here can be executed.
+#
+# If this file doesn't exist, all default tools are enabled.
+# If this file exists, ONLY tools defined here are available.
+#
+# SECURITY: Tools are executed without shell interpretation (no pipes, redirects).
+# This prevents command injection attacks but limits flexibility.
+
+[external]
+# Default timeout for all commands (seconds)
+default_timeout = 30
+# Enable sandboxing (Linux landlock)
+enable_sandbox = true
+
+# =============================================================================
+# PDF TOOLS (from poppler-utils)
+# =============================================================================
+
+[external.tools.pdftotext]
+# Extract text from PDF files to stdout
+# USAGE: pdftotext [-f <first>] [-l <last>] <file.pdf> -
+# EXAMPLE: pdftotext -f 1 -l 10 document.pdf -  (extract pages 1-10)
+enabled = true
+timeout = 30
+binary = "pdftotext"
+
+[external.tools.pdfinfo]
+# Show PDF metadata (pages, size, encryption, etc.)
+# USAGE: pdfinfo <file.pdf>
+enabled = true
+timeout = 5
+binary = "pdfinfo"
+
+[external.tools.pdftoppm]
+# Convert PDF pages to images (PNG, JPEG)
+# USAGE: pdftoppm -png <file.pdf> <output_prefix>
+# NOTE: Output goes to files, not stdout
+enabled = true
+timeout = 60
+binary = "pdftoppm"
+
+# =============================================================================
+# OCR TOOLS
+# =============================================================================
+
+[external.tools.tesseract]
+# Extract text from images using OCR (Optical Character Recognition)
+# USAGE: tesseract <image.png> stdout
+# SUPPORTS: PNG, JPEG, TIFF, BMP, GIF
+# NOTE: Accuracy depends on image quality and language packs installed
+enabled = true
+timeout = 120
+binary = "tesseract"
+
+# =============================================================================
+# IMAGE TOOLS
+# =============================================================================
+
+[external.tools.exiftool]
+# Read/write metadata from images, videos, and many other file types
+# USAGE: exiftool <file.jpg>
+# SUPPORTS: JPEG, PNG, TIFF, MP4, PDF, and 100+ other formats
+enabled = true
+timeout = 10
+binary = "exiftool"
+
+[external.tools.imagemagick]
+# Image conversion and manipulation (resize, crop, format convert)
+# USAGE: magick convert input.png -resize 50% output.jpg
+# WARNING: Powerful tool - consider disabling if security is a concern
+# NOTE: Binary is "magick" not "imagemagick" (v7 naming)
+enabled = true
+timeout = 60
+binary = "magick"
+

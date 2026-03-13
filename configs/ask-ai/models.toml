@@ -148,16 +148,16 @@ presence_penalty = 1.5
 repeat_penalty = 1.0
 thinking = true
 
-# [models."qwen3.5-abliterated:9b"]
-# model_id = "qwen3.5-abliterated:9b"
-# num_ctx = 131072
-# temperature = 0.6
-# top_p = 0.95
-# top_k = 20
-# min_p = 0.0
-# presence_penalty = 1.5
-# repeat_penalty = 1.0
-# thinking = true
+[models."qwen3.5-abliterated:9b"]
+model_id = "qwen3.5-abliterated:9b"
+num_ctx = 131072
+temperature = 0.6
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+presence_penalty = 1.5
+repeat_penalty = 1.0
+thinking = true
 
 # =======================================
 # Medium models
@@ -261,6 +261,15 @@ thinking = true
 # [models."qwen3-coder-next:cloud"]
 # model_id = "qwen3-coder-next:cloud"
 # num_ctx = 262144
+
+[models.nemotron-3-super]
+model_id = "nemotron-3-super:cloud"
+num_ctx = 262144
+thinking = true
+
+[models.devstral-small-2-cloud]
+model_id = "devstral-small-2:24b-cloud"
+num_ctx = 262144
 
 # ======================================
 # Miscellaneous models
