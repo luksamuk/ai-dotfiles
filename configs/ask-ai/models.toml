@@ -5,12 +5,10 @@
 # General use:
 #  - qwen3.5:9b (Qwen 3.5, Alibaba)
 #  - ministral-3:14b (Mistral Mini 3, Mistral)
-#  - hermes4:14b (Hermes 4, Nous Research)
 #  - gpt-oss:20b (GPT-OSS, OpenAI)
 #  - nemotron-3-nano:30b (Nemotron 3 Nano, NVIDIA)
-
+#
 # Coding, tool calling:
-#  - nouscoder:14b (NousCoder, Nous Research)
 #  - gpt-oss:20b (GPT-OSS, OpenAI)
 #  - qwen3-coder:30b (Qwen3-Coder, Alibaba)
 #  - qwen3.5:27b (Qwen 3.5, Alibaba)
@@ -93,16 +91,16 @@ thinking = true
 # min_p = 0.0
 # thinking = true
 
-[models."qwen3.5:2b"]
-model_id = "qwen3.5:2b"
-num_ctx = 131072
-temperature = 1.0
-top_p = 0.95
-top_k = 20
-min_p = 0.0
-presence_penalty = 1.5
-repeat_penalty = 1.0
-thinking = true
+# [models."qwen3.5:2b"]
+# model_id = "qwen3.5:2b"
+# num_ctx = 131072
+# temperature = 1.0
+# top_p = 0.95
+# top_k = 20
+# min_p = 0.0
+# presence_penalty = 1.5
+# repeat_penalty = 1.0
+# thinking = true
 
 # [models."qwen3.5-abliterated:2b"]
 # model_id = "qwen3.5-abliterated:2b"
@@ -148,16 +146,16 @@ presence_penalty = 1.5
 repeat_penalty = 1.0
 thinking = true
 
-[models."qwen3.5-abliterated:9b"]
-model_id = "qwen3.5-abliterated:9b"
-num_ctx = 131072
-temperature = 0.6
-top_p = 0.95
-top_k = 20
-min_p = 0.0
-presence_penalty = 1.5
-repeat_penalty = 1.0
-thinking = true
+# [models."qwen3.5-abliterated:9b"]
+# model_id = "qwen3.5-abliterated:9b"
+# num_ctx = 131072
+# temperature = 0.6
+# top_p = 0.95
+# top_k = 20
+# min_p = 0.0
+# presence_penalty = 1.5
+# repeat_penalty = 1.0
+# thinking = true
 
 # =======================================
 # Medium models
@@ -171,19 +169,19 @@ top_k = 40
 top_p = 0.9
 repeat_penalty = 1.1
 
-[models.nouscoder]
-model_id = "nouscoder:14b"
-num_ctx = 32768
-temperature = 1.0
-repeat_penalty = 1.1
-thinking = true
+# [models.nouscoder]
+# model_id = "nouscoder:14b"
+# num_ctx = 32768
+# temperature = 1.0
+# repeat_penalty = 1.1
+# thinking = true
 
-[models.hermes4]
-model_id = "hermes4:14b"
-num_ctx = 32768
-temperature = 0.1
-repeat_penalty = 1.1
-thinking = true
+# [models.hermes4]
+# model_id = "hermes4:14b"
+# num_ctx = 32768
+# temperature = 0.1
+# repeat_penalty = 1.1
+# thinking = true
 
 # =======================================
 # Intermediate models

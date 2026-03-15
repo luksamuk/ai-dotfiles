@@ -1,6 +1,12 @@
 {
     "$schema": "https://opencode.ai/config.json",
-    "model": "ollama/gpt-oss:20b",
+    "model": "ollama/glm-5:cloud",
+    "small_model": "ollama/qwen3.5:4b",
+    "default_agent": "plan",
+    "username": "luksamuk",
+    "autoupdate": "notify",
+    "share": "manual",
+    "enabled_providers": ["ollama", "opencode-zen"],
     "provider": {
         "ollama": {
             "npm": "@ai-sdk/openai-compatible",
@@ -9,40 +15,28 @@
                 "baseURL": "http://127.0.0.1:11434/v1"
             },
             "models": {
-                "qwen3-coder:30b": {
-                    "name": "Qwen3-Coder (30B)",
-                    "reasoning": false,
-                    "limit": {
-                        "context": 65536,
-                        "output": 0,
-                    }
-                },
-                "devstral-small-2:24b": {
-                    "name": "Devstral Small 2 (24B)",
-                    "reasoning": false,
-                    "limit": {
-                        "context": 65536,
-                        "output": 0,
-                    }
-                },
-                "gpt-oss:20b": {
-                    "name": "GPT-OSS (20B)",
+                "qwen3.5:9b": {
+                    "name": "Qwen 3.5 (9B)",
                     "reasoning": true,
                     "limit": {
-                        "context": 65536,
-                        "output": 0,
-                    },
-                    "variants": {
-                        "high": {
-                            "reasoningEffort": "high",
-                            "textVerbosity": "low",
-                            "reasoningSummary": "auto",
-                        },
-                        "low": {
-                            "reasoningEffort": "low",
-                            "textVerbosity": "low",
-                            "reasoningSummary": "auto",
-                        },
+                        "context": 131072,
+                        "output": 0
+                    }
+                },
+                "qwen3.5:27b": {
+                    "name": "Qwen 3.5 (27B)",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 0
+                    }
+                },
+                "glm-5:cloud": {
+                    "name": "GLM 5 (Cloud)",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 202752,
+                        "output": 0
                     }
                 },
                 "glm-4.7-flash:cloud": {
@@ -50,41 +44,49 @@
                     "reasoning": true,
                     "limit": {
                         "context": 202752,
-                        "output": 0,
+                        "output": 0
                     }
                 },
-		"glm-5:cloud": {
-		    "name": "GLM 5 (Cloud)",
-		    "reasoning": true,
-		    "limit": {
-			"context": 202752,
-			"output": 0,
-		    }
-		},
-		"minimax-m2.5:cloud": {
-		    "name": "MiniMax M2.5 (Cloud)",
-		    "reasoning": true,
-		    "limit": {
-			"context": 202752,
-			"output": 0,
-		    }
-		},
-		"qwen3-coder-next:cloud": {
-		    "name": "Qwen3-Coder-Next (Cloud)",
-		    "reasoning": true,
-		    "limit": {
-			"context": 262144,
-			"output": 0,
-		    }
-		},
-		"kimi-k2.5:cloud": {
-		    "name": "Kimi K2.5 (Cloud)",
-		    "reasoning": true,
-		    "limit": {
-			"context": 262144,
-			"output": 0,
-		    }
-		}
+                "minimax-m2.5:cloud": {
+                    "name": "MiniMax M2.5 (Cloud)",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 202752,
+                        "output": 0
+                    }
+                },
+                "qwen3-coder-next:cloud": {
+                    "name": "Qwen3-Coder-Next (Cloud)",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 262144,
+                        "output": 0
+                    }
+                },
+                "kimi-k2.5:cloud": {
+                    "name": "Kimi K2.5 (Cloud)",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 262144,
+                        "output": 0
+                    }
+                },
+                "devstral-small-2:24b-cloud": {
+                    "name": "Devstral Small 2 (24B Cloud)",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 262144,
+                        "output": 0
+                    }
+                },
+                "nemotron-3-super:cloud": {
+                    "name": "Nemotron 3 Super (Cloud)",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 262144,
+                        "output": 0
+                    }
+                }
             }
         }
     },
@@ -92,37 +94,57 @@
         "plan": {
             "model": "ollama/glm-5:cloud",
             "temperature": 0.7,
-            "tools": {
-                "write": true,
-                "edit": false,
-                "bash": false
+            "description": "Strategic planning and architecture decisions. Analyzes requirements, proposes solutions, and creates implementation roadmaps. Cannot modify code - only reads and plans.",
+            "permission": {
+                "read": "allow",
+                "write": "deny",
+                "edit": "deny",
+                "bash": "deny"
             }
         },
         "build": {
             "model": "ollama/glm-5:cloud",
             "temperature": 0.3,
-            "tools": {
-                "write": true,
-                "edit": true,
-                "bash": true
+            "description": "Primary coding agent. Full implementation capabilities including writing, editing, and testing code. Has unrestricted access to repository and shell for development tasks.",
+            "permission": {
+                "read": "allow",
+                "write": "allow",
+                "edit": "allow",
+                "bash": "allow"
             }
         },
         "research": {
-            "model": "ollama/kimi-k2.5:cloud",
+            "model": "ollama/nemotron-3-super:cloud",
             "temperature": 0.7,
-            "tools": {
-                "write": true,
-                "edit": true,
-                "bash": true
+            "description": "Deep research and investigation agent. Explores codebases, documentation, and external sources to gather information. Can create and edit documentation files only.",
+            "permission": {
+                "read": "allow",
+                "write": "allow",
+                "edit": "ask",
+                "bash": "deny"
             }
         },
         "brainstorm": {
-            "model": "ollama/glm-5:cloud",
+            "model": "ollama/nemotron-3-super:cloud",
             "temperature": 1.0,
-            "tools": {
-                "write": true,
-                "edit": true,
-                "bash": false
+            "description": "Creative exploration and ideation agent. Generates ideas, explores alternatives, and helps with design decisions. Can edit documentation files only.",
+            "permission": {
+                "read": "allow",
+                "write": "allow",
+                "edit": "ask",
+                "bash": "deny"
+            }
+        },
+        "offline": {
+            "model": "ollama/qwen3.5:27b",
+            "temperature": 0.6,
+            "description": "Offline fallback agent for when internet is unavailable. Full coding capabilities using local models. Use when cloud providers are inaccessible.",
+            "steps": 25,
+            "permission": {
+                "read": "allow",
+                "write": "allow",
+                "edit": "allow",
+                "bash": "allow"
             }
         }
     }
