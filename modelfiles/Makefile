@@ -8,7 +8,8 @@
 
 # Qwen 3.5 small variants
 qwen3.5-small: qwen3.5-9b qwen3.5-4b qwen3.5-2b qwen3.5-0.8b
-qwen3.5-small-abliterated: qwen3.5-abliterated-9b qwen3.5-abliterated-4b qwen3.5-abliterated-2b qwen3.5-abliterated-0.8b
+qwen3.5-small-abliterated: qwen3.5-abliterated-9b qwen3.5-abliterated-4b \
+                           qwen3.5-abliterated-2b qwen3.5-abliterated-0.8b
 
 # must-have models
 all: essentials
@@ -17,15 +18,14 @@ essentials: nomic \
             qwen3.5-small \
             translategemma \
             ministral \
-            nemotron-3-nano-4b \
             cloud-models
 
 # extra models
 extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
        devstral-small-2 deepseek-coder-v2 glm-4.7-flash cogito hermes3 \
        nouscoder hermes4 lfm qwen3.5-9b qwen2.5 mistral-nemo mistral hermes4.3 \
-       jan-code nemotron-3-nano gpt-oss qwen3-coder qwen3 lfm2 qwen3.5-27b \
-       hermes4 nouscoder
+       jan-code nemotron-3-nano nemotron-3-nano-4b gpt-oss qwen3-coder qwen3 \
+       lfm2 qwen3.5-27b hermes4 nouscoder
 
 # other models that you might not need to install
 other: glm-4.7-flash
