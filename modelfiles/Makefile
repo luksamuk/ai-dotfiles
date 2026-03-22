@@ -16,14 +16,16 @@ essentials: nomic \
             glm-ocr \
             qwen3.5-small \
             translategemma \
-            ministral hermes4 nouscoder \
+            ministral \
+            nemotron-3-nano-4b \
             cloud-models
 
 # extra models
 extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
        devstral-small-2 deepseek-coder-v2 glm-4.7-flash cogito hermes3 \
        nouscoder hermes4 lfm qwen3.5-9b qwen2.5 mistral-nemo mistral hermes4.3 \
-       jan-code nemotron-3-nano gpt-oss qwen3-coder qwen3 lfm2 qwen3.5-27b
+       jan-code nemotron-3-nano gpt-oss qwen3-coder qwen3 lfm2 qwen3.5-27b \
+       hermes4 nouscoder
 
 # other models that you might not need to install
 other: glm-4.7-flash
@@ -104,6 +106,9 @@ deepseek-coder-v2:
 
 nemotron-3-nano:
 	$(call BUILD,nemotron-3-nano:30b,nemotron-3-nano.modelfile)
+
+nemotron-3-nano-4b:
+	$(call BUILD,nemotron-3-nano:4b,nemotron-3-nano-4b.modelfile)
 
 ministral:
 	$(call BUILD,ministral-3:14b,ministral.modelfile)
