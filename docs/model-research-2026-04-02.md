@@ -27,7 +27,19 @@
 | qwen2.5-coder:7b | 7B | ~13K | Rápido | JSON bruto | ❌ FAIL (template) |
 | ministries-3:3b (temp 0.3) | 3B | ~14.5K | Médio | Correto (~15KB) | ✅ PASS |
 | nanbeige4.1:3b | 3B | ~16.5K | Lento | Correto (~15KB) | ⚠️ OK (lento) |
-| nanbeige4-thinking:3b | 3B | ∞ | Loop | Falhou | ❌ FAIL |
+|| nanbeige4-thinking:3b | 3B | ∞ | Loop | Falhou | ❌ FAIL |
+
+### Novos Testes (Abril 2026) - Modelos Alternativos
+
+|| Modelo | Params | Tamanho | Resultado | Status |
+||--------|--------|---------|-----------|--------|
+|| lfm2.5-nova-fc:1.2b | 1.2B | 730MB | Tools não detectado | ❌ TEMPLATE |
+|| hermes3-llama3.2:3b | 3B | 2.0GB | Tools não detectado | ❌ TEMPLATE |
+|| bonsai:4b | 4B | 572MB | Erro ao carregar | ❌ LOAD ERROR |
+
+**Problema identificado:** Modelos do HuggingFace GGUF nem sempre incluem templates de tool calling no metadata do arquivo. Ollama detecta tools automaticamente apenas se o template incluir blocos `<tools></tools>`.
+
+**Solução necessária:** Criar modelfiles customizados com templates de tool calling para cada modelo.
 
 ### Vereditos por Modelo
 
