@@ -6,7 +6,7 @@
 #  - qwen3.5:9b (Qwen 3.5, Alibaba)
 #  - ministral-3:14b (Mistral Mini 3, Mistral)
 #  - gpt-oss:20b (GPT-OSS, OpenAI)
-#  - nemotron-3-nano:30b (Nemotron 3 Nano, NVIDIA)
+#  - nemotron-3-nano:4b (Nemotron 3 Nano, NVIDIA)
 #
 # Coding, tool calling:
 #  - gpt-oss:20b (GPT-OSS, OpenAI)
@@ -22,18 +22,30 @@
 #  - qwen3.5:0.8b (Qwen 3.5, Alibaba)
 #  - moondream:1.8b (Moondream)
 
-# ======================================
+# =======================================
 # Tiny models
-# ======================================
+# =======================================
 
-# [models."llama3.2"]
-# model_id = "llama3.2:3b"
-# num_ctx = 32768
-# temperature = 0.7
-# top_p = 0.95
-# top_k = 40
-# repeat_penalty = 1.1
-# # BFCL estimate: ~50% | Size: 2GB | TESTED: Works! Tool calling OK (~17s)
+[models."llama3.2"]
+model_id = "llama3.2:3b"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+repeat_penalty = 1.1
+# BFCL estimate: ~50% | Size: 2GB | TESTED: Works! Tool calling OK (~17s)
+# Updated: context increased to 128K (Llama 3.2 supports it)
+
+[models."cogito"]
+model_id = "cogito:14b"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.95
+min_p = 0.01
+repeat_penalty = 1.05
+thinking = true
+# Cogito v1 - Hybrid reasoning model by Deep Cogito
+# Updated: context 128K for chain-of-thought, sensible defaults
 
 # [models."jan-code"]
 # model_id = "jan-code:4b"
@@ -46,6 +58,31 @@
 # ======================================
 # Small models
 # ======================================
+
+# Qwen2.5-Coder 3B - Specialized coding model (NO tools - too small)
+[models."qwen2.5-coder:3b"]
+model_id = "qwen2.5-coder:3b"
+num_ctx = 32768
+temperature = 0.15
+top_p = 0.85
+top_k = 40
+min_p = 0.02
+repeat_penalty = 1.05
+thinking = false
+# Size: 1.9GB | Tools: No (3B too small for reliable tool calling)
+
+# Qwen2.5-Coder 7B - Specialized coding model WITH tool calling
+[models."qwen2.5-coder:7b"]
+model_id = "qwen2.5-coder:7b"
+num_ctx = 131072
+temperature = 0.15
+top_p = 0.85
+top_k = 40
+min_p = 0.02
+repeat_penalty = 1.05
+thinking = false
+# Size: 4.7GB | Tools: Yes! (tested - works via Ollama API)
+# Updated: context increased to 128K for large codebases
 
 # [models."qwen2.5"]
 # model_id = "qwen2.5:7b"
@@ -75,87 +112,100 @@
 
 [models."qwen3.5:0.8b"]
 model_id = "qwen3.5:0.8b"
-num_ctx = 131072
-temperature = 1.0
+num_ctx = 32768
+temperature = 0.7
 top_p = 0.95
-top_k = 20
-min_p = 0.0
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
 thinking = true
+# Updated: smaller context for tiny model, sensible defaults
 
 # [models."qwen3.5-abliterated:0.8b"]
 # model_id = "qwen3.5-abliterated:0.8b"
-# num_ctx = 131072
-# temperature = 1.0
+# num_ctx = 32768
+# temperature = 0.7
 # top_p = 0.95
-# top_k = 20
-# min_p = 0.0
+# top_k = 40
+# min_p = 0.01
+# repeat_penalty = 1.05
 # thinking = true
+# # Updated: smaller context for tiny model, sensible defaults
 
 # [models."qwen3.5:2b"]
 # model_id = "qwen3.5:2b"
-# num_ctx = 131072
-# temperature = 1.0
+# num_ctx = 65536
+# temperature = 0.7
 # top_p = 0.95
-# top_k = 20
-# min_p = 0.0
-# presence_penalty = 1.5
-# repeat_penalty = 1.0
+# top_k = 40
+# min_p = 0.01
+# repeat_penalty = 1.05
 # thinking = true
+# # Updated: balanced context, sensible defaults
 
 # [models."qwen3.5-abliterated:2b"]
 # model_id = "qwen3.5-abliterated:2b"
-# num_ctx = 131072
-# temperature = 1.0
+# num_ctx = 65536
+# temperature = 0.7
 # top_p = 0.95
-# top_k = 20
-# min_p = 0.0
-# presence_penalty = 1.5
-# repeat_penalty = 1.0
+# top_k = 40
+# min_p = 0.01
+# repeat_penalty = 1.05
 # thinking = true
+# # Updated: balanced context, sensible defaults
 
 [models."qwen3.5:4b"]
 model_id = "qwen3.5:4b"
-num_ctx = 131072
-temperature = 1.0
+num_ctx = 65536
+temperature = 0.7
 top_p = 0.95
-top_k = 20
-min_p = 0.0
-presence_penalty = 1.5
-repeat_penalty = 1.0
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
 thinking = true
+# Updated: balanced context for 4B on 6GB GPU, sensible defaults
 
-# [models."qwen3.5-abliterated:4b"]
-# model_id = "qwen3.5-abliterated:4b"
-# num_ctx = 131072
-# temperature = 1.0
-# top_p = 0.95
-# top_k = 20
-# min_p = 0.0
-# presence_penalty = 1.5
-# repeat_penalty = 1.0
-# thinking = true
-
-[models."qwen3.5:9b"]
-model_id = "qwen3.5:9b"
+[models.nemotron]
+model_id = "nemotron-3-nano:4b"
 num_ctx = 131072
 temperature = 0.6
 top_p = 0.95
-top_k = 20
-min_p = 0.0
-presence_penalty = 1.5
-repeat_penalty = 1.0
+repeat_penalty = 1.05
 thinking = true
+# Updated: added repeat_penalty, context matches modelfile
+
+# [models."qwen3.5-abliterated:4b"]
+# model_id = "qwen3.5-abliterated:4b"
+# num_ctx = 65536
+# temperature = 0.7
+# top_p = 0.95
+# top_k = 40
+# min_p = 0.01
+# repeat_penalty = 1.05
+# thinking = true
+# # Updated: balanced context for 4B on 6GB GPU, sensible defaults
+
+[models."qwen3.5:9b"]
+model_id = "qwen3.5:9b"
+num_ctx = 65536
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
+thinking = true
+# Updated: moderate context for CPU inference, sensible defaults
 
 # [models."qwen3.5-abliterated:9b"]
 # model_id = "qwen3.5-abliterated:9b"
-# num_ctx = 131072
-# temperature = 0.6
+# num_ctx = 65536
+# temperature = 0.7
 # top_p = 0.95
-# top_k = 20
-# min_p = 0.0
-# presence_penalty = 1.5
-# repeat_penalty = 1.0
+# top_k = 40
+# min_p = 0.01
+# repeat_penalty = 1.05
 # thinking = true
+# # Updated: moderate context for CPU inference, sensible defaults
 
 # =======================================
 # Medium models
@@ -163,7 +213,8 @@ thinking = true
 
 [models.ministral]
 model_id = "ministral-3:14b"
-num_ctx = 32768
+#num_ctx = 32768
+num_ctx = 23437
 temperature = 0.2
 top_k = 40
 top_p = 0.9
@@ -187,20 +238,24 @@ repeat_penalty = 1.1
 # Intermediate models
 # =======================================
 
-# [models.gpt-oss]
-# model_id = "gpt-oss:20b"
-# num_ctx = 32768
-# temperature = 1.0
-# top_k = 0
-# top_p = 1.0
-# thinking = true
+[models."gpt-oss"]
+model_id = "gpt-oss:20b"
+num_ctx = 65535
+temperature = 0.7
+top_p = 0.95
+min_p = 0.02
+repeat_penalty = 1.05
+thinking = true
+# Updated: sensible defaults, removed invalid top_k=0
 
-# [models."lfm2"]
-# model_id = "lfm2:24b"
-# num_ctx = 32768
-# temperature = 0.1
-# top_k = 50
-# repeat_penalty = 1.05
+[models."lfm2"]
+model_id = "lfm2:24b"
+num_ctx = 65536
+temperature = 0.6
+top_p = 0.95
+min_p = 0.01
+repeat_penalty = 1.05
+# Updated: sensible defaults added
 
 # =======================================
 # Bigger models
@@ -223,14 +278,14 @@ repeat_penalty = 1.1
 
 [models."qwen3.5:27b"]
 model_id = "qwen3.5:27b"
-num_ctx = 65536
-temperature = 0.6
+num_ctx = 32768
+temperature = 0.7
 top_p = 0.95
-top_k = 20
-min_p = 0.0
-presence_penalty = 1.5
-repeat_penalty = 1.0
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
 thinking = true
+# Updated: smaller context for CPU-only 17GB model, sensible defaults
 
 # ======================================
 # Cloud models
@@ -280,11 +335,12 @@ num_ctx = 262144
 
 [models.translategemma]
 model_id = "translategemma:4b"
-num_ctx = 4096
+num_ctx = 32768
 temperature = 0.2
 top_k = 40
 top_p = 0.9
 repeat_penalty = 1.1
+# Updated: context increased to 32K for longer translations
 
 # ========================================
 # Vision models
@@ -350,3 +406,34 @@ repeat_penalty = 1.1
 # top_p = 0.85
 # repeat_penalty = 1.05
 
+# =======================================
+# Test models for context overflow
+# =======================================
+
+# [models."test-compact"]
+# model_id = "llama3.2:3b"
+# num_ctx = 16384              # 16K context - good for testing buffer triggers
+# temperature = 0.7
+# # Triggers for 16K context:
+# # - Auto-compact: 1K remaining (15K used = 94%)
+# # - Inter-tool: 10K remaining (6K used = 63%)
+# # - Emergency: 13K remaining (3K used = 81%)
+
+# [models."test-compact-small"]
+# model_id = "llama3.2:3b"
+# num_ctx = 8192               # 8K context - aggressive testing
+# temperature = 0.7
+# # Triggers for 8K context:
+# # - Inter-tool: 2K remaining (6K used = 75%)
+# # - Emergency: 5K remaining (3K used = 62%)
+
+[models."test-compact-normal"]
+model_id = "glm-5:cloud"
+num_ctx = 32768              # 32K context - allows ~20 messages before compaction
+temperature = 0.7
+# # Triggers for 32K context:
+# # - Pre-tool warning: 12K remaining (20K used = 62%)
+# # - Auto-compact: 17K remaining (15K used = 53%)
+# # - Inter-tool: 26K remaining (6K used = 81%)
+# # - Emergency: 29K remaining (3K used = 91%)
+# # Good for testing: allows ~20 messages before compaction zone

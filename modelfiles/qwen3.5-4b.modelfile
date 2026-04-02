@@ -1,8 +1,9 @@
 FROM qwen3.5:4b
-PARAMETER num_ctx 131072
-PARAMETER temperature 1.0
+# Qwen 3.5 4B - fits 6GB GPU (3.4GB model size)
+# Good balance of capability and speed
+PARAMETER num_ctx 65536
+PARAMETER temperature 0.7
 PARAMETER top_p 0.95
-PARAMETER top_k 20
-PARAMETER min_p 0.0
-PARAMETER presence_penalty 1.5
-PARAMETER repeat_penalty 1.0
+PARAMETER top_k 40
+PARAMETER min_p 0.01
+PARAMETER repeat_penalty 1.05

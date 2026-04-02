@@ -1,2 +1,8 @@
 FROM cogito:14b
-PARAMETER num_ctx 32768
+# Cogito v1 - Hybrid reasoning model by Deep Cogito
+# Supports tools and thinking mode, benefits from higher context for chain-of-thought
+PARAMETER num_ctx 131072
+PARAMETER temperature 0.7
+PARAMETER top_p 0.95
+PARAMETER repeat_penalty 1.05
+PARAMETER min_p 0.01

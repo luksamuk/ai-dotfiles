@@ -1,5 +1,6 @@
 FROM qwen2.5-coder:7b
-PARAMETER num_ctx 32768
+# Qwen 2.5 Coder - code model, benefits from larger context for codebases
+PARAMETER num_ctx 131072
 PARAMETER temperature 0.15
 PARAMETER top_p 0.85
 PARAMETER top_k 40

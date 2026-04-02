@@ -1,2 +1,7 @@
 FROM mistral-small:24b
+# Mistral Small - efficient model for general tasks
 PARAMETER num_ctx 32768
+PARAMETER temperature 0.6
+PARAMETER top_p 0.95
+PARAMETER repeat_penalty 1.05
+PARAMETER min_p 0.01

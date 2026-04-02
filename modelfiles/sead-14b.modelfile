@@ -1,2 +1,7 @@
 FROM hf.co/mradermacher/SEAD-14B-GGUF:Q4_K_M
+# SEAD model - general purpose
 PARAMETER num_ctx 32768
+PARAMETER temperature 0.7
+PARAMETER top_p 0.95
+PARAMETER repeat_penalty 1.05
+PARAMETER min_p 0.01

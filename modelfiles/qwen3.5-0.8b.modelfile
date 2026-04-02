@@ -1,8 +1,9 @@
 FROM qwen3.5:0.8b
-PARAMETER num_ctx 131072
-PARAMETER temperature 1.0
+# Qwen 3.5 0.8B - smallest variant, good for fast responses
+# Lower context for memory efficiency on this tiny model
+PARAMETER num_ctx 32768
+PARAMETER temperature 0.7
 PARAMETER top_p 0.95
-PARAMETER top_k 20
-PARAMETER min_p 0.0
-PARAMETER presence_penalty 1.5
-PARAMETER repeat_penalty 1.0
+PARAMETER top_k 40
+PARAMETER min_p 0.01
+PARAMETER repeat_penalty 1.05

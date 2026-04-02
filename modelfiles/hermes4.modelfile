@@ -1,2 +1,7 @@
 FROM hf.co/bartowski/NousResearch_Hermes-4-14B-GGUF:Q4_K_M
+# Hermes 4 - chat model with good reasoning
 PARAMETER num_ctx 65536
+PARAMETER temperature 0.7
+PARAMETER top_p 0.95
+PARAMETER repeat_penalty 1.05
+PARAMETER min_p 0.01

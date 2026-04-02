@@ -1,5 +1,7 @@
 FROM gpt-oss:20b
+# Open-source GPT-style model
 PARAMETER num_ctx 65535
-PARAMETER temperature 1.0
-PARAMETER top_p 1.0
-PARAMETER top_k 0
+PARAMETER temperature 0.7
+PARAMETER top_p 0.95
+PARAMETER repeat_penalty 1.05
+PARAMETER min_p 0.02

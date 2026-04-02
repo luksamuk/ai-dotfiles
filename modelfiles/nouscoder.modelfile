@@ -1,4 +1,7 @@
 FROM hf.co/AaryanK/NousCoder-14B-GGUF:Q4_K_M
+# NousCoder - coding specialized model (lower temp for code accuracy)
 PARAMETER num_ctx 65536
-PARAMETER temperature 1.0
-PARAMETER repeat_penalty 1.1
+PARAMETER temperature 0.3
+PARAMETER top_p 0.95
+PARAMETER repeat_penalty 1.05
+PARAMETER min_p 0.02
