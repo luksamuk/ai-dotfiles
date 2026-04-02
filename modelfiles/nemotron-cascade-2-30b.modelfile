@@ -1,0 +1,16 @@
+FROM nemotron-cascade-2:30b
+
+# Context: 262144 max (NVIDIA tested), 32K practical for local
+PARAMETER num_ctx 32768
+
+# Official NVIDIA recommended params
+PARAMETER temperature 1.0
+PARAMETER top_p 0.95
+
+# MoE stability
+PARAMETER repeat_penalty 1.05
+PARAMETER min_p 0.02
+
+# Nemotron-Cascade-2-30B-A3B MoE model
+# 30B total, 3B activated - strong reasoning/coding
+# Supports thinking mode with  tags

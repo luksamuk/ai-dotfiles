@@ -4,7 +4,8 @@
         glm-ocr llava smollm3 llama3.2 llama3.1 assistant-pepe nemotron-3-nano \
         ministral hermes3 nouscoder hermes4 qwen3.5-27b lfm2 \
         qwen2.5 mistral-nemo mistral hermes4.3 qwen3.5-9b jan-code \
-        qwen3.5-abliterated-9b qwen3.5-4b qwen3.5-0.8b qwen3.5
+        qwen3.5-abliterated-9b qwen3.5-4b qwen3.5-0.8b qwen3.5 \
+        nemotron-cascade-2-30b
 
 # Qwen 3.5 small variants
 qwen3.5-small: qwen3.5-9b qwen3.5-4b qwen3.5-2b qwen3.5-0.8b
@@ -18,6 +19,7 @@ essentials: nomic \
             qwen3.5-small \
             translategemma \
             ministral \
+            qwen2.5-coder-7b \
             cloud-models
 
 # extra models
@@ -131,6 +133,10 @@ lfm2:
 qwen2.5:
 	$(call BUILD,qwen2.5:7b,qwen2.5.modelfile)
 
+qwen2.5-coder-7b:
+	ollama pull qwen2.5-coder:7b
+	ollama create qwen2.5-coder:7b -f qwen2.5-coder-7b.modelfile
+
 mistral-nemo:
 	$(call BUILD,mistral-nemo:12b,mistral-nemo.modelfile)
 
@@ -191,3 +197,6 @@ cloud-models:
 	ollama pull "minimax-m2.5:cloud"
 	ollama pull "qwen3-coder-next:cloud"
 	ollama pull "kimi-k2.5:cloud"
+
+nemotron-cascade-2-30b:
+	$(call BUILD,nemotron-cascade-2:30b,nemotron-cascade-2-30b.modelfile)
