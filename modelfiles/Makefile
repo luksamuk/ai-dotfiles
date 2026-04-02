@@ -25,7 +25,7 @@ essentials: nomic \
             cloud-models
 
 # extra models
-extra: lfm2.5-thinking mistral-small zephyr llava smollm3 llama3.2 sead \
+extra: mistral-small zephyr llava smollm3 llama3.2 sead \
        devstral-small-2 deepseek-coder-v2 glm-4.7-flash hermes3 \
        nouscoder hermes4 lfm qwen3.5-9b qwen2.5 mistral-nemo mistral hermes4.3 \
        jan-code nemotron-3-nano nemotron-3-nano-4b gpt-oss qwen3-coder qwen3 \
@@ -62,12 +62,6 @@ endef
 
 glm-4.7-flash:
 	$(call BUILD,glm-4.7-flash:q4_K_M,glm-4.7-flash.modelfile)
-
-lfm2.5-thinking:
-	$(call BUILD,lfm2.5-thinking:1.2b,lfm2.5-thinking.modelfile)
-
-lfm2.5-350m:
-	$(call BUILD_DELBASE,lfm2.5:350m,lfm2.5-350m.modelfile)
 
 translategemma:
 	$(call BUILD,translategemma:4b,translategemma.modelfile)
