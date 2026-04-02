@@ -1,0 +1,21 @@
+# Ministral-3-3B - Mistral AI's edge-optimized model with native tool calling
+# From Mistral AI (France) - designed for edge deployment
+#
+# Features:
+# - 3B parameters (~3GB)
+# - Native function calling and JSON outputting
+# - 256K context window
+# - Vision capability
+# - Multilingual: EN, FR, ES, DE, IT, PT, NL, ZH, JA, KO, AR
+# - Apache 2.0 License
+
+FROM ministral-3:3b
+
+# Context window (supports up to 256K)
+PARAMETER num_ctx 65536
+
+# Generation params (from Mistral docs)
+PARAMETER temperature 0.5
+PARAMETER top_p 0.65
+PARAMETER top_k 40
+PARAMETER repeat_penalty 1.05

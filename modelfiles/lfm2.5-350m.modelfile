@@ -1,0 +1,36 @@
+# LFM2.5 350M - Tiny model with tool calling support
+# From Liquid AI - designed for edge/on-device deployment
+#
+# Features:
+# - 350M parameters (runs under 1GB RAM)
+# - Tool/function calling via special tokens
+# - 32K context (model supports up to 128K)
+# - Multilingual: EN, AR, ZH, FR, DE, JA, KO, PT, ES
+#
+# Tool Calling:
+# This model supports function calling using special tokens:
+# - <|tool_call_start|> and <|tool_call_end|> wrap function calls
+# - Define tools as a JSON list in the system prompt
+#
+# To enable tool calling in Ollama, pass tools in the API call:
+#   tools: [{"name": "get_weather", "description": "...", "parameters": {...}}]
+#
+# The chat_template.jinja from the original model handles tools automatically
+# when tools are passed via the API.
+
+FROM hf.co/LiquidAI/LFM2.5-350M-GGUF:Q4_K_M
+
+# Context window (32K is practical for local inference)
+PARAMETER num_ctx 32768
+
+# Generation params (from official Liquid AI docs)
+PARAMETER temperature 0.1
+PARAMETER top_k 50
+PARAMETER repeat_penalty 1.05
+
+# Stop tokens for chat and tool calling
+PARAMETER stop "<|startoftext|>"
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|tool_call_start|>"
+PARAMETER stop "<|tool_call_end|>"

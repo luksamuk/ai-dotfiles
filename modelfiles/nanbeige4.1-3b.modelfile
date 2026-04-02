@@ -1,0 +1,26 @@
+# Nanbeige4.1-3B - Small model with strong reasoning and agentic capabilities
+# From Nanbeige LLM Lab - excels at deep-search and tool use
+#
+# Features:
+# - 3B parameters (~2GB in Q4_K_M)
+# - Native deep-search support (500+ tool invocations)
+# - Strong reasoning (outperforms Qwen3-30B-A3B on many benchmarks)
+# - Tool-use capable
+# - Multilingual: EN, ZH
+#
+# Benchmarks:
+# - LiveCodeBench-V6: 76.9% (vs Qwen3-4B 57.4%)
+# - LiveCodeBench-Pro-Easy: 81.4%
+# - AIME 2026 I: 87.40%
+
+FROM hf.co/mradermacher/Nanbeige4.1-3B-heretic-i1-GGUF:Q4_K_M
+
+# Context window
+PARAMETER num_ctx 32768
+
+# Generation params
+PARAMETER temperature 0.7
+PARAMETER top_p 0.95
+PARAMETER top_k 40
+PARAMETER min_p 0.01
+PARAMETER repeat_penalty 1.05

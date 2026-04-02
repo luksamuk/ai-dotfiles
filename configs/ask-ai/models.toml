@@ -436,4 +436,46 @@ temperature = 0.7
 # # - Auto-compact: 17K remaining (15K used = 53%)
 # # - Inter-tool: 26K remaining (6K used = 81%)
 # # - Emergency: 29K remaining (3K used = 91%)
-# # Good for testing: allows ~20 messages before compaction zone
+# # Good for testing: allows ~20 messages before compaction
+
+# =======================================
+# Experimental models - Other companies
+# =======================================
+
+[models."nanbeige4.1"]
+model_id = "nanbeige4.1:3b"
+num_ctx = 32768
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
+# Nanbeige4.1-3B - Small model with strong reasoning and agentic capabilities
+# From Nanbeige LLM Lab (China) - Feb 2026
+# Features: Tool calling + Thinking (500+ tool invocations)
+# Benchmarks: LiveCodeBench-V6 76.9%, AIME 2026 I 87.40%
+# Size: 2.4GB | Capabilities: completion, tools, thinking
+
+[models."nanbeige4-thinking"]
+model_id = "nanbeige4-thinking:3b"
+num_ctx = 32768
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
+# Nanbeige4-3B-Thinking - Reasoning model from Nanbeige LLM Lab
+# Previous generation with strong reasoning capabilities
+# Size: 2.4GB | Capabilities: completion, tools, thinking
+
+[models."ministral-3"]
+model_id = "ministral-3:3b"
+num_ctx = 65536
+temperature = 0.5
+top_p = 0.65
+top_k = 40
+repeat_penalty = 1.05
+# Ministral-3-3B - Mistral AI's edge-optimized model (France) - Jan 2025
+# Features: Tool calling + Vision + 256K context
+# Multilingual: EN, FR, ES, DE, IT, PT, NL, ZH, JA, KO, AR
+# Size: 3.0GB | Capabilities: completion, vision, tools

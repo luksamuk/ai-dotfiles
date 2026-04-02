@@ -1,0 +1,20 @@
+# Nanbeige4-3B-Thinking - Reasoning model from Nanbeige LLM Lab
+# Previous generation thinking model with strong reasoning
+#
+# Features:
+# - 3B parameters (~2GB in Q4_K_M)
+# - Thinking capable
+# - Good reasoning performance
+# - Multilingual: EN, ZH
+
+FROM hf.co/bartowski/Nanbeige_Nanbeige4-3B-Thinking-2511-GGUF:Q4_K_M
+
+# Context window
+PARAMETER num_ctx 32768
+
+# Generation params for thinking models
+PARAMETER temperature 0.7
+PARAMETER top_p 0.95
+PARAMETER top_k 40
+PARAMETER min_p 0.01
+PARAMETER repeat_penalty 1.05

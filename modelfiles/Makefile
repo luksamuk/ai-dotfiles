@@ -5,7 +5,8 @@
         ministral hermes3 nouscoder hermes4 qwen3.5-27b lfm2 \
         qwen2.5 mistral-nemo mistral hermes4.3 qwen3.5-9b jan-code \
         qwen3.5-abliterated-9b qwen3.5-4b qwen3.5-0.8b qwen3.5 \
-        nemotron-cascade-2-30b
+        nemotron-cascade-2-30b nanbeige4.1-3b nanbeige4-thinking-3b \
+        ministral-3b falcon3-3b falcon3-1b
 
 # Qwen 3.5 small variants
 qwen3.5-small: qwen3.5-9b qwen3.5-4b qwen3.5-2b qwen3.5-0.8b
@@ -49,7 +50,7 @@ endef
 # $(call BUILD_DELBASE,<model-name>,<modelfile>)
 define BUILD_DELBASE
 	@set -e; \
-	base=$$(awk 'NR==1 && $$1=="FROM" {print $$2}' "$(2)"); \
+	base=$$(awk '/^FROM / {print $$2; exit}' "$(2)"); \
 	test -n "$$base"; \
 	echo "==> create $(1)"; \
 	ollama create "$(1)" -f "$(2)"; \
@@ -63,6 +64,9 @@ glm-4.7-flash:
 
 lfm2.5-thinking:
 	$(call BUILD,lfm2.5-thinking:1.2b,lfm2.5-thinking.modelfile)
+
+lfm2.5-350m:
+	$(call BUILD_DELBASE,lfm2.5:350m,lfm2.5-350m.modelfile)
 
 translategemma:
 	$(call BUILD,translategemma:4b,translategemma.modelfile)
@@ -200,3 +204,19 @@ cloud-models:
 
 nemotron-cascade-2-30b:
 	$(call BUILD,nemotron-cascade-2:30b,nemotron-cascade-2-30b.modelfile)
+
+# Experimental models from other companies
+nanbeige4.1-3b:
+	$(call BUILD_DELBASE,nanbeige4.1:3b,nanbeige4.1-3b.modelfile)
+
+nanbeige4-thinking-3b:
+	$(call BUILD_DELBASE,nanbeige4-thinking:3b,nanbeige4-thinking-3b.modelfile)
+
+ministral-3b:
+	$(call BUILD,ministral-3:3b,ministral-3b.modelfile)
+
+falcon3-3b:
+	$(call BUILD_DELBASE,falcon3:3b,falcon3-3b.modelfile)
+
+falcon3-1b:
+	$(call BUILD_DELBASE,falcon3:1b,falcon3-1b.modelfile)

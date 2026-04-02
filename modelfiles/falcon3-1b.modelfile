@@ -1,0 +1,20 @@
+# Falcon3-1B-Instruct - TII's compact Falcon 3 series
+# From Technology Innovation Institute (UAE)
+#
+# Features:
+# - 1B parameters (~800MB in Q4_K_M)
+# - Very compact for edge deployment
+# - Multilingual: EN, FR, ES, PT
+# - Good instruct following
+
+FROM hf.co/tiiuae/Falcon3-1B-Instruct-GGUF:Q4_K_M
+
+# Context window
+PARAMETER num_ctx 32768
+
+# Generation params
+PARAMETER temperature 0.7
+PARAMETER top_p 0.95
+PARAMETER top_k 40
+PARAMETER min_p 0.01
+PARAMETER repeat_penalty 1.05
