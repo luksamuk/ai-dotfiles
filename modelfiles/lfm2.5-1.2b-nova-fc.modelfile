@@ -1,0 +1,19 @@
+# LFM2.5-1.2B-Nova-Function-Calling - NovelChronoAI specialized model
+# ULTRA-COMPACT model DEDICATED to function calling
+# Based on Liquid AI's LFM architecture
+# Size: ~0.8GB | Capabilities: completion, tools (specialized)
+#
+# This is the SMALLEST model with confirmed function calling support
+# Great for edge deployment and fast inference
+# Perfect for testing tool workflows with minimal resources
+
+FROM hf.co/NovachronoAI/LFM2.5-1.2B-Nova-Function-Calling-GGUF:Q4_K_M
+
+# Context window - compact model, keep context reasonable
+PARAMETER num_ctx 32768
+
+# Generation params - optimized for structured output
+PARAMETER temperature 0.5
+PARAMETER top_p 0.95
+PARAMETER top_k 40
+PARAMETER repeat_penalty 1.0

@@ -1,0 +1,18 @@
+# Granite-3.3-8B - IBM enterprise-grade model
+# Designed for enterprise applications with robust tool calling
+# Supports up to 128K context window
+# Size: ~5GB | Capabilities: completion, tools, enterprise features
+#
+# IBM's Granite series is tuned for business/enterprise use cases
+# Good for RAG, document processing, and structured workflows
+
+FROM granite3.3:8b
+
+# Context window - Granite supports 128K
+PARAMETER num_ctx 131072
+
+# Generation params - conservative for enterprise reliability
+PARAMETER temperature 0.3
+PARAMETER top_p 0.95
+PARAMETER top_k 40
+PARAMETER repeat_penalty 1.05

@@ -6,7 +6,10 @@
         qwen2.5 mistral-nemo mistral hermes4.3 qwen3.5-9b jan-code \
         qwen3.5-abliterated-9b qwen3.5-4b qwen3.5-0.8b qwen3.5 \
         nemotron-cascade-2-30b nanbeige4.1-3b nanbeige4-thinking-3b \
-        ministral-3b falcon3-3b falcon3-1b
+        ministral-3b falcon3-3b falcon3-1b \
+        hermes3-llama3.2-3b hermes2-pro-mistral-7b \
+        bonsai-4b bonsai-8b lfm2.5-1.2b-nova-fc \
+        granite3.3-8b deepseek-r1-7b
 
 # Qwen 3.5 small variants
 qwen3.5-small: qwen3.5-9b qwen3.5-4b qwen3.5-2b qwen3.5-0.8b
@@ -220,3 +223,30 @@ falcon3-3b:
 
 falcon3-1b:
 	$(call BUILD_DELBASE,falcon3:1b,falcon3-1b.modelfile)
+
+# New tool-calling models (Apr 2026)
+# Install with: make <target>
+# Hermes series (NousResearch - FC specialists)
+hermes3-llama3.2-3b:
+	$(call BUILD_DELBASE,hermes3-llama3.2:3b,hermes3-llama3.2-3b.modelfile)
+
+hermes2-pro-mistral-7b:
+	$(call BUILD_DELBASE,hermes2-pro-mistral:7b,hermes2-pro-mistral-7b.modelfile)
+
+# PrismML Bonsai series (Qwen3-based)
+bonsai-4b:
+	$(call BUILD_DELBASE,bonsai:4b,bonsai-4b.modelfile)
+
+bonsai-8b:
+	$(call BUILD_DELBASE,bonsai:8b,bonsai-8b.modelfile)
+
+# Ultra-compact FC model
+lfm2.5-1.2b-nova-fc:
+	$(call BUILD_DELBASE,lfm2.5-nova-fc:1.2b,lfm2.5-1.2b-nova-fc.modelfile)
+
+# Enterprise and reasoning models
+granite3.3-8b:
+	$(call BUILD,granite3.3:8b,granite3.3-8b.modelfile)
+
+deepseek-r1-7b:
+	$(call BUILD,deepseek-r1:7b,deepseek-r1-7b.modelfile)

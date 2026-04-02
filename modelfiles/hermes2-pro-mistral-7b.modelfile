@@ -1,0 +1,19 @@
+# Hermes-2-Pro-Mistral-7B - NousResearch function calling specialist
+# Based on Mistral 7B with Hermes training for superior tool use
+# Strong function calling support (17+ mentions in docs)
+# Size: ~4GB | Capabilities: completion, tools, function calling
+#
+# The "Pro" variant includes enhanced reasoning and tool capabilities
+# Better for complex multi-tool workflows than the base Hermes
+
+FROM hf.co/NousResearch/Hermes-2-Pro-Mistral-7B-GGUF:Q4_K_M
+
+# Context window - 64K supports complex workflows
+PARAMETER num_ctx 65536
+
+# Generation params - optimized for tool calling accuracy
+PARAMETER temperature 0.6
+PARAMETER top_p 0.95
+PARAMETER top_k 40
+PARAMETER repeat_penalty 1.05
+PARAMETER min_p 0.01
