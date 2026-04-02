@@ -1,8 +1,15 @@
 FROM lfm2.5-thinking:1.2b
-PARAMETER num_ctx 32768
-PARAMETER temperature 0.1
-PARAMETER top_k 50
-PARAMETER top_p 0.1
-PARAMETER repeat_penalty 1.05
-PARAMETER stop <|endoftext|>
 
+# LFM2.5-Thinking 1.2B - Optimized for tool calling
+# BFCLv3 score: 56.97 (excellent for 1.2B model)
+# Context: 32K native (125K in Ollama)
+
+PARAMETER num_ctx 65536
+PARAMETER temperature 0.1
+PARAMETER top_p 0.1
+PARAMETER top_k 50
+PARAMETER repeat_penalty 1.05
+
+# Tool calling parameters
+PARAMETER stop "<|eot_id|>"
+PARAMETER stop "<|end_of_text|>"

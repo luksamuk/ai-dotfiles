@@ -3,11 +3,11 @@
         devstral-small-2 gpt-oss qwen3-coder qwen3-coder-next nomic zephyr \
         glm-ocr llava smollm3 llama3.2 llama3.1 assistant-pepe nemotron-3-nano \
         ministral hermes3 nouscoder hermes4 qwen3.5-27b lfm2 \
-        qwen2.5 mistral-nemo mistral hermes4.3 qwen3.5-9b jan-code \
+        qwen2.5 mistral-nemo hermes4.3 qwen3.5-9b jan-code \
         qwen3.5-abliterated-9b qwen3.5-4b qwen3.5-0.8b qwen3.5 \
         nemotron-cascade-2-30b nanbeige4.1-3b \
         ministral-3b falcon3-3b falcon3-1b \
-        hermes2-pro-mistral-7b deepseek-r1-7b
+        hermes2-pro-mistral-7b
 
 # Qwen 3.5 small variants
 qwen3.5-small: qwen3.5-9b qwen3.5-4b qwen3.5-2b qwen3.5-0.8b
@@ -142,9 +142,6 @@ qwen2.5-coder-7b:
 mistral-nemo:
 	$(call BUILD,mistral-nemo:12b,mistral-nemo.modelfile)
 
-mistral:
-	$(call BUILD,mistral:7b,mistral.modelfile)
-
 hermes4.3:
 	$(call BUILD_DELBASE,hermes4.3:36b,hermes4.3.modelfile)
 
@@ -219,6 +216,3 @@ falcon3-1b:
 # FC-enabled models from other companies
 hermes2-pro-mistral-7b:
 	$(call BUILD_DELBASE,hermes2-pro-mistral:7b,hermes2-pro-mistral-7b.modelfile)
-
-deepseek-r1-7b:
-	$(call BUILD,deepseek-r1:7b,deepseek-r1-7b.modelfile)
