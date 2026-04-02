@@ -7,7 +7,8 @@
         qwen3.5-abliterated-9b qwen3.5-4b qwen3.5-0.8b qwen3.5 \
         nemotron-cascade-2-30b nanbeige4.1-3b nanbeige4-thinking-3b \
         ministral-3b falcon3-3b falcon3-1b \
-        hermes3-llama3.2-3b hermes2-pro-mistral-7b \
+        hermes3-llama3.2-3b hermes3-llama3.2-3b-fc \
+        hermes2-pro-mistral-7b \
         bonsai-4b bonsai-8b lfm2.5-1.2b-nova-fc \
         granite3.3-8b deepseek-r1-7b
 
@@ -250,3 +251,10 @@ granite3.3-8b:
 
 deepseek-r1-7b:
 	$(call BUILD,deepseek-r1:7b,deepseek-r1-7b.modelfile)
+
+# FC variants with proper Hermes-style templates
+hermes3-llama3.2-3b-fc:
+	$(call BUILD_DELBASE,hermes3-llama3.2-fc:3b,hermes3-llama3.2-3b-fc.modelfile)
+
+lfm2.5-1.2b-nova-fc:
+	$(call BUILD_DELBASE,lfm2.5-nova-fc:1.2b,lfm2.5-1.2b-nova-fc.modelfile)
