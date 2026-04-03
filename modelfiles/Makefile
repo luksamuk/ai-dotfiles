@@ -7,7 +7,7 @@
         qwen3.5-abliterated-9b qwen3.5-4b qwen3.5-0.8b qwen3.5 \
         nemotron-cascade-2-30b nanbeige4.1-3b \
         ministral-3b falcon3-3b falcon3-1b \
-        hermes2-pro-mistral-7b
+        hermes2-pro-mistral-7b gemma4-e2b gemma4-e4b
 
 # Qwen 3.5 small variants
 qwen3.5-small: qwen3.5-9b qwen3.5-4b qwen3.5-2b qwen3.5-0.8b
@@ -210,3 +210,10 @@ falcon3-1b:
 # FC-enabled models from other companies
 hermes2-pro-mistral-7b:
 	$(call BUILD_DELBASE,hermes2-pro-mistral:7b,hermes2-pro-mistral-7b.modelfile)
+
+# Gemma 4 family (native function calling)
+gemma4-e2b:
+	$(call BUILD,gemma4:e2b,gemma4-e2b.modelfile)
+
+gemma4-e4b:
+	$(call BUILD,gemma4:e4b,gemma4-e4b.modelfile)

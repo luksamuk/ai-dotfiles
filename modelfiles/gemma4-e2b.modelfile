@@ -1,0 +1,16 @@
+FROM gemma4:e2b
+
+# Gemma 4 Effective 2B - compact model with native tool calling
+# 7.2GB, 131K context, good for tool-enabled workflows
+
+# Context (131K max, 32K practical for 6GB GPU)
+PARAMETER num_ctx 32768
+
+# Sampling - balanced for tool calling
+PARAMETER temperature 0.7
+PARAMETER top_p 0.95
+PARAMETER top_k 40
+PARAMETER repeat_penalty 1.1
+
+# Gemma 4 supports native function calling
+# Tested Apr 2026: works correctly with ask-ai tools
