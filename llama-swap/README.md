@@ -262,21 +262,21 @@ The API is OpenAI-compatible, so most tools work out of the box:
 
 | Model | VRAM | Context | Features |
 |-------|------|---------|----------|
-| **qwen3.5:4b** | ~3GB | 32K-128K | - |
-| **qwen3.5:9b** | ~5GB + RAM | 16K-128K | - |
-| **gemma4:e4b** | ~4.5GB + RAM | 16K-128K | - |
-| **gemma4:e2b** | ~3GB | 32K-128K | - |
-| **nemotron-3-nano:4b** | ~3GB | 32K-128K | `tools` |
+| **qwen3.5-4b** | ~3GB | 32K-128K | - |
+| **qwen3.5-9b** | ~5GB + RAM | 16K-128K | - |
+| **gemma4-e4b** | ~4.5GB + RAM | 16K-128K | - |
+| **gemma4-e2b** | ~3GB | 32K-128K | - |
+| **nemotron-3-nano-4b** | ~3GB | 32K-128K | `tools` |
 
 ### Thinking Models (With Reasoning)
 
 | Model | VRAM | Context | Features |
 |-------|------|---------|----------|
-| **qwen3.5:4b-think** | ~3GB | 32K-128K | `thinking` |
-| **qwen3.5:9b-think** | ~5GB + RAM | 16K-128K | `thinking` |
-| **gemma4:e4b-think** | ~4.5GB + RAM | 16K-128K | `thinking` |
-| **gemma4:e2b-think** | ~3GB | 32K-128K | `thinking` |
-| **nemotron-3-nano:4b-think** | ~3GB | 32K-128K | `thinking`, `tools` |
+| **qwen3.5-4b-think** | ~3GB | 32K-128K | `thinking` |
+| **qwen3.5-9b-think** | ~5GB + RAM | 16K-128K | `thinking` |
+| **gemma4-e4b-think** | ~4.5GB + RAM | 16K-128K | `thinking` |
+| **gemma4-e2b-think** | ~3GB | 32K-128K | `thinking` |
+| **nemotron-3-nano-4b-think** | ~3GB | 32K-128K | `thinking`, `tools` |
 
 ### Context Size Behavior
 
@@ -319,16 +319,16 @@ Models use the format `model:size` for consistency with Ollama:
 
 | Primary Name | Aliases |
 |--------------|---------|
-| `qwen3.5:4b` | `qwen3.5-4b`, `qwen3.5-4b-q4` |
-| `qwen3.5:4b-think` | `qwen3.5-4b-think`, `qwen3.5-4b-reasoning` |
-| `qwen3.5:9b` | `qwen3.5-9b`, `qwen3.5-9b-q4` |
-| `qwen3.5:9b-think` | `qwen3.5-9b-think`, `qwen3.5-9b-reasoning` |
-| `gemma4:e4b` | `gemma4-e4b`, `gemma-4-e4b` |
-| `gemma4:e4b-think` | `gemma4-e4b-think`, `gemma-4-e4b-think` |
-| `gemma4:e2b` | `gemma4-e2b`, `gemma-4-e2b` |
-| `gemma4:e2b-think` | `gemma4-e2b-think`, `gemma-4-e2b-think` |
-| `nemotron-3-nano:4b` | `nemotron-4b`, `nemotron-3-nano-4b`, `nemotron` |
-| `nemotron-3-nano:4b-think` | `nemotron-4b-think`, `nemotron-think` |
+| `qwen3.5-4b` | `qwen3.5-4b`, `qwen3.5-4b-q4` |
+| `qwen3.5-4b-think` | `qwen3.5-4b-think`, `qwen3.5-4b-reasoning` |
+| `qwen3.5-9b` | `qwen3.5-9b`, `qwen3.5-9b-q4` |
+| `qwen3.5-9b-think` | `qwen3.5-9b-think`, `qwen3.5-9b-reasoning` |
+| `gemma4-e4b` | `gemma4-e4b`, `gemma-4-e4b` |
+| `gemma4-e4b-think` | `gemma4-e4b-think`, `gemma-4-e4b-think` |
+| `gemma4-e2b` | `gemma4-e2b`, `gemma-4-e2b` |
+| `gemma4-e2b-think` | `gemma4-e2b-think`, `gemma-4-e2b-think` |
+| `nemotron-3-nano-4b` | `nemotron-4b`, `nemotron-3-nano-4b`, `nemotron` |
+| `nemotron-3-nano-4b-think` | `nemotron-4b-think`, `nemotron-think` |
 
 ## Configuration Details
 

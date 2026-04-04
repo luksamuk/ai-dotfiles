@@ -45,7 +45,7 @@ Configure o `config.yaml` com modelos que tenham a flag `thinking: true` nos met
 
 ```yaml
 models:
-  "gemma4:e4b-think":
+  "gemma4-e4b-think":
     cmd: ./llama-server ... -m gemma-4b-q4_k_m.gguf
     meta:
       llamaswap:

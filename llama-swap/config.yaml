@@ -77,7 +77,7 @@ models:
   # Melhor para: tarefas rápidas, código, suma
   # VRAM: ~3GB com contexto
   # -------------------------------------------
-  "qwen3.5:4b":
+  "qwen3.5-4b":
     name: "Qwen3.5 4B"
     description: "Qwen3.5-4B Q4_K_M - Uso geral, rápido e leve"
     cmd: |
@@ -108,7 +108,7 @@ models:
   # Melhor para: raciocínio, problemas complexos
   # Usa --reasoning auto para suporte a thinking
   # -------------------------------------------
-  "qwen3.5:4b-think":
+  "qwen3.5-4b-think":
     name: "Qwen3.5 4B Thinking"
     description: "Qwen3.5-4B Q4_K_M - Com reasoning/thinking"
     cmd: |
@@ -142,7 +142,7 @@ models:
   # Melhor para: raciocínio complexo, respostas longas
   # VRAM: ~5GB + RAM para offload
   # -------------------------------------------
-  "qwen3.5:9b":
+  "qwen3.5-9b":
     name: "Qwen3.5 9B"
     description: "Qwen3.5-9B Q4_K_M - Uso geral, maior capacidade"
     cmd: |
@@ -172,7 +172,7 @@ models:
   # QWEN3.5-9B THINKING - Com reasoning
   # Melhor para: raciocínio profundo, matemática, lógica
   # -------------------------------------------
-  "qwen3.5:9b-think":
+  "qwen3.5-9b-think":
     name: "Qwen3.5 9B Thinking"
     description: "Qwen3.5-9B Q4_K_M - Com reasoning/thinking"
     cmd: |
@@ -206,7 +206,7 @@ models:
   # Melhor para: uso geral, multilíngue
   # VRAM: ~4.5GB + RAM para offload
   # -------------------------------------------
-  "gemma4:e4b":
+  "gemma4-e4b":
     name: "Gemma 4 E4B"
     description: "Gemma-4 Efficient 4B Q4_K_M - Uso geral, multilíngue"
     cmd: |
@@ -236,7 +236,7 @@ models:
   # GEMMA-4-E4B THINKING - Com reasoning
   # Melhor para: raciocínio, problemas complexos
   # -------------------------------------------
-  "gemma4:e4b-think":
+  "gemma4-e4b-think":
     name: "Gemma 4 E4B Thinking"
     description: "Gemma-4 Efficient 4B Q4_K_M - Com reasoning"
     cmd: |
@@ -270,7 +270,7 @@ models:
   # Melhor para: uso geral, mais rápido que E4B
   # VRAM: ~3GB com contexto
   # -------------------------------------------
-  "gemma4:e2b":
+  "gemma4-e2b":
     name: "Gemma 4 E2B"
     description: "Gemma-4 Efficient 2B Q4_K_M - Compacto e rápido"
     cmd: |
@@ -300,7 +300,7 @@ models:
   # GEMMA-4-E2B THINKING - Com reasoning
   # Melhor para: raciocínio em modelo compacto
   # -------------------------------------------
-  "gemma4:e2b-think":
+  "gemma4-e2b-think":
     name: "Gemma 4 E2B Thinking"
     description: "Gemma-4 Efficient 2B Q4_K_M - Com reasoning"
     cmd: |
@@ -335,7 +335,7 @@ models:
   # Excelente para aulas de IA/Guilda
   # VRAM: ~3GB com contexto
   # -------------------------------------------
-  "nemotron-3-nano:4b":
+  "nemotron-3-nano-4b":
     name: "Nemotron 3 Nano 4B"
     description: "NVIDIA Nemotron-3-Nano-4B Q4_K_M - Tool-calling especialista"
     cmd: |
@@ -368,7 +368,7 @@ models:
   # NEMOTRON-3-NANO-4B - THINKING VARIANT
   # Melhor para: tool-calling com reasoning
   # -------------------------------------------
-  "nemotron-3-nano:4b-think":
+  "nemotron-3-nano-4b-think":
     name: "Nemotron 3 Nano 4B Thinking"
     description: "NVIDIA Nemotron-3-Nano-4B Q4_K_M - Com reasoning"
     cmd: |
@@ -422,17 +422,17 @@ groups:
     exclusive: true   # Descarrega outros grupos ao ativar
     members:
       # Modelos padrão (sem thinking)
-      - "qwen3.5:4b"
-      - "qwen3.5:9b"
-      - "gemma4:e4b"
-      - "gemma4:e2b"
-      - "nemotron-3-nano:4b"
+      - "qwen3.5-4b"
+      - "qwen3.5-9b"
+      - "gemma4-e4b"
+      - "gemma4-e2b"
+      - "nemotron-3-nano-4b"
       # Variantes thinking
-      - "qwen3.5:4b-think"
-      - "qwen3.5:9b-think"
-      - "gemma4:e4b-think"
-      - "gemma4:e2b-think"
-      - "nemotron-3-nano:4b-think"
+      - "qwen3.5-4b-think"
+      - "qwen3.5-9b-think"
+      - "gemma4-e4b-think"
+      - "gemma4-e2b-think"
+      - "nemotron-3-nano-4b-think"
 
 
 # ============================================
