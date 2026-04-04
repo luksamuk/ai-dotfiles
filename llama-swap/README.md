@@ -268,7 +268,7 @@ The API is OpenAI-compatible, so most tools work out of the box:
 ### Key Parameters
 
 - **`--fit on`**: Automatically adjusts GPU layers and context size to fit in VRAM
-- **`--fit-margin 512`**: Safety margin in MiB (prevents OOM)
+- **`--fit-target 512`**: Safety margin in MiB (prevents OOM)
 - **`--fit-ctx 4096`**: Minimum context size when downscaling
 - **`--ctx-size`**: Maximum context length (8192 or 16384 depending on model)
 - **`--flash-attn`**: Flash Attention for better performance

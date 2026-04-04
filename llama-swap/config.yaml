@@ -35,7 +35,7 @@ macros:
   "small_ctx": "8192"
   "medium_ctx": "16384"
   
-  # Margem de segurança para VRAM (MiB) - usada pelo --fit
+  # Margem de segurança para VRAM (MiB) - usada pelo --fit-target
   "vram_margin": "512"
 
 
@@ -55,7 +55,7 @@ models:
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B-Q4_K_M.gguf
       --fit on
-      --fit-margin ${vram_margin}
+      --fit-target ${vram_margin}
       --fit-ctx 4096
       --ctx-size ${medium_ctx}
       --temp ${default_temp}
@@ -82,7 +82,7 @@ models:
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-9B-Q4_K_M.gguf
       --fit on
-      --fit-margin 256
+      --fit-target 256
       --fit-ctx 4096
       --ctx-size ${small_ctx}
       --temp ${default_temp}
@@ -109,7 +109,7 @@ models:
       ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
       --fit on
-      --fit-margin 256
+      --fit-target 256
       --fit-ctx 4096
       --ctx-size ${small_ctx}
       --temp 0.7
@@ -137,7 +137,7 @@ models:
       ${llama_server} --port ${PORT}
       --model ${models_dir}/NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf
       --fit on
-      --fit-margin ${vram_margin}
+      --fit-target ${vram_margin}
       --fit-ctx 4096
       --ctx-size ${medium_ctx}
       --temp 0.6
