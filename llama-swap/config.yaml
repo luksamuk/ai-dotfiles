@@ -25,15 +25,40 @@ macros:
   # Build local em ~/git/llama.cpp/build/bin/llama-server
   "llama_server": "${env.HOME}/git/llama.cpp/build/bin/llama-server"
   
-  # Parâmetros de inferência padrão
+  # ===========================================
+  # PARÂMETROS DE INFERÊNCIA (baseados no Unsloth)
+  # ===========================================
+  # Qwen3.5: temp 0.6-0.7, top_p 0.8-0.9, top_k 20-40
+  # Nemotron: temp 0.6, top_p 0.9
+  # Gemma: temp 0.7, top_p 0.9
+  # Referência: https://unsloth.ai/docs/models/qwen3.5
+  # ===========================================
+  
+  # Parâmetros padrão (uso geral)
   "default_temp": "0.7"
-  "default_top_p": "0.85"
-  "default_top_k": "40"
+  "default_top_p": "0.9"
+  "default_top_k": "20"
+  "default_min_p": "0.01"
   "default_repeat_penalty": "1.05"
+  
+  # Parâmetros para código/tool-calling (mais determinístico)
+  "code_temp": "0.6"
+  "code_top_p": "0.85"
+  "code_top_k": "40"
+  "code_min_p": "0.02"
+  "code_repeat_penalty": "1.05"
+  
+  # Parâmetros para thinking/reasoning
+  "think_temp": "0.6"
+  "think_top_p": "0.9"
+  "think_top_k": "20"
+  "think_min_p": "0.0"
+  "think_repeat_penalty": "1.0"
   
   # Contexto adequado para 6GB VRAM
   "small_ctx": "8192"
   "medium_ctx": "16384"
+  "large_ctx": "32768"
   
   # Margem de segurança para VRAM (MiB) - usada pelo --fit-target
   "vram_margin": "512"
@@ -44,13 +69,13 @@ macros:
 # ===========================================
 models:
   # -------------------------------------------
-  # Qwen3.5-4B - CABE INTEIRO NA VRAM
-  # Melhor para: tarefas rápidas, code completion
+  # QWEN3.5-4B - CABE INTEIRO NA VRAM
+  # Melhor para: tarefas rápidas, código, suma
   # VRAM: ~3GB com contexto
   # -------------------------------------------
   "qwen3.5:4b":
     name: "Qwen3.5 4B"
-    description: "Qwen3.5-4B Q4_K_M - Leve e rápido, cabe inteiro na VRAM"
+    description: "Qwen3.5-4B Q4_K_M - Uso geral, rápido e leve"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B-Q4_K_M.gguf
@@ -61,6 +86,7 @@ models:
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
+      --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
       --flash-attn on
     ttl: 300
@@ -74,13 +100,46 @@ models:
       source: "unsloth/Qwen3.5-4B-GGUF"
 
   # -------------------------------------------
-  # Qwen3.5-9B - REQUER OFFLOAD PARCIAL
+  # QWEN3.5-4B THINKING - Com reasoning
+  # Melhor para: raciocínio, problemas complexos
+  # Usa --reasoning auto para suporte a thinking
+  # -------------------------------------------
+  "qwen3.5:4b-think":
+    name: "Qwen3.5 4B Thinking"
+    description: "Qwen3.5-4B Q4_K_M - Com reasoning/thinking"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.5-4B-Q4_K_M.gguf
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx 4096
+      --ctx-size ${medium_ctx}
+      --temp ${think_temp}
+      --top-p ${think_top_p}
+      --top-k ${think_top_k}
+      --min-p ${think_min_p}
+      --repeat-penalty ${think_repeat_penalty}
+      --reasoning auto
+      --flash-attn on
+    ttl: 300
+    aliases:
+      - "qwen3.5-4b-think"
+      - "qwen3.5-4b-reasoning"
+    metadata:
+      size: "2.63 GB"
+      context: "16384"
+      vram_usage: "~3GB"
+      source: "unsloth/Qwen3.5-4B-GGUF"
+      features: "thinking, reasoning"
+
+  # -------------------------------------------
+  # QWEN3.5-9B - REQUER OFFLOAD PARCIAL
   # Melhor para: raciocínio complexo, respostas longas
   # VRAM: ~5GB + RAM para offload
   # -------------------------------------------
   "qwen3.5:9b":
     name: "Qwen3.5 9B"
-    description: "Qwen3.5-9B Q4_K_M - Maior capacidade, offload automático"
+    description: "Qwen3.5-9B Q4_K_M - Uso geral, maior capacidade"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-9B-Q4_K_M.gguf
@@ -91,6 +150,7 @@ models:
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
+      --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
       --flash-attn on
     ttl: 300
@@ -104,7 +164,39 @@ models:
       source: "unsloth/Qwen3.5-9B-GGUF"
 
   # -------------------------------------------
-  # Gemma-4-E4B - REQUER OFFLOAD PARCIAL
+  # QWEN3.5-9B THINKING - Com reasoning
+  # Melhor para: raciocínio profundo, matemática, lógica
+  # -------------------------------------------
+  "qwen3.5:9b-think":
+    name: "Qwen3.5 9B Thinking"
+    description: "Qwen3.5-9B Q4_K_M - Com reasoning/thinking"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.5-9B-Q4_K_M.gguf
+      --fit on
+      --fit-target 256
+      --fit-ctx 4096
+      --ctx-size ${small_ctx}
+      --temp ${think_temp}
+      --top-p ${think_top_p}
+      --top-k ${think_top_k}
+      --min-p ${think_min_p}
+      --repeat-penalty ${think_repeat_penalty}
+      --reasoning auto
+      --flash-attn on
+    ttl: 300
+    aliases:
+      - "qwen3.5-9b-think"
+      - "qwen3.5-9b-reasoning"
+    metadata:
+      size: "5.68 GB"
+      context: "8192"
+      vram_usage: "~5GB + RAM offload"
+      source: "unsloth/Qwen3.5-9B-GGUF"
+      features: "thinking, reasoning"
+
+  # -------------------------------------------
+  # GEMMA-4-E4B - REQUER OFFLOAD PARCIAL
   # Melhor para: uso geral, multilíngue
   # VRAM: ~4.5GB + RAM para offload
   # -------------------------------------------
@@ -121,6 +213,7 @@ models:
       --temp 0.7
       --top-p 0.9
       --top-k 40
+      --min-p 0.01
       --repeat-penalty 1.0
       --flash-attn on
     ttl: 300
@@ -134,7 +227,7 @@ models:
       source: "unsloth/gemma-4-E4B-it-GGUF"
 
   # -------------------------------------------
-  # Gemma-4-E2B - CABE INTEIRO NA VRAM
+  # GEMMA-4-E2B - CABE INTEIRO NA VRAM
   # Melhor para: uso geral, mais rápido que E4B
   # VRAM: ~3GB com contexto
   # -------------------------------------------
@@ -151,6 +244,7 @@ models:
       --temp 0.7
       --top-p 0.9
       --top-k 40
+      --min-p 0.01
       --repeat-penalty 1.0
       --flash-attn on
     ttl: 300
@@ -164,14 +258,14 @@ models:
       source: "unsloth/gemma-4-E2B-it-GGUF"
 
   # -------------------------------------------
-  # Nemotron-3-Nano-4B - CABE INTEIRO NA VRAM
+  # NEMOTRON-3-NANO-4B - CABE INTEIRO NA VRAM
   # Melhor para: tool-calling, function calling
   # Excelente para aulas de IA/Guilda
   # VRAM: ~3GB com contexto
   # -------------------------------------------
   "nemotron-3-nano:4b":
     name: "Nemotron 3 Nano 4B"
-    description: "NVIDIA Nemotron-3-Nano-4B Q4_K_M - Excelente para tool-calling"
+    description: "NVIDIA Nemotron-3-Nano-4B Q4_K_M - Tool-calling especialista"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf
@@ -182,18 +276,53 @@ models:
       --temp 0.6
       --top-p 0.9
       --top-k 40
+      --min-p 0.00
       --repeat-penalty 1.0
       --flash-attn on
     ttl: 300
     aliases:
       - "nemotron-4b"
       - "nemotron-3-nano-4b"
+      - "nemotron"
     metadata:
       size: "2.90 GB"
       context: "16384"
       vram_usage: "~3GB"
       source: "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF"
       notes: "Excelente para tool-calling, ideal para aulas de IA"
+
+  # -------------------------------------------
+  # NEMOTRON-3-NANO-4B - THINKING VARIANT
+  # Melhor para: tool-calling com reasoning
+  # -------------------------------------------
+  "nemotron-3-nano:4b-think":
+    name: "Nemotron 3 Nano 4B Thinking"
+    description: "NVIDIA Nemotron-3-Nano-4B Q4_K_M - Com reasoning"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx 4096
+      --ctx-size ${medium_ctx}
+      --temp ${think_temp}
+      --top-p ${think_top_p}
+      --top-k ${think_top_k}
+      --min-p ${think_min_p}
+      --repeat-penalty ${think_repeat_penalty}
+      --reasoning auto
+      --flash-attn on
+    ttl: 300
+    aliases:
+      - "nemotron-4b-think"
+      - "nemotron-3-nano-4b-think"
+      - "nemotron-think"
+    metadata:
+      size: "2.90 GB"
+      context: "16384"
+      vram_usage: "~3GB"
+      source: "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF"
+      features: "thinking, reasoning, tool-calling"
 
 
 # ============================================
@@ -217,11 +346,16 @@ groups:
     swap: true        # Só um modelo por vez
     exclusive: true   # Descarrega outros grupos ao ativar
     members:
+      # Modelos padrão (sem thinking)
       - "qwen3.5:4b"
       - "qwen3.5:9b"
       - "gemma4:e4b"
       - "gemma4:e2b"
       - "nemotron-3-nano:4b"
+      # Variantes thinking
+      - "qwen3.5:4b-think"
+      - "qwen3.5:9b-think"
+      - "nemotron-3-nano:4b-think"
 
 
 # ============================================
