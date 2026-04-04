@@ -1,0 +1,169 @@
+# llama-swap configuration for RTX 3050 Laptop (6GB VRAM)
+# Configuração otimizada para uso com --fit automático
+#
+# Repositório: ~/git/ai-dotfiles/llama-swap/
+# Modelos: ~/.llama-models/
+
+# Schema para validação (VS Code)
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mostlygeek/llama-swap/refs/heads/main/config-schema.json
+
+healthCheckTimeout: 300
+logLevel: info
+logTimeFormat: "rfc3339"
+logToStdout: "proxy"
+captureBuffer: 15
+startPort: 10001
+sendLoadingState: true
+includeAliasesInList: false
+globalTTL: 0
+
+# Macros reutilizáveis
+macros:
+  "models_dir": "${env.HOME}/.llama-models"
+  
+  # Parâmetros de inferência padrão
+  "default_temp": "0.7"
+  "default_top_p": "0.85"
+  "default_top_k": "40"
+  "default_repeat_penalty": "1.05"
+  
+  # Contexto adequado para 6GB VRAM
+  "small_ctx": "8192"
+  "medium_ctx": "16384"
+  
+  # Margem de segurança para VRAM (MiB)
+  "vram_margin": "512"
+
+
+# ===========================================
+# MODELOS
+# ===========================================
+models:
+  # -------------------------------------------
+  # Qwen3.5-4B - CABE INTEIRO NA VRAM
+  # Melhor para: tarefas rápidas, code completion
+  # VRAM: ~3GB com contexto
+  # -------------------------------------------
+  "qwen3.5-4b":
+    name: "Qwen3.5 4B"
+    description: "Qwen3.5-4B Q4_K_M - Leve e rápido, cabe inteiro na VRAM"
+    cmd: |
+      llama-server --port ${PORT}
+      --model ${models_dir}/Qwen3.5-4B-Q4_K_M.gguf
+      --fit on
+      --fit-margin ${vram_margin}
+      --fit-ctx 4096
+      --ctx-size ${medium_ctx}
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --repeat-penalty ${default_repeat_penalty}
+      -fa
+    ttl: 300
+    metadata:
+      size: "2.63 GB"
+      context: "16384"
+      vram_usage: "~3GB"
+      source: "unsloth/Qwen3.5-4B-GGUF"
+
+  # -------------------------------------------
+  # Qwen3.5-9B - REQUER OFFLOAD PARCIAL
+  # Melhor para: raciocínio complexo, respostas longas
+  # VRAM: ~5GB + RAM para offload
+  # -------------------------------------------
+  "qwen3.5-9b":
+    name: "Qwen3.5 9B"
+    description: "Qwen3.5-9B Q4_K_M - Maior capacidade, offload automático"
+    cmd: |
+      llama-server --port ${PORT}
+      --model ${models_dir}/Qwen3.5-9B-Q4_K_M.gguf
+      --fit on
+      --fit-margin 256
+      --fit-ctx 4096
+      --ctx-size ${small_ctx}
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --repeat-penalty ${default_repeat_penalty}
+      -fa
+    ttl: 300
+    metadata:
+      size: "5.68 GB"
+      context: "8192"
+      vram_usage: "~5GB + RAM offload"
+      source: "unsloth/Qwen3.5-9B-GGUF"
+
+  # -------------------------------------------
+  # Gemma-4-E4B - REQUER OFFLOAD PARCIAL
+  # Melhor para: uso geral, multilíngue
+  # VRAM: ~4.5GB + RAM para offload
+  # -------------------------------------------
+  "gemma4-e4b":
+    name: "Gemma 4 E4B"
+    description: "Gemma-4 Efficient 4B Q4_K_M - Uso geral, multilíngue"
+    cmd: |
+      llama-server --port ${PORT}
+      --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
+      --fit on
+      --fit-margin 256
+      --fit-ctx 4096
+      --ctx-size ${small_ctx}
+      --temp 0.7
+      --top-p 0.9
+      --top-k 40
+      --repeat-penalty 1.0
+      -fa
+    ttl: 300
+    metadata:
+      size: "4.98 GB"
+      context: "8192"
+      vram_usage: "~4.5GB + RAM offload"
+      source: "unsloth/gemma-4-E4B-it-GGUF"
+
+
+# ============================================
+# ALIASES (nomes alternativos para os modelos)
+# ============================================
+# Descomente se quiser aliases
+# models:
+#   "qwen3.5-4b":
+#     aliases: ["qwen-4b", "qwen3.5-small"]
+#   "qwen3.5-9b":
+#     aliases: ["qwen-9b", "qwen3.5-medium"]
+#   "gemma4-e4b":
+#     aliases: ["gemma-4b", "gemma4-small"]
+
+
+# ============================================
+# GRUPOS
+# ============================================
+groups:
+  "default":
+    swap: true        # Só um modelo por vez
+    exclusive: true   # Descarrega outros grupos ao ativar
+    members:
+      - "qwen3.5-4b"
+      - "qwen3.5-9b"
+      - "gemma4-e4b"
+
+
+# ============================================
+# HOOKS
+# ============================================
+# hooks:
+#   on_startup:
+#     preload:
+#       - "qwen3.5-4b"  # Carregar na inicialização
+
+
+# ============================================
+# PEERS (outros servidores)
+# ============================================
+# Para conectar outros servidores OpenAI-compatible
+# peers:
+#   openrouter:
+#     proxy: https://openrouter.ai/api
+#     apiKey: ${env.OPENROUTER_API_KEY}
+#     models:
+#       - "anthropic/claude-3.5-sonnet"
+#       - "openai/gpt-4o"
