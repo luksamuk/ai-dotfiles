@@ -72,6 +72,7 @@ models:
   # QWEN3.5-4B - CABE INTEIRO NA VRAM
   # Melhor para: tarefas rápidas, código, suma
   # VRAM: ~3GB com contexto
+  # Explicitamente SEM reasoning (usa --reasoning off)
   # -------------------------------------------
   "qwen3.5:4b":
     name: "Qwen3.5 4B"
@@ -88,6 +89,7 @@ models:
       --top-k ${default_top_k}
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
+      --reasoning off
       --flash-attn on
     ttl: 300
     aliases:
@@ -98,6 +100,7 @@ models:
       context: "16384"
       vram_usage: "~3GB"
       source: "unsloth/Qwen3.5-4B-GGUF"
+      features: "no-thinking"
 
   # -------------------------------------------
   # QWEN3.5-4B THINKING - Com reasoning
@@ -136,6 +139,7 @@ models:
   # QWEN3.5-9B - REQUER OFFLOAD PARCIAL
   # Melhor para: raciocínio complexo, respostas longas
   # VRAM: ~5GB + RAM para offload
+  # Explicitamente SEM reasoning
   # -------------------------------------------
   "qwen3.5:9b":
     name: "Qwen3.5 9B"
@@ -152,6 +156,7 @@ models:
       --top-k ${default_top_k}
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
+      --reasoning off
       --flash-attn on
     ttl: 300
     aliases:
@@ -162,6 +167,7 @@ models:
       context: "8192"
       vram_usage: "~5GB + RAM offload"
       source: "unsloth/Qwen3.5-9B-GGUF"
+      features: "no-thinking"
 
   # -------------------------------------------
   # QWEN3.5-9B THINKING - Com reasoning
@@ -262,6 +268,7 @@ models:
   # Melhor para: tool-calling, function calling
   # Excelente para aulas de IA/Guilda
   # VRAM: ~3GB com contexto
+  # Explicitamente SEM reasoning (tool-calling puro)
   # -------------------------------------------
   "nemotron-3-nano:4b":
     name: "Nemotron 3 Nano 4B"
@@ -278,6 +285,7 @@ models:
       --top-k 40
       --min-p 0.00
       --repeat-penalty 1.0
+      --reasoning off
       --flash-attn on
     ttl: 300
     aliases:
@@ -289,7 +297,7 @@ models:
       context: "16384"
       vram_usage: "~3GB"
       source: "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF"
-      notes: "Excelente para tool-calling, ideal para aulas de IA"
+      features: "no-thinking, tool-calling"
 
   # -------------------------------------------
   # NEMOTRON-3-NANO-4B - THINKING VARIANT
