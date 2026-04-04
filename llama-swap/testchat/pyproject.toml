@@ -1,0 +1,16 @@
+[project]
+name = "lmstudio-chat"
+version = "0.1.0"
+description = "Chat com streaming de reasoning e response em Markdown"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "rich>=13.0.0",
+    "openai>=1.0.0",
+    "questionary>=2.0.0",
+    "prompt-toolkit>=3.0.0",
+    "requests>=2.31.0",
+]
+
+[project.scripts]
+chat = "main:main"
