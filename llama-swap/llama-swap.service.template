@@ -1,0 +1,35 @@
+[Unit]
+Description=llama-swap - Model swapping proxy for llama.cpp
+Documentation=https://github.com/mostlygeek/llama-swap
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# ExecStart uses the llama-swap binary from system
+# Config points to the user's config file
+# The llama-server binary path is defined in the config.yaml macros
+ExecStart=/usr/bin/llama-swap -config {{CONFIG}} -listen 127.0.0.1:{{PORT}} -watch-config
+
+# Environment
+Environment=HOME={{HOME}}
+Environment=PATH={{HOME}}/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+# Working directory
+WorkingDirectory={{HOME}}
+
+# Restart policy
+Restart=on-failure
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=llama-swap
+
+# Resource limits (optional, adjust as needed)
+# LimitNOFILE=65536
+# MemoryMax=16G
+
+[Install]
+WantedBy=default.target
