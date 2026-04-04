@@ -3,13 +3,14 @@
 # Usage: ./download-models.sh [model-name]
 #
 # Available models:
-#   qwen3.5-4b    - Qwen3.5-4B Q4_K_M (2.63 GB)
-#   qwen3.5-9b    - Qwen3.5-9B Q4_K_M (5.68 GB)
-#   gemma4-e4b    - Gemma-4 E4B Q4_K_M (4.98 GB)
-#   nemotron-4b   - Nemotron-3-Nano-4B Q4_K_M (2.90 GB) - tool-calling
-#   all           - Download all models
+#   qwen3.5:4b      - Qwen3.5-4B Q4_K_M (2.63 GB) - fits in VRAM
+#   qwen3.5:9b      - Qwen3.5-9B Q4_K_M (5.68 GB) - partial offload
+#   gemma4:e4b      - Gemma-4 E4B Q4_K_M (4.98 GB) - partial offload
+#   gemma4:e2b      - Gemma-4 E2B Q4_K_M (3.11 GB) - fits in VRAM
+#   nemotron-3-nano:4b - Nemotron-3-Nano-4B Q4_K_M (2.90 GB) - tool-calling
+#   all             - Download all models
 #
-# If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
+# If no argument, downloads qwen3.5:4b (fits entirely in 6GB VRAM)
 
 set -e
 
@@ -18,12 +19,22 @@ MODELS_DIR="${HOME}/.llama-models"
 # Create directory
 mkdir -p "$MODELS_DIR"
 
-# Model definitions
+# Model definitions (name: repo filename)
 declare -A MODELS=(
-  ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-Q4_K_M.gguf"
-  ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-Q4_K_M.gguf"
-  ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
-  ["nemotron-4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
+  ["qwen3.5:4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-Q4_K_M.gguf"
+  ["qwen3.5:9b"]="unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-Q4_K_M.gguf"
+  ["gemma4:e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
+  ["gemma4:e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf"
+  ["nemotron-3-nano:4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
+)
+
+# Legacy aliases (for backwards compatibility)
+declare -A ALIASES=(
+  ["qwen3.5-4b"]="qwen3.5:4b"
+  ["qwen3.5-9b"]="qwen3.5:9b"
+  ["gemma4-e4b"]="gemma4:e4b"
+  ["gemma4-e2b"]="gemma4:e2b"
+  ["nemotron-4b"]="nemotron-3-nano:4b"
 )
 
 # Alternative quantizations (for reference)
@@ -36,7 +47,19 @@ declare -A MODELS=(
 
 download_model() {
   local key="$1"
+  
+  # Resolve legacy aliases
+  if [[ -n "${ALIASES[$key]}" ]]; then
+    echo "Note: '$key' is deprecated, use '${ALIASES[$key]}' instead"
+    key="${ALIASES[$key]}"
+  fi
+  
   local repo_file="${MODELS[$key]}"
+  if [[ -z "$repo_file" ]]; then
+    echo "Error: Unknown model '$key'"
+    return 1
+  fi
+  
   local repo="${repo_file%% *}"
   local file="${repo_file#* }"
   
@@ -54,17 +77,30 @@ download_model() {
 
 show_sizes() {
   echo ""
-  echo "Model Sizes (Q4_K_M):"
-  echo "  Qwen3.5-4B:    2.63 GB  - Fits entirely in 6GB VRAM"
-  echo "  Qwen3.5-9B:    5.68 GB  - Requires partial offload"
-  echo "  Gemma-4-E4B:   4.98 GB  - Requires partial offload"
-  echo "  Nemotron-4B:   2.90 GB  - Fits in VRAM, great for tool-calling"
+  echo "Model Sizes (Q4_K_M) - Ollama-style names:"
+  echo "  qwen3.5:4b          2.63 GB  - Fits in VRAM"
+  echo "  qwen3.5:9b          5.68 GB  - Partial offload"
+  echo "  gemma4:e4b          4.98 GB  - Partial offload"
+  echo "  gemma4:e2b          3.11 GB  - Fits in VRAM"
+  echo "  nemotron-3-nano:4b  2.90 GB  - Fits in VRAM, tool-calling"
+  echo ""
+  echo "Legacy names (still work):"
+  echo "  qwen3.5-4b → qwen3.5:4b"
+  echo "  qwen3.5-9b → qwen3.5:9b"
+  echo "  gemma4-e4b → gemma4:e4b"
+  echo "  gemma4-e2b → gemma4:e2b"
+  echo "  nemotron-4b → nemotron-3-nano:4b"
   echo ""
 }
 
 # Main
-case "${1:-qwen3.5-4b}" in
-  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"nemotron-4b")
+case "${1:-qwen3.5:4b}" in
+  "qwen3.5:4b"|"qwen3.5:9b"|"gemma4:e4b"|"gemma4:e2b"|"nemotron-3-nano:4b")
+    show_sizes
+    download_model "$1"
+    ;;
+  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-4b")
+    # Legacy aliases
     show_sizes
     download_model "$1"
     ;;
@@ -80,7 +116,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, nemotron-4b, all, sizes"
+    echo "Available: qwen3.5:4b, qwen3.5:9b, gemma4:e4b, gemma4:e2b, nemotron-3-nano:4b, all, sizes"
     exit 1
     ;;
 esac

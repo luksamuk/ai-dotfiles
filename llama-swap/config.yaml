@@ -40,7 +40,7 @@ macros:
 
 
 # ===========================================
-# MODELOS
+# MODELOS (nomes estilo Ollama: modelo:tamanho)
 # ===========================================
 models:
   # -------------------------------------------
@@ -48,7 +48,7 @@ models:
   # Melhor para: tarefas rápidas, code completion
   # VRAM: ~3GB com contexto
   # -------------------------------------------
-  "qwen3.5-4b":
+  "qwen3.5:4b":
     name: "Qwen3.5 4B"
     description: "Qwen3.5-4B Q4_K_M - Leve e rápido, cabe inteiro na VRAM"
     cmd: |
@@ -64,6 +64,9 @@ models:
       --repeat-penalty ${default_repeat_penalty}
       --flash-attn on
     ttl: 300
+    aliases:
+      - "qwen3.5-4b"
+      - "qwen3.5-4b-q4"
     metadata:
       size: "2.63 GB"
       context: "16384"
@@ -75,7 +78,7 @@ models:
   # Melhor para: raciocínio complexo, respostas longas
   # VRAM: ~5GB + RAM para offload
   # -------------------------------------------
-  "qwen3.5-9b":
+  "qwen3.5:9b":
     name: "Qwen3.5 9B"
     description: "Qwen3.5-9B Q4_K_M - Maior capacidade, offload automático"
     cmd: |
@@ -91,6 +94,9 @@ models:
       --repeat-penalty ${default_repeat_penalty}
       --flash-attn on
     ttl: 300
+    aliases:
+      - "qwen3.5-9b"
+      - "qwen3.5-9b-q4"
     metadata:
       size: "5.68 GB"
       context: "8192"
@@ -102,7 +108,7 @@ models:
   # Melhor para: uso geral, multilíngue
   # VRAM: ~4.5GB + RAM para offload
   # -------------------------------------------
-  "gemma4-e4b":
+  "gemma4:e4b":
     name: "Gemma 4 E4B"
     description: "Gemma-4 Efficient 4B Q4_K_M - Uso geral, multilíngue"
     cmd: |
@@ -118,6 +124,9 @@ models:
       --repeat-penalty 1.0
       --flash-attn on
     ttl: 300
+    aliases:
+      - "gemma4-e4b"
+      - "gemma-4-e4b"
     metadata:
       size: "4.98 GB"
       context: "8192"
@@ -125,12 +134,42 @@ models:
       source: "unsloth/gemma-4-E4B-it-GGUF"
 
   # -------------------------------------------
+  # Gemma-4-E2B - CABE INTEIRO NA VRAM
+  # Melhor para: uso geral, mais rápido que E4B
+  # VRAM: ~3GB com contexto
+  # -------------------------------------------
+  "gemma4:e2b":
+    name: "Gemma 4 E2B"
+    description: "Gemma-4 Efficient 2B Q4_K_M - Compacto e rápido"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gemma-4-E2B-it-Q4_K_M.gguf
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx 4096
+      --ctx-size ${medium_ctx}
+      --temp 0.7
+      --top-p 0.9
+      --top-k 40
+      --repeat-penalty 1.0
+      --flash-attn on
+    ttl: 300
+    aliases:
+      - "gemma4-e2b"
+      - "gemma-4-e2b"
+    metadata:
+      size: "3.11 GB"
+      context: "16384"
+      vram_usage: "~3GB"
+      source: "unsloth/gemma-4-E2B-it-GGUF"
+
+  # -------------------------------------------
   # Nemotron-3-Nano-4B - CABE INTEIRO NA VRAM
   # Melhor para: tool-calling, function calling
   # Excelente para aulas de IA/Guilda
   # VRAM: ~3GB com contexto
   # -------------------------------------------
-  "nemotron-4b":
+  "nemotron-3-nano:4b":
     name: "Nemotron 3 Nano 4B"
     description: "NVIDIA Nemotron-3-Nano-4B Q4_K_M - Excelente para tool-calling"
     cmd: |
@@ -146,6 +185,9 @@ models:
       --repeat-penalty 1.0
       --flash-attn on
     ttl: 300
+    aliases:
+      - "nemotron-4b"
+      - "nemotron-3-nano-4b"
     metadata:
       size: "2.90 GB"
       context: "16384"
@@ -175,10 +217,11 @@ groups:
     swap: true        # Só um modelo por vez
     exclusive: true   # Descarrega outros grupos ao ativar
     members:
-      - "qwen3.5-4b"
-      - "qwen3.5-9b"
-      - "gemma4-e4b"
-      - "nemotron-4b"
+      - "qwen3.5:4b"
+      - "qwen3.5:9b"
+      - "gemma4:e4b"
+      - "gemma4:e2b"
+      - "nemotron-3-nano:4b"
 
 
 # ============================================

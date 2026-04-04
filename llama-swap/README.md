@@ -75,26 +75,27 @@ mkdir -p ~/.llama-models
 # Download Qwen3.5-4B (2.63 GB - fits entirely in VRAM)
 hf download unsloth/Qwen3.5-4B-GGUF \
   Qwen3.5-4B-Q4_K_M.gguf \
-  --local-dir ~/.llama-models \
-  --local-dir-use-symlinks False
+  --local-dir ~/.llama-models
 
 # Download Qwen3.5-9B (5.68 GB - requires partial offload)
 hf download unsloth/Qwen3.5-9B-GGUF \
   Qwen3.5-9B-Q4_K_M.gguf \
-  --local-dir ~/.llama-models \
-  --local-dir-use-symlinks False
+  --local-dir ~/.llama-models
 
 # Download Gemma-4-E4B (4.98 GB - requires partial offload)
 hf download unsloth/gemma-4-E4B-it-GGUF \
   gemma-4-E4B-it-Q4_K_M.gguf \
-  --local-dir ~/.llama-models \
-  --local-dir-use-symlinks False
+  --local-dir ~/.llama-models
+
+# Download Gemma-4-E2B (3.11 GB - fits in VRAM)
+hf download unsloth/gemma-4-E2B-it-GGUF \
+  gemma-4-E2B-it-Q4_K_M.gguf \
+  --local-dir ~/.llama-models
 
 # Download Nemotron-3-Nano-4B (2.90 GB - fits in VRAM, great for tool-calling)
 hf download unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF \
   NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf \
-  --local-dir ~/.llama-models \
-  --local-dir-use-symlinks False
+  --local-dir ~/.llama-models
 ```
 
 ### Alternative Quantizations
@@ -106,6 +107,7 @@ If you need different quality/size trade-offs:
 | Qwen3.5-4B | 2.63 GB | 3.09 GB | 3.59 GB | 4.65 GB |
 | Qwen3.5-9B | 5.68 GB | 6.58 GB | 7.46 GB | 9.53 GB |
 | Gemma-4-E4B | 4.98 GB | 5.48 GB | - | - |
+| Gemma-4-E2B | 3.11 GB | 3.36 GB | 4.50 GB | 5.05 GB |
 | Nemotron-3-Nano-4B | 2.90 GB | 3.16 GB | 4.06 GB | 4.23 GB |
 
 ```bash
@@ -258,10 +260,23 @@ The API is OpenAI-compatible, so most tools work out of the box:
 
 | Model | VRAM Usage | Speed | Quality | Best For |
 |-------|-----------|-------|---------|----------|
-| **qwen3.5-4b** | ~3GB | Fastest | Good | Quick tasks, code completion |
-| **qwen3.5-9b** | ~5GB + RAM | Medium | Better | Complex reasoning, longer responses |
-| **gemma4-e4b** | ~5GB + RAM | Medium | Good | General purpose, multilingual |
-| **nemotron-4b** | ~3GB | Fast | Excellent | Tool-calling, function calling, AI classes |
+| **qwen3.5:4b** | ~3GB | Fastest | Good | Quick tasks, code completion |
+| **qwen3.5:9b** | ~5GB + RAM | Medium | Better | Complex reasoning, longer responses |
+| **gemma4:e4b** | ~4.5GB + RAM | Medium | Good | General purpose, multilingual |
+| **gemma4:e2b** | ~3GB | Fast | Good | General purpose, faster than e4b |
+| **nemotron-3-nano:4b** | ~3GB | Fast | Excellent | Tool-calling, function calling, AI classes |
+
+### Model Names (Ollama-style)
+
+Models use the format `model:size` for consistency with Ollama:
+
+| Primary Name | Aliases |
+|--------------|---------|
+| `qwen3.5:4b` | `qwen3.5-4b`, `qwen3.5-4b-q4` |
+| `qwen3.5:9b` | `qwen3.5-9b`, `qwen3.5-9b-q4` |
+| `gemma4:e4b` | `gemma4-e4b`, `gemma-4-e4b` |
+| `gemma4:e2b` | `gemma4-e2b`, `gemma-4-e2b` |
+| `nemotron-3-nano:4b` | `nemotron-4b`, `nemotron-3-nano-4b` |
 
 ## Configuration Details
 
