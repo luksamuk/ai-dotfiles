@@ -405,14 +405,14 @@ models:
         tools: true
 
   # -------------------------------------------
-  # QWOPUS-9B - REASONING + TOOL-CALLING
-  # Fine-tune do Qwen3.5-9B focado em reasoning
-  # Melhor para: código, multi-step tasks, agentes
+  # QWOPUS-9B - TOOL-CALLING ESPECIALISTA
+  # Fine-tune do Qwen3.5-9B focado em tool-calling
+  # Melhor para: agentes, function calling, código
   # 87.80% HumanEval (+4.87pp sobre base)
   # -------------------------------------------
   "qwopus-9b":
     name: "Qwopus 9B"
-    description: "Qwopus3.5-9B-v3 Q4_K_M - Reasoning + tool-calling"
+    description: "Qwopus3.5-9B-v3 Q4_K_M - Tool-calling especialista"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwopus3.5-9B-v3-Q4_K_M.gguf
@@ -425,12 +425,46 @@ models:
       --top-k 40
       --min-p 0.0
       --repeat-penalty 1.0
-      --reasoning auto
+      --reasoning off
       --flash-attn on
     ttl: 60
     aliases:
       - "qwopus"
       - "qwopus9b"
+    metadata:
+      size: "5.63 GB"
+      context: "16K-128K (dynamic)"
+      vram_usage: "~5.5GB + RAM offload"
+      source: "Jackrong/Qwopus3.5-9B-v3-GGUF"
+      features:
+        tools: true
+
+  # -------------------------------------------
+  # QWOPUS-9B THINKING - REASONING + TOOL-CALLING
+  # Mesmo modelo, mas com reasoning exposto
+  # Melhor para: problemas complexos, multi-step reasoning
+  # -------------------------------------------
+  "qwopus-9b-think":
+    name: "Qwopus 9B Thinking"
+    description: "Qwopus3.5-9B-v3 Q4_K_M - Com reasoning + tools"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwopus3.5-9B-v3-Q4_K_M.gguf
+      --fit on
+      --fit-target 256
+      --fit-ctx ${large_model_min_ctx}
+      --ctx-size ${large_model_max_ctx}
+      --temp ${think_temp}
+      --top-p ${think_top_p}
+      --top-k ${think_top_k}
+      --min-p ${think_min_p}
+      --repeat-penalty ${think_repeat_penalty}
+      --reasoning auto
+      --flash-attn on
+    ttl: 60
+    aliases:
+      - "qwopus-think"
+      - "qwopus9b-think"
     metadata:
       size: "5.63 GB"
       context: "16K-128K (dynamic)"
@@ -460,8 +494,9 @@ groups:
       - "gemma4-e4b-think"
       - "gemma4-e2b-think"
       - "nemotron-3-nano-4b-think"
-      # Reasoning + tools especialista
+      # Qwopus: tool-calling + reasoning
       - "qwopus-9b"
+      - "qwopus-9b-think"
 
 
 # ============================================
