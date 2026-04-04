@@ -5,12 +5,10 @@
 # Available models:
 #   qwen3.5-4b          - Qwen3.5-4B Q4_K_M (2.63 GB) - fits in VRAM
 #   qwen3.5-9b          - Qwen3.5-9B Q4_K_M (5.68 GB) - partial offload
+#   qwen3.5-27b         - Qwen3.5-27B Q4_K_M (~17 GB) - heavy offload, slow
 #   gemma4-e4b          - Gemma-4 E4B Q4_K_M (4.98 GB) - partial offload
 #   gemma4-e2b          - Gemma-4 E2B Q4_K_M (3.11 GB) - fits in VRAM
 #   nemotron-3-nano-4b  - Nemotron-3-Nano-4B Q4_K_M (2.90 GB) - tool-calling
-#   qwopus-4b           - Qwopus3.5-4B-v3 Q4_K_M (2.63 GB) - reasoning+tools
-#   qwopus-9b           - Qwopus3.5-9B-v3 Q4_K_M (5.63 GB) - reasoning+tools
-#   carnice-9b          - Carnice-9b Q4_K_M (5.63 GB) - Hermes Agent specialized
 #   all                 - Download all models
 #
 # If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
@@ -28,12 +26,10 @@ mkdir -p "$MODELS_DIR"
 declare -A MODELS=(
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-Q4_K_M.gguf"
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-Q4_K_M.gguf"
+  ["qwen3.5-27b"]="unsloth/Qwen3.5-27B-GGUF Qwen3.5-27B-Q4_K_M.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf"
   ["nemotron-3-nano-4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
-  ["qwopus-4b"]="Jackrong/Qwopus3.5-4B-v3-GGUF Qwen3.5-4B.Q4_K_M.gguf Qwopus3.5-4B-v3-Q4_K_M.gguf"
-  ["qwopus-9b"]="Jackrong/Qwopus3.5-9B-v3-GGUF Qwen3.5-9B.Q4_K_M.gguf Qwopus3.5-9B-v3-Q4_K_M.gguf"
-  ["carnice-9b"]="kai-os/Carnice-9b-GGUF Carnice-9b-Q4_K_M.gguf"
 )
 
 # Legacy aliases with colons (for backwards compatibility)
@@ -96,12 +92,10 @@ show_sizes() {
   echo "Model Sizes (Q4_K_M):"
   echo "  qwen3.5-4b          2.63 GB  - Fits in VRAM"
   echo "  qwen3.5-9b          5.68 GB  - Partial offload"
+  echo "  qwen3.5-27b        ~17.00 GB  - Heavy offload, slow"
   echo "  gemma4-e4b          4.98 GB  - Partial offload"
   echo "  gemma4-e2b          3.11 GB  - Fits in VRAM"
   echo "  nemotron-3-nano-4b  2.90 GB  - Fits in VRAM, tool-calling"
-  echo "  qwopus-4b           2.63 GB  - Fits in VRAM, reasoning+tools"
-  echo "  qwopus-9b           5.63 GB  - Partial offload, reasoning+tools"
-  echo "  carnice-9b          5.63 GB  - Partial offload, Hermes Agent"
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
@@ -114,7 +108,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"qwopus-4b"|"qwopus-9b"|"carnice-9b")
+  "qwen3.5-4b"|"qwen3.5-9b"|"qwen3.5-27b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b")
     show_sizes
     download_model "$1"
     ;;
@@ -135,7 +129,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, qwopus-4b, qwopus-9b, carnice-9b, all, sizes"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, qwen3.5-27b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, all, sizes"
     exit 1
     ;;
 esac
