@@ -399,19 +399,40 @@ models:
         thinking: true
         tools: true
 
-
-# ============================================
-# ALIASES (nomes alternativos para os modelos)
-# ============================================
-# Descomente se quiser aliases
-# models:
-#   "qwen3.5-4b":
-#     aliases: ["qwen-4b", "qwen3.5-small"]
-#   "qwen3.5-9b":
-#     aliases: ["qwen-9b", "qwen3.5-medium"]
-#   "gemma4-e4b":
-#     aliases: ["gemma-4b", "gemma4-small"]
-
+  # -------------------------------------------
+  # QWOPUS-9B - REASONING + TOOL-CALLING
+  # Fine-tune do Qwen3.5-9B focado em reasoning
+  # Melhor para: código, multi-step tasks, agentes
+  # 87.80% HumanEval (+4.87pp sobre base)
+  # -------------------------------------------
+  "qwopus-9b":
+    name: "Qwopus 9B"
+    description: "Qwopus3.5-9B-v3 Q4_K_M - Reasoning + tool-calling"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwopus3.5-9B-v3-Q4_K_M.gguf
+      --fit on
+      --fit-target 256
+      --fit-ctx ${large_model_min_ctx}
+      --ctx-size ${large_model_max_ctx}
+      --temp 0.6
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.0
+      --repeat-penalty 1.0
+      --flash-attn on
+    ttl: 60
+    aliases:
+      - "qwopus"
+      - "qwopus9b"
+    metadata:
+      size: "5.63 GB"
+      context: "16K-128K (dynamic)"
+      vram_usage: "~5.5GB + RAM offload"
+      source: "Jackrong/Qwopus3.5-9B-v3-GGUF"
+      features:
+        thinking: true
+        tools: true
 
 # ============================================
 # GRUPOS
@@ -433,6 +454,8 @@ groups:
       - "gemma4-e4b-think"
       - "gemma4-e2b-think"
       - "nemotron-3-nano-4b-think"
+      # Reasoning + tools especialista
+      - "qwopus-9b"
 
 
 # ============================================
@@ -442,16 +465,3 @@ groups:
 #   on_startup:
 #     preload:
 #       - "qwen3.5-4b"  # Carregar na inicialização
-
-
-# ============================================
-# PEERS (outros servidores)
-# ============================================
-# Para conectar outros servidores OpenAI-compatible
-# peers:
-#   openrouter:
-#     proxy: https://openrouter.ai/api
-#     apiKey: ${env.OPENROUTER_API_KEY}
-#     models:
-#       - "anthropic/claude-3.5-sonnet"
-#       - "openai/gpt-4o"

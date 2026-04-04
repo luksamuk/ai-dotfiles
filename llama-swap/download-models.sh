@@ -8,6 +8,7 @@
 #   gemma4-e4b          - Gemma-4 E4B Q4_K_M (4.98 GB) - partial offload
 #   gemma4-e2b          - Gemma-4 E2B Q4_K_M (3.11 GB) - fits in VRAM
 #   nemotron-3-nano-4b  - Nemotron-3-Nano-4B Q4_K_M (2.90 GB) - tool-calling
+#   qwopus-9b           - Qwopus3.5-9B-v3 Q4_K_M (5.63 GB) - reasoning+tools
 #   all                 - Download all models
 #
 # If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
@@ -19,13 +20,16 @@ MODELS_DIR="${HOME}/.llama-models"
 # Create directory
 mkdir -p "$MODELS_DIR"
 
-# Model definitions (name: repo filename)
+# Model definitions
+# Format: "repo filename [local_filename]"
+# If local_filename is provided, the file is renamed after download
 declare -A MODELS=(
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-Q4_K_M.gguf"
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-Q4_K_M.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf"
   ["nemotron-3-nano-4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
+  ["qwopus-9b"]="Jackrong/Qwopus3.5-9B-v3-GGUF Qwen3.5-9B.Q4_K_M.gguf Qwopus3.5-9B-v3-Q4_K_M.gguf"
 )
 
 # Legacy aliases with colons (for backwards compatibility)
@@ -36,14 +40,6 @@ declare -A ALIASES=(
   ["gemma4:e2b"]="gemma4-e2b"
   ["nemotron-3-nano:4b"]="nemotron-3-nano-4b"
 )
-
-# Alternative quantizations (for reference)
-# declare -A QWEN_9B_VARIANTS=(
-#   ["q4_k_m"]="Qwen3.5-9B-Q4_K_M.gguf 5.68 GB"
-#   ["q5_k_m"]="Qwen3.5-9B-Q5_K_M.gguf 6.58 GB"
-#   ["q6_k"]="Qwen3.5-9B-Q6_K.gguf 7.46 GB"
-#   ["q8_0"]="Qwen3.5-9B-Q8_0.gguf 9.53 GB"
-# )
 
 download_model() {
   local key="$1"
@@ -60,19 +56,35 @@ download_model() {
     return 1
   fi
   
-  local repo="${repo_file%% *}"
-  local file="${repo_file#* }"
+  # Parse arguments: repo, remote_filename, [local_filename]
+  local repo remote_file local_file
+  read -r repo remote_file local_file <<< "$repo_file"
   
-  echo "Downloading $file from $repo..."
+  # If no local filename specified, use remote filename
+  local_file="${local_file:-$remote_file}"
   
-  if [[ -f "$MODELS_DIR/$file" ]]; then
-    echo "  ✓ Already exists: $MODELS_DIR/$file"
+  echo "Downloading $remote_file from $repo..."
+  
+  if [[ -f "$MODELS_DIR/$local_file" ]]; then
+    echo "  ✓ Already exists: $MODELS_DIR/$local_file"
     return 0
   fi
   
-  hf download "$repo" "$file" --local-dir "$MODELS_DIR"
+  # Download to temp directory first
+  local temp_dir=$(mktemp -d)
+  trap "rm -rf $temp_dir" EXIT
   
-  echo "  ✓ Downloaded: $MODELS_DIR/$file"
+  hf download "$repo" "$remote_file" --local-dir "$temp_dir"
+  
+  # Rename if needed
+  if [[ "$remote_file" != "$local_file" ]]; then
+    echo "  Renaming: $remote_file → $local_file"
+    mv "$temp_dir/$remote_file" "$MODELS_DIR/$local_file"
+  else
+    mv "$temp_dir/$remote_file" "$MODELS_DIR/$local_file"
+  fi
+  
+  echo "  ✓ Downloaded: $MODELS_DIR/$local_file"
 }
 
 show_sizes() {
@@ -83,6 +95,7 @@ show_sizes() {
   echo "  gemma4-e4b          4.98 GB  - Partial offload"
   echo "  gemma4-e2b          3.11 GB  - Fits in VRAM"
   echo "  nemotron-3-nano-4b  2.90 GB  - Fits in VRAM, tool-calling"
+  echo "  qwopus-9b           5.63 GB  - Partial offload, reasoning+tools"
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
@@ -95,7 +108,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b")
+  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"qwopus-9b")
     show_sizes
     download_model "$1"
     ;;
@@ -116,7 +129,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, all, sizes"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, qwopus-9b, all, sizes"
     exit 1
     ;;
 esac
