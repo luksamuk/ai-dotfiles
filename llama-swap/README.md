@@ -278,6 +278,15 @@ The API is OpenAI-compatible, so most tools work out of the box:
 | **gemma4-e2b-think** | ~3GB | 32K-128K | `thinking` |
 | **nemotron-3-nano-4b-think** | ~3GB | 32K-128K | `thinking`, `tools` |
 
+### Tool-Calling Models (Reasoning + Tools)
+
+These models are fine-tuned for function calling and always use reasoning:
+
+| Model | VRAM | Context | Features |
+|-------|------|---------|----------|
+| **qwopus-4b** | ~3GB | 32K-128K | `thinking`, `tools` |
+| **qwopus-9b** | ~5GB + RAM | 16K-128K | `thinking`, `tools` |
+
 ### Context Size Behavior
 
 Context is **dynamic** - automatically adjusts based on available VRAM:
@@ -329,6 +338,8 @@ Models use the format `model:size` for consistency with Ollama:
 | `gemma4-e2b-think` | `gemma4-e2b-think`, `gemma-4-e2b-think` |
 | `nemotron-3-nano-4b` | `nemotron-4b`, `nemotron-3-nano-4b`, `nemotron` |
 | `nemotron-3-nano-4b-think` | `nemotron-4b-think`, `nemotron-think` |
+| `qwopus-4b` | `qwopus4b`, `qwopus-4b` |
+| `qwopus-9b` | `qwopus`, `qwopus9b` |
 
 ## Configuration Details
 

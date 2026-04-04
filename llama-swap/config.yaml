@@ -405,6 +405,42 @@ models:
         tools: true
 
   # -------------------------------------------
+  # QWOPUS-4B - TOOL-CALLING + REASONING (FITS VRAM)
+  # Fine-tune do Qwen3.5-4B focado em tool-calling
+  # Sempre usa reasoning (treinado assim, não suporta desativar)
+  # Melhor para: agentes, function calling, código
+  # CABE INTEIRO NA VRAM (~3GB)
+  # -------------------------------------------
+  "qwopus-4b":
+    name: "Qwopus 4B"
+    description: "Qwopus3.5-4B-v3 Q4_K_M - Tool-calling + reasoning"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwopus3.5-4B-v3-Q4_K_M.gguf
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.6
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.0
+      --repeat-penalty 1.0
+      --flash-attn on
+    ttl: 60
+    aliases:
+      - "qwopus4b"
+      - "qwopus-4b"
+    metadata:
+      size: "2.63 GB"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~3GB"
+      source: "Jackrong/Qwopus3.5-4B-v3-GGUF"
+      features:
+        thinking: true
+        tools: true
+
+  # -------------------------------------------
   # QWOPUS-9B - TOOL-CALLING + REASONING
   # Fine-tune do Qwen3.5-9B focado em tool-calling
   # Sempre usa reasoning (treinado assim)
@@ -426,7 +462,6 @@ models:
       --top-k 40
       --min-p 0.0
       --repeat-penalty 1.0
-      --reasoning auto
       --flash-attn on
     ttl: 60
     aliases:
@@ -462,6 +497,7 @@ groups:
       - "gemma4-e2b-think"
       - "nemotron-3-nano-4b-think"
       # Qwopus: tool-calling + reasoning (sempre pensa)
+      - "qwopus-4b"
       - "qwopus-9b"
 
 
