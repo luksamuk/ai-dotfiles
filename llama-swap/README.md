@@ -260,27 +260,31 @@ The API is OpenAI-compatible, so most tools work out of the box:
 
 ### Standard Models (General Use)
 
-| Model | VRAM | Speed | Best For |
+| Model | VRAM | Speed | Features |
 |-------|------|-------|----------|
-| **qwen3.5:4b** | ~3GB | Fastest | Quick tasks, code completion |
-| **qwen3.5:9b** | ~5GB + RAM | Medium | Complex reasoning |
-| **gemma4:e4b** | ~4.5GB + RAM | Medium | General purpose, multilingual |
-| **gemma4:e2b** | ~3GB | Fast | General purpose, faster |
-| **nemotron-3-nano:4b** | ~3GB | Fast | Tool-calling, AI classes |
-
-**Note:** Standard models use `--reasoning off` to ensure no automatic thinking mode.
+| **qwen3.5:4b** | ~3GB | Fastest | - |
+| **qwen3.5:9b** | ~5GB + RAM | Medium | - |
+| **gemma4:e4b** | ~4.5GB + RAM | Medium | - |
+| **gemma4:e2b** | ~3GB | Fast | - |
+| **nemotron-3-nano:4b** | ~3GB | Fast | `tools` |
 
 ### Thinking Models (With Reasoning)
 
 | Model | VRAM | Features |
 |-------|------|----------|
-| **qwen3.5:4b-think** | ~3GB | Reasoning, complex problems |
-| **qwen3.5:9b-think** | ~5GB + RAM | Deep reasoning, math, logic |
-| **gemma4:e4b-think** | ~4.5GB + RAM | Reasoning, multilingual |
-| **gemma4:e2b-think** | ~3GB | Reasoning, compact |
-| **nemotron-3-nano:4b-think** | ~3GB | Tool-calling + reasoning |
+| **qwen3.5:4b-think** | ~3GB | `thinking` |
+| **qwen3.5:9b-think** | ~5GB + RAM | `thinking` |
+| **gemma4:e4b-think** | ~4.5GB + RAM | `thinking` |
+| **gemma4:e2b-think** | ~3GB | `thinking` |
+| **nemotron-3-nano:4b-think** | ~3GB | `thinking`, `tools` |
 
-**Note:** Thinking models use `--reasoning auto` to enable chain-of-thought.
+### Feature Flags
+
+| Flag | Description |
+|------|-------------|
+| `thinking` | Model has reasoning/thinking capability enabled |
+| `tools` | Model excels at function calling/tool use |
+| `vision` | Model supports image input (not yet available) |
 
 ### Inference Parameters
 

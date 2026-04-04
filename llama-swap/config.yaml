@@ -72,7 +72,6 @@ models:
   # QWEN3.5-4B - CABE INTEIRO NA VRAM
   # Melhor para: tarefas rápidas, código, suma
   # VRAM: ~3GB com contexto
-  # Explicitamente SEM reasoning (usa --reasoning off)
   # -------------------------------------------
   "qwen3.5:4b":
     name: "Qwen3.5 4B"
@@ -89,7 +88,6 @@ models:
       --top-k ${default_top_k}
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
-      --reasoning off
       --flash-attn on
     ttl: 60
     aliases:
@@ -100,7 +98,6 @@ models:
       context: "16384"
       vram_usage: "~3GB"
       source: "unsloth/Qwen3.5-4B-GGUF"
-      features: "no-thinking"
 
   # -------------------------------------------
   # QWEN3.5-4B THINKING - Com reasoning
@@ -133,13 +130,13 @@ models:
       context: "16384"
       vram_usage: "~3GB"
       source: "unsloth/Qwen3.5-4B-GGUF"
-      features: "thinking, reasoning"
+      features:
+        thinking: true
 
   # -------------------------------------------
   # QWEN3.5-9B - REQUER OFFLOAD PARCIAL
   # Melhor para: raciocínio complexo, respostas longas
   # VRAM: ~5GB + RAM para offload
-  # Explicitamente SEM reasoning
   # -------------------------------------------
   "qwen3.5:9b":
     name: "Qwen3.5 9B"
@@ -156,7 +153,6 @@ models:
       --top-k ${default_top_k}
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
-      --reasoning off
       --flash-attn on
     ttl: 60
     aliases:
@@ -167,7 +163,6 @@ models:
       context: "8192"
       vram_usage: "~5GB + RAM offload"
       source: "unsloth/Qwen3.5-9B-GGUF"
-      features: "no-thinking"
 
   # -------------------------------------------
   # QWEN3.5-9B THINKING - Com reasoning
@@ -199,13 +194,13 @@ models:
       context: "8192"
       vram_usage: "~5GB + RAM offload"
       source: "unsloth/Qwen3.5-9B-GGUF"
-      features: "thinking, reasoning"
+      features:
+        thinking: true
 
   # -------------------------------------------
   # GEMMA-4-E4B - REQUER OFFLOAD PARCIAL
   # Melhor para: uso geral, multilíngue
   # VRAM: ~4.5GB + RAM para offload
-  # Explicitamente SEM reasoning
   # -------------------------------------------
   "gemma4:e4b":
     name: "Gemma 4 E4B"
@@ -222,7 +217,6 @@ models:
       --top-k 40
       --min-p 0.01
       --repeat-penalty 1.0
-      --reasoning off
       --flash-attn on
     ttl: 60
     aliases:
@@ -233,7 +227,6 @@ models:
       context: "8192"
       vram_usage: "~4.5GB + RAM offload"
       source: "unsloth/gemma-4-E4B-it-GGUF"
-      features: "no-thinking"
 
   # -------------------------------------------
   # GEMMA-4-E4B THINKING - Com reasoning
@@ -265,13 +258,13 @@ models:
       context: "8192"
       vram_usage: "~4.5GB + RAM offload"
       source: "unsloth/gemma-4-E4B-it-GGUF"
-      features: "thinking, reasoning"
+      features:
+        thinking: true
 
   # -------------------------------------------
   # GEMMA-4-E2B - CABE INTEIRO NA VRAM
   # Melhor para: uso geral, mais rápido que E4B
   # VRAM: ~3GB com contexto
-  # Explicitamente SEM reasoning
   # -------------------------------------------
   "gemma4:e2b":
     name: "Gemma 4 E2B"
@@ -288,7 +281,6 @@ models:
       --top-k 40
       --min-p 0.01
       --repeat-penalty 1.0
-      --reasoning off
       --flash-attn on
     ttl: 60
     aliases:
@@ -299,7 +291,6 @@ models:
       context: "16384"
       vram_usage: "~3GB"
       source: "unsloth/gemma-4-E2B-it-GGUF"
-      features: "no-thinking"
 
   # -------------------------------------------
   # GEMMA-4-E2B THINKING - Com reasoning
@@ -331,14 +322,14 @@ models:
       context: "16384"
       vram_usage: "~3GB"
       source: "unsloth/gemma-4-E2B-it-GGUF"
-      features: "thinking, reasoning"
+      features:
+        thinking: true
 
   # -------------------------------------------
   # NEMOTRON-3-NANO-4B - CABE INTEIRO NA VRAM
   # Melhor para: tool-calling, function calling
   # Excelente para aulas de IA/Guilda
   # VRAM: ~3GB com contexto
-  # Explicitamente SEM reasoning (tool-calling puro)
   # -------------------------------------------
   "nemotron-3-nano:4b":
     name: "Nemotron 3 Nano 4B"
@@ -355,7 +346,6 @@ models:
       --top-k 40
       --min-p 0.00
       --repeat-penalty 1.0
-      --reasoning off
       --flash-attn on
     ttl: 60
     aliases:
@@ -367,7 +357,8 @@ models:
       context: "16384"
       vram_usage: "~3GB"
       source: "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF"
-      features: "no-thinking, tool-calling"
+      features:
+        tools: true
 
   # -------------------------------------------
   # NEMOTRON-3-NANO-4B - THINKING VARIANT
@@ -400,7 +391,9 @@ models:
       context: "16384"
       vram_usage: "~3GB"
       source: "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF"
-      features: "thinking, reasoning, tool-calling"
+      features:
+        thinking: true
+        tools: true
 
 
 # ============================================
