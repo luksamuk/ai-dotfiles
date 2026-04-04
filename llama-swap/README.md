@@ -143,21 +143,22 @@ llama-swap -config ~/.config/llama-swap/config.yaml -listen 127.0.0.1:12434
 
 ## Usage
 
-### Quick Start
+### Quick Start (No Systemd)
+
+Run directly in foreground - no installation needed:
 
 ```bash
-# Check status and prerequisites
+# Check prerequisites first
 ./run.sh status
 
-# Start in foreground (for testing)
-./run.sh start
+# Run in foreground (press Ctrl+C to stop)
+./run.sh run
 
-# Or install as systemd user service
-./run.sh install
-systemctl --user start llama-swap
+# Or use LLAMA_SWAP_PORT to change port
+LLAMA_SWAP_PORT=8080 ./run.sh run
 ```
 
-Once running, llama-swap provides an OpenAI-compatible API:
+### Systemd User Service
 
 ```bash
 # List available models
@@ -174,7 +175,7 @@ curl http://127.0.0.1:12434/v1/chat/completions \
 
 ### Systemd User Service
 
-The `run.sh` script can install llama-swap as a systemd user service:
+For running as a background service:
 
 ```bash
 # Install service (copies config if needed)
@@ -204,6 +205,23 @@ systemctl --user disable llama-swap
 
 The service file is installed at `~/.config/systemd/user/llama-swap.service`
 and uses the config from `~/.config/llama-swap/config.yaml`.
+
+### Testing the API
+
+Once running, llama-swap provides an OpenAI-compatible API:
+
+```bash
+# List available models
+curl http://127.0.0.1:12434/v1/models
+
+# Chat completion
+curl http://127.0.0.1:12434/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen3.5-4b",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+```
 
 ### Environment Variables
 

@@ -3,7 +3,8 @@
 # Usage: ./run.sh [command] [options]
 #
 # Commands:
-#   start       Start llama-swap server (foreground)
+#   run         Run llama-swap in foreground (quick, no systemd)
+#   start       Same as 'run' - run in foreground
 #   stop        Stop llama-swap server (via systemd)
 #   status      Check status of llama-swap
 #   install     Install systemd user service
@@ -22,7 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="${HOME}/.config/llama-swap"
 CONFIG_FILE="${LLAMA_SWAP_CONFIG:-$CONFIG_DIR/config.yaml}"
 SERVICE_NAME="llama-swap"
-SERVICE_FILE="${SCRIPT_DIR}/llama-swap.service"
+SERVICE_FILE="${SCRIPT_DIR}/llama-swap.service.template"
 USER_SERVICE_DIR="${HOME}/.config/systemd/user"
 PORT="${LLAMA_SWAP_PORT:-12434}"
 
@@ -30,11 +31,13 @@ PORT="${LLAMA_SWAP_PORT:-12434}"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+log_cmd() { echo -e "${CYAN}[CMD]${NC} $1"; }
 
 # Check prerequisites
 check_llama_server() {
@@ -73,16 +76,22 @@ check_models() {
 }
 
 # Commands
-cmd_start() {
+cmd_run() {
     check_llama_server || exit 1
     check_config || exit 1
     check_models || exit 1
     
-    log_info "Starting llama-swap on port $PORT..."
+    log_info "Running llama-swap in foreground (press Ctrl+C to stop)"
     log_info "Config: $CONFIG_FILE"
-    log_info "Press Ctrl+C to stop"
+    log_info "Port: $PORT"
+    log_info "Models: $(ls ~/.llama-models/*.gguf 2>/dev/null | wc -l) available"
+    echo ""
     
     exec llama-swap -config "$CONFIG_FILE" -listen "127.0.0.1:$PORT" -watch-config
+}
+
+cmd_start() {
+    cmd_run "$@"
 }
 
 cmd_stop() {
@@ -225,7 +234,8 @@ llama-swap runner script
 Usage: $0 [command] [options]
 
 Commands:
-  start       Start llama-swap server (foreground)
+  run         Run llama-swap in foreground (quick, no systemd)
+  start       Same as 'run' - run in foreground
   stop        Stop llama-swap server (via systemd)
   status      Check status of llama-swap and prerequisites
   install     Install systemd user service
@@ -239,17 +249,21 @@ Environment Variables:
   LLAMA_SWAP_PORT      Port to listen on (default: 12434)
 
 Examples:
-  $0 install                    # Install as user service
-  $0 start                      # Run in foreground
-  $0 status                     # Check status
-  $0 download nemotron-4b       # Download specific model
-  $0 download all               # Download all models
+  $0 run                          # Run in foreground (quick start)
+  $0 install                      # Install as user service
+  $0 start                        # Same as 'run'
+  $0 status                       # Check status
+  $0 download nemotron-4b         # Download specific model
+  $0 download all                 # Download all models
 
 EOF
 }
 
 # Main
 case "${1:-help}" in
+    run)
+        cmd_run
+        ;;
     start)
         cmd_start
         ;;
