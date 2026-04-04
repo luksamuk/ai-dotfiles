@@ -6,9 +6,10 @@
 #   qwen3.5-4b    - Qwen3.5-4B Q4_K_M (2.63 GB)
 #   qwen3.5-9b    - Qwen3.5-9B Q4_K_M (5.68 GB)
 #   gemma4-e4b    - Gemma-4 E4B Q4_K_M (4.98 GB)
+#   nemotron-4b   - Nemotron-3-Nano-4B Q4_K_M (2.90 GB) - tool-calling
 #   all           - Download all models
 #
-# If no argument, downloads Qwen3.5-4B (fits entirely in 6GB VRAM)
+# If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
 
 set -e
 
@@ -22,6 +23,7 @@ declare -A MODELS=(
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-Q4_K_M.gguf"
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-Q4_K_M.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
+  ["nemotron-4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
 )
 
 # Alternative quantizations (for reference)

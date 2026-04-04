@@ -120,6 +120,35 @@ models:
       vram_usage: "~4.5GB + RAM offload"
       source: "unsloth/gemma-4-E4B-it-GGUF"
 
+  # -------------------------------------------
+  # Nemotron-3-Nano-4B - CABE INTEIRO NA VRAM
+  # Melhor para: tool-calling, function calling
+  # Excelente para aulas de IA/Guilda
+  # VRAM: ~3GB com contexto
+  # -------------------------------------------
+  "nemotron-4b":
+    name: "Nemotron 3 Nano 4B"
+    description: "NVIDIA Nemotron-3-Nano-4B Q4_K_M - Excelente para tool-calling"
+    cmd: |
+      llama-server --port ${PORT}
+      --model ${models_dir}/NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf
+      --fit on
+      --fit-margin ${vram_margin}
+      --fit-ctx 4096
+      --ctx-size ${medium_ctx}
+      --temp 0.6
+      --top-p 0.9
+      --top-k 40
+      --repeat-penalty 1.0
+      -fa
+    ttl: 300
+    metadata:
+      size: "2.90 GB"
+      context: "16384"
+      vram_usage: "~3GB"
+      source: "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF"
+      notes: "Excelente para tool-calling, ideal para aulas de IA"
+
 
 # ============================================
 # ALIASES (nomes alternativos para os modelos)
@@ -145,6 +174,7 @@ groups:
       - "qwen3.5-4b"
       - "qwen3.5-9b"
       - "gemma4-e4b"
+      - "nemotron-4b"
 
 
 # ============================================

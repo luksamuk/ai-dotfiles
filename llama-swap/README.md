@@ -73,6 +73,12 @@ hf download unsloth/gemma-4-E4B-it-GGUF \
   gemma-4-E4B-it-Q4_K_M.gguf \
   --local-dir ~/.llama-models \
   --local-dir-use-symlinks False
+
+# Download Nemotron-3-Nano-4B (2.90 GB - fits in VRAM, great for tool-calling)
+hf download unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF \
+  NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf \
+  --local-dir ~/.llama-models \
+  --local-dir-use-symlinks False
 ```
 
 ### Alternative Quantizations
@@ -84,6 +90,7 @@ If you need different quality/size trade-offs:
 | Qwen3.5-4B | 2.63 GB | 3.09 GB | 3.59 GB | 4.65 GB |
 | Qwen3.5-9B | 5.68 GB | 6.58 GB | 7.46 GB | 9.53 GB |
 | Gemma-4-E4B | 4.98 GB | 5.48 GB | - | - |
+| Nemotron-3-Nano-4B | 2.90 GB | 3.16 GB | 4.06 GB | 4.23 GB |
 
 ```bash
 # Example: Download Q5_K_M variant
@@ -166,6 +173,7 @@ The API is OpenAI-compatible, so most tools work out of the box:
 | **qwen3.5-4b** | ~3GB | Fastest | Good | Quick tasks, code completion |
 | **qwen3.5-9b** | ~5GB + RAM | Medium | Better | Complex reasoning, longer responses |
 | **gemma4-e4b** | ~5GB + RAM | Medium | Good | General purpose, multilingual |
+| **nemotron-4b** | ~3GB | Fast | Excellent | Tool-calling, function calling, AI classes |
 
 ## Configuration Details
 
