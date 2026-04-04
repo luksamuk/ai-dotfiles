@@ -205,6 +205,7 @@ models:
   # GEMMA-4-E4B - REQUER OFFLOAD PARCIAL
   # Melhor para: uso geral, multilíngue
   # VRAM: ~4.5GB + RAM para offload
+  # Explicitamente SEM reasoning
   # -------------------------------------------
   "gemma4:e4b":
     name: "Gemma 4 E4B"
@@ -221,6 +222,7 @@ models:
       --top-k 40
       --min-p 0.01
       --repeat-penalty 1.0
+      --reasoning off
       --flash-attn on
     ttl: 300
     aliases:
@@ -231,11 +233,45 @@ models:
       context: "8192"
       vram_usage: "~4.5GB + RAM offload"
       source: "unsloth/gemma-4-E4B-it-GGUF"
+      features: "no-thinking"
+
+  # -------------------------------------------
+  # GEMMA-4-E4B THINKING - Com reasoning
+  # Melhor para: raciocínio, problemas complexos
+  # -------------------------------------------
+  "gemma4:e4b-think":
+    name: "Gemma 4 E4B Thinking"
+    description: "Gemma-4 Efficient 4B Q4_K_M - Com reasoning"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
+      --fit on
+      --fit-target 256
+      --fit-ctx 4096
+      --ctx-size ${small_ctx}
+      --temp ${think_temp}
+      --top-p ${think_top_p}
+      --top-k ${think_top_k}
+      --min-p ${think_min_p}
+      --repeat-penalty ${think_repeat_penalty}
+      --reasoning auto
+      --flash-attn on
+    ttl: 300
+    aliases:
+      - "gemma4-e4b-think"
+      - "gemma-4-e4b-think"
+    metadata:
+      size: "4.98 GB"
+      context: "8192"
+      vram_usage: "~4.5GB + RAM offload"
+      source: "unsloth/gemma-4-E4B-it-GGUF"
+      features: "thinking, reasoning"
 
   # -------------------------------------------
   # GEMMA-4-E2B - CABE INTEIRO NA VRAM
   # Melhor para: uso geral, mais rápido que E4B
   # VRAM: ~3GB com contexto
+  # Explicitamente SEM reasoning
   # -------------------------------------------
   "gemma4:e2b":
     name: "Gemma 4 E2B"
@@ -252,6 +288,7 @@ models:
       --top-k 40
       --min-p 0.01
       --repeat-penalty 1.0
+      --reasoning off
       --flash-attn on
     ttl: 300
     aliases:
@@ -262,6 +299,39 @@ models:
       context: "16384"
       vram_usage: "~3GB"
       source: "unsloth/gemma-4-E2B-it-GGUF"
+      features: "no-thinking"
+
+  # -------------------------------------------
+  # GEMMA-4-E2B THINKING - Com reasoning
+  # Melhor para: raciocínio em modelo compacto
+  # -------------------------------------------
+  "gemma4:e2b-think":
+    name: "Gemma 4 E2B Thinking"
+    description: "Gemma-4 Efficient 2B Q4_K_M - Com reasoning"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gemma-4-E2B-it-Q4_K_M.gguf
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx 4096
+      --ctx-size ${medium_ctx}
+      --temp ${think_temp}
+      --top-p ${think_top_p}
+      --top-k ${think_top_k}
+      --min-p ${think_min_p}
+      --repeat-penalty ${think_repeat_penalty}
+      --reasoning auto
+      --flash-attn on
+    ttl: 300
+    aliases:
+      - "gemma4-e2b-think"
+      - "gemma-4-e2b-think"
+    metadata:
+      size: "3.11 GB"
+      context: "16384"
+      vram_usage: "~3GB"
+      source: "unsloth/gemma-4-E2B-it-GGUF"
+      features: "thinking, reasoning"
 
   # -------------------------------------------
   # NEMOTRON-3-NANO-4B - CABE INTEIRO NA VRAM
@@ -363,6 +433,8 @@ groups:
       # Variantes thinking
       - "qwen3.5:4b-think"
       - "qwen3.5:9b-think"
+      - "gemma4:e4b-think"
+      - "gemma4:e2b-think"
       - "nemotron-3-nano:4b-think"
 
 

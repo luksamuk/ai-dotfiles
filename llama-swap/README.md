@@ -276,6 +276,8 @@ The API is OpenAI-compatible, so most tools work out of the box:
 |-------|------|----------|
 | **qwen3.5:4b-think** | ~3GB | Reasoning, complex problems |
 | **qwen3.5:9b-think** | ~5GB + RAM | Deep reasoning, math, logic |
+| **gemma4:e4b-think** | ~4.5GB + RAM | Reasoning, multilingual |
+| **gemma4:e2b-think** | ~3GB | Reasoning, compact |
 | **nemotron-3-nano:4b-think** | ~3GB | Tool-calling + reasoning |
 
 **Note:** Thinking models use `--reasoning auto` to enable chain-of-thought.
@@ -304,7 +306,9 @@ Models use the format `model:size` for consistency with Ollama:
 | `qwen3.5:9b` | `qwen3.5-9b`, `qwen3.5-9b-q4` |
 | `qwen3.5:9b-think` | `qwen3.5-9b-think`, `qwen3.5-9b-reasoning` |
 | `gemma4:e4b` | `gemma4-e4b`, `gemma-4-e4b` |
+| `gemma4:e4b-think` | `gemma4-e4b-think`, `gemma-4-e4b-think` |
 | `gemma4:e2b` | `gemma4-e2b`, `gemma-4-e2b` |
+| `gemma4:e2b-think` | `gemma4-e2b-think`, `gemma-4-e2b-think` |
 | `nemotron-3-nano:4b` | `nemotron-4b`, `nemotron-3-nano-4b`, `nemotron` |
 | `nemotron-3-nano:4b-think` | `nemotron-4b-think`, `nemotron-think` |
 
