@@ -179,13 +179,23 @@ The API is OpenAI-compatible, so most tools work out of the box:
 
 ### Key Parameters
 
-- **`--fit on`**: Automatically adjusts `-ngl` (GPU layers) based on available VRAM
-- **`--fit-margin 512`**: Safety margin in MiB (prevents OOM)
-- **`--ctx-size`**: Context length (reduced if needed by `--fit`)
-- **`-fa`**: Flash Attention for better performance
+- **`--gpu-layers` / `-ngl`**: Number of layers to offload to GPU
+  - `-ngl 99` = All layers on GPU (for models that fit in VRAM)
+  - `-ngl 35` = Partial offload (for larger models)
+- **`--ctx-size`**: Context length (8192 or 16384 depending on model)
+- **`--flash-attn`**: Flash Attention for better performance
 - **`--temp 0.7`**: Temperature for sampling diversity
 - **`--top-p 0.85`**: Nucleus sampling threshold
 - **`--top-k 40`**: Top-K sampling
+
+### Note on `--fit` (Automatic VRAM Fitting)
+
+The `--fit` feature (PR #16653, Dec 2025) is **not available** in llama.cpp b7376.
+To use automatic VRAM-aware parameter fitting, upgrade to llama.cpp build >= 7000.
+
+With the current version, GPU layers are manually configured:
+- Models that fit in VRAM (Qwen3.5-4B, Nemotron-4B): `--gpu-layers 99`
+- Larger models (Qwen3.5-9B, Gemma-4-E4B): `--gpu-layers 35`
 
 ### VRAM Considerations for RTX 3050 (6GB)
 

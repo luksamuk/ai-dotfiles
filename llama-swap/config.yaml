@@ -31,8 +31,13 @@ macros:
   "small_ctx": "8192"
   "medium_ctx": "16384"
   
-  # Margem de segurança para VRAM (MiB)
-  "vram_margin": "512"
+  # GPU layers para RTX 3050 6GB
+  # -ngl 99 = todas as camadas na GPU (modelos pequenos)
+  # -ngl 40 = ~60% na GPU (modelos maiores)
+  # NOTA: --fit automático não disponível no llama.cpp b7376
+  # Para usar --fit, atualizar para versão >= b7000 (Dez 2025)
+  "gpu_layers_full": "99"
+  "gpu_layers_partial": "35"
 
 
 # ===========================================
@@ -50,15 +55,13 @@ models:
     cmd: |
       llama-server --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B-Q4_K_M.gguf
-      --fit on
-      --fit-margin ${vram_margin}
-      --fit-ctx 4096
       --ctx-size ${medium_ctx}
+      --gpu-layers ${gpu_layers_full}
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
       --repeat-penalty ${default_repeat_penalty}
-      -fa
+      --flash-attn
     ttl: 300
     metadata:
       size: "2.63 GB"
@@ -73,19 +76,17 @@ models:
   # -------------------------------------------
   "qwen3.5-9b":
     name: "Qwen3.5 9B"
-    description: "Qwen3.5-9B Q4_K_M - Maior capacidade, offload automático"
+    description: "Qwen3.5-9B Q4_K_M - Maior capacidade, offload parcial"
     cmd: |
       llama-server --port ${PORT}
       --model ${models_dir}/Qwen3.5-9B-Q4_K_M.gguf
-      --fit on
-      --fit-margin 256
-      --fit-ctx 4096
       --ctx-size ${small_ctx}
+      --gpu-layers ${gpu_layers_partial}
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
       --repeat-penalty ${default_repeat_penalty}
-      -fa
+      --flash-attn
     ttl: 300
     metadata:
       size: "5.68 GB"
@@ -104,15 +105,13 @@ models:
     cmd: |
       llama-server --port ${PORT}
       --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
-      --fit on
-      --fit-margin 256
-      --fit-ctx 4096
       --ctx-size ${small_ctx}
+      --gpu-layers ${gpu_layers_partial}
       --temp 0.7
       --top-p 0.9
       --top-k 40
       --repeat-penalty 1.0
-      -fa
+      --flash-attn
     ttl: 300
     metadata:
       size: "4.98 GB"
@@ -132,15 +131,13 @@ models:
     cmd: |
       llama-server --port ${PORT}
       --model ${models_dir}/NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf
-      --fit on
-      --fit-margin ${vram_margin}
-      --fit-ctx 4096
       --ctx-size ${medium_ctx}
+      --gpu-layers ${gpu_layers_full}
       --temp 0.6
       --top-p 0.9
       --top-k 40
       --repeat-penalty 1.0
-      -fa
+      --flash-attn
     ttl: 300
     metadata:
       size: "2.90 GB"
