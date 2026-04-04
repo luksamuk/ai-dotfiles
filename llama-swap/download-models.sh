@@ -10,6 +10,7 @@
 #   nemotron-3-nano-4b  - Nemotron-3-Nano-4B Q4_K_M (2.90 GB) - tool-calling
 #   qwopus-4b           - Qwopus3.5-4B-v3 Q4_K_M (2.63 GB) - reasoning+tools
 #   qwopus-9b           - Qwopus3.5-9B-v3 Q4_K_M (5.63 GB) - reasoning+tools
+#   carnice-9b          - Carnice-9b Q4_K_M (5.63 GB) - Hermes Agent specialized
 #   all                 - Download all models
 #
 # If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
@@ -32,6 +33,7 @@ declare -A MODELS=(
   ["nemotron-3-nano-4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
   ["qwopus-4b"]="Jackrong/Qwopus3.5-4B-v3-GGUF Qwen3.5-4B.Q4_K_M.gguf Qwopus3.5-4B-v3-Q4_K_M.gguf"
   ["qwopus-9b"]="Jackrong/Qwopus3.5-9B-v3-GGUF Qwen3.5-9B.Q4_K_M.gguf Qwopus3.5-9B-v3-Q4_K_M.gguf"
+  ["carnice-9b"]="kai-os/Carnice-9b-GGUF Carnice-9b-Q4_K_M.gguf"
 )
 
 # Legacy aliases with colons (for backwards compatibility)
@@ -99,6 +101,7 @@ show_sizes() {
   echo "  nemotron-3-nano-4b  2.90 GB  - Fits in VRAM, tool-calling"
   echo "  qwopus-4b           2.63 GB  - Fits in VRAM, reasoning+tools"
   echo "  qwopus-9b           5.63 GB  - Partial offload, reasoning+tools"
+  echo "  carnice-9b          5.63 GB  - Partial offload, Hermes Agent"
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
@@ -111,7 +114,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"qwopus-4b"|"qwopus-9b")
+  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"qwopus-4b"|"qwopus-9b"|"carnice-9b")
     show_sizes
     download_model "$1"
     ;;
@@ -132,7 +135,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, qwopus-4b, qwopus-9b, all, sizes"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, qwopus-4b, qwopus-9b, carnice-9b, all, sizes"
     exit 1
     ;;
 esac

@@ -476,6 +476,76 @@ models:
         thinking: true
         tools: true
 
+  # -------------------------------------------
+  # CARNICE-9B - HERMES AGENT SPECIALIZED
+  # Fine-tune do Qwen3.5-9B focado em Hermes Agent
+  # Treinado para: terminal, browser, tool-calling
+  # Reasoning opcional (não forçado como Qwopus)
+  # Melhor para: agentes Hermes, tool use nativo
+  # -------------------------------------------
+  "carnice-9b":
+    name: "Carnice 9B"
+    description: "Carnice-9b Q4_K_M - Hermes Agent specialized"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Carnice-9b-Q4_K_M.gguf
+      --fit on
+      --fit-target 256
+      --fit-ctx ${large_model_min_ctx}
+      --ctx-size ${large_model_max_ctx}
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --reasoning off
+      --flash-attn on
+    ttl: 60
+    aliases:
+      - "carnice-9b"
+      - "carnice"
+    metadata:
+      size: "5.63 GB"
+      context: "16K-128K (dynamic)"
+      vram_usage: "~5.5GB + RAM offload"
+      source: "kai-os/Carnice-9b-GGUF"
+      features:
+        tools: true
+
+  # -------------------------------------------
+  # CARNICE-9B THINKING - Com reasoning
+  # Mesmo modelo com chain-of-thought ativado
+  # -------------------------------------------
+  "carnice-9b-think":
+    name: "Carnice 9B Thinking"
+    description: "Carnice-9b Q4_K_M - Com reasoning/thinking"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Carnice-9b-Q4_K_M.gguf
+      --fit on
+      --fit-target 256
+      --fit-ctx ${large_model_min_ctx}
+      --ctx-size ${large_model_max_ctx}
+      --temp ${think_temp}
+      --top-p ${think_top_p}
+      --top-k ${think_top_k}
+      --min-p ${think_min_p}
+      --repeat-penalty ${think_repeat_penalty}
+      --reasoning auto
+      --flash-attn on
+    ttl: 60
+    aliases:
+      - "carnice-9b-think"
+      - "carnice-9b-reasoning"
+    metadata:
+      size: "5.63 GB"
+      context: "16K-128K (dynamic)"
+      vram_usage: "~5.5GB + RAM offload"
+      source: "kai-os/Carnice-9b-GGUF"
+      features:
+        thinking: true
+        tools: true
+
 # ============================================
 # GRUPOS
 # ============================================
@@ -499,6 +569,9 @@ groups:
       # Qwopus: tool-calling + reasoning (sempre pensa)
       - "qwopus-4b"
       - "qwopus-9b"
+      # Carnice: Hermes Agent specialized (reasoning opcional)
+      - "carnice-9b"
+      - "carnice-9b-think"
 
 
 # ============================================

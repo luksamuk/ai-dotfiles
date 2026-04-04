@@ -1,0 +1,32 @@
+# Hermes Workspace - Web UI only
+# Connects to existing Hermes Agent Gateway via API Server (port 8642)
+#
+# Prerequisites:
+# 1. Add to ~/.hermes/.env:
+#    API_SERVER_ENABLED=true
+#    API_SERVER_PORT=8642
+#    API_SERVER_HOST=0.0.0.0  # Must bind to 0.0.0.0 for Docker access
+# 2. Restart gateway: systemctl --user restart hermes-gateway
+#
+# Usage:
+#   docker compose up -d
+#   Access at http://localhost:3113
+
+services:
+  hermes-workspace:
+    build:
+      context: https://github.com/outsourc-e/hermes-workspace.git
+      dockerfile: docker/workspace/Dockerfile
+    container_name: hermes-workspace
+    restart: unless-stopped
+    environment:
+      # Connect to host's API Server directly (localhost works with network_mode: host)
+      HERMES_API_URL: http://127.0.0.1:8642
+    network_mode: host
+    command: ["pnpm", "dev", "--host", "0.0.0.0", "--port", "3113"]
+    volumes:
+      - hermes-workspace-data:/app/data
+
+volumes:
+  hermes-workspace-data:
+    name: hermes-workspace-data

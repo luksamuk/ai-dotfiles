@@ -10,11 +10,11 @@ As dependências são gerenciadas pelo `pyproject.toml` e instaladas automaticam
 
 | Pacote | Versão | Descrição |
 |--------|--------|-----------|
-| rich | >=13.0.0 | Renderização de interface rica no terminal (panels, layouts, markdown, cores) |
+| rich | >=14.0.0 | Renderização de interface rica no terminal (panels, layouts, markdown, cores) |
 | openai | >=1.0.0 | Cliente para APIs OpenAI-compatíveis |
 | questionary | >=2.0.0 | Menus interativos navegáveis com setas |
 | prompt-toolkit | >=3.0.0 | Histórico persistente de comandos (↑/↓ no prompt) |
-| requests | >=2.31.0 | Requisições HTTP para buscar modelos da API |
+| requests | >=2.32.0 | Requisições HTTP para buscar modelos da API |
 
 ## Instalação
 
