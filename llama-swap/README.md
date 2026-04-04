@@ -260,23 +260,37 @@ The API is OpenAI-compatible, so most tools work out of the box:
 
 ### Standard Models (General Use)
 
-| Model | VRAM | Speed | Features |
-|-------|------|-------|----------|
-| **qwen3.5:4b** | ~3GB | Fastest | - |
-| **qwen3.5:9b** | ~5GB + RAM | Medium | - |
-| **gemma4:e4b** | ~4.5GB + RAM | Medium | - |
-| **gemma4:e2b** | ~3GB | Fast | - |
-| **nemotron-3-nano:4b** | ~3GB | Fast | `tools` |
+| Model | VRAM | Context | Features |
+|-------|------|---------|----------|
+| **qwen3.5:4b** | ~3GB | 32K-128K | - |
+| **qwen3.5:9b** | ~5GB + RAM | 16K-128K | - |
+| **gemma4:e4b** | ~4.5GB + RAM | 16K-128K | - |
+| **gemma4:e2b** | ~3GB | 32K-128K | - |
+| **nemotron-3-nano:4b** | ~3GB | 32K-128K | `tools` |
 
 ### Thinking Models (With Reasoning)
 
-| Model | VRAM | Features |
-|-------|------|----------|
-| **qwen3.5:4b-think** | ~3GB | `thinking` |
-| **qwen3.5:9b-think** | ~5GB + RAM | `thinking` |
-| **gemma4:e4b-think** | ~4.5GB + RAM | `thinking` |
-| **gemma4:e2b-think** | ~3GB | `thinking` |
-| **nemotron-3-nano:4b-think** | ~3GB | `thinking`, `tools` |
+| Model | VRAM | Context | Features |
+|-------|------|---------|----------|
+| **qwen3.5:4b-think** | ~3GB | 32K-128K | `thinking` |
+| **qwen3.5:9b-think** | ~5GB + RAM | 16K-128K | `thinking` |
+| **gemma4:e4b-think** | ~4.5GB + RAM | 16K-128K | `thinking` |
+| **gemma4:e2b-think** | ~3GB | 32K-128K | `thinking` |
+| **nemotron-3-nano:4b-think** | ~3GB | 32K-128K | `thinking`, `tools` |
+
+### Context Size Behavior
+
+Context is **dynamic** - automatically adjusts based on available VRAM:
+
+| Model Type | Minimum | Maximum | Behavior |
+|------------|---------|---------|----------|
+| Small (4B, E2B) | 32K | 128K | Fits entirely in VRAM |
+| Large (9B, E4B) | 16K | 128K | May use RAM offload |
+
+The `--fit` feature ensures:
+- **Never crashes** - reduces context if VRAM is tight
+- **Maximum utilization** - expands context when VRAM is free
+- **Dynamic adjustment** - adapts to current system state
 
 ### Feature Flags
 
