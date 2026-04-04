@@ -47,9 +47,7 @@ download_model() {
     return 0
   fi
   
-  hf download "$repo" "$file" \
-    --local-dir "$MODELS_DIR" \
-    --local-dir-use-symlinks False
+  hf download "$repo" "$file" --local-dir "$MODELS_DIR"
   
   echo "  ✓ Downloaded: $MODELS_DIR/$file"
 }
@@ -60,12 +58,13 @@ show_sizes() {
   echo "  Qwen3.5-4B:    2.63 GB  - Fits entirely in 6GB VRAM"
   echo "  Qwen3.5-9B:    5.68 GB  - Requires partial offload"
   echo "  Gemma-4-E4B:   4.98 GB  - Requires partial offload"
+  echo "  Nemotron-4B:   2.90 GB  - Fits in VRAM, great for tool-calling"
   echo ""
 }
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b")
+  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"nemotron-4b")
     show_sizes
     download_model "$1"
     ;;
@@ -81,7 +80,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, all, sizes"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, nemotron-4b, all, sizes"
     exit 1
     ;;
 esac
