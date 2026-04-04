@@ -16,17 +16,33 @@ size based on available VRAM.
 
 ### 1. Install llama.cpp with CUDA support
 
-```bash
-# Arch Linux (AUR)
-yay -S llama.cpp-cuda
+**Option A: Build from source (recommended - includes `--fit` feature)**
 
-# Or build from source
-git clone https://github.com/ggml-org/llama.cpp
+The `--fit` feature for automatic VRAM-aware parameter fitting requires llama.cpp
+built from source (PR #16653, Dec 2025). The AUR package `llama.cpp-cuda` may not
+have this feature yet.
+
+```bash
+# Clone and build with CUDA
+cd ~/git
+git clone --depth 1 https://github.com/ggml-org/llama.cpp.git
 cd llama.cpp
-cmake -B build -DGGML_CUDA=ON
-cmake --build build --config Release -j$(nproc)
-sudo cmake --install build
+mkdir -p build && cd build
+cmake .. -DGGML_CUDA=ON -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+
+# Binaries will be in build/bin/
+# llama-server is at: ~/git/llama.cpp/build/bin/llama-server
 ```
+
+**Option B: AUR package (without `--fit`)**
+
+```bash
+# Arch Linux (AUR) - may not have --fit feature
+yay -S llama.cpp-cuda
+```
+
+If using Option B, you'll need to manually configure `--gpu-layers` in the config.
 
 ### 2. Install llama-swap
 
@@ -179,23 +195,29 @@ The API is OpenAI-compatible, so most tools work out of the box:
 
 ### Key Parameters
 
-- **`--gpu-layers` / `-ngl`**: Number of layers to offload to GPU
-  - `-ngl 99` = All layers on GPU (for models that fit in VRAM)
-  - `-ngl 35` = Partial offload (for larger models)
-- **`--ctx-size`**: Context length (8192 or 16384 depending on model)
+- **`--fit on`**: Automatically adjusts GPU layers and context size to fit in VRAM
+- **`--fit-margin 512`**: Safety margin in MiB (prevents OOM)
+- **`--fit-ctx 4096`**: Minimum context size when downscaling
+- **`--ctx-size`**: Maximum context length (8192 or 16384 depending on model)
 - **`--flash-attn`**: Flash Attention for better performance
 - **`--temp 0.7`**: Temperature for sampling diversity
 - **`--top-p 0.85`**: Nucleus sampling threshold
 - **`--top-k 40`**: Top-K sampling
 
-### Note on `--fit` (Automatic VRAM Fitting)
+### How `--fit` Works
 
-The `--fit` feature (PR #16653, Dec 2025) is **not available** in llama.cpp b7376.
-To use automatic VRAM-aware parameter fitting, upgrade to llama.cpp build >= 7000.
+The `--fit` feature (PR #16653) automatically:
 
-With the current version, GPU layers are manually configured:
-- Models that fit in VRAM (Qwen3.5-4B, Nemotron-4B): `--gpu-layers 99`
-- Larger models (Qwen3.5-9B, Gemma-4-E4B): `--gpu-layers 35`
+1. Detects available VRAM on each GPU
+2. Calculates optimal number of GPU layers (`-ngl`)
+3. Reduces context size if necessary
+4. Prioritizes dense weights for MoE models
+5. Leaves a safety margin (configurable via `--fit-margin`)
+
+This is especially useful for:
+- **Mixed GPU setups** - automatically balances layers
+- **Memory pressure** - prevents OOM crashes
+- **Different models** - no manual tuning per model
 
 ### VRAM Considerations for RTX 3050 (6GB)
 

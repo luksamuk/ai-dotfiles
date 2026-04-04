@@ -21,6 +21,10 @@ globalTTL: 0
 macros:
   "models_dir": "${env.HOME}/.llama-models"
   
+  # Caminho para o llama-server compilado com CUDA (--fit disponível)
+  # Build local em ~/git/llama.cpp/build/bin/llama-server
+  "llama_server": "${env.HOME}/git/llama.cpp/build/bin/llama-server"
+  
   # Parâmetros de inferência padrão
   "default_temp": "0.7"
   "default_top_p": "0.85"
@@ -31,13 +35,8 @@ macros:
   "small_ctx": "8192"
   "medium_ctx": "16384"
   
-  # GPU layers para RTX 3050 6GB
-  # -ngl 99 = todas as camadas na GPU (modelos pequenos)
-  # -ngl 40 = ~60% na GPU (modelos maiores)
-  # NOTA: --fit automático não disponível no llama.cpp b7376
-  # Para usar --fit, atualizar para versão >= b7000 (Dez 2025)
-  "gpu_layers_full": "99"
-  "gpu_layers_partial": "35"
+  # Margem de segurança para VRAM (MiB) - usada pelo --fit
+  "vram_margin": "512"
 
 
 # ===========================================
@@ -53,10 +52,12 @@ models:
     name: "Qwen3.5 4B"
     description: "Qwen3.5-4B Q4_K_M - Leve e rápido, cabe inteiro na VRAM"
     cmd: |
-      llama-server --port ${PORT}
+      ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B-Q4_K_M.gguf
+      --fit on
+      --fit-margin ${vram_margin}
+      --fit-ctx 4096
       --ctx-size ${medium_ctx}
-      --gpu-layers ${gpu_layers_full}
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -76,12 +77,14 @@ models:
   # -------------------------------------------
   "qwen3.5-9b":
     name: "Qwen3.5 9B"
-    description: "Qwen3.5-9B Q4_K_M - Maior capacidade, offload parcial"
+    description: "Qwen3.5-9B Q4_K_M - Maior capacidade, offload automático"
     cmd: |
-      llama-server --port ${PORT}
+      ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-9B-Q4_K_M.gguf
+      --fit on
+      --fit-margin 256
+      --fit-ctx 4096
       --ctx-size ${small_ctx}
-      --gpu-layers ${gpu_layers_partial}
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -103,10 +106,12 @@ models:
     name: "Gemma 4 E4B"
     description: "Gemma-4 Efficient 4B Q4_K_M - Uso geral, multilíngue"
     cmd: |
-      llama-server --port ${PORT}
+      ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
+      --fit on
+      --fit-margin 256
+      --fit-ctx 4096
       --ctx-size ${small_ctx}
-      --gpu-layers ${gpu_layers_partial}
       --temp 0.7
       --top-p 0.9
       --top-k 40
@@ -129,10 +134,12 @@ models:
     name: "Nemotron 3 Nano 4B"
     description: "NVIDIA Nemotron-3-Nano-4B Q4_K_M - Excelente para tool-calling"
     cmd: |
-      llama-server --port ${PORT}
+      ${llama_server} --port ${PORT}
       --model ${models_dir}/NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf
+      --fit on
+      --fit-margin ${vram_margin}
+      --fit-ctx 4096
       --ctx-size ${medium_ctx}
-      --gpu-layers ${gpu_layers_full}
       --temp 0.6
       --top-p 0.9
       --top-k 40
