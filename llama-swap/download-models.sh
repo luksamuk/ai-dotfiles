@@ -29,6 +29,7 @@ declare -A MODELS=(
   ["qwen3.5-27b"]="unsloth/Qwen3.5-27B-GGUF Qwen3.5-27B-Q4_K_M.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf"
+  ["gemma4-31b"]="unsloth/gemma-4-31B-it-GGUF gemma-4-31B-it-Q4_K_M.gguf"
   ["nemotron-3-nano-4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
 )
 
@@ -92,9 +93,10 @@ show_sizes() {
   echo "Model Sizes (Q4_K_M):"
   echo "  qwen3.5-4b          2.63 GB  - Fits in VRAM"
   echo "  qwen3.5-9b          5.68 GB  - Partial offload"
-  echo "  qwen3.5-27b        ~17.00 GB  - Heavy offload, slow"
+  echo "  qwen3.5-27b        ~17.00 GB  - Heavy offload, slow (TOMBSTONE)"
   echo "  gemma4-e4b          4.98 GB  - Partial offload"
   echo "  gemma4-e2b          3.11 GB  - Fits in VRAM"
+  echo "  gemma4-31b         ~18.00 GB  - Heavy offload, slow"
   echo "  nemotron-3-nano-4b  2.90 GB  - Fits in VRAM, tool-calling"
   echo ""
   echo "Legacy names with colons (still work):"

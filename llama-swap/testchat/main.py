@@ -3,15 +3,15 @@
 Chat com streaming de Reasoning e Response usando Rich Live Display.
 
 Instalação:
-    uv pip install rich openai questionary prompt-toolkit requests
+    uv pip install rich questionary prompt-toolkit requests
 
 Uso:
-    uv run rich_chat.py
+    uv run main.py
 """
 
 import sys
-from typing import Optional
-from openai import OpenAI
+import json
+from typing import Optional, Iterator
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
@@ -25,11 +25,8 @@ from prompt_toolkit.history import FileHistory
 import os
 import requests
 
-# Configuração do cliente
-client = OpenAI(
-    base_url="http://127.0.0.1:12434/v1",
-    api_key="",
-)
+# Endpoint base
+BASE_URL = "http://127.0.0.1:12434/v1"
 
 console = Console()
 
@@ -251,35 +248,58 @@ class StreamingChat:
         
         return layout
     
-    def stream_chat(self, prompt: str):
-        """Realiza o streaming do chat."""
+    def stream_chat(self, prompt: str) -> Iterator[Layout]:
+        """Realiza o streaming do chat usando requests diretamente."""
         try:
-            stream = client.chat.completions.create(
-                model=self.selected_model,
-                messages=[{"role": "user", "content": prompt}],
+            # Faz POST com streaming
+            response = requests.post(
+                f"{BASE_URL}/chat/completions",
+                json={
+                    "model": self.selected_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "stream": True,
+                },
                 stream=True,
+                timeout=120,
             )
+            response.raise_for_status()
             
-            for chunk in stream:
-                delta = chunk.choices[0].delta
-                content = delta.content or ""
-                
-                # Pega reasoning content
-                reasoning = getattr(delta, 'reasoning_content', None) or getattr(delta, 'reasoning', None)
-                
-                if reasoning:
-                    if not self.has_reasoning:
-                        self.has_reasoning = True
-                        self.status = "Raciocinando..."
-                    self.reasoning_content += reasoning
-                    yield self.render()
-                
-                if content:
-                    if not self.has_response:
-                        self.has_response = True
-                        self.status = "Gerando resposta..."
-                    self.response_content += content
-                    yield self.render()
+            for line in response.iter_lines():
+                if not line:
+                    continue
+                    
+                # Decode UTF-8 explicitly
+                line = line.decode('utf-8')
+                    
+                if line.startswith("data: "):
+                    data_str = line[6:]  # Remove "data: "
+                    if data_str == "[DONE]":
+                        break
+                    
+                    try:
+                        data = json.loads(data_str)
+                        if "choices" not in data or not data["choices"]:
+                            continue
+                        
+                        delta = data["choices"][0].get("delta", {})
+                        content = delta.get("content", "")
+                        reasoning = delta.get("reasoning_content", "") or delta.get("reasoning", "")
+                        
+                        if reasoning:
+                            if not self.has_reasoning:
+                                self.has_reasoning = True
+                                self.status = "Raciocinando..."
+                            self.reasoning_content += reasoning
+                            yield self.render()
+                        
+                        if content:
+                            if not self.has_response:
+                                self.has_response = True
+                                self.status = "Gerando resposta..."
+                            self.response_content += content
+                            yield self.render()
+                    except json.JSONDecodeError:
+                        continue
             
             self.status = "Concluído!"
             yield self.render()

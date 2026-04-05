@@ -13,4 +13,5 @@ PARAMETER top_k 40
 PARAMETER repeat_penalty 1.1
 
 # Gemma 4 supports native function calling
-# Tested Apr 2026: works correctly with ask-ai tools
+# TESTED 2026-04-04: Tool calling works correctly (~6-7 min on CPU offload)
+# Test: calculate tool with expression "15 * 7" → correct result 105
