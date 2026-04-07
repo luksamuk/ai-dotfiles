@@ -1,6 +1,6 @@
 {
     "$schema": "https://opencode.ai/config.json",
-    "model": "ollama/glm-5:cloud",
+    "model": "ollama/glm-5.1:cloud",
     "small_model": "ollama/qwen3.5:4b",
     "default_agent": "plan",
     "username": "luksamuk",
@@ -31,8 +31,8 @@
                         "output": 0
                     }
                 },
-                "glm-5:cloud": {
-                    "name": "GLM 5 (Cloud)",
+                "glm-5.1:cloud": {
+                    "name": "GLM 5.1 (Cloud)",
                     "reasoning": true,
                     "limit": {
                         "context": 202752,
@@ -52,6 +52,14 @@
                     "reasoning": true,
                     "limit": {
                         "context": 202752,
+                        "output": 0
+                    }
+                },
+		"minimax-m2.7:cloud": {
+                    "name": "MiniMax M2.7 (Cloud)",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 204800,
                         "output": 0
                     }
                 },
@@ -78,21 +86,13 @@
                         "context": 262144,
                         "output": 0
                     }
-                },
-                "nemotron-3-super:cloud": {
-                    "name": "Nemotron 3 Super (Cloud)",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 262144,
-                        "output": 0
-                    }
                 }
             }
         }
     },
     "mode": {
         "plan": {
-            "model": "ollama/glm-5:cloud",
+            "model": "ollama/glm-5.1:cloud",
             "temperature": 0.7,
             "description": "Strategic planning and architecture decisions. Analyzes requirements, proposes solutions, and creates implementation roadmaps. Cannot modify code - only reads and plans.",
             "permission": {
@@ -103,7 +103,7 @@
             }
         },
         "build": {
-            "model": "ollama/glm-5:cloud",
+            "model": "ollama/glm-5.1:cloud",
             "temperature": 0.3,
             "description": "Primary coding agent. Full implementation capabilities including writing, editing, and testing code. Has unrestricted access to repository and shell for development tasks.",
             "permission": {
@@ -114,7 +114,7 @@
             }
         },
         "research": {
-            "model": "ollama/nemotron-3-super:cloud",
+            "model": "ollama/minimax-m2.7:cloud",
             "temperature": 0.7,
             "description": "Deep research and investigation agent. Explores codebases, documentation, and external sources to gather information. Can create and edit documentation files only.",
             "permission": {
@@ -125,7 +125,7 @@
             }
         },
         "brainstorm": {
-            "model": "ollama/nemotron-3-super:cloud",
+            "model": "ollama/glm-5.1:cloud",
             "temperature": 1.0,
             "description": "Creative exploration and ideation agent. Generates ideas, explores alternatives, and helps with design decisions. Can edit documentation files only.",
             "permission": {
