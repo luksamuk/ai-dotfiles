@@ -132,16 +132,16 @@ thinking = true
 # thinking = true
 # # Updated: smaller context for tiny model, sensible defaults
 
-# [models."qwen3.5:2b"]
-# model_id = "qwen3.5:2b"
-# num_ctx = 65536
-# temperature = 0.7
-# top_p = 0.95
-# top_k = 40
-# min_p = 0.01
-# repeat_penalty = 1.05
-# thinking = true
-# # Updated: balanced context, sensible defaults
+[models."qwen3.5:2b"]
+model_id = "qwen3.5:2b"
+num_ctx = 65536
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
+thinking = true
+# Updated: balanced context, sensible defaults
 
 # [models."qwen3.5-abliterated:2b"]
 # model_id = "qwen3.5-abliterated:2b"
@@ -481,3 +481,44 @@ repeat_penalty = 1.0
 # Multilingual: EN, FR, ES, DE, IT, PT, NL, ZH, JA, KO, AR
 # Size: 3.0GB | Capabilities: completion, vision, tools
 # Testing: temp 0.3 for more deterministic tool selection
+
+# =======================================
+# FC-enhanced models (Hermes-style templates)
+# Added 2026-04-02
+# =======================================
+
+[models."qwopus3.5:4b"]
+model_id = "qwopus3.5:4b"
+num_ctx = 65536
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
+# Qwopus3.5-4B-v3 - Qwen 3.5 + Claude Opus distillation
+# Reasoning + Tool-Calling RL training
+# Size: 3.4GB | Context: 64K | Vision: Yes (mmproj)
+
+# =======================================
+# Gemma 4 (April 2026)
+# =======================================
+
+[models."gemma4:e2b"]
+model_id = "gemma4:e2b"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+repeat_penalty = 1.1
+# Gemma 4 Effective 2B - Native FC support, ~7.2GB
+# Test pending: tool calling benchmark
+
+[models."gemma4:e4b"]
+model_id = "gemma4:e4b"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+repeat_penalty = 1.1
+# Gemma 4 Effective 4B - Native FC support, ~10GB
+# Test pending: tool calling benchmark

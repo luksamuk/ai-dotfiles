@@ -8,15 +8,14 @@ model = "qwen3.5:4b"
 tools = true
 
 [model.summarize]
-model = "qwen3.5:4b"
+model = "gemma4:e2b"
 tools = false
+thinking = false
 
 [model.code]
 model = "qwen2.5-coder:7b"
 tools = true
 thinking = false
-# model = "devstral-small-2-cloud"
-# tools = false
 
 [model.vision]
 model = "qwen3.5:0.8b"
