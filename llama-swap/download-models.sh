@@ -5,10 +5,17 @@
 # Available models:
 #   qwen3.5-4b          - Qwen3.5-4B Q4_K_M (2.63 GB) - fits in VRAM
 #   qwen3.5-9b          - Qwen3.5-9B Q4_K_M (5.68 GB) - partial offload
-#   qwen3.5-27b         - Qwen3.5-27B Q4_K_M (~17 GB) - heavy offload, slow
+#   qwen3.5-27b         - Qwen3.5-27B Q4_K_M (~17 GB) - REMOVED (replaced by qwen3-14b)
+#   gemma4-31b          - Gemma-4 31B Q4_K_M (~18 GB) - REMOVED (too large for RTX3050)
+#   qwen3-14b           - Qwen3-14B Q4_K_M (~8.5 GB) - partial offload, offline-deep
+#   qwopus3.5-9b        - Qwopus3.5-9B-v3 Q4_K_M (5.63 GB) - reasoning + tools, offline-fast
+#   qwopus3.5-4b        - Qwopus3.5-4B-v3 Q4_K_M (2.63 GB) - reasoning + tools, fits VRAM
+#   carnice-9b          - Carnice-9B Q4_K_M (5.31 GB) - Hermes Agent specialized, partial offload
 #   gemma4-e4b          - Gemma-4 E4B Q4_K_M (4.98 GB) - partial offload
 #   gemma4-e2b          - Gemma-4 E2B Q4_K_M (3.11 GB) - fits in VRAM
+#   gemma4-31b          - Gemma-4 31B Q4_K_M (~18 GB) - heavy offload, slow
 #   nemotron-3-nano-4b  - Nemotron-3-Nano-4B Q4_K_M (2.90 GB) - tool-calling
+#   lfm2.5-vl-450m      - LFM2.5-VL-450M Q4_0 (0.22 GB) + mmproj F16 - vision/OCR
 #   all                 - Download all models
 #
 # If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
@@ -26,11 +33,22 @@ mkdir -p "$MODELS_DIR"
 declare -A MODELS=(
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-Q4_K_M.gguf"
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-Q4_K_M.gguf"
-  ["qwen3.5-27b"]="unsloth/Qwen3.5-27B-GGUF Qwen3.5-27B-Q4_K_M.gguf"
+  ["qwen3.5-27b"]="TOMBSTONE - use qwen3-14b instead"
+  ["qwen3-14b"]="unsloth/Qwen3-14B-GGUF Qwen3-14B-Q4_K_M.gguf"
+  ["qwopus3.5-4b"]="Jackrong/Qwopus3.5-4B-v3-GGUF Qwopus3.5-4B-v3-Q4_K_M.gguf Qwopus3.5-4B-v3-Q4_K_M.gguf"
+  ["qwopus3.5-9b"]="Jackrong/Qwopus3.5-9B-v3-GGUF Qwopus3.5-9B-v3-Q4_K_M.gguf Qwopus3.5-9B-v3-Q4_K_M.gguf"
+  ["carnice-9b"]="kai-os/Carnice-9b-GGUF Carnice-9b-Q4_K_M.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf"
-  ["gemma4-31b"]="unsloth/gemma-4-31B-it-GGUF gemma-4-31B-it-Q4_K_M.gguf"
+  ["gemma4-31b"]="TOMBSTONE - too large for RTX3050 6GB"
   ["nemotron-3-nano-4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
+  ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF LFM2.5-VL-450M-Q4_0.gguf"
+)
+
+# Multimodal projector files (downloaded alongside their vision models)
+# Format: "repo filename"
+declare -A MMPROJ=(
+  ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF mmproj-LFM2.5-VL-450m-F16.gguf"
 )
 
 # Legacy aliases with colons (for backwards compatibility)
@@ -52,6 +70,15 @@ download_model() {
   fi
   
   local repo_file="${MODELS[$key]}"
+  
+  # Check if model is a tombstone (removed but kept as reference)
+  if [[ "$repo_file" == TOMBSTONE* ]]; then
+    echo "⚠️  Model '$key' has been removed from disk."
+    echo "   Reason: $repo_file"
+    echo "   To re-enable: download the model manually and uncomment its config in llama-swap."
+    return 1
+  fi
+  
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
     return 1
@@ -68,24 +95,43 @@ download_model() {
   
   if [[ -f "$MODELS_DIR/$local_file" ]]; then
     echo "  ✓ Already exists: $MODELS_DIR/$local_file"
-    return 0
-  fi
-  
-  # Download to temp directory first
-  local temp_dir=$(mktemp -d)
-  trap "rm -rf $temp_dir" EXIT
-  
-  hf download "$repo" "$remote_file" --local-dir "$temp_dir"
-  
-  # Rename if needed
-  if [[ "$remote_file" != "$local_file" ]]; then
-    echo "  Renaming: $remote_file → $local_file"
-    mv "$temp_dir/$remote_file" "$MODELS_DIR/$local_file"
   else
-    mv "$temp_dir/$remote_file" "$MODELS_DIR/$local_file"
+    # Download to temp directory first
+    local temp_dir=$(mktemp -d)
+    trap "rm -rf $temp_dir" EXIT
+    
+    hf download "$repo" "$remote_file" --local-dir "$temp_dir"
+    
+    # Rename if needed
+    if [[ "$remote_file" != "$local_file" ]]; then
+      echo "  Renaming: $remote_file → $local_file"
+      mv "$temp_dir/$remote_file" "$MODELS_DIR/$local_file"
+    else
+      mv "$temp_dir/$remote_file" "$MODELS_DIR/$local_file"
+    fi
+    
+    echo "  ✓ Downloaded: $MODELS_DIR/$local_file"
   fi
   
-  echo "  ✓ Downloaded: $MODELS_DIR/$local_file"
+  # Download mmproj if applicable
+  local mmproj_entry="${MMPROJ[$key]}"
+  if [[ -n "$mmproj_entry" ]]; then
+    local mmproj_repo mmproj_file
+    read -r mmproj_repo mmproj_file <<< "$mmproj_entry"
+    
+    echo "Downloading mmproj: $mmproj_file from $mmproj_repo..."
+    
+    if [[ -f "$MODELS_DIR/$mmproj_file" ]]; then
+      echo "  ✓ Already exists: $MODELS_DIR/$mmproj_file"
+    else
+      local temp_dir2=$(mktemp -d)
+      trap "rm -rf $temp_dir2" EXIT
+      
+      hf download "$mmproj_repo" "$mmproj_file" --local-dir "$temp_dir2"
+      mv "$temp_dir2/$mmproj_file" "$MODELS_DIR/$mmproj_file"
+      echo "  ✓ Downloaded mmproj: $MODELS_DIR/$mmproj_file"
+    fi
+  fi
 }
 
 show_sizes() {
@@ -93,11 +139,16 @@ show_sizes() {
   echo "Model Sizes (Q4_K_M):"
   echo "  qwen3.5-4b          2.63 GB  - Fits in VRAM"
   echo "  qwen3.5-9b          5.68 GB  - Partial offload"
-  echo "  qwen3.5-27b        ~17.00 GB  - Heavy offload, slow (TOMBSTONE)"
+  echo "  qwen3.5-27b          REMOVED - replaced by qwen3-14b (offline-deep)"
+  echo "  qwen3-14b          ~8.50 GB  - Partial offload, offline-deep"
+  echo "  qwopus3.5-4b        2.63 GB  - Fits in VRAM, reasoning + tools"
+  echo "  qwopus3.5-9b        5.63 GB  - Partial offload, reasoning + tools, offline-fast"
+  echo "  carnice-9b          5.31 GB  - Partial offload, Hermes Agent specialized"
   echo "  gemma4-e4b          4.98 GB  - Partial offload"
   echo "  gemma4-e2b          3.11 GB  - Fits in VRAM"
-  echo "  gemma4-31b         ~18.00 GB  - Heavy offload, slow"
+  echo "  gemma4-31b           REMOVED - too large for RTX3050 6GB"
   echo "  nemotron-3-nano-4b  2.90 GB  - Fits in VRAM, tool-calling"
+  echo "  lfm2.5-vl-450m      0.22 GB  - Fits in VRAM, vision/OCR (Q4_0 + mmproj F16)"
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
@@ -110,7 +161,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-4b"|"qwen3.5-9b"|"qwen3.5-27b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b")
+  "qwen3.5-4b"|"qwen3.5-9b"|"qwen3-14b"|"qwopus3.5-4b"|"qwopus3.5-9b"|"carnice-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m")
     show_sizes
     download_model "$1"
     ;;
@@ -131,7 +182,8 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, qwen3.5-27b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, all, sizes"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, qwen3-14b, qwopus3.5-4b, qwopus3.5-9b, carnice-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, lfm2.5-vl-450m, all, sizes"
+    echo "Removed: qwen3.5-27b (use qwen3-14b instead), gemma4-31b (too large)"
     exit 1
     ;;
 esac

@@ -1,16 +1,25 @@
 #!/usr/bin/env python3
 """
 Chat com streaming de Reasoning e Response usando Rich Live Display.
+Suporta modelos vision com envio de imagens inline no prompt.
 
 Instalação:
     uv pip install rich questionary prompt-toolkit requests
 
 Uso:
     uv run main.py
+
+Imagens no prompt:
+    O que tem escrito nessa imagem? ~/japanese.png
+    Descreva essas imagens: /tmp/photo1.jpg ~/pics/photo2.png
 """
 
 import sys
 import json
+import os
+import re
+import base64
+from pathlib import Path
 from typing import Optional, Iterator
 from rich.console import Console
 from rich.live import Live
@@ -22,13 +31,125 @@ from rich.align import Align
 from rich import box
 import questionary
 from prompt_toolkit.history import FileHistory
-import os
 import requests
 
 # Endpoint base
 BASE_URL = "http://127.0.0.1:12434/v1"
 
+# Extensões de imagem suportadas pelo llama.cpp
+IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.webp', '.tiff', '.tif'}
+
+# MIME types
+MIME_MAP = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.bmp': 'image/bmp',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.tiff': 'image/tiff',
+    '.tif': 'image/tiff',
+}
+
 console = Console()
+
+
+def parse_image_paths(prompt: str) -> tuple[str, list[str]]:
+    """
+    Extrai caminhos de imagem do prompt do usuário.
+    
+    Suporta:
+      - Caminhos absolutos: /home/user/photo.jpg
+      - Home com til: ~/pics/img.png
+      - Caminhos relativos: ./images/test.jpeg
+    
+    Retorna:
+      (texto_limpo, lista_de_caminhos)
+      O texto_limpo substitui os caminhos por [image 1], [image 2], etc.
+    """
+    # Pattern: caminhos que terminam com extensão de imagem
+    # Captura: ~/path/img.png, /abs/path/img.jpg, ./rel/path/img.webp
+    pattern = r'((?:~|[./]|\.{2}/|/)[\w./\-]+\.(?:jpg|jpeg|png|bmp|gif|webp|tiff|tif))'
+
+    matches = list(re.finditer(pattern, prompt, re.IGNORECASE))
+    if not matches:
+        return prompt, []
+
+    paths = []
+    clean_text = prompt
+    
+    # Processar em ordem reversa para não bagunçar os offsets
+    for i, match in enumerate(reversed(matches)):
+        original_idx = len(matches) - 1 - i
+        image_num = original_idx + 1
+        path_str = match.group(1)
+        
+        # Expandir ~ para home
+        expanded = os.path.expanduser(path_str)
+        
+        # Verificar se o arquivo existe (silenciosamente — pode ser caminho inválido)
+        if Path(expanded).is_file():
+            paths.insert(0, expanded)
+            # Substituir o caminho por tag [image N]
+            clean_text = clean_text[:match.start()] + f'[image {image_num}]' + clean_text[match.end():]
+        # Se não existe, deixamos o texto original (não é um caminho de imagem válido)
+    
+    return clean_text, paths
+
+
+def encode_image_base64(image_path: str) -> tuple[str, str]:
+    """
+    Codifica uma imagem em base64 e retorna (base64_data_uri, mime_type).
+    """
+    ext = Path(image_path).suffix.lower()
+    mime_type = MIME_MAP.get(ext, 'image/jpeg')
+    
+    with open(image_path, 'rb') as f:
+        image_data = f.read()
+    
+    b64 = base64.b64encode(image_data).decode('utf-8')
+    data_uri = f"data:{mime_type};base64,{b64}"
+    
+    return data_uri, mime_type
+
+
+def build_message_content(prompt: str, image_paths: list[str]) -> str | list:
+    """
+    Constroi o conteúdo da mensagem do usuário.
+    
+    Se há imagens, retorna formato OpenAI Vision (lista com text + image_url).
+    Se não há imagens, retorna string simples (compatível com qualquer modelo).
+    """
+    if not image_paths:
+        return prompt
+    
+    content_parts = []
+    
+    # Adicionar o texto primeiro
+    if prompt.strip():
+        content_parts.append({
+            "type": "text",
+            "text": prompt
+        })
+    
+    # Adicionar cada imagem
+    for i, img_path in enumerate(image_paths):
+        try:
+            data_uri, mime_type = encode_image_base64(img_path)
+            content_parts.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": data_uri
+                }
+            })
+        except Exception as e:
+            # Se falhar ao ler a imagem, nota no texto
+            content_parts.append({
+                "type": "text",
+                "text": f"[Erro ao carregar imagem {i+1}: {e}]"
+            })
+    
+    return content_parts
 
 
 def fetch_available_models():
@@ -44,17 +165,21 @@ def fetch_available_models():
             name = model.get("name", model_id)
             description = model.get("description", "")
             
-            # Verifica se tem thinking
+            # Verifica features
             meta = model.get("meta", {})
             llamaswap = meta.get("llamaswap", {})
             features = llamaswap.get("features", {})
             has_thinking = features.get("thinking", False)
+            has_vision = features.get("vision", False)
+            has_tools = features.get("tools", False)
             
             # Coleta extras para mostrar
             extras = []
             if has_thinking:
                 extras.append("🤔 thinking")
-            if features.get("tools", False):
+            if has_vision:
+                extras.append("👁️ vision")
+            if has_tools:
                 extras.append("🛠️ tools")
             
             context = llamaswap.get("context", "")
@@ -75,6 +200,7 @@ def fetch_available_models():
                 "description": description,
                 "display_desc": display_desc,
                 "supports_thinking": has_thinking,
+                "supports_vision": has_vision,
                 "features": features,
                 "context": context,
                 "vram": vram,
@@ -99,17 +225,28 @@ class StreamingChat:
         self.selected_model = ""
         self.selected_model_name = ""  # Nome amigável do modelo
         self.supports_reasoning = False
+        self.supports_vision = False
         self.available_models = []
+        self.image_paths = []  # Caminhos das imagens extraídas do prompt
     
     def check_model_reasoning(self) -> bool:
         """Verifica se o modelo suporta reasoning usando o metadata da API."""
         for model in self.available_models:
             if model["id"] == self.selected_model:
                 supports = model["supports_thinking"]
-                console.print(f"[green]✓ Modelo {'suporta' if supports else 'não suporta'} reasoning[/]\n")
+                self.supports_vision = model["supports_vision"]
+                features = []
+                if supports:
+                    features.append("reasoning")
+                if self.supports_vision:
+                    features.append("vision")
+                if features:
+                    console.print(f"[green]✓ Modelo suporta: {', '.join(features)}[/]")
+                else:
+                    console.print("[green]✓ Modelo não suporta reasoning/vision[/]")
                 return supports
         
-        console.print("[yellow]⚠ Modelo não encontrado nos metadados, assumindo sem reasoning[/]\n")
+        console.print("[yellow]⚠ Modelo não encontrado nos metadados, assumindo sem reasoning[/]")
         return False
     
     def select_model(self) -> str:
@@ -123,7 +260,7 @@ class StreamingChat:
             console.print("[red]Nenhum modelo disponível. Verifique se o servidor está rodando.[/]")
             sys.exit(1)
         
-        questionary.print("🤖 Selecione o modelo para o chat\n", style="bold cyan")
+        questionary.print("🤖 Selecione o modelo para o chat", style="bold cyan")
         
         # Prepara as opções no formato "modelo - descrição"
         choices = []
@@ -145,11 +282,10 @@ class StreamingChat:
                 ])
             ).ask()
         except KeyboardInterrupt:
-            console.print("\n[dim]Saindo...[/]")
+            console.print("[dim]Saindo...[/]")
             sys.exit(0)
-        
         if not selected:
-            console.print("\n[dim]Saindo...[/]")
+            console.print("[dim]Saindo...[/]")
             sys.exit(0)
         
         # Extrai o model_id da string selecionada e encontra os dados completos
@@ -157,6 +293,7 @@ class StreamingChat:
         for model in self.available_models:
             if model["id"] == model_id:
                 self.selected_model_name = model["name"]
+                self.supports_vision = model["supports_vision"]
                 break
         
         console.print(f"[green]✓ Modelo selecionado:[/] {model_id}")
@@ -248,15 +385,20 @@ class StreamingChat:
         
         return layout
     
-    def stream_chat(self, prompt: str) -> Iterator[Layout]:
+    def stream_chat(self, prompt: str, image_paths: list[str] = None) -> Iterator[Layout]:
         """Realiza o streaming do chat usando requests diretamente."""
+        image_paths = image_paths or []
+        
         try:
+            # Construir conteúdo da mensagem
+            message_content = build_message_content(prompt, image_paths)
+            
             # Faz POST com streaming
             response = requests.post(
                 f"{BASE_URL}/chat/completions",
                 json={
                     "model": self.selected_model,
-                    "messages": [{"role": "user", "content": prompt}],
+                    "messages": [{"role": "user", "content": message_content}],
                     "stream": True,
                 },
                 stream=True,
@@ -316,8 +458,15 @@ class StreamingChat:
         # Determina se suporta reasoning usando metadata da API
         self.supports_reasoning = self.check_model_reasoning()
         
-        console.print("\n[dim]Pressione Ctrl+C para sair a qualquer momento[/]")
-        console.print("[dim]↑↓ no prompt para histórico[/]\n")
+        # Indica suporte a visão se disponível
+        if self.supports_vision:
+            console.print("[cyan]👁️ Este modelo suporta visão — você pode incluir caminhos de imagem no prompt[/]")
+            console.print("[dim]   Ex: O que tem nessa imagem? ~/photo.png[/]")
+        console.print()
+        
+        console.print("[dim]Pressione Ctrl+C para sair a qualquer momento[/]")
+        console.print("[dim]↑↓ no prompt para histórico[/]")
+        console.print()
         
         # Configura histórico persistente
         history_file = os.path.expanduser("~/.rich_chat_history")
@@ -332,18 +481,33 @@ class StreamingChat:
                 ])
             ).ask()
         except KeyboardInterrupt:
-            console.print("\n[dim]Saindo...[/]")
+            console.print("[dim]Saindo...[/]")
             return
         
         if prompt is None:
-            console.print("\n[dim]Saindo...[/]")
+            console.print("[dim]Saindo...[/]")
             return
         
         if not prompt.strip():
             console.print("[red]Prompt vazio![/]")
             return
         
-        console.print("\n[dim]Iniciando streaming...[/]\n")
+        # Parsear caminhos de imagem do prompt
+        clean_prompt, image_paths = parse_image_paths(prompt)
+        
+        if image_paths:
+            console.print(f"[cyan]🖼️  {len(image_paths)} imagem(ns) detectada(s):[/]")
+            for i, path in enumerate(image_paths, 1):
+                fname = Path(path).name
+                fsize = Path(path).stat().st_size / 1024
+                console.print(f"[dim]   [{i}] {fname} ({fsize:.1f} KB)[/]")
+            console.print(f"[dim]   Prompt: {clean_prompt}[/]")
+            console.print()
+        else:
+            clean_prompt = prompt
+        
+        console.print("[dim]Iniciando streaming...[/]")
+        console.print()
         
         # Inicia Live display com screen=True (tela alternativa)
         with Live(
@@ -353,7 +517,7 @@ class StreamingChat:
             vertical_overflow="visible"
         ) as live:
             try:
-                for layout in self.stream_chat(prompt):
+                for layout in self.stream_chat(clean_prompt, image_paths):
                     live.update(layout)
                 
                 # Mostra resultado final com prompt e modelo
@@ -362,8 +526,16 @@ class StreamingChat:
                 
                 # Cabeçalho com prompt e modelo
                 model_display = self.selected_model_name or self.selected_model
+                
+                # Mostra o prompt original (com caminhos) se tinha imagens
+                display_prompt = prompt  # prompt original
+                header_parts = [f"[bold cyan]Prompt:[/] {display_prompt}"]
+                if image_paths:
+                    header_parts.append(f"[dim]Imagens: {len(image_paths)} anexada(s)[/]")
+                header_parts.append(f"[dim]Modelo:[/] {model_display}")
+                
                 console.print(Panel(
-                    f"[bold cyan]Prompt:[/] {prompt}\n[dim]Modelo:[/] {model_display}",
+                    "\n".join(header_parts),
                     title="✅ Concluído",
                     border_style="green"
                 ))
@@ -384,7 +556,7 @@ class StreamingChat:
                 
             except KeyboardInterrupt:
                 live.stop()
-                console.print("\n[dim]Interrompido pelo usuário[/]")
+                console.print("[dim]Interrompido pelo usuário[/]")
 
 
 def main():
