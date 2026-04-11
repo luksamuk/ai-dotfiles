@@ -16,6 +16,50 @@ default_timeout = 30
 enable_sandbox = true
 
 # =============================================================================
+# CORE TOOLS
+# =============================================================================
+
+[external.tools.csplit]
+enabled = true
+timeout = 30
+binary = "csplit"
+
+[external.tools.sed]
+enabled = true
+timeout = 5
+binary = "sed"
+
+[external.tools.awk]
+enabled = true
+timeout = 5
+binary = "awk"
+
+[external.tools.split]
+enabled = true
+timeout = 30
+binary = "split"
+
+[external.tools.ripgrep]
+enabled = true
+timeout = 30
+binary = "rg"
+
+[external.tools.jq]
+enabled = true
+timeout = 30
+binary = "jq"
+
+[external.tools.fd]
+enabled = true
+timeout = 30
+binary = "fd"
+
+[external.tools.bat]
+enabled = true
+timeout = 10
+binary = "bat"
+
+# =============================================================================
 # PDF TOOLS (from poppler-utils)
 # =============================================================================
 
@@ -41,6 +85,11 @@ binary = "pdfinfo"
 enabled = true
 timeout = 60
 binary = "pdftoppm"
+
+[external.tools.ebook-convert]
+enabled = true
+timeout = 60
+binary = "ebook-convert"
 
 # =============================================================================
 # OCR TOOLS
@@ -109,3 +158,6 @@ binary = "pandoc"
 enabled = true
 timeout = 30
 binary = "wkhtmltopdf"
+
+
+

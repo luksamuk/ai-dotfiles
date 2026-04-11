@@ -4,16 +4,16 @@ ollama_host = "127.0.0.1"
 ollama_port = 11434
 
 [model.query]
-model = "qwen3.5:4b"
+model = "gemma4:e4b"
 tools = true
 
 [model.summarize]
-model = "gemma4:e2b"
+model = "gemma4:e4b"
 tools = false
 thinking = false
 
 [model.code]
-model = "qwen2.5-coder:7b"
+model = "glm-5.1:cloud"
 tools = true
 thinking = false
 
@@ -22,7 +22,7 @@ model = "qwen3.5:0.8b"
 tools = false
 
 [model.chat]
-model = "qwen3.5:cloud"
+model = "glm-5.1:cloud"
 tools = true
 
 [model.translate]
