@@ -112,16 +112,24 @@
                 "baseURL": "http://127.0.0.1:12434/v1"
             },
             "models": {
-                "offline-fast": {
-                    "name": "Qwopus 3.5 9B (Local)",
+                "qwen3-coder-30b": {
+                    "name": "Qwen3-Coder-30B-A3B (llama-swap)",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "qwopus3.5-9b": {
+                    "name": "Qwopus3.5-9B-v3 (llama-swap)",
                     "reasoning": true,
                     "limit": {
                         "context": 32768,
                         "output": 16384
                     }
                 },
-                "offline-deep": {
-                    "name": "Qwen3 14B (Local)",
+                "qwen3-14b": {
+                    "name": "Qwen3-14B (llama-swap)",
                     "reasoning": true,
                     "limit": {
                         "context": 16384,
@@ -202,32 +210,6 @@
                 "write": "deny",
                 "edit": "deny",
                 "bash": "deny"
-            }
-        },
-        "offline": {
-            "model": "local/offline-fast",
-            "temperature": 0.6,
-            "description": "Offline fallback (fast). Uses local Qwopus3.5-9B via llama-swap for coding when cloud is unavailable. Fits mostly in VRAM.",
-            "prompt": "You are an offline coding agent operating without internet, powered by Qwopus3.5-9B. Use local models to implement, fix, or analyze code. Work conservatively — verify everything since you cannot search for documentation. Prefer patterns already present in the codebase.",
-            "steps": 25,
-            "permission": {
-                "read": "allow",
-                "write": "allow",
-                "edit": "allow",
-                "bash": "allow"
-            }
-        },
-        "offline-deep": {
-            "model": "local/offline-deep",
-            "temperature": 0.6,
-            "description": "Offline fallback (deep). Uses local Qwen3-14B via llama-swap for more capable coding when cloud is unavailable. Heavier offload, slower.",
-            "prompt": "You are an offline coding agent operating without internet, powered by Qwen3-14B. Use local models to implement, fix, or analyze code. This model is more capable but slower than offline-fast. Work conservatively — verify everything since you cannot search for documentation. Prefer patterns already present in the codebase.",
-            "steps": 25,
-            "permission": {
-                "read": "allow",
-                "write": "allow",
-                "edit": "allow",
-                "bash": "allow"
             }
         }
     }

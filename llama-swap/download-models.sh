@@ -11,6 +11,7 @@
 #   qwopus3.5-9b        - Qwopus3.5-9B-v3 Q4_K_M (5.63 GB) - reasoning + tools, offline-fast
 #   qwopus3.5-4b        - Qwopus3.5-4B-v3 Q4_K_M (2.63 GB) - reasoning + tools, fits VRAM
 #   carnice-9b          - Carnice-9B Q4_K_M (5.31 GB) - Hermes Agent specialized, partial offload
+#   qwen3-coder-30b     - Qwen3-Coder-30B-A3B Q4_K_M (~17.7 GB) - MoE coding + tools, heavy offload
 #   gemma4-e4b          - Gemma-4 E4B Q4_K_M (4.98 GB) - partial offload
 #   gemma4-e2b          - Gemma-4 E2B Q4_K_M (3.11 GB) - fits in VRAM
 #   gemma4-31b          - Gemma-4 31B Q4_K_M (~18 GB) - heavy offload, slow
@@ -38,6 +39,7 @@ declare -A MODELS=(
   ["qwopus3.5-4b"]="Jackrong/Qwopus3.5-4B-v3-GGUF Qwopus3.5-4B-v3-Q4_K_M.gguf Qwopus3.5-4B-v3-Q4_K_M.gguf"
   ["qwopus3.5-9b"]="Jackrong/Qwopus3.5-9B-v3-GGUF Qwopus3.5-9B-v3-Q4_K_M.gguf Qwopus3.5-9B-v3-Q4_K_M.gguf"
   ["carnice-9b"]="kai-os/Carnice-9b-GGUF Carnice-9b-Q4_K_M.gguf"
+  ["qwen3-coder-30b"]="unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf"
   ["gemma4-31b"]="TOMBSTONE - too large for RTX3050 6GB"
@@ -144,6 +146,7 @@ show_sizes() {
   echo "  qwopus3.5-4b        2.63 GB  - Fits in VRAM, reasoning + tools"
   echo "  qwopus3.5-9b        5.63 GB  - Partial offload, reasoning + tools, offline-fast"
   echo "  carnice-9b          5.31 GB  - Partial offload, Hermes Agent specialized"
+  echo "  qwen3-coder-30b  ~17.70 GB  - Partial offload, coding + tools, MoE"
   echo "  gemma4-e4b          4.98 GB  - Partial offload"
   echo "  gemma4-e2b          3.11 GB  - Fits in VRAM"
   echo "  gemma4-31b           REMOVED - too large for RTX3050 6GB"
@@ -161,7 +164,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-4b"|"qwen3.5-9b"|"qwen3-14b"|"qwopus3.5-4b"|"qwopus3.5-9b"|"carnice-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m")
+  "qwen3.5-4b"|"qwen3.5-9b"|"qwen3-14b"|"qwen3-coder-30b"|"qwopus3.5-4b"|"qwopus3.5-9b"|"carnice-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m")
     show_sizes
     download_model "$1"
     ;;
@@ -182,7 +185,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, qwen3-14b, qwopus3.5-4b, qwopus3.5-9b, carnice-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, lfm2.5-vl-450m, all, sizes"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, qwen3-14b, qwen3-coder-30b, qwopus3.5-4b, qwopus3.5-9b, carnice-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, lfm2.5-vl-450m, all, sizes"
     echo "Removed: qwen3.5-27b (use qwen3-14b instead), gemma4-31b (too large)"
     exit 1
     ;;

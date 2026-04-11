@@ -648,6 +648,77 @@ models:
       features:
         thinking: true
 
+  # -------------------------------------------
+  # QWEN3-CODER-30B - REQUER OFFLOAD PESADO
+  # MoE 30B (3B ativo por token), especialista em codigo + tool-calling
+  # 128 experts, top-8 routing. Q4_K_M ~17.7GB
+  # VRAM: ~2.3GB + ~15GB RAM offload
+  # -------------------------------------------
+  "qwen3-coder-30b":
+    name: "Qwen3 Coder 30B"
+    description: "Qwen3-Coder-30B-A3B Q4_K_M - Codigo + tools, REQUER OFFLOAD PESADO"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
+      --fit on
+      --fit-target 128
+      --fit-ctx 16384
+      --ctx-size 131072
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning off
+      --flash-attn on
+    ttl: 120
+    aliases:
+      - "qwen3-coder-30b"
+      - "coder-30b"
+      - "offline-coder"
+    metadata:
+      size: "~17.7 GB"
+      context: "16K-128K (dynamic)"
+      vram_usage: "~2.3GB VRAM + ~15GB RAM"
+      source: "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF"
+      features:
+        tools: true
+
+  # -------------------------------------------
+  # QWEN3-CODER-30B THINKING - Com reasoning
+  # MoE 30B (3B ativo por token), especialista em codigo + tool-calling
+  # REQUER OFFLOAD PESADO - expect inference lenta
+  # -------------------------------------------
+  "qwen3-coder-30b-think":
+    name: "Qwen3 Coder 30B Thinking"
+    description: "Qwen3-Coder-30B-A3B Q4_K_M - Com reasoning, REQUER OFFLOAD PESADO"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
+      --fit on
+      --fit-target 128
+      --fit-ctx 16384
+      --ctx-size 131072
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning auto
+      --flash-attn on
+    ttl: 120
+    aliases:
+      - "qwen3-coder-30b-think"
+      - "coder-30b-think"
+    metadata:
+      size: "~17.7 GB"
+      context: "16K-128K (dynamic)"
+      vram_usage: "~2.3GB VRAM + ~15GB RAM"
+      source: "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF"
+      features:
+        tools: true
+        thinking: true
+
   # ============================================
   # TOMBSTONES - Modelos removidos do disco mas mantidos como referência
   # Para reativar: baixar com ./download-models.sh <nome> e remover o # do config
@@ -767,6 +838,8 @@ groups:
       - "qwen3.5-4b-think"
       - "qwen3.5-9b-think"
       - "qwen3-14b-think"
+      - "qwen3-coder-30b"       # OFFLINE-CODER, MoE heavy offload
+      - "qwen3-coder-30b-think" # OFFLINE-CODER + reasoning
       - "carnice-9b-think"
       - "gemma4-e4b-think"
       - "gemma4-e2b-think"
