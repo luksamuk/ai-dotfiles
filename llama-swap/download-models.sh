@@ -53,6 +53,7 @@ declare -A MODELS=(
 # Format: "repo filename"
 declare -A MMPROJ=(
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF mmproj-LFM2.5-VL-450m-F16.gguf"
+  ["qwen3.6-35b-moe"]="unsloth/Qwen3.6-35B-A3B-GGUF mmproj-F16.gguf mmproj-Qwen3.6-35B-A3B-F16.gguf"
 )
 
 # Legacy aliases with colons (for backwards compatibility)
@@ -120,20 +121,27 @@ download_model() {
   # Download mmproj if applicable
   local mmproj_entry="${MMPROJ[$key]}"
   if [[ -n "$mmproj_entry" ]]; then
-    local mmproj_repo mmproj_file
-    read -r mmproj_repo mmproj_file <<< "$mmproj_entry"
+    local mmproj_repo mmproj_remote_file mmproj_local_file
+    read -r mmproj_repo mmproj_remote_file mmproj_local_file <<< "$mmproj_entry"
+    mmproj_local_file="${mmproj_local_file:-$mmproj_remote_file}"
     
-    echo "Downloading mmproj: $mmproj_file from $mmproj_repo..."
+    echo "Downloading mmproj: $mmproj_remote_file from $mmproj_repo..."
     
-    if [[ -f "$MODELS_DIR/$mmproj_file" ]]; then
-      echo "  ✓ Already exists: $MODELS_DIR/$mmproj_file"
+    if [[ -f "$MODELS_DIR/$mmproj_local_file" ]]; then
+      echo "  ✓ Already exists: $MODELS_DIR/$mmproj_local_file"
     else
       local temp_dir2=$(mktemp -d)
       trap "rm -rf $temp_dir2" EXIT
       
-      hf download "$mmproj_repo" "$mmproj_file" --local-dir "$temp_dir2"
-      mv "$temp_dir2/$mmproj_file" "$MODELS_DIR/$mmproj_file"
-      echo "  ✓ Downloaded mmproj: $MODELS_DIR/$mmproj_file"
+      hf download "$mmproj_repo" "$mmproj_remote_file" --local-dir "$temp_dir2"
+      
+      if [[ "$mmproj_remote_file" != "$mmproj_local_file" ]]; then
+        echo "  Renaming: $mmproj_remote_file → $mmproj_local_file"
+        mv "$temp_dir2/$mmproj_remote_file" "$MODELS_DIR/$mmproj_local_file"
+      else
+        mv "$temp_dir2/$mmproj_remote_file" "$MODELS_DIR/$mmproj_local_file"
+      fi
+      echo "  ✓ Downloaded mmproj: $MODELS_DIR/$mmproj_local_file"
     fi
   fi
 }
@@ -154,7 +162,7 @@ show_sizes() {
   echo "  gemma4-31b           REMOVED - too large for RTX3050 6GB"
   echo "  nemotron-3-nano-4b  2.90 GB  - Fits in VRAM, tool-calling"
   echo "  lfm2.5-vl-450m      0.22 GB  - Fits in VRAM, vision/OCR (Q4_0 + mmproj F16)"
-  echo "  qwen3.6-35b-moe  ~22.00 GB  - Heavy offload, MoE coding agent"
+  echo "  qwen3.6-35b-moe  ~22.00 GB  - Heavy offload, vision + MoE coding agent (+ mmproj)"
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
