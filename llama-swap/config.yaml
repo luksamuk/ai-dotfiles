@@ -82,7 +82,6 @@ macros:
   #   Qwen3.5-4B/9B   ✅ head_k=256 (256%64==0)
   #   Qwen3-14B        ✅ head_k=128 (128%64==0)
   #   Qwen3-Coder-30B  ✅ head_k=128
-  #   Gemma4-E2B/E4B   ❌ bug #21394, usar --cache-type-k f16
   #   Nemotron-3-Nano  ✅ head_k=128
   #   Carnice-9B       ✅ (base Qwen3.5)
   #   Qwopus3.5        ✅ (base Qwen3.5)
@@ -94,12 +93,14 @@ macros:
   #
   # Escolha: modelos pequenos (fit VRAM) usam q8_0 (saldo perf/mem)
   #          modelos grandes (offload) usam q4_0 (maximizar contexto)
-  "small_cache_k": "q8_0"
-  "small_cache_v": "q8_0"
-  "large_cache_k": "q4_0"
-  "large_cache_v": "q4_0"
-  "gemma_cache_k": "f16"
-  "gemma_cache_v": "f16"
+  # --cache-type-k/v desabilitados: crash ggml_backend_sched_split_graph com --fit
+  # Re-habilitar quando o bug for corrigido no llama.cpp
+  # "small_cache_k": "q8_0"
+  # "small_cache_v": "q8_0"
+  # "large_cache_k": "q4_0"
+  # "large_cache_v": "q4_0"
+  # "gemma_cache_k": "f16"
+  # "gemma_cache_v": "f16"
 
 
 # ===========================================
@@ -122,8 +123,6 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -140,7 +139,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/Qwen3.5-4B-GGUF"
-      kv_cache: "q8_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
 
   # -------------------------------------------
   # QWEN3.5-4B THINKING - Com reasoning
@@ -157,8 +156,6 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -175,7 +172,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/Qwen3.5-4B-GGUF"
-      kv_cache: "q8_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         thinking: true
 
@@ -195,8 +192,6 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -213,7 +208,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5GB + RAM offload"
       source: "unsloth/Qwen3.5-9B-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
 
   # -------------------------------------------
   # QWEN3.5-9B THINKING - Com reasoning
@@ -229,8 +224,6 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -247,7 +240,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5GB + RAM offload"
       source: "unsloth/Qwen3.5-9B-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         thinking: true
 
@@ -267,8 +260,6 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
-      --cache-type-k ${gemma_cache_k}
-      --cache-type-v ${gemma_cache_v}
       --temp 0.7
       --top-p 0.9
       --top-k 40
@@ -285,7 +276,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~4.5GB + RAM offload"
       source: "unsloth/gemma-4-E4B-it-GGUF"
-      kv_cache: "f16 (Gemma4 bug #21394)"
+      kv_cache: "f16 (cache-type disabled)"
 
   # -------------------------------------------
   # GEMMA-4-E4B THINKING - Com reasoning
@@ -301,8 +292,6 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
-      --cache-type-k ${gemma_cache_k}
-      --cache-type-v ${gemma_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -319,7 +308,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~4.5GB + RAM offload"
       source: "unsloth/gemma-4-E4B-it-GGUF"
-      kv_cache: "f16 (Gemma4 bug #21394)"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         thinking: true
 
@@ -339,8 +328,6 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --cache-type-k ${gemma_cache_k}
-      --cache-type-v ${gemma_cache_v}
       --temp 0.7
       --top-p 0.9
       --top-k 40
@@ -357,7 +344,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/gemma-4-E2B-it-GGUF"
-      kv_cache: "f16 (Gemma4 bug #21394)"
+      kv_cache: "f16 (cache-type disabled)"
 
   # -------------------------------------------
   # GEMMA-4-E2B THINKING - Com reasoning
@@ -373,8 +360,6 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --cache-type-k ${gemma_cache_k}
-      --cache-type-v ${gemma_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -391,7 +376,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/gemma-4-E2B-it-GGUF"
-      kv_cache: "f16 (Gemma4 bug #21394)"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         thinking: true
 
@@ -412,8 +397,6 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
       --temp 0.6
       --top-p 0.9
       --top-k 40
@@ -431,7 +414,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF"
-      kv_cache: "q8_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         tools: true
 
@@ -449,8 +432,6 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -468,7 +449,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF"
-      kv_cache: "q8_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         thinking: true
         tools: true
@@ -509,7 +490,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~0.5GB"
       source: "LiquidAI/LFM2.5-VL-450M-GGUF"
-      kv_cache: "f16 (vision, precisão prioritária)"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         vision: true
 
@@ -531,8 +512,6 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
       --temp ${code_temp}
       --top-p ${code_top_p}
       --top-k ${code_top_k}
@@ -548,7 +527,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "Jackrong/Qwopus3.5-4B-v3-GGUF"
-      kv_cache: "q8_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         tools: true
 
@@ -570,8 +549,6 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --temp ${code_temp}
       --top-p ${code_top_p}
       --top-k ${code_top_k}
@@ -588,7 +565,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5.5GB + RAM offload"
       source: "Jackrong/Qwopus3.5-9B-v3-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         tools: true
 
@@ -609,8 +586,6 @@ models:
       --fit-target 128
       --fit-ctx ${large_model_min_ctx}
       --ctx-size 65536
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -627,7 +602,7 @@ models:
       context: "16K-64K (limited by offload)"
       vram_usage: "~6GB VRAM + ~3GB RAM"
       source: "unsloth/Qwen3-14B-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
 
   # -------------------------------------------
   # QWEN3-14B THINKING - Com reasoning
@@ -642,8 +617,6 @@ models:
       --fit-target 128
       --fit-ctx ${large_model_min_ctx}
       --ctx-size 65536
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -660,7 +633,7 @@ models:
       context: "16K-64K (limited by offload)"
       vram_usage: "~6GB VRAM + ~3GB RAM"
       source: "unsloth/Qwen3-14B-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         thinking: true
 
@@ -681,8 +654,6 @@ models:
       --fit-target 128
       --fit-ctx 16384
       --ctx-size 131072
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --temp ${code_temp}
       --top-p ${code_top_p}
       --top-k ${code_top_k}
@@ -700,7 +671,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~2.3GB VRAM + ~15GB RAM"
       source: "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         tools: true
 
@@ -719,8 +690,6 @@ models:
       --fit-target 128
       --fit-ctx 16384
       --ctx-size 131072
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --temp ${code_temp}
       --top-p ${code_top_p}
       --top-k ${code_top_k}
@@ -737,7 +706,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~2.3GB VRAM + ~15GB RAM"
       source: "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         tools: true
         thinking: true
@@ -759,8 +728,6 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --temp ${code_temp}
       --top-p ${code_top_p}
       --top-k ${code_top_k}
@@ -777,7 +744,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5.5GB + RAM offload"
       source: "kai-os/Carnice-9b-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         tools: true
 
@@ -793,8 +760,6 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -811,7 +776,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5.5GB + RAM offload"
       source: "kai-os/Carnice-9b-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         thinking: true
         tools: true
@@ -828,8 +793,6 @@ models:
       --fit-target 128
       --fit-ctx 8192
       --ctx-size 32768
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -846,7 +809,7 @@ models:
       context: "8K-32K (limited by offload)"
       vram_usage: "~6GB VRAM + ~11GB RAM"
       source: "unsloth/Qwen3.5-27B-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
       warning: "Heavy offload - expect slow inference"
 
   "qwen3.5-27b-think":
@@ -860,8 +823,6 @@ models:
       --fit-target 128
       --fit-ctx 8192
       --ctx-size 32768
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -878,7 +839,7 @@ models:
       context: "8K-32K (limited by offload)"
       vram_usage: "~6GB VRAM + ~11GB RAM"
       source: "unsloth/Qwen3.5-27B-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "f16 (cache-type disabled)"
       features:
         thinking: true
       warning: "Heavy offload - expect slow inference"
@@ -895,8 +856,6 @@ models:
       --fit-target 128
       --fit-ctx 8192
       --ctx-size 32768
-      --cache-type-k ${gemma_cache_k}
-      --cache-type-v ${gemma_cache_v}
       --temp 0.7
       --top-p 0.9
       --top-k 40
@@ -913,7 +872,7 @@ models:
       context: "8K-32K (limited by offload)"
       vram_usage: "~6GB VRAM + ~12GB RAM"
       source: "unsloth/gemma-4-31B-it-GGUF"
-      kv_cache: "f16 (Gemma4 bug #21394)"
+      kv_cache: "f16 (cache-type disabled)"
       warning: "Very heavy offload - expect slow inference"
 
 
