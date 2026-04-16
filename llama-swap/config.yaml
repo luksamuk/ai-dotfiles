@@ -593,85 +593,6 @@ models:
         tools: true
 
   # -------------------------------------------
-  # CARNICE-9B - REQUER OFFLOAD PARCIAL
-  # Modelo especializado Hermes Agent, treinado em harness-native traces
-  # Reasoning opcional (auto), não forçado como Qwopus
-  # Melhor para: execução de agentes Hermes local
-  # VRAM: ~5.5GB + RAM para offload
-  # KV cache: q4_0 + attn_rot
-  # -------------------------------------------
-  "carnice-9b":
-    name: "Carnice 9B"
-    description: "Carnice-9B Q4_K_M - Hermes Agent specialized, optional reasoning"
-    unlisted: true
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/Carnice-9b-Q4_K_M.gguf
-      --fit on
-      --fit-target 256
-      --fit-ctx ${large_model_min_ctx}
-      --ctx-size ${large_model_max_ctx}
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
-      --min-p ${code_min_p}
-      --repeat-penalty ${code_repeat_penalty}
-      --reasoning off
-      --flash-attn on
-    ttl: 60
-    aliases:
-      - "carnice-9b"
-      - "carnice"
-    metadata:
-      size: "5.31 GB"
-      context: "16K-128K (dynamic)"
-      vram_usage: "~5.5GB + RAM offload"
-      source: "kai-os/Carnice-9b-GGUF"
-      kv_cache: "q4_0 + attn_rot"
-      features:
-        tools: true
-
-  # -------------------------------------------
-  # CARNICE-9B THINKING - Com reasoning
-  # Mesmo modelo com --reasoning auto
-  # -------------------------------------------
-  "carnice-9b-think":
-    name: "Carnice 9B Thinking"
-    description: "Carnice-9B Q4_K_M - Com reasoning, Hermes Agent specialized"
-    unlisted: true
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/Carnice-9b-Q4_K_M.gguf
-      --fit on
-      --fit-target 256
-      --fit-ctx ${large_model_min_ctx}
-      --ctx-size ${large_model_max_ctx}
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --temp ${think_temp}
-      --top-p ${think_top_p}
-      --top-k ${think_top_k}
-      --min-p ${think_min_p}
-      --repeat-penalty ${think_repeat_penalty}
-      --reasoning auto
-      --flash-attn on
-    ttl: 60
-    aliases:
-      - "carnice-9b-think"
-      - "carnice-think"
-    metadata:
-      size: "5.31 GB"
-      context: "16K-128K (dynamic)"
-      vram_usage: "~5.5GB + RAM offload"
-      source: "kai-os/Carnice-9b-GGUF"
-      kv_cache: "q4_0 + attn_rot"
-      features:
-        thinking: true
-        tools: true
-
-  # -------------------------------------------
   # QWEN3-14B - REQUER OFFLOAD PARCIAL
   # Modelo denso de 14B, significativamente mais capaz que 9B
   # Melhor para: OFFLINE-DEEP, coding complexo sem internet
@@ -822,77 +743,178 @@ models:
         thinking: true
 
   # ============================================
-  # TOMBSTONES - Modelos removidos do disco mas mantidos como referência
-  # Para reativar: baixar com ./download-models.sh <nome> e remover o # do config
+  # MODELOS SEM GGUF NO DISCO - unlisted da API
+  # Para reativar: baixar com ./download-models.sh <nome> e remover unlisted
   # ============================================
 
-  # QWEN3.5-27B - REMOVIDO do disco (17GB). Substituído por Qwen3-14B (offline-deep).
-  # Para reativar: ./download-models.sh qwen3.5-27b e descomentar abaixo
-  #
-  # "qwen3.5-27b":
-  #   name: "Qwen3.5 27B"
-  #   description: "Qwen3.5-27B Q4_K_M - Uso geral, alta capacidade (OFFLOAD PESADO)"
-  #   cmd: |
-  #     ${llama_server} --port ${PORT}
-  #     --model ${models_dir}/Qwen3.5-27B-Q4_K_M.gguf
-  #     --fit on
-  #     --fit-target 128
-  #     --fit-ctx 8192
-  #     --ctx-size 32768
-  #     --cache-type-k ${large_cache_k}
-  #     --cache-type-v ${large_cache_v}
-  #     --temp ${default_temp}
-  #     --top-p ${default_top_p}
-  #     --top-k ${default_top_k}
-  #     --min-p ${default_min_p}
-  #     --repeat-penalty ${default_repeat_penalty}
-  #     --reasoning off
-  #     --flash-attn on
-  #   ttl: 120
-  #   aliases:
-  #     - "qwen3.5-27b"
-  #     - "qwen27b"
-  #   metadata:
-  #     size: "~17 GB"
-  #     context: "8K-32K (limited by offload)"
-  #     vram_usage: "~6GB VRAM + ~11GB RAM"
-  #     source: "unsloth/Qwen3.5-27B-GGUF"
-  #     kv_cache: "q4_0 + attn_rot"
-  #     warning: "Heavy offload - expect slow inference"
+  # Carnice-9B - GGUF ausente (kai-os/Carnice-9b-GGUF)
+  "carnice-9b":
+    name: "Carnice 9B"
+    description: "Carnice-9B Q4_K_M - Hermes Agent specialized, optional reasoning"
+    unlisted: true
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Carnice-9b-Q4_K_M.gguf
+      --fit on
+      --fit-target 256
+      --fit-ctx ${large_model_min_ctx}
+      --ctx-size ${large_model_max_ctx}
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning off
+      --flash-attn on
+    ttl: 60
+    aliases:
+      - "carnice-9b"
+      - "carnice"
+    metadata:
+      size: "5.31 GB"
+      context: "16K-128K (dynamic)"
+      vram_usage: "~5.5GB + RAM offload"
+      source: "kai-os/Carnice-9b-GGUF"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        tools: true
 
-  # GEMMA-4-31B - REMOVIDO do disco (18GB). Muito pesado pra RTX3050 6GB.
-  # Para reativar: ./download-models.sh gemma4-31b e descomentar abaixo
-  #
-  # "gemma4-31b":
-  #   name: "Gemma 4 31B"
-  #   description: "Gemma-4-31B Q4_K_M - Alta capacidade (OFFLOAD PESADO)"
-  #   cmd: |
-  #     ${llama_server} --port ${PORT}
-  #     --model ${models_dir}/gemma-4-31B-it-Q4_K_M.gguf
-  #     --fit on
-  #     --fit-target 128
-  #     --fit-ctx 8192
-  #     --ctx-size 32768
-  #     --cache-type-k ${gemma_cache_k}
-  #     --cache-type-v ${gemma_cache_v}
-  #     --temp 0.7
-  #     --top-p 0.9
-  #     --top-k 40
-  #     --min-p 0.01
-  #     --repeat-penalty 1.0
-  #     --reasoning off
-  #     --flash-attn on
-  #   ttl: 120
-  #   aliases:
-  #     - "gemma4-31b"
-  #     - "gemma-4-31b"
-  #   metadata:
-  #     size: "~18 GB"
-  #     context: "8K-32K (limited by offload)"
-  #     vram_usage: "~6GB VRAM + ~12GB RAM"
-  #     source: "unsloth/gemma-4-31B-it-GGUF"
-  #     kv_cache: "f16 (Gemma4 bug #21394)"
-  #     warning: "Very heavy offload - expect slow inference"
+  # Carnice-9B THINKING - GGUF ausente
+  "carnice-9b-think":
+    name: "Carnice 9B Thinking"
+    description: "Carnice-9B Q4_K_M - Com reasoning, Hermes Agent specialized"
+    unlisted: true
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Carnice-9b-Q4_K_M.gguf
+      --fit on
+      --fit-target 256
+      --fit-ctx ${large_model_min_ctx}
+      --ctx-size ${large_model_max_ctx}
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --temp ${think_temp}
+      --top-p ${think_top_p}
+      --top-k ${think_top_k}
+      --min-p ${think_min_p}
+      --repeat-penalty ${think_repeat_penalty}
+      --reasoning auto
+      --flash-attn on
+    ttl: 60
+    aliases:
+      - "carnice-9b-think"
+      - "carnice-think"
+    metadata:
+      size: "5.31 GB"
+      context: "16K-128K (dynamic)"
+      vram_usage: "~5.5GB + RAM offload"
+      source: "kai-os/Carnice-9b-GGUF"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        thinking: true
+        tools: true
+
+  # QWEN3.5-27B - GGUF ausente (17GB). Substituído por Qwen3-14B (offline-deep).
+  "qwen3.5-27b":
+    name: "Qwen3.5 27B"
+    description: "Qwen3.5-27B Q4_K_M - Uso geral, alta capacidade (OFFLOAD PESADO)"
+    unlisted: true
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.5-27B-Q4_K_M.gguf
+      --fit on
+      --fit-target 128
+      --fit-ctx 8192
+      --ctx-size 32768
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --reasoning off
+      --flash-attn on
+    ttl: 120
+    aliases:
+      - "qwen3.5-27b"
+      - "qwen27b"
+    metadata:
+      size: "~17 GB"
+      context: "8K-32K (limited by offload)"
+      vram_usage: "~6GB VRAM + ~11GB RAM"
+      source: "unsloth/Qwen3.5-27B-GGUF"
+      kv_cache: "q4_0 + attn_rot"
+      warning: "Heavy offload - expect slow inference"
+
+  "qwen3.5-27b-think":
+    name: "Qwen3.5 27B Thinking"
+    description: "Qwen3.5-27B Q4_K_M - Com reasoning (OFFLOAD PESADO)"
+    unlisted: true
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.5-27B-Q4_K_M.gguf
+      --fit on
+      --fit-target 128
+      --fit-ctx 8192
+      --ctx-size 32768
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --temp ${think_temp}
+      --top-p ${think_top_p}
+      --top-k ${think_top_k}
+      --min-p ${think_min_p}
+      --repeat-penalty ${think_repeat_penalty}
+      --reasoning auto
+      --flash-attn on
+    ttl: 120
+    aliases:
+      - "qwen3.5-27b-think"
+      - "qwen27b-think"
+    metadata:
+      size: "~17 GB"
+      context: "8K-32K (limited by offload)"
+      vram_usage: "~6GB VRAM + ~11GB RAM"
+      source: "unsloth/Qwen3.5-27B-GGUF"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        thinking: true
+      warning: "Heavy offload - expect slow inference"
+
+  # GEMMA-4-31B - GGUF ausente (18GB). Muito pesado pra RTX3050 6GB.
+  "gemma4-31b":
+    name: "Gemma 4 31B"
+    description: "Gemma-4-31B Q4_K_M - Alta capacidade (OFFLOAD PESADO)"
+    unlisted: true
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gemma-4-31B-it-Q4_K_M.gguf
+      --fit on
+      --fit-target 128
+      --fit-ctx 8192
+      --ctx-size 32768
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
+      --temp 0.7
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.01
+      --repeat-penalty 1.0
+      --reasoning off
+      --flash-attn on
+    ttl: 120
+    aliases:
+      - "gemma4-31b"
+      - "gemma-4-31b"
+    metadata:
+      size: "~18 GB"
+      context: "8K-32K (limited by offload)"
+      vram_usage: "~6GB VRAM + ~12GB RAM"
+      source: "unsloth/gemma-4-31B-it-GGUF"
+      kv_cache: "f16 (Gemma4 bug #21394)"
+      warning: "Very heavy offload - expect slow inference"
 
 
 # ============================================
@@ -938,12 +960,19 @@ matrix:
     q14t: qwen3-14b-think
     qc30: qwen3-coder-30b
     qc30t: qwen3-coder-30b-think
+    # UNLISTED - GGUF ausente, rodam sozinhos quando baixados
+    q27: qwen3.5-27b
+    q27t: qwen3.5-27b-think
+    g31: gemma4-31b
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   # Modelos pesados demoram mais pra carregar → custo alto
   evict_costs:
     qc30: 10    # 17.7GB, demora muito pra carregar
     qc30t: 10
+    q27: 10     # 17GB unlisted
+    q27t: 10
+    g31: 10     # 18GB unlisted
     q14: 8      # 8.5GB, pesado
     q14t: 8
     c9: 5       # offload parcial
@@ -983,7 +1012,7 @@ matrix:
     medium: "q9 | q9t | qw9 | c9 | c9t | g4 | g4t"
 
     # Modelos pesados - toda VRAM + RAM offload
-    heavy: "q14 | q14t | qc30 | qc30t"
+    heavy: "q14 | q14t | qc30 | qc30t | q27 | q27t | g31"
 
     # Vision sozinho
     vision_only: "vl"
