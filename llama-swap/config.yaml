@@ -113,7 +113,7 @@ models:
   # -------------------------------------------
   "qwen3.5-4b":
     name: "Qwen3.5 4B"
-    description: "Qwen3.5-4B Q4_K_M - Uso geral, rápido e leve"
+    description: "Qwen3.5-4B — Lightweight multilingual model for chat, code, and reasoning"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B-Q4_K_M.gguf
@@ -148,7 +148,7 @@ models:
   # -------------------------------------------
   "qwen3.5-4b-think":
     name: "Qwen3.5 4B Thinking"
-    description: "Qwen3.5-4B Q4_K_M - Com reasoning/thinking"
+    description: "Qwen3.5-4B — Lightweight multilingual model with reasoning mode enabled"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B-Q4_K_M.gguf
@@ -186,7 +186,7 @@ models:
   # -------------------------------------------
   "qwen3.5-9b":
     name: "Qwen3.5 9B"
-    description: "Qwen3.5-9B Q4_K_M - Uso geral, maior capacidade"
+    description: "Qwen3.5-9B — Balanced multilingual model for complex tasks and longer responses"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-9B-Q4_K_M.gguf
@@ -220,7 +220,7 @@ models:
   # -------------------------------------------
   "qwen3.5-9b-think":
     name: "Qwen3.5 9B Thinking"
-    description: "Qwen3.5-9B Q4_K_M - Com reasoning/thinking"
+    description: "Qwen3.5-9B — Balanced multilingual model with reasoning mode enabled"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-9B-Q4_K_M.gguf
@@ -258,7 +258,7 @@ models:
   # -------------------------------------------
   "gemma4-e4b":
     name: "Gemma 4 E4B"
-    description: "Gemma-4 Efficient 4B Q4_K_M - Uso geral, multilíngue"
+    description: "Gemma 4 Efficient 4B — Multilingual general-purpose model with strong instruction following"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
@@ -292,7 +292,7 @@ models:
   # -------------------------------------------
   "gemma4-e4b-think":
     name: "Gemma 4 E4B Thinking"
-    description: "Gemma-4 Efficient 4B Q4_K_M - Com reasoning"
+    description: "Gemma 4 Efficient 4B — Multilingual model with reasoning mode"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
@@ -330,7 +330,7 @@ models:
   # -------------------------------------------
   "gemma4-e2b":
     name: "Gemma 4 E2B"
-    description: "Gemma-4 Efficient 2B Q4_K_M - Compacto e rápido"
+    description: "Gemma 4 Efficient 2B — Compact multilingual model, fits entirely in VRAM"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E2B-it-Q4_K_M.gguf
@@ -364,7 +364,7 @@ models:
   # -------------------------------------------
   "gemma4-e2b-think":
     name: "Gemma 4 E2B Thinking"
-    description: "Gemma-4 Efficient 2B Q4_K_M - Com reasoning"
+    description: "Gemma 4 Efficient 2B — Compact multilingual model with reasoning mode"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E2B-it-Q4_K_M.gguf
@@ -403,7 +403,7 @@ models:
   # -------------------------------------------
   "nemotron-3-nano-4b":
     name: "Nemotron 3 Nano 4B"
-    description: "NVIDIA Nemotron-3-Nano-4B Q4_K_M - Tool-calling especialista"
+    description: "NVIDIA Nemotron-3-Nano-4B — Specialist in tool-calling and structured output generation"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf
@@ -440,7 +440,7 @@ models:
   # -------------------------------------------
   "nemotron-3-nano-4b-think":
     name: "Nemotron 3 Nano 4B Thinking"
-    description: "NVIDIA Nemotron-3-Nano-4B Q4_K_M - Com reasoning"
+    description: "NVIDIA Nemotron-3-Nano-4B — Tool-calling specialist with reasoning mode"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf
@@ -482,7 +482,7 @@ models:
   # -------------------------------------------
   "lfm2.5-vl-450m":
     name: "LFM2.5-VL 450M"
-    description: "LiquidAI LFM2.5-VL-450M Q4_0 - Vision (OCR, descrição, bounding box)"
+    description: "LFM2.5-VL-450M — Compact vision model for OCR, image description, and visual QA"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/LFM2.5-VL-450M-Q4_0.gguf
@@ -524,7 +524,7 @@ models:
   # -------------------------------------------
   "qwopus3.5-4b":
     name: "Qwopus 3.5 4B v3"
-    description: "Qwopus3.5-4B-v3 Q4_K_M - Reasoning + tool-calling, fits VRAM"
+    description: "Qwopus3.5-4B-v3 — Fine-tuned Qwen3.5 for reasoning and tool-calling, fits in VRAM"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwopus3.5-4B-v3-Q4_K_M.gguf
@@ -563,7 +563,7 @@ models:
   # -------------------------------------------
   "qwopus3.5-9b":
     name: "Qwopus 3.5 9B v3"
-    description: "Qwopus3.5-9B-v3 Q4_K_M - Reasoning + tools, offline-fast"
+    description: "Qwopus3.5-9B-v3 — Fine-tuned Qwen3.5 for reasoning and tool-calling, partial offload"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwopus3.5-9B-v3-Q4_K_M.gguf
@@ -583,7 +583,6 @@ models:
     aliases:
       - "qwopus3.5-9b"
       - "qwopus-9b"
-      - "offline-fast"
     metadata:
       size: "5.63 GB"
       context: "16K-128K (dynamic)"
@@ -602,7 +601,7 @@ models:
   # -------------------------------------------
   "qwen3-14b":
     name: "Qwen3 14B"
-    description: "Qwen3-14B Q4_K_M - Offline-deep, alta capacidade local"
+    description: "Qwen3-14B — Dense 14B model for deep offline coding and analysis"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3-14B-Q4_K_M.gguf
@@ -622,7 +621,6 @@ models:
     ttl: 120
     aliases:
       - "qwen3-14b"
-      - "offline-deep"
     metadata:
       size: "~8.5 GB"
       context: "16K-64K (limited by offload)"
@@ -635,7 +633,7 @@ models:
   # -------------------------------------------
   "qwen3-14b-think":
     name: "Qwen3 14B Thinking"
-    description: "Qwen3-14B Q4_K_M - Com reasoning, offline-deep"
+    description: "Qwen3-14B — Dense 14B model with reasoning for complex problem-solving"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3-14B-Q4_K_M.gguf
@@ -655,7 +653,6 @@ models:
     ttl: 120
     aliases:
       - "qwen3-14b-think"
-      - "offline-deep-think"
     metadata:
       size: "~8.5 GB"
       context: "16K-64K (limited by offload)"
@@ -674,7 +671,7 @@ models:
   # -------------------------------------------
   "qwen3-coder-30b":
     name: "Qwen3 Coder 30B"
-    description: "Qwen3-Coder-30B-A3B Q4_K_M - Codigo + tools, REQUER OFFLOAD PESADO"
+    description: "Qwen3-Coder-30B-A3B — MoE coding specialist with agentic tool-calling (128 experts, 3B active)"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
@@ -712,7 +709,7 @@ models:
   # -------------------------------------------
   "qwen3-coder-30b-think":
     name: "Qwen3 Coder 30B Thinking"
-    description: "Qwen3-Coder-30B-A3B Q4_K_M - Com reasoning, REQUER OFFLOAD PESADO"
+    description: "Qwen3-Coder-30B-A3B — MoE coding specialist with reasoning and tool-calling"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
@@ -751,7 +748,7 @@ models:
   # Carnice-9B - GGUF ausente (kai-os/Carnice-9b-GGUF)
   "carnice-9b":
     name: "Carnice 9B"
-    description: "Carnice-9B Q4_K_M - Hermes Agent specialized, optional reasoning"
+    description: "Carnice-9B — Specialized Hermes Agent fine-tune with reasoning and tool support"
     unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
@@ -785,7 +782,7 @@ models:
   # Carnice-9B THINKING - GGUF ausente
   "carnice-9b-think":
     name: "Carnice 9B Thinking"
-    description: "Carnice-9B Q4_K_M - Com reasoning, Hermes Agent specialized"
+    description: "Carnice-9B — Hermes Agent fine-tune with reasoning mode"
     unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
@@ -820,7 +817,7 @@ models:
   # QWEN3.5-27B - GGUF ausente (17GB). Substituído por Qwen3-14B (offline-deep).
   "qwen3.5-27b":
     name: "Qwen3.5 27B"
-    description: "Qwen3.5-27B Q4_K_M - Uso geral, alta capacidade (OFFLOAD PESADO)"
+    description: "Qwen3.5-27B — Dense 27B model for deep offline analysis (very slow inference)"
     unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
@@ -852,7 +849,7 @@ models:
 
   "qwen3.5-27b-think":
     name: "Qwen3.5 27B Thinking"
-    description: "Qwen3.5-27B Q4_K_M - Com reasoning (OFFLOAD PESADO)"
+    description: "Qwen3.5-27B — Dense 27B with reasoning for complex offline tasks"
     unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
@@ -887,7 +884,7 @@ models:
   # GEMMA-4-31B - GGUF ausente (18GB). Muito pesado pra RTX3050 6GB.
   "gemma4-31b":
     name: "Gemma 4 31B"
-    description: "Gemma-4-31B Q4_K_M - Alta capacidade (OFFLOAD PESADO)"
+    description: "Gemma 4 31B — Large multilingual model (very slow inference)"
     unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
@@ -916,6 +913,80 @@ models:
       source: "unsloth/gemma-4-31B-it-GGUF"
       kv_cache: "f16 (Gemma4 bug #21394)"
       warning: "Very heavy offload - expect slow inference"
+
+  # -------------------------------------------
+  # QWEN3.6-35B-A3B - TESTE TEMPORÁRIO
+  # MoE 35B (3B ativo/token, 256 experts, 40 SSM hybrid layers)
+  # SWE-bench 73.4%, agentic coding. Q4_K_M ~22GB
+  # REQUER OFFLOAD PESADO - inference muito lenta
+  # KV cache: q4_0 + attn_rot
+  # -------------------------------------------
+  "qwen3.6-35b-moe":
+    name: "Qwen3.6 35B MoE"
+    description: "Qwen3.6-35B-A3B — Hybrid MoE/SSM agentic coding model (256 experts, 3B active, SWE-bench 73.4%)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.6-35B-A3B-UD-Q4_K_M.gguf
+      --fit on
+      --fit-target 128
+      --fit-ctx 16384
+      --ctx-size 131072
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning off
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --flash-attn on
+    ttl: 120
+    aliases:
+      - "qwen3.6-35b-moe"
+      - "qw36-35b"
+    metadata:
+      size: "~22 GB"
+      context: "16K-128K (dynamic)"
+      vram_usage: "~2.5GB VRAM + ~19GB RAM"
+      source: "unsloth/Qwen3.6-35B-A3B-GGUF"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        tools: true
+      warning: "Heavy offload - slow inference"
+
+  "qwen3.6-35b-moe-think":
+    name: "Qwen3.6 35B MoE Thinking"
+    description: "Qwen3.6-35B-A3B — Hybrid MoE/SSM with reasoning and preserved thinking capabilities"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.6-35B-A3B-UD-Q4_K_M.gguf
+      --fit on
+      --fit-target 128
+      --fit-ctx 16384
+      --ctx-size 131072
+      --temp ${think_temp}
+      --top-p ${think_top_p}
+      --top-k ${think_top_k}
+      --min-p ${think_min_p}
+      --repeat-penalty ${think_repeat_penalty}
+      --reasoning auto
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --flash-attn on
+    ttl: 120
+    aliases:
+      - "qwen3.6-35b-moe-think"
+      - "qw36-35b-think"
+    metadata:
+      size: "~22 GB"
+      context: "16K-128K (dynamic)"
+      vram_usage: "~2.5GB VRAM + ~19GB RAM"
+      source: "unsloth/Qwen3.6-35B-A3B-GGUF"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        tools: true
+        thinking: true
+      warning: "Heavy offload - slow inference"
 
 
 # ============================================
@@ -965,6 +1036,8 @@ matrix:
     q27: qwen3.5-27b
     q27t: qwen3.5-27b-think
     g31: gemma4-31b
+    qw36: qwen3.6-35b-moe
+    qw36t: qwen3.6-35b-moe-think
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   # Modelos pesados demoram mais pra carregar → custo alto
@@ -974,6 +1047,8 @@ matrix:
     q27: 10     # 17GB unlisted
     q27t: 10
     g31: 10     # 18GB unlisted
+    qw36: 10    # 22GB unlisted, TESTE TEMP
+    qw36t: 10
     q14: 8      # 8.5GB, pesado
     q14t: 8
     c9: 5       # offload parcial
@@ -1013,7 +1088,7 @@ matrix:
     medium: "q9 | q9t | qw9 | c9 | c9t | g4 | g4t"
 
     # Modelos pesados - toda VRAM + RAM offload
-    heavy: "q14 | q14t | qc30 | qc30t | q27 | q27t | g31"
+    heavy: "q14 | q14t | qc30 | qc30t | q27 | q27t | g31 | qw36 | qw36t"
 
     # Vision sozinho
     vision_only: "vl"

@@ -8,7 +8,7 @@
 #   qwen3.5-27b         - Qwen3.5-27B Q4_K_M (~17 GB) - REMOVED (replaced by qwen3-14b)
 #   gemma4-31b          - Gemma-4 31B Q4_K_M (~18 GB) - REMOVED (too large for RTX3050)
 #   qwen3-14b           - Qwen3-14B Q4_K_M (~8.5 GB) - partial offload, offline-deep
-#   qwopus3.5-9b        - Qwopus3.5-9B-v3 Q4_K_M (5.63 GB) - reasoning + tools, offline-fast
+#   qwopus3.5-9b        - Qwopus3.5-9B-v3 Q4_K_M (5.63 GB) - reasoning + tools
 #   qwopus3.5-4b        - Qwopus3.5-4B-v3 Q4_K_M (2.63 GB) - reasoning + tools, fits VRAM
 #   carnice-9b          - Carnice-9B Q4_K_M (5.31 GB) - Hermes Agent specialized, partial offload
 #   qwen3-coder-30b     - Qwen3-Coder-30B-A3B Q4_K_M (~17.7 GB) - MoE coding + tools, heavy offload
@@ -17,6 +17,7 @@
 #   gemma4-31b          - Gemma-4 31B Q4_K_M (~18 GB) - heavy offload, slow
 #   nemotron-3-nano-4b  - Nemotron-3-Nano-4B Q4_K_M (2.90 GB) - tool-calling
 #   lfm2.5-vl-450m      - LFM2.5-VL-450M Q4_0 (0.22 GB) + mmproj F16 - vision/OCR
+#   qwen3.6-35b-moe     - Qwen3.6-35B-A3B Q4_K_M (~22 GB) - MoE coding agent, heavy offload
 #   all                 - Download all models
 #
 # If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
@@ -45,6 +46,7 @@ declare -A MODELS=(
   ["gemma4-31b"]="TOMBSTONE - too large for RTX3050 6GB"
   ["nemotron-3-nano-4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF LFM2.5-VL-450M-Q4_0.gguf"
+  ["qwen3.6-35b-moe"]="unsloth/Qwen3.6-35B-A3B-GGUF Qwen3.6-35B-A3B-UD-Q4_K_M.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -144,7 +146,7 @@ show_sizes() {
   echo "  qwen3.5-27b          REMOVED - replaced by qwen3-14b (offline-deep)"
   echo "  qwen3-14b          ~8.50 GB  - Partial offload, offline-deep"
   echo "  qwopus3.5-4b        2.63 GB  - Fits in VRAM, reasoning + tools"
-  echo "  qwopus3.5-9b        5.63 GB  - Partial offload, reasoning + tools, offline-fast"
+  echo "  qwopus3.5-9b        5.63 GB  - Partial offload, reasoning + tools"
   echo "  carnice-9b          5.31 GB  - Partial offload, Hermes Agent specialized"
   echo "  qwen3-coder-30b  ~17.70 GB  - Partial offload, coding + tools, MoE"
   echo "  gemma4-e4b          4.98 GB  - Partial offload"
@@ -152,6 +154,7 @@ show_sizes() {
   echo "  gemma4-31b           REMOVED - too large for RTX3050 6GB"
   echo "  nemotron-3-nano-4b  2.90 GB  - Fits in VRAM, tool-calling"
   echo "  lfm2.5-vl-450m      0.22 GB  - Fits in VRAM, vision/OCR (Q4_0 + mmproj F16)"
+  echo "  qwen3.6-35b-moe  ~22.00 GB  - Heavy offload, MoE coding agent"
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
@@ -164,7 +167,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-4b"|"qwen3.5-9b"|"qwen3-14b"|"qwen3-coder-30b"|"qwopus3.5-4b"|"qwopus3.5-9b"|"carnice-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m")
+  "qwen3.5-4b"|"qwen3.5-9b"|"qwen3-14b"|"qwen3-coder-30b"|"qwopus3.5-4b"|"qwopus3.5-9b"|"carnice-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"qwen3.6-35b-moe")
     show_sizes
     download_model "$1"
     ;;
