@@ -7,7 +7,7 @@
 # Requer: llama.cpp build 9db77a0+ (attn_rot automático com cache quantizado)
 
 # Schema para validação (VS Code)
-# yaml-language-server: schema=config-schema.json (see llama-swap repo)
+
 
 healthCheckTimeout: 300
 logLevel: info
@@ -59,11 +59,11 @@ macros:
   
   # Contexto para modelos pequenos (cabem inteiros na VRAM)
   # fit-ctx: mínimo garantido, ctx-size: máximo teto
-  "small_model_min_ctx": "32768"   # 32K mínimo
+  "small_model_min_ctx": "65536"   # 64K mínimo (tool-calling/agentes)
   "small_model_max_ctx": "131072"  # 128K máximo
   
   # Contexto para modelos grandes (requerem offload)
-  "large_model_min_ctx": "16384"   # 16K mínimo
+  "large_model_min_ctx": "65536"   # 64K mínimo (tool-calling/agentes)
   "large_model_max_ctx": "131072"  # 128K máximo
   
   # Margem de segurança para VRAM (MiB) - usada pelo --fit-target
@@ -93,8 +93,6 @@ macros:
   #
   # Escolha: modelos pequenos (fit VRAM) usam q8_0 (saldo perf/mem)
   #          modelos grandes (offload) usam q4_0 (maximizar contexto)
-  # --cache-type-k/v: BUG CORRIGIDO no llama.cpp b8815+ (16/Abr/2026)
-  # Antes crashava com ggml_backend_sched_split_graph + --fit
   "small_cache_k": "q8_0"
   "small_cache_v": "q8_0"
   "large_cache_k": "q4_0"
@@ -131,8 +129,6 @@ models:
       --reasoning off
       --cache-type-k ${small_cache_k}
       --cache-type-v ${small_cache_v}
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -166,6 +162,8 @@ models:
       --min-p ${think_min_p}
       --repeat-penalty ${think_repeat_penalty}
       --reasoning auto
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -204,8 +202,6 @@ models:
       --reasoning off
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -238,6 +234,8 @@ models:
       --min-p ${think_min_p}
       --repeat-penalty ${think_repeat_penalty}
       --reasoning auto
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -276,8 +274,6 @@ models:
       --reasoning off
       --cache-type-k ${gemma_cache_k}
       --cache-type-v ${gemma_cache_v}
-      --cache-type-k ${gemma_cache_k}
-      --cache-type-v ${gemma_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -310,6 +306,8 @@ models:
       --min-p ${think_min_p}
       --repeat-penalty ${think_repeat_penalty}
       --reasoning auto
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -348,8 +346,6 @@ models:
       --reasoning off
       --cache-type-k ${gemma_cache_k}
       --cache-type-v ${gemma_cache_v}
-      --cache-type-k ${gemma_cache_k}
-      --cache-type-v ${gemma_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -382,6 +378,8 @@ models:
       --min-p ${think_min_p}
       --repeat-penalty ${think_repeat_penalty}
       --reasoning auto
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -620,10 +618,8 @@ models:
       --reasoning off
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --flash-attn on
-    ttl: 60
+    ttl: 120
     aliases:
       - "qwen3-14b"
       - "offline-deep"
@@ -653,6 +649,8 @@ models:
       --min-p ${think_min_p}
       --repeat-penalty ${think_repeat_penalty}
       --reasoning auto
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --flash-attn on
     ttl: 120
     aliases:
@@ -692,10 +690,8 @@ models:
       --reasoning off
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --flash-attn on
-    ttl: 60
+    ttl: 120
     aliases:
       - "qwen3-coder-30b"
       - "coder-30b"
@@ -730,6 +726,8 @@ models:
       --min-p ${code_min_p}
       --repeat-penalty ${code_repeat_penalty}
       --reasoning auto
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --flash-attn on
     ttl: 120
     aliases:
@@ -770,8 +768,6 @@ models:
       --reasoning off
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -804,6 +800,8 @@ models:
       --min-p ${think_min_p}
       --repeat-penalty ${think_repeat_penalty}
       --reasoning auto
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -839,10 +837,8 @@ models:
       --reasoning off
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
       --flash-attn on
-    ttl: 60
+    ttl: 120
     aliases:
       - "qwen3.5-27b"
       - "qwen27b"
@@ -871,6 +867,8 @@ models:
       --min-p ${think_min_p}
       --repeat-penalty ${think_repeat_penalty}
       --reasoning auto
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --flash-attn on
     ttl: 120
     aliases:
@@ -907,7 +905,7 @@ models:
       --cache-type-k ${gemma_cache_k}
       --cache-type-v ${gemma_cache_v}
       --flash-attn on
-    ttl: 60
+    ttl: 120
     aliases:
       - "gemma4-31b"
       - "gemma-4-31b"
