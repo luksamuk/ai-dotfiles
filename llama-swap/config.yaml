@@ -1,8 +1,10 @@
 # llama-swap configuration for RTX 3050 Laptop (6GB VRAM)
-# Configuração otimizada para uso com --fit automático
+# Configuração otimizada para uso com --fit automático + attn_rot (KV cache quantizado)
 #
 # Repositório: ~/git/ai-dotfiles/llama-swap/
 # Modelos: ~/.llama-models/
+# Requer: llama-swap v202+ (swap matrix DSL)
+# Requer: llama.cpp build 9db77a0+ (attn_rot automático com cache quantizado)
 
 # Schema para validação (VS Code)
 # yaml-language-server: $schema=https://raw.githubusercontent.com/mostlygeek/llama-swap/refs/heads/main/config-schema.json
@@ -67,6 +69,38 @@ macros:
   # Margem de segurança para VRAM (MiB) - usada pelo --fit-target
   "vram_margin": "512"
 
+  # ===========================================
+  # KV CACHE QUANTIZADO + ATTN_ROT
+  # ===========================================
+  # attn_rot é ativado AUTOMATICAMENTE quando o cache é quantizado
+  # (q4_0/q8_0) e n_embd_head % 64 == 0
+  # Reduz degradação de velocidade em contextos longos (~37% → ~10%)
+  # NOTA: Gemma4 tem bug com attn_rot (issue #21394), usar f16 nele
+  # ===========================================
+  #
+  # Compatibilidade attn_rot por modelo:
+  #   Qwen3.5-4B/9B   ✅ head_k=256 (256%64==0)
+  #   Qwen3-14B        ✅ head_k=128 (128%64==0)
+  #   Qwen3-Coder-30B  ✅ head_k=128
+  #   Gemma4-E2B/E4B   ❌ bug #21394, usar --cache-type-k f16
+  #   Nemotron-3-Nano  ✅ head_k=128
+  #   Carnice-9B       ✅ (base Qwen3.5)
+  #   Qwopus3.5        ✅ (base Qwen3.5)
+  #   LFM2.5-VL-450M   ❌ vision model, manter f16
+  #
+  # Tipos de cache:
+  #   q8_0: ~47% economia vs f16, perda mínima
+  #   q4_0: ~72% economia vs f16, mais compressão
+  #
+  # Escolha: modelos pequenos (fit VRAM) usam q8_0 (saldo perf/mem)
+  #          modelos grandes (offload) usam q4_0 (maximizar contexto)
+  "small_cache_k": "q8_0"
+  "small_cache_v": "q8_0"
+  "large_cache_k": "q4_0"
+  "large_cache_v": "q4_0"
+  "gemma_cache_k": "f16"
+  "gemma_cache_v": "f16"
+
 
 # ===========================================
 # MODELOS (nomes estilo Ollama: modelo:tamanho)
@@ -76,6 +110,7 @@ models:
   # QWEN3.5-4B - CABE INTEIRO NA VRAM
   # Melhor para: tarefas rápidas, código, suma
   # VRAM: ~3GB com contexto
+  # KV cache: q8_0 + attn_rot (auto)
   # -------------------------------------------
   "qwen3.5-4b":
     name: "Qwen3.5 4B"
@@ -87,6 +122,8 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -103,6 +140,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/Qwen3.5-4B-GGUF"
+      kv_cache: "q8_0 + attn_rot"
 
   # -------------------------------------------
   # QWEN3.5-4B THINKING - Com reasoning
@@ -119,6 +157,8 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -135,6 +175,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/Qwen3.5-4B-GGUF"
+      kv_cache: "q8_0 + attn_rot"
       features:
         thinking: true
 
@@ -142,6 +183,7 @@ models:
   # QWEN3.5-9B - REQUER OFFLOAD PARCIAL
   # Melhor para: raciocínio complexo, respostas longas
   # VRAM: ~5GB + RAM para offload
+  # KV cache: q4_0 + attn_rot (maximizar VRAM pra modelo)
   # -------------------------------------------
   "qwen3.5-9b":
     name: "Qwen3.5 9B"
@@ -153,6 +195,8 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -169,6 +213,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5GB + RAM offload"
       source: "unsloth/Qwen3.5-9B-GGUF"
+      kv_cache: "q4_0 + attn_rot"
 
   # -------------------------------------------
   # QWEN3.5-9B THINKING - Com reasoning
@@ -184,6 +229,8 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -200,6 +247,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5GB + RAM offload"
       source: "unsloth/Qwen3.5-9B-GGUF"
+      kv_cache: "q4_0 + attn_rot"
       features:
         thinking: true
 
@@ -207,6 +255,7 @@ models:
   # GEMMA-4-E4B - REQUER OFFLOAD PARCIAL
   # Melhor para: uso geral, multilíngue
   # VRAM: ~4.5GB + RAM para offload
+  # KV cache: f16 (attn_rot BUG com Gemma4, issue #21394)
   # -------------------------------------------
   "gemma4-e4b":
     name: "Gemma 4 E4B"
@@ -218,6 +267,8 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
       --temp 0.7
       --top-p 0.9
       --top-k 40
@@ -234,6 +285,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~4.5GB + RAM offload"
       source: "unsloth/gemma-4-E4B-it-GGUF"
+      kv_cache: "f16 (Gemma4 bug #21394)"
 
   # -------------------------------------------
   # GEMMA-4-E4B THINKING - Com reasoning
@@ -249,6 +301,8 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -265,6 +319,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~4.5GB + RAM offload"
       source: "unsloth/gemma-4-E4B-it-GGUF"
+      kv_cache: "f16 (Gemma4 bug #21394)"
       features:
         thinking: true
 
@@ -272,6 +327,7 @@ models:
   # GEMMA-4-E2B - CABE INTEIRO NA VRAM
   # Melhor para: uso geral, mais rápido que E4B
   # VRAM: ~3GB com contexto
+  # KV cache: f16 (mesmo bug Gemma4)
   # -------------------------------------------
   "gemma4-e2b":
     name: "Gemma 4 E2B"
@@ -283,6 +339,8 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
       --temp 0.7
       --top-p 0.9
       --top-k 40
@@ -299,6 +357,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/gemma-4-E2B-it-GGUF"
+      kv_cache: "f16 (Gemma4 bug #21394)"
 
   # -------------------------------------------
   # GEMMA-4-E2B THINKING - Com reasoning
@@ -314,6 +373,8 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -330,6 +391,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/gemma-4-E2B-it-GGUF"
+      kv_cache: "f16 (Gemma4 bug #21394)"
       features:
         thinking: true
 
@@ -338,6 +400,7 @@ models:
   # Melhor para: tool-calling, function calling
   # Excelente para aulas de IA/Guilda
   # VRAM: ~3GB com contexto
+  # KV cache: q8_0 + attn_rot
   # -------------------------------------------
   "nemotron-3-nano-4b":
     name: "Nemotron 3 Nano 4B"
@@ -349,6 +412,8 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
       --temp 0.6
       --top-p 0.9
       --top-k 40
@@ -366,6 +431,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF"
+      kv_cache: "q8_0 + attn_rot"
       features:
         tools: true
 
@@ -383,6 +449,8 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -400,6 +468,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF"
+      kv_cache: "q8_0 + attn_rot"
       features:
         thinking: true
         tools: true
@@ -410,6 +479,7 @@ models:
   # Requer: --mmproj para processamento de imagens
   # Parâmetros de inferência do LiquidAI: temp=0.1, min_p=0.15, rep_penalty=1.05
   # VRAM: ~0.5GB com contexto + mmproj
+  # KV cache: f16 (vision model, manter precisão)
   # -------------------------------------------
   "lfm2.5-vl-450m":
     name: "LFM2.5-VL 450M"
@@ -439,6 +509,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~0.5GB"
       source: "LiquidAI/LFM2.5-VL-450M-GGUF"
+      kv_cache: "f16 (vision, precisão prioritária)"
       features:
         vision: true
 
@@ -448,6 +519,7 @@ models:
   # Melhor para: tool-calling local, agentes, offline leve
   # 87.50% HumanEval
   # VRAM: ~3GB com contexto
+  # KV cache: q8_0 + attn_rot
   # -------------------------------------------
   "qwopus3.5-4b":
     name: "Qwopus 3.5 4B v3"
@@ -459,6 +531,8 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
       --temp ${code_temp}
       --top-p ${code_top_p}
       --top-k ${code_top_k}
@@ -474,6 +548,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "Jackrong/Qwopus3.5-4B-v3-GGUF"
+      kv_cache: "q8_0 + attn_rot"
       features:
         tools: true
 
@@ -483,6 +558,7 @@ models:
   # Melhor para: OFFLINE-FAST, coding agentic local
   # 87.80% HumanEval
   # VRAM: ~5.5GB + RAM para offload
+  # KV cache: q4_0 + attn_rot
   # -------------------------------------------
   "qwopus3.5-9b":
     name: "Qwopus 3.5 9B v3"
@@ -494,6 +570,8 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --temp ${code_temp}
       --top-p ${code_top_p}
       --top-k ${code_top_k}
@@ -510,6 +588,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5.5GB + RAM offload"
       source: "Jackrong/Qwopus3.5-9B-v3-GGUF"
+      kv_cache: "q4_0 + attn_rot"
       features:
         tools: true
 
@@ -519,6 +598,7 @@ models:
   # Reasoning opcional (auto), não forçado como Qwopus
   # Melhor para: execução de agentes Hermes local
   # VRAM: ~5.5GB + RAM para offload
+  # KV cache: q4_0 + attn_rot
   # -------------------------------------------
   "carnice-9b":
     name: "Carnice 9B"
@@ -530,6 +610,8 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --temp ${code_temp}
       --top-p ${code_top_p}
       --top-k ${code_top_k}
@@ -546,6 +628,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5.5GB + RAM offload"
       source: "kai-os/Carnice-9b-GGUF"
+      kv_cache: "q4_0 + attn_rot"
       features:
         tools: true
 
@@ -563,6 +646,8 @@ models:
       --fit-target 256
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -579,6 +664,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5.5GB + RAM offload"
       source: "kai-os/Carnice-9b-GGUF"
+      kv_cache: "q4_0 + attn_rot"
       features:
         thinking: true
         tools: true
@@ -588,6 +674,7 @@ models:
   # Modelo denso de 14B, significativamente mais capaz que 9B
   # Melhor para: OFFLINE-DEEP, coding complexo sem internet
   # VRAM: ~6GB + ~3GB RAM offload
+  # KV cache: q4_0 + attn_rot
   # -------------------------------------------
   "qwen3-14b":
     name: "Qwen3 14B"
@@ -599,6 +686,8 @@ models:
       --fit-target 128
       --fit-ctx ${large_model_min_ctx}
       --ctx-size 65536
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -615,6 +704,7 @@ models:
       context: "16K-64K (limited by offload)"
       vram_usage: "~6GB VRAM + ~3GB RAM"
       source: "unsloth/Qwen3-14B-GGUF"
+      kv_cache: "q4_0 + attn_rot"
 
   # -------------------------------------------
   # QWEN3-14B THINKING - Com reasoning
@@ -629,6 +719,8 @@ models:
       --fit-target 128
       --fit-ctx ${large_model_min_ctx}
       --ctx-size 65536
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --temp ${think_temp}
       --top-p ${think_top_p}
       --top-k ${think_top_k}
@@ -645,6 +737,7 @@ models:
       context: "16K-64K (limited by offload)"
       vram_usage: "~6GB VRAM + ~3GB RAM"
       source: "unsloth/Qwen3-14B-GGUF"
+      kv_cache: "q4_0 + attn_rot"
       features:
         thinking: true
 
@@ -653,6 +746,7 @@ models:
   # MoE 30B (3B ativo por token), especialista em codigo + tool-calling
   # 128 experts, top-8 routing. Q4_K_M ~17.7GB
   # VRAM: ~2.3GB + ~15GB RAM offload
+  # KV cache: q4_0 + attn_rot
   # -------------------------------------------
   "qwen3-coder-30b":
     name: "Qwen3 Coder 30B"
@@ -664,6 +758,8 @@ models:
       --fit-target 128
       --fit-ctx 16384
       --ctx-size 131072
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --temp ${code_temp}
       --top-p ${code_top_p}
       --top-k ${code_top_k}
@@ -681,6 +777,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~2.3GB VRAM + ~15GB RAM"
       source: "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF"
+      kv_cache: "q4_0 + attn_rot"
       features:
         tools: true
 
@@ -699,6 +796,8 @@ models:
       --fit-target 128
       --fit-ctx 16384
       --ctx-size 131072
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --temp ${code_temp}
       --top-p ${code_top_p}
       --top-k ${code_top_k}
@@ -715,6 +814,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~2.3GB VRAM + ~15GB RAM"
       source: "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF"
+      kv_cache: "q4_0 + attn_rot"
       features:
         tools: true
         thinking: true
@@ -737,6 +837,8 @@ models:
   #     --fit-target 128
   #     --fit-ctx 8192
   #     --ctx-size 32768
+  #     --cache-type-k ${large_cache_k}
+  #     --cache-type-v ${large_cache_v}
   #     --temp ${default_temp}
   #     --top-p ${default_top_p}
   #     --top-k ${default_top_k}
@@ -753,36 +855,7 @@ models:
   #     context: "8K-32K (limited by offload)"
   #     vram_usage: "~6GB VRAM + ~11GB RAM"
   #     source: "unsloth/Qwen3.5-27B-GGUF"
-  #     warning: "Heavy offload - expect slow inference"
-  #
-  # "qwen3.5-27b-think":
-  #   name: "Qwen3.5 27B Thinking"
-  #   description: "Qwen3.5-27B Q4_K_M - Com reasoning (OFFLOAD PESADO)"
-  #   cmd: |
-  #     ${llama_server} --port ${PORT}
-  #     --model ${models_dir}/Qwen3.5-27B-Q4_K_M.gguf
-  #     --fit on
-  #     --fit-target 128
-  #     --fit-ctx 8192
-  #     --ctx-size 32768
-  #     --temp ${think_temp}
-  #     --top-p ${think_top_p}
-  #     --top-k ${think_top_k}
-  #     --min-p ${think_min_p}
-  #     --repeat-penalty ${think_repeat_penalty}
-  #     --reasoning auto
-  #     --flash-attn on
-  #   ttl: 120
-  #   aliases:
-  #     - "qwen3.5-27b-think"
-  #     - "qwen27b-think"
-  #   metadata:
-  #     size: "~17 GB"
-  #     context: "8K-32K (limited by offload)"
-  #     vram_usage: "~6GB VRAM + ~11GB RAM"
-  #     source: "unsloth/Qwen3.5-27B-GGUF"
-  #     features:
-  #       thinking: true
+  #     kv_cache: "q4_0 + attn_rot"
   #     warning: "Heavy offload - expect slow inference"
 
   # GEMMA-4-31B - REMOVIDO do disco (18GB). Muito pesado pra RTX3050 6GB.
@@ -798,6 +871,8 @@ models:
   #     --fit-target 128
   #     --fit-ctx 8192
   #     --ctx-size 32768
+  #     --cache-type-k ${gemma_cache_k}
+  #     --cache-type-v ${gemma_cache_v}
   #     --temp 0.7
   #     --top-p 0.9
   #     --top-k 40
@@ -814,44 +889,99 @@ models:
   #     context: "8K-32K (limited by offload)"
   #     vram_usage: "~6GB VRAM + ~12GB RAM"
   #     source: "unsloth/gemma-4-31B-it-GGUF"
+  #     kv_cache: "f16 (Gemma4 bug #21394)"
   #     warning: "Very heavy offload - expect slow inference"
 
-# ============================================
-# GRUPOS
-# ============================================
-groups:
-  "default":
-    swap: true        # Só um modelo por vez
-    exclusive: true   # Descarrega outros grupos ao ativar
-    members:
-      # Modelos padrão (sem thinking)
-      - "qwen3.5-4b"
-      - "qwen3.5-9b"
-      - "qwen3-14b"        # OFFLINE-DEEP
-      - "qwopus3.5-4b"    # Reasoning + tools, fits VRAM
-      - "qwopus3.5-9b"    # OFFLINE-FAST
-      - "carnice-9b"      # Hermes Agent specialized
-      - "gemma4-e4b"
-      - "gemma4-e2b"
-      - "nemotron-3-nano-4b"
-      # Variantes thinking
-      - "qwen3.5-4b-think"
-      - "qwen3.5-9b-think"
-      - "qwen3-14b-think"
-      - "qwen3-coder-30b"       # OFFLINE-CODER, MoE heavy offload
-      - "qwen3-coder-30b-think" # OFFLINE-CODER + reasoning
-      - "carnice-9b-think"
-      - "gemma4-e4b-think"
-      - "gemma4-e2b-think"
-      - "nemotron-3-nano-4b-think"
-      # Vision
-      - "lfm2.5-vl-450m"
-
 
 # ============================================
-# HOOKS
+# SWAP MATRIX (v202+) - Substitui o antigo groups
 # ============================================
-# hooks:
-#   on_startup:
-#     preload:
-#       - "qwen3.5-4b"  # Carregar na inicialização
+# O solver determina automaticamente qual combinação de modelos
+# pode rodar simultaneamente e quais descarregar quando necessário.
+#
+# Regras de concorrência para RTX 3050 6GB:
+# - Modelos pequenos (~3GB VRAM) podem rodar SOZINHOS ou com LFM2.5-VL
+# - Modelos grandes (~5GB VRAM) rodam SOZINHOS
+# - Modelos pesados (14B+, offload) rodam SOZINHOS
+# - LFM2.5-VL (0.5GB) pode acompanhar modelos pequenos
+# - Gemma4-E2B (~3GB) + LFM2.5-VL (~0.5GB) = ~3.5GB total (CABE)
+# - Qwen3.5-4B (~3GB) + LFM2.5-VL (~0.5GB) = ~3.5GB total (CABE)
+# - Variantes "think" usam o mesmo modelo, só mudam --reasoning
+#   (não rodam simultaneamente com a variante base)
+# ============================================
+
+matrix:
+  # Nomes curtos para os modelos (1-8 chars, alfanumérico)
+  vars:
+    # Modelos pequenos (fit VRAM ~3GB)
+    q4: qwen3.5-4b
+    q4t: qwen3.5-4b-think
+    qw4: qwopus3.5-4b
+    n4: nemotron-3-nano-4b
+    n4t: nemotron-3-nano-4b-think
+    g2: gemma4-e2b
+    g2t: gemma4-e2b-think
+    # Vision (~0.5GB)
+    vl: lfm2.5-vl-450m
+    # Modelos médios (~5GB VRAM, offload parcial)
+    q9: qwen3.5-9b
+    q9t: qwen3.5-9b-think
+    qw9: qwopus3.5-9b
+    c9: carnice-9b
+    c9t: carnice-9b-think
+    g4: gemma4-e4b
+    g4t: gemma4-e4b-think
+    # Modelos pesados (offload pesado, rodam sozinhos)
+    q14: qwen3-14b
+    q14t: qwen3-14b-think
+    qc30: qwen3-coder-30b
+    qc30t: qwen3-coder-30b-think
+
+  # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
+  # Modelos pesados demoram mais pra carregar → custo alto
+  evict_costs:
+    qc30: 10    # 17.7GB, demora muito pra carregar
+    qc30t: 10
+    q14: 8      # 8.5GB, pesado
+    q14t: 8
+    c9: 5       # offload parcial
+    c9t: 5
+    qw9: 5
+    q9: 4
+    q9t: 4
+    g4: 4
+    g4t: 4
+    vl: 3       # vision, leve mas útil manter vivo
+    q4: 2
+    q4t: 2
+    qw4: 2
+    n4: 1
+    n4t: 1
+    g2: 1
+    g2t: 1
+
+  # Sets: combinações válidas de modelos simultâneos
+  # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
+  # +ref = expandir outro set inline
+  #
+  # Lógica:
+  # - small_vision: modelo pequeno + vision (cabem juntos na VRAM)
+  # - small_only: modelo pequeno sem vision
+  # - medium: modelos ~5GB rodam sozinhos
+  # - heavy: modelos 14B+ rodam sozinhos (toda VRAM)
+  sets:
+    # LLM pequeno + Vision: trocar entre modelos leves NÃO evicta o vision
+    # Expande: [q4,vl], [qw4,vl], [n4,vl], [g2,vl] (+ variants think com vl)
+    small_vision: "(q4 | q4t | qw4 | n4 | n4t | g2 | g2t) & vl"
+
+    # LLM pequeno sozinho (sem vision ativo)
+    small_only: "q4 | q4t | qw4 | n4 | n4t | g2 | g2t"
+
+    # Modelos médios (~5GB VRAM) - rodam sozinhos (não cabe + vision)
+    medium: "q9 | q9t | qw9 | c9 | c9t | g4 | g4t"
+
+    # Modelos pesados - toda VRAM + RAM offload
+    heavy: "q14 | q14t | qc30 | qc30t"
+
+    # Vision sozinho
+    vision_only: "vl"
