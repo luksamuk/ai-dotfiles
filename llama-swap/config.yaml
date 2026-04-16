@@ -7,7 +7,7 @@
 # Requer: llama.cpp build 9db77a0+ (attn_rot automático com cache quantizado)
 
 # Schema para validação (VS Code)
-# yaml-language-server: $schema=https://raw.githubusercontent.com/mostlygeek/llama-swap/refs/heads/main/config-schema.json
+# yaml-language-server: schema=config-schema.json (see llama-swap repo)
 
 healthCheckTimeout: 300
 logLevel: info
@@ -93,14 +93,14 @@ macros:
   #
   # Escolha: modelos pequenos (fit VRAM) usam q8_0 (saldo perf/mem)
   #          modelos grandes (offload) usam q4_0 (maximizar contexto)
-  # --cache-type-k/v desabilitados: crash ggml_backend_sched_split_graph com --fit
-  # Re-habilitar quando o bug for corrigido no llama.cpp
-  # "small_cache_k": "q8_0"
-  # "small_cache_v": "q8_0"
-  # "large_cache_k": "q4_0"
-  # "large_cache_v": "q4_0"
-  # "gemma_cache_k": "f16"
-  # "gemma_cache_v": "f16"
+  # --cache-type-k/v: BUG CORRIGIDO no llama.cpp b8815+ (16/Abr/2026)
+  # Antes crashava com ggml_backend_sched_split_graph + --fit
+  "small_cache_k": "q8_0"
+  "small_cache_v": "q8_0"
+  "large_cache_k": "q4_0"
+  "large_cache_v": "q4_0"
+  "gemma_cache_k": "f16"
+  "gemma_cache_v": "f16"
 
 
 # ===========================================
@@ -129,6 +129,10 @@ models:
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
       --reasoning off
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -139,7 +143,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/Qwen3.5-4B-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q8_0 + attn_rot"
 
   # -------------------------------------------
   # QWEN3.5-4B THINKING - Com reasoning
@@ -172,7 +176,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/Qwen3.5-4B-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q8_0 + attn_rot"
       features:
         thinking: true
 
@@ -198,6 +202,10 @@ models:
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
       --reasoning off
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -208,7 +216,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5GB + RAM offload"
       source: "unsloth/Qwen3.5-9B-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q4_0 + attn_rot"
 
   # -------------------------------------------
   # QWEN3.5-9B THINKING - Com reasoning
@@ -240,7 +248,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5GB + RAM offload"
       source: "unsloth/Qwen3.5-9B-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q4_0 + attn_rot"
       features:
         thinking: true
 
@@ -266,6 +274,10 @@ models:
       --min-p 0.01
       --repeat-penalty 1.0
       --reasoning off
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -276,7 +288,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~4.5GB + RAM offload"
       source: "unsloth/gemma-4-E4B-it-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "f16 (Gemma4 bug #21394)"
 
   # -------------------------------------------
   # GEMMA-4-E4B THINKING - Com reasoning
@@ -308,7 +320,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~4.5GB + RAM offload"
       source: "unsloth/gemma-4-E4B-it-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "f16 (Gemma4 bug #21394)"
       features:
         thinking: true
 
@@ -334,6 +346,10 @@ models:
       --min-p 0.01
       --repeat-penalty 1.0
       --reasoning off
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -344,7 +360,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/gemma-4-E2B-it-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "f16 (Gemma4 bug #21394)"
 
   # -------------------------------------------
   # GEMMA-4-E2B THINKING - Com reasoning
@@ -376,7 +392,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/gemma-4-E2B-it-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "f16 (Gemma4 bug #21394)"
       features:
         thinking: true
 
@@ -403,6 +419,8 @@ models:
       --min-p 0.00
       --repeat-penalty 1.0
       --reasoning off
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -414,7 +432,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q8_0 + attn_rot"
       features:
         tools: true
 
@@ -438,6 +456,8 @@ models:
       --min-p ${think_min_p}
       --repeat-penalty ${think_repeat_penalty}
       --reasoning auto
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -449,7 +469,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q8_0 + attn_rot"
       features:
         thinking: true
         tools: true
@@ -479,6 +499,8 @@ models:
       --min-p 0.15
       --repeat-penalty 1.05
       --reasoning off
+      --cache-type-k f16
+      --cache-type-v f16
       --flash-attn on
     ttl: 60
     aliases:
@@ -490,7 +512,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~0.5GB"
       source: "LiquidAI/LFM2.5-VL-450M-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "f16 (vision, precision priority)"
       features:
         vision: true
 
@@ -517,6 +539,8 @@ models:
       --top-k ${code_top_k}
       --min-p ${code_min_p}
       --repeat-penalty ${code_repeat_penalty}
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -527,7 +551,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "Jackrong/Qwopus3.5-4B-v3-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q8_0 + attn_rot"
       features:
         tools: true
 
@@ -554,6 +578,8 @@ models:
       --top-k ${code_top_k}
       --min-p ${code_min_p}
       --repeat-penalty ${code_repeat_penalty}
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -565,7 +591,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5.5GB + RAM offload"
       source: "Jackrong/Qwopus3.5-9B-v3-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q4_0 + attn_rot"
       features:
         tools: true
 
@@ -592,8 +618,12 @@ models:
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
       --reasoning off
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --flash-attn on
-    ttl: 120
+    ttl: 60
     aliases:
       - "qwen3-14b"
       - "offline-deep"
@@ -602,7 +632,7 @@ models:
       context: "16K-64K (limited by offload)"
       vram_usage: "~6GB VRAM + ~3GB RAM"
       source: "unsloth/Qwen3-14B-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q4_0 + attn_rot"
 
   # -------------------------------------------
   # QWEN3-14B THINKING - Com reasoning
@@ -633,7 +663,7 @@ models:
       context: "16K-64K (limited by offload)"
       vram_usage: "~6GB VRAM + ~3GB RAM"
       source: "unsloth/Qwen3-14B-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q4_0 + attn_rot"
       features:
         thinking: true
 
@@ -660,8 +690,12 @@ models:
       --min-p ${code_min_p}
       --repeat-penalty ${code_repeat_penalty}
       --reasoning off
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --flash-attn on
-    ttl: 120
+    ttl: 60
     aliases:
       - "qwen3-coder-30b"
       - "coder-30b"
@@ -671,7 +705,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~2.3GB VRAM + ~15GB RAM"
       source: "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q4_0 + attn_rot"
       features:
         tools: true
 
@@ -706,7 +740,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~2.3GB VRAM + ~15GB RAM"
       source: "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q4_0 + attn_rot"
       features:
         tools: true
         thinking: true
@@ -734,6 +768,10 @@ models:
       --min-p ${code_min_p}
       --repeat-penalty ${code_repeat_penalty}
       --reasoning off
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --flash-attn on
     ttl: 60
     aliases:
@@ -744,7 +782,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5.5GB + RAM offload"
       source: "kai-os/Carnice-9b-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q4_0 + attn_rot"
       features:
         tools: true
 
@@ -776,7 +814,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5.5GB + RAM offload"
       source: "kai-os/Carnice-9b-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q4_0 + attn_rot"
       features:
         thinking: true
         tools: true
@@ -799,8 +837,12 @@ models:
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
       --reasoning off
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
       --flash-attn on
-    ttl: 120
+    ttl: 60
     aliases:
       - "qwen3.5-27b"
       - "qwen27b"
@@ -809,7 +851,7 @@ models:
       context: "8K-32K (limited by offload)"
       vram_usage: "~6GB VRAM + ~11GB RAM"
       source: "unsloth/Qwen3.5-27B-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q4_0 + attn_rot"
       warning: "Heavy offload - expect slow inference"
 
   "qwen3.5-27b-think":
@@ -839,7 +881,7 @@ models:
       context: "8K-32K (limited by offload)"
       vram_usage: "~6GB VRAM + ~11GB RAM"
       source: "unsloth/Qwen3.5-27B-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "q4_0 + attn_rot"
       features:
         thinking: true
       warning: "Heavy offload - expect slow inference"
@@ -862,8 +904,10 @@ models:
       --min-p 0.01
       --repeat-penalty 1.0
       --reasoning off
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
       --flash-attn on
-    ttl: 120
+    ttl: 60
     aliases:
       - "gemma4-31b"
       - "gemma-4-31b"
@@ -872,7 +916,7 @@ models:
       context: "8K-32K (limited by offload)"
       vram_usage: "~6GB VRAM + ~12GB RAM"
       source: "unsloth/gemma-4-31B-it-GGUF"
-      kv_cache: "f16 (cache-type disabled)"
+      kv_cache: "f16 (Gemma4 bug #21394)"
       warning: "Very heavy offload - expect slow inference"
 
 
