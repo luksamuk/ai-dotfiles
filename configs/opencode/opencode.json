@@ -87,6 +87,14 @@
                         "output": 32768
                     }
                 },
+                "nemotron-3-nano:30b-cloud": {
+                    "name": "Nemotron 3 Nano 30B (Cloud)",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 1048576,
+                        "output": 32768
+                    }
+                },
                 "nemotron-3-super:cloud": {
                     "name": "Nemotron 3 Super (Cloud)",
                     "reasoning": true,
@@ -177,7 +185,7 @@
             }
         },
         "review": {
-            "model": "ollama/kimi-k2.5:cloud",
+            "model": "ollama/minimax-m2.5:cloud",
             "temperature": 0.5,
             "description": "Code review and quality analysis. Reviews changes for correctness, best practices, security, and maintainability. Read-only.",
             "prompt": "You are a senior code reviewer. Analyze code for: correctness, edge cases, error handling, security issues, performance problems, and adherence to project patterns. Be specific — cite file, line, and what should change. Classify issues as critical/warning/suggestion. Do NOT modify any files.",
@@ -201,7 +209,7 @@
             }
         },
         "explore": {
-            "model": "ollama/qwen3.5:cloud",
+            "model": "ollama/qwen3-coder-next:cloud",
             "temperature": 0.9,
             "description": "Creative exploration and ideation. Generates alternative approaches, explores design options, and helps with architecture decisions. Read-only.",
             "prompt": "You are a creative exploration agent. Think freely about alternative approaches, design patterns, and architectural decisions. Consider trade-offs between approaches. There are no wrong answers here — only ideas to evaluate. Challenge assumptions and propose unconventional solutions. You do NOT modify any code.",
