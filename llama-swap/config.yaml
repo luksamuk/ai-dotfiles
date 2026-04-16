@@ -918,6 +918,7 @@ models:
   # QWEN3.6-35B-A3B - MULTIMODAL MoE (VISION + TEXT)
   # MoE 35B (3B ativo/token, 256 experts, 40 SSM hybrid layers)
   # SWE-bench 73.4%, agentic coding. Q4_K_M ~22GB
+  # mmproj ~858MB - precisa de --fit-target 1024 pra caber na VRAM
   # REQUER OFFLOAD PESADO - inference muito lenta
   # KV cache: q4_0 + attn_rot
   # -------------------------------------------
@@ -929,7 +930,7 @@ models:
       --model ${models_dir}/Qwen3.6-35B-A3B-UD-Q4_K_M.gguf
       --mmproj ${models_dir}/mmproj-Qwen3.6-35B-A3B-F16.gguf
       --fit on
-      --fit-target 128
+      --fit-target 2048
       --fit-ctx 16384
       --ctx-size 131072
       --temp ${code_temp}
@@ -964,7 +965,7 @@ models:
       --model ${models_dir}/Qwen3.6-35B-A3B-UD-Q4_K_M.gguf
       --mmproj ${models_dir}/mmproj-Qwen3.6-35B-A3B-F16.gguf
       --fit on
-      --fit-target 128
+      --fit-target 2048
       --fit-ctx 16384
       --ctx-size 131072
       --temp ${think_temp}
