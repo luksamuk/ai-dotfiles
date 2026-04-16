@@ -1,0 +1,71 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
+  "agents": {
+    "sisyphus": {
+      "model": "ollama/glm-5.1:cloud",
+      "fallback_models": ["ollama/kimi-k2.5:cloud"]
+    },
+    "hephaestus": {
+      "disable": true
+    },
+    "prometheus": {
+      "model": "ollama/glm-5.1:cloud",
+      "fallback_models": ["ollama/kimi-k2.5:cloud"]
+    },
+    "oracle": {
+      "model": "ollama/gemma4:31b-cloud",
+      "fallback_models": ["ollama/glm-5.1:cloud"]
+    },
+    "atlas": {
+      "model": "ollama/kimi-k2.5:cloud",
+      "fallback_models": ["ollama/minimax-m2.7:cloud"]
+    },
+    "explore": {
+      "model": "ollama/qwen3-coder-next:cloud"
+    },
+    "librarian": {
+      "model": "ollama/minimax-m2.7:cloud"
+    },
+    "multimodal-looker": {
+      "model": "ollama/gemma4:31b-cloud"
+    },
+    "momus": {
+      "model": "ollama/minimax-m2.5:cloud"
+    },
+    "metis": {
+      "model": "ollama/glm-5.1:cloud"
+    },
+    "sisyphus-junior": {
+      "model": "ollama/kimi-k2.5:cloud"
+    }
+  },
+  "categories": {
+    "quick": {
+      "model": "ollama/qwen3-coder-next:cloud"
+    },
+    "deep": {
+      "model": "ollama/glm-5.1:cloud"
+    },
+    "ultrabrain": {
+      "model": "ollama/glm-5.1:cloud"
+    },
+    "visual-engineering": {
+      "model": "ollama/gemma4:31b-cloud"
+    },
+    "writing": {
+      "model": "ollama/qwen3.5:cloud"
+    },
+    "unspecified-low": {
+      "model": "ollama/minimax-m2.7:cloud"
+    },
+    "unspecified-high": {
+      "model": "ollama/glm-5.1:cloud"
+    }
+  },
+  "hashline_edit": true,
+  "runtime_fallback": {
+    "enabled": true,
+    "notify_on_fallback": true
+  },
+  "disabled_hooks": ["startup-toast"]
+}
