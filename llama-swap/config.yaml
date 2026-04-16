@@ -106,9 +106,9 @@ macros:
 # ===========================================
 models:
   # -------------------------------------------
-  # QWEN3.5-4B - CABE INTEIRO NA VRAM
-  # Melhor para: tarefas rápidas, código, suma
-  # VRAM: ~3GB com contexto
+  # QWEN3.5-4B - MULTIMODAL (VISION + TEXT)
+  # Cabe inteiro na VRAM com mmproj
+  # mmproj ~400MB - --fit-target 512 para vision
   # KV cache: q8_0 + attn_rot (auto)
   # -------------------------------------------
   "qwen3.5-4b":
@@ -117,8 +117,9 @@ models:
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B-Q4_K_M.gguf
+      --mmproj ${models_dir}/mmproj-Qwen3.5-4B-F16.gguf
       --fit on
-      --fit-target ${vram_margin}
+      --fit-target 768
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
       --temp ${default_temp}
@@ -140,11 +141,11 @@ models:
       vram_usage: "~3GB"
       source: "unsloth/Qwen3.5-4B-GGUF"
       kv_cache: "q8_0 + attn_rot"
+      features:
+        vision: true
 
   # -------------------------------------------
-  # QWEN3.5-4B THINKING - Com reasoning
-  # Melhor para: raciocínio, problemas complexos
-  # Usa --reasoning auto para suporte a thinking
+  # QWEN3.5-4B THINKING - MULTIMODAL + REASONING
   # -------------------------------------------
   "qwen3.5-4b-think":
     name: "Qwen3.5 4B Thinking"
@@ -152,8 +153,9 @@ models:
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B-Q4_K_M.gguf
+      --mmproj ${models_dir}/mmproj-Qwen3.5-4B-F16.gguf
       --fit on
-      --fit-target ${vram_margin}
+      --fit-target 768
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
       --temp ${think_temp}
@@ -176,13 +178,13 @@ models:
       source: "unsloth/Qwen3.5-4B-GGUF"
       kv_cache: "q8_0 + attn_rot"
       features:
+        vision: true
         thinking: true
 
   # -------------------------------------------
-  # QWEN3.5-9B - REQUER OFFLOAD PARCIAL
-  # Melhor para: raciocínio complexo, respostas longas
-  # VRAM: ~5GB + RAM para offload
-  # KV cache: q4_0 + attn_rot (maximizar VRAM pra modelo)
+  # QWEN3.5-9B - MULTIMODAL (VISION + TEXT)
+  # Requer offload parcial, mmproj ~400MB
+  # KV cache: q4_0 + attn_rot
   # -------------------------------------------
   "qwen3.5-9b":
     name: "Qwen3.5 9B"
@@ -190,8 +192,9 @@ models:
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-9B-Q4_K_M.gguf
+      --mmproj ${models_dir}/mmproj-Qwen3.5-9B-F16.gguf
       --fit on
-      --fit-target 256
+      --fit-target 1024
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
       --temp ${default_temp}
@@ -213,10 +216,11 @@ models:
       vram_usage: "~5GB + RAM offload"
       source: "unsloth/Qwen3.5-9B-GGUF"
       kv_cache: "q4_0 + attn_rot"
+      features:
+        vision: true
 
   # -------------------------------------------
-  # QWEN3.5-9B THINKING - Com reasoning
-  # Melhor para: raciocínio profundo, matemática, lógica
+  # QWEN3.5-9B THINKING - MULTIMODAL + REASONING
   # -------------------------------------------
   "qwen3.5-9b-think":
     name: "Qwen3.5 9B Thinking"
@@ -224,8 +228,9 @@ models:
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-9B-Q4_K_M.gguf
+      --mmproj ${models_dir}/mmproj-Qwen3.5-9B-F16.gguf
       --fit on
-      --fit-target 256
+      --fit-target 1024
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
       --temp ${think_temp}
@@ -248,12 +253,13 @@ models:
       source: "unsloth/Qwen3.5-9B-GGUF"
       kv_cache: "q4_0 + attn_rot"
       features:
+        vision: true
         thinking: true
 
   # -------------------------------------------
-  # GEMMA-4-E4B - REQUER OFFLOAD PARCIAL
-  # Melhor para: uso geral, multilíngue
-  # VRAM: ~4.5GB + RAM para offload
+  # GEMMA-4-E4B - MULTIMODAL (VISION + TEXT)
+  # Requer offload parcial, mmproj ~945MB
+  # --fit-target 1024 para acomodar mmproj na VRAM
   # KV cache: f16 (attn_rot BUG com Gemma4, issue #21394)
   # -------------------------------------------
   "gemma4-e4b":
@@ -262,8 +268,9 @@ models:
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
+      --mmproj ${models_dir}/mmproj-gemma-4-E4B-F16.gguf
       --fit on
-      --fit-target 256
+      --fit-target 1024
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
       --temp 0.7
@@ -285,9 +292,11 @@ models:
       vram_usage: "~4.5GB + RAM offload"
       source: "unsloth/gemma-4-E4B-it-GGUF"
       kv_cache: "f16 (Gemma4 bug #21394)"
+      features:
+        vision: true
 
   # -------------------------------------------
-  # GEMMA-4-E4B THINKING - Com reasoning
+  # GEMMA-4-E4B THINKING - MULTIMODAL + REASONING
   # Melhor para: raciocínio, problemas complexos
   # -------------------------------------------
   "gemma4-e4b-think":
@@ -296,8 +305,9 @@ models:
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
+      --mmproj ${models_dir}/mmproj-gemma-4-E4B-F16.gguf
       --fit on
-      --fit-target 256
+      --fit-target 1024
       --fit-ctx ${large_model_min_ctx}
       --ctx-size ${large_model_max_ctx}
       --temp ${think_temp}
@@ -320,13 +330,14 @@ models:
       source: "unsloth/gemma-4-E4B-it-GGUF"
       kv_cache: "f16 (Gemma4 bug #21394)"
       features:
+        vision: true
         thinking: true
 
   # -------------------------------------------
-  # GEMMA-4-E2B - CABE INTEIRO NA VRAM
-  # Melhor para: uso geral, mais rápido que E4B
-  # VRAM: ~3GB com contexto
-  # KV cache: f16 (mesmo bug Gemma4)
+  # GEMMA-4-E2B - MULTIMODAL (VISION + TEXT)
+  # Cabe na VRAM com mmproj (~940MB)
+  # --fit-target 1024 para acomodar mmproj
+  # KV cache: f16 (Gemma4 bug #21394)
   # -------------------------------------------
   "gemma4-e2b":
     name: "Gemma 4 E2B"
@@ -334,8 +345,9 @@ models:
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E2B-it-Q4_K_M.gguf
+      --mmproj ${models_dir}/mmproj-gemma-4-E2B-F16.gguf
       --fit on
-      --fit-target ${vram_margin}
+      --fit-target 1024
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
       --temp 0.7
@@ -357,9 +369,11 @@ models:
       vram_usage: "~3GB"
       source: "unsloth/gemma-4-E2B-it-GGUF"
       kv_cache: "f16 (Gemma4 bug #21394)"
+      features:
+        vision: true
 
   # -------------------------------------------
-  # GEMMA-4-E2B THINKING - Com reasoning
+  # GEMMA-4-E2B THINKING - MULTIMODAL + REASONING
   # Melhor para: raciocínio em modelo compacto
   # -------------------------------------------
   "gemma4-e2b-think":
@@ -368,8 +382,9 @@ models:
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E2B-it-Q4_K_M.gguf
+      --mmproj ${models_dir}/mmproj-gemma-4-E2B-F16.gguf
       --fit on
-      --fit-target ${vram_margin}
+      --fit-target 1024
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
       --temp ${think_temp}
@@ -392,6 +407,7 @@ models:
       source: "unsloth/gemma-4-E2B-it-GGUF"
       kv_cache: "f16 (Gemma4 bug #21394)"
       features:
+        vision: true
         thinking: true
 
   # -------------------------------------------
@@ -515,16 +531,13 @@ models:
         vision: true
 
   # -------------------------------------------
-  # QWOPUS3.5-4B-V3 - CABE INTEIRO NA VRAM
+  # QWOPUS3.5-4B-V3 - GGUF REMOVIDO
   # Fine-tune de Qwen3.5-4B pra reasoning + tool-calling
-  # Melhor para: tool-calling local, agentes, offline leve
-  # 87.50% HumanEval
-  # VRAM: ~3GB com contexto
-  # KV cache: q8_0 + attn_rot
   # -------------------------------------------
   "qwopus3.5-4b":
     name: "Qwopus 3.5 4B v3"
     description: "Qwopus3.5-4B-v3 — Fine-tuned Qwen3.5 for reasoning and tool-calling, fits in VRAM"
+    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwopus3.5-4B-v3-Q4_K_M.gguf
@@ -554,16 +567,13 @@ models:
         tools: true
 
   # -------------------------------------------
-  # QWOPUS3.5-9B-V3 - REQUER OFFLOAD PARCIAL
+  # QWOPUS3.5-9B-V3 - GGUF REMOVIDO
   # Fine-tune de Qwen3.5-9B pra reasoning + tool-calling
-  # Melhor para: OFFLINE-FAST, coding agentic local
-  # 87.80% HumanEval
-  # VRAM: ~5.5GB + RAM para offload
-  # KV cache: q4_0 + attn_rot
   # -------------------------------------------
   "qwopus3.5-9b":
     name: "Qwopus 3.5 9B v3"
     description: "Qwopus3.5-9B-v3 — Fine-tuned Qwen3.5 for reasoning and tool-calling, partial offload"
+    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwopus3.5-9B-v3-Q4_K_M.gguf

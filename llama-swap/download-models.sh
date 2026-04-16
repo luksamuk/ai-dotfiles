@@ -8,9 +8,9 @@
 #   qwen3.5-27b         - Qwen3.5-27B Q4_K_M (~17 GB) - REMOVED (replaced by qwen3-14b)
 #   gemma4-31b          - Gemma-4 31B Q4_K_M (~18 GB) - REMOVED (too large for RTX3050)
 #   qwen3-14b           - Qwen3-14B Q4_K_M (~8.5 GB) - partial offload, offline-deep
-#   qwopus3.5-9b        - Qwopus3.5-9B-v3 Q4_K_M (5.63 GB) - reasoning + tools
-#   qwopus3.5-4b        - Qwopus3.5-4B-v3 Q4_K_M (2.63 GB) - reasoning + tools, fits VRAM
-#   carnice-9b          - Carnice-9B Q4_K_M (5.31 GB) - Hermes Agent specialized, partial offload
+#   qwopus3.5-9b        - REMOVED (GGUF deleted)
+#   qwopus3.5-4b        - REMOVED (GGUF deleted)
+#   carnice-9b          - REMOVED (GGUF deleted)
 #   qwen3-coder-30b     - Qwen3-Coder-30B-A3B Q4_K_M (~17.7 GB) - MoE coding + tools, heavy offload
 #   gemma4-e4b          - Gemma-4 E4B Q4_K_M (4.98 GB) - partial offload
 #   gemma4-e2b          - Gemma-4 E2B Q4_K_M (3.11 GB) - fits in VRAM
@@ -37,9 +37,9 @@ declare -A MODELS=(
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-Q4_K_M.gguf"
   ["qwen3.5-27b"]="TOMBSTONE - use qwen3-14b instead"
   ["qwen3-14b"]="unsloth/Qwen3-14B-GGUF Qwen3-14B-Q4_K_M.gguf"
-  ["qwopus3.5-4b"]="Jackrong/Qwopus3.5-4B-v3-GGUF Qwopus3.5-4B-v3-Q4_K_M.gguf Qwopus3.5-4B-v3-Q4_K_M.gguf"
-  ["qwopus3.5-9b"]="Jackrong/Qwopus3.5-9B-v3-GGUF Qwopus3.5-9B-v3-Q4_K_M.gguf Qwopus3.5-9B-v3-Q4_K_M.gguf"
-  ["carnice-9b"]="kai-os/Carnice-9b-GGUF Carnice-9b-Q4_K_M.gguf"
+  ["qwopus3.5-4b"]="TOMBSTONE - GGUF removed, model unlisted"
+  ["qwopus3.5-9b"]="TOMBSTONE - GGuf removed, model unlisted"
+  ["carnice-9b"]="TOMBSTONE - GGUF removed, model unlisted"
   ["qwen3-coder-30b"]="unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf"
@@ -54,6 +54,10 @@ declare -A MODELS=(
 declare -A MMPROJ=(
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF mmproj-LFM2.5-VL-450m-F16.gguf"
   ["qwen3.6-35b-moe"]="unsloth/Qwen3.6-35B-A3B-GGUF mmproj-F16.gguf mmproj-Qwen3.6-35B-A3B-F16.gguf"
+  ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-4B-F16.gguf"
+  ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-9B-F16.gguf"
+  ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF mmproj-F16.gguf mmproj-gemma-4-E4B-F16.gguf"
+  ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF mmproj-F16.gguf mmproj-gemma-4-E2B-F16.gguf"
 )
 
 # Legacy aliases with colons (for backwards compatibility)
@@ -153,9 +157,9 @@ show_sizes() {
   echo "  qwen3.5-9b          5.68 GB  - Partial offload"
   echo "  qwen3.5-27b          REMOVED - replaced by qwen3-14b (offline-deep)"
   echo "  qwen3-14b          ~8.50 GB  - Partial offload, offline-deep"
-  echo "  qwopus3.5-4b        2.63 GB  - Fits in VRAM, reasoning + tools"
-  echo "  qwopus3.5-9b        5.63 GB  - Partial offload, reasoning + tools"
-  echo "  carnice-9b          5.31 GB  - Partial offload, Hermes Agent specialized"
+  echo "  qwopus3.5-4b          REMOVED - GGUF deleted, model unlisted"
+  echo "  qwopus3.5-9b          REMOVED - GGUF deleted, model unlisted"
+  echo "  carnice-9b            REMOVED - GGUF deleted, model unlisted"
   echo "  qwen3-coder-30b  ~17.70 GB  - Partial offload, coding + tools, MoE"
   echo "  gemma4-e4b          4.98 GB  - Partial offload"
   echo "  gemma4-e2b          3.11 GB  - Fits in VRAM"
