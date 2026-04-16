@@ -603,6 +603,7 @@ models:
   "carnice-9b":
     name: "Carnice 9B"
     description: "Carnice-9B Q4_K_M - Hermes Agent specialized, optional reasoning"
+    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Carnice-9b-Q4_K_M.gguf
@@ -639,6 +640,7 @@ models:
   "carnice-9b-think":
     name: "Carnice 9B Thinking"
     description: "Carnice-9B Q4_K_M - Com reasoning, Hermes Agent specialized"
+    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Carnice-9b-Q4_K_M.gguf
