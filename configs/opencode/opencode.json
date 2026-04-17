@@ -124,30 +124,22 @@
                 "baseURL": "http://127.0.0.1:12434/v1"
             },
             "models": {
-                "qwen3-coder-30b": {
-                    "name": "Qwen3-Coder-30B-A3B (llama-swap)",
+                "qwen3-coder-30b-think": {
+                    "name": "Qwen3-Coder 30B MoE (llama.cpp)",
                     "reasoning": true,
                     "limit": {
                         "context": 131072,
                         "output": 32768
                     }
                 },
-                "qwopus3.5-9b": {
-                    "name": "Qwopus3.5-9B-v3 (llama-swap)",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 32768,
-                        "output": 16384
-                    }
-                },
-                "qwen3-14b": {
-                    "name": "Qwen3-14B (llama-swap)",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 16384,
-                        "output": 16384
-                    }
-                }
+		"qwen3.6-35b-moe-think": {
+		    "name": "Qwen 3.6 35B MoE (llama.cpp)",
+		    "reasoning": true,
+		    "limit": {
+		        "context": 131072,
+			"output": 32768
+		    }
+		}
             }
         }
     },
@@ -177,7 +169,7 @@
             }
         },
         "fix": {
-            "model": "ollama/qwen3-coder-next:cloud",
+            "model": "ollama/glm-5.1:cloud",
             "temperature": 0.2,
             "description": "Bug fix agent. Applies minimal, targeted fixes based on diagnosis or error reports. Prioritizes smallest possible change.",
             "prompt": "You are a bug fix specialist. Fix issues with the MINIMUM change required. Never refactor adjacent code or add features. If the root cause is unclear, stop and suggest using the plan agent instead. Always verify the fix doesn't break existing functionality. Prefer surgical edits over rewrites.",
@@ -213,7 +205,7 @@
             }
         },
         "explore": {
-            "model": "ollama/qwen3-coder-next:cloud",
+            "model": "ollama/glm-5.1:cloud",
             "temperature": 0.9,
             "description": "Creative exploration and ideation. Generates alternative approaches, explores design options, and helps with architecture decisions. Read-only.",
             "prompt": "You are a creative exploration agent. Think freely about alternative approaches, design patterns, and architectural decisions. Consider trade-offs between approaches. There are no wrong answers here \u2014 only ideas to evaluate. Challenge assumptions and propose unconventional solutions. You do NOT modify any code.",
