@@ -1,0 +1,24 @@
+FROM medgemma1.5:4b
+
+# MedGemma 1.5 4B IT — Medical Vision & OCR
+# Google Health AI, Gemma 3 backbone + SigLIP (medically pre-trained)
+# 4.3B params, 128K context, 256 tokens/image @ 896x896
+# arXiv:2507.05201
+
+# Deterministic medical analysis — near-greedy for clinical accuracy
+# Google uses do_sample=False (greedy); Ollama needs temp > 0 to avoid degenerate output
+PARAMETER temperature 0.2
+PARAMETER top_p 0.9
+PARAMETER top_k 32
+PARAMETER min_p 0.05
+
+# Context: each image = 256 tokens; multi-image/longitudinal needs headroom
+# 32K handles ~8 images + conversation; 64K for WSI/CT volumes
+PARAMETER num_ctx 32768
+PARAMETER num_predict 2048
+
+# Mild repetition penalty prevents looping on medical terminology
+PARAMETER repeat_penalty 1.1
+
+# System prompt for medical image analysis
+SYSTEM You are a medical AI assistant specialized in interpreting medical images including radiographs, CT scans, MRI, histopathology, and medical documents. Provide thorough, accurate, and structured analysis. When describing findings, use precise medical terminology. Always note limitations and recommend clinical correlation. Do not provide definitive diagnoses—offer differential considerations and observations.
