@@ -353,6 +353,11 @@ model_id = "nemotron-3-nano:30b-cloud"
 num_ctx = 1048576
 thinking = true
 
+[models."gemini-3-flash-preview:cloud"]
+model_id = "gemini-3-flash-preview:cloud"
+num_ctx = 1048576
+thinking = true
+
 # ======================================
 # Miscellaneous models
 # ======================================
@@ -369,6 +374,22 @@ repeat_penalty = 1.1
 # ========================================
 # Vision models
 # ========================================
+
+[models.medgemma1.5]
+model_id = "medgemma1.5:4b"
+num_ctx = 32768
+temperature = 0.2
+top_p = 0.9
+top_k = 32
+min_p = 0.05
+repeat_penalty = 1.1
+# MedGemma 1.5 4B IT — Medical Vision & OCR (Google Health AI, Jan 2026)
+# Gemma 3 backbone + MedSigLIP | 4.3B params | 128K max context
+# Capabilities: completion, vision | No tool calling
+# Optimized for: radiology, CT/MRI, histopathology, medical document OCR
+# Near-greedy params for deterministic clinical analysis
+# Each image = 256 tokens @ 896x896 | 32K fits ~8 images + conversation
+# arXiv:2507.05201
 
 # [models.moondream]
 # model_id = "moondream:1.8b"
