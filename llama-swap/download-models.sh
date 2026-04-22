@@ -18,6 +18,7 @@
 #   nemotron-3-nano-4b  - Nemotron-3-Nano-4B Q4_K_M (2.90 GB) - tool-calling
 #   lfm2.5-vl-450m      - LFM2.5-VL-450M Q4_0 (0.22 GB) + mmproj F16 - vision/OCR
 #   qwen3.6-35b-moe     - Qwen3.6-35B-A3B Q4_K_M (~22 GB) - MoE coding agent, heavy offload
+#   qwopus-glm-18b      - Qwopus-GLM-18B-Healed Q4_K_M (9.84 GB) - Frankenmerge, tool-calling + reasoning
 #   all                 - Download all models
 #
 # If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
@@ -47,6 +48,7 @@ declare -A MODELS=(
   ["nemotron-3-nano-4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF LFM2.5-VL-450M-Q4_0.gguf"
   ["qwen3.6-35b-moe"]="unsloth/Qwen3.6-35B-A3B-GGUF Qwen3.6-35B-A3B-UD-Q4_K_M.gguf"
+  ["qwopus-glm-18b"]="KyleHessling1/Qwopus-GLM-18B-Merged-GGUF Qwopus-GLM-18B-Healed-Q4_K_M.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -167,6 +169,7 @@ show_sizes() {
   echo "  nemotron-3-nano-4b  2.90 GB  - Fits in VRAM, tool-calling"
   echo "  lfm2.5-vl-450m      0.22 GB  - Fits in VRAM, vision/OCR (Q4_0 + mmproj F16)"
   echo "  qwen3.6-35b-moe  ~22.00 GB  - Heavy offload, vision + MoE coding agent (+ mmproj)"
+  echo "  qwopus-glm-18b     9.84 GB  - Frankenmerge 18B, tool-calling + reasoning, text-only"
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
@@ -179,7 +182,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-4b"|"qwen3.5-9b"|"qwen3-14b"|"qwen3-coder-30b"|"qwopus3.5-4b"|"qwopus3.5-9b"|"carnice-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"qwen3.6-35b-moe")
+  "qwen3.5-4b"|"qwen3.5-9b"|"qwen3-14b"|"qwen3-coder-30b"|"qwopus3.5-4b"|"qwopus3.5-9b"|"carnice-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"qwen3.6-35b-moe"|"qwopus-glm-18b")
     show_sizes
     download_model "$1"
     ;;
@@ -200,7 +203,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, qwen3-14b, qwen3-coder-30b, qwopus3.5-4b, qwopus3.5-9b, carnice-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, lfm2.5-vl-450m, all, sizes"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, qwen3-14b, qwen3-coder-30b, qwopus3.5-4b, qwopus3.5-9b, carnice-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, lfm2.5-vl-450m, qwen3.6-35b-moe, qwopus-glm-18b, all, sizes"
     echo "Removed: qwen3.5-27b (use qwen3-14b instead), gemma4-31b (too large)"
     exit 1
     ;;

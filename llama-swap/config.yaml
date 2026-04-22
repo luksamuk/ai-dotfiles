@@ -603,15 +603,15 @@ models:
         tools: true
 
   # -------------------------------------------
-  # QWEN3-14B - REQUER OFFLOAD PARCIAL
-  # Modelo denso de 14B, significativamente mais capaz que 9B
-  # Melhor para: OFFLINE-DEEP, coding complexo sem internet
-  # VRAM: ~6GB + ~3GB RAM offload
+  # QWEN3-14B - UNLISTED (substituído por Qwopus-GLM-18B)
+  # Modelo denso de 14B, GGUF ainda no disco
+  # Para reativar: remover unlisted: true
   # KV cache: q4_0 + attn_rot
   # -------------------------------------------
   "qwen3-14b":
     name: "Qwen3 14B"
     description: "Qwen3-14B — Dense 14B model for deep offline coding and analysis"
+    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3-14B-Q4_K_M.gguf
@@ -639,11 +639,12 @@ models:
       kv_cache: "q4_0 + attn_rot"
 
   # -------------------------------------------
-  # QWEN3-14B THINKING - Com reasoning
+  # QWEN3-14B THINKING - UNLISTED (substituído por Qwopus-GLM-18B)
   # -------------------------------------------
   "qwen3-14b-think":
     name: "Qwen3 14B Thinking"
     description: "Qwen3-14B — Dense 14B model with reasoning for complex problem-solving"
+    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3-14B-Q4_K_M.gguf
@@ -671,6 +672,48 @@ models:
       kv_cache: "q4_0 + attn_rot"
       features:
         thinking: true
+
+  # -------------------------------------------
+  # QWOPUS-GLM-18B - FRANKENMERGE HEALED (reasoning sempre ativo)
+  # 64-layer frankenmerge de 2x Qwen3.5-9B, ~18B params
+  # Healed com 1000-step QLoRA. Score 40/44 (90.9%), bate Qwen3.6-35B MoE
+  # Text-only (sem mmproj). Base Qwen3.5 → attn_rot compatível
+  # Razão: modelo sempre reasoning, --reasoning off não funciona
+  # VRAM: ~5.5GB + ~4.3GB RAM offload. Mais rápido que 35B MoE
+  # KV cache: q4_0 + attn_rot
+  # -------------------------------------------
+  "qwopus-glm-18b-think":
+    name: "Qwopus GLM 18B"
+    description: "Qwopus-GLM-18B-Healed — Frankenmerge of 2x Qwen3.5-9B, 90.9% benchmark, tool-calling + reasoning (always-on)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwopus-GLM-18B-Healed-Q4_K_M.gguf
+      --fit on
+      --fit-target 128
+      --fit-ctx ${large_model_min_ctx}
+      --ctx-size 65536
+      --temp ${think_temp}
+      --top-p ${think_top_p}
+      --top-k ${think_top_k}
+      --min-p ${think_min_p}
+      --repeat-penalty ${think_repeat_penalty}
+      --reasoning auto
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --flash-attn on
+    ttl: 120
+    aliases:
+      - "qwopus-glm-18b-think"
+      - "qwglm18t"
+    metadata:
+      size: "9.84 GB"
+      context: "16K-64K (limited by offload)"
+      vram_usage: "~5.5GB VRAM + ~4.3GB RAM"
+      source: "KyleHessling1/Qwopus-GLM-18B-Merged-GGUF"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        thinking: true
+        tools: true
 
   # -------------------------------------------
   # QWEN3-CODER-30B - REQUER OFFLOAD PESADO
@@ -1042,6 +1085,8 @@ matrix:
     c9t: carnice-9b-think
     g4: gemma4-e4b
     g4t: gemma4-e4b-think
+    # Qwopus-GLM-18B frankenmerge (heavy offload mas +rápido que MoE)
+    qw18: qwopus-glm-18b-think
     # Modelos pesados (offload pesado, rodam sozinhos)
     q14: qwen3-14b
     q14t: qwen3-14b-think
@@ -1057,6 +1102,7 @@ matrix:
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   # Modelos pesados demoram mais pra carregar → custo alto
   evict_costs:
+    qw18: 9     # 9.84GB frankenmerge, heavy offload
     qc30: 10    # 17.7GB, demora muito pra carregar
     qc30t: 10
     q27: 10     # 17GB unlisted
@@ -1064,7 +1110,7 @@ matrix:
     g31: 10     # 18GB unlisted
     qw36: 10    # 22GB unlisted, TESTE TEMP
     qw36t: 10
-    q14: 8      # 8.5GB, pesado
+    q14: 8      # 8.5GB, pesado (unlisted)
     q14t: 8
     c9: 5       # offload parcial
     c9t: 5
@@ -1103,7 +1149,7 @@ matrix:
     medium: "q9 | q9t | qw9 | c9 | c9t | g4 | g4t"
 
     # Modelos pesados - toda VRAM + RAM offload
-    heavy: "q14 | q14t | qc30 | qc30t | q27 | q27t | g31 | qw36 | qw36t"
+    heavy: "qw18 | q14 | q14t | qc30 | qc30t | q27 | q27t | g31 | qw36 | qw36t"
 
     # Vision sozinho
     vision_only: "vl"
