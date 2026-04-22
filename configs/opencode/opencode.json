@@ -187,7 +187,7 @@
             }
         },
         "build": {
-            "model": "ollama/kimi-k2.6:cloud",
+            "model": "ollama/glm-5.1:cloud",
             "temperature": 0.3,
             "description": "Primary coding agent. Full implementation capabilities \u2014 writing, editing, testing code with unrestricted repository and shell access.",
             "prompt": "You are a senior software engineer. Implement features and create new code following the plan specifications exactly. Match existing code style and patterns. Always handle errors, validate inputs, and use types properly. No hardcoded secrets, no TODO/FIXME left behind. Before writing, read similar files to understand conventions.",
@@ -211,7 +211,7 @@
             }
         },
         "review": {
-            "model": "ollama/glm-5.1:cloud",
+            "model": "ollama/kimi-k2.6:cloud",
             "temperature": 0.5,
             "description": "Code review and quality analysis. Reviews changes for correctness, best practices, security, and maintainability. Read-only.",
             "prompt": "You are a senior code reviewer. Analyze code for: correctness, edge cases, error handling, security issues, performance problems, and adherence to project patterns. Be specific \u2014 cite file, line, and what should change. Classify issues as critical/warning/suggestion. Do NOT modify any files.",
@@ -223,7 +223,7 @@
             }
         },
         "research": {
-            "model": "ollama/glm-5.1:cloud",
+            "model": "ollama/minimax-m2.7:cloud",
             "temperature": 0.7,
             "description": "Deep research and investigation. Explores codebases, documentation, and external sources to gather information. Read-only analysis.",
             "prompt": "You are a research agent. Investigate codebases, trace dependencies, understand data flows, and identify risks. Search the web for documentation and best practices when needed. Provide comprehensive analysis with evidence. You do NOT write or modify any code \u2014 only investigate and report.",
