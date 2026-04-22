@@ -1,0 +1,76 @@
+* Pi Coding Agent Config
+
+Config files for [[https://github.com/badlogic/pi-mono][Pi Coding Agent]] (CLI AI coding assistant).
+
+** Files
+
+| File             | Source                   | Description                      |
+|------------------+--------------------------+----------------------------------|
+| models.json      | ~/.pi/agent/models.json | Provider and model definitions   |
+| settings.json    | ~/.pi/agent/settings.json | User settings (default model)   |
+| auth.json        | ~/.pi/agent/auth.json    | Auth credentials (DO NOT commit) |
+
+** Sync
+
+Copy from source of truth (ai-dotfiles) to runtime location:
+
+#+begin_src bash
+cp ~/git/ai-dotfiles/configs/pi/models.json ~/.pi/agent/models.json
+cp ~/git/ai-dotfiles/configs/pi/settings.json ~/.pi/agent/settings.json
+# auth.json is NOT synced — contains secrets, manage separately
+#+end_src
+
+** Providers
+
+- =ollama= — Cloud models via Ollama (porta 11434)
+- =local= — Local models via llama-swap (porta 12434)
+
+** Models
+
+*** Ollama Cloud (12 modelos)
+
+| Model ID                     | Name                       | Context | Vision |
+|------------------------------+----------------------------+---------+--------|
+| glm-5.1:cloud               | GLM 5.1                    | 202K    | no     |
+| glm-5:cloud                  | GLM 5                      | 202K    | no     |
+| kimi-k2.6:cloud              | Kimi K2.6                  | 262K    | yes    |
+| kimi-k2.5:cloud              | Kimi K2.5                  | 262K    | yes    |
+| qwen3.5:cloud                | Qwen 3.5 397B              | 262K    | yes    |
+| minimax-m2.5:cloud           | MiniMax M2.5               | 205K    | no     |
+| minimax-m2.7:cloud           | MiniMax M2.7               | 1M      | no     |
+| nemotron-3-super:cloud       | Nemotron 3 Super           | 262K    | no     |
+| nemotron-3-nano:30b-cloud    | Nemotron 3 Nano 30B        | 1M      | no     |
+| gemma4:31b-cloud             | Gemma 4 31B                | 262K    | yes    |
+| gemini-3-flash-preview:cloud | Gemini 3 Flash Preview     | 1M      | yes    |
+| qwen3-coder-next:cloud       | Qwen3 Coder Next           | 262K    | no     |
+
+*** Local / llama-swap (2 modelos)
+
+| Model ID           | Name                          | Context | Vision |
+|--------------------+-------------------------------+---------+--------|
+| qwen3.6-27b        | Qwen3.6 27B (no thinking)     | 131K    | yes    |
+| qwen3.6-27b-think  | Qwen3.6 27B Thinking          | 131K    | yes    |
+
+** Usage
+
+#+begin_src bash
+# Use cloud model
+pi --model glm-5.1:cloud
+
+# Use local Qwen3.6 27B (no thinking)
+pi --model local/qwen3.6-27b
+
+# Use local Qwen3.6 27B Thinking
+pi --model local/qwen3.6-27b-think
+
+# List all available models
+pi --list-models
+#+end_src
+
+** Pitfalls
+
+1. =auth.json= contains secrets — NEVER commit to git
+2. The =local= provider uses =thinkingFormat: "qwen-chat-template"= because llama-swap/llama.cpp needs =chat_template_kwargs.enable_thinking= for thinking mode
+3. The =ollama= provider uses =supportsDeveloperRole: false= and =supportsReasoningEffort: false= because Ollama's API doesn't support these OpenAI-specific features
+4. Default model is set in =settings.json= (currently =kimi-k2.6:cloud=)
+5. Pi auto-reloads =models.json= when you open =/model= in the TUI — no restart needed

@@ -1,0 +1,139 @@
+{
+  "providers": {
+    "ollama": {
+      "api": "openai-completions",
+      "apiKey": "***",
+      "baseUrl": "http://127.0.0.1:11434/v1",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "glm-5.1:cloud",
+          "name": "GLM 5.1 (Ollama Cloud)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 202752,
+          "maxTokens": 16384
+        },
+        {
+          "id": "glm-5:cloud",
+          "name": "GLM 5 (Ollama Cloud)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 202752,
+          "maxTokens": 16384
+        },
+        {
+          "id": "kimi-k2.6:cloud",
+          "name": "Kimi K2.6 (Ollama Cloud)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 262144,
+          "maxTokens": 16384
+        },
+        {
+          "id": "kimi-k2.5:cloud",
+          "name": "Kimi K2.5 (Ollama Cloud)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 262144,
+          "maxTokens": 16384
+        },
+        {
+          "id": "qwen3.5:cloud",
+          "name": "Qwen 3.5 397B (Ollama Cloud)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 262144,
+          "maxTokens": 16384
+        },
+        {
+          "id": "minimax-m2.5:cloud",
+          "name": "MiniMax M2.5 (Ollama Cloud)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 204800,
+          "maxTokens": 16384
+        },
+        {
+          "id": "minimax-m2.7:cloud",
+          "name": "MiniMax M2.7 1M (Ollama Cloud)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1048576,
+          "maxTokens": 16384
+        },
+        {
+          "id": "nemotron-3-super:cloud",
+          "name": "Nemotron 3 Super (Ollama Cloud)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 262144,
+          "maxTokens": 16384
+        },
+        {
+          "id": "nemotron-3-nano:30b-cloud",
+          "name": "Nemotron 3 Nano 30B 1M (Ollama Cloud)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1048576,
+          "maxTokens": 16384
+        },
+        {
+          "id": "gemma4:31b-cloud",
+          "name": "Gemma 4 31B (Ollama Cloud)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 262144,
+          "maxTokens": 16384
+        },
+        {
+          "id": "gemini-3-flash-preview:cloud",
+          "name": "Gemini 3 Flash Preview (Ollama Cloud)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 1048576,
+          "maxTokens": 16384
+        },
+        {
+          "id": "qwen3-coder-next:cloud",
+          "name": "Qwen3 Coder Next (Ollama Cloud)",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 262144,
+          "maxTokens": 16384
+        }
+      ]
+    },
+    "local": {
+      "api": "openai-completions",
+      "apiKey": "***",
+      "baseUrl": "http://127.0.0.1:12434/v1",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false,
+        "thinkingFormat": "qwen-chat-template"
+      },
+      "models": [
+        {
+          "id": "qwen3.6-27b",
+          "name": "Qwen3.6 27B (llama-swap)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "qwen3.6-27b-think",
+          "name": "Qwen3.6 27B Thinking (llama-swap)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        }
+      ]
+    }
+  }
+}
