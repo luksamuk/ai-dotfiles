@@ -33,8 +33,12 @@ import questionary
 from prompt_toolkit.history import FileHistory
 import requests
 
-# Endpoint base
-BASE_URL = "http://127.0.0.1:12434/v1"
+# Endpoint — use LLAMA_SWAP_HOST para acessar remotamente (ex: Termux via Tailscale)
+# Default: localhost (rode direto na máquina)
+# Remoto: export LLAMA_SWAP_HOST=100.65.187.74 (IP Tailscale)
+LLAMA_SWAP_HOST = os.environ.get("LLAMA_SWAP_HOST", "127.0.0.1")
+LLAMA_SWAP_PORT = int(os.environ.get("LLAMA_SWAP_PORT", "12434"))
+BASE_URL = f"http://{LLAMA_SWAP_HOST}:{LLAMA_SWAP_PORT}/v1"
 
 # Extensões de imagem suportadas pelo llama.cpp
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.webp', '.tiff', '.tif'}
@@ -155,7 +159,7 @@ def build_message_content(prompt: str, image_paths: list[str]) -> str | list:
 def fetch_available_models():
     """Busca modelos disponíveis do endpoint /v1/models."""
     try:
-        response = requests.get("http://127.0.0.1:12434/v1/models", timeout=5)
+        response = requests.get(f"{BASE_URL}/models", timeout=5)
         response.raise_for_status()
         data = response.json()
         

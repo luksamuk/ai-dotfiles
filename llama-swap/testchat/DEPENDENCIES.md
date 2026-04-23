@@ -56,4 +56,4 @@ uv run chat
 ## Requisitos
 
 - Python >= 3.12
-- Servidor OpenAI-compatível rodando em `127.0.0.1:12434` (ex: LM Studio, llama-swap)
+- Servidor OpenAI-compatível rodando (default: `127.0.0.1:12434`, veja env vars `LLAMA_SWAP_HOST`/`LLAMA_SWAP_PORT`)

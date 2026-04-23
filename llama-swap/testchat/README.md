@@ -21,13 +21,29 @@ Aplicação de chat com interface rica no terminal para interação com modelos 
 
 - Python >= 3.12
 - [uv](https://docs.astral.sh/uv/) instalado
-- Servidor OpenAI-compatível rodando em `127.0.0.1:12434` (ex: LM Studio, llama-swap)
+- Servidor OpenAI-compatível rodando (llama-swap, LM Studio, etc)
+- Porta padrão: `12434`
 
 ### Setup
 
 ```bash
 # Instalar dependências
 uv sync
+```
+
+### Variáveis de Ambiente
+
+| Variável | Default | Descrição |
+|----------|---------|-----------|
+| `LLAMA_SWAP_HOST` | `127.0.0.1` | Host do servidor (use IP Tailscale para acesso remoto) |
+| `LLAMA_SWAP_PORT` | `12434` | Porta do servidor |
+
+**Acesso remoto via Tailscale (ex: Termux no celular):**
+
+```bash
+# No Termux ou outra máquina na rede Tailscale
+export LLAMA_SWAP_HOST=100.65.187.74
+uv run main.py
 ```
 
 ## 🔌 Configuração do Servidor
@@ -37,7 +53,7 @@ uv sync
 1. Baixe e instale o [LM Studio](https://lmstudio.ai/)
 2. Carregue um modelo com suporte a thinking (ex: Qwen 3.5, Gemma 4)
 3. Ative o **"Local Inference Server"** na aba **"Developer"**
-4. Certifique-se de que está rodando em `http://127.0.0.1:12434`
+4. Certifique-se de que está acessível em `LLAMA_SWAP_HOST:LLAMA_SWAP_PORT` (default: `127.0.0.1:12434`)
 
 ### llama-swap
 
@@ -102,9 +118,10 @@ lmstudio/
 
 ## 🔧 Customização
 
-Edite o `main.py` para ajustar:
+O endpoint do servidor é controlado por variáveis de ambiente (veja tabela acima). Não é necessário editar o código.
 
-- **URL do servidor**: altere `base_url` na configuração do cliente
+- **Servidor local**: rode sem configurar nada (usa `127.0.0.1:12434`)
+- **Servidor remoto**: exporte `LLAMA_SWAP_HOST` com o IP do servidor
 - **Arquivo de histórico**: modifique `~/.rich_chat_history` (padrão)
 
 ## 📄 Licença
