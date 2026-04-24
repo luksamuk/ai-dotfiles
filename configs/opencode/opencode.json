@@ -130,22 +130,22 @@
                 "baseURL": "http://127.0.0.1:12434/v1"
             },
             "models": {
-		"gemma4-e4b-think": {
-		    "name": "Gemma 4 Efficient 4B",
-		    "reasoning": true,
-		    "limit": {
-			"context": 131072,
-			"output": 32768
-		    }
-		},
-		"nemotron-3-nano-4b-think": {
-		    "name": "Nemotron 3 Nano 4B",
-		    "reasoning": true,
-		    "limit": {
-		         "context": 131072,
-			 "output": 32768
-		    }
-		},
+                "gemma4-e4b-think": {
+                    "name": "Gemma 4 Efficient 4B",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "nemotron-3-nano-4b-think": {
+                    "name": "Nemotron 3 Nano 4B",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
                 "qwen3-coder-30b-think": {
                     "name": "Qwen3-Coder 30B MoE",
                     "reasoning": true,
@@ -154,22 +154,22 @@
                         "output": 32768
                     }
                 },
-		"qwen3.5-9b-think": {
-		    "name": "Qwen 3.5 9B",
-		    "reasoning": true,
-		    "limit": {
-			 "context": 131072,
-			 "output": 32768
-		    }
-		},
-		"qwen3.6-35b-moe-think": {
-		    "name": "Qwen 3.6 35B MoE",
-		    "reasoning": true,
-		    "limit": {
-		        "context": 131072,
-			"output": 32768
-		    }
-		}
+                "qwen3.5-9b-think": {
+                    "name": "Qwen 3.5 9B",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "qwen3.6-35b-moe-think": {
+                    "name": "Qwen 3.6 35B MoE",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                }
             }
         }
     },
@@ -177,8 +177,8 @@
         "plan": {
             "model": "ollama/glm-5.1:cloud",
             "temperature": 0.7,
-            "description": "Strategic planning and architecture. Analyzes requirements, proposes solutions, creates roadmaps. Read-only \u2014 cannot modify code.",
-            "prompt": "You are a strategic planning agent. Analyze the codebase, understand requirements, and create detailed implementation plans. You do NOT write or edit code \u2014 you only read, analyze, and plan. When you identify work needed, describe it precisely so the build or fix agent can execute. Always consider: project structure, existing patterns, dependencies, risks, and edge cases.",
+            "description": "Strategic planning and architecture. Analyzes requirements, proposes solutions, creates roadmaps. Read-only — cannot modify code.",
+            "prompt": "You are a strategic planning agent. Analyze the codebase, understand requirements, and create detailed implementation plans. You do NOT write or edit code — you only read, analyze, and plan. When you identify work needed, describe it precisely so the build or fix agent can execute. Always consider: project structure, existing patterns, dependencies, risks, and edge cases.",
             "permission": {
                 "read": "allow",
                 "write": "deny",
@@ -189,7 +189,7 @@
         "build": {
             "model": "ollama/glm-5.1:cloud",
             "temperature": 0.3,
-            "description": "Primary coding agent. Full implementation capabilities \u2014 writing, editing, testing code with unrestricted repository and shell access.",
+            "description": "Primary coding agent. Full implementation capabilities — writing, editing, testing code with unrestricted repository and shell access.",
             "prompt": "You are a senior software engineer. Implement features and create new code following the plan specifications exactly. Match existing code style and patterns. Always handle errors, validate inputs, and use types properly. No hardcoded secrets, no TODO/FIXME left behind. Before writing, read similar files to understand conventions.",
             "permission": {
                 "read": "allow",
@@ -214,7 +214,7 @@
             "model": "ollama/kimi-k2.6:cloud",
             "temperature": 0.5,
             "description": "Code review and quality analysis. Reviews changes for correctness, best practices, security, and maintainability. Read-only.",
-            "prompt": "You are a senior code reviewer. Analyze code for: correctness, edge cases, error handling, security issues, performance problems, and adherence to project patterns. Be specific \u2014 cite file, line, and what should change. Classify issues as critical/warning/suggestion. Do NOT modify any files.",
+            "prompt": "You are a senior code reviewer. Analyze code for: correctness, edge cases, error handling, security issues, performance problems, and adherence to project patterns. Be specific — cite file, line, and what should change. Classify issues as critical/warning/suggestion. Do NOT modify any files.",
             "permission": {
                 "read": "allow",
                 "write": "deny",
@@ -226,7 +226,7 @@
             "model": "ollama/minimax-m2.7:cloud",
             "temperature": 0.7,
             "description": "Deep research and investigation. Explores codebases, documentation, and external sources to gather information. Read-only analysis.",
-            "prompt": "You are a research agent. Investigate codebases, trace dependencies, understand data flows, and identify risks. Search the web for documentation and best practices when needed. Provide comprehensive analysis with evidence. You do NOT write or modify any code \u2014 only investigate and report.",
+            "prompt": "You are a research agent. Investigate codebases, trace dependencies, understand data flows, and identify risks. Search the web for documentation and best practices when needed. Provide comprehensive analysis with evidence. You do NOT write or modify any code — only investigate and report.",
             "permission": {
                 "read": "allow",
                 "write": "deny",
@@ -238,7 +238,7 @@
             "model": "ollama/glm-5.1:cloud",
             "temperature": 0.9,
             "description": "Creative exploration and ideation. Generates alternative approaches, explores design options, and helps with architecture decisions. Read-only.",
-            "prompt": "You are a creative exploration agent. Think freely about alternative approaches, design patterns, and architectural decisions. Consider trade-offs between approaches. There are no wrong answers here \u2014 only ideas to evaluate. Challenge assumptions and propose unconventional solutions. You do NOT modify any code.",
+            "prompt": "You are a creative exploration agent. Think freely about alternative approaches, design patterns, and architectural decisions. Consider trade-offs between approaches. There are no wrong answers here — only ideas to evaluate. Challenge assumptions and propose unconventional solutions. You do NOT modify any code.",
             "permission": {
                 "read": "allow",
                 "write": "deny",
@@ -247,5 +247,14 @@
             }
         }
     },
-    "plugin": []
+    "plugin": [],
+    "mcp": {
+        "serper": {
+            "type": "local",
+            "command": ["npx", "-y", "mcp-server-serper"],
+            "environment": {
+                "SERPER_API_KEY": "{env:SERPER_API_KEY}"
+            }
+        }
+    }
 }
