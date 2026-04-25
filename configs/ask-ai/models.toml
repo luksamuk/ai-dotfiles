@@ -315,6 +315,11 @@ model_id = "kimi-k2.5:cloud"
 num_ctx = 202144
 thinking = true
 
+[models."kimi-k2.6:cloud"]
+model_id = "kimi-k2.6:cloud"
+num_ctx = 262144
+thinking = true
+
 [models."minimax-m2.5:cloud"]
 model_id = "minimax-m2.5:cloud"
 num_ctx = 202752
@@ -355,6 +360,11 @@ thinking = true
 
 [models."gemini-3-flash-preview:cloud"]
 model_id = "gemini-3-flash-preview:cloud"
+num_ctx = 1048576
+thinking = true
+
+[models."deepseek-v4-flash:cloud"]
+model_id = "deepseek-v4-flash:cloud"
 num_ctx = 1048576
 thinking = true
 
@@ -568,3 +578,26 @@ top_k = 40
 repeat_penalty = 1.1
 # Gemma 4 Effective 4B - Native FC support, ~10GB
 # Test pending: tool calling benchmark
+
+[models."gemma4-abliterated:e4b"]
+model_id = "gemma4-abliterated:e4b"
+num_ctx = 32768
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.1
+# Gemma 4 Abliterated E4B - uncensored, vision + tools + thinking, ~9.6GB
+# Abliterated: reduced safety filtering, temp capped at 0.7-0.8
+
+[models."huihui-4"]
+model_id = "huihui-4:8b"
+num_ctx = 32768
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
+# Huihui4-8B-A4B - Pruned MoE from Gemma 4 26B (32/128 experts, 8 active)
+# Not abliterated | completion, vision, tools, thinking | ~6.6GB Q4_K_M
+# Optimized for consumer hardware + code conversation
