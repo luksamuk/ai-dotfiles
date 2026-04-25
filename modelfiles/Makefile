@@ -7,8 +7,7 @@
         qwen3.5-abliterated-9b qwen3.5-4b qwen3.5-0.8b qwen3.5 \
         nemotron-cascade-2-30b nanbeige4.1-3b \
         ministral-3b falcon3-3b falcon3-1b \
-        hermes2-pro-mistral-7b gemma4-e2b gemma4-e4b gemma4-abliterated-e4b medgemma1.5-4b \
-        huihui-4-8b
+        hermes2-pro-mistral-7b gemma4-e2b gemma4-e4b gemma4-abliterated-e4b medgemma1.5-4b
 
 # Qwen 3.5 small variants
 qwen3.5-small: qwen3.5-9b qwen3.5-4b qwen3.5-2b qwen3.5-0.8b
@@ -221,10 +220,6 @@ gemma4-e4b:
 
 gemma4-abliterated-e4b:
 	$(call BUILD_DELBASE,gemma4-abliterated:e4b,gemma4-abliterated-e4b.modelfile)
-
-# Huihui family (pruned Gemma 4 MoE)
-huihui-4-8b:
-	$(call BUILD_DELBASE,huihui-4:8b,huihui-4-8b.modelfile)
 
 # Medical Vision models (optional — specialized for radiology/pathology/OCR)
 medgemma1.5-4b:
