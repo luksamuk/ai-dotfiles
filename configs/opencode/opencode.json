@@ -125,50 +125,212 @@
         },
         "local": {
             "npm": "@ai-sdk/openai-compatible",
-            "name": "Local (llama.cpp)",
+            "name": "llama.cpp",
             "options": {
                 "baseURL": "http://127.0.0.1:12434/v1"
             },
             "models": {
-                "gemma4-e4b-think": {
+                "gemma4-e2b": {
+                    "name": "Gemma 4 Efficient 2B",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "vision"
+                    ]
+                },
+                "gemma4-e2b:think": {
+                    "name": "Gemma 4 Efficient 2B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "vision"
+                    ]
+                },
+                "gemma4-e4b": {
                     "name": "Gemma 4 Efficient 4B",
                     "reasoning": true,
                     "limit": {
                         "context": 131072,
                         "output": 32768
-                    }
+                    },
+                    "capabilities": [
+                        "vision"
+                    ]
                 },
-                "nemotron-3-nano-4b-think": {
+                "gemma4-e4b:think": {
+                    "name": "Gemma 4 Efficient 4B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "vision"
+                    ]
+                },
+                "lfm2.5-vl-450m": {
+                    "name": "LFM2.5-VL 450M",
+                    "reasoning": false,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "vision"
+                    ]
+                },
+                "nemotron-3-nano-4b": {
                     "name": "Nemotron 3 Nano 4B",
                     "reasoning": true,
                     "limit": {
                         "context": 131072,
                         "output": 32768
-                    }
+                    },
+                    "capabilities": [
+                        "tools"
+                    ]
                 },
-                "qwen3-coder-30b-think": {
+                "nemotron-3-nano-4b:think": {
+                    "name": "Nemotron 3 Nano 4B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "tools"
+                    ]
+                },
+                "nemotron3-omni-30b": {
+                    "name": "Nemotron 3 Nano Omni 30B",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "vision",
+                        "tools"
+                    ]
+                },
+                "nemotron3-omni-30b:think": {
+                    "name": "Nemotron 3 Nano Omni 30B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "vision",
+                        "tools"
+                    ]
+                },
+                "qwen3-coder-30b": {
                     "name": "Qwen3-Coder 30B MoE",
                     "reasoning": true,
                     "limit": {
                         "context": 131072,
                         "output": 32768
-                    }
+                    },
+                    "capabilities": [
+                        "tools"
+                    ]
                 },
-                "qwen3.5-9b-think": {
+                "qwen3-coder-30b:think": {
+                    "name": "Qwen3-Coder 30B MoE 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "tools"
+                    ]
+                },
+                "qwen3.5-4b": {
+                    "name": "Qwen 3.5 4B",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "vision"
+                    ]
+                },
+                "qwen3.5-4b:think": {
+                    "name": "Qwen 3.5 4B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "vision"
+                    ]
+                },
+                "qwen3.5-9b": {
                     "name": "Qwen 3.5 9B",
                     "reasoning": true,
                     "limit": {
                         "context": 131072,
                         "output": 32768
-                    }
+                    },
+                    "capabilities": [
+                        "vision"
+                    ]
                 },
-                "qwen3.6-35b-moe-think": {
-                    "name": "Qwen 3.6 35B MoE",
+                "qwen3.5-9b:think": {
+                    "name": "Qwen 3.5 9B 🧠",
                     "reasoning": true,
                     "limit": {
                         "context": 131072,
                         "output": 32768
-                    }
+                    },
+                    "capabilities": [
+                        "vision"
+                    ]
+                },
+                "qwen3.6-27b": {
+                    "name": "Qwen 3.6 27B",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "vision",
+                        "tools"
+                    ]
+                },
+                "qwen3.6-27b:think": {
+                    "name": "Qwen 3.6 27B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "vision",
+                        "tools"
+                    ]
+                },
+                "qwopus-glm-18b-think": {
+                    "name": "Qwopus GLM 18B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 65536,
+                        "output": 16384
+                    },
+                    "capabilities": [
+                        "tools"
+                    ]
                 }
             }
         }
@@ -251,7 +413,11 @@
     "mcp": {
         "serper": {
             "type": "local",
-            "command": ["npx", "-y", "mcp-server-serper"],
+            "command": [
+                "npx",
+                "-y",
+                "mcp-server-serper"
+            ],
             "environment": {
                 "SERPER_API_KEY": "{env:SERPER_API_KEY}"
             }
