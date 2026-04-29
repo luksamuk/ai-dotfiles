@@ -20,6 +20,7 @@
 #   qwen3.6-27b         - Qwen3.6-27B Q4_K_M (~16.8 GB) - Dense vision + coding, heavy offload
 #   qwen3.6-35b-moe     - REMOVED (replaced by qwen3.6-27b, dense better quality)
 #   qwopus-glm-18b      - Qwopus-GLM-18B-Healed Q4_K_M (9.84 GB) - Frankenmerge, tool-calling + reasoning
+#   nemotron3-omni-30b  - Nemotron-3-Nano-Omni-30B-A3B UD-Q4_K_XL (~22.3 GB) + mmproj - Omni (audio+video+image+text)
 #   all                 - Download all models
 #
 # If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
@@ -30,6 +31,9 @@ MODELS_DIR="${HOME}/.llama-models"
 
 # Create directory
 mkdir -p "$MODELS_DIR"
+
+# HF cache on disk (not tmpfs) — /tmp can be too small for models >16GB
+export HF_HUB_CACHE="${HOME}/.cache/huggingface"
 
 # Model definitions
 # Format: "repo filename [local_filename]"
@@ -51,10 +55,11 @@ declare -A MODELS=(
   ["qwen3.6-27b"]="unsloth/Qwen3.6-27B-GGUF Qwen3.6-27B-Q4_K_M.gguf"
   ["qwen3.6-35b-moe"]="TOMBSTONE - replaced by qwen3.6-27b (dense, better quality)"
   ["qwopus-glm-18b"]="KyleHessling1/Qwopus-GLM-18B-Merged-GGUF Qwopus-GLM-18B-Healed-Q4_K_M.gguf"
+  ["nemotron3-omni-30b"]="unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-UD-Q4_K_XL.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
-# Format: "repo filename"
+# Format: "repo filename [local_filename]"
 declare -A MMPROJ=(
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF mmproj-LFM2.5-VL-450m-F16.gguf"
   ["qwen3.6-27b"]="unsloth/Qwen3.6-27B-GGUF mmproj-F16.gguf mmproj-Qwen3.6-27B-F16.gguf"
@@ -62,6 +67,7 @@ declare -A MMPROJ=(
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-9B-F16.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF mmproj-F16.gguf mmproj-gemma-4-E4B-F16.gguf"
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF mmproj-F16.gguf mmproj-gemma-4-E2B-F16.gguf"
+  ["nemotron3-omni-30b"]="unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF mmproj-F16.gguf mmproj-Nemotron-3-Nano-Omni-30B-A3B-F16.gguf"
 )
 
 # Legacy aliases with colons (for backwards compatibility)
@@ -69,7 +75,7 @@ declare -A ALIASES=(
   ["qwen3.5:4b"]="qwen3.5-4b"
   ["qwen3.5:9b"]="qwen3.5-9b"
   ["gemma4:e4b"]="gemma4-e4b"
-  ["gemma4:e2b"]="gemma4-e2b"
+  ["gemma4:e2b"]="gema4-e2b"
   ["nemotron-3-nano:4b"]="nemotron-3-nano-4b"
 )
 
@@ -109,18 +115,13 @@ download_model() {
   if [[ -f "$MODELS_DIR/$local_file" ]]; then
     echo "  ✓ Already exists: $MODELS_DIR/$local_file"
   else
-    # Download to temp directory first
-    local temp_dir=$(mktemp -d)
-    trap "rm -rf $temp_dir" EXIT
-    
-    hf download "$repo" "$remote_file" --local-dir "$temp_dir"
+    # Download directly to models dir (avoids tmpfs /tmp for large models)
+    hf download "$repo" "$remote_file" --local-dir "$MODELS_DIR"
     
     # Rename if needed
     if [[ "$remote_file" != "$local_file" ]]; then
       echo "  Renaming: $remote_file → $local_file"
-      mv "$temp_dir/$remote_file" "$MODELS_DIR/$local_file"
-    else
-      mv "$temp_dir/$remote_file" "$MODELS_DIR/$local_file"
+      mv "$MODELS_DIR/$remote_file" "$MODELS_DIR/$local_file"
     fi
     
     echo "  ✓ Downloaded: $MODELS_DIR/$local_file"
@@ -138,16 +139,11 @@ download_model() {
     if [[ -f "$MODELS_DIR/$mmproj_local_file" ]]; then
       echo "  ✓ Already exists: $MODELS_DIR/$mmproj_local_file"
     else
-      local temp_dir2=$(mktemp -d)
-      trap "rm -rf $temp_dir2" EXIT
-      
-      hf download "$mmproj_repo" "$mmproj_remote_file" --local-dir "$temp_dir2"
+      hf download "$mmproj_repo" "$mmproj_remote_file" --local-dir "$MODELS_DIR"
       
       if [[ "$mmproj_remote_file" != "$mmproj_local_file" ]]; then
         echo "  Renaming: $mmproj_remote_file → $mmproj_local_file"
-        mv "$temp_dir2/$mmproj_remote_file" "$MODELS_DIR/$mmproj_local_file"
-      else
-        mv "$temp_dir2/$mmproj_remote_file" "$MODELS_DIR/$mmproj_local_file"
+        mv "$MODELS_DIR/$mmproj_remote_file" "$MODELS_DIR/$mmproj_local_file"
       fi
       echo "  ✓ Downloaded mmproj: $MODELS_DIR/$mmproj_local_file"
     fi
@@ -156,23 +152,24 @@ download_model() {
 
 show_sizes() {
   echo ""
-  echo "Model Sizes (Q4_K_M):"
-  echo "  qwen3.5-4b          2.63 GB  - Fits in VRAM"
-  echo "  qwen3.5-9b          5.68 GB  - Partial offload"
-  echo "  qwen3.5-27b          REMOVED - replaced by qwen3-14b (offline-deep)"
-  echo "  qwen3-14b          ~8.50 GB  - Partial offload, offline-deep"
-  echo "  qwopus3.5-4b          REMOVED - GGUF deleted, model unlisted"
-  echo "  qwopus3.5-9b          REMOVED - GGUF deleted, model unlisted"
-  echo "  carnice-9b            REMOVED - GGUF deleted, model unlisted"
-  echo "  qwen3-coder-30b  ~17.70 GB  - Partial offload, coding + tools, MoE"
-  echo "  gemma4-e4b          4.98 GB  - Partial offload"
-  echo "  gemma4-e2b          3.11 GB  - Fits in VRAM"
-  echo "  gemma4-31b           REMOVED - too large for RTX3050 6GB"
-  echo "  nemotron-3-nano-4b  2.90 GB  - Fits in VRAM, tool-calling"
-  echo "  lfm2.5-vl-450m      0.22 GB  - Fits in VRAM, vision/OCR (Q4_0 + mmproj F16)"
-  echo "  qwen3.6-27b      ~16.80 GB  - Heavy offload, dense vision + coding (+ mmproj)"
-  echo "  qwen3.6-35b-moe     REMOVED - replaced by qwen3.6-27b (dense, better quality)"
-  echo "  qwopus-glm-18b     9.84 GB  - Frankenmerge 18B, tool-calling + reasoning, text-only"
+  echo "Model Sizes (Q4_K_M unless noted):"
+  echo "  qwen3.5-4b            2.63 GB  - Fits in VRAM"
+  echo "  qwen3.5-9b            5.68 GB  - Partial offload"
+  echo "  qwen3.5-27b            REMOVED - replaced by qwen3-14b (offline-deep)"
+  echo "  qwen3-14b            ~8.50 GB  - Partial offload, offline-deep"
+  echo "  qwopus3.5-4b            REMOVED - GGUF deleted, model unlisted"
+  echo "  qwopus3.5-9b            REMOVED - GGUF deleted, model unlisted"
+  echo "  carnice-9b              REMOVED - GGUF deleted, model unlisted"
+  echo "  qwen3-coder-30b     ~17.70 GB  - Partial offload, coding + tools, MoE"
+  echo "  gemma4-e4b            4.98 GB  - Partial offload"
+  echo "  gemma4-e2b            3.11 GB  - Fits in VRAM"
+  echo "  gemma4-31b             REMOVED - too large for RTX3050 6GB"
+  echo "  nemotron-3-nano-4b    2.90 GB  - Fits in VRAM, tool-calling"
+  echo "  lfm2.5-vl-450m        0.22 GB  - Fits in VRAM, vision/OCR (Q4_0 + mmproj F16)"
+  echo "  qwen3.6-27b        ~16.80 GB  - Heavy offload, dense vision + coding (+ mmproj)"
+  echo "  qwen3.6-35b-moe       REMOVED - replaced by qwen3.6-27b (dense, better quality)"
+  echo "  qwopus-glm-18b       9.84 GB  - Frankenmerge 18B, tool-calling + reasoning, text-only"
+  echo "  nemotron3-omni-30b ~22.30 GB  - Heavy offload, Omni (audio+video+image+text) + mmproj"
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
@@ -185,7 +182,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-4b"|"qwen3.5-9b"|"qwen3-14b"|"qwen3-coder-30b"|"qwopus3.5-4b"|"qwopus3.5-9b"|"carnice-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"qwen3.6-27b"|"qwopus-glm-18b")
+  "qwen3.5-4b"|"qwen3.5-9b"|"qwen3-14b"|"qwen3-coder-30b"|"qwopus3.5-4b"|"qwopus3.5-9b"|"carnice-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"qwen3.6-27b"|"qwopus-glm-18b"|"nemotron3-omni-30b")
     show_sizes
     download_model "$1"
     ;;
@@ -206,7 +203,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, qwen3-14b, qwen3-coder-30b, qwopus3.5-4b, qwopus3.5-9b, carnice-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, lfm2.5-vl-450m, qwen3.6-27b, qwopus-glm-18b, all, sizes"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, qwen3-14b, qwen3-coder-30b, qwopus3.5-4b, qwopus3.5-9b, carnice-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, lfm2.5-vl-450m, qwen3.6-27b, qwopus-glm-18b, nemotron3-omni-30b, all, sizes"
     echo "Removed: qwen3.5-27b (use qwen3-14b), gemma4-31b (too large), qwen3.6-35b-moe (use qwen3.6-27b)"
     exit 1
     ;;
