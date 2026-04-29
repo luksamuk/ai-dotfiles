@@ -1,0 +1,28 @@
+FROM laguna-xs.2:q4_K_M
+
+# Context: 131072 max (Poolside tested), 32K practical for local offload
+# MoE 3B active per token → KV cache lighter than dense
+# SWA (30/40 layers with 512 window) → cache pressure reduced
+PARAMETER num_ctx 32768
+
+# Official Poolside recommended params (benchmarks at temp=0.7, top_k=20)
+PARAMETER temperature 0.7
+PARAMETER top_k 20
+PARAMETER top_p 0.9
+
+# MoE stability
+PARAMETER repeat_penalty 1.05
+PARAMETER min_p 0.02
+
+# Stop tokens (tokenizer config: EOS=token 2, </assistant>=token 24)
+PARAMETER stop "<|EOS|>"
+PARAMETER stop "</assistant>"
+
+# Laguna XS.2 — Poolside AI
+# 33B MoE (3B active per token), 256 experts + 1 shared
+# Agentic coding model with native reasoning support
+# Interleaved thinking with  tags between tool calls
+# Tool calling via XML-like  tags inside <assistant>
+# Text-only (no vision). Apache 2.0 license.
+# Trained on 30T tokens with Muon optimizer + async off-policy RL
+# SWE-bench Pro: 44.5%, SWE-bench Verified: 68.2%
