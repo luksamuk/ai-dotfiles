@@ -689,11 +689,13 @@ class StreamingChat:
         return layout
     
     def _fit_markdown(self, text: str, available_height: int, title: str = "") -> "Panel":
-        """Renderiza Markdown em texto com auto-scroll responsivo.
+        """Renderiza Markdown com scroll responsivo — sempre preenche 100% da área útil.
         
-        Medi a altura real renderizada usando Console virtual e trunca
-        parágrafos do topo até caber no espaço disponível.
-        Usa cache do último resultado pra evitar re-renderização desnecessária.
+        Comportamento:
+        - Se o conteúdo cabe inteiro: mostra Markdown completo (formatado bonito)
+        - Se transborda: fatia as últimas N linhas da saída renderizada (ANSI),
+          preservando cores/negrito via Text.from_ansi(). O painel sempre fica
+          100% cheio, rolando suavemente linha a linha.
         
         Args:
             text: Conteúdo Markdown para renderizar
@@ -701,7 +703,7 @@ class StreamingChat:
             title: Título do painel
         
         Returns:
-            Panel com Markdown que cabe no espaço disponível
+            Panel com conteúdo que preenche exatamente o espaço disponível
         """
         # Espaço útil = altura disponível - bordas do Panel (2 top + 2 bottom) - título (1)
         usable = max(5, available_height - 5)
@@ -714,39 +716,35 @@ class StreamingChat:
                 box=box.ROUNDED
             )
         
-        # Primeiro tenta renderizar o texto completo
+        # Renderiza Markdown completo num Console virtual
         md = Markdown(text)
-        
-        # Usa Console virtual pra medir a altura renderizada
-        from rich.console import Console as RichConsole, Capture
-        c = RichConsole(width=self._console_width or 80, legacy_windows=False)
+        from rich.console import Console as RichConsole
+        c = RichConsole(width=self._console_width or 80, legacy_windows=False, force_terminal=True)
         with c.capture() as capture:
             c.print(md)
-        rendered_lines = len(capture.get().split('\n'))
+        ansi_output = capture.get()
         
-        # Se coube, retorna direto
-        if rendered_lines <= usable:
+        # Conta linhas renderizadas
+        lines = ansi_output.split("\n")
+        # Remove trailing empty line do c.print
+        if lines and lines[-1] == "":
+            lines = lines[:-1]
+        
+        total_lines = len(lines)
+        
+        # Se coube inteiro, retorna Markdown formatado (mais bonito)
+        if total_lines <= usable:
             return Panel(md, title=title, border_style="yellow" if "Raciocínio" in title else "green", box=box.ROUNDED)
         
-        # Se não coube, trunca parágrafos do topo mantendo os mais recentes
-        # Divide em parágrafos (separados por linhas em branco duplas)
-        paragraphs = text.split('\n\n')
+        # Transbordou: fatia as últimas `usable` linhas da saída ANSI
+        # Text.from_ansi() preserva cores e formatação
+        tail_lines = lines[-usable:]
+        # Adiciona indicador de truncamento no topo
+        tail_with_hint = ["\x1b[2m  ⬆ …\x1b[0m"] + tail_lines
+        tail_ansi = "\n".join(tail_with_hint)
+        tail_text = Text.from_ansi(tail_ansi)
         
-        # Remove parágrafos do início até caber
-        # Binary search seria mais eficiente, mas linear é rápido o suficiente
-        # pra quantidades típicas de parágrafos (< 100)
-        for i in range(len(paragraphs)):
-            truncated = '\n\n'.join(paragraphs[i:])
-            md = Markdown(truncated)
-            with c.capture() as capture:
-                c.print(md)
-            rendered_lines = len(capture.get().split('\n'))
-            if rendered_lines <= usable:
-                return Panel(md, title=title, border_style="yellow" if "Raciocínio" in title else "green", box=box.ROUNDED)
-        
-        # Último recurso: mostrar só o último parágrafo
-        last_para = paragraphs[-1] if paragraphs else text
-        return Panel(Markdown(last_para), title=title, border_style="yellow" if "Raciocínio" in title else "green", box=box.ROUNDED)
+        return Panel(tail_text, title=title, border_style="yellow" if "Raciocínio" in title else "green", box=box.ROUNDED)
     
     @property
     def _console_width(self):
