@@ -1,0 +1,275 @@
+#!/usr/bin/env bash
+# llama-swap-cli — List and inspect llama-swap models
+# Usage:
+#   llama-swap-cli list    — Show all configured models (like ollama list)
+#   llama-swap-cli ps      — Show running models with stats (like ollama ps)
+#   llama-swap-cli unload  — Unload all models (free VRAM)
+#   llama-swap-cli logs    — Show recent llama-swap logs
+
+set -euo pipefail
+
+LLAMA_SWAP_URL="${LLAMA_SWAP_URL:-http://localhost:12434}"
+
+# Colors (respected by NO_COLOR env var)
+if [[ -t 1 ]] && [[ -z "${NO_COLOR:-}" ]]; then
+  BOLD='\033[1m'
+  DIM='\033[2m'
+  GREEN='\033[32m'
+  YELLOW='\033[33m'
+  CYAN='\033[36m'
+  MAGENTA='\033[35m'
+  RED='\033[31m'
+  RESET='\033[0m'
+else
+  BOLD='' DIM='' GREEN='' YELLOW='' CYAN='' MAGENTA='' RED='' RESET=''
+fi
+
+# Feature emoji mapping
+feat_emoji() {
+  local feats="$1"
+  local emojis=""
+  echo "$feats" | grep -qi "thinking" && emojis="${emojis}🤔"
+  echo "$feats" | grep -qi "vision" && emojis="${emojis}👁️"
+  echo "$feats" | grep -qi "tools" && emojis="${emojis}🛠️"
+  # If no special features, it's text-only
+  [[ -z "$emojis" ]] && emojis="📝"
+  echo "$emojis"
+}
+
+cmd_list() {
+  local data
+  data=$(curl -s "${LLAMA_SWAP_URL}/v1/models" 2>/dev/null)
+
+  if [[ -z "$data" ]] || echo "$data" | jq -e '.data' &>/dev/null; then
+    :
+  else
+    echo -e "${RED}Error: Could not reach llama-swap at ${LLAMA_SWAP_URL}${RESET}"
+    echo "Make sure llama-swap is running: systemctl --user status llama-swap"
+    exit 1
+  fi
+
+  local count
+  count=$(echo "$data" | jq '.data | length')
+
+  echo -e "${BOLD}llama-swap models:${RESET} ${count} configured"
+  echo ""
+
+  # Deduplicate — skip :think variants (they share the same base model)
+  local base_count=0
+  base_count=$(echo "$data" | jq -r '[.data[].id | select(endswith(":think") | not)] | length')
+
+  # Table header
+  printf "${BOLD}%-22s %-6s %-28s %-20s${RESET}\n" "MODEL" "EMOJIS" "DESCRIPTION" "SIZE"
+  printf "%-22s %-6s %-28s %-20s\n" "" "" "" "" | tr ' ' '-'
+
+  echo "$data" | jq -r '
+    .data[] |
+    select(.id | endswith(":think") | not) |
+    {
+      id: .id,
+      name: .name,
+      desc: .description,
+      size: (.meta.llamaswap.size // "—"),
+      vram: (.meta.llamaswap.vram_usage // ""),
+      ctx: (.meta.llamaswap.context // ""),
+      features: (.meta.llamaswap.features | tostring),
+      kv: (.meta.llamaswap.kv_cache // ""),
+      warning: (.meta.llamaswap.warning // "")
+    }
+  ' | jq -s '.' | jq -r '.[] |
+    [
+      .id,
+      .features,
+      .desc,
+      .size
+    ] | @tsv
+  ' | while IFS=$'\t' read -r id features desc size; do
+    local emojis
+    emojis=$(feat_emoji "$features")
+    # Truncate description to fit
+    desc=$(echo "$desc" | cut -c1-26)
+    printf "${CYAN}%-22s${RESET} %-6s %-28s ${DIM}%-20s${RESET}\n" "$id" "$emojis" "$desc" "$size"
+  done
+
+  echo ""
+  echo -e "${DIM}  🤔=thinking  👁️=vision  🛠️=tools  📝=text-only${RESET}"
+  echo -e "${DIM}  Use '${BOLD}llama-swap-cli ps${RESET}${DIM} to see running models.${RESET}"
+}
+
+cmd_ps() {
+  local running_data
+  running_data=$(curl -s "${LLAMA_SWAP_URL}/running" 2>/dev/null)
+
+  if [[ -z "$running_data" ]]; then
+    echo -e "${RED}Error: Could not reach llama-swap at ${LLAMA_SWAP_URL}${RESET}"
+    exit 1
+  fi
+
+  local running_count
+  running_count=$(echo "$running_data" | jq '.running | length')
+
+  if [[ "$running_count" -eq 0 ]]; then
+    echo -e "${YELLOW}No models currently loaded.${RESET}"
+    echo ""
+    echo "Models will load on-demand when you send a request."
+    return
+  fi
+
+  echo -e "${BOLD}llama-swap running models:${RESET} ${running_count} active"
+  echo ""
+
+  echo "$running_data" | jq -r '.running[] | @json' | while IFS= read -r model_json; do
+    local id name state proxy ttl desc
+    id=$(echo "$model_json" | jq -r '.model')
+    name=$(echo "$model_json" | jq -r '.name')
+    state=$(echo "$model_json" | jq -r '.state')
+    proxy=$(echo "$model_json" | jq -r '.proxy')
+    ttl=$(echo "$model_json" | jq -r '.ttl')
+    desc=$(echo "$model_json" | jq -r '.description')
+
+    # State color
+    local state_icon state_color
+    case "$state" in
+      "ready"|"started"|"running"|"loaded")
+        state_icon="🟢"
+        state_color="$GREEN"
+        ;;
+      "starting"|"loading"|"health_check")
+        state_icon="🟡"
+        state_color="$YELLOW"
+        ;;
+      "stopping"|"unloading"|"error"|"failed")
+        state_icon="🔴"
+        state_color="$RED"
+        ;;
+      *)
+        state_icon="⚪"
+        state_color=""
+        ;;
+    esac
+
+    echo -e "${BOLD}${state_icon} ${name}${RESET}  ${state_color}(${state})${RESET}"
+    echo -e "  ${DIM}ID:${RESET}    ${id}"
+    echo -e "  ${DIM}Proxy:${RESET} ${proxy}"
+
+    # Parse port from proxy for health check
+    local port
+    port=$(echo "$proxy" | grep -oP '\d+$' 2>/dev/null || echo "")
+
+    if [[ -n "$port" ]]; then
+      # Query llama-server for live stats
+      local health
+      health=$(curl -s "http://localhost:${port}/health" 2>/dev/null || echo "{}")
+
+      local status
+      status=$(echo "$health" | jq -r '.status // "unknown"')
+
+      if [[ "$status" == "ok" || "$status" == "loading model" ]]; then
+        echo -e "  ${DIM}Status:${RESET} ${GREEN}${status}${RESET}"
+      else
+        echo -e "  ${DIM}Status:${RESET} ${status}"
+      fi
+
+      # Try to get model info from models list
+      local model_info
+      model_info=$(curl -s "${LLAMA_SWAP_URL}/v1/models" 2>/dev/null | \
+        jq -r --arg id "$id" '.data[] | select(.id == $id) | {size: .meta.llamaswap.size, ctx: .meta.llamaswap.context, vram: .meta.llamaswap.vram_usage, kv: .meta.llamaswap.kv_cache, features: .meta.llamaswap.features, warning: .meta.llamaswap.warning}' 2>/dev/null)
+
+      if [[ -n "$model_info" && "$model_info" != "null" ]]; then
+        local size ctx vram kv warning features
+        size=$(echo "$model_info" | jq -r '.size // "—"')
+        ctx=$(echo "$model_info" | jq -r '.ctx // "—"')
+        vram=$(echo "$model_info" | jq -r '.vram // "—"')
+        kv=$(echo "$model_info" | jq -r '.kv // "—"')
+        warning=$(echo "$model_info" | jq -r '.warning // ""')
+        features=$(echo "$model_info" | jq -r '.features // "{}"')
+
+        local emojis
+        emojis=$(feat_emoji "$features")
+
+        echo -e "  ${DIM}Size:${RESET}  ${size}"
+        echo -e "  ${DIM}VRAM:${RESET} ${vram}"
+        echo -e "  ${DIM}Ctx:${RESET}   ${ctx}"
+        echo -e "  ${DIM}KV:${RESET}    ${kv}"
+        echo -e "  ${DIM}Flags:${RESET} ${emojis}"
+
+        if [[ -n "$warning" ]]; then
+          echo -e "  ${YELLOW}⚠ ${warning}${RESET}"
+        fi
+      fi
+
+      # Show GPU stats from health endpoint
+      local slots_info
+      slots_info=$(echo "$health" | jq -r '.slots // empty' 2>/dev/null)
+      if [[ -n "$slots_info" ]]; then
+        echo "$slots_info" | jq -r '
+          .[] |
+          "  \(.gpu_name // "GPU"): \(.used_gpu_memory // .used_memory // "?") / \(.total_gpu_memory // .total_memory // "?") GPU"
+        ' 2>/dev/null | head -2
+      fi
+    fi
+
+    # TTL
+    if [[ -n "$ttl" && "$ttl" != "null" ]]; then
+      local ttl_min
+      ttl_min=$((ttl / 60))
+      echo -e "  ${DIM}TTL:${RESET}   ${ttl}s (${ttl_min}m idle until unload)"
+    fi
+
+    echo ""
+  done
+}
+
+cmd_unload() {
+  echo -e "${YELLOW}Unloading all models...${RESET}"
+  local result
+  result=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${LLAMA_SWAP_URL}/models/unload" 2>/dev/null)
+
+  if [[ "$result" == "200" ]]; then
+    echo -e "${GREEN}✓ All models unloaded. VRAM freed.${RESET}"
+  else
+    echo -e "${RED}✗ Failed to unload models (HTTP ${result}).${RESET}"
+    exit 1
+  fi
+}
+
+cmd_logs() {
+  local lines="${1:-50}"
+  journalctl --user -u llama-swap --no-pager -n "$lines"
+}
+
+# Main
+case "${1:-help}" in
+  list|ls|models)
+    cmd_list
+    ;;
+  ps|running|status)
+    cmd_ps
+    ;;
+  unload|unload-all|free|eject)
+    cmd_unload
+    ;;
+  logs|log)
+    cmd_logs "${2:-50}"
+    ;;
+  help|--help|-h)
+    echo "llama-swap-cli — Manage llama-swap models from the terminal"
+    echo ""
+    echo "Usage: llama-swap-cli <command>"
+    echo ""
+    echo "Commands:"
+    echo "  list      List all configured models (like ollama list)"
+    echo "  ps        Show running models with stats (like ollama ps)"
+    echo "  unload    Unload all models (free VRAM)"
+    echo "  logs      Show recent llama-swap logs"
+    echo ""
+    echo "Environment:"
+    echo "  LLAMA_SWAP_URL  llama-swap URL (default: http://localhost:12434)"
+    echo "  NO_COLOR        Disable colored output"
+    ;;
+  *)
+    echo -e "${RED}Unknown command: ${1}${RESET}"
+    echo "Run 'llama-swap-cli help' for usage."
+    exit 1
+    ;;
+esac
