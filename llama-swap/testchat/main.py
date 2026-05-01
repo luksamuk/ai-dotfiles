@@ -23,6 +23,7 @@ import sys
 import json
 import os
 import re
+import time
 import base64
 import hashlib
 from pathlib import Path
@@ -311,6 +312,33 @@ def build_message_content(prompt: str, image_paths: list[str] = None, audio_path
     return content_parts
 
 
+import re
+
+def parse_context_to_tokens(ctx_str: str) -> int | None:
+    """Converte string de context como '32K-128K (dynamic)' em número máximo de tokens.
+    
+    Exemplos:
+      '32K-128K (dynamic)' -> 131072
+      '8K' -> 8192
+      '32768' -> 32768
+      '128K' -> 131072
+    """
+    ctx_str = ctx_str.upper().strip()
+    max_tokens = None
+    # Match números com opcional K/M suffix
+    for match in re.finditer(r'(\d+(?:\.\d+)?)\s*([KM])?', ctx_str):
+        val = float(match.group(1))
+        suffix = match.group(2)
+        if suffix == 'K':
+            val *= 1024
+        elif suffix == 'M':
+            val *= 1024 * 1024
+        val = int(val)
+        if max_tokens is None or val > max_tokens:
+            max_tokens = val
+    return max_tokens
+
+
 def fetch_available_models():
     """Busca modelos disponíveis do endpoint /v1/models.
     
@@ -437,6 +465,14 @@ class StreamingChat:
         self.image_paths = []  # Caminhos das imagens extraídas do prompt
         self.audio_paths = []  # Caminhos dos áudios extraídos do prompt
         self.video_paths = []  # Caminhos dos vídeos extraídos do prompt
+        # Modelo selecionado (dict completo) para mostrar info no relatório
+        self._selected_model_info = {}
+        # Streaming timing stats
+        self.stream_start_time = None
+        self.request_start_time = None  # TTFT: timestamp do início da request
+        self.first_token_time = None     # TTFT: timestamp do primeiro token recebido
+        self.stream_chars = 0
+        self.last_timing_stats = None
     
     def check_model_reasoning(self) -> bool:
         """Verifica se o modelo suporta reasoning usando o metadata da API.
@@ -474,25 +510,18 @@ class StreamingChat:
         return False
     
     def _format_model_label(self, model: dict) -> str:
-        """Formata label multiline do modelo para o menu de seleção.
+        """Formata label de UMA linha do modelo para o menu de seleção.
         
-        Layout:
-            Model Name  🤔 thinking  👁️ vision  ⚡ :think
-            id • Size • VRAM • Context
-            ⚠️ warning (se houver)
+        Layout: Name  🤔 👁️ 🛠️ 📝 ⚡  descrição curta
+        Descrição em cinza (dim), truncada pra caber numa linha.
         """
         name = model["name"]
-        model_id = model["id"]
-        size = model.get("size", "")
-        vram = model.get("vram", "")
-        context = model.get("context", "")
-        warning = model.get("warning", "")
         has_thinking = model.get("supports_thinking", False)
         has_vision = model.get("supports_vision", False)
         has_tools = model.get("supports_tools", False)
         has_think_variant = model.get("has_think_variant", False)
+        warning = model.get("warning", "")
         
-        # Linha 1: Nome + badges de features
         badges = []
         if has_thinking:
             badges.append("🤔")
@@ -500,37 +529,33 @@ class StreamingChat:
             badges.append("👁️")
         if has_tools:
             badges.append("🛠️")
+        if not has_vision and warning and "vision" in warning.lower():
+            badges.append("📝")
         if has_think_variant:
-            badges.append("⚡:think")
+            badges.append("⚡")
         
-        line1 = name
+        label = name
         if badges:
-            line1 += "  " + " ".join(badges)
+            label += "  " + " ".join(badges)
         
-        # Linha 2: ID + size + VRAM + context
-        info_parts = [model_id]
-        if size:
-            info_parts.append(size)
-        if vram:
-            info_parts.append(vram)
-        if context:
-            info_parts.append(f"ctx:{context}")
-        line2 = " • ".join(info_parts)
-        
-        label = f"{line1}\n    {line2}"
-        
-        # Linha 3: warning (se houver)
-        if warning:
-            label += f"\n    ⚠️ {warning}"
-        
+        # Descrição curta estilo catálogo — separador visual com traço
+        short_desc = model.get("description", "")
+        if short_desc:
+            # Trunca em ~55 chars pra não estourar a linha
+            if len(short_desc) > 55:
+                short_desc = short_desc[:52] + "..."
+            label += f"  — {short_desc}"
         return label
     
     def select_model(self) -> str:
-        """Mostra a lista de modelos em menu navegável com seleção de variante.
+        """Mostra a lista de modelos com Panel de detalhes acima da seleção.
         
         Fluxo:
-        1. Seleciona modelo base (lista deduplicada com descrição multiline)
-        2. Se o modelo tem variante :think, pergunta se quer usar thinking
+        1. Exibe Panel com detalhes do modelo (ID, size, VRAM, descrição, warning)
+        2. Lista de seleção com labels de uma linha
+        3. Após seleção, pergunta sobre variante :think se disponível
+        
+        Retorna: model_id selecionado (ou :think variant)
         """
         console.clear()
         
@@ -541,27 +566,28 @@ class StreamingChat:
             console.print("[red]Nenhum modelo disponível. Verifique se o servidor está rodando.[/]")
             sys.exit(1)
         
-        questionary.print("🤖 Selecione o modelo para o chat", style="bold cyan")
+        modelos = self.available_models
+        choices = [self._format_model_label(m) for m in modelos]
         
-        # Prepara as opções com label multiline
-        choices = []
-        for model in self.available_models:
-            label = self._format_model_label(model)
-            choices.append(label)
+        # Cabeçalho com instruções
+        console.print("[bold cyan]🤖 Selecione o modelo para o chat[/]")
+        console.print("[dim]↑↓ navegar • Enter selecionar • Esc sair[/]")
+        console.print()
         
+        # Lista de modelos com indicador
         try:
             selected = questionary.select(
-                "Use ↑↓ para navegar e Enter para selecionar:",
+                "Modelo:",
                 choices=choices,
                 use_indicator=True,
                 use_arrow_keys=True,
                 style=questionary.Style([
-                    ('question', 'bold #00d4ff'),       # Azul claro vibrante
-                    ('selected', 'bg:#005fff #ffffff bold'),  # Fundo azul, texto branco
-                    ('pointer', 'bold #00d4ff'),         # Seta azul vibrante
+                    ('question', 'bold #00d4ff'),
+                    ('selected', 'bg:#005fff #ffffff bold'),
+                    ('pointer', 'bold #00d4ff'),
                     ('instruction', 'dim'),
-                    ('answer', 'bold #00d4ff'),          # Resposta final em azul
-                    ('highlighted', 'bg:#005fff #ffffff bold'),  # Item em destaque
+                    ('answer', 'bold #00d4ff'),
+                    ('highlighted', 'bg:#005fff #ffffff bold'),
                 ])
             ).ask()
         except KeyboardInterrupt:
@@ -571,50 +597,39 @@ class StreamingChat:
             console.print("[dim]Saindo...[/]")
             sys.exit(0)
         
-        # Extrai o model_id da primeira linha do label selecionado
-        # Label format: "Name  badges...\n  model-id • size • vram • ctx: ..."
-        first_line = selected.split("\n")[0]
-        # Mas o model_id está na segunda linha, primeiro campo
-        second_line = selected.split("\n")[1] if "\n" in selected else ""
-        # Parse: "  model-id • size • vram • ctx: ..."
-        model_id = second_line.strip().split(" • ")[0].strip() if second_line else first_line.split(" - ")[0].strip()
-        
-        # Encontra o modelo na lista
-        selected_model = None
-        for model in self.available_models:
-            if model["id"] == model_id:
-                selected_model = model
-                break
-        
-        if not selected_model:
-            # Fallback: tenta pelo nome
-            for model in self.available_models:
-                if model["name"] in first_line:
-                    selected_model = model
-                    model_id = model["id"]
-                    break
-        
-        if not selected_model:
-            console.print(f"[red]Erro: modelo não encontrado na lista[/]")
-            sys.exit(1)
+        # Extrai o model_id: label = "Name  badges", sem mais linhas
+        # Usa o modelo na posição correspondente ao label selecionado
+        selected_idx = choices.index(selected)
+        selected_model = modelos[selected_idx]
+        model_id = selected_model["id"]
         
         self.selected_model_name = selected_model["name"]
         self.supports_vision = selected_model.get("supports_vision", False)
         self.supports_audio = selected_model.get("features", {}).get("audio", False)
+        self._selected_model_info = selected_model  # Salva info completa pro relatório
+        self._selected_description = selected_model.get("description", "")  # Descrição curta pro header
         
         # Etapa 2: Seleção de variante (se disponível)
         final_model_id = model_id
         
+        # Show description panel after selection (for all models)
+        description = selected_model.get("description", "")
+        warning = selected_model.get("warning", "")
+        desc_parts = [f"[bold]{selected_model['name']}[/]"]
+        if description:
+            desc_parts.append(f"[dim]{description}[/]")
+        if warning:
+            desc_parts.append(f"[yellow]⚠️ {warning}[/]")
+        
+        console.print()
+        console.print(Panel(
+            "\n".join(desc_parts),
+            title="Modelo selecionado",
+            border_style="cyan"
+        ))
+        
         if selected_model.get("has_think_variant"):
             think_id = selected_model["think_variant_id"]
-            
-            console.print()
-            console.print(Panel(
-                f"[bold]{selected_model['name']}[/]\n"
-                f"[dim]{selected_model.get('description', '')}[/]",
-                title="Modelo selecionado",
-                border_style="cyan"
-            ))
             
             variant_choices = [
                 f"💬 Chat normal (sem reasoning explícito)",
@@ -668,9 +683,9 @@ class StreamingChat:
         if self.use_thinking_variant:
             # Layout com split: reasoning (esquerda) e response (direita)
             layout.split_column(
-                Layout(name="header", size=3),
+                Layout(name="header", size=4),
                 Layout(name="body"),
-                Layout(name="footer", size=3)
+                Layout(name="footer", size=4)
             )
             
             # Body divide em reasoning (esquerda) e response (direita)
@@ -681,9 +696,9 @@ class StreamingChat:
         else:
             # Layout simples: só response em tela cheia
             layout.split_column(
-                Layout(name="header", size=3),
+                Layout(name="header", size=4),
                 Layout(name="response"),
-                Layout(name="footer", size=3)
+                Layout(name="footer", size=4)
             )
         
         return layout
@@ -769,10 +784,10 @@ class StreamingChat:
         except OSError:
             term_height = 24
         
-        # Header: 3 linhas, Footer: 3 linhas
+        # Header: 4 linhas, Footer: 4 linhas
         # Layout split: cada painel (reasoning/response) usa ~45% do restante
         # Layout full: response usa ~90% do restante
-        body_height = term_height - 6  # -3 header -3 footer
+        body_height = term_height - 8  # -4 header -4 footer
         if self.use_thinking_variant:
             reasoning_height = max(8, int(body_height * 0.45))
             response_height = max(8, body_height - reasoning_height)
@@ -780,12 +795,25 @@ class StreamingChat:
             reasoning_height = 0
             response_height = max(10, body_height)
         
-        # Header com nome do modelo e variante
+        # Header com nome do modelo + descrição, alinhado à esquerda
         display_name = self.selected_model_name or self.selected_model or "Chat"
+        
+        # Linha 1: nome do modelo + indicador de thinking
         if self.use_thinking_variant:
-            display_name += " :think"
-        header_text = Text(f"🤖 {display_name}", style="bold cyan")
-        header = Align.center(header_text)
+            name_line = Text(f"{display_name} ", style="bold cyan") + Text("🧠", style="bold yellow")
+        else:
+            name_line = Text(f"{display_name}", style="bold cyan")
+        
+        # Linha 2: descrição curta do modelo (se houver)
+        model_desc = getattr(self, '_selected_description', '')
+        if model_desc:
+            # Descrição já é a short description do config
+            desc_line = Text(f"\n{model_desc}", style="dim")
+            header_text = name_line + desc_line
+        else:
+            header_text = name_line
+        
+        header = Align.left(header_text)
         layout["header"].update(Panel(header, border_style="cyan"))
         
         # Reasoning panel (só se :think foi selecionado)
@@ -805,16 +833,66 @@ class StreamingChat:
         response_panel = self._fit_markdown(resp_content, response_height, title="[green]Resposta[/]")
         layout["response"].update(response_panel)
         
-        # Footer com status
-        footer_text = Text(f"⏳ {self.status}", style="dim")
-        if self.has_reasoning or self.has_response:
-            if self.use_thinking_variant:
-                stats = f"R: {len(self.reasoning_content)} | Resp: {len(self.response_content)} chars"
-            else:
-                stats = f"Resp: {len(self.response_content)} chars"
-            footer_text = Text(f"✅ {stats}", style="bold green")
+        # Footer com status + métricas em tempo real (2 linhas)
+        footer_line1 = ""
+        footer_line2 = ""
         
-        footer_panel = Panel(Align.center(footer_text), border_style="dim")
+        # Linha 1: Status + TTFT
+        status_icon = "⏳"
+        status_style = "dim"
+        if self.has_reasoning or self.has_response:
+            status_icon = "✅"
+            status_style = "bold green"
+        
+        footer_line1 = f"{status_icon} {self.status}"
+        
+        # TTFT
+        if self.request_start_time and self.first_token_time:
+            ttft = self.first_token_time - self.request_start_time
+            if ttft < 2.0:
+                ttft_color = "green"
+            elif ttft < 5.0:
+                ttft_color = "yellow"
+            else:
+                ttft_color = "red"
+            footer_line1 += f"  │  TTFT [{ttft_color}]{ttft:.1f}s[/]"
+        
+        # Linha 2: Métricas de streaming
+        if self.has_reasoning or self.has_response:
+            elapsed = 0.0
+            if self.stream_start_time:
+                elapsed = time.time() - self.stream_start_time
+            resp_chars = len(self.response_content)
+            reason_chars = len(self.reasoning_content)
+            est_resp_tok = max(1, resp_chars // 4) if resp_chars else 0
+            est_reason_tok = max(1, reason_chars // 4) if reason_chars else 0
+            
+            metric_parts = []
+            
+            # Tempo decorrido
+            if elapsed > 0.1:
+                metric_parts.append(f"⏱ {elapsed:.1f}s")
+            
+            # Raciocínio (se thinking)
+            if self.use_thinking_variant and est_reason_tok > 0:
+                reason_tok_s = f"{est_reason_tok / elapsed:.1f}" if elapsed > 0.1 else "..."
+                metric_parts.append(f"🤔 {est_reason_tok} tok @ {reason_tok_s}t/s")
+            
+            # Resposta
+            if est_resp_tok > 0 and elapsed > 0.1:
+                resp_tok_s = f"{est_resp_tok / elapsed:.1f}"
+                metric_parts.append(f"💬 {est_resp_tok} tok @ {resp_tok_s}t/s")
+            
+            # Velocidade real do llama.cpp (se disponível)
+            if self.last_timing_stats:
+                real_speed = self.last_timing_stats.get("predicted_per_second", 0)
+                if real_speed > 0:
+                    metric_parts.append(f"⚡ {real_speed:.1f}t/s real")
+            
+            footer_line2 = "  │  ".join(metric_parts)
+        
+        footer_content = Text.from_markup(footer_line1 + "\n" + footer_line2) if "[" in footer_line1 else Text(footer_line1 + "\n" + footer_line2, style=status_style)
+        footer_panel = Panel(Align.center(footer_content), border_style="dim")
         layout["footer"].update(footer_panel)
         
         return layout
@@ -824,9 +902,19 @@ class StreamingChat:
         image_paths = image_paths or []
         audio_paths = audio_paths or []
         
+        # Reset timing stats
+        self.stream_start_time = None
+        self.request_start_time = None
+        self.first_token_time = None
+        self.stream_chars = 0
+        self.last_timing_stats = None
+        
         try:
             # Construir conteúdo da mensagem
             message_content = build_message_content(prompt, image_paths, audio_paths)
+            
+            # Marca o início da request (TTFT)
+            self.request_start_time = time.time()
             
             # Faz POST com streaming
             response = requests.post(
@@ -855,6 +943,20 @@ class StreamingChat:
                     
                     try:
                         data = json.loads(data_str)
+                        
+                        # Check for timings in the final chunk (llama.cpp extension)
+                        if "timings" in data:
+                            timings = data["timings"]
+                            self.last_timing_stats = {
+                                "prompt_n": timings.get("prompt_n", 0),
+                                "prompt_ms": timings.get("prompt_ms", 0),
+                                "predicted_n": timings.get("predicted_n", 0),
+                                "predicted_ms": timings.get("predicted_ms", 0),
+                                "prompt_per_second": timings.get("prompt_per_second", 0),
+                                "predicted_per_second": timings.get("predicted_per_second", 0),
+                                "cache_n": timings.get("cache_n", 0),
+                            }
+                        
                         if "choices" not in data or not data["choices"]:
                             continue
                         
@@ -866,14 +968,24 @@ class StreamingChat:
                             if not self.has_reasoning:
                                 self.has_reasoning = True
                                 self.status = "Raciocinando..."
+                                if not self.stream_start_time:
+                                    self.stream_start_time = time.time()
+                                if not self.first_token_time:
+                                    self.first_token_time = time.time()
                             self.reasoning_content += reasoning
+                            self.stream_chars += len(reasoning)
                             yield self.render()
                         
                         if content:
                             if not self.has_response:
                                 self.has_response = True
                                 self.status = "Gerando resposta..."
+                                if not self.stream_start_time:
+                                    self.stream_start_time = time.time()
+                                if not self.first_token_time:
+                                    self.first_token_time = time.time()
                             self.response_content += content
+                            self.stream_chars += len(content)
                             yield self.render()
                     except json.JSONDecodeError:
                         continue
@@ -1065,6 +1177,91 @@ class StreamingChat:
                     title="Resposta",
                     border_style="green"
                 ))
+                
+                # Timing stats panel — métricas detalhadas
+                timing_lines = []
+                ts = self.last_timing_stats
+                
+                # --- TTFT (Time To First Token) ---
+                # TTFT total percebido: request → primeiro token (inclui swap + rede + prompt eval)
+                if self.request_start_time and self.first_token_time:
+                    ttft = self.first_token_time - self.request_start_time
+                    # Cor com base na velocidade: verde < 2s, amarelo < 5s, vermelho > 5s
+                    if ttft < 2.0:
+                        ttft_style = "bold green"
+                    elif ttft < 5.0:
+                        ttft_style = "bold yellow"
+                    else:
+                        ttft_style = "bold red"
+                    timing_lines.append(f"[bold]TTFT:[/] {ttft:.2f}s [{ttft_style}]{'●' * int(min(ttft, 10))}[/]")
+                
+                # --- Métricas do llama.cpp timings ---
+                if ts:
+                    prompt_n = ts.get("prompt_n", 0)
+                    predicted_n = ts.get("predicted_n", 0)
+                    prompt_per_s = ts.get("prompt_per_second", 0)
+                    predicted_per_s = ts.get("predicted_per_second", 0)
+                    prompt_ms = ts.get("prompt_ms", 0)
+                    predicted_ms = ts.get("predicted_ms", 0)
+                    cache_n = ts.get("cache_n", 0)
+                    total_tokens = prompt_n + predicted_n
+                    
+                    # TTFT do modelo: tempo de prompt eval (processamento real do input)
+                    if prompt_ms:
+                        prompt_eval_s = prompt_ms / 1000
+                        timing_lines.append(f"[bold]Eval:[/] {prompt_n} tok in {prompt_eval_s:.1f}s — {prompt_per_s:.1f} tok/s")
+                    
+                    if predicted_n:
+                        timing_lines.append(f"[bold]Decode:[/] {predicted_n} tok in {predicted_ms/1000:.1f}s — [bold green]{predicted_per_s:.1f} tok/s[/]")
+                    if cache_n:
+                        timing_lines.append(f"[dim]Cached: {cache_n} tok[/]")
+                    if total_tokens:
+                        total_time = (prompt_ms + predicted_ms) / 1000
+                        timing_lines.append(f"[bold]Total:[/] {total_tokens} tok in {total_time:.1f}s")
+                elif self.stream_start_time:
+                    # Fallback: show estimated stats
+                    elapsed = time.time() - self.stream_start_time
+                    resp_chars = len(self.response_content)
+                    reason_chars = len(self.reasoning_content)
+                    est_resp_tok = max(1, resp_chars // 4) if resp_chars else 0
+                    est_reason_tok = max(1, reason_chars // 4) if reason_chars else 0
+                    est_tok_s = (est_resp_tok + est_reason_tok) / elapsed if elapsed > 0.1 else 0
+                    timing_lines.append(f"[bold]Decode:[/] ~{est_resp_tok + est_reason_tok} tok in {elapsed:.1f}s — ~{est_tok_s:.1f} tok/s (estimated)")
+                
+                # --- Info do modelo (VRAM, context) ---
+                model_info = self._selected_model_info
+                if model_info:
+                    info_parts = []
+                    if model_info.get("size"):
+                        info_parts.append(f"[bold]Size:[/] {model_info['size']}")
+                    if model_info.get("vram"):
+                        info_parts.append(f"[bold]VRAM:[/] {model_info['vram']}")
+                    if model_info.get("context"):
+                        info_parts.append(f"[bold]Ctx:[/] {model_info['context']}")
+                    # Context usage se temos prompt_n
+                    if ts and ts.get("prompt_n") and model_info.get("context"):
+                        prompt_n_val = ts["prompt_n"]
+                        # Extrai o maior número de context (ex: "32K-128K (dynamic)" -> 131072)
+                        ctx_str = model_info["context"].upper()
+                        ctx_max = parse_context_to_tokens(ctx_str)
+                        if ctx_max:
+                            pct = prompt_n_val / ctx_max * 100
+                            bar_len = 20
+                            filled = max(1, min(bar_len, int(pct / 100 * bar_len)))
+                            bar = "█" * filled + "░" * (bar_len - filled)
+                            info_parts.append(f"[bold]Usage:[/] {prompt_n_val}/{ctx_max} tok [{bar}] {pct:.1f}%")
+                    if model_info.get("kv_cache"):
+                        info_parts.append(f"[dim]KV: {model_info['kv_cache']}[/]")
+                    if info_parts:
+                        timing_lines.append("")  # Separador
+                        timing_lines.extend(info_parts)
+                
+                if timing_lines:
+                    console.print(Panel(
+                        "\n".join(timing_lines),
+                        title="⚡ Performance",
+                        border_style="blue"
+                    ))
                 
             except KeyboardInterrupt:
                 live.stop()

@@ -3,8 +3,8 @@
 #
 # Repositório: ~/git/ai-dotfiles/llama-swap/
 # Modelos: ~/.llama-models/
-# Requer: llama-swap v204+ (matrix DSL + race condition fixes)
-# Requer: llama.cpp build b8902+ (attn_rot, --fit com cache quantizado, GLM fix)
+# Requer: llama-swap v209+ (reasoning UI, macro length, histogram split, SIGHUP reload)
+# Requer: llama.cpp build b8991+ (reasoning budget sampler fix, fast i-quant matmul, CUDA refactor)
 
 # Schema para validação (VS Code)
 
@@ -80,10 +80,11 @@ macros:
   # Compatibilidade attn_rot por modelo:
   #   Qwen3.5-4B/9B   ✅ head_k=256 (256%64==0)
   #   Qwen3-14B        ✅ head_k=128 (128%64==0)
-  #   Qwen3-Coder-30B  ✅ head_k=128
+  #   Qwen3.6-27B      ✅ head_k=256 (256%64==0) — Gated Attn
+  #   Qwen3.6-35B-A3B  ✅ head_k=128
   #   Nemotron-3-Nano  ✅ head_k=128
-  #   Carnice-9B       ✅ (base Qwen3.5)
-  #   Qwopus3.5        ✅ (base Qwen3.5)
+  #   Nemotron-Omni-30B ✅ head_k=128
+  #   Gemma-4 E2B/E4B  ❌ bug #21394, usar f16
   #   LFM2.5-VL-450M   ❌ vision model, manter f16
   #
   # Tipos de cache:
@@ -111,11 +112,11 @@ models:
   # -------------------------------------------
   "qwen3.5-4b":
     name: "Qwen3.5 4B"
-    description: "Qwen3.5-4B — Lightweight multilingual model for chat, code, and reasoning"
+    description: "Multimodal reasoning and agentic chat with 201-language support"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B-Q4_K_M.gguf
-      --mmproj ${models_dir}/mmproj-Qwen3.5-4B-F16.gguf
+      --no-mmproj
       --fit on
       --fit-target 768
       --fit-ctx ${small_model_min_ctx}
@@ -151,27 +152,28 @@ models:
       kv_cache: "q8_0 + attn_rot"
       features:
         thinking: true
-        vision: true
+        # vision: disabled — Gated Delta Net mmproj OOM on CUDA (issue #21323)
+      warning: "Vision disabled — Gated Delta Net mmproj crashes/CUDA OOM (llama.cpp issues #21323, #21402)"
 
   "qwen3.5-9b":
     name: "Qwen3.5 9B"
-    description: "Qwen3.5-9B — Balanced multilingual model for complex tasks and longer responses"
+    description: "Multimodal reasoning, coding, and agentic chat with 201-language support"
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.5-9B-Q4_K_M.gguf
-      --mmproj ${models_dir}/mmproj-Qwen3.5-9B-F16.gguf
+      --model ${models_dir}/Qwen3.5-9B-UD-Q3_K_XL.gguf
+      --no-mmproj
       --fit on
-      --fit-target 1024
-      --fit-ctx ${large_model_min_ctx}
-      --ctx-size ${large_model_max_ctx}
+      --fit-target 512
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
       --reasoning on
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
       --flash-attn on
     filters:
       stripParams: "temperature, top_p"
@@ -188,26 +190,27 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "5.68 GB"
-      context: "16K-128K (dynamic)"
-      vram_usage: "~5GB + RAM offload"
+      size: "~5.05 GB (UD-Q3_K_XL Dynamic 2.0)"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~5GB VRAM (text-only, mmproj offload needs fix)"
       source: "unsloth/Qwen3.5-9B-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "q8_0 + attn_rot"
       features:
         thinking: true
-        vision: true
+        # vision: disabled temporarily — mmproj + fit doesn't handle offload yet
+      warning: "Vision disabled temporarily — mmproj offload with --fit causes OOM"
 
   "gemma4-e4b":
     name: "Gemma 4 E4B"
-    description: "Gemma 4 Efficient 4B — Multilingual general-purpose model with strong instruction following"
+    description: "On-device multimodal reasoning with text, image, and audio understanding"
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
-      --mmproj ${models_dir}/mmproj-gemma-4-E4B-F16.gguf
+      --model ${models_dir}/gemma-4-E4B-it-UD-Q3_K_XL.gguf
+      --no-mmproj
       --fit on
-      --fit-target 1024
-      --fit-ctx ${large_model_min_ctx}
-      --ctx-size ${large_model_max_ctx}
+      --fit-target 512
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
       --temp 0.7
       --top-p 0.9
       --top-k 40
@@ -232,22 +235,23 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "4.98 GB"
-      context: "16K-128K (dynamic)"
-      vram_usage: "~4.5GB + RAM offload"
+      size: "~4.5 GB (UD-Q3_K_XL Dynamic 2.0)"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~5GB VRAM (fits with mmproj!)"
       source: "unsloth/gemma-4-E4B-it-GGUF"
       kv_cache: "f16 (Gemma4 bug #21394)"
       features:
         thinking: true
-        vision: true
+        # vision: disabled — mmproj crashes on CUDA (issue #21402)
+      warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."
 
   "gemma4-e2b":
     name: "Gemma 4 E2B"
-    description: "Gemma 4 Efficient 2B — Compact multilingual model, fits entirely in VRAM"
+    description: "Compact on-device multimodal reasoning with text, image, and audio"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E2B-it-Q4_K_M.gguf
-      --mmproj ${models_dir}/mmproj-gemma-4-E2B-F16.gguf
+      --no-mmproj
       --fit on
       --fit-target 1024
       --fit-ctx ${small_model_min_ctx}
@@ -283,11 +287,12 @@ models:
       kv_cache: "f16 (Gemma4 bug #21394)"
       features:
         thinking: true
-        vision: true
+        # vision: disabled — mmproj crashes on CUDA (issue #21402)
+      warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."
 
   "nemotron-3-nano-4b":
     name: "Nemotron 3 Nano 4B"
-    description: "NVIDIA Nemotron-3-Nano-4B — Specialist in tool-calling and structured output generation"
+    description: "Compact edge-ready reasoning and agentic AI with tool use"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf
@@ -330,7 +335,7 @@ models:
 
   "lfm2.5-vl-450m":
     name: "LFM2.5-VL 450M"
-    description: "LFM2.5-VL-450M — Compact vision model for OCR, image description, and visual QA"
+    description: "Edge vision-language model for object detection and captioning"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/LFM2.5-VL-450M-Q4_0.gguf
@@ -474,9 +479,15 @@ models:
         thinking: true
       warning: "GGUF DELETED on 2026-04-27 - use qwen3.6-27b instead"
 
+  # -------------------------------------------
+  # QWOPUS-GLM-18B - REMOVIDO (sem vantagem sobre qwen3.6-27b)
+  # Frankenmerge 2x Qwen3.5-9B, não oferecia ganho real
+  # GGUF DELETADO — não tente carregar este modelo
+  # -------------------------------------------
   "qwopus-glm-18b-think":
     name: "Qwopus GLM 18B"
-    description: "Qwopus-GLM-18B-Healed — Frankenmerge of 2x Qwen3.5-9B, 90.9% benchmark, tool-calling + reasoning (always-on)"
+    description: "Qwopus-GLM-18B-Healed — REMOVED, no advantage over qwen3.6-27b"
+    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwopus-GLM-18B-Healed-Q4_K_M.gguf
@@ -495,25 +506,25 @@ models:
       --flash-attn on
     ttl: 120
     metadata:
-      size: "9.84 GB"
-      context: "16K-64K (limited by offload)"
-      vram_usage: "~5.5GB VRAM + ~4.3GB RAM"
+      size: "REMOVED"
+      context: "N/A"
+      vram_usage: "N/A"
       source: "KyleHessling1/Qwopus-GLM-18B-Merged-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "N/A"
       features:
         thinking: true
         tools: true
+      warning: "GGUF DELETED on 2026-05-01 - use qwen3.6-27b instead"
 
   # -------------------------------------------
-  # QWEN3-CODER-30B - REQUER OFFLOAD PESADO
-  # MoE 30B (3B ativo por token), especialista em codigo + tool-calling
-  # 128 experts, top-8 routing. Q4_K_M ~17.7GB
-  # VRAM: ~2.3GB + ~15GB RAM offload
-  # KV cache: q4_0 + attn_rot
+  # QWEN3-CODER-30B - REMOVIDO (substituído pelo Qwen3.6-35B-A3B MoE)
+  # MoE 30B era especialista em código, mas Qwen3.6-35B-A3B é superior
+  # GGUF DELETADO — não tente carregar estemodelo
   # -------------------------------------------
   "qwen3-coder-30b":
     name: "Qwen3 Coder 30B"
-    description: "Qwen3-Coder-30B-A3B — MoE coding specialist with agentic tool-calling (128 experts, 3B active)"
+    description: "Qwen3-Coder-30B-A3B — REMOVED, replaced by qwen3.6-35b-moe (better coding model)"
+    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
@@ -545,14 +556,15 @@ models:
           top_p: 0.85
     ttl: 120
     metadata:
-      size: "~17.7 GB"
-      context: "16K-128K (dynamic)"
-      vram_usage: "~2.3GB VRAM + ~15GB RAM"
+      size: "REMOVED"
+      context: "N/A"
+      vram_usage: "N/A"
       source: "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "N/A"
       features:
         thinking: true
         tools: true
+      warning: "GGUF DELETED on 2026-05-01 - use qwen3.6-35b-moe instead"
 
   "carnice-9b":
     name: "Carnice 9B"
@@ -676,8 +688,8 @@ models:
   # MoE 30B params, 3B ativo por token. Contexto até 256K.
   # NVIDIA recomenda: temp 1.0, top_p 1.0 (geral); temp 0.6, top_p 0.95 (tools)
   # Variantes via filters.setParamsByID: base (chat) e :think (reasoning)
-  # UD-Q4_K_XL ~22.3GB + mmproj ~1.48GB → ~24GB total
-  # Offload pesado na RTX3050 (~2.5GB VRAM + ~21GB RAM)
+  # UD-Q3_K_XL ~17GB + mmproj ~1.48GB → ~18.5GB total (Dynamic 2.0)
+  # Offload pesado na RTX3050 (~2.5GB VRAM + ~16GB RAM)
   # mmproj unificado (audio+imagem) — não separar, é um arquivo só
   # KV cache: q4_0 + attn_rot (base Nemotron, head_k=128, 128%64==0)
   # NOTA: O nome é "Nano Omni" — NÃO confundir com Nemotron-3-Nano-4B (text-only)
@@ -685,10 +697,10 @@ models:
   # -------------------------------------------
   "nemotron3-omni-30b":
     name: "Nemotron 3 Nano Omni 30B"
-    description: "NVIDIA Nemotron-3-Nano-Omni-30B-A3B — Omni model supporting video, image, and text input (audio not supported in GGUF yet)"
+    description: "Omni-modal understanding across documents, audio, and video"
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-UD-Q4_K_XL.gguf
+      --model ${models_dir}/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-UD-Q3_K_XL.gguf
       --mmproj ${models_dir}/mmproj-Nemotron-3-Nano-Omni-30B-A3B-F16.gguf
       --fit on
       --fit-target 2048
@@ -715,9 +727,9 @@ models:
           top_p: 0.95
     ttl: 180
     metadata:
-      size: "~22.3 GB + mmproj 1.48 GB"
+      size: "~17 GB + mmproj 1.48 GB (UD-Q3_K_XL Dynamic 2.0)"
       context: "16K-128K (dynamic, supports 256K)"
-      vram_usage: "~2.5GB VRAM + ~21GB RAM"
+      vram_usage: "~2.5GB VRAM + ~16GB RAM"
       source: "unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF"
       kv_cache: "q4_0 + attn_rot"
       features:
@@ -730,16 +742,17 @@ models:
   # QWEN3.6-27B - MULTIMODAL DENSE (VISION + TEXT)
   # Denso 27B params, substitui o 35B MoE (era lento demais)
   # SWE-bench melhor que 35B MoE em denso, melhor qualidade/token
-  # Q4_K_M ~16.8GB, mmproj ~885MB
+  # UD-Q3_K_XL ~14.5GB (Unsloth Dynamic 2.0), mmproj ~885MB
   # REQUER OFFLOAD PESADO - inference lenta mas mais rápida que MoE
-  # KV cache: q4_0 + attn_rot
+  # Nota: UD-Q3_K_XL = Q3 base com Q4/Q5 nos tensores importantes (Dynamic 2.0)
+  # KV cache: q4_0 + attn_rot (head_k=256, 256%64==0 ✅)
   # -------------------------------------------
   "qwen3.6-27b":
     name: "Qwen3.6 27B"
-    description: "Qwen3.6-27B — Dense multimodal model for deep offline coding and analysis"
+    description: "Agentic coding and multimodal reasoning with thinking preservation"
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.6-27B-Q4_K_M.gguf
+      --model ${models_dir}/Qwen3.6-27B-UD-Q3_K_XL.gguf
       --mmproj ${models_dir}/mmproj-Qwen3.6-27B-F16.gguf
       --fit on
       --fit-target 1024
@@ -769,9 +782,9 @@ models:
           top_p: 0.9
     ttl: 120
     metadata:
-      size: "~16.8 GB"
+      size: "~14.5 GB (UD-Q3_K_XL Dynamic 2.0)"
       context: "16K-128K (dynamic)"
-      vram_usage: "~2GB VRAM + ~15GB RAM"
+      vram_usage: "~2GB VRAM + ~13GB RAM"
       source: "unsloth/Qwen3.6-27B-GGUF"
       kv_cache: "q4_0 + attn_rot"
       features:
@@ -780,13 +793,20 @@ models:
         tools: true
       warning: "Heavy offload - slow inference"
 
+  # -------------------------------------------
+  # QWEN3.6-35B-A3B - MoE CODING + MULTIMODAL
+  # MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
+  # 33 experts, top-8 routing. UD-Q3_K_XL ~13.8GB (Dynamic 2.0)
+  # mmproj ~885MB → ~14.7GB total
+  # Offload pesado (~2GB VRAM + ~13GB RAM), mas MoE = 3B ativo/token
+  # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
+  # -------------------------------------------
   "qwen3.6-35b-moe":
     name: "Qwen3.6 35B MoE"
-    description: "Qwen3.6-35B-A3B — REMOVED, replaced by qwen3.6-27b (dense, better quality)"
-    unlisted: true
+    description: "Efficient MoE for agentic coding and multimodal reasoning"
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.6-35B-A3B-UD-Q4_K_M.gguf
+      --model ${models_dir}/Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf
       --mmproj ${models_dir}/mmproj-Qwen3.6-35B-A3B-F16.gguf
       --fit on
       --fit-target 2048
@@ -816,16 +836,16 @@ models:
           top_p: 0.9
     ttl: 120
     metadata:
-      size: "~22 GB"
+      size: "~13.8 GB (UD-Q3_K_XL Dynamic 2.0) + mmproj ~885MB"
       context: "16K-128K (dynamic)"
-      vram_usage: "~2.5GB VRAM + ~19GB RAM"
+      vram_usage: "~2GB VRAM + ~13GB RAM"
       source: "unsloth/Qwen3.6-35B-A3B-GGUF"
       kv_cache: "q4_0 + attn_rot"
       features:
         thinking: true
         vision: true
         tools: true
-      warning: "GGUF DELETED on 2026-04-27 - use qwen3.6-27b instead"
+      warning: "Heavy offload - slow inference"
 
 # ============================================
 # SWAP MATRIX (v202+) - Substitui o antigo groups
@@ -851,8 +871,6 @@ matrix:
   vars:
     # Atalhos para IDs longos (usados em sets e evict_costs)
     no30: nemotron3-omni-30b
-    qw18: qwopus-glm-18b-think
-    qc30: qwen3-coder-30b
     # Modelos pequenos
     q4: qwen3.5-4b
     qw4: qwopus3.5-4b
@@ -860,16 +878,11 @@ matrix:
     g2: gemma4-e2b
     # Vision
     vl: lfm2.5-vl-450m
-    # Modelos médios
+    # Modelos médios (agora cabem na VRAM!)
     q9: qwen3.5-9b
-    qw9: qwopus3.5-9b
-    c9: carnice-9b
     g4: gemma4-e4b
     # Pesados
     qw27: qwen3.6-27b
-    q14: qwen3-14b
-    q27: qwen3.5-27b
-    g31: gemma4-31b
     qw36: qwen3.6-35b-moe
   # Sets: combinações válidas de modelos simultâneos
   # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
@@ -887,14 +900,15 @@ matrix:
     # LLM pequeno sozinho (sem vision ativo)
     small_only: "q4 | qw4 | n4 | g2"
 
-    # Modelos médios (~5GB VRAM) - rodam sozinhos (não cabe + vision)
-    medium: "q9 | qw9 | c9 | g4"
+    # Modelos médios (~5GB VRAM) - agora cabem na VRAM com UD-Q3!
+    # Qwen3.5-9B e Gemma4-E4B cabem inteiramente com mmproj
+    medium: "q9 | g4"
 
     # Modelo omni + Vision (ambos grandes, mas podem coexistir com swap)
     omni_vision: "no30 & vl"
 
     # Modelos pesados - toda VRAM + RAM offload
-    heavy: "no30 | qw18 | qw27 | q14 | qc30 | q27 | g31 | qw36"
+    heavy: "no30 | qw27 | qw36"
 
     # Vision sozinho
     vision_only: "vl"
@@ -902,18 +916,11 @@ matrix:
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   # Modelos pesados demoram mais pra carregar → custo alto
   evict_costs:
-    no30: 10     # 22.3GB omni, very heavy offload
-    qw18: 9      # 9.84GB frankenmerge, heavy offload
-    qc30: 10     # 17.7GB, demora muito pra carregar
-    qw27: 10     # 16.8GB dense, heavy offload
-    q27: 10      # 17GB unlisted
-    g31: 10      # 18GB unlisted
-    qw36: 10     # 22GB unlisted, DELETED
-    q14: 8       # 8.5GB, pesado (unlisted)
-    c9: 5        # offload parcial
-    qw9: 5
-    q9: 4
-    g4: 4
+    no30: 10     # 17GB omni UD-Q3, very heavy offload
+    qw27: 10     # 14.5GB dense UD-Q3, heavy offload
+    qw36: 10     # 13.8GB MoE UD-Q3, heavy offload
+    q9: 4        # ~5GB, fits VRAM now
+    g4: 4        # ~4.5GB, fits VRAM now
     vl: 3        # vision, leve mas útil manter vivo
     q4: 2
     qw4: 2
