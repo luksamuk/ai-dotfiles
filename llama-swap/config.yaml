@@ -80,10 +80,10 @@ macros:
   # Compatibilidade attn_rot por modelo:
   #   Qwen3.5-4B/9B   ✅ head_k=256 (256%64==0)
   #   Qwen3-14B        ✅ head_k=128 (128%64==0)
-  #   Qwen3.6-27B      ✅ head_k=256 (256%64==0) — Gated Attn
   #   Qwen3.6-35B-A3B  ✅ head_k=128
   #   Nemotron-3-Nano  ✅ head_k=128
   #   Nemotron-Omni-30B ✅ head_k=128
+  #   GLM-4.7-Flash     ❌ bug #21394, usar f16
   #   Gemma-4 E2B/E4B  ❌ bug #21394, usar f16
   #   LFM2.5-VL-450M   ❌ vision model, manter f16
   #
@@ -424,12 +424,11 @@ models:
   # Gated Delta Net — mmproj CRASHA no CUDA (issue #21402), TEXT-ONLY.
   # UD-Q3_K_XL ~14.6GB (Dynamic 2.0). Temp 1.0, top_p 0.95, min_p 0.01.
   # Repeat penalty 1.0 (z.ai recommendation). KV cache: f16 (Gated Delta Net bug #21394)
-  # NOTA: unlisted até terminar testes do Qwen3.6-35B.
+  # Substitui o Qwen3.6-27B (denso) — MoE 3B ativo = mais rápido, SWE-bench melhor.
   # -------------------------------------------
   "glm-4.7-flash":
     name: "GLM 4.7 Flash"
     description: "30B MoE coding champion — 3B active, best SWE-bench in class"
-    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/GLM-4.7-Flash-UD-Q3_K_XL.gguf
@@ -471,61 +470,6 @@ models:
         vision: false
         tools: true
       warning: "Vision disabled — Gated Delta Net mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode. Heavy offload."
-
-  # -------------------------------------------
-  # QWEN3.6-27B - DENSE MULTIMODAL (HEAVY OFFLOAD)
-  # Denso 27B params, substitui o 35B MoE (era lento demais)
-  # SWE-bench melhor que 35B MoE em denso, melhor qualidade/token
-  # UD-Q3_K_XL ~14.5GB (Unsloth Dynamic 2.0), mmproj ~885MB
-  # REQUER OFFLOAD PESADO - inference lenta mas mais rápida que MoE
-  # Nota: UD-Q3_K_XL = Q3 base com Q4/Q5 nos tensores importantes (Dynamic 2.0)
-  # KV cache: q4_0 + attn_rot (head_k=256, 256%64==0 ✅)
-  # -------------------------------------------
-  "qwen3.6-27b":
-    name: "Qwen3.6 27B"
-    description: "Agentic coding and multimodal reasoning with thinking preservation"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.6-27B-UD-Q3_K_XL.gguf
-      --mmproj ${models_dir}/mmproj-Qwen3.6-27B-F16.gguf
-      --fit on
-      --fit-target 1024
-      --fit-ctx 16384
-      --ctx-size 131072
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
-      --min-p ${code_min_p}
-      --repeat-penalty ${code_repeat_penalty}
-      --reasoning on
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --flash-attn on
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.85
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 120
-    metadata:
-      size: "~14.5 GB (UD-Q3_K_XL Dynamic 2.0)"
-      context: "16K-128K (dynamic)"
-      vram_usage: "~2GB VRAM + ~13GB RAM"
-      source: "unsloth/Qwen3.6-27B-GGUF"
-      kv_cache: "q4_0 + attn_rot"
-      features:
-        thinking: true
-        vision: true
-        tools: true
-      warning: "Heavy offload - slow inference"
 
   # -------------------------------------------
   # QWEN3.6-35B-A3B - MoE CODING + MULTIMODAL
@@ -615,9 +559,8 @@ matrix:
     q9: qwen3.5-9b
     g4: gemma4-e4b
     # Pesados
-    qw27: qwen3.6-27b
-    qw36: qwen3.6-35b-moe
     glm: glm-4.7-flash
+    qw36: qwen3.6-35b-moe
   # Sets: combinações válidas de modelos simultâneos
   # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
   # +ref = expandir outro set inline
@@ -642,7 +585,7 @@ matrix:
     omni_vision: "no30 & vl"
 
     # Modelos pesados - toda VRAM + RAM offload
-    heavy: "no30 | qw27 | qw36 | glm"
+    heavy: "no30 | glm | qw36"
 
     # Vision sozinho
     vision_only: "vl"
@@ -651,9 +594,8 @@ matrix:
   # Modelos pesados demoram mais pra carregar → custo alto
   evict_costs:
     no30: 10     # 17GB omni UD-Q3, very heavy offload
-    qw27: 10     # 14.5GB dense UD-Q3, heavy offload
-    qw36: 10     # 13.8GB MoE UD-Q3, heavy offload
     glm: 10      # 14.6GB MoE UD-Q3, heavy offload
+    qw36: 10     # 13.8GB MoE UD-Q3, heavy offload
     q9: 4        # ~5GB, fits VRAM now
     g4: 4        # ~4.5GB, fits VRAM now
     vl: 3        # vision, leve mas útil manter vivo
