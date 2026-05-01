@@ -1,60 +1,97 @@
 #!/usr/bin/env bash
 # llama-swap-cli — List and inspect llama-swap models
+#
 # Usage:
-#   llama-swap-cli list    — Show all configured models (like ollama list)
-#   llama-swap-cli ps      — Show running models with stats (like ollama ps)
-#   llama-swap-cli unload  — Unload all models (free VRAM)
-#   llama-swap-cli logs    — Show recent llama-swap logs
+#   llama-swap-cli list              Show configured models (aligned in TTY, TSV in pipe)
+#   llama-swap-cli list --pretty     Colored + emoji output
+#   llama-swap-cli ps                Show running models
+#   llama-swap-cli ps --pretty      Show running models (colored + emoji)
+#   llama-swap-cli unload            Unload all models (free VRAM)
+#   llama-swap-cli logs [N]          Show recent logs (default: 50 lines)
+#
+# Output in TTY: aligned columns via `column -t`
+# Output in pipe: tab-separated values (TSV) for awk/cut/jq
 
 set -euo pipefail
 
 LLAMA_SWAP_URL="${LLAMA_SWAP_URL:-http://localhost:12434}"
+PRETTY="${LLAMA_SWAP_PRETTY:-}"
 
-# Colors (respected by NO_COLOR env var)
-if [[ -t 1 ]] && [[ -z "${NO_COLOR:-}" ]]; then
-  BOLD='\033[1m' DIM='\033[2m' GREEN='\033[32m' YELLOW='\033[33m'
-  CYAN='\033[36m' MAGENTA='\033[35m' RED='\033[31m' RESET='\033[0m'
-else
-  BOLD='' DIM='' GREEN='' YELLOW='' CYAN='' MAGENTA='' RED='' RESET=''
+# Parse flags
+ARGS=()
+for arg in "$@"; do
+  case "$arg" in
+    --pretty) PRETTY=1 ;;
+    *) ARGS+=("$arg") ;;
+  esac
+done
+
+# Auto-disable pretty when piping unless FORCE_COLOR
+if [[ -n "$PRETTY" ]] && [[ ! -t 1 ]] && [[ -z "${FORCE_COLOR:-}" ]]; then
+  PRETTY=""
 fi
 
-# Calculate visual width of a string (emojis = 2 columns each)
-visual_width() {
-  local str="$1"
-  # Count emojis (Unicode ranges) as 2, everything else as 1
-  # First strip ANSI codes
-  local clean
-  clean=$(echo "$str" | sed $'s/\033\\[[0-9;]*m//g')
-  # Count emoji codepoints (rough: CJK, emojis, symbols)
-  local emoji_count plain_count
-  # Emojis and wide chars: count as 2
-  emoji_count=$(echo "$clean" | perl -CSD -ne 'while (/[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{FE00}-\x{FE0F}\x{1F000}-\x{1FAFF}\x{200D}\x{20E3}\x{E0020}-\x{E007F}\x{2194}-\x{21AA}]/g) { $c++ } END { print $c+0 }')
-  # Remove emojis to count narrow chars
-  local stripped
-  stripped=$(echo "$clean" | perl -CSD -pe 's/[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{FE00}-\x{FE0F}\x{1F000}-\x{1FAFF}\x{200D}\x{20E3}\x{E0020}-\x{E007F}\x{2194}-\x{21AA}]//g')
-  plain_count=${#stripped}
-  echo $(( plain_count + emoji_count * 2 ))
+# Colors
+if [[ -n "$PRETTY" ]] && [[ -z "${NO_COLOR:-}" ]]; then
+  BOLD='\033[1m' DIM='\033[2m' GREEN='\033[32m' YELLOW='\033[33m'
+  CYAN='\033[36m' RED='\033[31m' RESET='\033[0m'
+else
+  BOLD='' DIM='' GREEN='' YELLOW='' CYAN='' RED='' RESET=''
+fi
+
+# Feature tag: pipe-friendly text
+feat_tag() {
+  local feats="$1" tags=""
+  echo "$feats" | grep -qi "thinking" && tags="${tags}+think"
+  echo "$feats" | grep -qi "vision"  && tags="${tags}+vision"
+  echo "$feats" | grep -qi "tools"   && tags="${tags}+tools"
+  tags="${tags#+}"
+  [[ -z "$tags" ]] && tags="text"
+  echo "$tags"
 }
 
-# Pad string to a visual width, accounting for emojis
-pad_to() {
-  local str="$1" target_width="$2"
-  local vw
-  vw=$(visual_width "$str")
-  local padding=$(( target_width - vw ))
-  if [[ $padding -lt 0 ]]; then padding=0; fi
-  printf '%s%*s' "$str" "$padding" ""
-}
-
-# Feature emoji mapping
+# Feature emoji: pretty output
 feat_emoji() {
-  local feats="$1"
-  local emojis=""
+  local feats="$1" emojis=""
   echo "$feats" | grep -qi "thinking" && emojis="${emojis}🤔"
-  echo "$feats" | grep -qi "vision" && emojis="${emojis}👁️"
-  echo "$feats" | grep -qi "tools" && emojis="${emojis}🛠️"
+  echo "$feats" | grep -qi "vision"  && emojis="${emojis}👁"
+  echo "$feats" | grep -qi "tools"   && emojis="${emojis}🛠"
   [[ -z "$emojis" ]] && emojis="📝"
   echo "$emojis"
+}
+
+# Extract short size: "3.11 GB" from "~3.11 GB (UD-Q3_K_XL ...)" etc.
+short_size() {
+  echo "$1" | perl -ne 'if (/([\d.]+)\s*(GB|MB|KB)/i) { print "$1 $2" } else { print "-" }'
+}
+
+state_label() {
+  local state="$1"
+  if [[ -n "$PRETTY" ]]; then
+    case "$state" in
+      ready|started|running|loaded) echo "🟢" ;;
+      starting|loading|health_check) echo "🟡" ;;
+      stopping|unloading|error|failed) echo "🔴" ;;
+      *) echo "⚪" ;;
+    esac
+  else
+    case "$state" in
+      ready|started|running|loaded) echo "OK" ;;
+      starting|loading|health_check) echo "LOADING" ;;
+      stopping|unloading) echo "STOPPING" ;;
+      error|failed) echo "ERROR" ;;
+      *) echo "$state" ;;
+    esac
+  fi
+}
+
+# Format output: column-aligned in TTY, TSV in pipe
+format_output() {
+  if [[ -t 1 ]]; then
+    column -t -s $'\t'
+  else
+    cat
+  fi
 }
 
 cmd_list() {
@@ -62,58 +99,42 @@ cmd_list() {
   data=$(curl -s "${LLAMA_SWAP_URL}/v1/models" 2>/dev/null)
 
   if [[ -z "$data" ]] || ! echo "$data" | jq -e '.data' &>/dev/null; then
-    echo -e "${RED}Error: Could not reach llama-swap at ${LLAMA_SWAP_URL}${RESET}"
-    echo "Make sure llama-swap is running: systemctl --user status llama-swap"
+    echo "Error: Could not reach llama-swap at ${LLAMA_SWAP_URL}" >&2
+    echo "Make sure llama-swap is running: systemctl --user status llama-swap" >&2
     exit 1
   fi
 
-  local count
-  count=$(echo "$data" | jq '.data | length')
+  {
+    printf "NAME\tSIZE\tTAGS\tDESCRIPTION\n"
 
-  echo -e "${BOLD}llama-swap models:${RESET} ${count} configured"
-  echo ""
-
-  # Header
-  printf "${BOLD}%s${RESET}" "$(pad_to "MODEL" 22)"
-  printf "${BOLD}%s${RESET}" "$(pad_to "FLAGS" 8)"
-  printf "${BOLD}%s${RESET}" "$(pad_to "DESCRIPTION" 30)"
-  printf "${BOLD}%s${RESET}\n" "SIZE"
-  printf '%*s' 22 "" | tr ' ' '-'
-  printf '%*s' 8 "" | tr ' ' '-'
-  printf '%*s' 30 "" | tr ' ' '-'
-  printf '%*s\n' 20 "" | tr ' ' '-'
-
-  echo "$data" | jq -r '
-    .data[] |
-    select(.id | endswith(":think") | not) |
-    {
-      id: .id,
-      desc: (.description // ""),
-      size: (.meta.llamaswap.size // "—"),
-      features: (.meta.llamaswap.features | tostring)
-    } | [.id, .features, .desc, .size] | @tsv
-  ' | while IFS=$'\t' read -r id features desc size; do
-    local emojis
-    emojis=$(feat_emoji "$features")
-    # Truncate description for display
-    desc=$(echo "$desc" | cut -c1-28)
-    printf "${CYAN}%s${RESET}" "$(pad_to "$id" 22)"
-    printf '%s' "$(pad_to "$emojis" 8)"
-    printf '%s' "$(pad_to "$desc" 30)"
-    printf "${DIM}%s${RESET}\n" "$size"
-  done
-
-  echo ""
-  echo -e "${DIM}  🤔=thinking  👁️=vision  🛠️=tools  📝=text-only${RESET}"
-  echo -e "${DIM}  Use '${BOLD}llama-swap-cli ps${RESET}${DIM} to see running models.${RESET}"
+    echo "$data" | jq -r '
+      .data[] |
+      select(.id | endswith(":think") | not) |
+      {
+        id: .id,
+        desc: (.description // ""),
+        size: (.meta.llamaswap.size // "-"),
+        features: (.meta.llamaswap.features | tostring)
+      } | [.id, .features, .desc, .size] | @tsv
+    ' | while IFS=$'\t' read -r id features desc size; do
+      local tags sz
+      if [[ -n "$PRETTY" ]]; then
+        tags=$(feat_emoji "$features")
+      else
+        tags=$(feat_tag "$features")
+      fi
+      sz=$(short_size "$size")
+      printf "${CYAN}%s\t%s\t${DIM}%s${RESET}\t%s\n" "$id" "$sz" "$tags" "$desc"
+    done
+  } | format_output
 }
 
 cmd_ps() {
-  local running_data
+  local running_data models_data
   running_data=$(curl -s "${LLAMA_SWAP_URL}/running" 2>/dev/null)
 
   if [[ -z "$running_data" ]]; then
-    echo -e "${RED}Error: Could not reach llama-swap at ${LLAMA_SWAP_URL}${RESET}"
+    echo "Error: Could not reach llama-swap at ${LLAMA_SWAP_URL}" >&2
     exit 1
   fi
 
@@ -121,106 +142,82 @@ cmd_ps() {
   running_count=$(echo "$running_data" | jq '.running | length')
 
   if [[ "$running_count" -eq 0 ]]; then
-    echo -e "${YELLOW}No models currently loaded.${RESET}"
-    echo ""
+    if [[ -n "$PRETTY" ]]; then
+      echo -e "${YELLOW}No models currently loaded.${RESET}"
+    else
+      echo "No models currently loaded."
+    fi
     echo "Models will load on-demand when you send a request."
     return
   fi
 
-  echo -e "${BOLD}llama-swap running models:${RESET} ${running_count} active"
-  echo ""
+  models_data=$(curl -s "${LLAMA_SWAP_URL}/v1/models" 2>/dev/null)
 
-  echo "$running_data" | jq -r '.running[] | @json' | while IFS= read -r model_json; do
-    local id name state proxy ttl desc
-    id=$(echo "$model_json" | jq -r '.model')
-    name=$(echo "$model_json" | jq -r '.name')
-    state=$(echo "$model_json" | jq -r '.state')
-    proxy=$(echo "$model_json" | jq -r '.proxy')
-    ttl=$(echo "$model_json" | jq -r '.ttl')
-    desc=$(echo "$model_json" | jq -r '.description')
+  {
+    printf "NAME\tSTATE\tSIZE\tVRAM\tCONTEXT\tKV_CACHE\tTTL\n"
 
-    # State icon
-    local state_icon state_color
-    case "$state" in
-      ready|started|running|loaded)  state_icon="🟢"; state_color="$GREEN" ;;
-      starting|loading|health_check) state_icon="🟡"; state_color="$YELLOW" ;;
-      stopping|unloading|error|failed) state_icon="🔴"; state_color="$RED" ;;
-      *)                              state_icon="⚪"; state_color="" ;;
-    esac
+    echo "$running_data" | jq -r '.running[] | @json' | while IFS= read -r model_json; do
+      local id name state proxy ttl
+      id=$(echo "$model_json" | jq -r '.model')
+      name=$(echo "$model_json" | jq -r '.name')
+      state=$(echo "$model_json" | jq -r '.state')
+      proxy=$(echo "$model_json" | jq -r '.proxy')
+      ttl=$(echo "$model_json" | jq -r '.ttl // 0')
 
-    echo -e "${BOLD}${state_icon} ${name}${RESET}  ${state_color}(${state})${RESET}"
-    echo -e "  ${DIM}ID:${RESET}    ${id}"
-    echo -e "  ${DIM}Proxy:${RESET} ${proxy}"
+      local icon
+      icon=$(state_label "$state")
 
-    # Parse port for health check
-    local port
-    port=$(echo "$proxy" | grep -oP '\d+$' 2>/dev/null || echo "")
-
-    if [[ -n "$port" ]]; then
-      local health
-      health=$(curl -s "http://localhost:${port}/health" 2>/dev/null || echo "{}")
-
-      local status
-      status=$(echo "$health" | jq -r '.status // "unknown"')
-
-      if [[ "$status" == "ok" || "$status" == "loading model" ]]; then
-        echo -e "  ${DIM}Status:${RESET} ${GREEN}${status}${RESET}"
-      else
-        echo -e "  ${DIM}Status:${RESET} ${status}"
-      fi
-
-      # Fetch model metadata
-      local model_info
-      model_info=$(curl -s "${LLAMA_SWAP_URL}/v1/models" 2>/dev/null | \
-        jq -r --arg id "$id" '.data[] | select(.id == $id) |
-        {size: .meta.llamaswap.size, ctx: .meta.llamaswap.context,
-         vram: .meta.llamaswap.vram_usage, kv: .meta.llamaswap.kv_cache,
-         features: .meta.llamaswap.features, warning: .meta.llamaswap.warning}' 2>/dev/null)
-
-      if [[ -n "$model_info" && "$model_info" != "null" ]]; then
-        local size ctx vram kv warning features
-        size=$(echo "$model_info" | jq -r '.size // "—"')
-        ctx=$(echo "$model_info" | jq -r '.ctx // "—"')
-        vram=$(echo "$model_info" | jq -r '.vram // "—"')
-        kv=$(echo "$model_info" | jq -r '.kv // "—"')
-        warning=$(echo "$model_info" | jq -r '.warning // ""')
-        features=$(echo "$model_info" | jq -r '.features // "{}"')
-
-        local emojis
-        emojis=$(feat_emoji "$features")
-
-        echo -e "  ${DIM}Size:${RESET}  ${size}"
-        echo -e "  ${DIM}VRAM:${RESET} ${vram}"
-        echo -e "  ${DIM}Ctx:${RESET}   ${ctx}"
-        echo -e "  ${DIM}KV:${RESET}    ${kv}"
-        echo -e "  ${DIM}Flags:${RESET} ${emojis}"
-
-        if [[ -n "$warning" ]]; then
-          echo -e "  ${YELLOW}⚠ ${warning}${RESET}"
+      # Health check
+      local port
+      port=$(echo "$proxy" | grep -oP '\d+$' 2>/dev/null || echo "")
+      if [[ -n "$port" ]]; then
+        local health
+        health=$(curl -s "http://localhost:${port}/health" 2>/dev/null || echo "{}")
+        local hstatus
+        hstatus=$(echo "$health" | jq -r '.status // "unknown"')
+        if [[ "$hstatus" != "ok" ]] && [[ "$hstatus" != "loading model" ]]; then
+          icon="${icon}(${hstatus})"
         fi
       fi
-    fi
 
-    # TTL
-    if [[ -n "$ttl" && "$ttl" != "null" ]]; then
-      local ttl_min
-      ttl_min=$((ttl / 60))
-      echo -e "  ${DIM}TTL:${RESET}   ${ttl}s (${ttl_min}m idle until unload)"
-    fi
+      # Metadata lookup
+      local size="-" vram="-" ctx="-" kv="-"
+      if [[ -n "$models_data" ]]; then
+        local meta
+        meta=$(echo "$models_data" | jq -r --arg id "$id" '
+          .data[] | select(.id == $id) |
+          .meta.llamaswap // {} | {size, vram_usage, context, kv_cache}
+        ' 2>/dev/null)
+        if [[ -n "$meta" && "$meta" != "null" ]]; then
+          size=$(echo "$meta" | jq -r '.size // "-"')
+          vram=$(echo "$meta" | jq -r '.vram_usage // "-"')
+          ctx=$(echo "$meta" | jq -r '.context // "-"')
+          kv=$(echo "$meta" | jq -r '.kv_cache // "-"')
+        fi
+      fi
 
-    echo ""
-  done
+      local sz ttl_display
+      sz=$(short_size "$size")
+      if [[ "$ttl" -gt 0 ]]; then
+        ttl_display="${ttl}s"
+      else
+        ttl_display="-"
+      fi
+
+      printf "${CYAN}%s\t${GREEN}%s${RESET}\t%s\t%s\t%s\t%s\t%s\n" \
+        "$name" "$icon" "$sz" "$vram" "$ctx" "$kv" "$ttl_display"
+    done
+  } | format_output
 }
 
 cmd_unload() {
-  echo -e "${YELLOW}Unloading all models...${RESET}"
   local result
   result=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${LLAMA_SWAP_URL}/models/unload" 2>/dev/null)
 
   if [[ "$result" == "200" ]]; then
-    echo -e "${GREEN}✓ All models unloaded. VRAM freed.${RESET}"
+    echo "All models unloaded. VRAM freed."
   else
-    echo -e "${RED}✗ Failed to unload models (HTTP ${result}).${RESET}"
+    echo "Error: Failed to unload models (HTTP ${result})." >&2
     exit 1
   fi
 }
@@ -231,29 +228,46 @@ cmd_logs() {
 }
 
 # Main
-case "${1:-help}" in
-  list|ls|models)  cmd_list ;;
-  ps|running|status) cmd_ps ;;
-  unload|unload-all|free|eject) cmd_unload ;;
-  logs|log) cmd_logs "${2:-50}" ;;
+CMD="${ARGS[0]:-help}"
+
+case "$CMD" in
+  list|ls|models)     cmd_list ;;
+  ps|running|status)  cmd_ps ;;
+  unload|free|eject)  cmd_unload ;;
+  logs|log)           cmd_logs "${ARGS[1]:-50}" ;;
   help|--help|-h)
     echo "llama-swap-cli — Manage llama-swap models from the terminal"
     echo ""
-    echo "Usage: llama-swap-cli <command>"
+    echo "Usage: llama-swap-cli <command> [--pretty]"
     echo ""
     echo "Commands:"
-    echo "  list      List all configured models (like ollama list)"
-    echo "  ps        Show running models with stats (like ollama ps)"
-    echo "  unload    Unload all models (free VRAM)"
-    echo "  logs      Show recent llama-swap logs"
+    echo "  list       List configured models"
+    echo "  ps         Show running models with stats"
+    echo "  unload     Unload all models (free VRAM)"
+    echo "  logs [N]   Show recent logs (default: 50 lines)"
+    echo ""
+    echo "Flags:"
+    echo "  --pretty   Colored emoji output (default: plain)"
+    echo ""
+    echo "Output format:"
+    echo "  TTY:  aligned columns (via column -t)"
+    echo "  Pipe: tab-separated values (TSV) for awk/cut"
     echo ""
     echo "Environment:"
-    echo "  LLAMA_SWAP_URL  llama-swap URL (default: http://localhost:12434)"
-    echo "  NO_COLOR        Disable colored output"
+    echo "  LLAMA_SWAP_URL     llama-swap URL (default: http://localhost:12434)"
+    echo "  LLAMA_SWAP_PRETTY=1 Always use pretty output"
+    echo "  NO_COLOR=1         Disable colored output"
+    echo ""
+    echo "Examples:"
+    echo "  llama-swap-cli list                      # aligned table"
+    echo "  llama-swap-cli list --pretty              # colored + emojis"
+    echo "  llama-swap-cli list | cut -f1             # just model names"
+    echo "  llama-swap-cli list | awk -F'\\t' '\$3~/vision/' # filter by tag"
+    echo "  llama-swap-cli ps | cut -f1,2             # name + state"
     ;;
   *)
-    echo -e "${RED}Unknown command: ${1}${RESET}"
-    echo "Run 'llama-swap-cli help' for usage."
+    echo "Unknown command: ${CMD}" >&2
+    echo "Run 'llama-swap-cli help' for usage." >&2
     exit 1
     ;;
 esac
