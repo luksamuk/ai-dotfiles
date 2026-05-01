@@ -703,24 +703,22 @@ class StreamingChat:
         
         return layout
     
-    def _fit_markdown(self, text: str, available_height: int, title: str = "") -> "Panel":
-        """Renderiza Markdown com scroll responsivo — sempre preenche 100% da área útil.
+    def _fit_text(self, text: str, available_height: int, title: str = "") -> "Panel":
+        """Renderiza texto plano com scroll responsivo — sem formatação markdown.
         
         Comportamento:
-        - Se o conteúdo cabe inteiro: mostra Markdown completo (formatado bonito)
-        - Se transborda: fatia as últimas N linhas da saída renderizada (ANSI),
-          preservando cores/negrito via Text.from_ansi(). O painel sempre fica
-          100% cheio, rolando suavemente linha a linha.
+        - Trata tudo como texto puro (plain text), sem renderizar markdown
+        - Se o conteúdo transborda, fatia as últimas N linhas (scroll natural)
+        - Muito mais rápido que Markdown rendering, ideal para streaming
         
         Args:
-            text: Conteúdo Markdown para renderizar
+            text: Conteúdo de texto puro
             available_height: Linhas disponíveis no painel (borda + conteúdo)
             title: Título do painel
         
         Returns:
             Panel com conteúdo que preenche exatamente o espaço disponível
         """
-        # Espaço útil = altura disponível - bordas do Panel (2 top + 2 bottom) - título (1)
         usable = max(5, available_height - 5)
         
         if not text or not text.strip():
@@ -731,50 +729,30 @@ class StreamingChat:
                 box=box.ROUNDED
             )
         
-        # Renderiza Markdown completo num Console virtual
-        md = Markdown(text)
-        from rich.console import Console as RichConsole
-        c = RichConsole(width=self._console_width or 80, legacy_windows=False, force_terminal=True)
-        with c.capture() as capture:
-            c.print(md)
-        ansi_output = capture.get()
-        
-        # Conta linhas renderizadas
-        lines = ansi_output.split("\n")
-        # Remove trailing empty line do c.print
-        if lines and lines[-1] == "":
-            lines = lines[:-1]
-        
+        # Texto puro — sem renderização markdown
+        lines = text.split("\n")
         total_lines = len(lines)
+        border_style = "yellow" if "Raciocínio" in title else "green"
         
-        # Se coube inteiro, retorna Markdown formatado (mais bonito)
+        # Se coube inteiro, mostra tudo
         if total_lines <= usable:
-            return Panel(md, title=title, border_style="yellow" if "Raciocínio" in title else "green", box=box.ROUNDED)
+            content = Text(text)
+            return Panel(content, title=title, border_style=border_style, box=box.ROUNDED)
         
-        # Transbordou: fatia as últimas `usable` linhas da saída ANSI
-        # Text.from_ansi() preserva cores e formatação
-        tail_lines = lines[-usable:]
-        # Adiciona indicador de truncamento no topo
-        tail_with_hint = ["\x1b[2m  ⬆ …\x1b[0m"] + tail_lines
-        tail_ansi = "\n".join(tail_with_hint)
-        tail_text = Text.from_ansi(tail_ansi)
-        
-        return Panel(tail_text, title=title, border_style="yellow" if "Raciocínio" in title else "green", box=box.ROUNDED)
-    
-    @property
-    def _console_width(self):
-        """Retorna a largura do terminal para o Console virtual."""
-        try:
-            return os.get_terminal_size().columns
-        except OSError:
-            return 80
+        # Transbordou: fatia as últimas `usable` linhas
+        visible_lines = lines[-(usable - 1):]
+        # Indicador de truncamento no topo
+        truncated = "  ⬆ …\n" + "\n".join(visible_lines)
+        content = Text(truncated, style="")
+        # Pinta a primeira linha (indicador) de dim
+        content.stylize("dim", 0, len("  ⬆ …"))
+        return Panel(content, title=title, border_style=border_style, box=box.ROUNDED)
     
     def render(self) -> Layout:
         """Renderiza a interface completa com auto-scroll responsivo.
         
-        Usa Markdown rendering com truncamento inteligente por parágrafos.
-        Mede a altura renderizada com Console virtual e corta do topo
-        até caber no espaço disponível do terminal.
+        Usa texto puro (sem markdown) nos painéis de streaming.
+        Markdown é usado apenas no report final após a conclusão.
         """
         layout = self.create_layout()
         
@@ -816,21 +794,15 @@ class StreamingChat:
         header = Align.left(header_text)
         layout["header"].update(Panel(header, border_style="cyan"))
         
-        # Reasoning panel (só se :think foi selecionado)
+        # Reasoning panel (só se :think foi selecionado) — texto puro
         if self.use_thinking_variant:
-            if self.reasoning_content or self.has_reasoning:
-                r_content = f"## 🤔 Raciocínio\n\n{self.reasoning_content}"
-            else:
-                r_content = ""
-            reasoning_panel = self._fit_markdown(r_content, reasoning_height, title="[yellow]Raciocínio[/]")
+            r_content = self.reasoning_content
+            reasoning_panel = self._fit_text(r_content, reasoning_height, title="[yellow]Raciocínio[/]")
             layout["reasoning"].update(reasoning_panel)
         
-        # Response panel (sempre presente)
-        if self.response_content or self.has_response:
-            resp_content = f"## 💬 Resposta\n\n{self.response_content}"
-        else:
-            resp_content = ""
-        response_panel = self._fit_markdown(resp_content, response_height, title="[green]Resposta[/]")
+        # Response panel — texto puro
+        resp_content = self.response_content
+        response_panel = self._fit_text(resp_content, response_height, title="[green]Resposta[/]")
         layout["response"].update(response_panel)
         
         # Footer com status + métricas em tempo real (2 linhas)
