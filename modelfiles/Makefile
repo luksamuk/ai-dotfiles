@@ -228,4 +228,4 @@ medgemma1.5-4b:
 
 # Poolside Laguna XS.2 — agentic coding MoE (33B/3B active)
 laguna-xs2:
-	$(call BUILD,laguna-xs2:q4_K_M,laguna-xs2.modelfile)
+	$(call BUILD,laguna-xs.2:q4_K_M,laguna-xs2.modelfile)
