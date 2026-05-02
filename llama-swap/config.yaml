@@ -74,7 +74,7 @@ macros:
   # attn_rot é ativado AUTOMATICAMENTE quando o cache é quantizado
   # (q4_0/q8_0) e n_embd_head % 64 == 0
   # Reduz degradação de velocidade em contextos longos (~37% → ~10%)
-  # NOTA: Gemma4 tem bug com attn_rot (issue #21394), usar f16 nele
+  # NOTA: Gemma4 iSWA attn_rot bug FIXED (commit 4eb19514d, b8815+). q4_0 cache works now!
   # ===========================================
   #
   # Compatibilidade attn_rot por modelo:
@@ -83,8 +83,8 @@ macros:
   #   Qwen3.6-35B-A3B  ✅ head_k=128
   #   Nemotron-3-Nano  ✅ head_k=128
   #   Nemotron-Omni-30B ✅ head_k=128
-  #   GLM-4.7-Flash     ❌ bug #21394, usar f16
-  #   Gemma-4 E2B/E4B  ❌ bug #21394, usar f16
+  #   Gemma-4 E2B/E4B  ✅ head_k=256, iSWA attn_rot fixed (b8815+)
+  #   Gemma-4 26B-MoE  ✅ head_k=256, iSWA attn_rot fixed (b8815+)
   #   LFM2.5-VL-450M   ❌ vision model, manter f16
   #
   # Tipos de cache:
@@ -97,8 +97,8 @@ macros:
   "small_cache_v": "q8_0"
   "large_cache_k": "q4_0"
   "large_cache_v": "q4_0"
-  "gemma_cache_k": "f16"
-  "gemma_cache_v": "f16"
+  "gemma_cache_k": "q4_0"
+  "gemma_cache_v": "q4_0"
 
 # ===========================================
 # MODELOS (nomes estilo Ollama: modelo:tamanho)
@@ -130,6 +130,7 @@ models:
       --cache-type-k ${small_cache_k}
       --cache-type-v ${small_cache_v}
       --flash-attn on
+      --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
@@ -175,6 +176,7 @@ models:
       --cache-type-k ${small_cache_k}
       --cache-type-v ${small_cache_v}
       --flash-attn on
+      --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
@@ -220,6 +222,7 @@ models:
       --cache-type-k ${gemma_cache_k}
       --cache-type-v ${gemma_cache_v}
       --flash-attn on
+      --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
@@ -239,7 +242,7 @@ models:
       context: "64K-128K (dynamic)"
       vram_usage: "~5GB VRAM (fits with mmproj!)"
       source: "unsloth/gemma-4-E4B-it-GGUF"
-      kv_cache: "f16 (Gemma4 bug #21394)"
+      kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
       features:
         thinking: true
         # vision: disabled — mmproj crashes on CUDA (issue #21402)
@@ -265,6 +268,7 @@ models:
       --cache-type-k ${gemma_cache_k}
       --cache-type-v ${gemma_cache_v}
       --flash-attn on
+      --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
@@ -284,7 +288,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
       source: "unsloth/gemma-4-E2B-it-GGUF"
-      kv_cache: "f16 (Gemma4 bug #21394)"
+      kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
       features:
         thinking: true
         # vision: disabled — mmproj crashes on CUDA (issue #21402)
@@ -309,6 +313,7 @@ models:
       --cache-type-k ${small_cache_k}
       --cache-type-v ${small_cache_v}
       --flash-attn on
+      --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
@@ -353,6 +358,7 @@ models:
       --cache-type-k f16
       --cache-type-v f16
       --flash-attn on
+      --metrics
     ttl: 60
     metadata:
       size: "0.22 GB + mmproj"
@@ -363,131 +369,137 @@ models:
       features:
         vision: true
 
-  # -------------------------------------------
-  # NEMOTRON-3-NANO-OMNI-30B - MULTIMODAL OMNI (VIDEO + IMAGE + TEXT)
-  # MoE 30B params, 3B ativo por token. Contexto até 256K.
-  # NVIDIA recomenda: temp 1.0, top_p 1.0 (geral); temp 0.6, top_p 0.95 (tools)
-  # Variantes via filters.setParamsByID: base (chat) e :think (reasoning)
-  # UD-Q3_K_XL ~17GB + mmproj ~1.48GB → ~18.5GB total (Dynamic 2.0)
-  # Offload pesado na RTX3050 (~2.5GB VRAM + ~16GB RAM)
-  # mmproj unificado (audio+imagem) — não separar, é um arquivo só
-  # KV cache: q4_0 + attn_rot (base Nemotron, head_k=128, 128%64==0)
-  # NOTA: O nome é "Nano Omni" — NÃO confundir com Nemotron-3-Nano-4B (text-only)
-  # Audio N/A em GGUF (Parakeet encoder não convertido)
-  # -------------------------------------------
-  "nemotron3-omni-30b":
-    name: "Nemotron 3 Nano Omni 30B"
-    description: "Omni-modal understanding across documents, audio, and video"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-UD-Q3_K_XL.gguf
-      --mmproj ${models_dir}/mmproj-Nemotron-3-Nano-Omni-30B-A3B-F16.gguf
-      --fit on
-      --fit-target 2048
-      --fit-ctx 16384
-      --ctx-size 131072
-      --temp 1.0
-      --top-p 1.0
-      --reasoning on
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --flash-attn on
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 1.0
-          top_p: 1.0
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-    ttl: 180
-    metadata:
-      size: "~17 GB + mmproj 1.48 GB (UD-Q3_K_XL Dynamic 2.0)"
-      context: "16K-128K (dynamic, supports 256K)"
-      vram_usage: "~2.5GB VRAM + ~16GB RAM"
-      source: "unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF"
-      kv_cache: "q4_0 + attn_rot"
-      features:
-        vision: true
-        thinking: true
-        tools: true
-      warning: "Heavy offload - slow inference"
+  # [REMOVED] Nemotron-3-Nano-Omni-30B — underperforming vs Qwen3.6 for code
 
   # -------------------------------------------
-  # GLM-4.7-FLASH - 30B MoE A3B CODING CHAMPION
-  # MoE 30B total, 3B ativo por token. SWE-Bench Verified 59.2%.
-  # Gated Delta Net — mmproj CRASHA no CUDA (issue #21402), TEXT-ONLY.
-  # UD-Q3_K_XL ~14.6GB (Dynamic 2.0). Temp 1.0, top_p 0.95, min_p 0.01.
-  # Repeat penalty 1.0 (z.ai recommendation). KV cache: f16 (Gated Delta Net bug #21394)
-  # Substitui o Qwen3.6-27B (denso) — MoE 3B ativo = mais rápido, SWE-bench melhor.
+  # [REMOVED] GLM 4.7 Flash — ~4 t/s, Gated Delta Net needs f16 cache. Superseded by Qwen3.6 35B MoE at 27+ t/s.
+
+  # [REMOVED] Devstral Small 2 — 4.2 t/s. Dense 24B superseded by Qwen3.6 35B MoE at 26+ t/s.
+
   # -------------------------------------------
-  "glm-4.7-flash":
-    name: "GLM 4.7 Flash"
-    description: "30B MoE coding champion — 3B active, best SWE-bench in class"
+  # GEMMA-4-26B-A4B - MoE REASONING + CODING
+  # MoE 26B params, 4B ativo por token. 128 experts, top-8 routing.
+  # Google recomenda: temp=1.0 para reasoning, temp=0.7 para coding
+  # Variantes via setParamsByID: base (chat), :think (reasoning)
+  # UD-Q3_K_XL ~12GB (Dynamic 2.0)
+  # head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
+  # mmproj crashes on CUDA (bug #21402) → text-only
+  # Architecture: gemma4 (Gemma4ForCausalLM)
+  # -------------------------------------------
+  "gemma4-26b-moe":
+    name: "Gemma 4 26B MoE"
+    description: "MoE reasoning + coding — 128 experts, 4B active/token"
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/GLM-4.7-Flash-UD-Q3_K_XL.gguf
+      --model ${models_dir}/gemma-4-26B-A4B-it-UD-Q3_K_XL.gguf
       --no-mmproj
       --fit on
-      --fit-target 1024
+      --fit-target 256
       --fit-ctx 16384
       --ctx-size 131072
       --temp 1.0
       --top-p 0.95
-      --top-k 40
-      --min-p 0.01
-      --repeat-penalty 1.0
-      --cache-type-k ${gemma_cache_k}
-      --cache-type-v ${gemma_cache_v}
+      --reasoning on
+      --cache-type-k q4_0
+      --cache-type-v q4_0
       --flash-attn on
+      --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
         "${MODEL_ID}":
           chat_template_kwargs:
             enable_thinking: false
-          temperature: 1.0
+          temperature: 0.7
           top_p: 0.95
         "${MODEL_ID}:think":
           chat_template_kwargs:
             enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
+          temperature: 1.0
+          top_p: 0.95
     ttl: 120
     metadata:
-      size: "~14.6 GB (UD-Q3_K_XL Dynamic 2.0)"
+      size: "~12 GB (UD-Q3_K_XL Dynamic 2.0)"
       context: "16K-128K (dynamic)"
-      vram_usage: "~2GB VRAM + ~13GB RAM"
-      source: "unsloth/GLM-4.7-Flash-GGUF"
-      kv_cache: "f16 (Gated Delta Net bug #21394)"
+      vram_usage: "~5GB VRAM + ~7GB RAM (q4_0 cache, more layers GPU)"
+      source: "unsloth/gemma-4-26B-A4B-it-GGUF"
+      kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
       features:
         thinking: true
         vision: false
-        tools: true
-      warning: "Vision disabled — Gated Delta Net mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode. Heavy offload."
+        tools: false
+      warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (issue #21402). Text-only. q4_0 cache now works (iSWA attn_rot fix, commit 4eb19514d)."
 
   # -------------------------------------------
-  # QWEN3.6-35B-A3B - MoE CODING + MULTIMODAL
+  # GPT-OSS-20B - DENSE CODING (always reasoning)
+  # Dense 20B params. OpenAI open-source model for coding.
+  # Harmony format: ALWAYS generates <channel|analysis> tokens.
+  # --reasoning on ensures reasoning_content is properly extracted.
+  # Low/medium/high reasoning_effort is Ollama-specific, NOT supported in llama.cpp.
+  # No variant :think needed — model always thinks internally.
+  # Q4_K_M ~11GB (dense, all 20B params active per token, slower than MoE but stronger).
+  # head_dim=64 → attn_rot ✅, KV cache q4_0
+  # No mmproj exists → text-only.
+  # Architecture: gptoss (GptOssForCausalLM)
+  # -------------------------------------------
+  "gpt-oss-20b":
+    name: "GPT-OSS 20B"
+    description: "Dense 20B coding — GPT-OSS Harmony, always reasons internally"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gpt-oss-20b-Q4_K_M.gguf
+      --no-mmproj
+      --fit on
+      --fit-target 256
+      --fit-ctx 16384
+      --ctx-size 201000
+      --temp 0.6
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.01
+      --repeat-penalty 1.0
+      --reasoning on
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+    ttl: 120
+    metadata:
+      size: "~11 GB (Q4_K_M)"
+      context: "16K-200K (dynamic)"
+      vram_usage: "~5GB VRAM + ~6GB RAM"
+      source: "unsloth/gpt-oss-20b-GGUF"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        thinking: true
+        vision: false
+        tools: false
+      warning: "Harmony format: ALWAYS reasons internally (not optional). --reasoning on extracts it properly. Text-only. Dense 20B."
+
+  # [REMOVED] Qwen3.6-27B — 3.8 t/s on limited VRAM (dense = no partial expert offload).
+  # MoE models are 5-7x faster. Linear_attention/SSM didn't help when most layers in RAM.
+
+  # -------------------------------------------
+  # QWEN3.6-35B-A3B - MoE CODING (text-only, no vision)
   # MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
   # 33 experts, top-8 routing. UD-Q3_K_XL ~13.8GB (Dynamic 2.0)
-  # mmproj ~885MB → ~14.7GB total
-  # Offload pesado (~2GB VRAM + ~13GB RAM), mas MoE = 3B ativo/token
+  # --no-mmproj: mmproj ocupa 858MB VRAM e impede partial expert offload.
+  #   Sem mmproj: ALL 41 layers sobem pra GPU (partial expert partition) → 20+ t/s!
+  #   Com mmproj: só ~11 layers em GPU → ~5 t/s. Não vale a pena.
   # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
+  # Architecture: qwen35moe (Qwen3MoeForCausalLM)
   # -------------------------------------------
   "qwen3.6-35b-moe":
     name: "Qwen3.6 35B MoE"
-    description: "Efficient MoE for agentic coding and multimodal reasoning"
+    description: "Efficient MoE for agentic coding — 3B active/token, 26+ t/s text-only"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf
-      --mmproj ${models_dir}/mmproj-Qwen3.6-35B-A3B-F16.gguf
+      --no-mmproj
       --fit on
-      --fit-target 2048
+      --fit-target 256
       --fit-ctx 16384
       --ctx-size 131072
       --temp ${code_temp}
@@ -499,6 +511,7 @@ models:
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
       --flash-attn on
+      --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
@@ -514,16 +527,16 @@ models:
           top_p: 0.9
     ttl: 120
     metadata:
-      size: "~13.8 GB (UD-Q3_K_XL Dynamic 2.0) + mmproj ~885MB"
+      size: "~13.8 GB (UD-Q3_K_XL Dynamic 2.0)"
       context: "16K-128K (dynamic)"
-      vram_usage: "~2GB VRAM + ~13GB RAM"
+      vram_usage: "~5GB VRAM + ~9GB RAM (all layers GPU with partial expert offload)"
       source: "unsloth/Qwen3.6-35B-A3B-GGUF"
       kv_cache: "q4_0 + attn_rot"
       features:
         thinking: true
-        vision: true
+        vision: false
         tools: true
-      warning: "Heavy offload - slow inference"
+      warning: "Vision disabled — mmproj blocks partial expert offload (11→41 layers GPU). Text-only = 26+ t/s vs 5 t/s with vision."
 
 # ============================================
 # SWAP MATRIX (v202+) - Substitui o antigo groups
@@ -548,7 +561,7 @@ matrix:
   # NOTA: todo ID usado em sets/evict_costs DEVE estar definido aqui
   vars:
     # Atalhos para IDs longos (usados em sets e evict_costs)
-    no30: nemotron3-omni-30b
+    gemma4m: gemma4-26b-moe
     # Modelos pequenos
     q4: qwen3.5-4b
     n4: nemotron-3-nano-4b
@@ -559,8 +572,8 @@ matrix:
     q9: qwen3.5-9b
     g4: gemma4-e4b
     # Pesados
-    glm: glm-4.7-flash
     qw36: qwen3.6-35b-moe
+    gptoss: gpt-oss-20b
   # Sets: combinações válidas de modelos simultâneos
   # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
   # +ref = expandir outro set inline
@@ -581,11 +594,10 @@ matrix:
     # Qwen3.5-9B e Gemma4-E4B cabem inteiramente com mmproj
     medium: "q9 | g4"
 
-    # Modelo omni + Vision (ambos grandes, mas podem coexistir com swap)
-    omni_vision: "no30 & vl"
+    # Removed: omni_vision set (Nemotron removed)
 
     # Modelos pesados - toda VRAM + RAM offload
-    heavy: "no30 | glm | qw36"
+    heavy: "qw36 | gemma4m | gptoss"
 
     # Vision sozinho
     vision_only: "vl"
@@ -593,9 +605,9 @@ matrix:
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   # Modelos pesados demoram mais pra carregar → custo alto
   evict_costs:
-    no30: 10     # 17GB omni UD-Q3, very heavy offload
-    glm: 10      # 14.6GB MoE UD-Q3, heavy offload
+    gemma4m: 10  # 26B MoE UD-Q3, heavy offload
     qw36: 10     # 13.8GB MoE UD-Q3, heavy offload
+    gptoss: 8    # 11GB dense Q4_K_M, heavy offload
     q9: 4        # ~5GB, fits VRAM now
     g4: 4        # ~4.5GB, fits VRAM now
     vl: 3        # vision, leve mas útil manter vivo

@@ -9,10 +9,10 @@
 #   gemma4-e2b           - Gemma-4 E2B Q4_K_M (3.11 GB) - fits in VRAM
 #   nemotron-3-nano-4b   - Nemotron-3-Nano-4B Q4_K_M (2.90 GB) - tool-calling
 #   lfm2.5-vl-450m       - LFM2.5-VL-450M Q4_0 (0.22 GB) + mmproj F16 - vision/OCR
-#   glm-4.7-flash        - GLM-4.7-Flash UD-Q3_K_XL (~14.6 GB) - MoE coding champion
-#   qwen3.6-27b          - Qwen3.6-27B UD-Q3_K_XL (~14.5 GB) - Dense vision + coding
+#   [REMOVED] glm-4.7-flash — superseded by Qwen3.6 35B MoE
 #   qwen3.6-35b-moe      - Qwen3.6-35B-A3B UD-Q3_K_XL (~13.8 GB) - MoE coding + tools
-#   nemotron3-omni-30b   - Nemotron-3-Nano-Omni-30B-A3B UD-Q3_K_XL (~17 GB) + mmproj - Omni
+#   gemma4-26b-moe       - Gemma 4 26B-A4B UD-Q3_K_XL (~12 GB) - MoE reasoning + coding, text-only
+#   gpt-oss-20b          - GPT-OSS 20B Q4_K_M (~11 GB) - Dense coding, text-only
 #   all                  - Download all models
 #
 # If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
@@ -37,22 +37,21 @@ declare -A MODELS=(
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf"
   ["nemotron-3-nano-4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF LFM2.5-VL-450M-Q4_0.gguf"
-  ["glm-4.7-flash"]="unsloth/GLM-4.7-Flash-GGUF GLM-4.7-Flash-UD-Q3_K_XL.gguf"
-  ["qwen3.6-27b"]="unsloth/Qwen3.6-27B-GGUF Qwen3.6-27B-UD-Q3_K_XL.gguf"
+  # glm-4.7-flash removed
   ["qwen3.6-35b-moe"]="unsloth/Qwen3.6-35B-A3B-GGUF Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf"
-  ["nemotron3-omni-30b"]="unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-UD-Q3_K_XL.gguf"
+  ["gemma4-26b-moe"]="unsloth/gemma-4-26B-A4B-it-GGUF gemma-4-26B-A4B-it-UD-Q3_K_XL.gguf"
+  ["gpt-oss-20b"]="unsloth/gpt-oss-20b-GGUF gpt-oss-20b-Q4_K_M.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
 # Format: "repo filename [local_filename]"
 declare -A MMPROJ=(
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF mmproj-LFM2.5-VL-450m-F16.gguf"
-  ["qwen3.6-27b"]="unsloth/Qwen3.6-27B-GGUF mmproj-F16.gguf mmproj-Qwen3.6-27B-F16.gguf"
   ["qwen3.6-35b-moe"]="unsloth/Qwen3.6-35B-A3B-GGUF mmproj-F16.gguf mmproj-Qwen3.6-35B-A3B-F16.gguf"  ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-4B-F16.gguf"
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-9B-F16.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF mmproj-F16.gguf mmproj-gemma-4-E4B-F16.gguf"
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF mmproj-F16.gguf mmproj-gemma-4-E2B-F16.gguf"
-  ["nemotron3-omni-30b"]="unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF mmproj-F16.gguf mmproj-Nemotron-3-Nano-Omni-30B-A3B-F16.gguf"
+
 )
 
 # Legacy aliases with colons (for backwards compatibility)
@@ -77,7 +76,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, lfm2.5-vl-450m, glm-4.7-flash, qwen3.6-27b, qwen3.6-35b-moe, nemotron3-omni-30b, all"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nematron-3-nano-4b, lfm2.5-vl-450m, qwen3.6-35b-moe, gemma4-26b-moe, gpt-oss-20b, all"
     return 1
   fi
   
@@ -137,10 +136,10 @@ show_sizes() {
   echo "  gemma4-e2b            3.11 GB  (Q4_K_M) - Fits in VRAM"
   echo "  nemotron-3-nano-4b    2.90 GB  (Q4_K_M) - Fits in VRAM, tool-calling"
   echo "  lfm2.5-vl-450m        0.22 GB  (Q4_0) - Fits in VRAM, vision/OCR + mmproj"
-  echo "  glm-4.7-flash        ~14.60 GB  (UD-Q3_K_XL) - Heavy offload, MoE coding (text-only)"
-  echo "  qwen3.6-27b        ~14.50 GB  (UD-Q3_K_XL) - Heavy offload, dense vision + coding + mmproj"
+  # glm-4.7-flash removed
   echo "  qwen3.6-35b-moe    ~13.80 GB  (UD-Q3_K_XL) - Heavy offload, MoE coding + tools + mmproj"
-  echo "  nemotron3-omni-30b  ~17.00 GB  (UD-Q3_K_XL) - Heavy offload, Omni + mmproj"
+  echo "  gemma4-26b-moe   ~12.00 GB  (UD-Q3_K_XL) - Heavy offload, MoE reasoning + coding text-only"
+  echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
@@ -153,7 +152,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"glm-4.7-flash"|"qwen3.6-27b"|"qwen3.6-35b-moe"|"nemotron3-omni-30b")
+  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"qwen3.6-35b-moe"|"gemma4-26b-moe"|"gpt-oss-20b")
     show_sizes
     download_model "$1"
     ;;
@@ -174,7 +173,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, lfm2.5-vl-450m, glm-4.7-flash, qwen3.6-27b, qwen3.6-35b-moe, nematron3-omni-30b, all, sizes"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nematron-3-nano-4b, lfm2.5-vl-450m, qwen3.6-35b-moe, gemma4-26b-moe, gpt-oss-20b, all, sizes"
     exit 1
     ;;
 esac
