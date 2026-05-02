@@ -459,6 +459,7 @@ class StreamingChat:
         self.selected_model_name = ""  # Nome amigável do modelo
         self.supports_reasoning = False
         self.use_thinking_variant = False  # True se variante :think foi selecionada
+        self.always_thinks = False        # True se modelo sempre pensa (ex: GPT-OSS Harmony)
         self.supports_vision = False
         self.supports_audio = False
         self.available_models = []
@@ -666,6 +667,12 @@ class StreamingChat:
             else:
                 self.use_thinking_variant = False
                 console.print(f"[green]💬 Variante chat normal selecionada[/]")
+        elif selected_model.get("supports_thinking") and not selected_model.get("has_think_variant"):
+            # Modelo que SEMPRE pensa (ex: GPT-OSS Harmony) — sem variante :think
+            # pois o raciocínio é arquitetural, não opcional
+            self.always_thinks = True
+            self.use_thinking_variant = True  # Ativa painel de raciocínio
+            console.print(f"[yellow]🤔 Modelo com raciocínio interno obrigatório — painel de raciocínio ativado[/]")
         
         console.print(f"[green]✓ Modelo selecionado:[/] {final_model_id}")
         
@@ -991,7 +998,9 @@ class StreamingChat:
             if not self.supports_audio:
                 console.print("[yellow]⚠️  Áudio do vídeo NÃO será enviado (modelo sem suporte a áudio via GGUF)[/]")
                 console.print("[dim]   Apenas os frames visuais serão processados.[/]")
-        if self.use_thinking_variant:
+        if self.use_thinking_variant and self.always_thinks:
+            console.print("[yellow]🤔 Modo reasoning ativado — raciocínio sempre visível (modelo Harmony)[/]")
+        elif self.use_thinking_variant:
             console.print("[yellow]🤔 Modo reasoning ativado — painel de raciocínio visível[/]")
         elif self.supports_reasoning:
             console.print("[dim]💡 Modo chat normal — raciocínio desabilitado (use variante :think para reasoning)[/]")
