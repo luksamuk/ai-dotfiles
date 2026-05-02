@@ -40,11 +40,14 @@ else
 fi
 
 # Feature tag: pipe-friendly text
+# Input: dict-like string from llama-swap metadata, e.g. {"thinking":false,"vision":true,"tools":true}
+# Must check actual boolean values right after the key (not just key name presence)
+# jq outputs: {"thinking":false,"vision":true} — double quotes, lowercase true/false
 feat_tag() {
   local feats="$1" tags=""
-  echo "$feats" | grep -qi "thinking" && tags="${tags}+think"
-  echo "$feats" | grep -qi "vision"  && tags="${tags}+vision"
-  echo "$feats" | grep -qi "tools"   && tags="${tags}+tools"
+  echo "$feats" | grep -qiP '["'"'"']thinking["'"'"']?\s*:\s*(true|True)'   && tags="${tags}+think"
+  echo "$feats" | grep -qiP '["'"'"']vision["'"'"']?\s*:\s*(true|True)'     && tags="${tags}+vision"
+  echo "$feats" | grep -qiP '["'"'"']tools["'"'"']?\s*:\s*(true|True)'      && tags="${tags}+tools"
   tags="${tags#+}"
   [[ -z "$tags" ]] && tags="text"
   echo "$tags"
@@ -53,9 +56,9 @@ feat_tag() {
 # Feature emoji: pretty output
 feat_emoji() {
   local feats="$1" emojis=""
-  echo "$feats" | grep -qi "thinking" && emojis="${emojis}🤔"
-  echo "$feats" | grep -qi "vision"  && emojis="${emojis}👁"
-  echo "$feats" | grep -qi "tools"   && emojis="${emojis}🛠"
+  echo "$feats" | grep -qiP '["'"'"']thinking["'"'"']?\s*:\s*(true|True)'   && emojis="${emojis}🤔"
+  echo "$feats" | grep -qiP '["'"'"']vision["'"'"']?\s*:\s*(true|True)'     && emojis="${emojis}👁"
+  echo "$feats" | grep -qiP '["'"'"']tools["'"'"']?\s*:\s*(true|True)'      && emojis="${emojis}🛠"
   [[ -z "$emojis" ]] && emojis="📝"
   echo "$emojis"
 }
@@ -130,7 +133,7 @@ cmd_list() {
 }
 
 cmd_ps() {
-  local running_data models_data
+  local running_data
   running_data=$(curl -s "${LLAMA_SWAP_URL}/running" 2>/dev/null)
 
   if [[ -z "$running_data" ]]; then
@@ -151,13 +154,27 @@ cmd_ps() {
     return
   fi
 
-  models_data=$(curl -s "${LLAMA_SWAP_URL}/v1/models" 2>/dev/null)
+  # --- Live VRAM from nvidia-smi ---
+  # Build an associative array: PID -> VRAM_MiB (numeric only)
+  declare -A vram_map
+  while IFS=, read -r pid _pName vram_mib; do
+    pid="${pid// /}"
+    # Extract just the number before " MiB"
+    vram_num=$(echo "$vram_mib" | grep -oP '\d+' | head -1)
+    [[ -n "$vram_num" ]] && vram_map["$pid"]="$vram_num"
+  done < <(nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv,noheader 2>/dev/null)
+
+  # Total GPU VRAM
+  local gpu_total_mib=0 gpu_used_mib=0
+  IFS=, read -r gpu_used_mib gpu_total_mib < <(nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader,nounits 2>/dev/null | tr -d ' ')
+  gpu_total_mib="${gpu_total_mib:-0}"
+  gpu_used_mib="${gpu_used_mib:-0}"
 
   {
-    printf "NAME\tSTATE\tSIZE\tVRAM\tCONTEXT\tKV_CACHE\tTTL\n"
+    printf "NAME\tPID\tSTATE\tVRAM\tRSS\tT/S\tGPU_LAYERS\tFIT\tTTL\n"
 
     echo "$running_data" | jq -r '.running[] | @json' | while IFS= read -r model_json; do
-      local id name state proxy ttl
+      local id name state proxy ttl port pid
       id=$(echo "$model_json" | jq -r '.model')
       name=$(echo "$model_json" | jq -r '.name')
       state=$(echo "$model_json" | jq -r '.state')
@@ -168,56 +185,201 @@ cmd_ps() {
       icon=$(state_label "$state")
 
       # Health check
-      local port
       port=$(echo "$proxy" | grep -oP '\d+$' 2>/dev/null || echo "")
       if [[ -n "$port" ]]; then
-        local health
+        local health hstatus
         health=$(curl -s "http://localhost:${port}/health" 2>/dev/null || echo "{}")
-        local hstatus
         hstatus=$(echo "$health" | jq -r '.status // "unknown"')
         if [[ "$hstatus" != "ok" ]] && [[ "$hstatus" != "loading model" ]]; then
           icon="${icon}(${hstatus})"
         fi
       fi
 
-      # Metadata lookup
-      local size="-" vram="-" ctx="-" kv="-"
-      if [[ -n "$models_data" ]]; then
-        local meta
-        meta=$(echo "$models_data" | jq -r --arg id "$id" '
-          .data[] | select(.id == $id) |
-          .meta.llamaswap // {} | {size, vram_usage, context, kv_cache}
-        ' 2>/dev/null)
-        if [[ -n "$meta" && "$meta" != "null" ]]; then
-          size=$(echo "$meta" | jq -r '.size // "-"')
-          vram=$(echo "$meta" | jq -r '.vram_usage // "-"')
-          ctx=$(echo "$meta" | jq -r '.context // "-"')
-          kv=$(echo "$meta" | jq -r '.kv_cache // "-"')
+      # --- Find PID from port ---
+      pid="-"
+      if [[ -n "$port" ]]; then
+        local found_pid
+        found_pid=$(ss -tlnp 2>/dev/null | grep ":${port} " | grep -oP 'pid=\K\d+' | head -1)
+        if [[ -z "$found_pid" ]]; then
+          found_pid=$(lsof -ti :"$port" 2>/dev/null | head -1)
+        fi
+        [[ -n "$found_pid" ]] && pid="$found_pid"
+      fi
+
+      # --- Live VRAM from nvidia-smi ---
+      local vram="-"
+      if [[ "$pid" != "-" ]] && [[ -n "${vram_map[$pid]+_}" ]]; then
+        local vram_num="${vram_map[$pid]}"
+        vram=$(echo "$vram_num" | awk '{printf "%.1f GB", $1/1024}')
+      fi
+
+      # --- Live RSS from /proc ---
+      local rss="-"
+      if [[ "$pid" != "-" ]] && [[ -r "/proc/${pid}/status" ]]; then
+        local rss_kb
+        rss_kb=$(awk '/^VmRSS:/ {print $2}' "/proc/${pid}/status" 2>/dev/null)
+        if [[ -n "$rss_kb" ]]; then
+          rss=$(echo "$rss_kb" | awk '{printf "%.1f GB", $1/1048576}')
         fi
       fi
 
-      local sz ttl_display
-      sz=$(short_size "$size")
+      # --- Parse --fit from cmd ---
+      local fit="-"
+      local cmd_str
+      cmd_str=$(echo "$model_json" | jq -r '.cmd')
+      if echo "$cmd_str" | grep -qP '\-\-fit\s'; then
+        local fit_target
+        fit_target=$(echo "$cmd_str" | grep -oP '\-\-fit-target\s+\K\d+' || echo "auto")
+        fit="on (${fit_target}MB)"
+      fi
+
+      # --- Live tok/s from /metrics ---
+      local gen_tps="-" prompt_tps="-"
+      if [[ -n "$port" ]]; then
+        local metrics_raw
+        metrics_raw=$(curl -s "http://localhost:${port}/metrics" 2>/dev/null || echo "")
+        if [[ -n "$metrics_raw" ]]; then
+          gen_tps=$(echo "$metrics_raw" | grep -P '^llamacpp:predicted_tokens_seconds\s' | awk '{print $2}')
+          prompt_tps=$(echo "$metrics_raw" | grep -P '^llamacpp:prompt_tokens_seconds\s' | awk '{print $2}')
+          [[ -z "$gen_tps" || "$gen_tps" == "0" ]] && gen_tps="-"
+          [[ -z "$prompt_tps" || "$prompt_tps" == "0" ]] && prompt_tps="-"
+        fi
+      fi
+
+      # --- GPU layers from journalctl (last load of this model) ---
+      local gpu_layers="-"
+      if [[ "$pid" != "-" ]]; then
+        local layer_info
+        layer_info=$(journalctl --user -u llama-swap --since "10 min ago" --no-pager 2>/dev/null \
+          | grep -oP "offloaded \K\d+/\d+ layers to GPU" 2>/dev/null | tail -1 || true)
+        [[ -n "$layer_info" ]] && gpu_layers="$layer_info"
+      fi
+
+      local ttl_display
       if [[ "$ttl" -gt 0 ]]; then
         ttl_display="${ttl}s"
       else
         ttl_display="-"
       fi
 
-      printf "${CYAN}%s\t${GREEN}%s${RESET}\t%s\t%s\t%s\t%s\t%s\n" \
-        "$name" "$icon" "$sz" "$vram" "$ctx" "$kv" "$ttl_display"
+      printf "${CYAN}%s${RESET}\t%s\t${GREEN}%s${RESET}\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+        "$name" "$pid" "$icon" "$vram" "$rss" "$gen_tps" "$gpu_layers" "$fit" "$ttl_display"
     done
   } | format_output
+
+  # Summary line
+  if [[ -n "$PRETTY" ]]; then
+    local total_vram_usage="-"
+    local total_used_mib=0
+    for pid in "${!vram_map[@]}"; do
+      local mib="${vram_map[$pid]}"
+      total_used_mib=$((total_used_mib + mib))
+    done
+    if [[ "$total_used_mib" -gt 0 ]]; then
+      total_vram_usage="$(awk 'BEGIN {printf "%.1f / %.1f GB", '"${total_used_mib}"'/1024, '"${gpu_total_mib}"'/1024}')"
+    fi
+    echo -e "\n${DIM}GPU: ${total_vram_usage}${RESET}"
+    echo -e "${DIM}VRAM = GPU memory | RSS = process resident | t/s = generation throughput${RESET}"
+  fi
+}
+
+cmd_stats() {
+  local running_data
+  running_data=$(curl -s "${LLAMA_SWAP_URL}/running" 2>/dev/null)
+
+  if [[ -z "$running_data" ]]; then
+    echo "Error: Could not reach llama-swap at ${LLAMA_SWAP_URL}" >&2
+    exit 1
+  fi
+
+  local running_count
+  running_count=$(echo "$running_data" | jq '.running | length')
+
+  if [[ "$running_count" -eq 0 ]]; then
+    echo "No models currently loaded. No stats available."
+    return
+  fi
+
+  echo "$running_data" | jq -r '.running[] | @json' | while IFS= read -r model_json; do
+    local id name proxy port
+    id=$(echo "$model_json" | jq -r '.model')
+    name=$(echo "$model_json" | jq -r '.name')
+    proxy=$(echo "$model_json" | jq -r '.proxy')
+    port=$(echo "$proxy" | grep -oP '\d+$' 2>/dev/null || echo "")
+
+    if [[ -z "$port" ]]; then
+      echo "=== $name === (no port)"
+      continue
+    fi
+
+    local metrics_raw
+    metrics_raw=$(curl -s "http://localhost:${port}/metrics" 2>/dev/null || echo "")
+
+    if [[ -z "$metrics_raw" ]]; then
+      echo "=== $name === (metrics not available — need --metrics flag)"
+      continue
+    fi
+
+    # Parse Prometheus metrics
+    local prompt_total gen_total prompt_sec gen_sec processing deferred
+    prompt_total=$(echo "$metrics_raw" | grep '^llamacpp:prompt_tokens_total' | awk '{print $2}')
+    gen_total=$(echo "$metrics_raw" | grep '^llamacpp:tokens_predicted_total' | awk '{print $2}')
+    prompt_sec=$(echo "$metrics_raw" | grep '^llamacpp:prompt_seconds_total' | awk '{print $2}')
+    gen_sec=$(echo "$metrics_raw" | grep '^llamacpp:tokens_predicted_seconds_total' | awk '{print $2}')
+    processing=$(echo "$metrics_raw" | grep '^llamacpp:requests_processing' | awk '{print $2}')
+    deferred=$(echo "$metrics_raw" | grep '^llamacpp:requests_deferred' | awk '{print $2}')
+
+    # Compute average speeds
+    local avg_prompt_tps="0" avg_gen_tps="0"
+    if [[ -n "$prompt_sec" ]] && [[ "$(echo "$prompt_sec > 0" | bc -l 2>/dev/null || echo 0)" == "1" ]]; then
+      avg_prompt_tps=$(awk "BEGIN {printf \"%.1f\", ${prompt_total:-0} / ${prompt_sec}}")
+    fi
+    if [[ -n "$gen_sec" ]] && [[ "$(echo "$gen_sec > 0" | bc -l 2>/dev/null || echo 0)" == "1" ]]; then
+      avg_gen_tps=$(awk "BEGIN {printf \"%.1f\", ${gen_total:-0} / ${gen_sec}}")
+    fi
+
+    if [[ -n "$PRETTY" ]]; then
+      echo -e "\n${CYAN}${BOLD}=== ${name} ===${RESET}"
+      echo -e "  ${GREEN}Tokens:${RESET}  ${prompt_total:--} in → ${gen_total:--} out"
+      echo -e "  ${GREEN}Speed:${RESET}   prompt ${avg_prompt_tps} t/s | generation ${avg_gen_tps} t/s"
+      echo -e "  ${GREEN}Time:${RESET}    prompt ${prompt_sec:--}s | generation ${gen_sec:--}s"
+      echo -e "  ${GREEN}Queue:${RESET}  ${processing:-0} processing | ${deferred:-0} deferred"
+    else
+      echo "=== $name ==="
+      echo "  prompt_tokens: ${prompt_total:--}"
+      echo "  completion_tokens: ${gen_total:--}"
+      echo "  avg_prompt_t/s: ${avg_prompt_tps}"
+      echo "  avg_gen_t/s: ${avg_gen_tps}"
+      echo "  prompt_time_s: ${prompt_sec:--}"
+      echo "  gen_time_s: ${gen_sec:--}"
+      echo "  requests_processing: ${processing:-0}"
+      echo "  requests_deferred: ${deferred:-0}"
+    fi
+  done
 }
 
 cmd_unload() {
-  local result
-  result=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${LLAMA_SWAP_URL}/models/unload" 2>/dev/null)
+  local target="${ARGS[1]:-}"
+  local endpoint result
+
+  if [[ -n "$target" ]]; then
+    # Unload specific model
+    endpoint="${LLAMA_SWAP_URL}/api/models/unload/${target}"
+  else
+    # Unload all models
+    endpoint="${LLAMA_SWAP_URL}/api/models/unload"
+  fi
+
+  result=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$endpoint" 2>/dev/null)
 
   if [[ "$result" == "200" ]]; then
-    echo "All models unloaded. VRAM freed."
+    if [[ -n "$target" ]]; then
+      echo "Model '${target}' unloaded."
+    else
+      echo "All models unloaded. VRAM freed."
+    fi
   else
-    echo "Error: Failed to unload models (HTTP ${result})." >&2
+    echo "Error: Failed to unload ${target:-all models} (HTTP ${result})." >&2
     exit 1
   fi
 }
@@ -227,14 +389,45 @@ cmd_logs() {
   journalctl --user -u llama-swap --no-pager -n "$lines"
 }
 
+cmd_testchat() {
+  local testchat_dir="$(dirname "$(readlink -f "$0")")/testchat"
+  # Fallback: check deployed config location
+  if [[ ! -d "$testchat_dir" ]]; then
+    testchat_dir="$HOME/.config/llama-swap/testchat"
+  fi
+
+  if [[ ! -f "$testchat_dir/main.py" ]]; then
+    echo "Error: testchat not found. Looked in:" >&2
+    echo "  $(dirname "$(readlink -f "$0")")/testchat/" >&2
+    echo "  $HOME/.config/llama-swap/testchat/" >&2
+    exit 1
+  fi
+
+  # Forward LLAMA_SWAP_HOST/PORT to testchat
+  export LLAMA_SWAP_HOST="${LLAMA_SWAP_HOST:-127.0.0.1}"
+  export LLAMA_SWAP_PORT="${LLAMA_SWAP_PORT:-12434}"
+
+  # Pass any extra args to testchat (e.g. model name)
+  local chat_args=("$@")
+
+  # Use venv if available, else uv run
+  if [[ -x "$testchat_dir/.venv/bin/python" ]]; then
+    exec "$testchat_dir/.venv/bin/python" "$testchat_dir/main.py" "${chat_args[@]}"
+  else
+    exec uv run --project "$testchat_dir" "$testchat_dir/main.py" "${chat_args[@]}"
+  fi
+}
+
 # Main
 CMD="${ARGS[0]:-help}"
 
 case "$CMD" in
   list|ls|models)     cmd_list ;;
   ps|running|status)  cmd_ps ;;
-  unload|free|eject)  cmd_unload ;;
+  stats|metrics)      cmd_stats ;;
+  unload|free|eject)  cmd_unload "${ARGS[@]:1}" ;;
   logs|log)           cmd_logs "${ARGS[1]:-50}" ;;
+  testchat|chat)      cmd_testchat "${ARGS[@]:1}" ;;
   help|--help|-h)
     echo "llama-swap-cli — Manage llama-swap models from the terminal"
     echo ""
@@ -242,9 +435,11 @@ case "$CMD" in
     echo ""
     echo "Commands:"
     echo "  list       List configured models"
-    echo "  ps         Show running models with stats"
-    echo "  unload     Unload all models (free VRAM)"
+    echo "  ps         Show running models (live VRAM, RSS, t/s, GPU layers)"
+    echo "  stats      Detailed metrics for running models (tokens, speed, queue)"
+    echo "  unload [MODEL]  Unload all models, or a specific model (free VRAM)"
     echo "  logs [N]   Show recent logs (default: 50 lines)"
+    echo "  testchat   Open interactive chat with model selection"
     echo ""
     echo "Flags:"
     echo "  --pretty   Colored emoji output (default: plain)"
@@ -262,8 +457,12 @@ case "$CMD" in
     echo "  llama-swap-cli list                      # aligned table"
     echo "  llama-swap-cli list --pretty              # colored + emojis"
     echo "  llama-swap-cli list | cut -f1             # just model names"
-    echo "  llama-swap-cli list | awk -F'\\t' '\$3~/vision/' # filter by tag"
-    echo "  llama-swap-cli ps | cut -f1,2             # name + state"
+    echo '  llama-swap-cli list | awk -F"\t" '"'"'$3~/vision/'"'"' # filter by tag'
+    echo "  llama-swap-cli ps                        # live stats (VRAM, RSS, t/s, layers)"
+    echo "  llama-swap-cli stats                     # detailed metrics per model"
+    echo "  llama-swap-cli stats --pretty            # colored detailed metrics"
+    echo "  llama-swap-cli unload                    # unload all models"
+    echo "  llama-swap-cli unload qwen3.6-35b-moe    # unload specific model"
     ;;
   *)
     echo "Unknown command: ${CMD}" >&2
