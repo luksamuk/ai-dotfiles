@@ -1,381 +1,394 @@
 {
-    "$schema": "https://opencode.ai/config.json",
-    "default_agent": "build",
-    "username": "luksamuk",
-    "autoupdate": "notify",
-    "share": "manual",
-    "enabled_providers": [
-        "ollama",
-        "opencode-zen",
-        "local"
-    ],
-    "provider": {
-        "ollama": {
-            "npm": "@ai-sdk/openai-compatible",
-            "name": "Ollama",
-            "options": {
-                "baseURL": "http://127.0.0.1:11434/v1"
-            },
-            "models": {
-                "qwen3.5:4b": {
-                    "name": "Qwen 3.5 (4B)",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5:9b": {
-                    "name": "Qwen 3.5 (9B)",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "glm-5:cloud": {
-                    "name": "GLM 5 ☁️",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "glm-5.1:cloud": {
-                    "name": "GLM 5.1 ☁️",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 202752,
-                        "output": 32768
-                    }
-                },
-                "minimax-m2.5:cloud": {
-                    "name": "MiniMax M2.5 ☁️",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 202752,
-                        "output": 32768
-                    }
-                },
-                "minimax-m2.7:cloud": {
-                    "name": "MiniMax M2.7 ☁️",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 204800,
-                        "output": 32768
-                    }
-                },
-                "qwen3-coder-next:cloud": {
-                    "name": "Qwen3-Coder-Next ☁️",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "kimi-k2.5:cloud": {
-                    "name": "Kimi K2.5 ☁️",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "kimi-k2.6:cloud": {
-                    "name": "Kimi K2.6 ☁️",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5:cloud": {
-                    "name": "Qwen 3.5 ☁️",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "nemotron-3-nano:30b-cloud": {
-                    "name": "Nemotron 3 Nano 30B ☁️",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 1048576,
-                        "output": 32768
-                    }
-                },
-                "nemotron-3-super:cloud": {
-                    "name": "Nemotron 3 Super ☁️",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 1048576,
-                        "output": 32768
-                    }
-                },
-                "gemma4:31b-cloud": {
-                    "name": "Gemma 4 31B ☁️",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                }
-            }
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "build",
+  "username": "luksamuk",
+  "autoupdate": "notify",
+  "share": "manual",
+  "enabled_providers": [
+    "ollama",
+    "opencode-zen",
+    "local"
+  ],
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama",
+      "options": {
+        "baseURL": "http://127.0.0.1:11434/v1"
+      },
+      "models": {
+        "qwen3.5:4b": {
+          "name": "Qwen 3.5 (4B)",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
         },
-        "local": {
-            "npm": "@ai-sdk/openai-compatible",
-            "name": "llama.cpp",
-            "options": {
-                "baseURL": "http://127.0.0.1:12434/v1"
-            },
-            "models": {
-                "gemma4-e2b": {
-                    "name": "Gemma 4 Efficient 2B",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "gemma4-e2b:think": {
-                    "name": "Gemma 4 Efficient 2B 🧠",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "gemma4-e4b": {
-                    "name": "Gemma 4 Efficient 4B",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "gemma4-e4b:think": {
-                    "name": "Gemma 4 Efficient 4B 🧠",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "lfm2.5-vl-450m": {
-                    "name": "LFM2.5-VL 450M",
-                    "reasoning": false,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "vision"
-                    ]
-                },
-                "nemotron-3-nano-4b": {
-                    "name": "Nemotron 3 Nano 4B",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "nemotron-3-nano-4b:think": {
-                    "name": "Nemotron 3 Nano 4B 🧠",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "nemotron3-omni-30b": {
-                    "name": "Nemotron 3 Nano Omni 30B",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "vision",
-                        "tools"
-                    ]
-                },
-                "nemotron3-omni-30b:think": {
-                    "name": "Nemotron 3 Nano Omni 30B 🧠",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "vision",
-                        "tools"
-                    ]
-                },
-                "qwen3.5-4b": {
-                    "name": "Qwen 3.5 4B",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5-4b:think": {
-                    "name": "Qwen 3.5 4B 🧠",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5-9b": {
-                    "name": "Qwen 3.5 9B",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5-9b:think": {
-                    "name": "Qwen 3.5 9B 🧠",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "qwen3.6-35b-moe": {
-                    "name": "Qwen 3.6 35B MoE",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "vision",
-                        "tools"
-                    ]
-                },
-                "qwen3.6-35b-moe:think": {
-                    "name": "Qwen 3.6 35B MoE 🧠",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "vision",
-                        "tools"
-                    ]
-                },
-                "glm-4.7-flash": {
-                    "name": "GLM 4.7 Flash",
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "glm-4.7-flash:think": {
-                    "name": "GLM 4.7 Flash 🧠",
-                    "capabilities": [
-                        "tools"
-                    ]
-                }
-            }
+        "qwen3.5:9b": {
+          "name": "Qwen 3.5 (9B)",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "glm-5:cloud": {
+          "name": "GLM 5 \u2601\ufe0f",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "glm-5.1:cloud": {
+          "name": "GLM 5.1 \u2601\ufe0f",
+          "reasoning": true,
+          "limit": {
+            "context": 202752,
+            "output": 32768
+          }
+        },
+        "minimax-m2.5:cloud": {
+          "name": "MiniMax M2.5 \u2601\ufe0f",
+          "reasoning": true,
+          "limit": {
+            "context": 202752,
+            "output": 32768
+          }
+        },
+        "minimax-m2.7:cloud": {
+          "name": "MiniMax M2.7 \u2601\ufe0f",
+          "reasoning": true,
+          "limit": {
+            "context": 204800,
+            "output": 32768
+          }
+        },
+        "qwen3-coder-next:cloud": {
+          "name": "Qwen3-Coder-Next \u2601\ufe0f",
+          "reasoning": true,
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
+        },
+        "kimi-k2.5:cloud": {
+          "name": "Kimi K2.5 \u2601\ufe0f",
+          "reasoning": true,
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
+        },
+        "kimi-k2.6:cloud": {
+          "name": "Kimi K2.6 \u2601\ufe0f",
+          "reasoning": true,
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
+        },
+        "qwen3.5:cloud": {
+          "name": "Qwen 3.5 \u2601\ufe0f",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "nemotron-3-nano:30b-cloud": {
+          "name": "Nemotron 3 Nano 30B \u2601\ufe0f",
+          "reasoning": true,
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          }
+        },
+        "nemotron-3-super:cloud": {
+          "name": "Nemotron 3 Super \u2601\ufe0f",
+          "reasoning": true,
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          }
+        },
+        "gemma4:31b-cloud": {
+          "name": "Gemma 4 31B \u2601\ufe0f",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
         }
+      }
     },
-    "agent": {
-        "plan": {
-            "model": "ollama/glm-5.1:cloud",
-            "temperature": 0.7,
-            "description": "Strategic planning and architecture. Analyzes requirements, proposes solutions, creates roadmaps. Read-only — cannot modify code.",
-            "prompt": "You are a strategic planning agent. Analyze the codebase, understand requirements, and create detailed implementation plans. You do NOT write or edit code — you only read, analyze, and plan. When you identify work needed, describe it precisely so the build or fix agent can execute. Always consider: project structure, existing patterns, dependencies, risks, and edge cases.",
-            "permission": {
-                "read": "allow",
-                "write": "deny",
-                "edit": "deny",
-                "bash": "deny"
-            }
+    "local": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "llama.cpp",
+      "options": {
+        "baseURL": "http://127.0.0.1:12434/v1"
+      },
+      "models": {
+        "gemma4-e2b": {
+          "name": "Gemma 4 Efficient 2B",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
         },
-        "build": {
-            "model": "ollama/glm-5.1:cloud",
-            "temperature": 0.3,
-            "description": "Primary coding agent. Full implementation capabilities — writing, editing, testing code with unrestricted repository and shell access.",
-            "prompt": "You are a senior software engineer. Implement features and create new code following the plan specifications exactly. Match existing code style and patterns. Always handle errors, validate inputs, and use types properly. No hardcoded secrets, no TODO/FIXME left behind. Before writing, read similar files to understand conventions.",
-            "permission": {
-                "read": "allow",
-                "write": "allow",
-                "edit": "allow",
-                "bash": "allow"
-            }
+        "gemma4-e2b:think": {
+          "name": "Gemma 4 Efficient 2B \ud83e\udde0",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
         },
-        "fix": {
-            "model": "ollama/kimi-k2.6:cloud",
-            "temperature": 0.2,
-            "description": "Bug fix agent. Applies minimal, targeted fixes based on diagnosis or error reports. Prioritizes smallest possible change.",
-            "prompt": "You are a bug fix specialist. Fix issues with the MINIMUM change required. Never refactor adjacent code or add features. If the root cause is unclear, stop and suggest using the plan agent instead. Always verify the fix doesn't break existing functionality. Prefer surgical edits over rewrites.",
-            "permission": {
-                "read": "allow",
-                "write": "allow",
-                "edit": "allow",
-                "bash": "ask"
-            }
+        "gemma4-e4b": {
+          "name": "Gemma 4 Efficient 4B",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
         },
-        "review": {
-            "model": "ollama/kimi-k2.6:cloud",
-            "temperature": 0.5,
-            "description": "Code review and quality analysis. Reviews changes for correctness, best practices, security, and maintainability. Read-only.",
-            "prompt": "You are a senior code reviewer. Analyze code for: correctness, edge cases, error handling, security issues, performance problems, and adherence to project patterns. Be specific — cite file, line, and what should change. Classify issues as critical/warning/suggestion. Do NOT modify any files.",
-            "permission": {
-                "read": "allow",
-                "write": "deny",
-                "edit": "deny",
-                "bash": "deny"
-            }
+        "gemma4-e4b:think": {
+          "name": "Gemma 4 Efficient 4B \ud83e\udde0",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
         },
-        "research": {
-            "model": "ollama/minimax-m2.7:cloud",
-            "temperature": 0.7,
-            "description": "Deep research and investigation. Explores codebases, documentation, and external sources to gather information. Read-only analysis.",
-            "prompt": "You are a research agent. Investigate codebases, trace dependencies, understand data flows, and identify risks. Search the web for documentation and best practices when needed. Provide comprehensive analysis with evidence. You do NOT write or modify any code — only investigate and report.",
-            "permission": {
-                "read": "allow",
-                "write": "deny",
-                "edit": "deny",
-                "bash": "deny"
-            }
+        "lfm2.5-vl-450m": {
+          "name": "LFM2.5-VL 450M",
+          "reasoning": false,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          },
+          "capabilities": [
+            "vision"
+          ]
         },
-        "explore": {
-            "model": "ollama/glm-5.1:cloud",
-            "temperature": 0.9,
-            "description": "Creative exploration and ideation. Generates alternative approaches, explores design options, and helps with architecture decisions. Read-only.",
-            "prompt": "You are a creative exploration agent. Think freely about alternative approaches, design patterns, and architectural decisions. Consider trade-offs between approaches. There are no wrong answers here — only ideas to evaluate. Challenge assumptions and propose unconventional solutions. You do NOT modify any code.",
-            "permission": {
-                "read": "allow",
-                "write": "deny",
-                "edit": "deny",
-                "bash": "deny"
-            }
+        "nemotron-3-nano-4b": {
+          "name": "Nemotron 3 Nano 4B",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          },
+          "capabilities": [
+            "tools"
+          ]
+        },
+        "nemotron-3-nano-4b:think": {
+          "name": "Nemotron 3 Nano 4B \ud83e\udde0",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          },
+          "capabilities": [
+            "tools"
+          ]
+        },
+        "qwen3.5-4b": {
+          "name": "Qwen 3.5 4B",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "qwen3.5-4b:think": {
+          "name": "Qwen 3.5 4B \ud83e\udde0",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "qwen3.5-9b": {
+          "name": "Qwen 3.5 9B",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "qwen3.5-9b:think": {
+          "name": "Qwen 3.5 9B \ud83e\udde0",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "qwen3.6-35b-moe": {
+          "name": "Qwen 3.6 35B MoE",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          },
+          "capabilities": [
+            "tools"
+          ]
+        },
+        "qwen3.6-35b-moe:think": {
+          "name": "Qwen 3.6 35B MoE \ud83e\udde0",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          },
+          "capabilities": [
+            "tools"
+          ]
+        },
+        "glm-4.7-flash": {
+          "name": "GLM 4.7 Flash",
+          "capabilities": [
+            "tools"
+          ]
+        },
+        "glm-4.7-flash:think": {
+          "name": "GLM 4.7 Flash \ud83e\udde0",
+          "capabilities": [
+            "tools"
+          ]
+        },
+        "gemma4-26b-moe": {
+          "name": "Gemma 4 26B MoE",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          },
+          "capabilities": []
+        },
+        "gemma4-26b-moe:think": {
+          "name": "Gemma 4 26B MoE \ud83e\udde0",
+          "reasoning": true,
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          },
+          "capabilities": []
+        },
+        "gpt-oss-20b": {
+          "name": "GPT-OSS 20B \ud83e\udde0",
+          "reasoning": true,
+          "limit": {
+            "context": 201000,
+            "output": 32768
+          },
+          "capabilities": []
         }
-    },
-    "plugin": [],
-    "mcp": {
-        "serper": {
-            "type": "local",
-            "command": [
-                "npx",
-                "-y",
-                "mcp-server-serper"
-            ],
-            "environment": {
-                "SERPER_API_KEY": "{env:SERPER_API_KEY}"
-            }
-        }
+      }
     }
+  },
+  "agent": {
+    "plan": {
+      "model": "ollama/glm-5.1:cloud",
+      "temperature": 0.7,
+      "description": "Strategic planning and architecture. Analyzes requirements, proposes solutions, creates roadmaps. Read-only \u2014 cannot modify code.",
+      "prompt": "You are a strategic planning agent. Analyze the codebase, understand requirements, and create detailed implementation plans. You do NOT write or edit code \u2014 you only read, analyze, and plan. When you identify work needed, describe it precisely so the build or fix agent can execute. Always consider: project structure, existing patterns, dependencies, risks, and edge cases.",
+      "permission": {
+        "read": "allow",
+        "write": "deny",
+        "edit": "deny",
+        "bash": "deny"
+      }
+    },
+    "build": {
+      "model": "ollama/glm-5.1:cloud",
+      "temperature": 0.3,
+      "description": "Primary coding agent. Full implementation capabilities \u2014 writing, editing, testing code with unrestricted repository and shell access.",
+      "prompt": "You are a senior software engineer. Implement features and create new code following the plan specifications exactly. Match existing code style and patterns. Always handle errors, validate inputs, and use types properly. No hardcoded secrets, no TODO/FIXME left behind. Before writing, read similar files to understand conventions.",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "edit": "allow",
+        "bash": "allow"
+      }
+    },
+    "fix": {
+      "model": "ollama/kimi-k2.6:cloud",
+      "temperature": 0.2,
+      "description": "Bug fix agent. Applies minimal, targeted fixes based on diagnosis or error reports. Prioritizes smallest possible change.",
+      "prompt": "You are a bug fix specialist. Fix issues with the MINIMUM change required. Never refactor adjacent code or add features. If the root cause is unclear, stop and suggest using the plan agent instead. Always verify the fix doesn't break existing functionality. Prefer surgical edits over rewrites.",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "edit": "allow",
+        "bash": "ask"
+      }
+    },
+    "review": {
+      "model": "ollama/kimi-k2.6:cloud",
+      "temperature": 0.5,
+      "description": "Code review and quality analysis. Reviews changes for correctness, best practices, security, and maintainability. Read-only.",
+      "prompt": "You are a senior code reviewer. Analyze code for: correctness, edge cases, error handling, security issues, performance problems, and adherence to project patterns. Be specific \u2014 cite file, line, and what should change. Classify issues as critical/warning/suggestion. Do NOT modify any files.",
+      "permission": {
+        "read": "allow",
+        "write": "deny",
+        "edit": "deny",
+        "bash": "deny"
+      }
+    },
+    "research": {
+      "model": "ollama/minimax-m2.7:cloud",
+      "temperature": 0.7,
+      "description": "Deep research and investigation. Explores codebases, documentation, and external sources to gather information. Read-only analysis.",
+      "prompt": "You are a research agent. Investigate codebases, trace dependencies, understand data flows, and identify risks. Search the web for documentation and best practices when needed. Provide comprehensive analysis with evidence. You do NOT write or modify any code \u2014 only investigate and report.",
+      "permission": {
+        "read": "allow",
+        "write": "deny",
+        "edit": "deny",
+        "bash": "deny"
+      }
+    },
+    "explore": {
+      "model": "ollama/glm-5.1:cloud",
+      "temperature": 0.9,
+      "description": "Creative exploration and ideation. Generates alternative approaches, explores design options, and helps with architecture decisions. Read-only.",
+      "prompt": "You are a creative exploration agent. Think freely about alternative approaches, design patterns, and architectural decisions. Consider trade-offs between approaches. There are no wrong answers here — only ideas to evaluate. Challenge assumptions and propose unconventional solutions. You do NOT modify any code.",
+      "permission": {
+        "read": "allow",
+        "write": "deny",
+        "edit": "deny",
+        "bash": "deny"
+      }
+    },
+    "debug": {
+      "model": "ollama/kimi-k2.6:cloud",
+      "temperature": 0.2,
+      "description": "Debug agent with runtime instrumentation. Starts a debug server, instruments code with language-appropriate HTTP calls, captures runtime data, and pinpoints root causes.",
+      "prompt": "You are a debug specialist using runtime instrumentation. Your workflow:\n\n1. Call debug_start to launch the capture server\n2. Read the relevant code and form multiple hypotheses about the bug\n3. Instrument code with HTTP POST calls to the debug server — ADAPT THE INSTRUMENTATION TO THE PROJECT'S LANGUAGE:\n   - Python: use requests.post() or urllib.request — e.g. requests.post('http://localhost:PORT/debug', json={'label': '...', 'data': {...}})\n   - JavaScript/TypeScript: use fetch() — e.g. fetch('http://localhost:PORT/debug', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({label: '...', data: {...}})}).catch(() => {})\n   - Rust: use ureq::post('http://localhost:PORT/debug').send_json(ureq::json!({'label': '...', 'data': {...})) — add ureq as a dev-dependency temporarily\n   - Go: use http.Post('http://localhost:PORT/debug', 'application/json', bytes.NewReader(jsonData))\n   - Always wrap instrumentation in error suppression so debug calls never affect production behavior\n4. Ask the user to reproduce the issue\n5. Call debug_read to analyze captured data — look for unexpected values, wrong control flow, missing state\n6. Apply a minimal targeted fix\n7. Ask the user to verify the fix\n8. Call debug_stop and REMOVE all instrumentation code\n9. If the fix doesn't work, add more instrumentation and repeat\n\nCRITICAL RULES:\n- NEVER use fetch() in non-JS projects. Detect the project language first.\n- Always clean up instrumentation after debugging.\n- Prefer the smallest possible change that fixes the bug.\n- If root cause is unclear, request more instrumentation before guessing.",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "edit": "allow",
+        "bash": "ask"
+      }
+    }
+  },
+  "plugin": ["@thecto/opencode-debug-plugin@latest"],
+  "mcp": {
+    "serper": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "mcp-server-serper"
+      ],
+      "environment": {
+        "SERPER_API_KEY": "{env:SERPER_API_KEY}"
+      }
+    }
+  }
 }
