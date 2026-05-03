@@ -1,8 +1,14 @@
 {
-  "defaultModel": "kimi-k2.6:cloud",
-  "defaultProvider": "ollama",
-  "lastChangelogVersion": "0.70.2",
+  "defaultModel": "gemma4-26b-moe:think",
+  "defaultProvider": "llama.cpp",
+  "lastChangelogVersion": "0.72.1",
   "packages": [
-    "npm:@ollama/pi-web-search"
-  ]
+    "npm:pi-mcp-adapter"
+  ],
+  "defaultThinkingLevel": "medium",
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 16384,
+    "keepRecentTokens": 20000
+  }
 }

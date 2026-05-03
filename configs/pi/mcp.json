@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "duckduckgo": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@aiprintmoney-arc/mcp-server-duckduckgo"
+      ],
+      "lifecycle": "lazy",
+      "idleTimeout": 10,
+      "directTools": true
+    },
+    "searxng": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-searxng-public"
+      ],
+      "lifecycle": "lazy",
+      "idleTimeout": 10
+    }
+  }
+}
