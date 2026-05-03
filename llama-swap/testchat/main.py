@@ -43,8 +43,19 @@ import requests
 # Endpoint — use LLAMA_SWAP_HOST para acessar remotamente (ex: Termux via Tailscale)
 # Default: localhost (rode direto na máquina)
 # Remoto: export LLAMA_SWAP_HOST=100.65.187.74 (IP Tailscale)
-LLAMA_SWAP_HOST = os.environ.get("LLAMA_SWAP_HOST", "127.0.0.1")
-LLAMA_SWAP_PORT = int(os.environ.get("LLAMA_SWAP_PORT", "12434"))
+# NOTA: Goose (AAIF) usa LLAMA_SWAP_HOST como URL completa (http://host:port),
+#       enquanto o testchat espera hostname + porta separados.
+#       Se LLAMA_SWAP_HOST já contém http://, extraímos host/port da URL.
+_raw_host = os.environ.get("LLAMA_SWAP_HOST", "127.0.0.1")
+if _raw_host.startswith("http://") or _raw_host.startswith("https://"):
+    # Goose-style: URL completa — extrair host e porta
+    from urllib.parse import urlparse
+    parsed = urlparse(_raw_host)
+    LLAMA_SWAP_HOST = parsed.hostname or "127.0.0.1"
+    LLAMA_SWAP_PORT = parsed.port or int(os.environ.get("LLAMA_SWAP_PORT", "12434"))
+else:
+    LLAMA_SWAP_HOST = _raw_host
+    LLAMA_SWAP_PORT = int(os.environ.get("LLAMA_SWAP_PORT", "12434"))
 BASE_URL = f"http://{LLAMA_SWAP_HOST}:{LLAMA_SWAP_PORT}/v1"
 
 # Extensões de imagem suportadas pelo llama.cpp
@@ -1137,7 +1148,6 @@ class StreamingChat:
                         detail += f" + {len(video_audio_paths)} áudios"
                     detail += ")"
                     header_parts.append(f"[dim]{detail}[/]")
-                header_parts.append(f"[dim]Modelo:[/] {model_display}")
                 
                 console.print(Panel(
                     "\n".join(header_parts),
@@ -1209,10 +1219,11 @@ class StreamingChat:
                     est_tok_s = (est_resp_tok + est_reason_tok) / elapsed if elapsed > 0.1 else 0
                     timing_lines.append(f"[bold]Decode:[/] ~{est_resp_tok + est_reason_tok} tok in {elapsed:.1f}s — ~{est_tok_s:.1f} tok/s (estimated)")
                 
-                # --- Info do modelo (VRAM, context) ---
+                # --- Info do modelo (nome, VRAM, context) ---
                 model_info = self._selected_model_info
                 if model_info:
                     info_parts = []
+                    info_parts.append(f"[bold]Modelo:[/] {model_display}")
                     if model_info.get("size"):
                         info_parts.append(f"[bold]Size:[/] {model_info['size']}")
                     if model_info.get("vram"):
@@ -1236,6 +1247,10 @@ class StreamingChat:
                     if info_parts:
                         timing_lines.append("")  # Separador
                         timing_lines.extend(info_parts)
+                elif model_display:
+                    # Fallback: sem model_info, mas mostra pelo menos o nome do modelo
+                    timing_lines.append("")  # Separador
+                    timing_lines.append(f"[bold]Modelo:[/] {model_display}")
                 
                 if timing_lines:
                     console.print(Panel(
