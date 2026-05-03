@@ -65,14 +65,6 @@
             "output": 32768
           }
         },
-        "qwen3-coder-next:cloud": {
-          "name": "Qwen3-Coder-Next \u2601\ufe0f",
-          "reasoning": true,
-          "limit": {
-            "context": 262144,
-            "output": 32768
-          }
-        },
         "kimi-k2.5:cloud": {
           "name": "Kimi K2.5 \u2601\ufe0f",
           "reasoning": true,
@@ -239,24 +231,12 @@
           ]
         },
         "qwen3.6-35b-moe:think": {
-          "name": "Qwen 3.6 35B MoE \ud83e\udde0",
+          "name": "Qwen 3.6 35B MoE 🧠",
           "reasoning": true,
           "limit": {
             "context": 131072,
             "output": 32768
           },
-          "capabilities": [
-            "tools"
-          ]
-        },
-        "glm-4.7-flash": {
-          "name": "GLM 4.7 Flash",
-          "capabilities": [
-            "tools"
-          ]
-        },
-        "glm-4.7-flash:think": {
-          "name": "GLM 4.7 Flash \ud83e\udde0",
           "capabilities": [
             "tools"
           ]
@@ -379,7 +359,28 @@
   },
   "plugin": ["@thecto/opencode-debug-plugin@latest"],
   "mcp": {
-    "serper": {
+    "duckduckgo": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "mcp-duckduckgo-search"
+      ]
+    },
+    "_searxng_disabled": {
+      "_comment": "Searxng MCP — disabled until Sisyphus is reconfigured. Needs self-hosted instance URL.",
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "mcp-searxng"
+      ],
+      "environment": {
+        "SEARXNG_URL": "https://search.ononoki.org"
+      }
+    },
+    "_serper_disabled": {
+      "_comment": "Serper MCP — temporarily disabled. Re-enable by removing _ prefix from key and environment when API key is active again.",
       "type": "local",
       "command": [
         "npx",
