@@ -164,6 +164,13 @@
           "context_window": 201000,
           "default_max_tokens": 32768,
           "can_reason": true
+        },
+        {
+          "name": "Qwen 3.6 Opus 4.7 35B 🧠",
+          "id": "qwen3.6-35b-opus-4.7",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true
         }
       ]
     }
@@ -184,14 +191,19 @@
     "duckduckgo": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["duckduckgo-mcp-server"],
+      "args": [
+        "duckduckgo-mcp-server"
+      ],
       "timeout": 120,
       "disabled": false
     },
     "searxng": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "mcp-searxng-public"],
+      "args": [
+        "-y",
+        "mcp-searxng-public"
+      ],
       "timeout": 120,
       "disabled": false
     }
@@ -205,7 +217,9 @@
     },
     "typescript": {
       "command": "typescript-language-server",
-      "args": ["--stdio"]
+      "args": [
+        "--stdio"
+      ]
     },
     "rust": {
       "command": "rust-analyzer"
