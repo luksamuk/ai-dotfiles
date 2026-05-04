@@ -1,0 +1,217 @@
+{
+  "$schema": "https://charm.land/crush.json",
+  "providers": {
+    "ollama": {
+      "name": "Ollama",
+      "base_url": "http://127.0.0.1:11434/v1/",
+      "type": "openai-compat",
+      "models": [
+        {
+          "name": "☁️ GLM 5.1",
+          "id": "glm-5.1:cloud",
+          "context_window": 202752,
+          "default_max_tokens": 32768,
+          "can_reason": true
+        },
+        {
+          "name": "☁️ GLM 5",
+          "id": "glm-5:cloud",
+          "context_window": 202752,
+          "default_max_tokens": 32768,
+          "can_reason": true
+        },
+        {
+          "name": "☁️ Kimi K2.6",
+          "id": "kimi-k2.6:cloud",
+          "context_window": 262144,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "supports_attachments": true
+        },
+        {
+          "name": "☁️ Kimi K2.5",
+          "id": "kimi-k2.5:cloud",
+          "context_window": 262144,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "supports_attachments": true
+        },
+        {
+          "name": "☁️ MiniMax M2.7 1M",
+          "id": "minimax-m2.7:cloud",
+          "context_window": 1048576,
+          "default_max_tokens": 16384,
+          "can_reason": true
+        },
+        {
+          "name": "☁️ MiniMax M2.5",
+          "id": "minimax-m2.5:cloud",
+          "context_window": 204800,
+          "default_max_tokens": 16384,
+          "can_reason": true
+        },
+        {
+          "name": "☁️ Nemotron 3 Super",
+          "id": "nemotron-3-super:cloud",
+          "context_window": 262144,
+          "default_max_tokens": 16384,
+          "can_reason": true
+        },
+        {
+          "name": "☁️ Nemotron 3 Nano 30B 1M",
+          "id": "nemotron-3-nano:30b-cloud",
+          "context_window": 1048576,
+          "default_max_tokens": 16384,
+          "can_reason": true
+        },
+        {
+          "name": "☁️ Qwen 3.5 397B",
+          "id": "qwen3.5:cloud",
+          "context_window": 262144,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "supports_attachments": true
+        },
+        {
+          "name": "☁️ Gemma 4 31B",
+          "id": "gemma4:31b-cloud",
+          "context_window": 131072,
+          "default_max_tokens": 16384,
+          "can_reason": true,
+          "supports_attachments": true
+        },
+        {
+          "name": "☁️ DeepSeek V4 Flash",
+          "id": "deepseek-v4-flash:cloud",
+          "context_window": 1048576,
+          "default_max_tokens": 16384,
+          "can_reason": true
+        },
+        {
+          "name": "☁️ DeepSeek V4 Pro",
+          "id": "deepseek-v4-pro:cloud",
+          "context_window": 1048576,
+          "default_max_tokens": 16384,
+          "can_reason": true
+        },
+        {
+          "name": "☁️ Gemini 3 Flash Preview",
+          "id": "gemini-3-flash-preview:cloud",
+          "context_window": 1048576,
+          "default_max_tokens": 16384,
+          "can_reason": true,
+          "supports_attachments": true
+        }
+      ]
+    },
+    "llama-cpp": {
+      "name": "llama.cpp",
+      "base_url": "http://127.0.0.1:12434/v1/",
+      "type": "openai-compat",
+      "models": [
+        {
+          "name": "🧠 Qwen 3.5 4B",
+          "id": "qwen3.5-4b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true
+        },
+        {
+          "name": "🧠 Qwen 3.5 9B",
+          "id": "qwen3.5-9b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true
+        },
+        {
+          "name": "🧠 Gemma 4 E2B",
+          "id": "gemma4-e2b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true
+        },
+        {
+          "name": "🧠 Gemma 4 E4B",
+          "id": "gemma4-e4b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true
+        },
+        {
+          "name": "🧠 Nemotron 3 Nano 4B",
+          "id": "nemotron-3-nano-4b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true
+        },
+        {
+          "name": "🧠 Qwen 3.6 35B MoE",
+          "id": "qwen3.6-35b-moe",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true
+        },
+        {
+          "name": "🧠 Gemma 4 26B MoE",
+          "id": "gemma4-26b-moe",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true
+        },
+        {
+          "name": "🧠 GPT-OSS 20B",
+          "id": "gpt-oss-20b",
+          "context_window": 201000,
+          "default_max_tokens": 32768,
+          "can_reason": true
+        }
+      ]
+    }
+  },
+  "mcp": {
+    "duckduckgo": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-duckduckgo-search"],
+      "timeout": 120,
+      "disabled": false
+    },
+    "searxng": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-searxng-public"],
+      "timeout": 120,
+      "disabled": false
+    }
+  },
+  "lsp": {
+    "python": {
+      "command": "pylsp"
+    },
+    "go": {
+      "command": "gopls"
+    },
+    "typescript": {
+      "command": "typescript-language-server",
+      "args": ["--stdio"]
+    },
+    "rust": {
+      "command": "rust-analyzer"
+    }
+  },
+  "permissions": {
+    "allowed_tools": [
+      "view",
+      "ls",
+      "grep",
+      "edit",
+      "mcp_duckduckgo_search",
+      "mcp_duckduckgo_fetch",
+      "mcp_searxng_search"
+    ]
+  },
+  "options": {
+    "disable_metrics": true,
+    "disable_provider_auto_update": false
+  }
+}
