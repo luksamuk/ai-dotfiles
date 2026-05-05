@@ -327,6 +327,37 @@
           "maxTokens": 32768
         }
       ]
+    },
+    "sisyphus": {
+      "api": "openai-completions",
+      "apiKey": "not-needed",
+      "baseURL": "http://192.168.3.8:8081/v1",
+      "models": {
+        "qwen3-1.7b": {
+          "name": "Qwen3 1.7B 📟",
+          "context": 16384,
+          "maxTokens": 4096,
+          "reasoning": true,
+          "inputPrice": 0,
+          "outputPrice": 0
+        },
+        "qwen3-0.6b": {
+          "name": "Qwen3 0.6B 📟",
+          "context": 16384,
+          "maxTokens": 4096,
+          "reasoning": true,
+          "inputPrice": 0,
+          "outputPrice": 0
+        },
+        "gemma3-1b": {
+          "name": "Gemma 3 1B 📟",
+          "context": 8192,
+          "maxTokens": 4096,
+          "reasoning": false,
+          "inputPrice": 0,
+          "outputPrice": 0
+        }
+      }
     }
   }
 }
