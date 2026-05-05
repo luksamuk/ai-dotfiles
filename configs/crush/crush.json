@@ -173,6 +173,11 @@
           "can_reason": true
         }
       ]
+    },
+    "sisyphus": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "📟 Pi LLM",
+      "baseURL": "http://192.168.3.8:8081/v1"
     }
   },
   "models": {
@@ -185,6 +190,26 @@
       "model": "gpt-oss-20b",
       "provider": "llama-cpp",
       "think": true
+    },
+    "📟 Qwen3 1.7B (Pi)": {
+      "provider": "sisyphus",
+      "model": "qwen3-1.7b",
+      "reasoning": true,
+      "context": 4096,
+      "maxOutputTokens": 2048
+    },
+    "📟 Qwen3 0.6B (Pi)": {
+      "provider": "sisyphus",
+      "model": "qwen3-0.6b",
+      "reasoning": true,
+      "context": 4096,
+      "maxOutputTokens": 2048
+    },
+    "📟 Gemma 3 1B (Pi)": {
+      "provider": "sisyphus",
+      "model": "gemma3-1b",
+      "context": 4096,
+      "maxOutputTokens": 2048
     }
   },
   "mcp": {
@@ -202,8 +227,11 @@
       "command": "npx",
       "args": [
         "-y",
-        "mcp-searxng-public"
+        "mcp-searxng"
       ],
+      "env": {
+        "SEARXNG_URL": "http://192.168.3.8:8888"
+      },
       "timeout": 120,
       "disabled": false
     }

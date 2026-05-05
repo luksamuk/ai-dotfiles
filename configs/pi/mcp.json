@@ -2,20 +2,17 @@
   "mcpServers": {
     "duckduckgo": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@aiprintmoney-arc/mcp-server-duckduckgo"
-      ],
+      "args": ["-y", "@aiprintmoney-arc/mcp-server-duckduckgo"],
       "lifecycle": "lazy",
       "idleTimeout": 10,
       "directTools": true
     },
     "searxng": {
       "command": "npx",
-      "args": [
-        "-y",
-        "mcp-searxng-public"
-      ],
+      "args": ["-y", "mcp-searxng"],
+      "env": {
+        "SEARXNG_URL": "http://192.168.3.8:8888"
+      },
       "lifecycle": "lazy",
       "idleTimeout": 10
     }

@@ -291,6 +291,39 @@
           ]
         }
       }
+    },
+    "sisyphus": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "📟 Pi LLM",
+      "options": {
+        "baseURL": "http://192.168.3.8:8081/v1"
+      },
+      "models": {
+        "qwen3-1.7b": {
+          "name": "Qwen3 1.7B 📟",
+          "reasoning": true,
+          "limit": {
+            "context": 16384,
+            "output": 4096
+          }
+        },
+        "qwen3-0.6b": {
+          "name": "Qwen3 0.6B 📟",
+          "reasoning": true,
+          "limit": {
+            "context": 16384,
+            "output": 4096
+          }
+        },
+        "gemma3-1b": {
+          "name": "Gemma 3 1B 📟",
+          "reasoning": false,
+          "limit": {
+            "context": 8192,
+            "output": 4096
+          }
+        }
+      }
     }
   },
   "agent": {
@@ -390,8 +423,7 @@
         "duckduckgo-mcp-server"
       ]
     },
-    "_searxng_disabled": {
-      "_comment": "Searxng MCP — disabled until Sisyphus is reconfigured. Needs self-hosted instance URL.",
+    "searxng": {
       "type": "local",
       "command": [
         "npx",
@@ -399,7 +431,7 @@
         "mcp-searxng"
       ],
       "environment": {
-        "SEARXNG_URL": "https://search.ononoki.org"
+        "SEARXNG_URL": "http://192.168.3.8:8888"
       }
     },
     "_serper_disabled": {

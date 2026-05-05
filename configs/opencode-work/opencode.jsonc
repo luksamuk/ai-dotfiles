@@ -1,0 +1,342 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "default_agent": "plan",
+    "username": "luksamuk",
+    "autoupdate": "notify",
+    "share": "manual",
+    "enabled_providers": [
+        "ollama-local",
+        "llama-cpp",
+        "sisyphus"
+    ],
+    "provider": {
+        "ollama-local": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "Ollama",
+            "options": {
+                "baseURL": "http://192.168.3.50:11434/v1"
+            },
+            "models": {
+                "glm-5.1:cloud": {
+                    "name": "GLM 5.1",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 202752,
+                        "output": 32768
+                    }
+                },
+                "glm-5:cloud": {
+                    "name": "GLM 5",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 202752,
+                        "output": 32768
+                    }
+                },
+                "kimi-k2.6:cloud": {
+                    "name": "Kimi K2.6",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
+                    }
+                },
+                "deepseek-v4-flash:cloud": {
+                    "name": "DeepSeek V4 Flash",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 1048576,
+                        "output": 16384
+                    }
+                },
+                "deepseek-v4-pro:cloud": {
+                    "name": "DeepSeek V4 Pro",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 1048576,
+                        "output": 16384
+                    }
+                }
+            }
+        },
+        "llama-cpp": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "llama.cpp",
+            "options": {
+                "baseURL": "http://192.168.3.50:12434/v1"
+            },
+            "models": {
+                "qwen3.5-4b": {
+                    "name": "Qwen 3.5 4B",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "qwen3.5-4b:think": {
+                    "name": "Qwen 3.5 4B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "qwen3.5-9b": {
+                    "name": "Qwen 3.5 9B",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "qwen3.5-9b:think": {
+                    "name": "Qwen 3.5 9B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "gemma4-e2b": {
+                    "name": "Gemma 4 E2B",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "gemma4-e2b:think": {
+                    "name": "Gemma 4 E2B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "gemma4-e4b": {
+                    "name": "Gemma 4 E4B",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "gemma4-e4b:think": {
+                    "name": "Gemma 4 E4B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "nemotron-3-nano-4b": {
+                    "name": "Nemotron 3 Nano 4B",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "tools"
+                    ]
+                },
+                "nemotron-3-nano-4b:think": {
+                    "name": "Nemotron 3 Nano 4B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "tools"
+                    ]
+                },
+                "qwen3.6-35b-moe": {
+                    "name": "Qwen 3.6 35B MoE",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "tools"
+                    ]
+                },
+                "qwen3.6-35b-moe:think": {
+                    "name": "Qwen 3.6 35B MoE 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "tools"
+                    ]
+                },
+                "gemma4-26b-moe": {
+                    "name": "Gemma 4 26B MoE",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "gemma4-26b-moe:think": {
+                    "name": "Gemma 4 26B MoE 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "gpt-oss-20b": {
+                    "name": "GPT-OSS 20B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 201000,
+                        "output": 32768
+                    }
+                },
+                "qwen3.6-35b-opus-4.7": {
+                    "name": "Qwen 3.6 Opus 4.7 35B",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "tools"
+                    ]
+                },
+                "qwen3.6-35b-opus-4.7:think": {
+                    "name": "Qwen 3.6 Opus 4.7 35B 🧠",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "tools"
+                    ]
+                }
+            }
+        },
+        "sisyphus": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "Pi LLM",
+            "options": {
+                "baseURL": "http://192.168.3.8:8081/v1"
+            },
+            "models": {
+                "qwen3-1.7b": {
+                    "name": "Qwen3 1.7B 📟",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 16384,
+                        "output": 4096
+                    }
+                },
+                "qwen3-0.6b": {
+                    "name": "Qwen3 0.6B 📟",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 16384,
+                        "output": 4096
+                    }
+                },
+                "gemma3-1b": {
+                    "name": "Gemma 3 1B 📟",
+                    "reasoning": false,
+                    "limit": {
+                        "context": 8192,
+                        "output": 4096
+                    }
+                }
+            }
+        }
+    },
+    "agent": {
+        "plan": {
+            "model": "llama-cpp/qwen3.6-35b-opus-4.7:think",
+            "temperature": 0.7,
+            "description": "Strategic planning and architecture. Analyzes requirements, proposes solutions, creates roadmaps. Read-only — cannot modify code.",
+            "prompt": "You are a strategic planning agent. Analyze the codebase, understand requirements, and create detailed implementation plans. You do NOT write or edit code — you only read, analyze, and plan. When you identify work needed, describe it precisely so the build or fix agent can execute. Always consider: project structure, existing patterns, dependencies, risks, and edge cases.",
+            "permission": {
+                "read": "allow",
+                "write": "deny",
+                "edit": "deny",
+                "bash": "deny"
+            }
+        },
+        "build": {
+            "model": "llama-cpp/qwen3.6-35b-moe:think",
+            "temperature": 0.3,
+            "description": "Primary coding agent. Full implementation capabilities — writing, editing, testing code with unrestricted repository and shell access.",
+            "prompt": "You are a senior software engineer. Implement features and create new code following the plan specifications exactly. Match existing code style and patterns. Always handle errors, validate inputs, and use types properly. No hardcoded secrets, no TODO/FIXME left behind. Before writing, read similar files to understand conventions.",
+            "permission": {
+                "read": "allow",
+                "write": "allow",
+                "edit": "allow",
+                "bash": "allow"
+            }
+        },
+        "fix": {
+            "model": "llama-cpp/qwen3.6-35b-moe:think",
+            "temperature": 0.2,
+            "description": "Bug fix agent. Applies minimal, targeted fixes based on diagnosis or error reports. Prioritizes smallest possible change.",
+            "prompt": "You are a bug fix specialist. Fix issues with the MINIMUM change required. Never refactor adjacent code or add features. If the root cause is unclear, stop and suggest using the plan agent instead. Always verify the fix doesn't break existing functionality. Prefer surgical edits over rewrites.",
+            "permission": {
+                "read": "allow",
+                "write": "allow",
+                "edit": "allow",
+                "bash": "ask"
+            }
+        },
+        "review": {
+            "model": "llama-cpp/qwen3.6-35b-opus-4.7:think",
+            "temperature": 0.5,
+            "description": "Code review and quality analysis. Reviews changes for correctness, best practices, security, and maintainability. Read-only.",
+            "prompt": "You are a senior code reviewer. Analyze code for: correctness, edge cases, error handling, security issues, performance problems, and adherence to project patterns. Be specific — cite file, line, and what should change. Classify issues as critical/warning/suggestion. Do NOT modify any files.",
+            "permission": {
+                "read": "allow",
+                "write": "deny",
+                "edit": "deny",
+                "bash": "deny"
+            }
+        },
+        "research": {
+            "model": "llama-cpp/qwen3.6-35b-opus-4.7:think",
+            "temperature": 0.7,
+            "description": "Deep research and investigation. Explores codebases, documentation, and traces dependencies. Read-only analysis.",
+            "prompt": "You are a research agent. Investigate codebases, trace dependencies, understand data flows, and identify risks. Provide comprehensive analysis with evidence. You do NOT write or modify any code — only investigate and report.",
+            "permission": {
+                "read": "allow",
+                "write": "deny",
+                "edit": "deny",
+                "bash": "deny"
+            }
+        },
+        "explore": {
+            "model": "llama-cpp/gemma4-26b-moe:think",
+            "temperature": 0.9,
+            "description": "Creative exploration and ideation. Generates alternative approaches, explores design options. Read-only.",
+            "prompt": "You are a creative exploration agent. Think freely about alternative approaches, design patterns, and architectural decisions. Consider trade-offs between approaches. There are no wrong answers here — only ideas to evaluate. Challenge assumptions and propose unconventional solutions. You do NOT modify any code.",
+            "permission": {
+                "read": "allow",
+                "write": "deny",
+                "edit": "deny",
+                "bash": "deny"
+            }
+        }
+    },
+    "plugin": [],
+    "mcp": {
+        "sentry": {
+            "type": "remote",
+            "url": "https://mcp.sentry.dev/mcp",
+            "enabled": true,
+            "oauth": {}
+        }
+    }
+}
