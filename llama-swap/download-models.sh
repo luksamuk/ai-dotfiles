@@ -5,10 +5,12 @@
 # Available models:
 #   qwen3.5-4b           - Qwen3.5-4B Q4_K_M (2.63 GB) - fits in VRAM
 #   qwen3.5-9b           - Qwen3.5-9B UD-Q3_K_XL (~5.05 GB) - fits in VRAM
-#   gemma4-e4b           - Gemma-4 E4B UD-Q3_K_XL (~4.5 GB) - fits in VRAM
+#   gemma4-e4b           - Gemma-4 E4B UD-Q3_K_XL (~4.50 GB) - fits in VRAM
 #   gemma4-e2b           - Gemma-4 E2B Q4_K_M (3.11 GB) - fits in VRAM
 #   nemotron-3-nano-4b   - Nemotron-3-Nano-4B Q4_K_M (2.90 GB) - tool-calling
 #   lfm2.5-vl-450m       - LFM2.5-VL-450M Q4_0 (0.22 GB) + mmproj F16 - vision/OCR
+#   granite-4.1-3b       - Granite 4.1 3B Q4_K_M (~2.1 GB) - dense, tool-calling, 128K ctx
+#   granite-4.1-8b       - Granite 4.1 8B UD-Q3_K_XL (~4.6 GB) - dense, tool-calling, 512K ctx
 #   [REMOVED] glm-4.7-flash — superseded by Qwen3.6 35B MoE
 #   qwen3.6-35b-moe      - Qwen3.6-35B-A3B APEX I-Compact (~17.3 GB) - MoE coding + tools
 #   gemma4-26b-moe       - Gemma 4 26B-A4B APEX I-Compact (~15.5 GB) - MoE reasoning + coding, text-only
@@ -37,6 +39,9 @@ declare -A MODELS=(
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf"
   ["nemotron-3-nano-4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF LFM2.5-VL-450M-Q4_0.gguf"
+  # Granite 4.1 — dense, Apache 2.0, strong tool-calling + code
+  ["granite-4.1-3b"]="unsloth/granite-4.1-3b-GGUF granite-4.1-3b-Q4_K_M.gguf"
+  ["granite-4.1-8b"]="unsloth/granite-4.1-8b-GGUF granite-4.1-8b-UD-Q3_K_XL.gguf"
   # glm-4.7-flash removed
   ["qwen3.6-35b-moe"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF Qwen3.5-35B-A3B-APEX-I-Compact.gguf Qwen3.6-35B-A3B-APEX-I-Compact.gguf"
   ["gemma4-26b-moe"]="mudler/gemma-4-26B-A4B-it-APEX-GGUF gemma-4-26B-A4B-APEX-I-Compact.gguf"
@@ -137,6 +142,8 @@ show_sizes() {
   echo "  gemma4-e2b            3.11 GB  (Q4_K_M) - Fits in VRAM"
   echo "  nemotron-3-nano-4b    2.90 GB  (Q4_K_M) - Fits in VRAM, tool-calling"
   echo "  lfm2.5-vl-450m        0.22 GB  (Q4_0) - Fits in VRAM, vision/OCR + mmproj"
+  echo "  granite-4.1-3b       ~2.10 GB  (Q4_K_M) - Dense, tool-calling, 128K ctx"
+  echo "  granite-4.1-8b       ~4.60 GB  (UD-Q3_K_XL) - Dense, tool-calling, 512K ctx"
   # glm-4.7-flash removed
   echo "  qwen3.6-35b-moe    ~17.30 GB  (APEX I-Compact) - Heavy offload, MoE coding + tools"
   echo "  gemma4-26b-moe    ~15.50 GB  (APEX I-Compact) - Heavy offload, MoE reasoning + coding text-only"
@@ -153,7 +160,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"qwen3.6-35b-moe"|"gemma4-26b-moe"|"gpt-oss-20b")
+  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"granite-4.1-3b"|"granite-4.1-8b"|"qwen3.6-35b-moe"|"gemma4-26b-moe"|"gpt-oss-20b")
     show_sizes
     download_model "$1"
     ;;
@@ -174,7 +181,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nematron-3-nano-4b, lfm2.5-vl-450m, qwen3.6-35b-moe, gemma4-26b-moe, gpt-oss-20b, all, sizes"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nematron-3-nano-4b, lfm2.5-vl-450m, granite-4.1-3b, granite-4.1-8b, qwen3.6-35b-moe, gemma4-26b-moe, gpt-oss-20b, all, sizes"
     exit 1
     ;;
 esac

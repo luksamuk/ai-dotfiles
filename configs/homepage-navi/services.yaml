@@ -1,0 +1,33 @@
+---
+# Navi — Homepage Services
+
+- IA & Inferência:
+    - LLM Swap:
+        href: http://localhost:12434/
+        icon: /icons/llama-swap.png
+        description: 20 modelos locais (llama.cpp + MoE)
+        widget:
+            type: customapi
+            url: http://192.168.3.50:12434/v1/models
+            mappings:
+                - label: Disponíveis
+                  field: data.length
+    - Ollama:
+        href: http://localhost:11434/
+        icon: /icons/ollama.png
+        description: Runtime LLM (cloud proxies)
+    - Open Design:
+        href: http://localhost:7456/
+        icon: /icons/open-design.png
+        description: Design tool com agentes IA
+
+- Rede:
+    - Tailscale:
+        href: https://login.tailscale.com/admin/machines
+        icon: tailscale.png
+        description: VPN mesh
+
+- Sistema:
+    - Homepage:
+        icon: homepage.png
+        description: Dashboard central
