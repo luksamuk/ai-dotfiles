@@ -20,6 +20,8 @@ class Handler(BaseHTTPRequestHandler):
             self._open_design_status()
         elif self.path == "/open-webui":
             self._open_webui_status()
+        elif self.path == "/hermes":
+            self._hermes_status()
         else:
             self.send_response(404)
             self.end_headers()
@@ -85,6 +87,17 @@ class Handler(BaseHTTPRequestHandler):
             })
         except Exception:
             self.send_json({"version": "?", "status": "error"})
+
+    def _hermes_status(self):
+        try:
+            req = urllib.request.Request("http://127.0.0.1:9119/")
+            resp = urllib.request.urlopen(req, timeout=5)
+            if resp.status == 200:
+                self.send_json({"status": "online"})
+            else:
+                self.send_json({"status": "error"})
+        except Exception:
+            self.send_json({"status": "error"})
 
     def send_json(self, data):
         body = json.dumps(data, ensure_ascii=False).encode()

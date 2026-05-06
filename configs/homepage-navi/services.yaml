@@ -54,6 +54,16 @@
                   field: version
                 - label: Status
                   field: status
+    - Hermes:
+        href: http://localhost:9119/
+        icon: /icons/hermes.png
+        description: Agente IA
+        widget:
+            type: customapi
+            url: http://127.0.0.1:8083/hermes
+            mappings:
+                - label: Status
+                  field: status
 
 - Rede:
     - Tailscale:
