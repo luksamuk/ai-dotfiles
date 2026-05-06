@@ -3,8 +3,11 @@
 # Runtime: ~/.codex/config.toml
 # Sync: cp ~/git/ai-dotfiles/configs/codex/config.toml ~/.codex/config.toml
 #
-# Structure mirrors OpenCode and Pi Coding Agent configs.
-# Profiles switch between providers; use --profile <name> or -p <name>.
+# IMPORTANT: Codex 0.128+ requires OpenAI Responses API for custom providers.
+# llama.cpp/llama-swap only implements Chat Completions, NOT Responses API.
+# This means llama-swap and Sisyphus profiles DO NOT WORK as custom providers.
+# Use --oss --local-provider=ollama for Ollama models (cloud + local).
+# See: https://github.com/openai/codex/discussions/7782
 
 # ============================================================
 # Default profile (Ollama cloud — free, fast, no local GPU)
@@ -17,30 +20,29 @@ model_provider = "ollama-cloud"
 # ============================================================
 
 # --- Ollama Cloud (primary — API-routed, no local GPU) ---
-# Uses built-in ollama provider via --oss flag or profiles.
-# When using custom provider (not built-in), Codex requires wire_api = "responses"
-# which means the endpoint must support OpenAI Responses API.
-# Ollama serves Chat Completions, so use --oss or built-in "ollama" provider instead.
+# Works with Responses API. No wire_api needed (auto-detected).
 [model_providers.ollama-cloud]
 name = "Ollama Cloud"
 base_url = "http://127.0.0.1:11434/v1"
 
 # --- llama-swap local (RTX 3050, GGUF models on Navi) ---
-# llama-swap serves Chat Completions API, NOT Responses API.
-# Since Codex 0.128+ requires Responses API for custom providers,
-# we use a compatibility proxy or rely on --oss mode.
-# For now, this works with the built-in OSS provider behavior.
+# LIMITED: Codex requires Responses API but llama-swap only serves Chat Completions.
+# Tool calls fail with: 'type' of tool must be 'function'
+# WORKAROUND: Use --oss --local-provider=ollama and set OLLAMA_BASE_URL
+# (Does NOT work as a custom provider in Codex 0.128+)
 [model_providers.llama-swap]
 name = "llama.cpp (local)"
 base_url = "http://127.0.0.1:12434/v1"
 
 # --- Sisyphus Pi (Raspberry Pi, lightweight models) ---
+# SAME LIMITATION as llama-swap: does NOT work as custom provider.
+# Pi models on Codex are unavailable until Responses API support lands in llama.cpp.
 [model_providers.sisyphus]
 name = "Pi LLM"
 base_url = "http://192.168.3.8:8081/v1"
 
 # ============================================================
-# Profiles
+# Profiles — Ollama Cloud (all working)
 # ============================================================
 
 # Default cloud (Ollama) — GLM 5.1
@@ -48,17 +50,27 @@ base_url = "http://192.168.3.8:8081/v1"
 model = "glm-5.1:cloud"
 model_provider = "ollama-cloud"
 
+# GLM 5 (previous generation)
+[profiles.glm5]
+model = "glm-5:cloud"
+model_provider = "ollama-cloud"
+
 # Kimi K2.6 — strong coder
 [profiles.kimi]
 model = "kimi-k2.6:cloud"
 model_provider = "ollama-cloud"
 
-# MiniMax M2.7 — deep context
+# Kimi K2.5 — vision-capable coding
+[profiles.kimi25]
+model = "kimi-k2.5:cloud"
+model_provider = "ollama-cloud"
+
+# MiniMax M2.7 — deep context, tool search
 [profiles.m2.7]
 model = "minimax-m2.7:cloud"
 model_provider = "ollama-cloud"
 
-# MiniMax M2.5 — coding specialist
+# MiniMax M2.5 — coding specialist (SWE-Bench 79.7%)
 [profiles.m2.5]
 model = "minimax-m2.5:cloud"
 model_provider = "ollama-cloud"
@@ -66,6 +78,11 @@ model_provider = "ollama-cloud"
 # DeepSeek V4 Pro — heavy reasoning
 [profiles.deepseek]
 model = "deepseek-v4-pro:cloud"
+model_provider = "ollama-cloud"
+
+# DeepSeek V4 Flash — fast reasoning
+[profiles.deepseek-flash]
+model = "deepseek-v4-flash:cloud"
 model_provider = "ollama-cloud"
 
 # Gemini 3 Flash — Google fast
@@ -78,43 +95,45 @@ model_provider = "ollama-cloud"
 model = "nemotron-3-super:cloud"
 model_provider = "ollama-cloud"
 
-# --- Local llama-swap profiles ---
+# Nemotron 3 Nano 30B — 1M context
+[profiles.nematron-nano]
+model = "nemotron-3-nano:30b-cloud"
+model_provider = "ollama-cloud"
 
-# Qwen 3.6 35B MoE (best local coder)
+# Gemma 4 31B — Google MoE
+[profiles.gemma4]
+model = "gemma4:31b-cloud"
+model_provider = "ollama-cloud"
+
+# Qwen 3.5 — Alibaba reasoning+vision
+[profiles.qwen]
+model = "qwen3.5:cloud"
+model_provider = "ollama-cloud"
+
+# ============================================================
+# Profiles — Local llama-swap (LIMITED — see note above)
+# These profiles register the provider but tool-calling FAILS.
+# Use OLLAMA_HOST=http://127.0.0.1:12434 codex --oss instead for local models.
+# ============================================================
+
 [profiles.local-qwen]
 model = "qwen3.6-35b-moe"
 model_provider = "llama-swap"
 
-# Qwen 3.6 35B MoE thinking variant
-[profiles.local-qwen-think]
-model = "qwen3.6-35b-moe:think"
-model_provider = "llama-swap"
-
-# Gemma 4 26B MoE (alternative local)
 [profiles.local-gemma]
 model = "gemma4-26b-moe"
 model_provider = "llama-swap"
 
-# Gemma 4 26B MoE thinking variant
-[profiles.local-gemma-think]
-model = "gemma4-26b-moe:think"
-model_provider = "llama-swap"
-
-# GPT-OSS 20B — always-reasoning (Harmony format)
 [profiles.local-gptoss]
 model = "gpt-oss-20b"
 model_provider = "llama-swap"
 
-# --- Sisyphus Pi profiles ---
+# ============================================================
+# Profiles — Sisyphus Pi (LIMITED — same issue as llama-swap)
+# ============================================================
 
-# Qwen3 1.7B — best Pi model (GQA, thinking)
 [profiles.pi-qwen]
 model = "qwen3-1.7b"
-model_provider = "sisyphus"
-
-# Qwen3 0.6B — ultra-light Pi
-[profiles.pi-qwen-tiny]
-model = "qwen3-0.6b"
 model_provider = "sisyphus"
 
 # ============================================================

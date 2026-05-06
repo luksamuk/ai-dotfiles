@@ -5,21 +5,43 @@
     - LLM Swap:
         href: http://localhost:12434/
         icon: /icons/llama-swap.png
-        description: 20 modelos locais (llama.cpp + MoE)
+        description: Modelos locais (llama.cpp + MoE)
         widget:
             type: customapi
-            url: http://192.168.3.50:12434/v1/models
+            url: http://127.0.0.1:8083/llama-swap
             mappings:
                 - label: Disponíveis
-                  field: data.length
+                  field: available
+                - label: Rodando
+                  field: running
+                - label: Status
+                  field: status
     - Ollama:
         href: http://localhost:11434/
         icon: /icons/ollama.png
         description: Runtime LLM (cloud proxies)
+        widget:
+            type: customapi
+            url: http://127.0.0.1:8083/ollama
+            mappings:
+                - label: Disponíveis
+                  field: available
+                - label: Rodando
+                  field: running
+                - label: Status
+                  field: status
     - Open Design:
         href: http://localhost:7456/
         icon: /icons/open-design.png
         description: Design tool com agentes IA
+        widget:
+            type: customapi
+            url: http://127.0.0.1:8083/open-design
+            mappings:
+                - label: Agentes
+                  field: agents
+                - label: Status
+                  field: status
 
 - Rede:
     - Tailscale:
