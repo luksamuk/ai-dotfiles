@@ -8,6 +8,9 @@
 # This means llama-swap and Sisyphus profiles DO NOT WORK as custom providers.
 # Use --oss --local-provider=ollama for Ollama models (cloud + local).
 # See: https://github.com/openai/codex/discussions/7782
+#
+# NOTE: TOML profile names with dots/hyphens need quoted keys.
+# Use: codex -p 'glm-5.1'  (quotes required in shell for dots)
 
 # ============================================================
 # Default profile (Ollama cloud — free, fast, no local GPU)
@@ -43,70 +46,72 @@ base_url = "http://192.168.3.8:8081/v1"
 
 # ============================================================
 # Profiles — Ollama Cloud (all working)
+# Profile names with dots/hyphens use quoted TOML keys.
+# Shell usage: codex -p 'glm-5.1' or codex -p kimi-k2.6
 # ============================================================
 
-# Default cloud (Ollama) — GLM 5.1
-[profiles.cloud]
+# GLM 5.1 — default, great all-rounder
+[profiles."glm-5.1"]
 model = "glm-5.1:cloud"
 model_provider = "ollama-cloud"
 
-# GLM 5 (previous generation)
+# GLM 5 — previous generation
 [profiles.glm5]
 model = "glm-5:cloud"
 model_provider = "ollama-cloud"
 
-# Kimi K2.6 — strong coder
-[profiles.kimi]
+# Kimi K2.6 — strong coder, vision
+[profiles."kimi-k2.6"]
 model = "kimi-k2.6:cloud"
 model_provider = "ollama-cloud"
 
 # Kimi K2.5 — vision-capable coding
-[profiles.kimi25]
+[profiles."kimi-k2.5"]
 model = "kimi-k2.5:cloud"
 model_provider = "ollama-cloud"
 
 # MiniMax M2.7 — deep context, tool search
-[profiles.m2.7]
+[profiles."minimax-m2.7"]
 model = "minimax-m2.7:cloud"
 model_provider = "ollama-cloud"
 
 # MiniMax M2.5 — coding specialist (SWE-Bench 79.7%)
-[profiles.m2.5]
+[profiles."minimax-m2.5"]
 model = "minimax-m2.5:cloud"
 model_provider = "ollama-cloud"
 
 # DeepSeek V4 Pro — heavy reasoning
-[profiles.deepseek]
+[profiles."deepseek-v4-pro"]
 model = "deepseek-v4-pro:cloud"
 model_provider = "ollama-cloud"
 
 # DeepSeek V4 Flash — fast reasoning
-[profiles.deepseek-flash]
+[profiles."deepseek-v4-flash"]
 model = "deepseek-v4-flash:cloud"
 model_provider = "ollama-cloud"
 
 # Gemini 3 Flash — Google fast
-[profiles.gemini]
+[profiles."gemini-3-flash"]
 model = "gemini-3-flash-preview:cloud"
 model_provider = "ollama-cloud"
 
 # Nemotron 3 Super — NVIDIA reasoning
-[profiles.nemotron]
+[profiles."nemotron-3-super"]
 model = "nemotron-3-super:cloud"
 model_provider = "ollama-cloud"
 
 # Nemotron 3 Nano 30B — 1M context
-[profiles.nematron-nano]
+[profiles."nemotron-3-nano"]
 model = "nemotron-3-nano:30b-cloud"
 model_provider = "ollama-cloud"
 
 # Gemma 4 31B — Google MoE
-[profiles.gemma4]
+[profiles."gemma4-31b"]
 model = "gemma4:31b-cloud"
 model_provider = "ollama-cloud"
 
 # Qwen 3.5 — Alibaba reasoning+vision
-[profiles.qwen]
+[profiles."qwen3.5"]
 model = "qwen3.5:cloud"
 model_provider = "ollama-cloud"
 
@@ -116,15 +121,15 @@ model_provider = "ollama-cloud"
 # Use OLLAMA_HOST=http://127.0.0.1:12434 codex --oss instead for local models.
 # ============================================================
 
-[profiles.local-qwen]
+[profiles."qwen3.6-35b-moe"]
 model = "qwen3.6-35b-moe"
 model_provider = "llama-swap"
 
-[profiles.local-gemma]
+[profiles."gemma4-26b-moe"]
 model = "gemma4-26b-moe"
 model_provider = "llama-swap"
 
-[profiles.local-gptoss]
+[profiles."gpt-oss-20b"]
 model = "gpt-oss-20b"
 model_provider = "llama-swap"
 
@@ -132,7 +137,7 @@ model_provider = "llama-swap"
 # Profiles — Sisyphus Pi (LIMITED — same issue as llama-swap)
 # ============================================================
 
-[profiles.pi-qwen]
+[profiles."qwen3-1.7b"]
 model = "qwen3-1.7b"
 model_provider = "sisyphus"
 
