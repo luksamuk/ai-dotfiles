@@ -18,6 +18,8 @@ class Handler(BaseHTTPRequestHandler):
             self._ollama_status()
         elif self.path == "/open-design":
             self._open_design_status()
+        elif self.path == "/open-webui":
+            self._open_webui_status()
         else:
             self.send_response(404)
             self.end_headers()
@@ -71,6 +73,18 @@ class Handler(BaseHTTPRequestHandler):
             })
         except Exception:
             self.send_json({"agents": "?", "status": "error"})
+
+    def _open_webui_status(self):
+        try:
+            req = urllib.request.Request("http://127.0.0.1:3111/api/config")
+            resp = urllib.request.urlopen(req, timeout=5)
+            config = json.loads(resp.read())
+            self.send_json({
+                "version": config.get("version", "?"),
+                "status": "online",
+            })
+        except Exception:
+            self.send_json({"version": "?", "status": "error"})
 
     def send_json(self, data):
         body = json.dumps(data, ensure_ascii=False).encode()

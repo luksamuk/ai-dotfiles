@@ -42,6 +42,18 @@
                   field: agents
                 - label: Status
                   field: status
+    - Open WebUI:
+        href: http://localhost:3111/
+        icon: /icons/open-webui.png
+        description: Interface web para LLMs
+        widget:
+            type: customapi
+            url: http://127.0.0.1:8083/open-webui
+            mappings:
+                - label: Versão
+                  field: version
+                - label: Status
+                  field: status
 
 - Rede:
     - Tailscale:
