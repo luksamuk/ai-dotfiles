@@ -17,11 +17,9 @@ ai-dotfiles/
 │   ├── droid/                  # Factory.ai Droid
 │   ├── hermes-workspace/       # Docker Compose para Hermes Agent
 │   ├── homepage-navi/          # Homepage dashboard
-│   ├── opencode/               # OpenCode CLI (máquina pessoal)
-│   ├── opencode-work/          # OpenCode CLI (máquina de trabalho)
+│   ├── opencode/               # OpenCode CLI
 │   ├── open-webui/             # Open WebUI Docker
-│   ├── pi/                     # Pi Coding Agent (máquina pessoal)
-│   ├── pi-work/                 # Pi Coding Agent (máquina de trabalho)
+│   ├── pi/                     # Pi Coding Agent
 │   └── tui-studio/             # TUI Studio Docker
 ├── llama-swap/                 # Config do llama-swap + modelos GGUF
 ├── modelfiles/                  # Ollama Modelfiles (Makefile)
@@ -82,7 +80,7 @@ Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) par
 - **Arquivos**: =settings.yaml=, =services.yaml=, =bookmarks.yaml=, =widgets.yaml=, =status-server.py=.
 - **Uso**: Copiar os YAMLs para o volume de config do container Docker do Homepage.
 
-** opencode — OpenCode CLI (máquina pessoal)
+** opencode — OpenCode CLI
 
 - **Ferramenta**: [[https://opencode.ai][OpenCode CLI]] — agente de código TUI com múltiplos agentes (build, fix, plan, review, debug, etc.).
 - **Diretório**: =configs/opencode/=
@@ -96,24 +94,13 @@ Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) par
   cp ~/git/ai-dotfiles/configs/opencode/tui.json ~/.config/opencode/tui.json
   #+END_SRC
 
-** opencode-work — OpenCode CLI (máquina de trabalho)
-
-- **Ferramenta**: Variante do OpenCode para máquina de trabalho (IPs e providers diferentes).
-- **Diretório**: =configs/opencode-work/=
-- **Arquivos**: =opencode.jsonc= — usa Ollama em =192.168.3.50= e Sisyphus Pi como providers.
-- **Destino**: =~/.config/opencode/opencode.jsonc=
-- **Sync**:
-  #+BEGIN_SRC bash
-  cp ~/git/ai-dotfiles/configs/opencode-work/opencode.jsonc ~/.config/opencode/opencode.jsonc
-  #+END_SRC
-
 ** open-webui — Open WebUI Docker
 
 - **Ferramenta**: [[https://github.com/open-webui/open-webui][Open WebUI]] — interface web para modelos de IA (Docker).
 - **Diretório**: =configs/open-webui/=
 - **Uso**: Configs para bind-mount no container Docker do Open WebUI.
 
-** pi — Pi Coding Agent (máquina pessoal)
+** pi — Pi Coding Agent
 
 - **Ferramenta**: [[https://pi.agent][Pi Coding Agent]] — agente de IA para programação, com suporte a MCP e extensões.
 - **Diretório**: =configs/pi/=
@@ -127,19 +114,6 @@ Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) par
   #+END_SRC
 
 - **Nota**: O arquivo =auth.json= (chaves de API) está no =.gitignore= e **não** é versionado.
-
-** pi-work — Pi Coding Agent (máquina de trabalho)
-
-- **Ferramenta**: Variante do Pi para máquina de trabalho (IPs e providers diferentes).
-- **Diretório**: =configs/pi-work/=
-- **Arquivos**: =settings.json=, =mcp.json=, =models.json= — usa Sisyphus Pi como default, modelos locais llama.cpp em =192.168.3.50=.
-- **Destino**: =~/.pi/agent/=
-- **Sync**:
-  #+BEGIN_SRC bash
-  cp ~/git/ai-dotfiles/configs/pi-work/settings.json ~/.pi/agent/settings.json
-  cp ~/git/ai-dotfiles/configs/pi-work/mcp.json ~/.pi/agent/mcp.json
-  cp ~/git/ai-dotfiles/configs/pi-work/models.json ~/.pi/agent/models.json
-  #+END_SRC
 
 ** tui-studio — TUI Studio Docker
 
@@ -195,9 +169,7 @@ A pasta =scripts/= contém apenas o script =ask-ai.py=, que está **obsoleto** e
 | =codex/=                | =~/.codex/=                        | =config.toml=                       |
 | =crush/=                | =~/.local/share/crush/=            | =crush.json=                        |
 | =opencode/=             | =~/.config/opencode/=              | =opencode.json=, =tui.json=         |
-| =opencode-work/=        | =~/.config/opencode/=              | =opencode.jsonc=                    |
 | =pi/=                   | =~/.pi/agent/=                     | =settings.json=, =mcp.json=, =models.json= |
-| =pi-work/=              | =~/.pi/agent/=                     | =settings.json=, =mcp.json=, =models.json= |
 
 ** TODO Sincronizar tudo de uma vez
 

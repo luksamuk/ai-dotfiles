@@ -192,29 +192,3 @@ pi --list-models
 
 11. *Pi recarrega =models.json= automaticamente* ao abrir o seletor de modelos (= /model = no TUI) — não é necessário reiniciar.
 
-** Config de Trabalho (pi-work/)
-
-Para máquinas de trabalho, criar um diretório =pi-work/= com overrides:
-
-#+begin_src bash
-mkdir -p ~/git/ai-dotfiles/configs/pi/pi-work
-#+end_src
-
-Estrutura sugerida:
-
-#+begin_example
-pi-work/
-├── settings.json   # Modelo padrão diferente (ex.: cloud por padrão)
-├── mcp.json        # MCP servers corporativos
-└── auth.json       # Credenciais corporativas
-#+end_example
-
-Para sincronizar na máquina de trabalho:
-
-#+begin_src bash
-cp ~/git/ai-dotfiles/configs/pi/pi-work/settings.json ~/.pi/agent/settings.json
-cp ~/git/ai-dotfiles/configs/pi/pi-work/mcp.json     ~/.pi/agent/mcp.json
-# models.json pode ser o mesmo, ou adaptado para models restritos
-#+end_src
-
-O diretório =pi-work/= é versionado no git junto com o resto, mas =auth.json= de trabalho não deve ser commitado.
