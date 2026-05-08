@@ -1,78 +1,230 @@
-* Repositório de Modelos de IA Locais
+#+TITLE: ai-dotfiles — Configurações para Ferramentas de IA
+#+AUTHOR: luksamuk
+#+LANGUAGE: pt-BR
 
-Este repositório contém scripts e configurações para gerar versões especializadas de modelos de linguagem instalados localmente, bem como configurações para ferramentas que utilizam IA.
+* Sobre
 
-** Estrutura do Repositório
+Este repositório contém configurações /dotfiles/ para diversas ferramentas de IA — agentes de código, CLIs, dashboards e serviços Docker — todos versionados em um só lugar para facilitar sincronização entre máquinas.
 
-- =modelfiles/=: Pasta com arquivos .modelfile para criação de modelos especializados com Ollama
-- =configs/=: Configurações para ferramentas de IA como OpenWebUI, OpenCode e ~ask-ai-rs~
-- =llama-swap/=: Configuração do llama-swap com múltiplos modelos GGUF para RTX 3050 6GB
-- =scripts/=: Scripts auxiliares para gerenciamento de modelos
+* Estrutura do Repositório
 
-** Como Usar
-
-*** Ollama Modelfiles
-
-Para criar todos os modelos configurados:
-#+BEGIN_SRC bash
-make all
+#+BEGIN_SRC
+ai-dotfiles/
+├── configs/                    # Configurações por ferramenta
+│   ├── ask-ai/                 # ask-ai-rs agent
+│   ├── codex/                  # OpenAI Codex CLI
+│   ├── crush/                  # Charm Crush CLI
+│   ├── droid/                  # Factory.ai Droid
+│   ├── hermes-workspace/       # Docker Compose para Hermes Agent
+│   ├── homepage-navi/          # Homepage dashboard
+│   ├── opencode/               # OpenCode CLI (máquina pessoal)
+│   ├── opencode-work/          # OpenCode CLI (máquina de trabalho)
+│   ├── open-webui/             # Open WebUI Docker
+│   ├── pi/                     # Pi Coding Agent (máquina pessoal)
+│   ├── pi-work/                 # Pi Coding Agent (máquina de trabalho)
+│   └── tui-studio/             # TUI Studio Docker
+├── llama-swap/                 # Config do llama-swap + modelos GGUF
+├── modelfiles/                  # Ollama Modelfiles (Makefile)
+├── scripts/                     # DEPRECATED — script ask-ai.py antigo
+└── docs/                        # Documentação adicional
 #+END_SRC
 
-Para criar um modelo específico:
+* Configurações por Ferramenta
+
+Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) para as configurações de uma ferramenta. Sincronize com =cp= ou =ln -s= conforme preferir.
+
+** ask-ai — Agente ask-ai-rs
+
+- **Ferramenta**: [[https://github.com/luksamuk/ask-ai-rs][ask-ai-rs]] — agente de IA no terminal com RAG e ferramentas MCP.
+- **Diretório**: =configs/ask-ai/=
+- **Sync**: Os configs são gerenciados internamente pelo =ask-ai-rs=; este diretório serve como backup/versionamento.
+
+** codex — OpenAI Codex CLI
+
+- **Ferramenta**: [[https://github.com/openai/codex][OpenAI Codex CLI]] — agente de código no terminal (Codex 0.128+).
+- **Diretório**: =configs/codex/=
+- **Arquivos**: =config.toml= — perfis de modelo (Ollama Cloud, llama-swap local, Sisyphus Pi), projetos confiáveis.
+- **Destino**: =~/.codex/config.toml=
+- **Sync**:
+  #+BEGIN_SRC bash
+  cp ~/git/ai-dotfiles/configs/codex/config.toml ~/.codex/config.toml
+  #+END_SRC
+
+** crush — Charm Crush CLI
+
+- **Ferramenta**: [[https://charm.land/crush][Charm Crush]] — CLI de chat com IA, suporta múltiplos providers e MCP.
+- **Diretório**: =configs/crush/=
+- **Arquivos**: =crush.json= — providers (Ollama Cloud, llama.cpp local, Sisyphus Pi), modelos, MCP servers (DuckDuckGo via uvx, SearXNG), LSP, permissões.
+- **Destino**: =~/.local/share/crush/crush.json=
+- **Sync**:
+  #+BEGIN_SRC bash
+  cp ~/git/ai-dotfiles/configs/crush/crush.json ~/.local/share/crush/crush.json
+  #+END_SRC
+
+** droid — Factory.ai Droid
+
+- **Ferramenta**: [[https://droid.factory.ai][Factory.ai Droid]] — agente de código com modelos customizados.
+- **Diretório**: =configs/droid/=
+- **Arquivos**: =settings.json= — modelos locais (llama.cpp), modelos nuvem (Ollama Cloud), modelos Pi.
+- **Destino**: Diretório de config do Droid (verificar com =droid config=).
+
+** hermes-workspace — Docker
+
+- **Ferramenta**: [[https://hermes-agent.nousresearch.com][Hermes Agent]] — agente Dockerizado (Nous Research).
+- **Diretório**: =configs/hermes-workspace/=
+- **Arquivos**: =docker-compose.yml= e configs do workspace.
+- **Uso**: =docker compose up= dentro do diretório.
+
+** homepage-navi — Homepage Dashboard
+
+- **Ferramenta**: [[https://github.com/benphelps/homepage][Homepage]] — dashboard de serviços self-hosted ("Navi").
+- **Diretório**: =configs/homepage-navi/=
+- **Arquivos**: =settings.yaml=, =services.yaml=, =bookmarks.yaml=, =widgets.yaml=, =status-server.py=.
+- **Uso**: Copiar os YAMLs para o volume de config do container Docker do Homepage.
+
+** opencode — OpenCode CLI (máquina pessoal)
+
+- **Ferramenta**: [[https://opencode.ai][OpenCode CLI]] — agente de código TUI com múltiplos agentes (build, fix, plan, review, debug, etc.).
+- **Diretório**: =configs/opencode/=
+- **Arquivos**: =opencode.json= (config principal), =tui.json= (tema TUI).
+- **Provedores**: Ollama Cloud, llama.cpp local — modelos nuvem como default, modelos GGUF como alternativa.
+- **MCP**: DuckDuckGo (via =uvx duckduckgo-mcp-server=) e SearXNG (via =npx -y mcp-searxng=).
+- **Destino**: =~/.config/opencode/opencode.json= e =~/.config/opencode/tui.json=
+- **Sync**:
+  #+BEGIN_SRC bash
+  cp ~/git/ai-dotfiles/configs/opencode/opencode.json ~/.config/opencode/opencode.json
+  cp ~/git/ai-dotfiles/configs/opencode/tui.json ~/.config/opencode/tui.json
+  #+END_SRC
+
+** opencode-work — OpenCode CLI (máquina de trabalho)
+
+- **Ferramenta**: Variante do OpenCode para máquina de trabalho (IPs e providers diferentes).
+- **Diretório**: =configs/opencode-work/=
+- **Arquivos**: =opencode.jsonc= — usa Ollama em =192.168.3.50= e Sisyphus Pi como providers.
+- **Destino**: =~/.config/opencode/opencode.jsonc=
+- **Sync**:
+  #+BEGIN_SRC bash
+  cp ~/git/ai-dotfiles/configs/opencode-work/opencode.jsonc ~/.config/opencode/opencode.jsonc
+  #+END_SRC
+
+** open-webui — Open WebUI Docker
+
+- **Ferramenta**: [[https://github.com/open-webui/open-webui][Open WebUI]] — interface web para modelos de IA (Docker).
+- **Diretório**: =configs/open-webui/=
+- **Uso**: Configs para bind-mount no container Docker do Open WebUI.
+
+** pi — Pi Coding Agent (máquina pessoal)
+
+- **Ferramenta**: [[https://pi.agent][Pi Coding Agent]] — agente de IA para programação, com suporte a MCP e extensões.
+- **Diretório**: =configs/pi/=
+- **Arquivos**: =settings.json= (config principal), =mcp.json= (MCP servers — DuckDuckGo e SearXNG), =models.json= (providers e modelos), =extensions/latency.ts=.
+- **Destino**: =~/.pi/agent/=
+- **Sync**:
+  #+BEGIN_SRC bash
+  cp ~/git/ai-dotfiles/configs/pi/settings.json ~/.pi/agent/settings.json
+  cp ~/git/ai-dotfiles/configs/pi/mcp.json ~/.pi/agent/mcp.json
+  cp ~/git/ai-dotfiles/configs/pi/models.json ~/.pi/agent/models.json
+  #+END_SRC
+
+- **Nota**: O arquivo =auth.json= (chaves de API) está no =.gitignore= e **não** é versionado.
+
+** pi-work — Pi Coding Agent (máquina de trabalho)
+
+- **Ferramenta**: Variante do Pi para máquina de trabalho (IPs e providers diferentes).
+- **Diretório**: =configs/pi-work/=
+- **Arquivos**: =settings.json=, =mcp.json=, =models.json= — usa Sisyphus Pi como default, modelos locais llama.cpp em =192.168.3.50=.
+- **Destino**: =~/.pi/agent/=
+- **Sync**:
+  #+BEGIN_SRC bash
+  cp ~/git/ai-dotfiles/configs/pi-work/settings.json ~/.pi/agent/settings.json
+  cp ~/git/ai-dotfiles/configs/pi-work/mcp.json ~/.pi/agent/mcp.json
+  cp ~/git/ai-dotfiles/configs/pi-work/models.json ~/.pi/agent/models.json
+  #+END_SRC
+
+** tui-studio — TUI Studio Docker
+
+- **Ferramenta**: TUI Studio — ambiente Docker para desenvolvimento de TUI apps.
+- **Diretório**: =configs/tui-studio/=
+- **Uso**: Configs para bind-mount no container Docker.
+
+* llama-swap — Serviço de Modelos GGUF Locais
+
+Configuração do [[https://github.com/nathan-nfx/llama-swap][llama-swap]] para servir múltiplos modelos GGUF com swap automático na RTX 3050 6GB.
+
+- **Diretório**: =llama-swap/=
+- **Arquivos**: =config.yaml= (config principal), =download-models.sh= (script de download), =llama-swap-cli= (CLI helper), =testchat/= (script de teste).
+
+** Comandos Principais
+
 #+BEGIN_SRC bash
-make qwen3
-#+END_SRC
-
-*** llama-swap (Modelos GGUF)
-
-O llama-swap permite rodar múltiplos modelos GGUF com swap automático baseado em demanda.
-
-**** Modelos Disponíveis (13 total)
-
-| Modelo | Tamanho | VRAM | Features |
-|--------+---------+------+----------|
-| =qwen3.5-4b= | 2.63 GB | ~3GB | Uso geral |
-| =qwen3.5-4b-think= | 2.63 GB | ~3GB | Reasoning |
-| =qwen3.5-9b= | 5.68 GB | ~5GB + offload | Uso geral |
-| =qwen3.5-9b-think= | 5.68 GB | ~5GB + offload | Reasoning |
-| =gemma4-e2b= | 3.11 GB | ~3GB | Multilíngue |
-| =gemma4-e2b-think= | 3.11 GB | ~3GB | Reasoning |
-| =gemma4-e4b= | 4.98 GB | ~4.5GB + offload | Multilíngue |
-| =gemma4-e4b-think= | 4.98 GB | ~4.5GB + offload | Reasoning |
-| =nemotron-3-nano-4b= | 2.90 GB | ~3GB | Tool-calling |
-| =nemotron-3-nano-4b-think= | 2.90 GB | ~3GB | Tools + Reasoning |
-| =qwopus-4b= | 2.63 GB | ~3GB | Tools + Reasoning (fits VRAM) |
-| =qwopus-9b= | 5.63 GB | ~5.5GB + offload | Tools + Reasoning |
-
-**** Download de Modelos
-
-#+BEGIN_SRC bash
+# Download de modelos
 cd llama-swap
-./download-models.sh qwopus-4b   # Modelo específico
-./download-models.sh all          # Baixar todos
-#+END_SRC
+./download-models.sh qwopus-4b    # Modelo específico
+./download-models.sh all           # Baixar todos
 
-**** Iniciar Serviço
-
-#+BEGIN_SRC bash
+# Iniciar serviço
 systemctl --user restart llama-swap
 curl http://127.0.0.1:12434/v1/models
 #+END_SRC
 
 Ver documentação completa em =llama-swap/README.md=.
 
-** Modelfiles
+* Ollama Modelfiles
 
-A pasta =modelfiles/= contém arquivos de configuração que facilitam a instalação de modelos importantes no Ollama. Estes arquivos definem especificações e parâmetros para os modelos, otimizando o processo de instalação local.
+A pasta =modelfiles/= contém arquivos =.modelfile= e um =Makefile= para criar modelos especializados no Ollama.
 
-** Orientações
+#+BEGIN_SRC bash
+# Criar todos os modelos essenciais
+make -C modelfiles essentials
 
-Este repositório é orientado para a execução de modelos instalados localmente com Ollama e llama-swap, proporcionando configurações e scripts para gerenciar esses modelos de forma eficiente.
+# Criar modelo específico
+make -C modelfiles qwen3.5-4b
 
-*** Nota importante
+# Baixar modelos cloud
+make -C modelfiles cloud-models
+#+END_SRC
 
-O script ~ask-ai.py~ está depreciado e não será mais mantido. Estou deixando-o aqui apenas a título de histórico. O projeto ~ask-ai-rs~ oferece uma alternativa robusta em formato de agente com ferramentas RAG.
+* scripts/ (DEPRECATED)
 
-** Licença
+A pasta =scripts/= contém apenas o script =ask-ai.py=, que está **obsoleto** e não será mais mantido. Está presente apenas como registro histórico. O projeto [[https://github.com/luksamuk/ask-ai-rs][ask-ai-rs]] é a alternativa ativa.
+
+* Tabela de Sincronização Rápida
+
+| Dir Config              | Destino                            | Arquivos                           |
+|-------------------------+------------------------------------+-------------------------------------|
+| =codex/=                | =~/.codex/=                        | =config.toml=                       |
+| =crush/=                | =~/.local/share/crush/=            | =crush.json=                        |
+| =opencode/=             | =~/.config/opencode/=              | =opencode.json=, =tui.json=         |
+| =opencode-work/=        | =~/.config/opencode/=              | =opencode.jsonc=                    |
+| =pi/=                   | =~/.pi/agent/=                     | =settings.json=, =mcp.json=, =models.json= |
+| =pi-work/=              | =~/.pi/agent/=                     | =settings.json=, =mcp.json=, =models.json= |
+
+** TODO Sincronizar tudo de uma vez
+
+#+BEGIN_SRC bash
+#!/bin/bash
+# sync.sh — Sincroniza todas as configs para seus destinos
+
+DOTFILES=~/git/ai-dotfiles
+
+# Codex
+cp "$DOTFILES/configs/codex/config.toml" ~/.codex/config.toml
+
+# Crush
+cp "$DOTFILES/configs/crush/crush.json" ~/.local/share/crush/crush.json
+
+# OpenCode (máquina pessoal)
+cp "$DOTFILES/configs/opencode/opencode.json" ~/.config/opencode/opencode.json
+cp "$DOTFILES/configs/opencode/tui.json" ~/.config/opencode/tui.json
+
+# Pi (máquina pessoal)
+cp "$DOTFILES/configs/pi/settings.json" ~/.pi/agent/settings.json
+cp "$DOTFILES/configs/pi/mcp.json" ~/.pi/agent/mcp.json
+cp "$DOTFILES/configs/pi/models.json" ~/.pi/agent/models.json
+
+echo "✓ Sincronização concluída!"
+#+END_SRC
+
+* Licença
 
 Este trabalho está licenciado sob a licença WTFPL (Do What The Fuck You Want To Public License).

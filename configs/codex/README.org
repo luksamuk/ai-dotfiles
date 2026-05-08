@@ -1,0 +1,165 @@
+#+title: Configuração do OpenAI Codex CLI
+#+language: pt-BR
+#+options: toc:2
+
+* O que é o Codex CLI?
+
+O /Codex CLI/ é o agente de codificação de terminal da OpenAI. Ele roda
+localmente, lê o código-fonte do projeto e executa ações (edição,
+execução de comandos, etc.) usando modelos de linguagem como backend.
+Repositório oficial: https://github.com/openai/codex
+
+* Arquivo principal: =config.toml=
+
+| Item           | Valor                                                       |
+|----------------+-------------------------------------------------------------|
+| Arquivo        | =configs/codex/config.toml=                                   |
+| Fonte verdade  | =~/git/ai-dotfiles/configs/codex/config.toml=                 |
+| Destino        | =~/.codex/config.toml=                                        |
+| Formato        | TOML                                                         |
+
+O =config.toml= é a /source of truth/ dentro do repositório =ai-dotfiles=.
+Em tempo de execução o Codex lê de =~/.codex/config.toml=, então é
+necessário copiar ou criar um symlink após cada alteração.
+
+** Sincronização
+
+#+begin_src sh
+cp ~/git/ai-dotfiles/configs/codex/config.toml ~/.codex/config.toml
+#+end_src
+
+Dica: adicione um alias no shell para não digitar o comando inteiro:
+
+#+begin_src sh
+alias sync-codex='cp ~/git/ai-dotfiles/configs/codex/config.toml ~/.codex/config.toml'
+#+end_src
+
+* Arquitetura de providers
+
+| Provider       | Endpoint                      | Status   | Observações                                      |
+|----------------+-------------------------------+----------+--------------------------------------------------|
+| =ollama-cloud=  | =http://127.0.0.1:11434/v1=    | ✅ Funciona | Provider primário; API-routed, sem GPU local     |
+| =llama-swap=    | =http://127.0.0.1:12434/v1=    | ⚠️ Limitado | Serve apenas Chat Completions, /não/ Responses API |
+| =sisyphus=      | =http://192.168.3.8:8081/v1=  | ⚠️ Limitado | Mesma limitação do llama-swap (Raspberry Pi)     |
+
+** Limitação crítica (Codex ≥ 0.128)
+
+A partir da versão 0.128, o Codex exige a /OpenAI Responses API/
+para providers customizados.  Servidores baseados em =llama.cpp=
+(llama-swap, Sisyphus) só implementam a /Chat Completions API/,
+o que faz tool-calls falharem com erro:
+
+#+begin_quote
+'type' of tool must be 'function'
+#+end_quote
+
+Referência: [[https://github.com/openai/codex/discussions/7782][GitHub Discussions #7782]]
+
+** Workaround para modelos locais
+
+Use o modo OSS do Codex apontando para o endpoint =llama-swap=
+via variável de ambiente =OLLAMA_HOST=:
+
+#+begin_src sh
+OLLAMA_HOST=http://127.0.0.1:12434 codex --oss --local-provider=ollama
+#+end_src
+
+Isso faz o Codex usar o protocolo Chat Completions nativo do Ollama,
+contornando a exigência da Responses API.
+
+* Tabela de perfis
+
+** Perfis funcionais (ollama-cloud)
+
+| Perfil              | Modelo                     | Provider       | Uso no shell                   |
+|---------------------+----------------------------+----------------+--------------------------------|
+| =glm-5.1= (default) | =glm-5.1:cloud=            | ollama-cloud   | =codex -p 'glm-5.1'=           |
+| =glm5=              | =glm-5:cloud=              | ollama-cloud   | =codex -p glm5=                |
+| =kimi-k2.6=         | =kimi-k2.6:cloud=          | ollama-cloud   | =codex -p 'kimi-k2.6'=         |
+| =kimi-k2.5=         | =kimi-k2.5:cloud=          | ollama-cloud   | =codex -p 'kimi-k2.5'=         |
+| =minimax-m2.7=      | =minimax-m2.7:cloud=       | ollama-cloud   | =codex -p 'minimax-m2.7'=     |
+| =minimax-m2.5=      | =minimax-m2.5:cloud=       | ollama-cloud   | =codex -p 'minimax-m2.5'=     |
+| =deepseek-v4-pro=   | =deepseek-v4-pro:cloud=    | ollama-cloud   | =codex -p 'deepseek-v4-pro'=  |
+| =deepseek-v4-flash= | =deepseek-v4-flash:cloud=   | ollama-cloud   | =codex -p 'deepseek-v4-flash'=|
+| =gemini-3-flash=    | =gemini-3-flash-preview:cloud= | ollama-cloud | =codex -p 'gemini-3-flash'=   |
+| =nemotron-3-super=  | =nemotron-3-super:cloud=   | ollama-cloud   | =codex -p 'nemotron-3-super'= |
+| =nemotron-3-nano=   | =nemotron-3-nano:30b-cloud= | ollama-cloud  | =codex -p 'nemotron-3-nano'=  |
+| =gemma4-31b=        | =gemma4:31b-cloud=         | ollama-cloud   | =codex -p 'gemma4-31b'=       |
+| =qwen3.5=           | =qwen3.5:cloud=            | ollama-cloud   | =codex -p 'qwen3.5'=          |
+
+** Perfis limitados (llama-swap / sisyphus)
+
+| Perfil              | Modelo                  | Provider    | Observações                        |
+|---------------------+-------------------------+-------------+------------------------------------|
+| =qwen3.6-35b-moe=   | =qwen3.6-35b-moe=       | llama-swap  | Tool-calling Falha; usar workaround |
+| =gemma4-26b-moe=    | =gemma4-26b-moe=        | llama-swap  | Idem                               |
+| =gpt-oss-20b=       | =gpt-oss-20b=           | llama-swap  | Idem                               |
+| =qwen3-1.7b=        | =qwen3-1.7b=            | sisyphus    | Idem (Pi)                          |
+
+Para usar modelos locais, prefira o workaround descrito em
+[[*Workaround para modelos locais][Workaround para modelos locais]].
+
+* Uso rápido
+
+#+begin_src sh
+# Modelo padrão (glm-5.1 via ollama-cloud)
+codex
+
+# Perfil específico
+codex -p 'kimi-k2.6'
+
+# Modelo local via workaround
+OLLAMA_HOST=http://127.0.0.1:12434 codex --oss --local-provider=ollama
+
+# Modelo local no Raspberry Pi
+OLLAMA_HOST=http://192.168.3.8:8081 codex --oss --local-provider=ollama
+
+# Sincronizar config após edição
+cp ~/git/ai-dotfiles/configs/codex/config.toml ~/.codex/config.toml
+#+end_src
+
+* Troubleshooting
+
+** Chaves TOML com pontos/hífens no shell
+
+Nomes de perfis com =.= ou =-= são chaves quotadas no TOML:
+
+#+begin_src toml
+[profiles."glm-5.1"]
+[profiles."kimi-k2.6"]
+#+end_src
+
+No shell, coloque o nome do perfil entre aspas simples para evitar
+interpretação do ponto pelo shell:
+
+#+begin_src sh
+# ✅ Correto
+codex -p 'glm-5.1'
+
+# ❌ Incorreto — o shell pode expandir o ponto
+codex -p glm-5.1
+#+end_src
+
+** Erro "type of tool must be function"
+
+Esse erro indica que o provider /não/ suporta a Responses API.
+Solução: use =--oss --local-provider=ollama= com =OLLAMA_HOST= apontando
+para o servidor compatível.  Veja [[*Workaround para modelos locais][Workaround para modelos locais]].
+
+** Projetos não confiam
+
+Se o Codex pergunta sobre confiança do projeto a cada execução, adicione
+a seção =[projects."/caminho/do/projeto"]= no =config.toml=:
+
+#+begin_src toml
+[projects."/home/alchemist/meu-projeto"]
+trust_level = "trusted"
+#+end_src
+
+** Config não surtiu efeito
+
+Lembre-se de copiar o arquivo atualizado:
+
+#+begin_src sh
+cp ~/git/ai-dotfiles/configs/codex/config.toml ~/.codex/config.toml
+#+end_src
