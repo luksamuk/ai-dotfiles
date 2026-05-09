@@ -3,18 +3,22 @@
 # Usage: ./download-models.sh [model-name]
 #
 # Available models:
+#   qwen3.5-0.8b         - Qwen3.5-0.8B Q4_K_M (~0.55 GB) + mmproj (~196 MB) - fits in VRAM, vision+text
 #   qwen3.5-4b           - Qwen3.5-4B Q4_K_M (2.63 GB) - fits in VRAM
 #   qwen3.5-9b           - Qwen3.5-9B UD-Q3_K_XL (~5.05 GB) - fits in VRAM
 #   gemma4-e4b           - Gemma-4 E4B UD-Q3_K_XL (~4.50 GB) - fits in VRAM
 #   gemma4-e2b           - Gemma-4 E2B Q4_K_M (3.11 GB) - fits in VRAM
 #   nemotron-3-nano-4b   - Nemotron-3-Nano-4B Q4_K_M (2.90 GB) - tool-calling
 #   lfm2.5-vl-450m       - LFM2.5-VL-450M Q4_0 (0.22 GB) + mmproj F16 - vision/OCR
-#   granite-4.1-3b       - Granite 4.1 3B Q4_K_M (~2.1 GB) - dense, tool-calling, 128K ctx
-#   granite-4.1-8b       - Granite 4.1 8B UD-Q3_K_XL (~4.6 GB) - dense, tool-calling, 512K ctx
+#   [REMOVED] granite-4.1-3b — tool-calling failed in Pi, removed May 2026
+#   [REMOVED] granite-4.1-8b — tool-calling failed in Pi, removed May 2026
 #   [REMOVED] glm-4.7-flash — superseded by Qwen3.6 35B MoE
 #   qwen3.6-35b-moe      - Qwen3.6-35B-A3B APEX I-Compact (~17.3 GB) - MoE coding + tools
 #   gemma4-26b-moe       - Gemma 4 26B-A4B APEX I-Compact (~15.5 GB) - MoE reasoning + coding, text-only
 #   gpt-oss-20b          - GPT-OSS 20B Q4_K_M (~11 GB) - Dense coding, text-only
+#   ds-r1-distill-14b    - [REMOVED] Dense 14B, poor perf on RTX 3050
+#   ds-r1-distill-32b    - [REMOVED] Dense 32B, very slow on limited VRAM
+#   qwen3.5-9b-ace      - Qwen3.5-9B NSC-ACE-SABER Q4_K_M (~5.63 GB) - Agentic tool-calling tune, text-only
 #   all                  - Download all models
 #
 # If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
@@ -33,6 +37,7 @@ export HF_HUB_CACHE="${HOME}/.cache/huggingface"
 # Format: "repo filename [local_filename]"
 # If local_filename is provided, the file is renamed after download
 declare -A MODELS=(
+  ["qwen3.5-0.8b"]="unsloth/Qwen3.5-0.8B-GGUF Qwen3.5-0.8B-Q4_K_M.gguf"
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-Q4_K_M.gguf"
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-UD-Q3_K_XL.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-UD-Q3_K_XL.gguf"
@@ -40,12 +45,15 @@ declare -A MODELS=(
   ["nemotron-3-nano-4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF LFM2.5-VL-450M-Q4_0.gguf"
   # Granite 4.1 — dense, Apache 2.0, strong tool-calling + code
-  ["granite-4.1-3b"]="unsloth/granite-4.1-3b-GGUF granite-4.1-3b-Q4_K_M.gguf"
-  ["granite-4.1-8b"]="unsloth/granite-4.1-8b-GGUF granite-4.1-8b-UD-Q3_K_XL.gguf"
   # glm-4.7-flash removed
   ["qwen3.6-35b-moe"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF Qwen3.5-35B-A3B-APEX-I-Compact.gguf Qwen3.6-35B-A3B-APEX-I-Compact.gguf"
   ["gemma4-26b-moe"]="mudler/gemma-4-26B-A4B-it-APEX-GGUF gemma-4-26B-A4B-APEX-I-Compact.gguf"
   ["gpt-oss-20b"]="unsloth/gpt-oss-20b-GGUF gpt-oss-20b-Q4_K_M.gguf"
+  # [REMOVED] ds-r1-distill-14b — Dense 14B, poor perf on RTX 3050, SSD pressure
+  # [REMOVED] ds-r1-distill-32b — Dense 32B, very slow on limited VRAM, SSD pressure
+  # NSC-ACE-SABER — agentic tool-calling tuned Qwen3.5-9B (GestaltLabs)
+  # Same arch as qwen3.5-9b, drop-in replacement for tool-use focus
+  ["qwen3.5-9b-ace"]="GestaltLabs/Qwen3.5-9B-NSC-ACE-SABER-GGUF Qwen3.5-9B-NSC-ACE-SABER.Q4_K_M.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -57,6 +65,7 @@ declare -A MMPROJ=(
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-9B-F16.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF mmproj-F16.gguf mmproj-gemma-4-E4B-F16.gguf"
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF mmproj-F16.gguf mmproj-gemma-4-E2B-F16.gguf"
+  ["qwen3.5-0.8b"]="unsloth/Qwen3.5-0.8B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-0.8B-F16.gguf"
 
 )
 
@@ -136,7 +145,8 @@ download_model() {
 show_sizes() {
   echo ""
   echo "Model Sizes (quantization noted):"
-  echo "  qwen3.5-4b            2.63 GB  (Q4_K_M) - Fits in VRAM"
+    echo "  qwen3.5-0.8b          ~0.55 GB  (Q4_K_M) + ~0.20 GB mmproj - Tiny, vision+text"
+    echo "  qwen3.5-4b            2.63 GB  (Q4_K_M) - Fits in VRAM"
   echo "  qwen3.5-9b           ~5.05 GB  (UD-Q3_K_XL) - Fits in VRAM + mmproj"
   echo "  gemma4-e4b           ~4.50 GB  (UD-Q3_K_XL) - Fits in VRAM + mmproj"
   echo "  gemma4-e2b            3.11 GB  (Q4_K_M) - Fits in VRAM"
@@ -148,6 +158,9 @@ show_sizes() {
   echo "  qwen3.6-35b-moe    ~17.30 GB  (APEX I-Compact) - Heavy offload, MoE coding + tools"
   echo "  gemma4-26b-moe    ~15.50 GB  (APEX I-Compact) - Heavy offload, MoE reasoning + coding text-only"
   echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"
+  echo "  ds-r1-distill-14b    [REMOVED] — poor perf on RTX 3050"
+  echo "  ds-r1-distill-32b    [REMOVED] — very slow on limited VRAM"
+  echo "  qwen3.5-9b-ace    ~5.63 GB  (Q4_K_M) - Fits in VRAM, agentic tool-calling text-only (NSC-ACE-SABER)"
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
@@ -160,8 +173,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"granite-4.1-3b"|"granite-4.1-8b"|"qwen3.6-35b-moe"|"gemma4-26b-moe"|"gpt-oss-20b")
-    show_sizes
+  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"qwen3.6-35b-moe"|"gemma4-26b-moe"|"gpt-oss-20b"|"qwen3.5-9b-ace")
     download_model "$1"
     ;;
   "qwen3.5:4b"|"qwen3.5:9b"|"gemma4:e4b"|"gemma4:e2b"|"nemotron-3-nano:4b")
@@ -181,7 +193,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nematron-3-nano-4b, lfm2.5-vl-450m, granite-4.1-3b, granite-4.1-8b, qwen3.6-35b-moe, gemma4-26b-moe, gpt-oss-20b, all, sizes"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, lfm2.5-vl-450m, qwen3.6-35b-moe, gemma4-26b-moe, gpt-oss-20b, qwen3.5-9b-ace, all"
     exit 1
     ;;
 esac

@@ -11,7 +11,7 @@ Este repositório contém configurações /dotfiles/ para diversas ferramentas d
 #+BEGIN_SRC
 ai-dotfiles/
 ├── configs/                    # Configurações por ferramenta
-│   ├── ask-ai/                 # ask-ai-rs agent
+│   ├── sprachspiel/          # Sprachspiel CLI agent
 │   ├── codex/                  # OpenAI Codex CLI
 │   ├── crush/                  # Charm Crush CLI
 │   ├── droid/                  # Factory.ai Droid
@@ -31,11 +31,11 @@ ai-dotfiles/
 
 Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) para as configurações de uma ferramenta. Sincronize com =cp= ou =ln -s= conforme preferir.
 
-** ask-ai — Agente ask-ai-rs
+** sprachspiel — Sprachspiel CLI Agent
 
-- **Ferramenta**: [[https://github.com/luksamuk/ask-ai-rs][ask-ai-rs]] — agente de IA no terminal com RAG e ferramentas MCP.
-- **Diretório**: =configs/ask-ai/=
-- **Sync**: Os configs são gerenciados internamente pelo =ask-ai-rs=; este diretório serve como backup/versionamento.
+- **Ferramenta**: [[https://github.com/luksamuk/sprachspiel][Sprachspiel]] — agente de IA no terminal com RAG e ferramentas MCP.
+- **Diretório**: =configs/sprachspiel/=
+- **Sync**: Os configs são gerenciados internamente pelo Sprachspiel; este diretório serve como backup/versionamento.
 
 ** codex — OpenAI Codex CLI
 
@@ -160,7 +160,7 @@ make -C modelfiles cloud-models
 
 * scripts/ (DEPRECATED)
 
-A pasta =scripts/= contém apenas o script =ask-ai.py=, que está **obsoleto** e não será mais mantido. Está presente apenas como registro histórico. O projeto [[https://github.com/luksamuk/ask-ai-rs][ask-ai-rs]] é a alternativa ativa.
+A pasta =scripts/= contém apenas o script =ask-ai.py=, que está **obsoleto** e não será mais mantido. Está presente apenas como registro histórico. O projeto [[https://github.com/luksamuk/sprachspiel][Sprachspiel]] (anteriormente ask-ai-rs) é a alternativa ativa.
 
 * Tabela de Sincronização Rápida
 

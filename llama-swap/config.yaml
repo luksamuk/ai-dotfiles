@@ -26,6 +26,9 @@ macros:
   # Build local em ~/git/llama.cpp/build/bin/llama-server
   "llama_server": "${env.HOME}/git/llama.cpp/build/bin/llama-server"
   
+  # Caminho para o vLLM (installed in ~/.vllm venv)
+  "vllm_bin": "${env.HOME}/.vllm/bin/vllm"
+  
   # ===========================================
   # PARÂMETROS DE INFERÊNCIA (baseados no Unsloth)
   # ===========================================
@@ -104,6 +107,94 @@ macros:
 # MODELOS (nomes estilo Ollama: modelo:tamanho)
 # ===========================================
 models:
+  # -------------------------------------------
+  # QWEN3.5-0.8B - MULTIMODAL (VISION + TEXT)
+  # Smallest Qwen3.5 variant with native vision (early fusion)
+  # Cabe inteiro na VRAM: 0.55GB model + 0.20GB mmproj + ~1GB cache
+  # mmproj ~196MB (F16) — lightweight enough to fit with model+cache
+  # NOTE: Bug #21402 (Gemma 4 mmproj crash) does NOT affect Qwen3.5
+  # NOTE: Bug #22785 (Qwen-VL accuracy degraded in llama-server) — monitor
+  # KV cache: q8_0 + attn_rot (head_dim provavelmente 128, 128%64==0)
+  # -------------------------------------------
+  "qwen3.5-0.8b":
+    name: "Qwen3.5 0.8B"
+    description: "Compact multimodal reasoning model — text + vision (llama.cpp GGUF)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.5-0.8B-Q4_K_M.gguf
+      --mmproj ${models_dir}/mmproj-Qwen3.5-0.8B-F16.gguf
+      --fit on
+      --fit-target 768
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --reasoning on
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    metadata:
+      size: "~0.55 GB (Q4_K_M) + ~0.20 GB (mmproj F16)"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~1.7GB (model + mmproj + cache)"
+      source: "unsloth/Qwen3.5-0.8B-GGUF"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        thinking: true
+        vision: true
+        tools: true
+
+  # -------------------------------------------
+  # QWEN3.5-0.8B - vLLM BACKEND (safetensors)
+  # EXCLUSIVO PARA TESTES DE COMPATIBILIDADE DO SPRACHSPIEL
+  # Nao usar como backend diario — startup lento (~30-90s), overhead alto
+  # vLLM serve: OpenAI-compatible API (mesmo formato que Ollama e llama.cpp)
+  # Requer: venv ~/.vllm com vllm instalado
+  # Requer: modelo baixado via HF (auto-download no primeiro serve)
+  # -------------------------------------------
+  "qwen3.5-0.8b-vllm":
+    name: "Qwen3.5 0.8B (vLLM)"
+    description: "vLLM backend test — Sprachspiel compatibility (NOT for daily use)"
+    cmd: |
+      ${vllm_bin} serve Qwen/Qwen3.5-0.8B
+      --port ${PORT}
+      --gpu-memory-utilization 0.45
+      --max-model-len 8192
+      --max-num-seqs 2
+      --dtype half
+      --trust-remote-code
+      --reasoning-parser qwen3
+    ttl: 600
+    metadata:
+      backend: vllm
+      size: "~1.6 GB (BF16 safetensors, auto-download from HF)"
+      context: "8K (vLLM optimized for 6GB VRAM)"
+      vram_usage: "~2.5-3GB"
+      source: "Qwen/Qwen3.5-0.8B (HuggingFace safetensors)"
+      note: "vLLM test backend for Sprachspiel — slow startup (~30-90s), use only for API compat testing"
+      features:
+        thinking: true
+        vision: false
+        tools: true
+
   # -------------------------------------------
   # QWEN3.5-4B - MULTIMODAL (VISION + TEXT)
   # Cabe inteiro na VRAM com mmproj
@@ -294,6 +385,65 @@ models:
         # vision: disabled — mmproj crashes on CUDA (issue #21402)
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."
 
+  # -------------------------------------------
+  # QWEN3.5-9B-NSC-ACE-SABER - AGENTIC TOOL-CALLING (text-only)
+  # Fine-tune of Qwen3.5-9B by GestaltLabs using NSC-ACE (Neural Steering Committee
+  # for Agentic Co-Evolution) + SABER refusal calibration pass.
+  # Focus: consistent tool-call formatting, 1-2 tool-call sweet spot, proper
+  # argument filling, self-consistency across rollouts. Less over-refusal.
+  # Same qwen35 arch as vanilla Qwen3.5-9B — drop-in replacement.
+  # head_dim=128 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works
+  # K-quants use Acta-derived imatrix. Recommended: Q4_K_M for size/quality.
+  # text-only — no mmproj for this model. Vision not applicable.
+  # Architecture: qwen35 (same as Qwen3.5-9B base)
+  # -------------------------------------------
+  "qwen3.5-9b-ace":
+    name: "Qwen3.5 9B ACE"
+    description: "Agentic tool-calling — NSC-ACE-SABER tuned Qwen3.5-9B (Q4_K_M, text-only)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.5-9B-NSC-ACE-SABER.Q4_K_M.gguf
+      --no-mmproj
+      --fit on
+      --fit-target 512
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning on
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.85
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    metadata:
+      size: "~5.63 GB (Q4_K_M, Acta imatrix)"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~5GB VRAM (fits with mmproj off)"
+      source: "GestaltLabs/Qwen3.5-9B-NSC-ACE-SABER-GGUF"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        thinking: true
+        vision: false
+        tools: true
+      warning: "NSC-ACE-SABER — agentic tool-calling fine-tune. Experimental (GestaltLabs, small lab). Text-only. Use vanilla qwen3.5-9b for general chat, this for structured tool-use."
+
   "nemotron-3-nano-4b":
     name: "Nemotron 3 Nano 4B"
     description: "Compact edge-ready reasoning and agentic AI with tool use"
@@ -480,6 +630,112 @@ models:
         tools: false
       warning: "Harmony format: ALWAYS reasons internally (not optional). --reasoning on extracts it properly. Text-only. Dense 20B."
 
+  # [REMOVED] ds-r1-distill-14b — Dense 14B, poor performance on RTX 3050. SSD pressure.
+  # [REMOVED] ds-r1-distill-32b — Dense 32B, very slow on limited VRAM. SSD pressure.
+  #
+  # To reactivate (if SSD pressure resolves):
+  #   1. Download: ~/git/ai-dotfiles/llama-swap/download-models.sh ds-r1-distill-14b
+  #   2. Download: ~/git/ai-dotfiles/llama-swap/download-models.sh ds-r1-distill-32b
+  #   3. Uncomment the model blocks below
+  #   4. Add ds14: ds-r1-distill-14b and ds32: ds-r1-distill-32b to matrix.vars
+  #   5. Add ds14 | ds32 to heavy set, ds14: 7 / ds32: 10 to evict_costs
+  #
+  # --- DEEPSEEK-R1-DISTILL-QWEN-14B (REMOVED) ---
+  # "ds-r1-distill-14b":
+  #   name: "DeepSeek R1 Distill 14B"
+  #   description: "Dense 14B reasoning — DeepSeek R1 chain-of-thought distillation (Q4_K_M)"
+  #   cmd: |
+  #     ${llama_server} --port ${PORT}
+  #     --model ${models_dir}/DeepSeek-R1-Distill-Qwen-14B-Q4_K_M.gguf
+  #     --no-mmproj
+  #     --fit on
+  #     --fit-target 256
+  #     --fit-ctx 16384
+  #     --ctx-size ${large_model_max_ctx}
+  #     --temp ${think_temp}
+  #     --top-p ${think_top_p}
+  #     --top-k ${think_top_k}
+  #     --min-p ${think_min_p}
+  #     --repeat-penalty ${think_repeat_penalty}
+  #     --reasoning on
+  #     --cache-type-k ${small_cache_k}
+  #     --cache-type-v ${small_cache_v}
+  #     --flash-attn on
+  #     --metrics
+  #   filters:
+  #     stripParams: "temperature, top_p"
+  #     setParamsByID:
+  #       "${MODEL_ID}":
+  #         chat_template_kwargs:
+  #           enable_thinking: false
+  #         temperature: 0.7
+  #         top_p: 0.9
+  #       "${MODEL_ID}:think":
+  #         chat_template_kwargs:
+  #           enable_thinking: true
+  #         temperature: 0.6
+  #         top_p: 0.9
+  #   ttl: 120
+  #   metadata:
+  #     size: "~9 GB (Q4_K_M)"
+  #     context: "16K-128K (dynamic)"
+  #     vram_usage: "~4-5GB VRAM + ~4GB RAM (partial offload)"
+  #     source: "unsloth/DeepSeek-R1-Distill-Qwen-14B-GGUF"
+  #     kv_cache: "q8_0 + attn_rot"
+  #     features:
+  #       thinking: true
+  #       vision: false
+  #       tools: false
+  #     warning: "Dense 14B — slower than MoE. No tool calling template. Vision not supported."
+  #
+  # --- DEEPSEEK-R1-DISTILL-QWEN-32B (REMOVED) ---
+  # "ds-r1-distill-32b":
+  #   name: "DeepSeek R1 Distill 32B"
+  #   description: "Dense 32B reasoning — DeepSeek R1 chain-of-thought distillation (Q4_K_M, heavy offload)"
+  #   cmd: |
+  #     ${llama_server} --port ${PORT}
+  #     --model ${models_dir}/DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf
+  #     --no-mmproj
+  #     --fit on
+  #     --fit-target 256
+  #     --fit-ctx 16384
+  #     --ctx-size ${large_model_max_ctx}
+  #     --temp ${think_temp}
+  #     --top-p ${think_top_p}
+  #     --top-k ${think_top_k}
+  #     --min-p ${think_min_p}
+  #     --repeat-penalty ${think_repeat_penalty}
+  #     --reasoning on
+  #     --cache-type-k ${large_cache_k}
+  #     --cache-type-v ${large_cache_v}
+  #     --flash-attn on
+  #     --metrics
+  #   filters:
+  #     stripParams: "temperature, top_p"
+  #     setParamsByID:
+  #       "${MODEL_ID}":
+  #         chat_template_kwargs:
+  #           enable_thinking: false
+  #         temperature: 0.7
+  #         top_p: 0.9
+  #       "${MODEL_ID}:think":
+  #         chat_template_kwargs:
+  #           enable_thinking: true
+  #         temperature: 0.6
+  #         top_p: 0.9
+  #   ttl: 120
+  #   metadata:
+  #     size: "~19.9 GB (Q4_K_M)"
+  #     context: "16K-128K (dynamic)"
+  #     vram_usage: "~5GB VRAM + ~15GB RAM (heavy offload)"
+  #     source: "unsloth/DeepSeek-R1-Distill-Qwen-32B-GGUF"
+  #     kv_cache: "q4_0 + attn_rot"
+  #     features:
+  #       thinking: true
+  #       vision: false
+  #       tools: false
+  #     warning: "Dense 32B — very slow on 6GB VRAM. Heavy RAM offload. No tool calling template. Vision not supported."
+
   # [REMOVED] Qwen3.6-27B — 3.8 t/s on limited VRAM (dense = no partial expert offload).
   # MoE models are 5-7x faster. Linear_attention/SSM didn't help when most layers in RAM.
 
@@ -624,7 +880,11 @@ matrix:
   vars:
     # Atalhos para IDs longos (usados em sets e evict_costs)
     gemma4m: gemma4-26b-moe
+    # DeepSeek R1 Distill — REMOVED (poor perf on RTX 3050, SSD pressure)
+    # ds14: ds-r1-distill-14b
+    # ds32: ds-r1-distill-32b
     # Modelos pequenos
+    q08: qwen3.5-0.8b
     q4: qwen3.5-4b
     n4: nemotron-3-nano-4b
     g2: gemma4-e2b
@@ -632,6 +892,7 @@ matrix:
     vl: lfm2.5-vl-450m
     # Modelos médios (agora cabem na VRAM!)
     q9: qwen3.5-9b
+    ace: qwen3.5-9b-ace
     g4: gemma4-e4b
     # Pesados
     qw36: qwen3.6-35b-moe
@@ -648,14 +909,14 @@ matrix:
   # - heavy: modelos 14B+ rodam sozinhos (toda VRAM)
   sets:
     # LLM pequeno + Vision: trocar entre modelos leves NÃO evicta o vision
-    small_vision: "(q4 | n4 | g2) & vl"
+    small_vision: "(q08 | q4 | n4 | g2) & vl"
 
     # LLM pequeno sozinho (sem vision ativo)
-    small_only: "q4 | n4 | g2"
+    small_only: "q08 | q4 | n4 | g2"
 
     # Modelos médios (~5GB VRAM) - agora cabem na VRAM com UD-Q3!
-    # Qwen3.5-9B e Gemma4-E4B cabem inteiramente com mmproj
-    medium: "q9 | g4"
+    # Qwen3.5-9B, ACE e Gemma4-E4B cabem inteiramente (mmproj off for ACE)
+    medium: "q9 | ace | g4"
 
     # Removed: omni_vision set (Nemotron removed)
 
@@ -672,9 +933,13 @@ matrix:
     qw36: 10     # 35B MoE APEX I-Compact ~17.3GB, heavy offload
     qwopus: 10   # 35B MoE Opus 4.7 APEX I-Compact ~16.1GB, heavy offload
     gptoss: 8    # 11GB dense Q4_K_M, heavy offload
+    # ds14: 7   REMOVED — Dense 14B poor perf on RTX 3050
+    # ds32: 10  REMOVED — Dense 32B very slow on limited VRAM
     q9: 4        # ~5GB, fits VRAM now
+    ace: 4       # ~5.63GB, fits VRAM (NSC-ACE-SABER, agentic tool-use)
     g4: 4        # ~4.5GB, fits VRAM now
     vl: 3        # vision, leve mas útil manter vivo
+    q08: 1       # 0.8B, ultra-leve
     q4: 2
     n4: 1
     g2: 1
