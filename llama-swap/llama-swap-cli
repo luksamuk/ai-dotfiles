@@ -208,7 +208,7 @@ cmd_ps() {
       local found_pid
       found_pid=$(ss -tlnp 2>/dev/null | grep ":${port} " | grep -oP 'pid=\K\d+' | head -1 || true)
       if [[ -z "$found_pid" ]]; then
-        found_pid=$(lsof -ti :"$port" 2>/dev/null | head -1)
+        found_pid=$(lsof -ti :"$port" 2>/dev/null | head -1 || true)
       fi
       [[ -n "$found_pid" ]] && pid="$found_pid"
     fi

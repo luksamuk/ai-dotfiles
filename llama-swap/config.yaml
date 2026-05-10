@@ -288,6 +288,7 @@ models:
       kv_cache: "q8_0 + attn_rot"
       features:
         thinking: true
+        tools: true
         # vision: disabled — Gated Delta Net mmproj OOM on CUDA (issue #21323)
       warning: "Vision disabled — Gated Delta Net mmproj crashes/CUDA OOM (llama.cpp issues #21323, #21402)"
 
@@ -334,6 +335,7 @@ models:
       kv_cache: "q8_0 + attn_rot"
       features:
         thinking: true
+        tools: true
         # vision: disabled temporarily — mmproj + fit doesn't handle offload yet
       warning: "Vision disabled temporarily — mmproj offload with --fit causes OOM"
 
@@ -380,6 +382,7 @@ models:
       kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
       features:
         thinking: true
+        tools: true
         # vision: disabled — mmproj crashes on CUDA (issue #21402)
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."
 
@@ -426,6 +429,7 @@ models:
       kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
       features:
         thinking: true
+        tools: true
         # vision: disabled — mmproj crashes on CUDA (issue #21402)
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."
 
@@ -623,7 +627,7 @@ models:
       features:
         thinking: true
         vision: false
-        tools: false
+        tools: true
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (issue #21402). Text-only. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K."
 
   # -------------------------------------------
@@ -671,7 +675,7 @@ models:
       features:
         thinking: true
         vision: false
-        tools: false
+        tools: true
       warning: "Harmony format: ALWAYS reasons internally (not optional). --reasoning on extracts it properly. Text-only. Dense 20B."
 
   # [REMOVED] ds-r1-distill-14b — Dense 14B, poor performance on RTX 3050. SSD pressure.
