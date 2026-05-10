@@ -1066,7 +1066,7 @@ class StreamingChat:
                 args_compact = json.dumps(args_dict, ensure_ascii=False)
             except (json.JSONDecodeError, TypeError):
                 args_compact = fn_args
-            self.response_content += f"🔧 {fn_name}({args_compact})\n"
+            self.response_content += f"🔧 {fn_name}({args_compact})\n\n"
         yield self.render()
         
         # Build messages with tool results
