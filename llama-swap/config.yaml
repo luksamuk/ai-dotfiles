@@ -185,12 +185,14 @@ models:
       --default-chat-template-kwargs '{"enable_thinking": false}'
       --enable-auto-tool-choice
       --tool-call-parser qwen3_coder
+      --skip-mm-profiling
+      --limit-mm-per-prompt '{"image": 0}'
     ttl: 900
     metadata:
       backend: vllm
       size: "~1.6 GB (BF16 safetensors, auto-download from HF)"
       context: "8K (vLLM optimized for 6GB VRAM)"
-      vram_usage: "~2.5-3GB"
+      vram_usage: "~2-2.5GB (vision disabled)"
       source: "Qwen/Qwen3.5-0.8B (HuggingFace safetensors)"
       note: "vLLM test backend for Sprachspiel — slow startup (~30-90s), use only for API compat testing"
       features:
