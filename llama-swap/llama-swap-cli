@@ -170,118 +170,120 @@ cmd_ps() {
   gpu_total_mib="${gpu_total_mib:-0}"
   gpu_used_mib="${gpu_used_mib:-0}"
 
-  {
-    printf "NAME\tPID\tSTATE\tVRAM\tRSS\tT/S\tGPU_LAYERS\tFIT\tTTL\n"
+  local output=""
+  output+="NAME\tPID\tSTATE\tVRAM\tRSS\tT/S\tGPU_LAYERS\tFIT\tTTL\n"
 
-    echo "$running_data" | jq -r '.running[] | @json' | while IFS= read -r model_json; do
-      local id name state proxy ttl port pid
-      id=$(echo "$model_json" | jq -r '.model')
-      name=$(echo "$model_json" | jq -r '.name')
-      state=$(echo "$model_json" | jq -r '.state')
-      proxy=$(echo "$model_json" | jq -r '.proxy')
-      ttl=$(echo "$model_json" | jq -r '.ttl // 0')
+  while IFS= read -r model_json; do
+    local id name state proxy ttl port pid
+    id=$(echo "$model_json" | jq -r '.model')
+    name=$(echo "$model_json" | jq -r '.name')
+    state=$(echo "$model_json" | jq -r '.state')
+    proxy=$(echo "$model_json" | jq -r '.proxy')
+    ttl=$(echo "$model_json" | jq -r '.ttl // 0')
 
-      local icon
-      icon=$(state_label "$state")
+    local icon
+    icon=$(state_label "$state")
 
-      # Health check
-      port=$(echo "$proxy" | grep -oP '\d+$' 2>/dev/null || echo "")
-      if [[ -n "$port" ]]; then
-        local health hstatus
-        health=$(curl -s "http://localhost:${port}/health" 2>/dev/null || echo "{}")
-        if [[ -z "$health" ]]; then
-          # vLLM returns empty 200 on /health
-          hstatus="ok"
-        else
-          hstatus=$(echo "$health" | jq -r ".status // "unknown"" 2>/dev/null || echo "unknown")
-          # vLLM may also return plain text or empty body
-          [[ "$hstatus" == "null" || "$hstatus" == "" ]] && hstatus="ok"
-        fi
-        if [[ "$hstatus" != "ok" ]] && [[ "$hstatus" != "loading model" ]]; then
-          icon="${icon}(${hstatus})"
-        fi
-      fi
-
-      # --- Find PID from port ---
-      pid="-"
-      if [[ -n "$port" ]]; then
-        local found_pid
-        found_pid=$(ss -tlnp 2>/dev/null | grep ":${port} " | grep -oP 'pid=\K\d+' | head -1)
-        if [[ -z "$found_pid" ]]; then
-          found_pid=$(lsof -ti :"$port" 2>/dev/null | head -1)
-        fi
-        [[ -n "$found_pid" ]] && pid="$found_pid"
-      fi
-
-      # --- Live VRAM from nvidia-smi ---
-      local vram="-"
-      if [[ "$pid" != "-" ]] && [[ -n "${vram_map[$pid]+_}" ]]; then
-        local vram_num="${vram_map[$pid]}"
-        vram=$(echo "$vram_num" | awk '{printf "%.1f GB", $1/1024}')
-      fi
-
-      # --- Live RSS from /proc ---
-      local rss="-"
-      if [[ "$pid" != "-" ]] && [[ -r "/proc/${pid}/status" ]]; then
-        local rss_kb
-        rss_kb=$(awk '/^VmRSS:/ {print $2}' "/proc/${pid}/status" 2>/dev/null)
-        if [[ -n "$rss_kb" ]]; then
-          rss=$(echo "$rss_kb" | awk '{printf "%.1f GB", $1/1048576}')
-        fi
-      fi
-
-      # --- Parse --fit from cmd ---
-      local fit="-"
-      local cmd_str
-      cmd_str=$(echo "$model_json" | jq -r '.cmd')
-      if echo "$cmd_str" | grep -qP '\-\-fit\s'; then
-        local fit_target
-        fit_target=$(echo "$cmd_str" | grep -oP '\-\-fit-target\s+\K\d+' || echo "auto")
-        fit="on (${fit_target}MB)"
-      fi
-
-      # --- Live tok/s from /metrics ---
-      local gen_tps="-" prompt_tps="-"
-      if [[ -n "$port" ]]; then
-        local metrics_raw
-        metrics_raw=$(curl -s "http://localhost:${port}/metrics" 2>/dev/null || echo "")
-        if [[ -n "$metrics_raw" ]]; then
-          # llama.cpp metrics
-          gen_tps=$(echo "$metrics_raw" | grep -P "^llamacpp:predicted_tokens_seconds\s" | awk "{print \$2}")
-          prompt_tps=$(echo "$metrics_raw" | grep -P "^llamacpp:prompt_tokens_seconds\s" | awk "{print \$2}")
-          # vLLM metrics fallback
-          if [[ -z "$gen_tps" || "$gen_tps" == "0" ]]; then
-            # vLLM: use avg generation throughput (tokens/sec histogram)
-            gen_tps=$(echo "$metrics_raw" | grep -oP "^vllm:generation_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1)
-            prompt_tps=$(echo "$metrics_raw" | grep -oP "^vllm:prompt_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1)
-          fi
-          [[ -z "$gen_tps" || "$gen_tps" == "0" ]] && gen_tps="-"
-          [[ -z "$prompt_tps" || "$prompt_tps" == "0" ]] && prompt_tps="-"
-          [[ -z "$gen_tps" || "$gen_tps" == "0" ]] && gen_tps="-"
-          [[ -z "$prompt_tps" || "$prompt_tps" == "0" ]] && prompt_tps="-"
-        fi
-      fi
-
-      # --- GPU layers from journalctl (last load of this model) ---
-      local gpu_layers="-"
-      if [[ "$pid" != "-" ]]; then
-        local layer_info
-        layer_info=$(journalctl --user -u llama-swap --since "10 min ago" --no-pager 2>/dev/null \
-          | grep -oP "offloaded \K\d+/\d+ layers to GPU" 2>/dev/null | tail -1 || true)
-        [[ -n "$layer_info" ]] && gpu_layers="$layer_info"
-      fi
-
-      local ttl_display
-      if [[ "$ttl" -gt 0 ]]; then
-        ttl_display="${ttl}s"
+    # Health check
+    port=$(echo "$proxy" | grep -oP '\d+$' 2>/dev/null || echo "")
+    if [[ -n "$port" ]]; then
+      local health hstatus
+      health=$(curl -s "http://localhost:${port}/health" 2>/dev/null || echo "{}")
+      if [[ -z "$health" ]]; then
+        # vLLM returns empty 200 on /health
+        hstatus="ok"
       else
-        ttl_display="-"
+        hstatus=$(echo "$health" | jq -r '.status // "unknown"' 2>/dev/null || echo "unknown")
+        # vLLM may also return plain text or empty body
+        [[ "$hstatus" == "null" || "$hstatus" == "" ]] && hstatus="ok"
       fi
+      if [[ "$hstatus" != "ok" ]] && [[ "$hstatus" != "loading model" ]]; then
+        icon="${icon}(${hstatus})"
+      fi
+    fi
 
-      printf "${CYAN}%s${RESET}\t%s\t${GREEN}%s${RESET}\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-        "$name" "$pid" "$icon" "$vram" "$rss" "$gen_tps" "$gpu_layers" "$fit" "$ttl_display"
-    done
-  } | format_output
+    # --- Find PID from port ---
+    pid="-"
+    if [[ -n "$port" ]]; then
+      local found_pid
+      found_pid=$(ss -tlnp 2>/dev/null | grep ":${port} " | grep -oP 'pid=\K\d+' | head -1 || true)
+      if [[ -z "$found_pid" ]]; then
+        found_pid=$(lsof -ti :"$port" 2>/dev/null | head -1)
+      fi
+      [[ -n "$found_pid" ]] && pid="$found_pid"
+    fi
+
+    # --- Live VRAM from nvidia-smi ---
+    local vram="-"
+    if [[ "$pid" != "-" ]] && [[ -n "${vram_map[$pid]+_}" ]]; then
+      local vram_num="${vram_map[$pid]}"
+      vram=$(echo "$vram_num" | awk '{printf "%.1f GB", $1/1024}')
+    fi
+
+    # --- Live RSS from /proc ---
+    local rss="-"
+    if [[ "$pid" != "-" ]] && [[ -r "/proc/${pid}/status" ]]; then
+      local rss_kb
+      rss_kb=$(awk '/^VmRSS:/ {print $2}' "/proc/${pid}/status" 2>/dev/null)
+      if [[ -n "$rss_kb" ]]; then
+        rss=$(echo "$rss_kb" | awk '{printf "%.1f GB", $1/1048576}')
+      fi
+    fi
+
+    # --- Parse --fit from cmd ---
+    local fit="-"
+    local cmd_str
+    cmd_str=$(echo "$model_json" | jq -r '.cmd')
+    if echo "$cmd_str" | grep -qP '\-\-fit\s'; then
+      local fit_target
+      fit_target=$(echo "$cmd_str" | grep -oP '\-\-fit-target\s+\K\d+' || echo "auto")
+      fit="on (${fit_target}MB)"
+    fi
+
+    # --- Live tok/s from /metrics ---
+    local gen_tps="-" prompt_tps="-"
+    if [[ -n "$port" ]]; then
+      local metrics_raw
+      metrics_raw=$(curl -s "http://localhost:${port}/metrics" 2>/dev/null || echo "")
+      if [[ -n "$metrics_raw" ]]; then
+        # llama.cpp metrics (may not exist on vLLM)
+        gen_tps=$(echo "$metrics_raw" | grep -P "^llamacpp:predicted_tokens_seconds\s" | awk '{print $2}' || true)
+        gen_tps="${gen_tps:-}"
+        prompt_tps=$(echo "$metrics_raw" | grep -P "^llamacpp:prompt_tokens_seconds\s" | awk '{print $2}' || true)
+        prompt_tps="${prompt_tps:-}"
+        # vLLM metrics fallback
+        if [[ -z "$gen_tps" || "$gen_tps" == "0" ]]; then
+          gen_tps=$(echo "$metrics_raw" | grep -oP "^vllm:generation_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1 || true)
+          gen_tps="${gen_tps:-}"
+          prompt_tps=$(echo "$metrics_raw" | grep -oP "^vllm:prompt_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1 || true)
+          prompt_tps="${prompt_tps:-}"
+        fi
+        [[ -z "$gen_tps" || "$gen_tps" == "0" ]] && gen_tps="-"
+        [[ -z "$prompt_tps" || "$prompt_tps" == "0" ]] && prompt_tps="-"
+      fi
+    fi
+
+    # --- GPU layers from journalctl (last load of this model) ---
+    local gpu_layers="-"
+    if [[ "$pid" != "-" ]]; then
+      local layer_info
+      layer_info=$(journalctl --user -u llama-swap --since "10 min ago" --no-pager 2>/dev/null \
+        | grep -oP "offloaded \K\d+/\d+ layers to GPU" 2>/dev/null | tail -1 || true)
+      [[ -n "$layer_info" ]] && gpu_layers="$layer_info"
+    fi
+
+    local ttl_display
+    if [[ "$ttl" -gt 0 ]]; then
+      ttl_display="${ttl}s"
+    else
+      ttl_display="-"
+    fi
+
+    output+=$(printf "${CYAN}%s${RESET}\t%s\t${GREEN}%s${RESET}\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+      "$name" "$pid" "$icon" "$vram" "$rss" "$gen_tps" "$gpu_layers" "$fit" "$ttl_display")
+  done < <(echo "$running_data" | jq -r '.running[] | @json')
+
+  echo -e "$output" | format_output
 
   # Summary line
   if [[ -n "$PRETTY" ]]; then
@@ -336,22 +338,21 @@ cmd_stats() {
       continue
     fi
 
-    # Parse Prometheus metrics
     # Parse Prometheus metrics (llama.cpp + vLLM fallback)
-    prompt_total=$(echo "$metrics_raw" | grep "^llamacpp:prompt_tokens_total" | awk "{print \$2}")
-    gen_total=$(echo "$metrics_raw" | grep "^llamacpp:tokens_predicted_total" | awk "{print \$2}")
-    prompt_sec=$(echo "$metrics_raw" | grep "^llamacpp:prompt_seconds_total" | awk "{print \$2}")
-    gen_sec=$(echo "$metrics_raw" | grep "^llamacpp:tokens_predicted_seconds_total" | awk "{print \$2}")
-    processing=$(echo "$metrics_raw" | grep "^llamacpp:requests_processing" | awk "{print \$2}")
-    deferred=$(echo "$metrics_raw" | grep "^llamacpp:requests_deferred" | awk "{print \$2}")
-    # vLLM fallback: use vllm_ metrics if llama.cpp not found
+    prompt_total=$(echo "$metrics_raw" | grep "^llamacpp:prompt_tokens_total" | awk "{print \$2}" || true)
+    gen_total=$(echo "$metrics_raw" | grep "^llamacpp:tokens_predicted_total" | awk "{print \$2}" || true)
+    prompt_sec=$(echo "$metrics_raw" | grep "^llamacpp:prompt_seconds_total" | awk "{print \$2}" || true)
+    gen_sec=$(echo "$metrics_raw" | grep "^llamacpp:tokens_predicted_seconds_total" | awk "{print \$2}" || true)
+    processing=$(echo "$metrics_raw" | grep "^llamacpp:requests_processing" | awk "{print \$2}" || true)
+    deferred=$(echo "$metrics_raw" | grep "^llamacpp:requests_deferred" | awk "{print \$2}" || true)
+    # vLLM fallback: use vllm: metrics if llama.cpp not found
     if [[ -z "$prompt_total" ]]; then
-      prompt_total=$(echo "$metrics_raw" | grep -oP "^vllm:prompt_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1)
-      gen_total=$(echo "$metrics_raw" | grep -oP "^vllm:generation_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1)
-      prompt_sec=$(echo "$metrics_raw" | grep -oP "^vllm:e2e_request_latency_seconds_sum\{[^}]*\}\s+\K[0-9.]+" | head -1)
-      gen_sec=$(echo "$metrics_raw" | grep -oP "^vllm:request_inference_time_seconds_sum\{[^}]*\}\s+\K[0-9.]+" | head -1)
-      processing=$(echo "$metrics_raw" | grep -oP "^vllm:num_requests_running\{[^}]*\}\s+\K[0-9.]+" | head -1)
-      deferred=$(echo "$metrics_raw" | grep -oP "^vllm:num_requests_waiting\{[^}]*\}\s+\K[0-9.]+" | head -1)
+      prompt_total=$(echo "$metrics_raw" | grep -oP "^vllm:prompt_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1 || true)
+      gen_total=$(echo "$metrics_raw" | grep -oP "^vllm:generation_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1 || true)
+      prompt_sec=$(echo "$metrics_raw" | grep -oP "^vllm:e2e_request_latency_seconds_sum\{[^}]*\}\s+\K[0-9.]+" | head -1 || true)
+      gen_sec=$(echo "$metrics_raw" | grep -oP "^vllm:request_inference_time_seconds_sum\{[^}]*\}\s+\K[0-9.]+" | head -1 || true)
+      processing=$(echo "$metrics_raw" | grep -oP "^vllm:num_requests_running\{[^}]*\}\s+\K[0-9.]+" | head -1 || true)
+      deferred=$(echo "$metrics_raw" | grep -oP "^vllm:num_requests_waiting\{[^}]*\}\s+\K[0-9.]+" | head -1 || true)
     fi
     # Compute average speeds
     local avg_prompt_tps="0" avg_gen_tps="0"
