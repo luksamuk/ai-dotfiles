@@ -249,12 +249,14 @@ cmd_ps() {
           # llama.cpp metrics
           gen_tps=$(echo "$metrics_raw" | grep -P "^llamacpp:predicted_tokens_seconds\s" | awk "{print \$2}")
           prompt_tps=$(echo "$metrics_raw" | grep -P "^llamacpp:prompt_tokens_seconds\s" | awk "{print \$2}")
-          # vLLM metrics fallback (Prometheus format: vllm_prompt_tokens_total, vllm_generation_tokens_total)
+          # vLLM metrics fallback
           if [[ -z "$gen_tps" || "$gen_tps" == "0" ]]; then
-            gen_tps=$(echo "$metrics_raw" | grep -oP "vllm_token_count_total\{[^}]*\}\s+\K[0-9.]+" | head -1)
-            vllm_decoded=$(echo "$metrics_raw" | grep -oP "vllm:avg_generation_throughput\s+\K[0-9.]+" | head -1)
-            [[ -n "$vllm_decoded" ]] && gen_tps="$vllm_decoded"
+            # vLLM: use avg generation throughput (tokens/sec histogram)
+            gen_tps=$(echo "$metrics_raw" | grep -oP "^vllm:generation_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1)
+            prompt_tps=$(echo "$metrics_raw" | grep -oP "^vllm:prompt_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1)
           fi
+          [[ -z "$gen_tps" || "$gen_tps" == "0" ]] && gen_tps="-"
+          [[ -z "$prompt_tps" || "$prompt_tps" == "0" ]] && prompt_tps="-"
           [[ -z "$gen_tps" || "$gen_tps" == "0" ]] && gen_tps="-"
           [[ -z "$prompt_tps" || "$prompt_tps" == "0" ]] && prompt_tps="-"
         fi
@@ -344,14 +346,13 @@ cmd_stats() {
     deferred=$(echo "$metrics_raw" | grep "^llamacpp:requests_deferred" | awk "{print \$2}")
     # vLLM fallback: use vllm_ metrics if llama.cpp not found
     if [[ -z "$prompt_total" ]]; then
-      prompt_total=$(echo "$metrics_raw" | grep -oP "vllm_prompt_tokens_total\s+\K[0-9.]+" | head -1)
-      gen_total=$(echo "$metrics_raw" | grep -oP "vllm_generation_tokens_total\s+\K[0-9.]+" | head -1)
-      prompt_sec=$(echo "$metrics_raw" | grep -oP "vllm_prompt_tokens_seconds\s+\K[0-9.]+" | head -1)
-      gen_sec=$(echo "$metrics_raw" | grep -oP "vllm_generation_seconds\s+\K[0-9.]+" | head -1)
-      processing=$(echo "$metrics_raw" | grep -oP "vllm_num_requests_running\s+\K[0-9.]+" | head -1)
-      deferred=$(echo "$metrics_raw" | grep -oP "vllm_num_requests_waiting\s+\K[0-9.]+" | head -1)
+      prompt_total=$(echo "$metrics_raw" | grep -oP "^vllm:prompt_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1)
+      gen_total=$(echo "$metrics_raw" | grep -oP "^vllm:generation_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1)
+      prompt_sec=$(echo "$metrics_raw" | grep -oP "^vllm:e2e_request_latency_seconds_sum\{[^}]*\}\s+\K[0-9.]+" | head -1)
+      gen_sec=$(echo "$metrics_raw" | grep -oP "^vllm:request_inference_time_seconds_sum\{[^}]*\}\s+\K[0-9.]+" | head -1)
+      processing=$(echo "$metrics_raw" | grep -oP "^vllm:num_requests_running\{[^}]*\}\s+\K[0-9.]+" | head -1)
+      deferred=$(echo "$metrics_raw" | grep -oP "^vllm:num_requests_waiting\{[^}]*\}\s+\K[0-9.]+" | head -1)
     fi
-
     # Compute average speeds
     local avg_prompt_tps="0" avg_gen_tps="0"
     if [[ -n "$prompt_sec" ]] && [[ "$(echo "$prompt_sec > 0" | bc -l 2>/dev/null || echo 0)" == "1" ]]; then
