@@ -40,6 +40,9 @@ import questionary
 from prompt_toolkit.history import FileHistory
 import requests
 
+# Tool calling mock definitions
+from tools import MOCK_TOOLS, get_mock_response
+
 # Endpoint — use LLAMA_SWAP_HOST para acessar remotamente (ex: Termux via Tailscale)
 # Default: localhost (rode direto na máquina)
 # Remoto: export LLAMA_SWAP_HOST=100.65.187.74 (IP Tailscale)
@@ -473,6 +476,9 @@ class StreamingChat:
         self.always_thinks = False        # True se modelo sempre pensa (ex: GPT-OSS Harmony)
         self.supports_vision = False
         self.supports_audio = False
+        self.supports_tools = False
+        self.tool_calls = []  # Accumulated tool calls from current response
+        self.all_tool_calls = []  # All tool calls across turns (for final display)
         self.available_models = []
         self.image_paths = []  # Caminhos das imagens extraídas do prompt
         self.audio_paths = []  # Caminhos dos áudios extraídos do prompt
@@ -504,6 +510,7 @@ class StreamingChat:
                 if is_think_variant:
                     supports = True  # Variante :think sempre tem reasoning
                 self.supports_vision = model.get("supports_vision", False)
+                self.supports_tools = model.get("supports_tools", False)
                 self.supports_audio = model.get("features", {}).get("audio", False)
                 features = []
                 if supports:
@@ -512,6 +519,8 @@ class StreamingChat:
                     features.append("vision")
                 if self.supports_audio:
                     features.append("audio")
+                if self.supports_tools:
+                    features.append("tools")
                 if features:
                     console.print(f"[green]✓ Modelo suporta: {', '.join(features)}[/]")
                 else:
@@ -617,6 +626,7 @@ class StreamingChat:
         
         self.selected_model_name = selected_model["name"]
         self.supports_vision = selected_model.get("supports_vision", False)
+        self.supports_tools = selected_model.get("supports_tools", False)
         self.supports_audio = selected_model.get("features", {}).get("audio", False)
         self._selected_model_info = selected_model  # Salva info completa pro relatório
         self._selected_description = selected_model.get("description", "")  # Descrição curta pro header
@@ -887,8 +897,16 @@ class StreamingChat:
         
         return layout
     
-    def stream_chat(self, prompt: str, image_paths: list[str] = None, audio_paths: list[str] = None) -> Iterator[Layout]:
-        """Realiza o streaming do chat usando requests diretamente."""
+    def stream_chat(self, prompt: str, image_paths: list[str] = None, audio_paths: list[str] = None, messages: list = None, tools: list = None) -> Iterator[Layout]:
+        """Realiza o streaming do chat usando requests diretamente.
+        
+        Args:
+            prompt: The user prompt (used if messages is None)
+            image_paths: List of image file paths
+            audio_paths: List of audio file paths
+            messages: Pre-built message list for multi-turn (tool calling). If provided, prompt is ignored.
+            tools: OpenAI-formatted tool definitions to include in the request
+        """
         image_paths = image_paths or []
         audio_paths = audio_paths or []
         
@@ -898,26 +916,42 @@ class StreamingChat:
         self.first_token_time = None
         self.stream_chars = 0
         self.last_timing_stats = None
+        self.tool_calls = []  # Reset tool calls for this turn
         
         try:
-            # Construir conteúdo da mensagem
-            message_content = build_message_content(prompt, image_paths, audio_paths)
+            # Construir mensagens — se messages foi fornecido (tool calling), usar diretamente
+            if messages is None:
+                message_content = build_message_content(prompt, image_paths, audio_paths)
+                messages = [{"role": "user", "content": message_content}]
             
             # Marca o início da request (TTFT)
             self.request_start_time = time.time()
             
+            # Build request payload
+            payload = {
+                "model": self.selected_model,
+                "messages": messages,
+                "stream": True,
+            }
+            
+            # Add tools if supported
+            if tools:
+                payload["tools"] = tools
+                payload["tool_choice"] = "auto"
+            
             # Faz POST com streaming
             response = requests.post(
                 f"{BASE_URL}/chat/completions",
-                json={
-                    "model": self.selected_model,
-                    "messages": [{"role": "user", "content": message_content}],
-                    "stream": True,
-                },
+                json=payload,
                 stream=True,
                 timeout=120,
             )
             response.raise_for_status()
+            
+            # Accumulate tool calls from streaming
+            # tool_calls come as deltas that need to be merged by index
+            tool_calls_accumulator = {}  # index -> {id, function: {name, arguments}}
+            finish_reason = None
             
             for line in response.iter_lines():
                 if not line:
@@ -950,9 +984,30 @@ class StreamingChat:
                         if "choices" not in data or not data["choices"]:
                             continue
                         
-                        delta = data["choices"][0].get("delta", {})
+                        choice = data["choices"][0]
+                        delta = choice.get("delta", {})
+                        finish_reason = choice.get("finish_reason") or finish_reason
                         content = delta.get("content", "")
                         reasoning = delta.get("reasoning_content", "") or delta.get("reasoning", "")
+                        
+                        # Handle tool_calls in streaming delta
+                        if "tool_calls" in delta:
+                            for tc in delta["tool_calls"]:
+                                idx = tc.get("index", 0)
+                                if idx not in tool_calls_accumulator:
+                                    tool_calls_accumulator[idx] = {
+                                        "id": tc.get("id", ""),
+                                        "type": "function",
+                                        "function": {"name": "", "arguments": ""}
+                                    }
+                                # Merge deltas
+                                if tc.get("id"):
+                                    tool_calls_accumulator[idx]["id"] = tc["id"]
+                                func = tc.get("function", {})
+                                if func.get("name"):
+                                    tool_calls_accumulator[idx]["function"]["name"] += func["name"]
+                                if func.get("arguments"):
+                                    tool_calls_accumulator[idx]["function"]["arguments"] += func["arguments"]
                         
                         if reasoning:
                             if not self.has_reasoning:
@@ -980,12 +1035,96 @@ class StreamingChat:
                     except json.JSONDecodeError:
                         continue
             
+            # Finalize tool calls from accumulator
+            self.tool_calls = [tool_calls_accumulator[i] for i in sorted(tool_calls_accumulator.keys())]
+            
             self.status = "Concluído!"
             yield self.render()
             
         except Exception as e:
             self.status = f"Erro: {str(e)[:50]}"
             yield self.render()
+    
+    def handle_tool_calls(self, user_prompt: str) -> Iterator[Layout]:
+        """Handle tool calls by embedding results into response_content and streaming 2nd turn.
+        
+        Instead of resetting the view, we append tool call info to response_content
+        and stream the model's follow-up in the same panel.
+        """
+        if not self.tool_calls:
+            return
+        
+        # Add separator before tool calls in response buffer
+        self.response_content += "\n\n---\n\n"
+        
+        # Embed tool calls: just name(args), no mock results in buffer
+        for i, tc in enumerate(self.tool_calls):
+            fn_name = tc["function"]["name"]
+            fn_args = tc["function"]["arguments"]
+            try:
+                args_dict = json.loads(fn_args)
+                args_compact = json.dumps(args_dict, ensure_ascii=False)
+            except (json.JSONDecodeError, TypeError):
+                args_compact = fn_args
+            self.response_content += f"🔧 {fn_name}({args_compact})\n"
+        yield self.render()
+        
+        # Build messages with tool results
+        # Extract original assistant content (before tool call embeds)
+        original_content = self.response_content.split("\n\n---\n\n")[0] or None
+        if original_content and not original_content.strip():
+            original_content = None
+        base_messages = [{"role": "user", "content": user_prompt}]
+        assistant_msg = {
+            "role": "assistant",
+            "content": original_content,
+            "tool_calls": self.tool_calls
+        }
+        base_messages.append(assistant_msg)
+        
+        # Generate and embed mock results
+        for i, tc in enumerate(self.tool_calls):
+            func_name = tc["function"]["name"]
+            func_args = tc["function"]["arguments"]
+            tool_id = tc.get("id", f"call_{func_name}")
+            
+            # Parse arguments — handle malformed JSON gracefully
+            try:
+                args_dict = json.loads(func_args)
+            except json.JSONDecodeError as e:
+                mock_result = f"Error: Invalid JSON in arguments. {e}. Your arguments were: '{func_args}'. Please ensure all arguments are valid JSON."
+            else:
+                mock_result = get_mock_response(func_name, args_dict)
+            
+            # Special didactic feedback for common mistakes
+            if isinstance(mock_result, dict):
+                if func_name == "get_weather" and not args_dict.get("city"):
+                    mock_result = "Error: Missing required parameter 'city'. You must specify which city's weather you want."
+                elif func_name == "calculator" and not args_dict.get("expression"):
+                    mock_result = "Error: Missing required parameter 'expression'. Provide a math expression like '2 + 2'."
+                elif func_name == "get_time" and not args_dict.get("timezone"):
+                    mock_result = "Error: Missing required parameter 'timezone'. Provide a timezone like 'America/Sao_Paulo'."
+            
+            if isinstance(mock_result, dict):
+                mock_result = json.dumps(mock_result, ensure_ascii=False)
+            
+            base_messages.append({
+                "role": "tool",
+                "tool_call_id": tool_id,
+                "content": mock_result,
+            })
+        
+        # Add separator before 2nd turn response
+        self.response_content += "\n\n---\n\n"
+        # Add separator in reasoning too, so new thinking is visually distinct
+        if self.reasoning_content:
+            self.reasoning_content += "\n\n---\n\n"
+        self.status = "Gerando resposta final..."
+        yield self.render()
+        
+        # Stream 2nd turn inline — NO tools to prevent infinite loops
+        for layout in self.stream_chat(prompt="", messages=base_messages, tools=None):
+            yield layout
     
     def run(self):
         """Executa o chat interativo."""
@@ -1015,6 +1154,12 @@ class StreamingChat:
             console.print("[yellow]🤔 Modo reasoning ativado — painel de raciocínio visível[/]")
         elif self.supports_reasoning:
             console.print("[dim]💡 Modo chat normal — raciocínio desabilitado (use variante :think para reasoning)[/]")
+        if self.supports_tools:
+            console.print("[cyan]🛠️ Tool calling ativo — Ferramentas de teste disponíveis:[/]")
+            console.print("[dim]   🌡️  get_weather  — Clima atual por cidade (ex: \"Qual o clima em Tokyo?\")[/]")
+            console.print("[dim]   🧮  calculator   — Expressões matemáticas (ex: \"Quanto é 2**10 + sqrt(144)?\")[/]")
+            console.print("[dim]   🕐 get_time      — Data/hora por fuso (ex: \"Que horas são em São Paulo?\")[/]")
+            console.print("[dim]   Respostas são mockadas — servem pra testar se o modelo sabe chamar tools.[/]")
         console.print()
         
         console.print("[dim]Pressione Ctrl+C para sair a qualquer momento[/]")
@@ -1123,8 +1268,18 @@ class StreamingChat:
             vertical_overflow="visible"
         ) as live:
             try:
-                for layout in self.stream_chat(clean_prompt, image_paths, audio_paths):
+                tools_payload = MOCK_TOOLS if self.supports_tools else None
+                for layout in self.stream_chat(clean_prompt, image_paths, audio_paths, tools=tools_payload):
                     live.update(layout)
+                
+                # Handle tool calls — stream 2nd turn inline with mock responses
+                if self.tool_calls and self.supports_tools:
+                    self.all_tool_calls.extend(self.tool_calls)
+                    for layout in self.handle_tool_calls(clean_prompt):
+                        live.update(layout)
+                # Also save tool calls from models that don't go through handle_tool_calls
+                elif self.tool_calls:
+                    self.all_tool_calls.extend(self.tool_calls)
                 
                 # Mostra resultado final com prompt e modelo
                 live.stop()
@@ -1161,6 +1316,33 @@ class StreamingChat:
                         Markdown(f"## 🤔 Raciocínio\n\n{self.reasoning_content}"),
                         title="Raciocínio",
                         border_style="yellow"
+                    ))
+                
+                # Show tool calls if any were made — compact format with mock result
+                if self.all_tool_calls:
+                    tc_lines = []
+                    for i, tc in enumerate(self.all_tool_calls, 1):
+                        fn_name = tc.get("function", {}).get("name", "unknown")
+                        fn_args = tc.get("function", {}).get("arguments", "{}")
+                        try:
+                            args_dict = json.loads(fn_args)
+                            args_compact = json.dumps(args_dict, ensure_ascii=False)
+                        except (json.JSONDecodeError, TypeError):
+                            args_compact = fn_args
+                        # Get mock result for display
+                        try:
+                            mock = get_mock_response(fn_name, json.loads(fn_args) if fn_args.strip() else {})
+                            if isinstance(mock, dict):
+                                mock = json.dumps(mock, ensure_ascii=False)
+                        except Exception:
+                            mock = "(error)"
+                        # Compact one-liner: name(args) → result
+                        mock_preview = mock if len(mock) <= 80 else mock[:77] + "…"
+                        tc_lines.append(f"**{i}. {fn_name}**({args_compact}) → `{mock_preview}`")
+                    console.print(Panel(
+                        Markdown("\n\n".join(tc_lines)),
+                        title="🔧 Tool Calls",
+                        border_style="cyan"
                     ))
                 
                 console.print(Panel(

@@ -176,13 +176,14 @@ models:
     cmd: |
       ${vllm_bin} serve Qwen/Qwen3.5-0.8B
       --port ${PORT}
-      --gpu-memory-utilization 0.45
+      --served-model-name qwen3.5-0.8b-vllm
+      --gpu-memory-utilization 0.70
       --max-model-len 8192
       --max-num-seqs 2
       --dtype half
       --trust-remote-code
-      --reasoning-parser qwen3
-    ttl: 600
+      --default-chat-template-kwargs '{"enable_thinking": false}'
+    ttl: 900
     metadata:
       backend: vllm
       size: "~1.6 GB (BF16 safetensors, auto-download from HF)"
@@ -191,7 +192,44 @@ models:
       source: "Qwen/Qwen3.5-0.8B (HuggingFace safetensors)"
       note: "vLLM test backend for Sprachspiel — slow startup (~30-90s), use only for API compat testing"
       features:
-        thinking: true
+        thinking: false
+        vision: false
+        tools: true
+
+  # -------------------------------------------
+  # QWEN3.5-2B - vLLM BACKEND (safetensors)
+  # Requer: venv ~/.vllm com vllm instalado
+  # Requer: modelo baixado via HF (auto-download no primeiro serve)
+  # IMPORTANTE: skip-mm-profiling + limit-mm-per-prompt necessário
+  #   para caber na VRAM (~4.6GB pesos + overhead vLLM)
+  # Vision DESABILITADO — sem mmproj, texto apenas
+  # -------------------------------------------
+  "qwen3.5-2b-vllm":
+    name: "Qwen3.5 2B (vLLM)"
+    description: "vLLM backend — 2B text-only, no vision (~90 tok/s)"
+    cmd: |
+      ${vllm_bin} serve Qwen/Qwen3.5-2B
+      --port ${PORT}
+      --served-model-name qwen3.5-2b-vllm
+      --gpu-memory-utilization 0.82
+      --max-model-len 2048
+      --max-num-seqs 1
+      --dtype half
+      --trust-remote-code
+      --enforce-eager
+      --skip-mm-profiling
+      --limit-mm-per-prompt '{"image": 0}'
+      --default-chat-template-kwargs '{"enable_thinking": false}'
+    ttl: 900
+    metadata:
+      backend: vllm
+      size: "~4 GB (BF16 safetensors, auto-download from HF)"
+      context: "2K (vLLM tight fit on 6GB VRAM)"
+      vram_usage: "~5GB"
+      source: "Qwen/Qwen3.5-2B (HuggingFace safetensors)"
+      note: "vLLM 2B on 6GB VRAM — enforce-eager, skip-mm-profiling, no vision. Slow startup (~60-120s)"
+      features:
+        thinking: false
         vision: false
         tools: true
 
