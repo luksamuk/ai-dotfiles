@@ -1,19 +1,20 @@
 <p align="center">
-  <h1>🤖 Chat com Reasoning e Streaming Markdown</h1>
+  <h1>🤖 Testchat — Chat Interativo com Reasoning, Tools e Streaming</h1>
 </p>
 
 ## 📋 Descrição
 
-Aplicação de chat com interface rica no terminal para interação com modelos de linguagem via API OpenAI-compatível (LM Studio, llama-swap, Ollama, etc).
+Aplicação de chat com interface rica no terminal para interação com modelos de linguagem via API OpenAI-compatível (llama-swap, vLLM, Ollama, etc).
 
 ## ✨ Recursos
 
-- 🎯 **Seleção de modelos**: Menu navegável com metadados (thinking, tools, VRAM)
-- 🧠 **Detecção automática**: Identifica modelos com suporte a reasoning via API
+- 🎯 **Seleção de modelos**: Menu navegável com metadados (thinking, tools, vision, VRAM)
+- 🧠 **Detecção automática**: Identifica modelos com reasoning (thinking) e tool calling via metadata
+- 🛠️ **Tool calling mockado**: Testa capacidade de tool calling com ferramentas simuladas (get_weather, calculator, get_time)
 - 📐 **Layout adaptativo**: Split-screen para reasoning+response, ou tela cheia apenas response
 - 📝 **Markdown formatado**: Syntax highlighting e renderização rica
 - 📜 **Histórico persistente**: Acesse prompts anteriores com ↑/↓
-- ⚡ **Streaming em tempo real**: Acompanhamento do raciocínio e resposta
+- ⚡ **Streaming em tempo real**: Acompanhamento do raciocínio, tool calls e resposta
 
 ## 🚀 Instalação
 
@@ -21,7 +22,7 @@ Aplicação de chat com interface rica no terminal para interação com modelos 
 
 - Python >= 3.12
 - [uv](https://docs.astral.sh/uv/) instalado
-- Servidor OpenAI-compatível rodando (llama-swap, LM Studio, etc)
+- Servidor OpenAI-compatível rodando (llama-swap com vLLM e/ou llama.cpp)
 - Porta padrão: `12434`
 
 ### Setup
@@ -46,45 +47,83 @@ export LLAMA_SWAP_HOST=100.65.187.74
 uv run main.py
 ```
 
+## 🛠️ Tool Calling
+
+Modelos com `tools: true` nos metadados recebem automaticamente as ferramentas mock de teste:
+
+| Ferramenta | Descrição | Exemplo |
+|------------|-----------|---------|
+| 🌡️ `get_weather` | Clima atual por cidade | "Qual o clima em Tokyo?" |
+| 🧮 `calculator` | Expressões matemáticas | "Quanto é 2**10 + sqrt(144)?" |
+| 🕐 `get_time` | Data/hora por fuso | "Que horas são em São Paulo?" |
+
+As respostas são simuladas — servem pra testar se o modelo sabe chamar ferramentas corretamente, não pra obter dados reais.
+
+**Fluxo de tool calling:**
+1. O modelo decide chamar uma ferramenta → exibe `🔧 nome(args)` no buffer
+2. Testchat gera a resposta mockada → exibe resultado inline
+3. O modelo recebe o resultado e formula a resposta final
+
+### Configuração de modelos vLLM com tool calling
+
+Para que modelos vLLM suportem `tool_choice: "auto"`, adicione as flags:
+
+```yaml
+cmd: |
+  ${vllm_bin} serve Qwen/Qwen3.5-0.8B
+  --port ${PORT}
+  --enable-auto-tool-choice
+  --tool-call-parser qwen3_coder
+```
+
+Sem essas flags, vLLM retorna erro 400 ao receber `tool_choice: "auto"`.
+
 ## 🔌 Configuração do Servidor
-
-### LM Studio
-
-1. Baixe e instale o [LM Studio](https://lmstudio.ai/)
-2. Carregue um modelo com suporte a thinking (ex: Qwen 3.5, Gemma 4)
-3. Ative o **"Local Inference Server"** na aba **"Developer"**
-4. Certifique-se de que está acessível em `LLAMA_SWAP_HOST:LLAMA_SWAP_PORT` (default: `127.0.0.1:12434`)
 
 ### llama-swap
 
-Configure o `config.yaml` com modelos que tenham a flag `thinking: true` nos metadados:
+Configure o `config.yaml` com modelos que tenham features nos metadados:
 
 ```yaml
 models:
-  "gemma4-e4b-think":
-    cmd: ./llama-server ... -m gemma-4b-q4_k_m.gguf
-    meta:
+  "qwen3.5-9b-ace":
+    cmd: |
+      ${llama_server} --port ${PORT} -m qwen3.5-9b-ace.Q4_K_M.gguf ...
+    metadata:
       llamaswap:
         features:
           thinking: true
+          tools: true
+
+  "qwen3.5-0.8b-vllm":
+    cmd: |
+      ${vllm_bin} serve Qwen/Qwen3.5-0.8B
+      --port ${PORT}
+      --enable-auto-tool-choice
+      --tool-call-parser qwen3_coder
+      ...
+    metadata:
+      llamaswap:
+        features:
+          tools: true
 ```
 
 ## 🖥️ Uso
 
 ```bash
-# Rodar a aplicação
-uv run main.py
+# Via llama-swap-cli
+llama-swap-cli testchat
 
-# Ou via script
-uv run chat
+# Ou direto
+uv run main.py
 ```
 
 ### Fluxo
 
-1. **Menu de modelos**: Selecione o modelo usando ↑/↓
+1. **Menu de modelos**: Selecione o modelo usando ↑/↓ (features marcadas com ícones 🤔 🛠️ 👁️)
 2. **Prompt**: Digite sua pergunta (use ↑/↓ para histórico)
-3. **Streaming**: Acompanhe o raciocínio e resposta em tempo real
-4. **Resultado**: Visualize o prompt, modelo, raciocínio (se houver) e resposta
+3. **Streaming**: Acompanhe reasoning, tool calls e resposta em tempo real
+4. **Resultado**: Visualize o painel final com timing, tokens, e tool calls
 
 ### Controles
 
@@ -107,13 +146,13 @@ uv run chat
 ### Estrutura de Arquivos
 
 ```
-lmstudio/
-├── main.py              # Aplicação principal
+testchat/
+├── main.py              # Aplicação principal (chat, streaming, UI)
+├── tools.py             # Mock tools (get_weather, calculator, get_time)
 ├── pyproject.toml       # Configuração do projeto
-├── uv.lock             # Lock de dependências
-├── .venv/              # Ambiente virtual
-├── README.md           # Este arquivo
-└── DEPENDENCIES.md     # Documentação de dependências
+├── uv.lock              # Lock de dependências
+├── .venv/               # Ambiente virtual
+└── README.md            # Este arquivo
 ```
 
 ## 🔧 Customização

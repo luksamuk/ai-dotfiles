@@ -287,6 +287,20 @@ These models are fine-tuned for function calling and always use reasoning:
 | **qwopus-4b** | ~3GB | 32K-128K | `thinking`, `tools` |
 | **qwopus-9b** | ~5GB + RAM | 16K-128K | `thinking`, `tools` |
 
+### vLLM Backend Models
+
+Experimental vLLM backends for API compatibility testing. Not for daily use — slower startup (~30-90s), higher overhead.
+
+| Model | VRAM | Context | Features | Notes |
+|-------|------|---------|----------|-------|
+| **qwen3.5-0.8b-vllm** | ~2.5-3GB | 8K | `tools` | vLLM safetensors, auto-download from HF |
+| **qwen3.5-2b-vllm** | ~5GB | 2K | `tools` | vLLM safetensors, no vision (`--skip-mm-profiling`) |
+
+**vLLM-specific flags:**
+- `--enable-auto-tool-choice` + `--tool-call-parser qwen3_coder` — Required for tool calling
+- `--skip-mm-profiling` + `--limit-mm-per-prompt '{"image": 0}'` — Skip ViT profiling (2B only)
+- `--default-chat-template-kwargs '{"enable_thinking": false}'` — Disable reasoning in output
+
 ### Context Size Behavior
 
 Context is **dynamic** - automatically adjusts based on available VRAM:
@@ -340,6 +354,74 @@ Models use the format `model:size` for consistency with Ollama:
 | `nemotron-3-nano-4b-think` | `nemotron-4b-think`, `nemotron-think` |
 | `qwopus-4b` | `qwopus4b`, `qwopus-4b` |
 | `qwopus-9b` | `qwopus`, `qwopus9b` |
+
+## CLI: llama-swap-cli
+
+A companion CLI for managing llama-swap models from the terminal.
+
+```bash
+# List configured models
+llama-swap-cli list [--pretty]
+
+# Show running models (VRAM, RSS, tok/s, GPU layers)
+llama-swap-cli ps [--pretty]
+
+# Detailed metrics (tokens, speed, queue)
+llama-swap-cli stats [--pretty]
+
+# Unload all models (or a specific one)
+llama-swap-cli unload [MODEL]
+
+# Recent logs
+llama-swap-cli logs [N]
+
+# Interactive chat with model selection
+llama-swap-cli testchat
+```
+
+Supports both llama.cpp and vLLM backends. The `ps` and `stats` commands detect vLLM metrics automatically.
+
+## Interactive Chat (testchat)
+
+An interactive terminal chat with streaming, reasoning display, and tool calling.
+
+```bash
+# Via CLI
+llama-swap-cli testchat
+
+# Or directly
+cd testchat && uv run main.py
+```
+
+### Features
+
+- **Model selection** with feature icons (🤔 thinking, 🛠️ tools, 👁️ vision)
+- **Tool calling** with mock tools (get_weather, calculator, get_time) — auto-enabled for models with `tools: true`
+- **Reasoning panel** — split-screen display for thinking models
+- **Streaming** — real-time token display with timing stats
+
+### Tool Calling Flow
+
+When a model with `tools: true` is selected, mock tools are sent automatically. The model decides whether to call a tool, and the testchat provides simulated responses:
+
+1. Model decides to call a tool → displays `🔧 tool_name(args)`
+2. Testchat generates mock response → displays inline
+3. Model formats final answer using mock data
+
+### Waybar Integration
+
+The `inference-status.py` Waybar module shows loaded models and allows unloading via click:
+
+```json
+// ~/.config/waybar/config.jsonc
+"custom/inference": {
+  "exec": "~/.config/waybar/scripts/inference-status.py llamaswap status",
+  "return-type": "json",
+  "on-click": "~/.config/waybar/scripts/inference-status.py llamaswap eject_all"
+}
+```
+
+Uses the llama-swap `/running` API — works with both llama.cpp and vLLM backends.
 
 ## Configuration Details
 
