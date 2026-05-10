@@ -92,11 +92,11 @@ MOCK_RESPONSES = {
         "10 * 5": "50",
     },
     "get_time": {
-        "america/sao paulo": "2025-05-09 22:00:00 BRT (UTC-3)",
-        "america/sao_paulo": "2025-05-09 22:00:00 BRT (UTC-3)",
-        "europe/london": "2025-05-10 02:00:00 BST (UTC+1)",
-        "asia/tokyo": "2025-05-10 10:00:00 JST (UTC+9)",
-        "us/eastern": "2025-05-09 21:00:00 EDT (UTC-4)",
+        "america/sao paulo": "2025-05-09 22:00:00",
+        "america/sao_paulo": "2025-05-09 22:00:00",
+        "europe/london": "2025-05-10 02:00:00",
+        "asia/tokyo": "2025-05-10 10:00:00",
+        "us/eastern": "2025-05-09 21:00:00",
     }
 }
 
@@ -182,7 +182,7 @@ def get_mock_response(tool_name: str, arguments: dict) -> str:
                 return value
         
         # Generic response for unknown timezones
-        return f"{timezone}: 2025-05-09 22:00:00 (UTC-3)"
+        return f"{timezone}: 2025-05-09 22:00:00"
     
     else:
         return f"Error: Unknown tool '{tool_name}'. Available tools: get_weather, calculator, get_time."
