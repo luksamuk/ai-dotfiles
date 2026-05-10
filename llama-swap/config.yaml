@@ -183,6 +183,8 @@ models:
       --dtype half
       --trust-remote-code
       --default-chat-template-kwargs '{"enable_thinking": false}'
+      --enable-auto-tool-choice
+      --tool-call-parser qwen3_coder
     ttl: 900
     metadata:
       backend: vllm
@@ -220,6 +222,8 @@ models:
       --skip-mm-profiling
       --limit-mm-per-prompt '{"image": 0}'
       --default-chat-template-kwargs '{"enable_thinking": false}'
+      --enable-auto-tool-choice
+      --tool-call-parser qwen3_coder
     ttl: 900
     metadata:
       backend: vllm
