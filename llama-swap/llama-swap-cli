@@ -189,7 +189,14 @@ cmd_ps() {
       if [[ -n "$port" ]]; then
         local health hstatus
         health=$(curl -s "http://localhost:${port}/health" 2>/dev/null || echo "{}")
-        hstatus=$(echo "$health" | jq -r '.status // "unknown"')
+        if [[ -z "$health" ]]; then
+          # vLLM returns empty 200 on /health
+          hstatus="ok"
+        else
+          hstatus=$(echo "$health" | jq -r ".status // "unknown"" 2>/dev/null || echo "unknown")
+          # vLLM may also return plain text or empty body
+          [[ "$hstatus" == "null" || "$hstatus" == "" ]] && hstatus="ok"
+        fi
         if [[ "$hstatus" != "ok" ]] && [[ "$hstatus" != "loading model" ]]; then
           icon="${icon}(${hstatus})"
         fi
@@ -239,8 +246,15 @@ cmd_ps() {
         local metrics_raw
         metrics_raw=$(curl -s "http://localhost:${port}/metrics" 2>/dev/null || echo "")
         if [[ -n "$metrics_raw" ]]; then
-          gen_tps=$(echo "$metrics_raw" | grep -P '^llamacpp:predicted_tokens_seconds\s' | awk '{print $2}')
-          prompt_tps=$(echo "$metrics_raw" | grep -P '^llamacpp:prompt_tokens_seconds\s' | awk '{print $2}')
+          # llama.cpp metrics
+          gen_tps=$(echo "$metrics_raw" | grep -P "^llamacpp:predicted_tokens_seconds\s" | awk "{print \$2}")
+          prompt_tps=$(echo "$metrics_raw" | grep -P "^llamacpp:prompt_tokens_seconds\s" | awk "{print \$2}")
+          # vLLM metrics fallback (Prometheus format: vllm_prompt_tokens_total, vllm_generation_tokens_total)
+          if [[ -z "$gen_tps" || "$gen_tps" == "0" ]]; then
+            gen_tps=$(echo "$metrics_raw" | grep -oP "vllm_token_count_total\{[^}]*\}\s+\K[0-9.]+" | head -1)
+            vllm_decoded=$(echo "$metrics_raw" | grep -oP "vllm:avg_generation_throughput\s+\K[0-9.]+" | head -1)
+            [[ -n "$vllm_decoded" ]] && gen_tps="$vllm_decoded"
+          fi
           [[ -z "$gen_tps" || "$gen_tps" == "0" ]] && gen_tps="-"
           [[ -z "$prompt_tps" || "$prompt_tps" == "0" ]] && prompt_tps="-"
         fi
@@ -321,13 +335,22 @@ cmd_stats() {
     fi
 
     # Parse Prometheus metrics
-    local prompt_total gen_total prompt_sec gen_sec processing deferred
-    prompt_total=$(echo "$metrics_raw" | grep '^llamacpp:prompt_tokens_total' | awk '{print $2}')
-    gen_total=$(echo "$metrics_raw" | grep '^llamacpp:tokens_predicted_total' | awk '{print $2}')
-    prompt_sec=$(echo "$metrics_raw" | grep '^llamacpp:prompt_seconds_total' | awk '{print $2}')
-    gen_sec=$(echo "$metrics_raw" | grep '^llamacpp:tokens_predicted_seconds_total' | awk '{print $2}')
-    processing=$(echo "$metrics_raw" | grep '^llamacpp:requests_processing' | awk '{print $2}')
-    deferred=$(echo "$metrics_raw" | grep '^llamacpp:requests_deferred' | awk '{print $2}')
+    # Parse Prometheus metrics (llama.cpp + vLLM fallback)
+    prompt_total=$(echo "$metrics_raw" | grep "^llamacpp:prompt_tokens_total" | awk "{print \$2}")
+    gen_total=$(echo "$metrics_raw" | grep "^llamacpp:tokens_predicted_total" | awk "{print \$2}")
+    prompt_sec=$(echo "$metrics_raw" | grep "^llamacpp:prompt_seconds_total" | awk "{print \$2}")
+    gen_sec=$(echo "$metrics_raw" | grep "^llamacpp:tokens_predicted_seconds_total" | awk "{print \$2}")
+    processing=$(echo "$metrics_raw" | grep "^llamacpp:requests_processing" | awk "{print \$2}")
+    deferred=$(echo "$metrics_raw" | grep "^llamacpp:requests_deferred" | awk "{print \$2}")
+    # vLLM fallback: use vllm_ metrics if llama.cpp not found
+    if [[ -z "$prompt_total" ]]; then
+      prompt_total=$(echo "$metrics_raw" | grep -oP "vllm_prompt_tokens_total\s+\K[0-9.]+" | head -1)
+      gen_total=$(echo "$metrics_raw" | grep -oP "vllm_generation_tokens_total\s+\K[0-9.]+" | head -1)
+      prompt_sec=$(echo "$metrics_raw" | grep -oP "vllm_prompt_tokens_seconds\s+\K[0-9.]+" | head -1)
+      gen_sec=$(echo "$metrics_raw" | grep -oP "vllm_generation_seconds\s+\K[0-9.]+" | head -1)
+      processing=$(echo "$metrics_raw" | grep -oP "vllm_num_requests_running\s+\K[0-9.]+" | head -1)
+      deferred=$(echo "$metrics_raw" | grep -oP "vllm_num_requests_waiting\s+\K[0-9.]+" | head -1)
+    fi
 
     # Compute average speeds
     local avg_prompt_tps="0" avg_gen_tps="0"
