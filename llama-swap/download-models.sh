@@ -18,7 +18,8 @@
 #   gpt-oss-20b          - GPT-OSS 20B Q4_K_M (~11 GB) - Dense coding, text-only
 #   ds-r1-distill-14b    - [REMOVED] Dense 14B, poor perf on RTX 3050
 #   ds-r1-distill-32b    - [REMOVED] Dense 32B, very slow on limited VRAM
-#   qwen3.5-9b-ace      - Qwen3.5-9B NSC-ACE-SABER Q4_K_M (~5.63 GB) - Agentic tool-calling tune, text-only
+#   qwen3.6-35b-qwopus  - Qwopus3.6-35B-A3B-v1 APEX I-Compact (~16.5 GB) - MoE coding+reasoning SFT
+#   [REMOVED] qwen3.5-9b-ace — superseded by Qwopus for agentic tasks
 #   all                  - Download all models
 #
 # If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
@@ -47,13 +48,12 @@ declare -A MODELS=(
   # Granite 4.1 — dense, Apache 2.0, strong tool-calling + code
   # glm-4.7-flash removed
   ["qwen3.6-35b-moe"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF Qwen3.5-35B-A3B-APEX-I-Compact.gguf Qwen3.6-35B-A3B-APEX-I-Compact.gguf"
+  ["qwen3.6-35b-qwopus"]="mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf"
   ["gemma4-26b-moe"]="mudler/gemma-4-26B-A4B-it-APEX-GGUF gemma-4-26B-A4B-APEX-I-Compact.gguf"
   ["gpt-oss-20b"]="unsloth/gpt-oss-20b-GGUF gpt-oss-20b-Q4_K_M.gguf"
   # [REMOVED] ds-r1-distill-14b — Dense 14B, poor perf on RTX 3050, SSD pressure
   # [REMOVED] ds-r1-distill-32b — Dense 32B, very slow on limited VRAM, SSD pressure
-  # NSC-ACE-SABER — agentic tool-calling tuned Qwen3.5-9B (GestaltLabs)
-  # Same arch as qwen3.5-9b, drop-in replacement for tool-use focus
-  ["qwen3.5-9b-ace"]="GestaltLabs/Qwen3.5-9B-NSC-ACE-SABER-GGUF Qwen3.5-9B-NSC-ACE-SABER.Q4_K_M.gguf"
+  # [REMOVED] qwen3.5-9b-ace — superseded by Qwopus for agentic tasks
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -156,11 +156,12 @@ show_sizes() {
   echo "  granite-4.1-8b       ~4.60 GB  (UD-Q3_K_XL) - Dense, tool-calling, 512K ctx"
   # glm-4.7-flash removed
   echo "  qwen3.6-35b-moe    ~17.30 GB  (APEX I-Compact) - Heavy offload, MoE coding + tools"
+  echo "  qwen3.6-35b-qwopus ~16.50 GB  (APEX I-Compact) - Heavy offload, MoE coding+reasoning SFT"
   echo "  gemma4-26b-moe    ~15.50 GB  (APEX I-Compact) - Heavy offload, MoE reasoning + coding text-only"
   echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"
   echo "  ds-r1-distill-14b    [REMOVED] — poor perf on RTX 3050"
   echo "  ds-r1-distill-32b    [REMOVED] — very slow on limited VRAM"
-  echo "  qwen3.5-9b-ace    ~5.63 GB  (Q4_K_M) - Fits in VRAM, agentic tool-calling text-only (NSC-ACE-SABER)"
+  echo "  qwen3.5-9b-ace       [REMOVED] — superseded by Qwopus for agentic tasks"
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
@@ -173,7 +174,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"qwen3.6-35b-moe"|"gemma4-26b-moe"|"gpt-oss-20b"|"qwen3.5-9b-ace")
+  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"qwen3.6-35b-moe"|"qwen3.6-35b-qwopus"|"gemma4-26b-moe"|"gpt-oss-20b")
     download_model "$1"
     ;;
   "qwen3.5:4b"|"qwen3.5:9b"|"gemma4:e4b"|"gemma4:e2b"|"nemotron-3-nano:4b")

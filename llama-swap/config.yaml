@@ -433,64 +433,7 @@ models:
         # vision: disabled — mmproj crashes on CUDA (issue #21402)
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."
 
-  # -------------------------------------------
-  # QWEN3.5-9B-NSC-ACE-SABER - AGENTIC TOOL-CALLING (text-only)
-  # Fine-tune of Qwen3.5-9B by GestaltLabs using NSC-ACE (Neural Steering Committee
-  # for Agentic Co-Evolution) + SABER refusal calibration pass.
-  # Focus: consistent tool-call formatting, 1-2 tool-call sweet spot, proper
-  # argument filling, self-consistency across rollouts. Less over-refusal.
-  # Same qwen35 arch as vanilla Qwen3.5-9B — drop-in replacement.
-  # head_dim=128 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works
-  # K-quants use Acta-derived imatrix. Recommended: Q4_K_M for size/quality.
-  # text-only — no mmproj for this model. Vision not applicable.
-  # Architecture: qwen35 (same as Qwen3.5-9B base)
-  # -------------------------------------------
-  "qwen3.5-9b-ace":
-    name: "Qwen3.5 9B ACE"
-    description: "Agentic tool-calling — NSC-ACE-SABER tuned Qwen3.5-9B (Q4_K_M, text-only)"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.5-9B-NSC-ACE-SABER.Q4_K_M.gguf
-      --no-mmproj
-      --fit on
-      --fit-target 512
-      --fit-ctx ${small_model_min_ctx}
-      --ctx-size ${small_model_max_ctx}
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
-      --min-p ${code_min_p}
-      --repeat-penalty ${code_repeat_penalty}
-      --reasoning on
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.85
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    metadata:
-      size: "~5.63 GB (Q4_K_M, Acta imatrix)"
-      context: "64K-128K (dynamic)"
-      vram_usage: "~5GB VRAM (fits with mmproj off)"
-      source: "GestaltLabs/Qwen3.5-9B-NSC-ACE-SABER-GGUF"
-      kv_cache: "q8_0 + attn_rot"
-      features:
-        thinking: true
-        vision: false
-        tools: true
-      warning: "NSC-ACE-SABER — agentic tool-calling fine-tune. Experimental (GestaltLabs, small lab). Text-only. Use vanilla qwen3.5-9b for general chat, this for structured tool-use."
+  # [REMOVED] Qwen3.5-9B-ACE — superseded by Qwen3.6-35B-Qwopus for agentic tasks
 
   "nemotron-3-nano-4b":
     name: "Nemotron 3 Nano 4B"
@@ -788,32 +731,31 @@ models:
   # MoE models are 5-7x faster. Linear_attention/SSM didn't help when most layers in RAM.
 
   # -------------------------------------------
-  # QWEN3.6-35B-A3B-OPUS-4.7 - MoE REASONING DISTILL (APEX I-Compact)
-  # Qwen3.6-35B-A3B fine-tuned on ~8k reasoning traces from Claude Opus 4.7
-  # Same MoE arch as qwen3.6-35b-moe but with Claude-grade chain-of-thought
-  # Emits 5–30k tokens of thinking on hard problems before answering
-  # APEX I-Compact ~16.1GB — mixed-precision MoE quant com imatrix diversa
-  # LoRA also available: lordx64/reasoning-distill-opus-4-7-max-sft
+  # QWOPUS3.6-35B-A3B-V1 - MoE CODING+REASONING (text-only, no vision) (APEX I-Compact)
+  # Qwen3.6-35B-A3B fine-tuned by Jackrong with 3-stage curriculum SFT.
+  # Same MoE arch as qwen3.6-35b-moe (35B params, 3B active, 256 experts, top-8 routing)
+  # APEX I-Compact ~16.5GB — mixed-precision MoE quant com imatrix diversa
   # --no-mmproj: same as vanilla Qwen3.6, mmproj blocks expert offload
   # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
   # Architecture: qwen35moe (Qwen3MoeForCausalLM)
+  # Replaces qwen3.6-35b-opus-4.7 (Opus distill) — Qwopus has broader SFT coverage
   # -------------------------------------------
-  "qwen3.6-35b-opus-4.7":
-    name: "Qwen3.6 Opus 4.7"
-    description: "MoE reasoning distill — Claude Opus 4.7 chain-of-thought, 3B active/token (APEX I-Compact)"
+  "qwen3.6-35b-qwopus":
+    name: "Qwopus 3.6 35B"
+    description: "MoE coding+reasoning — Qwopus SFT, 3B active/token (APEX I-Compact)"
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.6-35B-A3B-Claude-4.7-Opus-Reasoning-Distilled-APEX-I-Compact.gguf
+      --model ${models_dir}/Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf
       --no-mmproj
       --fit on
       --fit-target 256
       --fit-ctx 16384
       --ctx-size 131072
-      --temp ${think_temp}
-      --top-p ${think_top_p}
-      --top-k ${think_top_k}
-      --min-p ${think_min_p}
-      --repeat-penalty ${think_repeat_penalty}
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
       --reasoning on
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
@@ -825,8 +767,8 @@ models:
         "${MODEL_ID}":
           chat_template_kwargs:
             enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
+          temperature: 0.6
+          top_p: 0.85
         "${MODEL_ID}:think":
           chat_template_kwargs:
             enable_thinking: true
@@ -834,16 +776,16 @@ models:
           top_p: 0.9
     ttl: 120
     metadata:
-      size: "~16.1 GB (APEX I-Compact)"
+      size: "~16.5 GB (APEX I-Compact)"
       context: "16K-128K (dynamic)"
       vram_usage: "~5GB VRAM + ~11GB RAM (APEX mixed-precision offload)"
-      source: "mudler/Qwen3.6-35B-A3B-Claude-4.7-Opus-Reasoning-Distilled-APEX-GGUF"
+      source: "mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF"
       kv_cache: "q4_0 + attn_rot"
       features:
         thinking: true
         vision: false
         tools: true
-      warning: "Vision disabled — mmproj blocks partial expert offload. Claude Opus 4.7 distill — emits 5-30k thinking tokens on hard problems. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K."
+      warning: "Vision disabled — mmproj blocks partial expert offload. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K."
 
   # -------------------------------------------
   # QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
@@ -940,13 +882,12 @@ matrix:
     vl: lfm2.5-vl-450m
     # Modelos médios (agora cabem na VRAM!)
     q9: qwen3.5-9b
-    ace: qwen3.5-9b-ace
+    # [REMOVED] ace: qwen3.5-9b-ace — superseded by Qwopus for agentic tasks
     g4: gemma4-e4b
     # Pesados
     qw36: qwen3.6-35b-moe
-    qwopus: qwen3.6-35b-opus-4.7
+    qwopus: qwen3.6-35b-qwopus
     gptoss: gpt-oss-20b
-  # Sets: combinações válidas de modelos simultâneos
   # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
   # +ref = expandir outro set inline
   #
@@ -963,8 +904,8 @@ matrix:
     small_only: "q08 | q4 | n4 | g2"
 
     # Modelos médios (~5GB VRAM) - agora cabem na VRAM com UD-Q3!
-    # Qwen3.5-9B, ACE e Gemma4-E4B cabem inteiramente (mmproj off for ACE)
-    medium: "q9 | ace | g4"
+    # Qwen3.5-9B e Gemma4-E4B cabem inteiramente
+    medium: "q9 | g4"
 
     # Removed: omni_vision set (Nemotron removed)
 
@@ -979,12 +920,12 @@ matrix:
   evict_costs:
     gemma4m: 10  # 26B MoE APEX I-Compact ~15.5GB, heavy offload
     qw36: 10     # 35B MoE APEX I-Compact ~17.3GB, heavy offload
-    qwopus: 10   # 35B MoE Opus 4.7 APEX I-Compact ~16.1GB, heavy offload
+    qwopus: 10   # 35B MoE Qwopus APEX I-Compact ~16.5GB, heavy offload
     gptoss: 8    # 11GB dense Q4_K_M, heavy offload
     # ds14: 7   REMOVED — Dense 14B poor perf on RTX 3050
     # ds32: 10  REMOVED — Dense 32B very slow on limited VRAM
     q9: 4        # ~5GB, fits VRAM now
-    ace: 4       # ~5.63GB, fits VRAM (NSC-ACE-SABER, agentic tool-use)
+    # [REMOVED] ace: 4 — superseded by Qwopus for agentic tasks
     g4: 4        # ~4.5GB, fits VRAM now
     vl: 3        # vision, leve mas útil manter vivo
     q08: 1       # 0.8B, ultra-leve
