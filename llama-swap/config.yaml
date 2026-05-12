@@ -1,5 +1,6 @@
 # llama-swap configuration for RTX 3050 Laptop (6GB VRAM)
 # Configuração otimizada para uso com --fit automático + attn_rot (KV cache quantizado)
+# Dual binary: llama.cpp for dense models, ik_llama.cpp for MoE models (pinned memory, better expert offload)
 #
 # Repositório: ~/git/ai-dotfiles/llama-swap/
 # Modelos: ~/.llama-models/
@@ -25,6 +26,10 @@ macros:
   # Caminho para o llama-server compilado com CUDA (--fit disponível)
   # Build local em ~/git/llama.cpp/build/bin/llama-server
   "llama_server": "${env.HOME}/git/llama.cpp/build/bin/llama-server"
+  
+  # Caminho para ik_llama.cpp — fork otimizado para MoE (pinned memory, faster expert offload)
+  # Build local em ~/git/ik_llama.cpp/build/bin/llama-server
+  "ik_llama_server": "${env.HOME}/git/ik_llama.cpp/build/bin/llama-server"
   
   # Caminho para o vLLM (installed in ~/.vllm venv)
   "vllm_bin": "${env.HOME}/.vllm/bin/vllm"
@@ -528,17 +533,18 @@ models:
   # head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
   # mmproj crashes on CUDA (bug #21402) → text-only
   # Architecture: gemma4 (Gemma4ForCausalLM)
+  # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
   # -------------------------------------------
   "gemma4-26b-moe":
     name: "Gemma 4 26B MoE"
     description: "MoE reasoning + coding — 128 experts, 4B active/token (APEX I-Compact)"
     cmd: |
-      ${llama_server} --port ${PORT}
+      ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-26B-A4B-APEX-I-Compact.gguf
-      --no-mmproj
-      --fit on
-      --fit-target 256
-      --fit-ctx 16384
+      # No --no-mmproj: ik_llama.cpp doesn't support this flag (upstream-only)
+      # No --fit-ctx: ik_llama.cpp doesn't support this flag; --ctx-size serves as ceiling
+      --fit
+      --fit-margin 512
       --ctx-size 131072
       --temp 1.0
       --top-p 0.95
@@ -564,7 +570,7 @@ models:
     metadata:
       size: "~15.5 GB (APEX I-Compact)"
       context: "16K-128K (dynamic)"
-      vram_usage: "~5GB VRAM + ~10GB RAM (q4_0 cache, APEX mixed-precision offload)"
+      vram_usage: "~5GB VRAM + ~10GB RAM (q4_0 cache, APEX mixed-precision offload, ik_llama.cpp pinned memory)"
       source: "mudler/gemma-4-26B-A4B-it-APEX-GGUF"
       kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
       features:
@@ -738,18 +744,19 @@ models:
   # --no-mmproj: same as vanilla Qwen3.6, mmproj blocks expert offload
   # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
   # Architecture: qwen35moe (Qwen3MoeForCausalLM)
+  # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
   # Replaces qwen3.6-35b-opus-4.7 (Opus distill) — Qwopus has broader SFT coverage
   # -------------------------------------------
   "qwen3.6-35b-qwopus":
     name: "Qwopus 3.6 35B"
     description: "MoE coding+reasoning — Qwopus SFT, 3B active/token (APEX I-Compact)"
     cmd: |
-      ${llama_server} --port ${PORT}
+      ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf
-      --no-mmproj
-      --fit on
-      --fit-target 256
-      --fit-ctx 16384
+      # No --no-mmproj: ik_llama.cpp doesn't support this flag (upstream-only)
+      # No --fit-ctx: ik_llama.cpp doesn't support this flag; --ctx-size serves as ceiling
+      --fit
+      --fit-margin 512
       --ctx-size 131072
       --temp ${code_temp}
       --top-p ${code_top_p}
@@ -778,7 +785,7 @@ models:
     metadata:
       size: "~16.5 GB (APEX I-Compact)"
       context: "16K-128K (dynamic)"
-      vram_usage: "~5GB VRAM + ~11GB RAM (APEX mixed-precision offload)"
+      vram_usage: "~5GB VRAM + ~11GB RAM (APEX mixed-precision offload, ik_llama.cpp pinned memory)"
       source: "mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF"
       kv_cache: "q4_0 + attn_rot"
       features:
@@ -798,17 +805,18 @@ models:
   #   Com mmproj: só ~11 layers em GPU → ~5 t/s. Não vale a pena.
   # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
   # Architecture: qwen35moe (Qwen3MoeForCausalLM)
+  # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
   # -------------------------------------------
   "qwen3.6-35b-moe":
     name: "Qwen3.6 35B MoE"
     description: "Efficient MoE for agentic coding — 3B active/token (APEX I-Compact)"
     cmd: |
-      ${llama_server} --port ${PORT}
+      ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.6-35B-A3B-APEX-I-Compact.gguf
-      --no-mmproj
-      --fit on
-      --fit-target 256
-      --fit-ctx 16384
+      # No --no-mmproj: ik_llama.cpp doesn't support this flag (upstream-only)
+      # No --fit-ctx: ik_llama.cpp doesn't support this flag; --ctx-size serves as ceiling
+      --fit
+      --fit-margin 512
       --ctx-size 131072
       --temp ${code_temp}
       --top-p ${code_top_p}
@@ -837,7 +845,7 @@ models:
     metadata:
       size: "~17.3 GB (APEX I-Compact)"
       context: "16K-128K (dynamic)"
-      vram_usage: "~5GB VRAM + ~12GB RAM (APEX mixed-precision offload)"
+      vram_usage: "~5GB VRAM + ~12GB RAM (APEX mixed-precision offload, ik_llama.cpp pinned memory)"
       source: "mudler/Qwen3.5-35B-A3B-APEX-GGUF"
       kv_cache: "q4_0 + attn_rot"
       features:
