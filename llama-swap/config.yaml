@@ -539,17 +539,16 @@ models:
     name: "Gemma 4 26B MoE"
     description: "MoE reasoning + coding — 128 experts, 4B active/token (APEX I-Compact)"
     cmd: |
-      ${ik_llama_server} --port ${PORT}
+      ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-26B-A4B-APEX-I-Compact.gguf
-      # No --no-mmproj: ik_llama.cpp doesn't support this flag (upstream-only)
-      # No --fit-ctx: ik_llama.cpp doesn't support this flag; --ctx-size serves as ceiling
-      --fit
-      --fit-margin 512
+      --no-mmproj
+      --fit on
+      --fit-target 256
+      --fit-ctx 16384
       --ctx-size 131072
       --temp 1.0
       --top-p 0.95
       --reasoning on
-      --jinja
       --cache-type-k q4_0
       --cache-type-v q4_0
       --flash-attn on
@@ -571,7 +570,7 @@ models:
     metadata:
       size: "~15.5 GB (APEX I-Compact)"
       context: "16K-128K (dynamic)"
-      vram_usage: "~5GB VRAM + ~10GB RAM (q4_0 cache, APEX mixed-precision offload, ik_llama.cpp pinned memory)"
+      vram_usage: "~5GB VRAM + ~10GB RAM (q4_0 cache, APEX mixed-precision offload)"
       source: "mudler/gemma-4-26B-A4B-it-APEX-GGUF"
       kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
       features:
