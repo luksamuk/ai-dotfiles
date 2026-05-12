@@ -5,7 +5,8 @@
 # Repositório: ~/git/ai-dotfiles/llama-swap/
 # Modelos: ~/.llama-models/
 # Requer: llama-swap v209+ (reasoning UI, macro length, histogram split, SIGHUP reload)
-# Requer: llama.cpp build b8991+ (reasoning budget sampler fix, fast i-quant matmul, CUDA refactor)
+# Requer: llama.cpp build b9124+ (speculative checkpointing, Gemma 4 KV fix, Flash Attention default)
+# Requer: ik_llama.cpp v4486+ (MTP p/ Gemma4 + Qwen3.5-MoE, MTP improvements, recurrent state async)
 
 # Schema para validação (VS Code)
 
@@ -745,6 +746,7 @@ models:
   # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
   # Architecture: qwen35moe (Qwen3MoeForCausalLM)
   # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
+  # --mtp: Multi-Token Prediction now supported for Qwen3.5-MoE (#1745, v4486+)
   # Replaces qwen3.6-35b-opus-4.7 (Opus distill) — Qwopus has broader SFT coverage
   # -------------------------------------------
   "qwen3.6-35b-qwopus":
@@ -766,6 +768,7 @@ models:
       --reasoning on
       --jinja
       --parallel-tool-calls
+      --mtp
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
       --flash-attn on
@@ -808,6 +811,7 @@ models:
   # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
   # Architecture: qwen35moe (Qwen3MoeForCausalLM)
   # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
+  # --mtp: Multi-Token Prediction now supported for Qwen3.5-MoE (#1745, v4486+)
   # -------------------------------------------
   "qwen3.6-35b-moe":
     name: "Qwen3.6 35B MoE"
@@ -828,6 +832,7 @@ models:
       --reasoning on
       --jinja
       --parallel-tool-calls
+      --mtp
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
       --flash-attn on
