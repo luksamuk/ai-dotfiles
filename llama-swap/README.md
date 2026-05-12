@@ -76,6 +76,7 @@ MoE models using ik_llama.cpp require these flag differences from upstream:
 | Context floor | `--fit-ctx N` | ❌ Not supported — use `--ctx-size` only |
 | Vision disable | `--no-mmproj` | ❌ Not supported — omit for text-only models |
 | Tool calling | Automatic | `--jinja` required |
+| Parallel tool calls | Automatic | `--parallel-tool-calls` required |
 | Reasoning | `--reasoning on` | `--reasoning on` (no `--reasoning-format` needed) |
 
 ### Known Limitations of ik_llama.cpp
@@ -85,9 +86,9 @@ MoE models using ik_llama.cpp require these flag differences from upstream:
    (tags stay in `content`). The `deepseek-legacy` format keeps tags in `content` in
    both modes. Use `--jinja` for proper chat template and tool support instead.
 
-2. **Sequential tool calls**: Qwen3.6 35B MoE generates sequential tool calls (1 per
-   turn) rather than parallel calls (6 per turn like Qwen3.5 9B). This is a model
-   behavior difference — the MoE model prefers to think between each tool call.
+2. **Sequential tool calls** (FIXED): ik_llama.cpp requires `--parallel-tool-calls` to
+   generate multiple tool calls in a single response. Without it, the model only generates
+   1 tool call per turn. Upstream enables this by default.
 
 3. **No `--no-mmproj` or `--fit-ctx`**: These upstream flags don't exist in ik.
    For text-only models, simply omit `--no-mmproj`. Use `--ctx-size` as the ceiling
