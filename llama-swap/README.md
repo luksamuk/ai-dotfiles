@@ -8,9 +8,74 @@ for llama.cpp.
 
 **Hardware Target:** NVIDIA RTX 3050 Laptop (6GB VRAM)
 
-This configuration uses llama.cpp's **`--fit`** feature for automatic VRAM-aware
-parameter fitting, which automatically adjusts GPU layers (`-ngl`) and context
-size based on available VRAM.
+This configuration uses a **dual-binary setup** for optimal performance:
+- **llama.cpp** (upstream) for dense models — better mmap performance
+- **ik_llama.cpp** (Iwan Kawrakow's fork) for MoE models — faster prompt processing via pinned memory
+
+Both binaries share the same GGUF format (standard quants), same server API, and same
+CLI flags — just swap the binary. The config uses the macro `${llama_server}` for upstream
+and `${ik_llama_server}` for ik, routing models to the best backend automatically.
+
+## Why Two Binaries?
+
+**ik_llama.cpp** ([github.com/ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp))
+is a performance-focused fork of llama.cpp by Iwan Kawrakow. Its key advantages for
+MoE (Mixture of Experts) models on CPU+GPU hybrid setups:
+
+- **Pinned CUDA_Host memory** (`cudaHostAlloc`) for expert offload — reduces PCIe transfer
+  latency and improves prompt processing throughput significantly
+- **Fused MoE FFN kernel** — combines gate+up projection into a single kernel, reducing memory
+  bandwidth
+- **Smart Expert Reduction (SER)** — dynamically reduces active experts when GPU memory is limited
+- **`--fit` support** (PR #1501/#1504, merged Mar 2026) — automatic layer distribution like upstream
+
+**Benchmark results on RTX 3050 6GB (hybrid CPU+GPU):**
+
+| Model | Type | Backend | Prompt tok/s | Decode tok/s | Notes |
+|-------|------|---------|-------------|-------------|-------|
+| Qwen3.6 35B MoE | MoE (APEX I-Compact) | ik_llama.cpp | **87.1** | 31.1 | +41% prompt vs upstream |
+| Qwen3.6 35B MoE | MoE (APEX I-Compact) | upstream | 60.8–67.1 | 30.5 | Baseline |
+| GPT-OSS 20B | Dense (Q4_K_M) | upstream | **66.8–104.6** | **31.8** | +42–148% vs ik |
+| GPT-OSS 20B | Dense (Q4_K_M) | ik_llama.cpp | 42.1–53.9 | 22.4 | Slower for dense |
+
+**Decision rule:** Use ik_llama.cpp for MoE models, upstream for dense models.
+
+### Key Differences Between Binaries
+
+| Feature | llama.cpp (upstream) | ik_llama.cpp |
+|---------|---------------------|--------------|
+| `--fit` flag | `--fit on` | `--fit` (no arg) |
+| VRAM margin | `--fit-target N` (MiB free target) | `--fit-margin N` (MiB safety margin) |
+| Best for | Dense models (Q4_K_M, small) | MoE models (APEX I-Compact, expert offload) |
+| Pinned memory | No (uses mmap) | Yes (CUDA_Host, automatic for experts) |
+| APEX I-Compact GGUF | ✅ Works | ✅ Works |
+| Unsloth `_XL` GGUF | ✅ Works | ❌ Known incompatibility |
+
+### MoE Models Using ik_llama.cpp
+
+The following models in `config.yaml` are configured to use ik_llama.cpp:
+
+- `gemma4-26b-moe` — Gemma 4 26B MoE (128 experts, 4B active)
+- `qwen3.6-35b-moe` — Qwen3.6 35B MoE (256 experts, 3B active)
+- `qwen3.6-35b-qwopus` — Qwopus 3.6 35B (same arch, Qwopus SFT)
+
+All other models use the upstream llama.cpp binary.
+
+### Build ik_llama.cpp
+
+```bash
+# Clone and build (same process as llama.cpp)
+cd ~/git
+git clone --depth 1 https://github.com/ikawrakow/ik_llama.cpp.git
+cd ik_llama.cpp
+mkdir -p build && cd build
+cmake .. -DGGML_CUDA=ON -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+
+# Binary at: ~/git/ik_llama.cpp/build/bin/llama-server
+```
+
+Build both from source with CUDA. The AUR package doesn't include `--fit`.
 
 ## Prerequisites
 
@@ -438,13 +503,20 @@ Uses the llama-swap `/running` API — works with both llama.cpp and vLLM backen
 
 ### How `--fit` Works
 
-The `--fit` feature (PR #16653) automatically:
+The `--fit` feature automatically:
 
 1. Detects available VRAM on each GPU
 2. Calculates optimal number of GPU layers (`-ngl`)
 3. Reduces context size if necessary
 4. Prioritizes dense weights for MoE models
-5. Leaves a safety margin (configurable via `--fit-margin`)
+5. Leaves a safety margin (configurable)
+
+**Note:** The flag syntax differs between binaries:
+- **upstream llama.cpp:** `--fit on --fit-target 512` (target free VRAM in MiB)
+- **ik_llama.cpp:** `--fit --fit-margin 512` (safety margin in MiB)
+
+In `config.yaml`, MoE models use `${ik_llama_server}` with `--fit --fit-margin`,
+while dense models use `${llama_server}` with `--fit on --fit-target`.
 
 This is especially useful for:
 - **Mixed GPU setups** - automatically balances layers

@@ -127,6 +127,7 @@ Configuração do [[https://github.com/nathan-nfx/llama-swap][llama-swap]] para 
 
 - **Diretório**: =llama-swap/=
 - **Arquivos**: =config.yaml= (config principal), =download-models.sh= (script de download), =llama-swap-cli= (CLI helper), =testchat/= (script de teste).
+- **Dual-binary**: Usa dois backends — =llama.cpp= (upstream) para modelos densos e [[https://github.com/ikawrakow/ik_llama.cpp][ik_llama.cpp]] para modelos MoE, com =--fit= ativado e tamanhos de fit diferentes por backend (ik suporta contextos maiores para MoE).
 
 ** Comandos Principais
 

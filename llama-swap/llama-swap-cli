@@ -230,14 +230,30 @@ cmd_ps() {
       fi
     fi
 
-    # --- Parse --fit from cmd ---
+    # --- Parse --fit from cmd (detect ik_llama.cpp vs upstream) ---
     local fit="-"
     local cmd_str
     cmd_str=$(echo "$model_json" | jq -r '.cmd')
     if echo "$cmd_str" | grep -qP '\-\-fit\s'; then
-      local fit_target
-      fit_target=$(echo "$cmd_str" | grep -oP '\-\-fit-target\s+\K\d+' || echo "auto")
-      fit="on (${fit_target}MB)"
+      # Detect backend: ik_llama.cpp vs upstream llama.cpp
+      local backend
+      if echo "$cmd_str" | grep -q 'ik_llama.cpp'; then
+        backend="ik"
+      else
+        backend="upstream"
+      fi
+      local fit_target fit_margin
+      fit_target=$(echo "$cmd_str" | grep -oP '\-\-fit-target\s+\K\d+' || echo "")
+      fit_margin=$(echo "$cmd_str" | grep -oP '\-\-fit-margin\s+\K\d+' || echo "")
+      # Build fit display: "<backend>/<target>MB" (+margin if present)
+      if [[ -n "$fit_target" ]]; then
+        fit="${backend}/${fit_target}MB"
+      else
+        fit="${backend}/auto"
+      fi
+      if [[ -n "$fit_margin" ]]; then
+        fit="${fit}+${fit_margin}MB"
+      fi
     fi
 
     # --- Live tok/s from /metrics ---
