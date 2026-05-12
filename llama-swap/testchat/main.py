@@ -468,6 +468,7 @@ class StreamingChat:
         self.response_content = ""
         self.has_reasoning = False
         self.has_response = False
+        self.last_error = None
         self.status = "Aguardando..."
         self.selected_model = ""
         self.selected_model_name = ""  # Nome amigável do modelo
@@ -917,6 +918,7 @@ class StreamingChat:
         self.stream_chars = 0
         self.last_timing_stats = None
         self.tool_calls = []  # Reset tool calls for this turn
+        self.last_error = None  # Reset error for this turn
         
         try:
             # Construir mensagens — se messages foi fornecido (tool calling), usar diretamente
@@ -946,7 +948,19 @@ class StreamingChat:
                 stream=True,
                 timeout=120,
             )
-            response.raise_for_status()
+            
+            # Check for HTTP errors before streaming
+            if response.status_code != 200:
+                error_body = ""
+                try:
+                    error_json = response.json()
+                    error_body = error_json.get("error", {}).get("message", response.text[:500])
+                except Exception:
+                    error_body = response.text[:500]
+                self.last_error = f"HTTP {response.status_code}: {error_body}"
+                self.status = f"Erro HTTP {response.status_code}"
+                yield self.render()
+                return
             
             # Accumulate tool calls from streaming
             # tool_calls come as deltas that need to be merged by index
@@ -1042,6 +1056,8 @@ class StreamingChat:
             yield self.render()
             
         except Exception as e:
+            import traceback
+            self.last_error = f"{type(e).__name__}: {str(e)[:200]}"
             self.status = f"Erro: {str(e)[:50]}"
             yield self.render()
     
@@ -1304,12 +1320,22 @@ class StreamingChat:
                     detail += ")"
                     header_parts.append(f"[dim]{detail}[/]")
                 
+                has_error = self.last_error is not None
                 console.print(Panel(
                     "\n".join(header_parts),
-                    title="✅ Concluído",
-                    border_style="green"
+                    title="❌ Erro" if has_error else "✅ Concluído",
+                    border_style="red" if has_error else "green"
                 ))
                 console.print()
+                
+                # Show error panel if there was an error
+                if self.last_error:
+                    console.print(Panel(
+                        f"[bold red]{self.last_error}[/]",
+                        title="❌ Erro",
+                        border_style="red"
+                    ))
+                    console.print()
                 
                 if self.use_thinking_variant and self.reasoning_content:
                     console.print(Panel(
