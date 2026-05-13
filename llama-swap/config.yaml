@@ -819,6 +819,14 @@ models:
         tools: true
       warning: "Vision disabled — mmproj blocks partial expert offload (11→41 layers GPU). Text-only = 26+ t/s vs 5 t/s with vision. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K."
 
+# Hooks: ações na inicialização do llama-swap
+# preload: carrega modelos síncronamente antes de aceitar requests
+# Ideal para vLLM (startup lento = 30-90s sem warm-up)
+hooks:
+  on_startup:
+    preload:
+      - "qwen3.5-0.8b-vllm"
+
 # ============================================
 # SWAP MATRIX (v202+) - Substitui o antigo groups
 # ============================================
