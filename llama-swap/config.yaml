@@ -39,7 +39,7 @@ macros:
   # PARÂMETROS DE INFERÊNCIA (baseados no Unsloth)
   # ===========================================
   # Qwen3.5: temp 0.6-0.7, top_p 0.8-0.9, top_k 20-40
-  # Nemotron: temp 0.6, top_p 0.9
+
   # Gemma: temp 0.7, top_p 0.9
   # Referência: https://unsloth.ai/docs/models/qwen3.5
   # ===========================================
@@ -90,8 +90,8 @@ macros:
   #   Qwen3.5-4B/9B   ✅ head_k=256 (256%64==0)
   #   Qwen3-14B        ✅ head_k=128 (128%64==0)
   #   Qwen3.6-35B-A3B  ✅ head_k=128
-  #   Nemotron-3-Nano  ✅ head_k=128
-  #   Nemotron-Omni-30B ✅ head_k=128
+    #   Nemotron-3-Nano  ✅ head_k=128 (REMOVED — poor quality)
+    # Nemotron-Omni-30B ✅ head_k=128 (NOT added — upstream-only, ik doesn't support nemotron_h_moe)
   #   Gemma-4 E2B/E4B  ✅ head_k=256, iSWA attn_rot fixed (b8815+)
   #   Gemma-4 26B-MoE  ✅ head_k=256, iSWA attn_rot fixed (b8815+)
   #   LFM2.5-VL-450M   ❌ vision model, manter f16
@@ -441,49 +441,7 @@ models:
 
   # [REMOVED] Qwen3.5-9B-ACE — superseded by Qwen3.6-35B-Qwopus for agentic tasks
 
-  "nemotron-3-nano-4b":
-    name: "Nemotron 3 Nano 4B"
-    description: "Compact edge-ready reasoning and agentic AI with tool use"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf
-      --fit on
-      --fit-target ${vram_margin}
-      --fit-ctx ${small_model_min_ctx}
-      --ctx-size ${small_model_max_ctx}
-      --temp 0.6
-      --top-p 0.9
-      --top-k 40
-      --min-p 0.00
-      --repeat-penalty 1.0
-      --reasoning on
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.9
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    metadata:
-      size: "2.90 GB"
-      context: "32K-128K (dynamic)"
-      vram_usage: "~3GB"
-      source: "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF"
-      kv_cache: "q8_0 + attn_rot"
-      features:
-        thinking: true
-        tools: true
+  # [REMOVED] Nemotron 3 Nano 4B — superseded by Qwen3.5-4B/9B, poor quality for size
 
   "lfm2.5-vl-450m":
     name: "LFM2.5-VL 450M"
@@ -893,7 +851,7 @@ matrix:
     # Modelos pequenos
     q08: qwen3.5-0.8b
     q4: qwen3.5-4b
-    n4: nemotron-3-nano-4b
+    # [REMOVED] n4: nemotron-3-nano-4b
     g2: gemma4-e2b
     # Vision
     vl: lfm2.5-vl-450m
@@ -915,16 +873,16 @@ matrix:
   # - heavy: modelos 14B+ rodam sozinhos (toda VRAM)
   sets:
     # LLM pequeno + Vision: trocar entre modelos leves NÃO evicta o vision
-    small_vision: "(q08 | q4 | n4 | g2) & vl"
+    small_vision: "(q08 | q4 | g2) & vl"
 
     # LLM pequeno sozinho (sem vision ativo)
-    small_only: "q08 | q4 | n4 | g2"
+    small_only: "q08 | q4 | g2"
 
     # Modelos médios (~5GB VRAM) - agora cabem na VRAM com UD-Q3!
     # Qwen3.5-9B e Gemma4-E4B cabem inteiramente
     medium: "q9 | g4"
 
-    # Removed: omni_vision set (Nemotron removed)
+    # [REMOVED] omni_vision set (Nemotron Omni not added — upstream-only, poor perf on 6GB VRAM)
 
     # Modelos pesados - toda VRAM + RAM offload
     heavy: "qw36 | qwopus | gemma4m | gptoss"
@@ -947,5 +905,5 @@ matrix:
     vl: 3        # vision, leve mas útil manter vivo
     q08: 1       # 0.8B, ultra-leve
     q4: 2
-    n4: 1
+    # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1
