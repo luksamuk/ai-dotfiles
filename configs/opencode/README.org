@@ -2,8 +2,51 @@
 
 Some configuration for OpenCode.
 
-- ~opencode.json~: Basic  configuration for OpenCode.   Includes plans that  I run
-  locally.
-- ~AGENTS.template.md~: Some  extra snippets for  an eventual ~AGENTS.md~  file that
-  might come in handy.
+- ~opencode.json~: Full OpenCode config — providers (Ollama Cloud, llama.cpp local),
+  agents (build, fix, plan, review, research, explore, debug), MCP servers, and plugins.
+- ~AGENTS.template.md~: Extra snippets for an eventual ~AGENTS.md~ file.
 
+* Model Configuration Notes
+
+** Vision (~modalities~)
+
+Models that natively support image input /must/ declare the =modalities= field:
+
+#+BEGIN_SRC json
+"model-name": {
+    "name": "Display Name",
+    "reasoning": true,
+    "modalities": { "input": ["text", "image"], "output": ["text"] },
+    "limit": { "context": 262144, "output": 32768 }
+}
+#+END_SRC
+
+Without =modalities=, OpenCode treats the model as text-only and silently drops
+any images pasted into the chat.
+
+Cloud models with vision (=modalities= set):
+- =glm-5:cloud=, =glm-5.1:cloud= — GLM 5/5.1
+- =minimax-m2.5:cloud=, =minimax-m2.7:cloud= — MiniMax M2.5/M2.7
+- =kimi-k2.5:cloud=, =kimi-k2.6:cloud= — Kimi K2.5/K2.6 (MoonViT)
+- =qwen3.5:cloud=, =qwen3.5:4b=, =qwen3.5:9b= — Qwen 3.5 (native multimodal)
+- =gemma4:31b-cloud= — Gemma 4 31B
+- =nemotron-3-nano:30b-cloud= — Nemotron 3 Nano Omni (vision + audio)
+- =lfm2.5-vl-450m= — LFM2.5-VL 450M (local, vision-only)
+
+Cloud models /without/ vision (text-only, no =modalities=):
+- =nemotron-3-super:cloud=
+
+Local models are all text-only due to mmproj bugs on 6 GB VRAM
+(llama.cpp issues #21323, #21402).
+
+** Do NOT use =capabilities: ["vision"]=
+
+The =capabilities= field is only for =[ "tools" ]=. For vision, always use the
+=modalities= field. The old =capabilities: ["vision"]= was removed from the
+=lfm2.5-vl-450m= entry and replaced with =modalities=.
+
+** Thinking variants (=:think=)
+
+llama-swap supports =:think= variants via =setParamsByID=. In OpenCode config
+these appear as separate model keys (e.g. =qwen3.5-4b:think=). They do /not/
+need separate =modalities= — they inherit from the base model's API behavior.
