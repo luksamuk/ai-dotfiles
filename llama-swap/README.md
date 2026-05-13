@@ -33,10 +33,14 @@ MoE (Mixture of Experts) models on CPU+GPU hybrid setups:
 
 | Model | Type | Backend | Prompt tok/s | Decode tok/s | Notes |
 |-------|------|---------|-------------|-------------|-------|
-| Qwen3.6 35B MoE | MoE (APEX I-Compact) | ik_llama.cpp | **87.1** | 31.1 | +41% prompt vs upstream |
+| Qwen3.6 35B MoE | MoE (APEX I-Compact) | ik_llama.cpp + MTP | **91.2** | **40.4** | +41% prompt vs upstream, MTP enabled |
+| Qwen3.6 35B Qwopus | MoE (APEX I-Compact) | ik_llama.cpp + MTP | **80.5** | **38.8** | Same arch, Qwopus SFT |
 | Qwen3.6 35B MoE | MoE (APEX I-Compact) | upstream | 60.8–67.1 | 30.5 | Baseline |
 | GPT-OSS 20B | Dense (Q4_K_M) | upstream | **66.8–104.6** | **31.8** | +42–148% vs ik |
 | GPT-OSS 20B | Dense (Q4_K_M) | ik_llama.cpp | 42.1–53.9 | 22.4 | Slower for dense |
+| Gemma 4 26B MoE | MoE (APEX I-Compact) | upstream | 86.5 | 31.0 | ik `--fit` fails; upstream only |
+| Qwen3.5 9B | Dense (UD-Q3_K_XL) | upstream | 26.0 | 15.3 | Fits VRAM with partial offload |
+| Gemma 4 E4B | Dense (UD-Q3_K_XL) | upstream | 138.5 | 49.2 | Fits VRAM, fast |
 
 **Decision rule:** Use ik_llama.cpp for MoE models, upstream for dense models.
 
@@ -78,6 +82,7 @@ MoE models using ik_llama.cpp require these flag differences from upstream:
 | Tool calling | Automatic | `--jinja` required |
 | Parallel tool calls | Automatic | `--parallel-tool-calls` required |
 | Reasoning | `--reasoning on` | `--reasoning on` (no `--reasoning-format` needed) |
+| Multi-Token Pred | ❌ Not available | `--multi-token-prediction` (**long form only**, `--mtp` causes exit 1) |
 
 ### Known Limitations of ik_llama.cpp
 
@@ -109,6 +114,54 @@ make -j$(nproc)
 ```
 
 Build both from source with CUDA. The AUR package doesn't include `--fit`.
+
+## Changelog
+
+### 2025-05-12 — MTP, Speculative Checkpointing, Build Upgrades
+
+**Binaries upgraded:**
+- `llama.cpp`: b9066 → **b9124** (upstream)
+- `ik_llama.cpp`: v4481 → **v4486** (Iwan Kawrakow's fork)
+- `vLLM`: 0.20.1 → **0.20.2**
+- `llama-swap`: v211 (unchanged, current)
+
+**What's new in llama.cpp b9066 → b9124:**
+- **Speculative Checkpointing** (PR #19493) — Saves/restores KV state during speculative decoding, reducing VRAM usage by up to 40% and boosting throughput by up to 20%. Useful with draft-model setups.
+- **Gemma 4 KV Cache Fix** (PR #21534) — Fixes over-allocation of VRAM for Gemma 4 models that use shared KV layers. All Gemma 4 variants now use less memory.
+- **Flash Attention enabled by default** — `-fa` is now on by default in recent builds. RTX 3050 (Ampere, compute 8.6) supports it.
+- **Qwen3Next graph optimization** (PR #19375) — Reduces redundant copy operations.
+- **NCCL-free Tensor Parallelism** (build b9095) — Dual GPU without NCCL library.
+- **TurboQuant** (PR #21089) — **NOT YET MERGED**. Game-changer for 6GB VRAM: compresses KV cache from 16-bit to 2–4 bits (~4.5× compression). Will enable 4–5× longer contexts once merged.
+
+**What's new in ik_llama.cpp v4481 → v4486:**
+- **MTP for Gemma 4** (PR #1744) — Multi-Token Prediction native support for Gemma 4 models.
+- **MTP for Qwen3.5-MoE** (PR #1745) — MTP tail layer support for Qwen3.5/Qwen3.6 MoE models.
+- **MTP improvements** — Multiple PRs optimizing MTP: async copies for recurrent state, AVX2 greedy speculative sampling, fix crashes in speculative decoding, avoid per-step SSM copy.
+- **Gemma4 partial offload fix** (PR #1657) — Fixed Gemma 4 not fitting correctly with partial offload.
+- **Gemma4 MoE better routing** (PRs #1610, #1615) — Fused ops and optimized routing for Gemma4-MoE.
+- **Expiring Logit Bias** (PR #1731) — New feature for bias that expires automatically.
+
+**What's new in vLLM 0.20.1 → 0.20.2:**
+- Bug fixes for DeepSeek V4, Qwen3-VL, and gpt-oss.
+- **Breaking:** `reasoning_content` message field removed (deprecated in 0.20.0).
+- **Breaking:** BitBlas and Marlin 24-bit quantization removed.
+- AWQ, GPTQ-Marlin, GGUF, and FP8 quantization remain available.
+
+**Config changes:**
+- Added `--multi-token-prediction` flag to `qwen3.6-35b-moe` and `qwen3.6-35b-qwopus` (ik_llama.cpp MoE models).
+- ⚠️ **Pitfall:** Use `--multi-token-prediction` (long form only). The `--mtp` shorthand causes **exit code 1** in `llama-server`. The CLI `llama-cli` accepts it, but the server binary does not.
+- Updated build version comments in `config.yaml` header.
+
+**Test results (post-upgrade, all models passing):**
+
+| Model | Backend | Prompt t/s | Gen t/s | Cold Start |
+|-------|---------|-----------|---------|-------------|
+| qwen3.6-35b-moe | ik + MTP | 80.5 | 38.8 | ~12s |
+| qwen3.6-35b-qwopus | ik + MTP | 91.2 | 40.4 | ~12s (warm) |
+| qwen3.5-4b | upstream | — | — | ~6s |
+| qwen3.5-9b | upstream | 26.0 | 15.3 | ~8s |
+| gemma4-e4b | upstream | 138.5 | 49.2 | ~6s |
+| gemma4-26b-moe | upstream | 86.5 | 31.0 | ~16s |
 
 ## Prerequisites
 
