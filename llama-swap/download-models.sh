@@ -8,7 +8,7 @@
 #   qwen3.5-9b           - Qwen3.5-9B UD-Q3_K_XL (~5.05 GB) - fits in VRAM
 #   gemma4-e4b           - Gemma-4 E4B UD-Q3_K_XL (~4.50 GB) - fits in VRAM
 #   gemma4-e2b           - Gemma-4 E2B Q4_K_M (3.11 GB) - fits in VRAM
-#   nemotron-3-nano-4b   - Nemotron-3-Nano-4B Q4_K_M (2.90 GB) - tool-calling
+#   [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
 #   lfm2.5-vl-450m       - LFM2.5-VL-450M Q4_0 (0.22 GB) + mmproj F16 - vision/OCR
 #   [REMOVED] granite-4.1-3b — tool-calling failed in Pi, removed May 2026
 #   [REMOVED] granite-4.1-8b — tool-calling failed in Pi, removed May 2026
@@ -18,7 +18,7 @@
 #   gpt-oss-20b          - GPT-OSS 20B Q4_K_M (~11 GB) - Dense coding, text-only
 #   ds-r1-distill-14b    - [REMOVED] Dense 14B, poor perf on RTX 3050
 #   ds-r1-distill-32b    - [REMOVED] Dense 32B, very slow on limited VRAM
-#   qwen3.6-35b-qwopus  - Qwopus3.6-35B-A3B-v1 APEX I-Compact (~16.5 GB) - MoE coding+reasoning SFT
+#   qwopus-35b           - Qwopus3.6-35B-A3B-v1 APEX I-Compact (~16.5 GB) - MoE coding+reasoning SFT
 #   [REMOVED] qwen3.5-9b-ace — superseded by Qwopus for agentic tasks
 #   all                  - Download all models
 #
@@ -43,17 +43,17 @@ declare -A MODELS=(
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-UD-Q3_K_XL.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-UD-Q3_K_XL.gguf"
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf"
-  ["nemotron-3-nano-4b"]="unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
+  # [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF LFM2.5-VL-450M-Q4_0.gguf"
   # Granite 4.1 — dense, Apache 2.0, strong tool-calling + code
   # glm-4.7-flash removed
   ["qwen3.6-35b-moe"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF Qwen3.5-35B-A3B-APEX-I-Compact.gguf Qwen3.6-35B-A3B-APEX-I-Compact.gguf"
-  ["qwen3.6-35b-qwopus"]="mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf"
+  ["qwopus-35b"]="mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf"
   ["gemma4-26b-moe"]="mudler/gemma-4-26B-A4B-it-APEX-GGUF gemma-4-26B-A4B-APEX-I-Compact.gguf"
   ["gpt-oss-20b"]="unsloth/gpt-oss-20b-GGUF gpt-oss-20b-Q4_K_M.gguf"
   # [REMOVED] ds-r1-distill-14b — Dense 14B, poor perf on RTX 3050, SSD pressure
   # [REMOVED] ds-r1-distill-32b — Dense 32B, very slow on limited VRAM, SSD pressure
-  # [REMOVED] qwen3.5-9b-ace — superseded by Qwopus for agentic tasks
+  # [REMOVED] qwen3.5-9b-ace — analyzed, worse perplexity than 9B regular (no imatrix)
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -150,18 +150,19 @@ show_sizes() {
   echo "  qwen3.5-9b           ~5.05 GB  (UD-Q3_K_XL) - Fits in VRAM + mmproj"
   echo "  gemma4-e4b           ~4.50 GB  (UD-Q3_K_XL) - Fits in VRAM + mmproj"
   echo "  gemma4-e2b            3.11 GB  (Q4_K_M) - Fits in VRAM"
-  echo "  nemotron-3-nano-4b    2.90 GB  (Q4_K_M) - Fits in VRAM, tool-calling"
+  echo "  [REMOVED] nemotron-3-nano-4b — poor quality"
   echo "  lfm2.5-vl-450m        0.22 GB  (Q4_0) - Fits in VRAM, vision/OCR + mmproj"
   echo "  granite-4.1-3b       ~2.10 GB  (Q4_K_M) - Dense, tool-calling, 128K ctx"
   echo "  granite-4.1-8b       ~4.60 GB  (UD-Q3_K_XL) - Dense, tool-calling, 512K ctx"
   # glm-4.7-flash removed
   echo "  qwen3.6-35b-moe    ~17.30 GB  (APEX I-Compact) - Heavy offload, MoE coding + tools"
-  echo "  qwen3.6-35b-qwopus ~16.50 GB  (APEX I-Compact) - Heavy offload, MoE coding+reasoning SFT"
+  echo "  qwopus-35b        ~16.50 GB  (APEX I-Compact) - Heavy offload, MoE coding+reasoning SFT"
   echo "  gemma4-26b-moe    ~15.50 GB  (APEX I-Compact) - Heavy offload, MoE reasoning + coding text-only"
   echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"
   echo "  ds-r1-distill-14b    [REMOVED] — poor perf on RTX 3050"
   echo "  ds-r1-distill-32b    [REMOVED] — very slow on limited VRAM"
-  echo "  qwen3.5-9b-ace       [REMOVED] — superseded by Qwopus for agentic tasks"
+  echo "  [REMOVED] nemotron-3-nano-4b"
+  echo "  [REMOVED] qwen3.5-9b-ace — worse perplexity, no imatrix quant"
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
@@ -174,10 +175,10 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"nemotron-3-nano-4b"|"lfm2.5-vl-450m"|"qwen3.6-35b-moe"|"qwen3.6-35b-qwopus"|"gemma4-26b-moe"|"gpt-oss-20b")
+  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"lfm2.5-vl-450m"|"qwen3.6-35b-moe"|"qwopus-35b"|"gemma4-26b-moe"|"gpt-oss-20b")
     download_model "$1"
     ;;
-  "qwen3.5:4b"|"qwen3.5:9b"|"gemma4:e4b"|"gemma4:e2b"|"nemotron-3-nano:4b")
+  "qwen3.5:4b"|"qwen3.5:9b"|"gemma4:e4b"|"gemma4:e2b")
     # Legacy aliases with colons
     show_sizes
     download_model "$1"
@@ -194,7 +195,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nemotron-3-nano-4b, lfm2.5-vl-450m, qwen3.6-35b-moe, gemma4-26b-moe, gpt-oss-20b, qwen3.5-9b-ace, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, all"
     exit 1
     ;;
 esac
