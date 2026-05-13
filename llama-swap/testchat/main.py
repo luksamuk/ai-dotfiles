@@ -940,6 +940,10 @@ class StreamingChat:
             if tools:
                 payload["tools"] = tools
                 payload["tool_choice"] = "auto"
+                # LFM2 models support parallel tool calls via pythonic format
+                # upstream llama.cpp disables them by default — explicitly enable
+                if self.selected_model.startswith("lfm2"):
+                    payload["parallel_tool_calls"] = True
             
             # Faz POST com streaming
             response = requests.post(

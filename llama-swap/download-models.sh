@@ -10,6 +10,9 @@
 #   gemma4-e2b           - Gemma-4 E2B UD-Q3_K_XL (~2.72 GB) - fits in VRAM
 #   [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
 #   lfm2.5-vl-450m       - LFM2.5-VL-450M Q4_0 (0.22 GB) + mmproj F16 - vision/OCR
+#   lfm2.5-1.2b           - LFM2.5-1.2B-Instruct Q8_0 (~1.25 GB) - edge, tool-calling
+#   lfm2.5-1.2b-think      - LFM2.5-1.2B-Thinking Q8_0 (~1.25 GB) - edge reasoning, CoT
+#   lfm2-24b              - LFM2-24B-A2B Q4_K_M (~14.4 GB) - MoE hybrid, 2.3B active
 #   [REMOVED] granite-4.1-3b — tool-calling failed in Pi, removed May 2026
 #   [REMOVED] granite-4.1-8b — tool-calling failed in Pi, removed May 2026
 #   [REMOVED] glm-4.7-flash — superseded by Qwen3.6 35B MoE
@@ -45,6 +48,9 @@ declare -A MODELS=(
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-UD-Q3_K_XL.gguf"
   # [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF LFM2.5-VL-450M-Q4_0.gguf"
+  ["lfm2.5-1.2b"]="LiquidAI/LFM2.5-1.2B-Instruct-GGUF LFM2.5-1.2B-Instruct-Q8_0.gguf"
+  ["lfm2.5-1.2b-think"]="LiquidAI/LFM2.5-1.2B-Thinking-GGUF LFM2.5-1.2B-Thinking-Q8_0.gguf"
+  ["lfm2-24b"]="LiquidAI/LFM2-24B-A2B-GGUF LFM2-24B-A2B-Q4_K_M.gguf"
   # Granite 4.1 — dense, Apache 2.0, strong tool-calling + code
   # glm-4.7-flash removed
   ["qwen3.6-35b-moe"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF Qwen3.5-35B-A3B-APEX-I-Compact.gguf Qwen3.6-35B-A3B-APEX-I-Compact.gguf"
@@ -91,7 +97,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, nematron-3-nano-4b, lfm2.5-vl-450m, qwen3.6-35b-moe, gemma4-26b-moe, gpt-oss-20b, all"
+  echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-1.2b, lfm2-24b, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, all"
     return 1
   fi
   
@@ -152,6 +158,9 @@ show_sizes() {
   echo "  gemma4-e2b            ~2.72 GB  (UD-Q3_K_XL) - Fits in VRAM"
   echo "  [REMOVED] nemotron-3-nano-4b — poor quality"
   echo "  lfm2.5-vl-450m        0.22 GB  (Q4_0) - Fits in VRAM, vision/OCR + mmproj"
+  echo "  lfm2.5-1.2b           ~1.25 GB  (Q8_0) - Fits in VRAM, edge instruct tool-calling"
+  echo "  lfm2.5-1.2b-think      ~1.25 GB  (Q8_0) - Fits in VRAM, edge reasoning CoT"
+  echo "  lfm2-24b            ~14.40 GB  (Q4_K_M) - Heavy offload, MoE hybrid"
   echo "  granite-4.1-3b       ~2.10 GB  (Q4_K_M) - Dense, tool-calling, 128K ctx"
   echo "  granite-4.1-8b       ~4.60 GB  (UD-Q3_K_XL) - Dense, tool-calling, 512K ctx"
   # glm-4.7-flash removed
@@ -175,7 +184,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"lfm2.5-vl-450m"|"qwen3.6-35b-moe"|"qwopus-35b"|"gemma4-26b-moe"|"gpt-oss-20b")
+  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"lfm2.5-vl-450m"|"lfm2.5-1.2b"|"lfm2.5-1.2b-think"|"lfm2-24b"|"qwen3.6-35b-moe"|"qwopus-35b"|"gemma4-26b-moe"|"gpt-oss-20b")
     download_model "$1"
     ;;
   "qwen3.5:4b"|"qwen3.5:9b"|"gemma4:e4b"|"gemma4:e2b")
@@ -195,7 +204,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-1.2b, lfm2.5-1.2b-think, lfm2-24b, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, all"
     exit 1
     ;;
 esac
