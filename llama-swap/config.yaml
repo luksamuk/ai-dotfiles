@@ -127,7 +127,7 @@ models:
     description: "Compact multimodal reasoning model — text + vision (llama.cpp GGUF)"
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.5-0.8B-Q4_K_M.gguf
+      --model ${models_dir}/Qwen3.5-0.8B-UD-Q3_K_XL.gguf
       --mmproj ${models_dir}/mmproj-Qwen3.5-0.8B-F16.gguf
       --fit on
       --fit-target 768
@@ -158,10 +158,10 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "~0.55 GB (Q4_K_M) + ~0.20 GB (mmproj F16)"
+      size: "~0.46 GB (UD-Q3_K_XL Dynamic 2.0) + ~0.20 GB (mmproj F16)"
       context: "64K-128K (dynamic)"
-      vram_usage: "~1.7GB (model + mmproj + cache)"
-      source: "unsloth/Qwen3.5-0.8B-GGUF"
+      vram_usage: "~1.6GB (model + mmproj + cache)"
+      source: "unsloth/Qwen3.5-0.8B-GGUF (UD-Q3_K_XL)"
       kv_cache: "q8_0 + attn_rot"
       features:
         thinking: true
@@ -256,7 +256,7 @@ models:
     description: "Multimodal reasoning and agentic chat with 201-language support"
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.5-4B-Q4_K_M.gguf
+      --model ${models_dir}/Qwen3.5-4B-UD-Q3_K_XL.gguf
       --no-mmproj
       --fit on
       --fit-target 768
@@ -287,10 +287,10 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "2.63 GB"
+      size: "~2.27 GB (UD-Q3_K_XL Dynamic 2.0)"
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
-      source: "unsloth/Qwen3.5-4B-GGUF"
+      source: "unsloth/Qwen3.5-4B-GGUF (UD-Q3_K_XL)"
       kv_cache: "q8_0 + attn_rot"
       features:
         thinking: true
@@ -397,7 +397,7 @@ models:
     description: "Compact on-device multimodal reasoning with text, image, and audio"
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-E2B-it-Q4_K_M.gguf
+      --model ${models_dir}/gemma-4-E2B-it-UD-Q3_K_XL.gguf
       --no-mmproj
       --fit on
       --fit-target 1024
@@ -428,10 +428,10 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "3.11 GB"
+      size: "~2.72 GB (UD-Q3_K_XL Dynamic 2.0)"
       context: "32K-128K (dynamic)"
       vram_usage: "~3GB"
-      source: "unsloth/gemma-4-E2B-it-GGUF"
+      source: "unsloth/gemma-4-E2B-it-GGUF (UD-Q3_K_XL)"
       kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
       features:
         thinking: true

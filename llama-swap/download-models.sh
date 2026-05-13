@@ -3,11 +3,11 @@
 # Usage: ./download-models.sh [model-name]
 #
 # Available models:
-#   qwen3.5-0.8b         - Qwen3.5-0.8B Q4_K_M (~0.55 GB) + mmproj (~196 MB) - fits in VRAM, vision+text
-#   qwen3.5-4b           - Qwen3.5-4B Q4_K_M (2.63 GB) - fits in VRAM
+#   qwen3.5-0.8b         - Qwen3.5-0.8B UD-Q3_K_XL (~0.46 GB) + mmproj (~196 MB) - fits in VRAM, vision+text
+#   qwen3.5-4b           - Qwen3.5-4B UD-Q3_K_XL (~2.27 GB) - fits in VRAM
 #   qwen3.5-9b           - Qwen3.5-9B UD-Q3_K_XL (~5.05 GB) - fits in VRAM
 #   gemma4-e4b           - Gemma-4 E4B UD-Q3_K_XL (~4.50 GB) - fits in VRAM
-#   gemma4-e2b           - Gemma-4 E2B Q4_K_M (3.11 GB) - fits in VRAM
+#   gemma4-e2b           - Gemma-4 E2B UD-Q3_K_XL (~2.72 GB) - fits in VRAM
 #   [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
 #   lfm2.5-vl-450m       - LFM2.5-VL-450M Q4_0 (0.22 GB) + mmproj F16 - vision/OCR
 #   [REMOVED] granite-4.1-3b — tool-calling failed in Pi, removed May 2026
@@ -38,11 +38,11 @@ export HF_HUB_CACHE="${HOME}/.cache/huggingface"
 # Format: "repo filename [local_filename]"
 # If local_filename is provided, the file is renamed after download
 declare -A MODELS=(
-  ["qwen3.5-0.8b"]="unsloth/Qwen3.5-0.8B-GGUF Qwen3.5-0.8B-Q4_K_M.gguf"
-  ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-Q4_K_M.gguf"
+  ["qwen3.5-0.8b"]="unsloth/Qwen3.5-0.8B-GGUF Qwen3.5-0.8B-UD-Q3_K_XL.gguf"
+  ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-UD-Q3_K_XL.gguf"
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-UD-Q3_K_XL.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-UD-Q3_K_XL.gguf"
-  ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf"
+  ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-UD-Q3_K_XL.gguf"
   # [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF LFM2.5-VL-450M-Q4_0.gguf"
   # Granite 4.1 — dense, Apache 2.0, strong tool-calling + code
@@ -145,11 +145,11 @@ download_model() {
 show_sizes() {
   echo ""
   echo "Model Sizes (quantization noted):"
-    echo "  qwen3.5-0.8b          ~0.55 GB  (Q4_K_M) + ~0.20 GB mmproj - Tiny, vision+text"
-    echo "  qwen3.5-4b            2.63 GB  (Q4_K_M) - Fits in VRAM"
+    echo "  qwen3.5-0.8b          ~0.46 GB  (UD-Q3_K_XL) + ~0.20 GB mmproj - Tiny, vision+text"
+    echo "  qwen3.5-4b            ~2.27 GB  (UD-Q3_K_XL) - Fits in VRAM"
   echo "  qwen3.5-9b           ~5.05 GB  (UD-Q3_K_XL) - Fits in VRAM + mmproj"
   echo "  gemma4-e4b           ~4.50 GB  (UD-Q3_K_XL) - Fits in VRAM + mmproj"
-  echo "  gemma4-e2b            3.11 GB  (Q4_K_M) - Fits in VRAM"
+  echo "  gemma4-e2b            ~2.72 GB  (UD-Q3_K_XL) - Fits in VRAM"
   echo "  [REMOVED] nemotron-3-nano-4b — poor quality"
   echo "  lfm2.5-vl-450m        0.22 GB  (Q4_0) - Fits in VRAM, vision/OCR + mmproj"
   echo "  granite-4.1-3b       ~2.10 GB  (Q4_K_M) - Dense, tool-calling, 128K ctx"
