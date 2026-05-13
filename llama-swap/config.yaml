@@ -746,7 +746,7 @@ models:
   # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
   # Architecture: qwen35moe (Qwen3MoeForCausalLM)
   # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-  # --mtp: Multi-Token Prediction now supported for Qwen3.5-MoE (#1745, v4486+)
+  # --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4486+). Use long form (not --mtp).
   # Replaces qwen3.6-35b-opus-4.7 (Opus distill) — Qwopus has broader SFT coverage
   # -------------------------------------------
   "qwen3.6-35b-qwopus":
@@ -768,7 +768,7 @@ models:
       --reasoning on
       --jinja
       --parallel-tool-calls
-      --mtp
+      --multi-token-prediction
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
       --flash-attn on
@@ -811,7 +811,7 @@ models:
   # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
   # Architecture: qwen35moe (Qwen3MoeForCausalLM)
   # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-  # --mtp: Multi-Token Prediction now supported for Qwen3.5-MoE (#1745, v4486+)
+  # --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4486+). Use long form (not --mtp).
   # -------------------------------------------
   "qwen3.6-35b-moe":
     name: "Qwen3.6 35B MoE"
@@ -832,7 +832,7 @@ models:
       --reasoning on
       --jinja
       --parallel-tool-calls
-      --mtp
+      --multi-token-prediction
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
       --flash-attn on
