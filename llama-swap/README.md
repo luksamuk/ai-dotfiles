@@ -117,7 +117,47 @@ Build both from source with CUDA. The AUR package doesn't include `--fit`.
 
 ## Changelog
 
-### 2025-05-12 — MTP, Speculative Checkpointing, Build Upgrades
+### 2026-05-14 — llama-swap v212, Binary Rebuilds, BeeLlama Monitoring
+
+**Binaries upgraded:**
+- `llama.cpp`: b9124 → **b9158+** (upstream, version 500)
+- `ik_llama.cpp`: v4486 → **v4496** (Iwan Kawrakow's fork)
+- `llama-swap`: v211 → **v212**
+- `vLLM`: 0.20.2 (unchanged)
+
+**What's new in llama.cpp b9124 → b9158+:**
+- **Qwen3.5 tokenizer fix** — Prevents stack overflow on long Qwen3.5 prompts.
+- **WebGPU gpt-oss support** — Can now run gpt-oss-20b via WebGPU backend.
+- **Server: /v1/models modalities** — Models endpoint now exposes vision/audio/text capabilities.
+- **NCCL-free Tensor Parallelism** (build b9095) — Dual GPU without NCCL.
+- **attn-rot PR #21038** — Gerganov opened PR for Hadamard rotation before KV quantization (~80% of TurboQuant benefit). **NOT YET MERGED**.
+- **MTP PR #22673** — Still open/draft. Not in mainline yet.
+- **TurboQuant/TCQ** — CPU-only PR #21089 pending. CUDA versions only in community forks.
+- **BeeLlama.cpp** (github.com/Anbeeld/beellama.cpp, v0.1.2) — Performance fork combining DFlash speculative decoding, TurboQuant/TCQ KV cache compression, adaptive draft, and reasoning-loop protection. **Monitoring only** — not adopted yet. TurboQuant KV cache is the killer feature for 6GB VRAM (4-5× more context). `turbo4` ≈ lossless, `turbo3_tcq` achieves PPL lower than FP16. Waiting for upstream merge or stabilization.
+
+**What's new in ik_llama.cpp v4486 → v4496:**
+- **Gemma 4 MTP KV fix** (PR #1786) — MTP avoids casting KV cache to f32, saving VRAM on Gemma 4 models.
+- **Gemma 4 full tensor mapping + imatrix** (PR #1796) — Complete model support with imatrix for better quantization.
+- **`--threads-mtmd`** (PR #1797) — Independent thread count for multimodal processing. ik-only flag (upstream doesn't have this).
+- **MTP faster recurrent state restore** (PR #1791) — Speed improvement for MTP on recurrent models.
+- **mmproj: inflate n_batch only for GPU-offloaded** (PR #1788) — CPU mmproj no longer gets inflated batch size.
+- **Cache tokens reset fix** (PR #1787) — Server resets cache tokens after prompt processing stops.
+- **Hadamard KV/V-cache transforms** (PRs #1033/#1034/#1527) — ik's answer to TurboQuant rotation, already available.
+- **Low perplexity Q4_0 KV cache** (PRs #1547/#1556) — Alternative to Hadamard approach.
+
+**What's new in llama-swap v211 → v212:**
+- **Prometheus metrics** — Performance monitoring endpoint.
+- **Fix: data race in `/running` endpoint** — Race condition during model status queries.
+- **Fix: ignore LACT devices with zero VRAM** — Prevents errors on systems with virtual displays.
+- **v208: `reasoning_content` in UI** — Shows thinking/reasoning in the web interface.
+- **v205: SIGHUP config reload** — No restart needed for config changes.
+- **v203: zstd compression for captures + race condition fix during swap**.
+
+**Config changes:**
+- Updated build version comments in `config.yaml` header (b9158+, v4496+, v212+).
+- `--threads-mtmd` available in ik_llama.cpp but **not used** in current config — vision models use upstream binary which doesn't have this flag.
+
+**Previous: 2025-05-12 — MTP, Speculative Checkpointing, Build Upgrades**
 
 **Binaries upgraded:**
 - `llama.cpp`: b9066 → **b9124** (upstream)
@@ -152,11 +192,25 @@ Build both from source with CUDA. The AUR package doesn't include `--fit`.
 - ⚠️ **Pitfall:** Use `--multi-token-prediction` (long form only). The `--mtp` shorthand causes **exit code 1** in `llama-server`. The CLI `llama-cli` accepts it, but the server binary does not.
 - Updated build version comments in `config.yaml` header.
 
-**Test results (post-upgrade, all models passing):**
+**Test results (post-upgrade, models pre-loaded / hot):**
 
-| Model | Backend | Prompt t/s | Gen t/s | Cold Start |
-|-------|---------|-----------|---------|-------------|
-| qwen3.6-35b-moe | ik + MTP | 80.5 | 38.8 | ~12s |
+| Model | Backend | Prompt t/s | Gen t/s | Cold Start | Notes |
+|-------|---------|-----------|---------|------------|-------|
+| lfm2.5-vl-450m | upstream | 773 | **244** | ~4s | Fastest generate in fleet |
+| qwen3.5-0.8b | upstream | 1113 | **126** | ~5s | Smallest Qwen |
+| lfm2.5-1.2b | upstream | 1646 | **107** | ~2s | Fast text model |
+| lfm2.5-1.2b-think | upstream | 1635 | **107** | ~4s | Thinking variant |
+| gemma4-e2b | upstream | 677 | **63** | ~8s | |
+| lfm2-24b | ik | 118 | **43** | ~10s | MoE, offloaded experts |
+| gemma4-e4b | upstream | 407 | **39** | ~5s | Best small dense |
+| qwen3.6-35b-moe | ik + MTP | 95 | **27** | ~12s | MoE, MTP enabled |
+| qwen3.5-4b | upstream | 58 | **24** | ~10s | |
+| gemma4-26b-moe | upstream | 86 | **24** | ~18s | MoE, 128 experts |
+| qwen3.5-9b | upstream | 23 | **12** | ~15s | Largest dense fit |
+
+> Method: prompt "Comer miojo de galinha caipira na sexta-feira santa é pecado?", 200 max tokens, temp 0.7.
+> Second request (model pre-loaded in VRAM). Prompt t/s from llama-server timings.
+> gpt-oss-20b: template parsing error with Portuguese diacritics — known quirk, not a regression.
 | qwen3.6-35b-qwopus | ik + MTP | 91.2 | 40.4 | ~12s (warm) |
 | qwen3.5-4b | upstream | — | — | ~6s |
 | qwen3.5-9b | upstream | 26.0 | 15.3 | ~8s |
