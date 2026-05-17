@@ -4,7 +4,7 @@
     description: "Edge vision-language model for object detection and captioning"
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/LFM2.5-VL-450M-Q4_0.gguf
+      --model ${models_dir}/LFM2.5-VL-450M-Q8_0.gguf
       --jinja
       --mmproj ${models_dir}/mmproj-LFM2.5-VL-450m-F16.gguf
       --fit on
@@ -23,7 +23,7 @@
       --metrics
     ttl: 60
     metadata:
-      size: "0.22 GB + mmproj"
+      size: "0.36 GB (Q8_0) + 0.18 GB mmproj"
       context: "32K-128K (dynamic)"
       vram_usage: "~0.5GB"
       source: "LiquidAI/LFM2.5-VL-450M-GGUF"
