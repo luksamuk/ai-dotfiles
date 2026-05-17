@@ -4,9 +4,9 @@
 #
 # Repositório: ~/git/ai-dotfiles/llama-swap/
 # Modelos: ~/.llama-models/
-# Requer: llama-swap v209+ (reasoning UI, macro length, histogram split, SIGHUP reload)
-# Requer: llama.cpp build b9124+ (speculative checkpointing, Gemma 4 KV fix, Flash Attention default)
-# Requer: ik_llama.cpp v4486+ (MTP p/ Gemma4 + Qwen3.5-MoE, MTP improvements, recurrent state async)
+# Requer: llama-swap v212+ (Prometheus metrics, SIGHUP reload, reasoning UI, race fix, zstd captures)
+# Requer: llama.cpp build b9174+ (MTP support via --spec-type draft-mtp, Qwen3.5/3.6 tokenizer fix, WebGPU gpt-oss, /v1/models modalities, NCCL-free TP)
+# Requer: ik_llama.cpp v4504+ (MTP re-quant output tensor, Gemma4 MTP + imatrix, --threads-mtmd, MTP recurrent state restore, mmproj n_batch fix)
 
 # Schema para validação (VS Code)
 
@@ -94,6 +94,8 @@ macros:
     # Nemotron-Omni-30B ✅ head_k=128 (NOT added — upstream-only, ik doesn't support nemotron_h_moe)
   #   Gemma-4 E2B/E4B  ✅ head_k=256, iSWA attn_rot fixed (b8815+)
   #   Gemma-4 26B-MoE  ✅ head_k=256, iSWA attn_rot fixed (b8815+)
+  #   LFM2.5-1.2B       ✅ head_k=64 (64%64==0) — dense hybrid
+  #   LFM2-24B-A2B     ✅ head_k=128 (128%64==0) — MoE hybrid
   #   LFM2.5-VL-450M   ❌ vision model, manter f16
   #
   # Tipos de cache:
@@ -158,7 +160,7 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "~0.46 GB (UD-Q3_K_XL Dynamic 2.0) + ~0.20 GB (mmproj F16)"
+      size: "~0.47 GB (UD-Q3_K_XL Dynamic 2.0) + ~0.20 GB (mmproj F16)"
       context: "64K-128K (dynamic)"
       vram_usage: "~1.6GB (model + mmproj + cache)"
       source: "unsloth/Qwen3.5-0.8B-GGUF (UD-Q3_K_XL)"
@@ -188,7 +190,8 @@ models:
       --max-num-seqs 2
       --dtype half
       --trust-remote-code
-      --default-chat-template-kwargs '{"enable_thinking": false}'
+      --default-chat-template-kwargs '{"enable_thinking": true}'
+      --reasoning-parser qwen3
       --enable-auto-tool-choice
       --tool-call-parser qwen3_coder
       --skip-mm-profiling
@@ -202,44 +205,70 @@ models:
       source: "Qwen/Qwen3.5-0.8B (HuggingFace safetensors)"
       note: "vLLM test backend for Sprachspiel — slow startup (~30-90s), use only for API compat testing"
       features:
+        thinking: true
+        vision: false
+        tools: true
+
+  # -------------------------------------------
+  # LFM2.5-1.2B-INSTRUCT - vLLM BACKEND (safetensors)
+  # Uses vLLM's native lfm2 tool parser for proper tool calling
+  # No more --jinja needed — vLLM handles the chat template natively
+  # Pythonic tool-call format (<|tool_call_start|>[...]<|tool_call_end|>) parsed correctly
+  # -------------------------------------------
+  "lfm2.5-1.2b-vllm":
+    name: "LFM2.5 1.2B Instruct (vLLM)"
+    description: "vLLM backend — lfm2 tool parser, proper tool calling (Sprachspiel compat)"
+    cmd: |
+      ${vllm_bin} serve LiquidAI/LFM2.5-1.2B-Instruct
+      --port ${PORT}
+      --served-model-name lfm2.5-1.2b-vllm
+      --gpu-memory-utilization 0.70
+      --max-model-len 8192
+      --max-num-seqs 2
+      --dtype half
+      --trust-remote-code
+      --enable-auto-tool-choice
+      --tool-call-parser lfm2
+    ttl: 900
+    metadata:
+      backend: vllm
+      size: "~2.4 GB (BF16 safetensors, auto-download from HF)"
+      context: "8K (vLLM optimized for 6GB VRAM)"
+      vram_usage: "~3GB (model + cache)"
+      source: "LiquidAI/LFM2.5-1.2B-Instruct (HuggingFace safetensors)"
+      note: "vLLM backend with native lfm2 tool parser — no --jinja workaround needed"
+      features:
         thinking: false
         vision: false
         tools: true
 
   # -------------------------------------------
-  # QWEN3.5-2B - vLLM BACKEND (safetensors)
-  # Requer: venv ~/.vllm com vllm instalado
-  # Requer: modelo baixado via HF (auto-download no primeiro serve)
-  # IMPORTANTE: skip-mm-profiling + limit-mm-per-prompt necessário
-  #   para caber na VRAM (~4.6GB pesos + overhead vLLM)
-  # Vision DESABILITADO — sem mmproj, texto apenas
+  # SGLANG BACKEND — COMPATIBILITY TEST FOR SPRACHSPIEL
+  # SGLang serves OpenAI-compatible API on /v1/*
+  # Uses LFM2.5-1.2B-Instruct (safetensors, standard transformer)
+  # Requer: venv ~/.sglang-venv com sglang instalado
   # -------------------------------------------
-  "qwen3.5-2b-vllm":
-    name: "Qwen3.5 2B (vLLM)"
-    description: "vLLM backend — 2B text-only, no vision (~90 tok/s)"
+  "lfm2.5-sgl":
+    name: "LFM2.5 1.2B (SGLang)"
+    description: "SGLang backend test — Sprachspiel compatibility (NOT for daily use)"
     cmd: |
-      ${vllm_bin} serve Qwen/Qwen3.5-2B
-      --port ${PORT}
-      --served-model-name qwen3.5-2b-vllm
-      --gpu-memory-utilization 0.82
-      --max-model-len 2048
-      --max-num-seqs 1
-      --dtype half
+      ${env.HOME}/.sglang-venv/bin/python -m sglang.launch_server
+      --model-path LiquidAI/LFM2.5-1.2B-Instruct
       --trust-remote-code
-      --enforce-eager
-      --skip-mm-profiling
-      --limit-mm-per-prompt '{"image": 0}'
-      --default-chat-template-kwargs '{"enable_thinking": false}'
-      --enable-auto-tool-choice
-      --tool-call-parser qwen3_coder
+      --port ${PORT}
+      --host 127.0.0.1
+      --mem-fraction-static 0.7
+      --tool-call-parser lfm2
     ttl: 900
+    healthCheckTimeout: 300
     metadata:
-      backend: vllm
-      size: "~4 GB (BF16 safetensors, auto-download from HF)"
-      context: "2K (vLLM tight fit on 6GB VRAM)"
-      vram_usage: "~5GB"
-      source: "Qwen/Qwen3.5-2B (HuggingFace safetensors)"
-      note: "vLLM 2B on 6GB VRAM — enforce-eager, skip-mm-profiling, no vision. Slow startup (~60-120s)"
+      backend: sglang
+      size: "~2.5 GB (BF16 safetensors, cached from HF)"
+      context: "~32K default (mem-fraction 0.7)"
+      vram_usage: "~3.2 GB (model + KV cache)"
+      source: "LiquidAI/LFM2.5-1.2B-Instruct (HuggingFace safetensors)"
+      note: "SGLang backend for Sprachspiel compat testing — RadixAttention cache, slower startup (~2 min JIT compile)."
+      health_check_timeout: 300
       features:
         thinking: false
         vision: false
@@ -436,11 +465,97 @@ models:
       features:
         thinking: true
         tools: true
-        # vision: disabled — mmproj crashes on CUDA (issue #21402)
-      warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."
-
   # [REMOVED] Nemotron 3 Nano 4B — superseded by Qwen3.5-4B/9B, poor quality for size
   # [REMOVED] ACE — no imatrix quants, worse perplexity than 9B regular
+
+  # -------------------------------------------
+  # LFM2.5-1.2B-INSTRUCT - DENSE HYBRID (CONV + GQA)
+  # Liquid AI's 1.2B dense instruct model — best tool-calling / agentic
+  # Treinado em 28T tokens + RL. Melhor pra tool-calling (sem CoT forçado).
+  # Tool calling reliability: CONSISTENT — best LFM2 for agentic tasks
+  # Liquid AI recommends: temp=0.3, min_p=0.15, repeat_penalty=1.05
+  # head_dim=64 → attn_rot ✅ (64%64==0)
+  # Architecture: lfm2 (upstream llama.cpp b8145+)
+  # Q8_0 ~1.25GB — practically lossless, still fits entirely in VRAM
+  # -------------------------------------------
+  "lfm2.5-1.2b":
+    name: "LFM2.5 1.2B Instruct"
+    description: "Edge hybrid — conv+GQA dense, tool-calling optimized (Q8_0, llama.cpp)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/LFM2.5-1.2B-Instruct-Q8_0.gguf
+      --jinja
+      --fit on
+      --fit-target 768
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.3
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      size: "~1.25 GB (Q8_0)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~2GB (model + cache)"
+      source: "LiquidAI/LFM2.5-1.2B-Instruct-GGUF (Q8_0)"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        thinking: false
+        vision: false
+        tools: true
+
+  # -------------------------------------------
+  # LFM2.5-1.2B-THINKING - DENSE HYBRID (CONV + GQA) WITH CHAIN-OF-THOUGHT
+  # Liquid AI's 1.2B reasoning model — CoT before answer, best for math/reasoning
+  # Treinado em 28T tokens + multi-stage RL. MATH-500: 88%, GSM8K: 85.6%
+  # Liquid AI recommends: temp=0.3, min_p=0.15, repeat_penalty=1.05
+  # head_dim=64 → attn_rot ✅ (64%64==0)
+  # Architecture: lfm2 (upstream llama.cpp b8145+)
+  # Q8_0 ~1.25GB — practically lossless, still fits entirely in VRAM
+  # --reasoning on: SEMPRE gera CoT (como gpt-oss-20b, sem toggle)
+  # Tool calling reliability: HOPELESS for agentic — CoT disperses reasoning away from tool-call structure
+  # -------------------------------------------
+  "lfm2.5-1.2b-think":
+    name: "LFM2.5 1.2B Thinking"
+    description: "Edge hybrid reasoning — conv+GQA dense, always thinks (Q8_0, llama.cpp)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/LFM2.5-1.2B-Thinking-Q8_0.gguf
+      --jinja
+      --fit on
+      --fit-target 768
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.3
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --reasoning on
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+    ttl: 60
+    metadata:
+      size: "~1.25 GB (Q8_0)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~2GB (model + cache)"
+      source: "LiquidAI/LFM2.5-1.2B-Thinking-GGUF (Q8_0)"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        thinking: true
+        vision: false
+        tools: true
+      warning: "SEMPRE gera CoT internamente (como gpt-oss-20b). Pior pra tool-calling — use lfm2.5-1.2b (Instruct) para tarefas agenticas."
 
   "lfm2.5-vl-450m":
     name: "LFM2.5-VL 450M"
@@ -448,6 +563,7 @@ models:
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/LFM2.5-VL-450M-Q4_0.gguf
+      --jinja
       --mmproj ${models_dir}/mmproj-LFM2.5-VL-450m-F16.gguf
       --fit on
       --fit-target ${vram_margin}
@@ -585,6 +701,55 @@ models:
         tools: true
       warning: "Harmony format: ALWAYS reasons internally (not optional). --reasoning on extracts it properly. Text-only. Dense 20B."
 
+  # -------------------------------------------
+  # LFM2-24B-A2B - MoE HYBRID (CONV + GQA + MOE)
+  # Liquid AI's 24B MoE — 2.3B active per token, 64 experts top-4 routing
+  # 40 layers: 30 conv + 10 GQA (first 2 dense for stability)
+  # Hybrid architecture: NOT a pure transformer, conv blocks replace most attention
+  # Liquid AI recommends: temp=0.3, min_p=0.15, repeat_penalty=1.05
+  # head_dim=128 → attn_rot ✅ (128%64==0)
+  # Architecture: lfm2moe (upstream llama.cpp b8145+, ik_llama.cpp DOES NOT SUPPORT)
+  # Using llama_server (upstream): no pinned memory for expert offload = slower than ik
+  # Q4_K_M ~14.4GB → heavy offload to RAM (~9GB), fits 32GB total system
+  # Context ceiling: 32K (LFM2 limitation, not our hardware)
+  # Tool calling reliability: INCONSISTENT — MoE varies, sometimes hallucinates instead of calling tools
+  # -------------------------------------------
+  "lfm2-24b":
+    name: "LFM2 24B MoE"
+    description: "Hybrid MoE — conv+GQA+MoE, 2.3B active/token (llama.cpp upstream)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/LFM2-24B-A2B-Q4_K_M.gguf
+      --jinja
+      --no-mmproj
+      --fit on
+      --fit-target 256
+      --fit-ctx 16384
+      --ctx-size 32768
+      --temp 0.3
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+    ttl: 120
+    metadata:
+      size: "~14.4 GB (Q4_K_M)"
+      context: "16K-32K (dynamic, 32K max)"
+      vram_usage: "~5GB VRAM + ~9GB RAM (MoE offload, upstream llama.cpp)"
+      source: "LiquidAI/LFM2-24B-A2B-GGUF (Q4_K_M)"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        thinking: false
+        vision: false
+        tools: true
+      warning: "ik_llama.cpp does NOT support lfm2moe arch — running on upstream llama_server without pinned memory. 32K context ceiling (model limitation)."
+
   # [REMOVED] ds-r1-distill-14b — Dense 14B, poor performance on RTX 3050. SSD pressure.
   # [REMOVED] ds-r1-distill-32b — Dense 32B, very slow on limited VRAM. SSD pressure.
   #
@@ -703,7 +868,7 @@ models:
   # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
   # Architecture: qwen35moe (Qwen3MoeForCausalLM)
   # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-  # --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4486+). Use long form (not --mtp).
+  # --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4496+). Use long form (not --mtp).
   # -------------------------------------------
   "qwopus-35b":
     name: "Qwopus 35B"
@@ -767,7 +932,7 @@ models:
   # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
   # Architecture: qwen35moe (Qwen3MoeForCausalLM)
   # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-  # --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4486+). Use long form (not --mtp).
+  # --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4496+). Use long form (not --mtp).
   # -------------------------------------------
   "qwen3.6-35b-moe":
     name: "Qwen3.6 35B MoE"
@@ -809,23 +974,26 @@ models:
     ttl: 120
     metadata:
       size: "~17.3 GB (APEX I-Compact)"
-      context: "16K-128K (dynamic)"
-      vram_usage: "~5GB VRAM + ~12GB RAM (APEX mixed-precision offload, ik_llama.cpp pinned memory)"
+      context: "1K-131K (safe max; 200K works but zero VRAM headroom)"
+      vram_usage: "~5.4GB VRAM + 13.8GB pinned RAM (ik pinned memory, constant 33-34 t/s up to 131K)"
       source: "mudler/Qwen3.5-35B-A3B-APEX-GGUF"
       kv_cache: "q4_0 + attn_rot"
       features:
         thinking: true
         vision: false
         tools: true
-      warning: "Vision disabled — mmproj blocks partial expert offload (11→41 layers GPU). Text-only = 26+ t/s vs 5 t/s with vision. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K."
+      warning: "Vision disabled — mmproj blocks partial expert offload (11→41 layers GPU). Text-only = 33-34 t/s vs 5 t/s with vision. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. Pinned memory gives constant speed up to 200K tokens."
 
 # Hooks: ações na inicialização do llama-swap
 # preload: carrega modelos síncronamente antes de aceitar requests
 # Ideal para vLLM (startup lento = 30-90s sem warm-up)
+# NOTA: preloads desabilitados temporariamente — ocupam GPU e bloqueiam swap pra SGLang
+# Para reabilitar: descomente as linhas preload abaixo
 hooks:
   on_startup:
-    preload:
-      - "qwen3.5-0.8b-vllm"
+    preload: []
+      # - "qwen3.5-0.8b-vllm"
+      # - "lfm2.5-1.2b-vllm"
 
 # ============================================
 # SWAP MATRIX (v202+) - Substitui o antigo groups
@@ -859,6 +1027,8 @@ matrix:
     q4: qwen3.5-4b
     # [REMOVED] n4: nemotron-3-nano-4b
     g2: gemma4-e2b
+    lfm2s: lfm2.5-1.2b
+    lfm2t: lfm2.5-1.2b-think
     # Vision
     vl: lfm2.5-vl-450m
     # Modelos médios (agora cabem na VRAM!)
@@ -869,6 +1039,11 @@ matrix:
     qw36: qwen3.6-35b-moe
     qwopus: qwopus-35b
     gptoss: gpt-oss-20b
+    lfm2l: lfm2-24b
+    # vLLM backends (separate process, same GPU)
+    q08vllm: qwen3.5-0.8b-vllm
+    lfm2vllm: lfm2.5-1.2b-vllm
+    sglang: lfm2.5-sgl
   # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
   # +ref = expandir outro set inline
   #
@@ -879,10 +1054,13 @@ matrix:
   # - heavy: modelos 14B+ rodam sozinhos (toda VRAM)
   sets:
     # LLM pequeno + Vision: trocar entre modelos leves NÃO evicta o vision
-    small_vision: "(q08 | q4 | g2) & vl"
+    small_vision: "(q08 | q4 | g2 | lfm2s | lfm2t) & vl"
 
     # LLM pequeno sozinho (sem vision ativo)
-    small_only: "q08 | q4 | g2"
+    small_only: "q08 | q4 | g2 | lfm2s | lfm2t"
+
+    # vLLM backends (mutuamente exclusivos com llama.cpp — mesma GPU)
+    vllm: "q08vllm | lfm2vllm"
 
     # Modelos médios (~5GB VRAM) - agora cabem na VRAM com UD-Q3!
     # Qwen3.5-9B e Gemma4-E4B cabem inteiramente
@@ -891,7 +1069,7 @@ matrix:
     # [REMOVED] omni_vision set (Nemotron Omni not added — upstream-only, poor perf on 6GB VRAM)
 
     # Modelos pesados - toda VRAM + RAM offload
-    heavy: "qw36 | qwopus | gemma4m | gptoss"
+    heavy: "qw36 | qwopus | gemma4m | gptoss | lfm2l"
 
     # Vision sozinho
     vision_only: "vl"
@@ -903,6 +1081,7 @@ matrix:
     qw36: 10     # 35B MoE APEX I-Compact ~17.3GB, heavy offload
     qwopus: 10   # 35B MoE Qwopus APEX I-Compact ~16.5GB, heavy offload
     gptoss: 8    # 11GB dense Q4_K_M, heavy offload
+    lfm2l: 9    # 14.4GB MoE Q4_K_M, upstream llama.cpp (no pinned memory)
     # ds14: 7   REMOVED — Dense 14B poor perf on RTX 3050
     # ds32: 10  REMOVED — Dense 32B very slow on limited VRAM
     q9: 4        # ~5GB, fits VRAM now
@@ -910,6 +1089,11 @@ matrix:
     g4: 4        # ~4.5GB, fits VRAM now
     vl: 3        # vision, leve mas útil manter vivo
     q08: 1       # 0.8B, ultra-leve
+    lfm2s: 1    # 1.2B Instruct, ultra-leve
+    lfm2t: 1    # 1.2B Thinking, ultra-leve
     q4: 2
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1
+    # vLLM backends — high startup cost (30-90s), high eviction cost
+    q08vllm: 5
+    lfm2vllm: 5
