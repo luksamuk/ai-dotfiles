@@ -1,0 +1,31 @@
+  # -------------------------------------------
+  # SGLANG BACKEND (PAUSADO — venv ~/.sglang-venv deletado)
+  # Restaurar: pip install sglang em ~/.sglang-venv, HF models re-downloaded
+  # UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
+  # -------------------------------------------
+  "lfm2.5-sgl":
+    name: "LFM2.5 1.2B (SGLang)"
+    description: "SGLang backend test — Sprachspiel compatibility (NOT for daily use)"
+    unlisted: true
+    cmd: |
+      ${env.HOME}/.sglang-venv/bin/python -m sglang.launch_server
+      --model-path LiquidAI/LFM2.5-1.2B-Instruct
+      --trust-remote-code
+      --port ${PORT}
+      --host 127.0.0.1
+      --mem-fraction-static 0.7
+      --tool-call-parser lfm2
+    ttl: 900
+    healthCheckTimeout: 300
+    metadata:
+      backend: sglang
+      size: "~2.5 GB (BF16 safetensors, cached from HF)"
+      context: "~32K default (mem-fraction 0.7)"
+      vram_usage: "~3.2 GB (model + KV cache)"
+      source: "LiquidAI/LFM2.5-1.2B-Instruct (HuggingFace safetensors)"
+      note: "SGLang backend for Sprachspiel compat testing — RadixAttention cache, slower startup (~2 min JIT compile)."
+      health_check_timeout: 300
+      features:
+        thinking: false
+        vision: false
+        tools: true

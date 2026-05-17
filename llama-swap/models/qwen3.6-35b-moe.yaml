@@ -1,0 +1,63 @@
+  # -------------------------------------------
+  # QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
+  # MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
+  # 33 experts, top-8 routing. APEX I-Compact ~17.3GB
+  #   Mixed-precision MoE quant com imatrix diversa (chat, code, reasoning, tool-calling)
+  #   Perplexity comparable to Q8_0 (6.669 vs 6.533), beats UD-Q3_K_XL on real benchmarks
+  # --no-mmproj: mmproj ocupa 858MB VRAM e impede partial expert offload.
+  #   Sem mmproj: ALL 41 layers sobem pra GPU (partial expert partition) → 20+ t/s!
+  #   Com mmproj: só ~11 layers em GPU → ~5 t/s. Não vale a pena.
+  # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
+  # Architecture: qwen35moe (Qwen3MoeForCausalLM)
+  # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
+  # --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4496+). Use long form (not --mtp).
+  # -------------------------------------------
+  "qwen3.6-35b-moe":
+    name: "Qwen3.6 35B MoE"
+    description: "Efficient MoE for agentic coding — 3B active/token (APEX I-Compact)"
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.6-35B-A3B-APEX-I-Compact.gguf
+      # No --no-mmproj: ik_llama.cpp doesn't support this flag (upstream-only)
+      # No --fit-ctx: ik_llama.cpp doesn't support this flag; --ctx-size serves as ceiling
+      --fit
+      --fit-margin 512
+      --ctx-size 131072
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning on
+      --jinja
+      --parallel-tool-calls
+      --multi-token-prediction
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.85
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 120
+    metadata:
+      size: "~17.3 GB (APEX I-Compact)"
+      context: "1K-131K (safe max; 200K works but zero VRAM headroom)"
+      vram_usage: "~5.4GB VRAM + 13.8GB pinned RAM (ik pinned memory, constant 33-34 t/s up to 131K)"
+      source: "mudler/Qwen3.5-35B-A3B-APEX-GGUF"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        thinking: true
+        vision: false
+        tools: true
+      warning: "Vision disabled — mmproj blocks partial expert offload (11→41 layers GPU). Text-only = 33-34 t/s vs 5 t/s with vision. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. Pinned memory gives constant speed up to 200K tokens."

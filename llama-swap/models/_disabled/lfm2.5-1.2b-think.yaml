@@ -1,0 +1,47 @@
+  # -------------------------------------------
+  # LFM2.5-1.2B-THINKING - DENSE HYBRID (CONV + GQA) WITH CHAIN-OF-THOUGHT
+  # Liquid AI's 1.2B reasoning model — CoT before answer, best for math/reasoning
+  # Treinado em 28T tokens + multi-stage RL. MATH-500: 88%, GSM8K: 85.6%
+  # Liquid AI recommends: temp=0.3, min_p=0.15, repeat_penalty=1.05
+  # head_dim=64 → attn_rot ✅ (64%64==0)
+  # Architecture: lfm2 (upstream llama.cpp b8145+)
+  # Q8_0 ~1.25GB — practically lossless, still fits entirely in VRAM
+  # Tool calling reliability: HOPELESS for agentic — CoT disperses reasoning away from tool-call structure
+  # UNLISTED: always-on CoT is useless for tool-calling, superseded by lfm2.5-1.2b (Instruct)
+  # -------------------------------------------
+  "lfm2.5-1.2b-think":
+    name: "LFM2.5 1.2B Thinking"
+    description: "Edge hybrid reasoning — conv+GQA dense, always thinks (Q8_0, llama.cpp)"
+    unlisted: true
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/LFM2.5-1.2B-Thinking-Q8_0.gguf
+      --jinja
+      --fit on
+      --fit-target 768
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.3
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --reasoning on
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+    ttl: 60
+    metadata:
+      size: "~1.25 GB (Q8_0)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~2GB (model + cache)"
+      source: "LiquidAI/LFM2.5-1.2B-Thinking-GGUF (Q8_0)"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        thinking: true
+        vision: false
+        tools: true
+      warning: "SEMPRE gera CoT internamente (como gpt-oss-20b). Pior pra tool-calling — use lfm2.5-1.2b (Instruct) para tarefas agenticas."

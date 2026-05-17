@@ -1,0 +1,49 @@
+  # -------------------------------------------
+  # GPT-OSS-20B - DENSE CODING (always reasoning)
+  # Dense 20B params. OpenAI open-source model for coding.
+  # Harmony format: ALWAYS generates <channel|analysis> tokens.
+  # --reasoning on ensures reasoning_content is properly extracted.
+  # Low/medium/high reasoning_effort is Ollama-specific, NOT supported in llama.cpp.
+  # No variant :think needed — model always thinks internally.
+  # Q4_K_M ~11GB (dense, all 20B params active per token, slower than MoE but stronger).
+  # head_dim=64 → attn_rot ✅, KV cache q4_0
+  # No mmproj exists → text-only.
+  # Architecture: gptoss (GptOssForCausalLM)
+  # -------------------------------------------
+  # UNLISTED: dense 20B coding, disk freed for space. MoE models are more efficient on 6GB VRAM.
+  "gpt-oss-20b":
+    name: "GPT-OSS 20B"
+    description: "Dense 20B coding — GPT-OSS Harmony, always reasons internally"
+    unlisted: true
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gpt-oss-20b-Q4_K_M.gguf
+      --no-mmproj
+      --fit on
+      --fit-target 256
+      --fit-ctx 16384
+      --ctx-size 201000
+      --temp 0.6
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.01
+      --repeat-penalty 1.0
+      --reasoning on
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+    ttl: 120
+    metadata:
+      size: "~11 GB (Q4_K_M)"
+      context: "16K-200K (dynamic)"
+      vram_usage: "~5GB VRAM + ~6GB RAM"
+      source: "unsloth/gpt-oss-20b-GGUF"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        thinking: true
+        vision: false
+        tools: true
+      warning: "Harmony format: ALWAYS reasons internally (not optional). --reasoning on extracts it properly. Text-only. Dense 20B."

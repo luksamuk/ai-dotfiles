@@ -126,7 +126,8 @@ Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) par
 Configuração do [[https://github.com/nathan-nfx/llama-swap][llama-swap]] para servir múltiplos modelos GGUF com swap automático na RTX 3050 6GB.
 
 - **Diretório**: =llama-swap/=
-- **Arquivos**: =config.yaml= (config principal), =download-models.sh= (script de download), =llama-swap-cli= (CLI helper), =testchat/= (script de teste).
+- **Arquivos**: =config.yaml= (config gerado — *não editar diretamente*), =config-base.yaml= + =config-footer.yaml= + =models/= (fontes fragmentadas), =build-config.py= (assembler), =download-models.sh= (script de download), =llama-swap-cli= (CLI helper), =testchat/= (script de teste).
+- **Workflow**: Editar fragmentos em =models/= → =python3 build-config.py= → config regenerado e sincronizado automaticamente. Ver [[llama-swap/ARCHITECTURE.md][ARCHITECTURE.md]] para detalhes.
 - **Dual-binary**: Usa dois backends — =llama.cpp= (upstream) para modelos densos e [[https://github.com/ikawrakow/ik_llama.cpp][ik_llama.cpp]] para modelos MoE, com =--fit= ativado e tamanhos de fit diferentes por backend (ik suporta contextos maiores para MoE).
 
 ** Comandos Principais

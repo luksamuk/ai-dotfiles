@@ -4,6 +4,10 @@ This directory contains configuration files for running local LLMs with
 [llama-swap](https://github.com/mostlygeek/llama-swap) - a model swapping proxy 
 for llama.cpp.
 
+> **📋 Config Architecture:** The config is now split into modular fragments.
+> See [ARCHITECTURE.md](ARCHITECTURE.md) for the full structure, workflow, and build process.
+> **Do not edit `config.yaml` directly** — edit model fragments in `models/` and run `python3 build-config.py`.
+
 ## Overview
 
 **Hardware Target:** NVIDIA RTX 3050 Laptop (6GB VRAM)
