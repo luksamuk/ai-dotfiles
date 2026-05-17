@@ -721,9 +721,11 @@ models:
   # Context ceiling: 32K (LFM2 limitation, not our hardware)
   # Tool calling reliability: INCONSISTENT — MoE varies, sometimes hallucinates instead of calling tools
   # -------------------------------------------
+  # UNLISTED: tool-calling disappointing, superseded by lfm2.5-1.2b Instruct for edge use cases. Disk freed.
   "lfm2-24b":
-    name: "LFM2 24B MoE"
+    name: "LFM2 24B"
     description: "Hybrid MoE — conv+GQA+MoE, 2.3B active/token (llama.cpp upstream)"
+    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/LFM2-24B-A2B-Q4_K_M.gguf
