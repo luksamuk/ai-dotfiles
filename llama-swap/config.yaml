@@ -124,9 +124,11 @@ models:
   # NOTE: Bug #22785 (Qwen-VL accuracy degraded in llama-server) — monitor
   # KV cache: q8_0 + attn_rot (head_dim provavelmente 128, 128%64==0)
   # -------------------------------------------
+  # UNLISTED: nice-to-have tiny model, disk freed for space
   "qwen3.5-0.8b":
     name: "Qwen3.5 0.8B"
     description: "Compact multimodal reasoning model — text + vision (llama.cpp GGUF)"
+    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-0.8B-UD-Q3_K_XL.gguf
@@ -325,9 +327,11 @@ models:
         # vision: disabled — Gated Delta Net mmproj OOM on CUDA (issue #21323)
       warning: "Vision disabled — Gated Delta Net mmproj crashes/CUDA OOM (llama.cpp issues #21323, #21402)"
 
+  # UNLISTED: nice-to-have 9B variant, disk freed for space. qwen3.5-4b covers daily use.
   "qwen3.5-9b":
     name: "Qwen3.5 9B"
     description: "Multimodal reasoning, coding, and agentic chat with 201-language support"
+    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-9B-UD-Q3_K_XL.gguf
@@ -556,9 +560,11 @@ models:
         tools: true
       warning: "SEMPRE gera CoT internamente (como gpt-oss-20b). Pior pra tool-calling — use lfm2.5-1.2b (Instruct) para tarefas agenticas."
 
+  # UNLISTED: vision model, disk freed for space. Re-download when vision is needed.
   "lfm2.5-vl-450m":
     name: "LFM2.5-VL 450M"
     description: "Edge vision-language model for object detection and captioning"
+    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/LFM2.5-VL-450M-Q4_0.gguf
@@ -664,9 +670,11 @@ models:
   # No mmproj exists → text-only.
   # Architecture: gptoss (GptOssForCausalLM)
   # -------------------------------------------
+  # UNLISTED: dense 20B coding, disk freed for space. MoE models are more efficient on 6GB VRAM.
   "gpt-oss-20b":
     name: "GPT-OSS 20B"
     description: "Dense 20B coding — GPT-OSS Harmony, always reasons internally"
+    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/gpt-oss-20b-Q4_K_M.gguf
