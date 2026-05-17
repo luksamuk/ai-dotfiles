@@ -64,6 +64,9 @@ declare -A MODELS=(
   ["qwopus-35b"]="mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf"
   ["gemma4-26b-moe"]="mudler/gemma-4-26B-A4B-it-APEX-GGUF gemma-4-26B-A4B-APEX-I-Compact.gguf"
   ["gpt-oss-20b"]="unsloth/gpt-oss-20b-GGUF gpt-oss-20b-Q4_K_M.gguf"
+  # Ministral 3 3B — Mistral edge model, text-only (mmproj crashes CUDA), tool calling
+  # Uses mistral3 arch — ONLY llama.cpp upstream, NOT ik_llama.cpp
+  ["ministral-3-3b"]="unsloth/Ministral-3-3B-Instruct-2512-GGUF Ministral-3-3B-Instruct-2512-UD-Q5_K_XL.gguf"
   # [REMOVED] ds-r1-distill-14b — Dense 14B, poor perf on RTX 3050, SSD pressure
   # [REMOVED] ds-r1-distill-32b — Dense 32B, very slow on limited VRAM, SSD pressure
   # [REMOVED] qwen3.5-9b-ace — analyzed, worse perplexity than 9B regular (no imatrix)
@@ -79,6 +82,8 @@ declare -A MMPROJ=(
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF mmproj-F16.gguf mmproj-gemma-4-E4B-F16.gguf"
   ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF mmproj-F16.gguf mmproj-gemma-4-E2B-F16.gguf"
   ["qwen3.5-0.8b"]="unsloth/Qwen3.5-0.8B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-0.8B-F16.gguf"
+  # Ministral 3 3B — mmproj downloaded but UNUSED (crashes CUDA on mistral3 arch)
+  ["ministral-3-3b"]="unsloth/Ministral-3-3B-Instruct-2512-GGUF mmproj-F16.gguf mmproj-Ministral-3-3B-F16.gguf"
 
 )
 

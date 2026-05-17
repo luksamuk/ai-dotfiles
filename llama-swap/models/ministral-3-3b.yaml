@@ -19,17 +19,27 @@
     description: "Edge tool-calling + 128K context (UD-Q5_K_XL, text-only)"
     tags: ["think+tools"]
     cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/Ministral-3-3B-Instruct-2512-UD-Q5_K_XL.gguf
-      --fit on
-      --fit-ctx 8192
-      --ctx-size 131072
-      --parallel 4
-      --cont-batching
-      --temp ${default_temp}
-      --top-p ${default_top_p}
-      --top-k ${default_top_k}
-      --min-p ${default_min_p}
-      --repeat-penalty ${default_repeat_penalty}
-      --jinja
-    size: "2.31"
+        ${llama_server} --port ${PORT}
+        --model ${models_dir}/Ministral-3-3B-Instruct-2512-UD-Q5_K_XL.gguf
+        --fit on
+        --fit-ctx 8192
+        --ctx-size 131072
+        --parallel 4
+        --cont-batching
+        --temp ${default_temp}
+        --top-p ${default_top_p}
+        --top-k ${default_top_k}
+        --min-p ${default_min_p}
+        --repeat-penalty ${default_repeat_penalty}
+        --jinja
+    metadata:
+        size: "2.31 GB (UD-Q5_K_XL)"
+        context: "8K-128K (dynamic via --fit)"
+        vram_usage: "~3 GB VRAM with --fit on"
+        source: "unsloth/Ministral-3-3B-Instruct-2512-GGUF"
+        kv_cache: "q4_0 + attn_rot"
+        features:
+            thinking: true
+            vision: false
+            tools: true
+        warning: "Uses mistral3 arch — ONLY runs on llama.cpp upstream, NOT ik_llama.cpp. Vision disabled: mmproj crashes with CUDA OOM on mistral3. --n-gpu-layers 99 causes OOM with 131K ctx, use --fit on instead."
