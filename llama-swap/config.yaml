@@ -869,9 +869,11 @@ models:
   # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
   # --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4496+). Use long form (not --mtp).
   # -------------------------------------------
+  # UNLISTED: Redundant — Qwopus SFT variant superseded by qwen3.6-35b-moe (same arch, better base)
   "qwopus-35b":
     name: "Qwopus 35B"
     description: "MoE coding+reasoning — Qwopus SFT, 3B active/token (APEX I-Compact)"
+    unlisted: true
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf
