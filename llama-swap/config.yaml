@@ -170,109 +170,11 @@ models:
         vision: true
         tools: true
 
-  # -------------------------------------------
-  # QWEN3.5-0.8B - vLLM BACKEND (safetensors)
-  # EXCLUSIVO PARA TESTES DE COMPATIBILIDADE DO SPRACHSPIEL
-  # Nao usar como backend diario — startup lento (~30-90s), overhead alto
-  # vLLM serve: OpenAI-compatible API (mesmo formato que Ollama e llama.cpp)
-  # Requer: venv ~/.vllm com vllm instalado
-  # Requer: modelo baixado via HF (auto-download no primeiro serve)
-  # -------------------------------------------
-  "qwen3.5-0.8b-vllm":
-    name: "Qwen3.5 0.8B (vLLM)"
-    description: "vLLM backend test — Sprachspiel compatibility (NOT for daily use)"
-    cmd: |
-      ${vllm_bin} serve Qwen/Qwen3.5-0.8B
-      --port ${PORT}
-      --served-model-name qwen3.5-0.8b-vllm
-      --gpu-memory-utilization 0.70
-      --max-model-len 8192
-      --max-num-seqs 2
-      --dtype half
-      --trust-remote-code
-      --default-chat-template-kwargs '{"enable_thinking": true}'
-      --reasoning-parser qwen3
-      --enable-auto-tool-choice
-      --tool-call-parser qwen3_coder
-      --skip-mm-profiling
-      --limit-mm-per-prompt '{"image": 0}'
-    ttl: 900
-    metadata:
-      backend: vllm
-      size: "~1.6 GB (BF16 safetensors, auto-download from HF)"
-      context: "8K (vLLM optimized for 6GB VRAM)"
-      vram_usage: "~2-2.5GB (vision disabled)"
-      source: "Qwen/Qwen3.5-0.8B (HuggingFace safetensors)"
-      note: "vLLM test backend for Sprachspiel — slow startup (~30-90s), use only for API compat testing"
-      features:
-        thinking: true
-        vision: false
-        tools: true
-
-  # -------------------------------------------
-  # LFM2.5-1.2B-INSTRUCT - vLLM BACKEND (safetensors)
-  # Uses vLLM's native lfm2 tool parser for proper tool calling
-  # No more --jinja needed — vLLM handles the chat template natively
-  # Pythonic tool-call format (<|tool_call_start|>[...]<|tool_call_end|>) parsed correctly
-  # -------------------------------------------
-  "lfm2.5-1.2b-vllm":
-    name: "LFM2.5 1.2B Instruct (vLLM)"
-    description: "vLLM backend — lfm2 tool parser, proper tool calling (Sprachspiel compat)"
-    cmd: |
-      ${vllm_bin} serve LiquidAI/LFM2.5-1.2B-Instruct
-      --port ${PORT}
-      --served-model-name lfm2.5-1.2b-vllm
-      --gpu-memory-utilization 0.70
-      --max-model-len 8192
-      --max-num-seqs 2
-      --dtype half
-      --trust-remote-code
-      --enable-auto-tool-choice
-      --tool-call-parser lfm2
-    ttl: 900
-    metadata:
-      backend: vllm
-      size: "~2.4 GB (BF16 safetensors, auto-download from HF)"
-      context: "8K (vLLM optimized for 6GB VRAM)"
-      vram_usage: "~3GB (model + cache)"
-      source: "LiquidAI/LFM2.5-1.2B-Instruct (HuggingFace safetensors)"
-      note: "vLLM backend with native lfm2 tool parser — no --jinja workaround needed"
-      features:
-        thinking: false
-        vision: false
-        tools: true
-
-  # -------------------------------------------
-  # SGLANG BACKEND — COMPATIBILITY TEST FOR SPRACHSPIEL
-  # SGLang serves OpenAI-compatible API on /v1/*
-  # Uses LFM2.5-1.2B-Instruct (safetensors, standard transformer)
-  # Requer: venv ~/.sglang-venv com sglang instalado
-  # -------------------------------------------
-  "lfm2.5-sgl":
-    name: "LFM2.5 1.2B (SGLang)"
-    description: "SGLang backend test — Sprachspiel compatibility (NOT for daily use)"
-    cmd: |
-      ${env.HOME}/.sglang-venv/bin/python -m sglang.launch_server
-      --model-path LiquidAI/LFM2.5-1.2B-Instruct
-      --trust-remote-code
-      --port ${PORT}
-      --host 127.0.0.1
-      --mem-fraction-static 0.7
-      --tool-call-parser lfm2
-    ttl: 900
-    healthCheckTimeout: 300
-    metadata:
-      backend: sglang
-      size: "~2.5 GB (BF16 safetensors, cached from HF)"
-      context: "~32K default (mem-fraction 0.7)"
-      vram_usage: "~3.2 GB (model + KV cache)"
-      source: "LiquidAI/LFM2.5-1.2B-Instruct (HuggingFace safetensors)"
-      note: "SGLang backend for Sprachspiel compat testing — RadixAttention cache, slower startup (~2 min JIT compile)."
-      health_check_timeout: 300
-      features:
-        thinking: false
-        vision: false
-        tools: true
+  # [REMOVED] qwen3.5-0.8b-vllm — vLLM backend pausado (venv ~/.vllm + HF models deletados)
+  # Motivo: vLLM/SGLang backends pausados até Sprachspiel suportar multi-provider via OpenAI API
+  # Para restaurar: reinstall venv, HF models re-downloaded no primeiro serve
+  # [REMOVED] lfm2.5-1.2b-vllm — vLLM backend pausado (mesmo motivo)
+  # [REMOVED] lfm2.5-sgl — SGLang backend pausado (venv ~/.sglang-venv deletado, mesmo motivo)
 
   # -------------------------------------------
   # QWEN3.5-4B - MULTIMODAL (VISION + TEXT)
