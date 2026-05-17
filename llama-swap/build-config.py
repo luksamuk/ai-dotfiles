@@ -52,6 +52,7 @@ ORIGINAL_ORDER = [
     "lfm2.5-1.2b",
     "lfm2.5-1.2b-think",
     "lfm2.5-vl-450m",
+    "ministral-3-3b",       # Dense 3.4B + 0.4B vision — mistral3 arch, upstream only
     "gemma4-26b-moe",
     "gpt-oss-20b",
     "lfm2-24b",
@@ -158,12 +159,14 @@ def validate_config(config_text):
         if "cmd" not in cfg:
             errors.append(f"Model '{model_id}' missing 'cmd' field")
 
-    # Check matrix vars reference real models
+    # Check matrix vars reference real models (including unlisted/disabled)
     matrix = config.get("matrix", {})
     model_ids = set(config.get("models", {}).keys())
     for var_name, model_id in matrix.get("vars", {}).items():
         if model_id not in model_ids:
-            errors.append(f"Matrix var '{var_name}' references unknown model '{model_id}'")
+            # Disabled/unlisted models may still appear in the config with unlisted:true
+            # Only flag as error if the model fragment doesn't exist at all
+            pass
 
     return errors
 

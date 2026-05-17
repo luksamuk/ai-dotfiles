@@ -593,6 +593,42 @@ models:
         vision: true
 
   # -------------------------------------------
+  # MINISTRAL-3-3B — Mistral Small 3.2 family
+  # -------------------------------------------
+  # Dense 3.4B params, text-only (vision/mmproj crashes on CUDA — mistral3 arch)
+  # Mistral's latest edge model — tool calling, 256K context
+  # Architecture: mistral3 — ONLY supported in llama.cpp upstream (NOT ik_llama.cpp)
+  # Uses ${llama_server} (upstream), NOT ${ik_llama_server}
+  # UD-Q5_K_XL: 2.31 GB — fits entirely in VRAM with --fit
+  # --fit on: auto offload layers to GPU, keeps KV cache in VRAM
+  # --parallel 4 --cont-batching: concurrent requests
+  # --ctx-size 131072: 128K context (model supports 256K, 128K practical for 3B)
+  # Tool calling: mistral template (chat_template=ministral_3)
+  # NOTE: mmproj crashes llama-server with CUDA alloc error (~13.9 GB buffer).
+  #   Vision disabled until bug is fixed or mmproj is optimized for mistral3.
+  #   --n-gpu-layers 99 causes OOM with 131K ctx — use --fit on instead.
+  # Apache 2.0 license
+  "ministral-3-3b":
+    name: "Ministral 3 3B"
+    description: "Edge tool-calling + 128K context (UD-Q5_K_XL, text-only)"
+    tags: ["think+tools"]
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Ministral-3-3B-Instruct-2512-UD-Q5_K_XL.gguf
+      --fit on
+      --fit-ctx 8192
+      --ctx-size 131072
+      --parallel 4
+      --cont-batching
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --jinja
+    size: "2.31"
+
+  # -------------------------------------------
   # GEMMA-4-26B-A4B - MoE REASONING + CODING (APEX I-Compact)
   # MoE 26B params, 4B ativo por token. 128 experts, top-8 routing.
   # Google recomenda: temp=1.0 para reasoning, temp=0.7 para coding
@@ -918,6 +954,7 @@ matrix:
     # Modelos pequenos
     q08: qwen3.5-0.8b
     q4: qwen3.5-4b
+    m3: ministral-3-3b
     # [REMOVED] n4: nemotron-3-nano-4b
     g2: gemma4-e2b
     lfm2s: lfm2.5-1.2b
@@ -930,9 +967,9 @@ matrix:
     g4: gemma4-e4b
     # Pesados
     qw36: qwen3.6-35b-moe
-    qwopus: qwopus-35b
-    gptoss: gpt-oss-20b
-    lfm2l: lfm2-24b
+    # qwopus: qwopus-35b         # DISABLED: model unlisted
+    # gptoss: gpt-oss-20b        # DISABLED: model unlisted
+    # lfm2l: lfm2-24b            # DISABLED: model unlisted
     # vLLM backends (separate process, same GPU)
     q08vllm: qwen3.5-0.8b-vllm
     lfm2vllm: lfm2.5-1.2b-vllm
@@ -947,10 +984,10 @@ matrix:
   # - heavy: modelos 14B+ rodam sozinhos (toda VRAM)
   sets:
     # LLM pequeno + Vision: trocar entre modelos leves NÃO evicta o vision
-    small_vision: "(q08 | q4 | g2 | lfm2s | lfm2t) & vl"
+    small_vision: "(q08 | q4 | g2 | lfm2s | lfm2t | m3) & vl"
 
     # LLM pequeno sozinho (sem vision ativo)
-    small_only: "q08 | q4 | g2 | lfm2s | lfm2t"
+    small_only: "q08 | q4 | g2 | lfm2s | lfm2t | m3"
 
     # vLLM backends (mutuamente exclusivos com llama.cpp — mesma GPU)
     vllm: "q08vllm | lfm2vllm"
@@ -962,7 +999,8 @@ matrix:
     # [REMOVED] omni_vision set (Nemotron Omni not added — upstream-only, poor perf on 6GB VRAM)
 
     # Modelos pesados - toda VRAM + RAM offload
-    heavy: "qw36 | qwopus | gemma4m | gptoss | lfm2l"
+    # (qwopus, gptoss, lfm2l disabled — models unlisted)
+    heavy: "qw36 | gemma4m"
 
     # Vision sozinho
     vision_only: "vl"
@@ -972,9 +1010,9 @@ matrix:
   evict_costs:
     gemma4m: 10  # 26B MoE APEX I-Compact ~15.5GB, heavy offload
     qw36: 10     # 35B MoE APEX I-Compact ~17.3GB, heavy offload
-    qwopus: 10   # 35B MoE Qwopus APEX I-Compact ~16.5GB, heavy offload
-    gptoss: 8    # 11GB dense Q4_K_M, heavy offload
-    lfm2l: 9    # 14.4GB MoE Q4_K_M, upstream llama.cpp (no pinned memory)
+    # qwopus: 10   # DISABLED: model unlisted
+    # gptoss: 8    # DISABLED: model unlisted
+    # lfm2l: 9    # DISABLED: model unlisted
     # ds14: 7   REMOVED — Dense 14B poor perf on RTX 3050
     # ds32: 10  REMOVED — Dense 32B very slow on limited VRAM
     q9: 4        # ~5GB, fits VRAM now
@@ -984,6 +1022,7 @@ matrix:
     q08: 1       # 0.8B, ultra-leve
     lfm2s: 1    # 1.2B Instruct, ultra-leve
     lfm2t: 1    # 1.2B Thinking, ultra-leve
+    m3: 2        # 3.4B dense + 0.4B vision, leve mas maior
     q4: 2
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1

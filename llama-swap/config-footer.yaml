@@ -39,6 +39,7 @@ matrix:
     # Modelos pequenos
     q08: qwen3.5-0.8b
     q4: qwen3.5-4b
+    m3: ministral-3-3b
     # [REMOVED] n4: nemotron-3-nano-4b
     g2: gemma4-e2b
     lfm2s: lfm2.5-1.2b
@@ -51,9 +52,9 @@ matrix:
     g4: gemma4-e4b
     # Pesados
     qw36: qwen3.6-35b-moe
-    qwopus: qwopus-35b
-    gptoss: gpt-oss-20b
-    lfm2l: lfm2-24b
+    # qwopus: qwopus-35b         # DISABLED: model unlisted
+    # gptoss: gpt-oss-20b        # DISABLED: model unlisted
+    # lfm2l: lfm2-24b            # DISABLED: model unlisted
     # vLLM backends (separate process, same GPU)
     q08vllm: qwen3.5-0.8b-vllm
     lfm2vllm: lfm2.5-1.2b-vllm
@@ -68,10 +69,10 @@ matrix:
   # - heavy: modelos 14B+ rodam sozinhos (toda VRAM)
   sets:
     # LLM pequeno + Vision: trocar entre modelos leves NÃO evicta o vision
-    small_vision: "(q08 | q4 | g2 | lfm2s | lfm2t) & vl"
+    small_vision: "(q08 | q4 | g2 | lfm2s | lfm2t | m3) & vl"
 
     # LLM pequeno sozinho (sem vision ativo)
-    small_only: "q08 | q4 | g2 | lfm2s | lfm2t"
+    small_only: "q08 | q4 | g2 | lfm2s | lfm2t | m3"
 
     # vLLM backends (mutuamente exclusivos com llama.cpp — mesma GPU)
     vllm: "q08vllm | lfm2vllm"
@@ -83,7 +84,8 @@ matrix:
     # [REMOVED] omni_vision set (Nemotron Omni not added — upstream-only, poor perf on 6GB VRAM)
 
     # Modelos pesados - toda VRAM + RAM offload
-    heavy: "qw36 | qwopus | gemma4m | gptoss | lfm2l"
+    # (qwopus, gptoss, lfm2l disabled — models unlisted)
+    heavy: "qw36 | gemma4m"
 
     # Vision sozinho
     vision_only: "vl"
@@ -93,9 +95,9 @@ matrix:
   evict_costs:
     gemma4m: 10  # 26B MoE APEX I-Compact ~15.5GB, heavy offload
     qw36: 10     # 35B MoE APEX I-Compact ~17.3GB, heavy offload
-    qwopus: 10   # 35B MoE Qwopus APEX I-Compact ~16.5GB, heavy offload
-    gptoss: 8    # 11GB dense Q4_K_M, heavy offload
-    lfm2l: 9    # 14.4GB MoE Q4_K_M, upstream llama.cpp (no pinned memory)
+    # qwopus: 10   # DISABLED: model unlisted
+    # gptoss: 8    # DISABLED: model unlisted
+    # lfm2l: 9    # DISABLED: model unlisted
     # ds14: 7   REMOVED — Dense 14B poor perf on RTX 3050
     # ds32: 10  REMOVED — Dense 32B very slow on limited VRAM
     q9: 4        # ~5GB, fits VRAM now
@@ -105,6 +107,7 @@ matrix:
     q08: 1       # 0.8B, ultra-leve
     lfm2s: 1    # 1.2B Instruct, ultra-leve
     lfm2t: 1    # 1.2B Thinking, ultra-leve
+    m3: 2        # 3.4B dense + 0.4B vision, leve mas maior
     q4: 2
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1
