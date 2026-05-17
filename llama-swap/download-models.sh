@@ -40,6 +40,8 @@ export HF_HUB_CACHE="${HOME}/.cache/huggingface"
 # Model definitions
 # Format: "repo filename [local_filename]"
 # If local_filename is provided, the file is renamed after download
+# NOTE: MTP GGUFs available (unsloth/Qwen3.5-XB-MTP-GGUF) but Qwen3.5 SSM architecture
+# requires ~1.3GB Gated Delta Net compute buffer per context, making MTP unusable on 6GB VRAM
 declare -A MODELS=(
   ["qwen3.5-0.8b"]="unsloth/Qwen3.5-0.8B-GGUF Qwen3.5-0.8B-UD-Q3_K_XL.gguf"
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-UD-Q3_K_XL.gguf"
@@ -52,6 +54,11 @@ declare -A MODELS=(
   ["lfm2.5-1.2b-think"]="LiquidAI/LFM2.5-1.2B-Thinking-GGUF LFM2.5-1.2B-Thinking-Q8_0.gguf"
   ["lfm2-24b"]="LiquidAI/LFM2-24B-A2B-GGUF LFM2-24B-A2B-Q4_K_M.gguf"
   # Granite 4.1 — dense, Apache 2.0, strong tool-calling + code
+  # NOTE: Gemma 4 MTP assistants available but NOT useful on RTX 3050 6GB
+  # E2B: MTP overhead > speedup (10.6 vs 38.3 tok/s). E4B: OOM with MTP.
+  # To download+convert manually for other hardware:
+  #   hf download google/gemma-4-E2B-it-assistant --local-dir ~/.llama-models/gemma-4-E2B-it-assistant
+  #   python3 ~/git/ik_llama.cpp/convert_hf_to_gguf.py ~/.llama-models/gemma-4-E2B-it-assistant --outfile ~/.llama-models/gemma-4-E2B-it-assistant-Q4_K_M.gguf --outtype q4_k_m
   # glm-4.7-flash removed
   ["qwen3.6-35b-moe"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF Qwen3.5-35B-A3B-APEX-I-Compact.gguf Qwen3.6-35B-A3B-APEX-I-Compact.gguf"
   ["qwopus-35b"]="mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf"
@@ -151,8 +158,8 @@ download_model() {
 show_sizes() {
   echo ""
   echo "Model Sizes (quantization noted):"
-    echo "  qwen3.5-0.8b          ~0.46 GB  (UD-Q3_K_XL) + ~0.20 GB mmproj - Tiny, vision+text"
-    echo "  qwen3.5-4b            ~2.27 GB  (UD-Q3_K_XL) - Fits in VRAM"
+  echo "  qwen3.5-0.8b          ~0.47 GB  (UD-Q3_K_XL) + ~0.20 GB mmproj - Tiny, vision+text"
+  echo "  qwen3.5-4b            ~2.27 GB  (UD-Q3_K_XL) - Fits in VRAM"
   echo "  qwen3.5-9b           ~5.05 GB  (UD-Q3_K_XL) - Fits in VRAM + mmproj"
   echo "  gemma4-e4b           ~4.50 GB  (UD-Q3_K_XL) - Fits in VRAM + mmproj"
   echo "  gemma4-e2b            ~2.72 GB  (UD-Q3_K_XL) - Fits in VRAM"

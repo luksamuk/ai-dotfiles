@@ -459,6 +459,26 @@ cmd_testchat() {
   fi
 }
 
+cmd_voiceclone() {
+  local tui_dir="$HOME/projects/ai/voiceclone-tui"
+  local venv_python="$tui_dir/.venv/bin/python"
+
+  if [[ ! -f "$tui_dir/voice_tui.py" ]]; then
+    echo "Error: voiceclone-tui not found at $tui_dir/voice_tui.py" >&2
+    echo "Install: git clone or copy voiceclone-tui to $tui_dir" >&2
+    exit 1
+  fi
+
+  if [[ ! -x "$venv_python" ]]; then
+    echo "Error: voiceclone venv not found at $venv_python" >&2
+    echo "The TUI will offer to create it on first run." >&2
+    echo "Or run manually: python3 -m venv $tui_dir/.venv" >&2
+    exit 1
+  fi
+
+  exec "$venv_python" "$tui_dir/voice_tui.py" "$@"
+}
+
 # Main
 CMD="${ARGS[0]:-help}"
 
@@ -469,6 +489,7 @@ case "$CMD" in
   unload|free|eject)  cmd_unload "${ARGS[@]:1}" ;;
   logs|log)           cmd_logs "${ARGS[1]:-50}" ;;
   testchat|chat)      cmd_testchat "${ARGS[@]:1}" ;;
+  voiceclone|voice|vc) cmd_voiceclone "${ARGS[@]:1}" ;;
   help|--help|-h)
     echo "llama-swap-cli — Manage llama-swap models from the terminal"
     echo ""
@@ -481,6 +502,7 @@ case "$CMD" in
     echo "  unload [MODEL]  Unload all models, or a specific model (free VRAM)"
     echo "  logs [N]   Show recent logs (default: 50 lines)"
     echo "  testchat   Open interactive chat with model selection"
+    echo "  voiceclone Open voice clone TUI (Drácula, Alucard, etc.)"
     echo ""
     echo "Flags:"
     echo "  --pretty   Colored emoji output (default: plain)"
@@ -504,6 +526,7 @@ case "$CMD" in
     echo "  llama-swap-cli stats --pretty            # colored detailed metrics"
     echo "  llama-swap-cli unload                    # unload all models"
     echo "  llama-swap-cli unload qwen3.6-35b-moe    # unload specific model"
+    echo "  llama-swap-cli voiceclone                # open voice clone TUI"
     ;;
   *)
     echo "Unknown command: ${CMD}" >&2

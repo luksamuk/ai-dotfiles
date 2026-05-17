@@ -117,6 +117,36 @@ Build both from source with CUDA. The AUR package doesn't include `--fit`.
 
 ## Changelog
 
+### 2026-05-16 — MTP Benchmark Results, Gemma 4 MTP Assistants
+
+**Binaries (unchanged from 2026-05-15):**
+- `llama.cpp`: **b9174+13** (v528) — MTP PR #22673 merged
+- `ik_llama.cpp`: **v4504** — MTP re-quant output tensor, Gemma 4 MTP
+- `llama-swap`: **v214** (unchanged)
+
+**Gemma 4 MTP assistant GGUFs created:**
+- `gemma-4-E2B-it-assistant-Q4_K_M.gguf` (75 MB) — converted from `google/gemma-4-E2B-it-assistant`
+- `gemma-4-E4B-it-assistant-Q4_K_M.gguf` (75 MB) — converted from `google/gemma-4-E4B-it-assistant`
+- Both converted using ik_llama.cpp's `convert_hf_to_gguf.py` (arch: `Gemma4AssistantForCausalLM` → `gemma4_mtp`)
+- F16 originals also available (165-166 MB)
+
+**MTP Benchmark Results on RTX 3050 (6GB VRAM):**
+
+| Model | Baseline | With MTP | Notes |
+|-------|----------|----------|-------|
+| Gemma 4 E2B | **38.3 tok/s** | 10.6 tok/s | MTP overhead > speedup |
+| Gemma 4 E4B | **27.5 tok/s** | OOM | Exceeds 6GB VRAM |
+| Qwen 3.5 0.8B | 136 tok/s | OOM | GDN compute buffer blocks MTP |
+| Qwen 3.5 4B | 25 tok/s | OOM | GDN compute buffer blocks MTP |
+| Qwen 3.5 9B | 12 tok/s | OOM | GDN compute buffer blocks MTP |
+
+**Conclusion: MTP is NOT beneficial for small dense models on RTX 3050 6GB.** The
+speculative decoding verification overhead exceeds any draft acceptance gains on models
+that already run fast. Only the Qwen 3.6 MoE (with ik_llama.cpp pinned memory offload)
+benefits from MTP on this hardware.
+
+See [MTP-NOTES.md](MTP-NOTES.md) for detailed MTP configuration and architecture notes.
+
 ### 2026-05-14 — llama-swap v212, Binary Rebuilds, BeeLlama Monitoring
 
 **Binaries upgraded:**
@@ -157,7 +187,47 @@ Build both from source with CUDA. The AUR package doesn't include `--fit`.
 - Updated build version comments in `config.yaml` header (b9158+, v4496+, v212+).
 - `--threads-mtmd` available in ik_llama.cpp but **not used** in current config — vision models use upstream binary which doesn't have this flag.
 
-**Previous: 2025-05-12 — MTP, Speculative Checkpointing, Build Upgrades**
+**What's new in 2025-05-16 — MTP Upstream, Build Upgrades, Qwen 3.5 MTP Investigation**
+
+**Binaries upgraded:**
+- `llama.cpp`: b9158 → **b9174+13** (v528, upstream)
+- `ik_llama.cpp`: v4503 → **v4504** (Iwan Kawrakow's fork)
+- `llama-swap`: v214 (unchanged)
+
+**What's new in llama.cpp b9158 → b9174+:**
+- **MTP Support** (PR #22673) — `--spec-type draft-mtp` for Qwen3.5/3.6 dense models.
+  Supports Qwen3.5/3.6 dense and MoE, plus Qwen3.5-MoE in ik_llama.cpp.
+  See [MTP-NOTES.md](MTP-NOTES.md) for details and RTX 3050 limitations.
+- **New spec-types**: `draft-mtp`, `ngram-simple`, `ngram-map-k`, `ngram-map-k4v`, `ngram-mod`, `ngram-cache`
+- **Draft model support**: `--spec-draft-model`, `--spec-draft-type-k/v` for separate draft model cache types
+- **GDN partial rollback** (for speculative decoding with Gated Delta Net models)
+- **Various**: Qwen3 ASR conversion fix, Codex CLI support, AIME 2026 dataset, UI timeout for MCP tools
+
+**What's new in ik_llama.cpp v4503 → v4504:**
+- **MTP re-quantized output tensor** (PR #1809) — Better TG performance with MTP enabled
+- imatrix fix: use data for ffn_up when data for ffn_gate is missing (PR #1806)
+- **Dual speculative decoding** (PR #1789) — Combine draft model + ngram/MTP
+
+**Qwen 3.5 Dense MTP Investigation:**
+- Downloaded and tested Unsloth MTP GGUF variants for Qwen 3.5 (0.8B, 4B, 9B)
+- **Result: MTP does NOT work on RTX 3050 6GB** — Gated Delta Net requires ~1.3GB
+  compute buffer per context, and MTP doubles this for the draft head
+- Even the 0.8B model fails with OOM when `--spec-type draft-mtp` is enabled
+- Qwen 3.5 dense models remain on non-MTP UD-Q3_K_XL variants
+- Qwen 3.6 MoE (ik_llama.cpp) continues to work with MTP as before
+- See [MTP-NOTES.md](MTP-NOTES.md) for full details
+
+**Benchmark (Qwen 3.5 dense, non-MTP, hot cache):**
+
+| Model | Type | Backend | Prompt t/s | Decode t/s |
+|-------|------|---------|------------|------------|
+| qwen3.5-0.8b | Dense Q3 | upstream | 1356 | **136** |
+| qwen3.5-4b | Dense Q3 | upstream | 62 | **25** |
+| qwen3.5-9b | Dense Q3 | upstream | 23 | **12** |
+
+> Second request (model pre-loaded). MTP variants failed with OOM on 6GB VRAM.
+
+**Previous: 2025-05-15 — vLLM 0.21, LFM2 Tool Parser, Qwopus**
 
 **Binaries upgraded:**
 - `llama.cpp`: b9066 → **b9124** (upstream)

@@ -395,6 +395,7 @@ def fetch_available_models():
             warning = llamaswap.get("warning", "")
             source = llamaswap.get("source", "")
             kv_cache = llamaswap.get("kv_cache", "")
+            health_check_timeout = llamaswap.get("health_check_timeout", 0)
             
             model_info = {
                 "id": model_id,
@@ -410,6 +411,7 @@ def fetch_available_models():
                 "warning": warning,
                 "source": source,
                 "kv_cache": kv_cache,
+                "health_check_timeout": health_check_timeout,
             }
             
             if is_think:
@@ -945,12 +947,22 @@ class StreamingChat:
                 if self.selected_model.startswith("lfm2"):
                     payload["parallel_tool_calls"] = True
             
+            # Timeout dinâmico: usa health_check_timeout do modelo (cold start) + 30s buffer
+            # Modelos como SGLang precisam de ~2-5 min pra carregar na primeira request
+            hct = (self._selected_model_info or {}).get("health_check_timeout", 0)
+            if isinstance(hct, str):
+                hct = int(''.join(c for c in hct if c.isdigit()) or '0')
+            # Tupla (connect_timeout, read_timeout): conecta rápido, mas espera o response
+            connect_timeout = 15  # 15s pra conectar
+            read_timeout = max(hct + 30, 120)  # Mínimo 120s, ou health_check + 30s buffer
+            request_timeout = (connect_timeout, read_timeout)
+            
             # Faz POST com streaming
             response = requests.post(
                 f"{BASE_URL}/chat/completions",
                 json=payload,
                 stream=True,
-                timeout=120,
+                timeout=request_timeout,
             )
             
             # Check for HTTP errors before streaming
@@ -1009,8 +1021,10 @@ class StreamingChat:
                         reasoning = delta.get("reasoning_content", "") or delta.get("reasoning", "")
                         
                         # Handle tool_calls in streaming delta
-                        if "tool_calls" in delta:
-                            for tc in delta["tool_calls"]:
+                        # SGLang can send "tool_calls": null — treat as absent
+                        tool_calls_in_delta = delta.get("tool_calls")
+                        if tool_calls_in_delta:
+                            for tc in tool_calls_in_delta:
                                 idx = tc.get("index", 0)
                                 if idx not in tool_calls_accumulator:
                                     tool_calls_accumulator[idx] = {
@@ -1059,8 +1073,34 @@ class StreamingChat:
             self.status = "Concluído!"
             yield self.render()
             
+        except (requests.exceptions.ConnectTimeout, requests.exceptions.ReadTimeout) as e:
+            # Timeout específico — mensagem clara sobre cold start
+            hct = (self._selected_model_info or {}).get("health_check_timeout", 0)
+            model_name = self.selected_model_name or self.selected_model
+            if hct > 0:
+                self.last_error = f"Timeout após {read_timeout}s. Modelo {model_name!r} pode estar em cold start (healthCheckTimeout={hct}s). Tente novamente — o modelo já deve estar carregado."
+            else:
+                self.last_error = f"Timeout após {read_timeout}s conectando ao modelo {model_name!r}. Verifique se o servidor está rodando."
+            self.status = "⏱️ Timeout"
+            yield self.render()
+        except requests.exceptions.ConnectionError as e:
+            model_name = self.selected_model_name or self.selected_model
+            self.last_error = f"Erro de conexão: não conseguiu alcançar o servidor ({BASE_URL}). Verifique se o llama-swap está rodando."
+            self.status = "🔌 Sem conexão"
+            yield self.render()
         except Exception as e:
             import traceback
+            tb_str = traceback.format_exc()
+            # Log full traceback to file for debugging
+            try:
+                with open("/tmp/testchat_error.log", "a") as f:
+                    f.write(f"\n--- {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n")
+                    f.write(f"Model: {self.selected_model}\n")
+                    f.write(f"Error: {type(e).__name__}: {e}\n")
+                    f.write(tb_str)
+                    f.write("\n")
+            except Exception:
+                pass
             self.last_error = f"{type(e).__name__}: {str(e)[:200]}"
             self.status = f"Erro: {str(e)[:50]}"
             yield self.render()
