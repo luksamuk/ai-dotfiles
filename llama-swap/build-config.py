@@ -53,6 +53,7 @@ ORIGINAL_ORDER = [
     "lfm2.5-1.2b-think",
     "lfm2.5-vl-450m",
     "ministral-3-3b",       # Dense 3.4B + 0.4B vision — mistral3 arch, upstream only
+    "webworld-8b",          # Web world model Qwen3-8B fine-tune — qwen3 arch, upstream only
     "gemma4-26b-moe",
     "gpt-oss-20b",
     "lfm2-24b",

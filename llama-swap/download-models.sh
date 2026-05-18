@@ -19,6 +19,7 @@
 #   minicpm-v-4.6        - MiniCPM-V 4.6 Q5_K_M (~0.54 GB) + mmproj F16 (~1.03 GB) - VLM, video+text, 256K ctx
 #   smolllm3-3b           - SmolLM3-3B UD-Q5_K_XL (~2.06 GB) - dense, tool-calling, 128K ctx
 #   littlelamb-0.3b-tc   - LittleLamb 0.3B Tool-Calling Q8_0 (~0.30 GB) - ultra-light agentic, 40K ctx
+#   webworld-8b          - WebWorld-8B i1-Q5_K_M (~5.9 GB) - web world model, predicts next page state
 #   qwen3.6-35b-moe      - Qwen3.6-35B-A3B APEX I-Compact (~17.3 GB) - MoE coding + tools
 #   gemma4-26b-moe       - Gemma 4 26B-A4B APEX I-Compact (~15.5 GB) - MoE reasoning + coding, text-only
 #   gpt-oss-20b          - GPT-OSS 20B Q4_K_M (~11 GB) - Dense coding, text-only
@@ -81,6 +82,10 @@ declare -A MODELS=(
   # Uses qwen3 arch — supported in both ik_llama.cpp and upstream
   # Q8_0 preferred: 290M params tiny, quality matters more than size
   ["littlelamb-0.3b-tc"]="mradermacher/LittleLamb-ToolCalling-GGUF LittleLamb-ToolCalling.Q8_0.gguf"
+  # WebWorld-8B — Qwen3-8B web world model, predicts next page state given current state + action
+  # Uses qwen3 arch — ik_llama.cpp segfaults, use upstream only
+  # i1 (imatrix) quantization for better quality at aggressive compression
+  ["webworld-8b"]="mradermacher/WebWorld-8B-i1-GGUF WebWorld-8B.i1-Q5_K_M.gguf"
   # [REMOVED] ds-r1-distill-14b — Dense 14B, poor perf on RTX 3050, SSD pressure
   # [REMOVED] ds-r1-distill-32b — Dense 32B, very slow on limited VRAM, SSD pressure
   # [REMOVED] qwen3.5-9b-ace — analyzed, worse perplexity than 9B regular (no imatrix)
@@ -125,7 +130,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-1.2b, lfm2-24b, minicpm-v-4.6, smolllm3-3b, littlelamb-0.3b-tc, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, ministral-3-3b, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-1.2b, lfm2-24b, minicpm-v-4.6, smolllm3-3b, littlelamb-0.3b-tc, webworld-8b, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, ministral-3-3b, all"
     return 1
   fi
   
@@ -199,6 +204,7 @@ show_sizes() {
   echo "  minicpm-v-4.6      ~0.54 GB  (Q5_K_M) + 1.03 GB mmproj - VLM video+image+text, 256K ctx"
   echo "  smolllm3-3b         ~2.06 GB  (UD-Q5_K_XL) - Dense, dual tool-calling (XML+Python), 128K ctx"
   echo "  littlelamb-0.3b-tc  ~0.30 GB  (Q8_0) - Ultra-light tool-calling, 40K ctx"
+  echo "  webworld-8b         ~5.90 GB  (i1-Q5_K_M) - Web world model, predicts next page state"
   echo "  ds-r1-distill-14b    [REMOVED] — poor perf on RTX 3050"
   echo "  ds-r1-distill-32b    [REMOVED] — very slow on limited VRAM"
   echo "  [REMOVED] nemotron-3-nano-4b"
@@ -215,7 +221,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"lfm2.5-vl-450m"|"lfm2.5-1.2b"|"lfm2.5-1.2b-think"|"lfm2-24b"|"qwen3.6-35b-moe"|"qwopus-35b"|"gemma4-26b-moe"|"gpt-oss-20b"|"ministral-3-3b"|"minicpm-v-4.6"|"smolllm3-3b"|"littlelamb-0.3b-tc")
+  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"lfm2.5-vl-450m"|"lfm2.5-1.2b"|"lfm2.5-1.2b-think"|"lfm2-24b"|"qwen3.6-35b-moe"|"qwopus-35b"|"gemma4-26b-moe"|"gpt-oss-20b"|"ministral-3-3b"|"minicpm-v-4.6"|"smolllm3-3b"|"littlelamb-0.3b-tc"|"webworld-8b")
     download_model "$1"
     ;;
   "qwen3.5:4b"|"qwen3.5:9b"|"gemma4:e4b"|"gemma4:e2b")
@@ -235,7 +241,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-1.2b, lfm2.5-1.2b-think, lfm2-24b, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-1.2b, lfm2.5-1.2b-think, lfm2-24b, webworld-8b, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, all"
     exit 1
     ;;
 esac

@@ -640,6 +640,56 @@ models:
         warning: "Uses mistral3 arch — ONLY runs on llama.cpp upstream, NOT ik_llama.cpp. Vision disabled: mmproj crashes with CUDA OOM on mistral3. --n-gpu-layers 99 causes OOM with 131K ctx, use --fit on instead."
 
   # -------------------------------------------
+  # WEBWORLD-8B — Web World Model (Qwen3-8B fine-tune)
+  # Qwen/WebWorld-8B — predicts next web page state given current state + action
+  # Trained on 1M+ real web interaction trajectories
+  # Architecture: qwen3 — causes SEGFAULT in ik_llama.cpp, use upstream
+  # Supports: A11y Tree, HTML, XML, Markdown, NL state representations
+  # Action space: click(bid), fill(bid,text), goto(url), scroll(dx,dy), keyboard_press(key)
+  # NOT a chatbot — requires specialized prompt format (world model system prompt + state/action)
+  # Multi-turn trajectory simulation (30+ steps) must be implemented client-side
+  # Paper: arXiv 2602.14721
+  # i1-Q5_K_M ~5.9GB — fits in VRAM with --fit
+  # Uses ${llama_server} (upstream) — ik_llama.cpp segfaults with qwen3 GGUFs
+  # No tool calling, no vision, no thinking — pure world model for web simulation
+  # Apache 2.0 license
+  # -------------------------------------------
+  "webworld-8b":
+    name: "WebWorld 8B"
+    description: "Web world model, predicts next page state (i1-Q5_K_M, upstream)"
+    tags: ["world-model"]
+    cmd: |
+        ${llama_server} --port ${PORT}
+        --model ${models_dir}/WebWorld-8B.i1-Q5_K_M.gguf
+        --fit on
+        --fit-ctx 8192
+        --fit-target ${vram_margin}
+        --ctx-size 32768
+        --parallel 2
+        --cont-batching
+        --temp 0.6
+        --top-p 0.9
+        --top-k 20
+        --min-p 0.01
+        --repeat-penalty 1.05
+        --cache-type-k ${small_cache_k}
+        --cache-type-v ${small_cache_v}
+        --flash-attn on
+        --metrics
+    ttl: 60
+    metadata:
+        size: "~5.9 GB (i1-Q5_K_M)"
+        context: "8K-32K (dynamic)"
+        vram_usage: "~5.5GB (model + cache)"
+        source: "mradermacher/WebWorld-8B-i1-GGUF (i1-Q5_K_M)"
+        kv_cache: "q8_0 + attn_rot"
+        features:
+            thinking: false
+            vision: false
+            tools: false
+        warning: "ik_llama.cpp segfaults with this model — use llama.cpp upstream. Not a chatbot — requires specialized world model prompts."
+
+  # -------------------------------------------
   # GEMMA-4-26B-A4B - MoE REASONING + CODING (APEX I-Compact)
   # MoE 26B params, 4B ativo por token. 128 experts, top-8 routing.
   # Google recomenda: temp=1.0 para reasoning, temp=0.7 para coding
@@ -1130,6 +1180,7 @@ hooks:
 # - LFM2.5-VL (0.5GB) pode acompanhar modelos pequenos
 # - Gemma4-E2B (~3GB) + LFM2.5-VL (~0.5GB) = ~3.5GB total (CABE)
 # - Qwen3.5-4B (~3GB) + LFM2.5-VL (~0.5GB) = ~3.5GB total (CABE)
+# - WebWorld-8B (~5.9GB) roda SOZINHO (não cabe com vision)
 # - Variantes "think" usam o mesmo modelo, só mudam --reasoning
 #   (não rodam simultaneamente com a variante base)
 # ============================================
@@ -1148,6 +1199,7 @@ matrix:
     q08: qwen3.5-0.8b
     q4: qwen3.5-4b
     m3: ministral-3-3b
+    ww: webworld-8b
     # [REMOVED] n4: nemotron-3-nano-4b
     g2: gemma4-e2b
     lfm2s: lfm2.5-1.2b
@@ -1187,7 +1239,7 @@ matrix:
 
     # Modelos médios (~5GB VRAM) - agora cabem na VRAM com UD-Q3!
     # Qwen3.5-9B e Gemma4-E4B cabem inteiramente
-    medium: "q9 | g4"
+    medium: "q9 | g4 | ww"
 
     # [REMOVED] omni_vision set (Nemotron Omni not added — upstream-only, poor perf on 6GB VRAM)
 
@@ -1217,6 +1269,7 @@ matrix:
     lfm2t: 1    # 1.2B Thinking, ultra-leve
     m3: 2        # 3.4B dense + 0.4B vision, leve mas maior
     q4: 2
+    ww: 4        # 8B world model, ~5.9GB, medium startup
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1
     # vLLM backends — high startup cost (30-90s), high eviction cost

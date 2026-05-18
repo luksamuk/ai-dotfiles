@@ -22,6 +22,7 @@ hooks:
 # - LFM2.5-VL (0.5GB) pode acompanhar modelos pequenos
 # - Gemma4-E2B (~3GB) + LFM2.5-VL (~0.5GB) = ~3.5GB total (CABE)
 # - Qwen3.5-4B (~3GB) + LFM2.5-VL (~0.5GB) = ~3.5GB total (CABE)
+# - WebWorld-8B (~5.9GB) roda SOZINHO (não cabe com vision)
 # - Variantes "think" usam o mesmo modelo, só mudam --reasoning
 #   (não rodam simultaneamente com a variante base)
 # ============================================
@@ -40,6 +41,7 @@ matrix:
     q08: qwen3.5-0.8b
     q4: qwen3.5-4b
     m3: ministral-3-3b
+    ww: webworld-8b
     # [REMOVED] n4: nemotron-3-nano-4b
     g2: gemma4-e2b
     lfm2s: lfm2.5-1.2b
@@ -79,7 +81,7 @@ matrix:
 
     # Modelos médios (~5GB VRAM) - agora cabem na VRAM com UD-Q3!
     # Qwen3.5-9B e Gemma4-E4B cabem inteiramente
-    medium: "q9 | g4"
+    medium: "q9 | g4 | ww"
 
     # [REMOVED] omni_vision set (Nemotron Omni not added — upstream-only, poor perf on 6GB VRAM)
 
@@ -109,6 +111,7 @@ matrix:
     lfm2t: 1    # 1.2B Thinking, ultra-leve
     m3: 2        # 3.4B dense + 0.4B vision, leve mas maior
     q4: 2
+    ww: 4        # 8B world model, ~5.9GB, medium startup
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1
     # vLLM backends — high startup cost (30-90s), high eviction cost
