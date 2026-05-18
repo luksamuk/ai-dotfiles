@@ -16,6 +16,9 @@
 #   [REMOVED] granite-4.1-3b — tool-calling failed in Pi, removed May 2026
 #   [REMOVED] granite-4.1-8b — tool-calling failed in Pi, removed May 2026
 #   [REMOVED] glm-4.7-flash — superseded by Qwen3.6 35B MoE
+#   minicpm-v-4.6        - MiniCPM-V 4.6 Q5_K_M (~0.54 GB) + mmproj F16 (~1.03 GB) - VLM, video+text, 256K ctx
+#   smolllm3-3b           - SmolLM3-3B UD-Q5_K_XL (~2.06 GB) - dense, tool-calling, 128K ctx
+#   littlelamb-0.3b-tc   - LittleLamb 0.3B Tool-Calling Q8_0 (~0.30 GB) - ultra-light agentic, 40K ctx
 #   qwen3.6-35b-moe      - Qwen3.6-35B-A3B APEX I-Compact (~17.3 GB) - MoE coding + tools
 #   gemma4-26b-moe       - Gemma 4 26B-A4B APEX I-Compact (~15.5 GB) - MoE reasoning + coding, text-only
 #   gpt-oss-20b          - GPT-OSS 20B Q4_K_M (~11 GB) - Dense coding, text-only
@@ -67,6 +70,17 @@ declare -A MODELS=(
   # Ministral 3 3B — Mistral edge model, text-only (mmproj crashes CUDA), tool calling
   # Uses mistral3 arch — ONLY llama.cpp upstream, NOT ik_llama.cpp
   ["ministral-3-3b"]="unsloth/Ministral-3-3B-Instruct-2512-GGUF Ministral-3-3B-Instruct-2512-UD-Q5_K_XL.gguf"
+  # MiniCPM-V 4.6 — VLM with SigLIP2-400M, Qwen3.5-0.8B backbone, 256K ctx, video+image+text
+  # Uses qwen35 arch — supported in both ik_llama.cpp and upstream
+  # Q5_K_M: good q/size ratio for a 1.3B model that fits entirely in VRAM
+  ["minicpm-v-4.6"]="openbmb/MiniCPM-V-4.6-gguf MiniCPM-V-4_6-Q5_K_M.gguf"
+  # SmolLM3-3B — HuggingFace dense model, dual tool-calling (XML+Python), 128K ctx
+  # Uses smollm3 arch — supported in both ik_llama.cpp and upstream
+  ["smolllm3-3b"]="unsloth/SmolLM3-3B-GGUF SmolLM3-3B-UD-Q5_K_XL.gguf"
+  # LittleLamb 0.3B TC — ultra-light tool-calling model compressed from Qwen3-0.6B via CompactifAI
+  # Uses qwen3 arch — supported in both ik_llama.cpp and upstream
+  # Q8_0 preferred: 290M params tiny, quality matters more than size
+  ["littlelamb-0.3b-tc"]="mradermacher/LittleLamb-ToolCalling-GGUF LittleLamb-ToolCalling.Q8_0.gguf"
   # [REMOVED] ds-r1-distill-14b — Dense 14B, poor perf on RTX 3050, SSD pressure
   # [REMOVED] ds-r1-distill-32b — Dense 32B, very slow on limited VRAM, SSD pressure
   # [REMOVED] qwen3.5-9b-ace — analyzed, worse perplexity than 9B regular (no imatrix)
@@ -84,6 +98,8 @@ declare -A MMPROJ=(
   ["qwen3.5-0.8b"]="unsloth/Qwen3.5-0.8B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-0.8B-F16.gguf"
   # Ministral 3 3B — mmproj downloaded but UNUSED (crashes CUDA on mistral3 arch)
   ["ministral-3-3b"]="unsloth/Ministral-3-3B-Instruct-2512-GGUF mmproj-F16.gguf mmproj-Ministral-3-3B-F16.gguf"
+  # MiniCPM-V 4.6 — mmproj includes SigLIP2-400M vision encoder (1.03 GB F16)
+  ["minicpm-v-4.6"]="openbmb/MiniCPM-V-4.6-gguf mmproj-model-f16.gguf mmproj-MiniCPM-V-4.6-F16.gguf"
 
 )
 
@@ -109,7 +125,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-  echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-1.2b, lfm2-24b, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-1.2b, lfm2-24b, minicpm-v-4.6, smolllm3-3b, littlelamb-0.3b-tc, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, ministral-3-3b, all"
     return 1
   fi
   
@@ -180,6 +196,9 @@ show_sizes() {
   echo "  qwopus-35b        ~16.50 GB  (APEX I-Compact) - Heavy offload, MoE coding+reasoning SFT"
   echo "  gemma4-26b-moe    ~15.50 GB  (APEX I-Compact) - Heavy offload, MoE reasoning + coding text-only"
   echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"
+  echo "  minicpm-v-4.6      ~0.54 GB  (Q5_K_M) + 1.03 GB mmproj - VLM video+image+text, 256K ctx"
+  echo "  smolllm3-3b         ~2.06 GB  (UD-Q5_K_XL) - Dense, dual tool-calling (XML+Python), 128K ctx"
+  echo "  littlelamb-0.3b-tc  ~0.30 GB  (Q8_0) - Ultra-light tool-calling, 40K ctx"
   echo "  ds-r1-distill-14b    [REMOVED] — poor perf on RTX 3050"
   echo "  ds-r1-distill-32b    [REMOVED] — very slow on limited VRAM"
   echo "  [REMOVED] nemotron-3-nano-4b"
@@ -196,7 +215,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"lfm2.5-vl-450m"|"lfm2.5-1.2b"|"lfm2.5-1.2b-think"|"lfm2-24b"|"qwen3.6-35b-moe"|"qwopus-35b"|"gemma4-26b-moe"|"gpt-oss-20b")
+  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"lfm2.5-vl-450m"|"lfm2.5-1.2b"|"lfm2.5-1.2b-think"|"lfm2-24b"|"qwen3.6-35b-moe"|"qwopus-35b"|"gemma4-26b-moe"|"gpt-oss-20b"|"ministral-3-3b"|"minicpm-v-4.6"|"smolllm3-3b"|"littlelamb-0.3b-tc")
     download_model "$1"
     ;;
   "qwen3.5:4b"|"qwen3.5:9b"|"gemma4:e4b"|"gemma4:e2b")

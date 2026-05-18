@@ -23,6 +23,7 @@ globalTTL: 0
 # Macros reutilizáveis
 macros:
   "models_dir": "${env.HOME}/.llama-models"
+  "media_path": "${env.HOME}/testfiles/vision"
   
   # Caminho para o llama-server compilado com CUDA (--fit disponível)
   # Build local em ~/git/llama.cpp/build/bin/llama-server
@@ -567,6 +568,7 @@ models:
       --model ${models_dir}/LFM2.5-VL-450M-Q8_0.gguf
       --jinja
       --mmproj ${models_dir}/mmproj-LFM2.5-VL-450m-F16.gguf
+      --media-path ${media_path}
       --fit on
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
@@ -921,6 +923,188 @@ models:
         vision: false
         tools: true
       warning: "Vision disabled — mmproj blocks partial expert offload (11→41 layers GPU). Text-only = 33-34 t/s vs 5 t/s with vision. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. Pinned memory gives constant speed up to 200K tokens."
+
+  # -------------------------------------------
+  # LITTLELAMB 0.3B TC — Ultra-light tool-calling model
+  # Compressed from Qwen3-0.6B to 290M params via CompactifAI (50% compression)
+  # Architecture: qwen3 — causes SEGFAULT in ik_llama.cpp, use upstream
+  # Q8_0 ~303 MB — fits ENTIRELY in VRAM with room to spare
+  # Tool calling: Qwen3-style JSON format, BFCL v4 51.5%
+  # 40K context, English only for tool-calling variant
+  # Dual mode: base (chat, no think) and :think (reasoning)
+  # Uses ${llama_server} (upstream) — ik_llama.cpp segfaults with this model
+  # NOTE: BFCL 51.5% is low — test if sufficient for simple agentic loops
+  # Apache 2.0 license
+  # -------------------------------------------
+  "littlelamb-0.3b-tc":
+    name: "LittleLamb 0.3B TC"
+    description: "Ultra-light tool-calling, Qwen3-compressed (Q8_0, upstream)"
+    tags: ["tools"]
+    cmd: |
+        ${llama_server} --port ${PORT}
+        --model ${models_dir}/LittleLamb-ToolCalling.Q8_0.gguf
+        --jinja
+        --fit on
+        --fit-target 768
+        --fit-ctx ${small_model_min_ctx}
+        --ctx-size 40960
+        --parallel 4
+        --cont-batching
+        --temp ${code_temp}
+        --top-p ${code_top_p}
+        --top-k ${code_top_k}
+        --min-p ${code_min_p}
+        --repeat-penalty ${code_repeat_penalty}
+        --reasoning on
+        --cache-type-k ${small_cache_k}
+        --cache-type-v ${small_cache_v}
+        --flash-attn on
+        --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.9
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    metadata:
+        size: "~303 MB (Q8_0)"
+        context: "8K-40K (dynamic)"
+        vram_usage: "~0.5GB (model + cache)"
+        source: "mradermacher/LittleLamb-ToolCalling-GGUF (Q8_0)"
+        kv_cache: "q8_0 + attn_rot"
+        features:
+            thinking: true
+            vision: false
+            tools: true
+        warning: "ik_llama.cpp segfaults with this model — use llama.cpp upstream"
+
+  # -------------------------------------------
+  # MINICPM-V 4.6 — VLM (Vision-Language Model)
+  # OpenBMB/Tsinghua, Qwen3.5-0.8B backbone + SigLIP2-400M vision encoder
+  # Architecture: qwen35 (text) + clip (mmproj) — supported in llama.cpp v528+
+  # 1.3B total params — video+image+text, 256K context, LLaVA-UHD v4 compression
+  # Uses ${llama_server} (upstream) — mmproj uses libmtmd multimodal pipeline
+  # Q5_K_M ~552 MB + mmproj F16 ~1.1 GB — fits in VRAM with --fit
+  # Dual mode: base (chat, no think) and :think (reasoning)
+  # Apache 2.0 license
+  # -------------------------------------------
+  "minicpm-v-4.6":
+    name: "MiniCPM-V 4.6"
+    description: "VLM Qwen3.5-0.8B + SigLIP2-400M, video+image+text (Q5_K_M, llama.cpp)"
+    tags: ["vision"]
+    cmd: |
+        ${llama_server} --port ${PORT}
+        --model ${models_dir}/MiniCPM-V-4_6-Q5_K_M.gguf
+        --mmproj ${models_dir}/mmproj-MiniCPM-V-4.6-F16.gguf
+        --media-path ${media_path}
+        --jinja
+        --fit on
+        --fit-ctx 8192
+        --ctx-size 262144
+        --parallel 4
+        --cont-batching
+        --temp ${default_temp}
+        --top-p 0.8
+        --top-k 100
+        --min-p ${default_min_p}
+        --repeat-penalty 1.05
+        --reasoning on
+        --cache-type-k f16
+        --cache-type-v f16
+        --flash-attn on
+        --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    metadata:
+        size: "0.55 GB (Q5_K_M) + 1.1 GB mmproj"
+        context: "8K-256K (dynamic)"
+        vram_usage: "~2GB (model + mmproj + cache)"
+        source: "openbmb/MiniCPM-V-4.6-gguf"
+        kv_cache: "f16 (vision model, precision priority)"
+        features:
+            thinking: true
+            vision: true
+            tools: false
+
+  # -------------------------------------------
+  # SMOLLM3-3B — HuggingFace dense transformer
+  # Custom SmolLM3ForCausalLM (GQA + NoPE, 36 layers, SiLU, tied embeddings)
+  # Architecture: smollm3 — supported in ik_llama.cpp (build_smollm3)
+  # 3B params, dual tool-calling (XML+JSON / Python), dual thinking mode
+  # BFCL v4 score: 92.3 (no-think) — excellent tool-calling for 3B
+  # UD-Q5_K_XL ~2.1 GB — fits in VRAM with --fit
+  # 65K native ctx, 128K with YaRN rope_scaling
+  # Dual mode: base (chat, no think) and :think (reasoning)
+  # Apache 2.0 license
+  # -------------------------------------------
+  "smolllm3-3b":
+    name: "SmolLM3 3B"
+    description: "HuggingFace dense, dual tool-calling XML+Python (UD-Q5_K_XL, ik)"
+    unlisted: true
+    tags: ["tools"]
+    cmd: |
+        ${ik_llama_server} --port ${PORT}
+        --model ${models_dir}/SmolLM3-3B-UD-Q5_K_XL.gguf
+        --jinja
+        --fit
+        --fit-margin 768
+        --ctx-size 131072
+        --parallel 4
+        --cont-batching
+        --temp ${default_temp}
+        --top-p ${default_top_p}
+        --top-k ${code_top_k}
+        --min-p ${code_min_p}
+        --repeat-penalty ${code_repeat_penalty}
+        --reasoning on
+        --cache-type-k ${small_cache_k}
+        --cache-type-v ${small_cache_v}
+        --flash-attn on
+        --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.9
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    metadata:
+        size: "~2.1 GB (UD-Q5_K_XL)"
+        context: "32K-128K (dynamic)"
+        vram_usage: "~3GB (model + cache)"
+        source: "unsloth/SmolLM3-3B-GGUF (UD-Q5_K_XL)"
+        kv_cache: "q8_0 + attn_rot"
+        features:
+            thinking: true
+            vision: false
+            tools: true
 
 # Hooks: ações na inicialização do llama-swap
 # preload: carrega modelos síncronamente antes de aceitar requests

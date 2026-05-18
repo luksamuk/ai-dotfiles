@@ -20,7 +20,15 @@
                 "qwen3.5:4b": {
                     "name": "Qwen 3.5 (4B)",
                     "reasoning": true,
-                    "modalities": { "input": ["text", "image"], "output": ["text"] },
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
                         "context": 131072,
                         "output": 32768
@@ -29,7 +37,15 @@
                 "qwen3.5:9b": {
                     "name": "Qwen 3.5 (9B)",
                     "reasoning": true,
-                    "modalities": { "input": ["text", "image"], "output": ["text"] },
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
                         "context": 131072,
                         "output": 32768
@@ -38,7 +54,15 @@
                 "glm-5:cloud": {
                     "name": "GLM 5 ☁️",
                     "reasoning": true,
-                    "modalities": { "input": ["text", "image"], "output": ["text"] },
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
                         "context": 131072,
                         "output": 32768
@@ -47,7 +71,15 @@
                 "glm-5.1:cloud": {
                     "name": "GLM 5.1 ☁️",
                     "reasoning": true,
-                    "modalities": { "input": ["text", "image"], "output": ["text"] },
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
                         "context": 202752,
                         "output": 32768
@@ -56,7 +88,15 @@
                 "minimax-m2.5:cloud": {
                     "name": "MiniMax M2.5 ☁️",
                     "reasoning": true,
-                    "modalities": { "input": ["text", "image"], "output": ["text"] },
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
                         "context": 202752,
                         "output": 32768
@@ -65,7 +105,15 @@
                 "minimax-m2.7:cloud": {
                     "name": "MiniMax M2.7 ☁️",
                     "reasoning": true,
-                    "modalities": { "input": ["text", "image"], "output": ["text"] },
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
                         "context": 204800,
                         "output": 32768
@@ -74,7 +122,15 @@
                 "kimi-k2.5:cloud": {
                     "name": "Kimi K2.5 ☁️",
                     "reasoning": true,
-                    "modalities": { "input": ["text", "image"], "output": ["text"] },
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
                         "context": 262144,
                         "output": 32768
@@ -83,7 +139,15 @@
                 "kimi-k2.6:cloud": {
                     "name": "Kimi K2.6 ☁️",
                     "reasoning": true,
-                    "modalities": { "input": ["text", "image"], "output": ["text"] },
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
                         "context": 262144,
                         "output": 32768
@@ -92,7 +156,15 @@
                 "qwen3.5:cloud": {
                     "name": "Qwen 3.5 ☁️",
                     "reasoning": true,
-                    "modalities": { "input": ["text", "image"], "output": ["text"] },
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
                         "context": 131072,
                         "output": 32768
@@ -101,7 +173,15 @@
                 "nemotron-3-nano:30b-cloud": {
                     "name": "Nemotron 3 Nano 30B ☁️",
                     "reasoning": true,
-                    "modalities": { "input": ["text", "image"], "output": ["text"] },
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
                         "context": 1048576,
                         "output": 32768
@@ -118,7 +198,15 @@
                 "gemma4:31b-cloud": {
                     "name": "Gemma 4 31B ☁️",
                     "reasoning": true,
-                    "modalities": { "input": ["text", "image"], "output": ["text"] },
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
                         "context": 131072,
                         "output": 32768
@@ -128,7 +216,7 @@
         },
         "local": {
             "npm": "@ai-sdk/openai-compatible",
-            "name": "llama.cpp",
+            "name": "llama-swap",
             "options": {
                 "baseURL": "http://127.0.0.1:12434/v1"
             },
@@ -165,37 +253,6 @@
                         "output": 32768
                     }
                 },
-                "lfm2.5-vl-450m": {
-                    "name": "LFM2.5-VL 450M",
-                    "reasoning": false,
-                    "modalities": { "input": ["text", "image"], "output": ["text"] },
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "nemotron-3-nano-4b": {
-                    "name": "Nemotron 3 Nano 4B",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "nemotron-3-nano-4b:think": {
-                    "name": "Nemotron 3 Nano 4B 🧠",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
                 "qwen3.5-4b": {
                     "name": "Qwen 3.5 4B",
                     "reasoning": true,
@@ -206,22 +263,6 @@
                 },
                 "qwen3.5-4b:think": {
                     "name": "Qwen 3.5 4B 🧠",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5-9b": {
-                    "name": "Qwen 3.5 9B",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5-9b:think": {
-                    "name": "Qwen 3.5 9B 🧠",
                     "reasoning": true,
                     "limit": {
                         "context": 131072,
@@ -268,18 +309,36 @@
                     },
                     "capabilities": []
                 },
-                "gpt-oss-20b": {
-                    "name": "GPT-OSS 20B 🧠",
-                    "reasoning": true,
+                "lfm2.5-1.2b": {
+                    "name": "LFM2.5 1.2B",
+                    "reasoning": false,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
-                        "context": 201000,
+                        "context": 131072,
                         "output": 32768
                     },
-                    "capabilities": []
+                    "capabilities": [
+                        "tools"
+                    ]
                 },
-                "qwen3.6-35b-qwopus": {
-                    "name": "Qwopus 3.6 35B",
-                    "reasoning": true,
+                "ministral-3-3b": {
+                    "name": "Ministral 3 3B",
+                    "reasoning": false,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
                         "context": 131072,
                         "output": 32768
@@ -288,16 +347,77 @@
                         "tools"
                     ]
                 },
-                "qwen3.6-35b-qwopus:think": {
-                    "name": "Qwopus 3.6 35B 🧠",
-                    "reasoning": true,
+                "littlelamb-0.3b-tc": {
+                    "name": "LittleLamb 0.3B TC",
+                    "reasoning": false,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
-                        "context": 131072,
-                        "output": 32768
+                        "context": 40960,
+                        "output": 8192
                     },
                     "capabilities": [
                         "tools"
                     ]
+                },
+                "littlelamb-0.3b-tc:think": {
+                    "name": "LittleLamb 0.3B TC 🧠",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "limit": {
+                        "context": 40960,
+                        "output": 8192
+                    },
+                    "capabilities": [
+                        "tools"
+                    ]
+                },
+                "minicpm-v-4.6": {
+                    "name": "MiniCPM-V 4.6",
+                    "reasoning": false,
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
+                    }
+                },
+                "minicpm-v-4.6:think": {
+                    "name": "MiniCPM-V 4.6 🧠",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
+                    }
                 }
             }
         }
@@ -336,7 +456,7 @@
                 "read": "allow",
                 "write": "allow",
                 "edit": "allow",
-                "bash": "ask"
+                "bash": "allow"
             }
         },
         "review": {
@@ -384,7 +504,7 @@
                 "read": "allow",
                 "write": "allow",
                 "edit": "allow",
-                "bash": "ask"
+                "bash": "allow"
             }
         }
     },

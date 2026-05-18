@@ -11,7 +11,7 @@
       "models": [
         {
           "id": "deepseek-v4-flash:cloud",
-          "name": "\u2601\ufe0f DeepSeek V4 Flash",
+          "name": "☁️ DeepSeek V4 Flash",
           "reasoning": true,
           "input": [
             "text"
@@ -21,7 +21,7 @@
         },
         {
           "id": "deepseek-v4-pro:cloud",
-          "name": "\u2601\ufe0f DeepSeek V4 Pro",
+          "name": "☁️ DeepSeek V4 Pro",
           "reasoning": true,
           "input": [
             "text"
@@ -31,7 +31,7 @@
         },
         {
           "id": "gemini-3-flash-preview:cloud",
-          "name": "\u2601\ufe0f Gemini 3 Flash Preview",
+          "name": "☁️ Gemini 3 Flash Preview",
           "reasoning": true,
           "input": [
             "text",
@@ -42,7 +42,7 @@
         },
         {
           "id": "gemma4:31b-cloud",
-          "name": "\u2601\ufe0f Gemma 4 31B",
+          "name": "☁️ Gemma 4 31B",
           "reasoning": true,
           "input": [
             "text",
@@ -53,7 +53,7 @@
         },
         {
           "id": "glm-5.1:cloud",
-          "name": "\u2601\ufe0f GLM 5.1",
+          "name": "☁️ GLM 5.1",
           "reasoning": true,
           "input": [
             "text"
@@ -63,7 +63,7 @@
         },
         {
           "id": "glm-5:cloud",
-          "name": "\u2601\ufe0f GLM 5",
+          "name": "☁️ GLM 5",
           "reasoning": true,
           "input": [
             "text"
@@ -73,7 +73,7 @@
         },
         {
           "id": "kimi-k2.6:cloud",
-          "name": "\u2601\ufe0f Kimi K2.6",
+          "name": "☁️ Kimi K2.6",
           "reasoning": true,
           "input": [
             "text",
@@ -84,7 +84,7 @@
         },
         {
           "id": "kimi-k2.5:cloud",
-          "name": "\u2601\ufe0f Kimi K2.5",
+          "name": "☁️ Kimi K2.5",
           "reasoning": true,
           "input": [
             "text",
@@ -95,7 +95,7 @@
         },
         {
           "id": "minimax-m2.5:cloud",
-          "name": "\u2601\ufe0f MiniMax M2.5",
+          "name": "☁️ MiniMax M2.5",
           "reasoning": true,
           "input": [
             "text"
@@ -105,7 +105,7 @@
         },
         {
           "id": "minimax-m2.7:cloud",
-          "name": "\u2601\ufe0f MiniMax M2.7 1M",
+          "name": "☁️ MiniMax M2.7 1M",
           "reasoning": true,
           "input": [
             "text"
@@ -115,7 +115,7 @@
         },
         {
           "id": "nemotron-3-super:cloud",
-          "name": "\u2601\ufe0f Nemotron 3 Super",
+          "name": "☁️ Nemotron 3 Super",
           "reasoning": true,
           "input": [
             "text"
@@ -125,7 +125,7 @@
         },
         {
           "id": "nemotron-3-nano:30b-cloud",
-          "name": "\u2601\ufe0f Nemotron 3 Nano 30B 1M",
+          "name": "☁️ Nemotron 3 Nano 30B 1M",
           "reasoning": true,
           "input": [
             "text"
@@ -135,7 +135,7 @@
         },
         {
           "id": "qwen3.5:cloud",
-          "name": "\u2601\ufe0f Qwen 3.5 397B",
+          "name": "☁️ Qwen 3.5 397B",
           "reasoning": true,
           "input": [
             "text",
@@ -146,7 +146,41 @@
         }
       ]
     },
-    "llama.cpp": {
+    "sisyphus": {
+      "api": "openai-completions",
+      "apiKey": "not-needed",
+      "models": [
+        {
+          "id": "qwen3-1.7b",
+          "name": "Qwen3 1.7B 📟",
+          "context": 16384,
+          "maxTokens": 4096,
+          "reasoning": true,
+          "inputPrice": 0,
+          "outputPrice": 0
+        },
+        {
+          "id": "qwen3-0.6b",
+          "name": "Qwen3 0.6B 📟",
+          "context": 16384,
+          "maxTokens": 4096,
+          "reasoning": true,
+          "inputPrice": 0,
+          "outputPrice": 0
+        },
+        {
+          "id": "gemma3-1b",
+          "name": "Gemma 3 1B 📟",
+          "context": 8192,
+          "maxTokens": 4096,
+          "reasoning": false,
+          "inputPrice": 0,
+          "outputPrice": 0
+        }
+      ],
+      "baseUrl": "http://192.168.3.8:8081/v1"
+    },
+    "llama-swap": {
       "api": "openai-completions",
       "apiKey": "***",
       "baseUrl": "http://127.0.0.1:12434/v1",
@@ -158,7 +192,7 @@
       "models": [
         {
           "id": "qwen3.5-4b",
-          "name": "\ud83e\udde0 Qwen3.5 4B",
+          "name": "🧠 Qwen3.5 4B",
           "reasoning": true,
           "input": [
             "text"
@@ -168,27 +202,7 @@
         },
         {
           "id": "qwen3.5-4b:think",
-          "name": "\ud83e\udde0 Qwen3.5 4B Thinking",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "qwen3.5-9b",
-          "name": "\ud83e\udde0 Qwen3.5 9B",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "qwen3.5-9b:think",
-          "name": "\ud83e\udde0 Qwen3.5 9B Thinking",
+          "name": "🧠 Qwen3.5 4B Thinking",
           "reasoning": true,
           "input": [
             "text"
@@ -198,7 +212,7 @@
         },
         {
           "id": "gemma4-e2b",
-          "name": "\ud83e\udde0 Gemma 4 E2B",
+          "name": "🧠 Gemma 4 E2B",
           "reasoning": true,
           "input": [
             "text"
@@ -208,7 +222,7 @@
         },
         {
           "id": "gemma4-e2b:think",
-          "name": "\ud83e\udde0 Gemma 4 E2B Thinking",
+          "name": "🧠 Gemma 4 E2B Thinking",
           "reasoning": true,
           "input": [
             "text"
@@ -218,7 +232,7 @@
         },
         {
           "id": "gemma4-e4b",
-          "name": "\ud83e\udde0 Gemma 4 E4B",
+          "name": "🧠 Gemma 4 E4B",
           "reasoning": true,
           "input": [
             "text"
@@ -228,7 +242,7 @@
         },
         {
           "id": "gemma4-e4b:think",
-          "name": "\ud83e\udde0 Gemma 4 E4B Thinking",
+          "name": "🧠 Gemma 4 E4B Thinking",
           "reasoning": true,
           "input": [
             "text"
@@ -236,29 +250,10 @@
           "contextWindow": 131072,
           "maxTokens": 32768
         },
-        {
-          "id": "nemotron-3-nano-4b",
-          "name": "\ud83e\udde0 Nemotron 3 Nano 4B",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "nemotron-3-nano-4b:think",
-          "name": "\ud83e\udde0 Nemotron 3 Nano 4B Thinking",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
+
         {
           "id": "gemma4-26b-moe",
-          "name": "\ud83e\udde0 Gemma 4 26B MoE",
+          "name": "🧠 Gemma 4 26B MoE",
           "reasoning": true,
           "input": [
             "text"
@@ -268,7 +263,7 @@
         },
         {
           "id": "gemma4-26b-moe:think",
-          "name": "\ud83e\udde0 Gemma 4 26B MoE Thinking",
+          "name": "🧠 Gemma 4 26B MoE Thinking",
           "reasoning": true,
           "input": [
             "text"
@@ -277,18 +272,8 @@
           "maxTokens": 32768
         },
         {
-          "id": "gpt-oss-20b",
-          "name": "\ud83e\udde0 GPT-OSS 20B",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 201000,
-          "maxTokens": 32768
-        },
-        {
           "id": "qwen3.6-35b-moe",
-          "name": "\ud83e\udde0 Qwen3.6 35B MoE",
+          "name": "🧠 Qwen3.6 35B MoE",
           "reasoning": true,
           "input": [
             "text"
@@ -298,7 +283,7 @@
         },
         {
           "id": "qwen3.6-35b-moe:think",
-          "name": "\ud83e\udde0 Qwen3.6 35B MoE Thinking",
+          "name": "🧠 Qwen3.6 35B MoE Thinking",
           "reasoning": true,
           "input": [
             "text"
@@ -307,60 +292,80 @@
           "maxTokens": 32768
         },
         {
-          "id": "qwen3.6-35b-qwopus",
-          "name": "\ud83e\udde0 Qwopus 3.6 35B",
-          "reasoning": true,
+          "id": "lfm2.5-1.2b",
+          "name": "🧠 LFM2.5 1.2B",
+          "reasoning": false,
           "input": [
             "text"
           ],
           "contextWindow": 131072,
+          "maxTokens": 32768,
+          "capabilities": [
+            "tools"
+          ]
+        },
+        {
+          "id": "ministral-3-3b",
+          "name": "🧠 Ministral 3 3B",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "capabilities": [
+            "tools"
+          ]
+        },
+        {
+          "id": "littlelamb-0.3b-tc",
+          "name": "🧠 LittleLamb 0.3B TC",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 40960,
+          "maxTokens": 8192,
+          "capabilities": [
+            "tools"
+          ]
+        },
+        {
+          "id": "littlelamb-0.3b-tc:think",
+          "name": "🧠 LittleLamb 0.3B TC Thinking",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 40960,
+          "maxTokens": 8192,
+          "capabilities": [
+            "tools"
+          ]
+        },
+        {
+          "id": "minicpm-v-4.6",
+          "name": "🧠 MiniCPM-V 4.6",
+          "reasoning": false,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 262144,
           "maxTokens": 32768
         },
         {
-          "id": "qwen3.6-35b-qwopus:think",
-          "name": "\ud83e\udde0 Qwopus 3.6 35B Thinking",
+          "id": "minicpm-v-4.6:think",
+          "name": "🧠 MiniCPM-V 4.6 Thinking",
           "reasoning": true,
           "input": [
-            "text"
+            "text",
+            "image"
           ],
-          "contextWindow": 131072,
+          "contextWindow": 262144,
           "maxTokens": 32768
         }
       ]
-    },
-    "sisyphus": {
-      "api": "openai-completions",
-      "apiKey": "not-needed",
-      "models": [
-        {
-          "id": "qwen3-1.7b",
-          "name": "Qwen3 1.7B \ud83d\udcdf",
-          "context": 16384,
-          "maxTokens": 4096,
-          "reasoning": true,
-          "inputPrice": 0,
-          "outputPrice": 0
-        },
-        {
-          "id": "qwen3-0.6b",
-          "name": "Qwen3 0.6B \ud83d\udcdf",
-          "context": 16384,
-          "maxTokens": 4096,
-          "reasoning": true,
-          "inputPrice": 0,
-          "outputPrice": 0
-        },
-        {
-          "id": "gemma3-1b",
-          "name": "Gemma 3 1B \ud83d\udcdf",
-          "context": 8192,
-          "maxTokens": 4096,
-          "reasoning": false,
-          "inputPrice": 0,
-          "outputPrice": 0
-        }
-      ],
-      "baseUrl": "http://192.168.3.8:8081/v1"
     }
   }
 }

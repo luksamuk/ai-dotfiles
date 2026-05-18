@@ -7,6 +7,7 @@
       --model ${models_dir}/LFM2.5-VL-450M-Q8_0.gguf
       --jinja
       --mmproj ${models_dir}/mmproj-LFM2.5-VL-450m-F16.gguf
+      --media-path ${media_path}
       --fit on
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
