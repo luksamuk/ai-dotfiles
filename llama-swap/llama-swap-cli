@@ -479,6 +479,35 @@ cmd_voiceclone() {
   exec "$venv_python" "$tui_dir/voice_tui.py" "$@"
 }
 
+cmd_worldsim() {
+  local worldsim_dir="$(dirname "$(readlink -f "$0")")/worldsim"
+  # Fallback: check deployed config location
+  if [[ ! -d "$worldsim_dir" ]]; then
+    worldsim_dir="$HOME/.config/llama-swap/worldsim"
+  fi
+
+  if [[ ! -f "$worldsim_dir/main.py" ]]; then
+    echo "Error: worldsim not found. Looked in:" >&2
+    echo "  $(dirname "$(readlink -f "$0")")/worldsim/" >&2
+    echo "  $HOME/.config/llama-swap/worldsim/" >&2
+    exit 1
+  fi
+
+  # Forward LLAMA_SWAP_HOST/PORT to worldsim
+  export LLAMA_SWAP_HOST="${LLAMA_SWAP_HOST:-127.0.0.1}"
+  export LLAMA_SWAP_PORT="${LLAMA_SWAP_PORT:-12434}"
+
+  # Pass any extra args to worldsim (e.g. --manual, --agent, --world)
+  local sim_args=("$@")
+
+  # Use venv if available, else uv run
+  if [[ -x "$worldsim_dir/.venv/bin/python" ]]; then
+    exec "$worldsim_dir/.venv/bin/python" "$worldsim_dir/main.py" "${sim_args[@]}"
+  else
+    exec uv run --project "$worldsim_dir" "$worldsim_dir/main.py" "${sim_args[@]}"
+  fi
+}
+
 # Main
 CMD="${ARGS[0]:-help}"
 
@@ -489,6 +518,7 @@ case "$CMD" in
   unload|free|eject)  cmd_unload "${ARGS[@]:1}" ;;
   logs|log)           cmd_logs "${ARGS[1]:-50}" ;;
   testchat|chat)      cmd_testchat "${ARGS[@]:1}" ;;
+  worldsim|sim|ws)   cmd_worldsim "${ARGS[@]:1}" ;;
   voiceclone|voice|vc) cmd_voiceclone "${ARGS[@]:1}" ;;
   help|--help|-h)
     echo "llama-swap-cli — Manage llama-swap models from the terminal"
@@ -502,6 +532,7 @@ case "$CMD" in
     echo "  unload [MODEL]  Unload all models, or a specific model (free VRAM)"
     echo "  logs [N]   Show recent logs (default: 50 lines)"
     echo "  testchat   Open interactive chat with model selection"
+    echo "  worldsim  Interactive web world model simulation (Agent + World Model loop)"
     echo "  voiceclone Open voice clone TUI (Drácula, Alucard, etc.)"
     echo ""
     echo "Flags:"
