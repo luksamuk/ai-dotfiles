@@ -210,6 +210,28 @@
                         "context": 131072,
                         "output": 32768
                     }
+                },
+                "deepseek-v4-pro:cloud": {
+                    "name": "DeepSeek V4 Pro ☁️",
+                    "reasoning": true,
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 1048576,
+                        "output": 32768
+                    }
+                },
+                "deepseek-v4-flash:cloud": {
+                    "name": "DeepSeek V4 Flash ☁️",
+                    "reasoning": true,
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 1048576,
+                        "output": 32768
+                    }
                 }
             }
         },
@@ -463,7 +485,7 @@
             }
         },
         "research": {
-            "model": "ollama/minimax-m2.7:cloud",
+            "model": "ollama/kimi-k2.6:cloud",
             "temperature": 0.3,
             "description": "Deep research and investigation. Explores codebases, documentation, and external sources to gather information. Read-only analysis.",
             "prompt": "You are a research agent. Investigate codebases, trace dependencies, understand data flows, and identify risks. Search the web for documentation and best practices when needed. Provide comprehensive analysis with evidence. You do NOT write or modify any code — only investigate and report.",
