@@ -2,9 +2,9 @@
 """
 worldsim — Interactive web world model simulation using llama-swap.
 
-Agent + World Model loop with sliding window context management.
+Agent + World Model loop with single-turn world model calls.
 The agent has conversation memory (knows what it already did).
-The world model uses sliding window (last N turns only) to avoid context overflow.
+The world model receives only current state + action (no trajectory history).
 
 Usage:
     llama-swap-cli worldsim
@@ -59,12 +59,6 @@ WORLD_SYSTEM = (
     "and a sequence of actions. For each action, predict the resulting page state.\n"
     "Strictly maintain the original format. Output only the full page state "
     "without explanations, code, or truncation."
-)
-
-CONTINUE_PROMPT = (
-    "Continue the trajectory. Given the previous state, "
-    "predict the next page state after this action.\n\n"
-    "Action: '{action}'\n\nNext Page State:"
 )
 
 # Agent system prompt — explains A11y format and task structure
@@ -221,20 +215,6 @@ def truncate_state(state: str, max_lines: int = 50) -> str:
     return "\n".join(lines[:max_lines]) + f"\n... ({len(lines) - max_lines} more lines)"
 
 
-def sliding_window(messages: list, keep_turns: int = 2) -> list:
-    """
-    Keep system message + last N turn pairs from world model context.
-    Each turn = user + assistant message pair.
-    """
-    if len(messages) <= 1 + keep_turns * 2:
-        return messages
-
-    system = messages[0]  # Always keep system
-    # Keep last keep_turns * 2 messages (user+assistant pairs)
-    tail = messages[-(keep_turns * 2):]
-    return [system] + tail
-
-
 def run_agent(agent_model: str, state: str, task: str,
               action_history: list, step: int) -> tuple:
     """
@@ -262,44 +242,23 @@ def run_agent(agent_model: str, state: str, task: str,
     return action, elapsed, tokens
 
 
-def run_world_model(world_model: str, state: str, action: str,
-                    wm_messages: list, step: int, window_turns: int = 2) -> tuple:
+def run_world_model(world_model: str, state: str, action: str) -> tuple:
     """
     Run world model to predict next page state.
-    Uses sliding window on wm_messages to avoid context overflow.
-    Returns (new_state, updated_wm_messages, elapsed_seconds, tokens).
+    Single-turn: always sends just (current state + action), no history.
+    The world model doesn't need trajectory context — given state + action, it predicts next state.
+    Trajectory coherence is the agent's responsibility (it has memory of past actions).
+    Returns (new_state, elapsed_seconds, tokens).
     """
-    # Build prompt for this turn
-    if step == 0:
-        user_msg = f"Initial Page State:\n{state}\n\nFirst Action: '{action}'\n\nNext Page State:"
-        new_messages = [
-            {"role": "system", "content": WORLD_SYSTEM},
-            {"role": "user", "content": user_msg},
-        ]
-    else:
-        user_msg = CONTINUE_PROMPT.format(action=action)
-        new_messages = wm_messages + [{"role": "user", "content": user_msg}]
+    user_msg = f"Initial Page State:\n{state}\n\nFirst Action: '{action}'\n\nNext Page State:"
+    messages = [
+        {"role": "system", "content": WORLD_SYSTEM},
+        {"role": "user", "content": user_msg},
+    ]
 
-    # Apply sliding window BEFORE sending (keep system + last N turns)
-    new_messages_windowed = sliding_window(new_messages, keep_turns=window_turns)
-
-    content, elapsed, tokens = chat_completion(world_model, new_messages_windowed, max_tokens=4096, temperature=0.0)
+    content, elapsed, tokens = chat_completion(world_model, messages, max_tokens=4096, temperature=0.0)
     new_state = strip_reason(content)
-
-    # Update multi-turn context with FULL (un-windowed) messages for accurate history tracking
-    if step == 0:
-        updated = [
-            {"role": "system", "content": WORLD_SYSTEM},
-            {"role": "user", "content": f"Initial Page State:\n{state}\n\nFirst Action: '{action}'\n\nNext Page State:"},
-            {"role": "assistant", "content": content},
-        ]
-    else:
-        updated = wm_messages + [
-            {"role": "user", "content": user_msg},
-            {"role": "assistant", "content": content},
-        ]
-
-    return new_state, updated, elapsed, tokens
+    return new_state, elapsed, tokens
 
 
 def fetch_models():
@@ -343,17 +302,15 @@ def main():
                         help="Task description for the agent")
     parser.add_argument("--state", type=str, choices=list(DEFAULT_STATES.keys()),
                         help="Initial page state template")
-    parser.add_argument("--steps", type=int, default=15,
-                        help="Maximum simulation steps (default: 15)")
-    parser.add_argument("--window", type=int, default=2,
-                        help="Sliding window turns for world model (default: 2)")
+    parser.add_argument("--steps", type=int, default=10,
+                        help="Max simulation steps (default: 10)")
     parser.add_argument("--no-truncate", action="store_true",
                         help="Don't truncate states sent to agent")
     args = parser.parse_args()
 
     console.print(Panel(
         "[bold cyan]🌐 WorldSim[/bold cyan] — Agent + World Model → Web Trajectory Simulation\n"
-        "[dim]Sliding window context · Agent with memory · Step-by-step display[/dim]",
+        "[dim]Single-turn world model · Agent with memory · Step-by-step display[/dim]",
         border_style="bright_blue",
         box=box.HEAVY,
     ))
@@ -421,7 +378,7 @@ def main():
     console.print(f"  World Model: [cyan]{world_model}[/cyan]")
     console.print(f"  Mode: {'👤 Manual' if args.manual else f'🤖 Agent ({agent_model})'}")
     console.print(f"  Task: [italic]{task if task else 'N/A (manual)'}[/italic]")
-    console.print(f"  Max steps: {args.steps} | Window: last {args.window} turns")
+    console.print(f"  Max steps: {args.steps}")
     console.rule()
 
     # Print initial state
@@ -435,7 +392,6 @@ def main():
     ))
 
     current_state = initial_state
-    wm_messages = []   # World model multi-turn context (full history)
     action_history = []  # List of actions taken
     trajectory = []     # List of (action, state_after, agent_time, wm_time) tuples
 
@@ -477,9 +433,8 @@ def main():
 
         # --- World model predicts next state ---
         with console.status("[bold cyan]🌍 World model predicting...[/bold cyan]"):
-            new_state, wm_messages, wm_time, wm_tokens = run_world_model(
+            new_state, wm_time, wm_tokens = run_world_model(
                 world_model, current_state, action,
-                wm_messages, step, window_turns=args.window,
             )
 
         trajectory.append((action, new_state, agent_time, wm_time))
