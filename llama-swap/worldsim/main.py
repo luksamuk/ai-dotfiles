@@ -34,9 +34,24 @@ console = Console()
 # --- Config ---
 BASE_URL = os.environ.get(
     "WORLDSIM_URL",
-    f"http://{os.environ.get('LLAMA_SWAP_HOST', '127.0.0.1')}"
-    f":{os.environ.get('LLAMA_SWAP_PORT', '12434')}/v1",
+    f"http://127.0.0.1:12434/v1",
 )
+
+# If LLAMA_SWAP_HOST/PORT are set, use them (handle Goose-style full URLs)
+_raw_host = os.environ.get("LLAMA_SWAP_HOST", "")
+_raw_port = os.environ.get("LLAMA_SWAP_PORT", "")
+if _raw_host and not os.environ.get("WORLDSIM_URL"):
+    if _raw_host.startswith("http://") or _raw_host.startswith("https://"):
+        # Full URL style (e.g. from Goose): extract host and port
+        from urllib.parse import urlparse
+        parsed = urlparse(_raw_host)
+        host = parsed.hostname or "127.0.0.1"
+        port = parsed.port or int(_raw_port or "12434")
+        BASE_URL = f"http://{host}:{port}/v1"
+    else:
+        # Hostname-only style
+        port = _raw_port or "12434"
+        BASE_URL = f"http://{_raw_host}:{port}/v1"
 
 # WebWorld system prompt (from official model card)
 WORLD_SYSTEM = (
