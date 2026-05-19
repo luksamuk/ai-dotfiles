@@ -317,74 +317,73 @@ def run_world_model_streamed(world_model: str, state: str, action: str, step: in
         {"role": "user", "content": user_msg},
     ]
 
-    # Streaming state
-    full_text = ""
-    in_reason = False
+    # State machine for incremental tag parsing
+    # BEFORE_REASON: haven't seen <reason> yet, accumulating into pre_buf
+    # IN_REASON: inside <reason>...</reason>, accumulating into reason_buf
+    # AFTER_REASON: </reason> seen, everything else is state
+    BEFORE_REASON, IN_REASON, AFTER_REASON = 0, 1, 2
+    parse_state = BEFORE_REASON
     reason_buf = ""
     state_buf = ""
-    reason_line_count = 0
-    state_line_count = 0
+    # Buffer for text before <reason> — may contain leftover whitespace
+    # if model starts directly with state (no <reason> tag)
+    pre_buf = ""
 
-    # Build initial layout
-    reason_text_widget = Text("", style="dim italic")
-    state_text_widget = Text("", style="cyan")
-    title_text = Text(f"🌍 Predicting Step {step + 1}...", style="bold cyan")
-
-    layout = Panel(
-        Text.assemble(title_text, "\n\n", reason_text_widget, "\n", state_text_widget),
-        title="[bold]🌍 World Model[/bold]",
-        border_style="cyan",
-        box=box.ROUNDED,
-        padding=(1, 2),
-    )
-
-    with Live(layout, console=console, refresh_per_second=8, transient=True) as live:
+    with Live("", console=console, refresh_per_second=8, transient=True) as live:
         def on_chunk(text: str):
-            nonlocal full_text, in_reason, reason_buf, state_buf
-            nonlocal reason_line_count, state_line_count
-            full_text += text
+            nonlocal parse_state, reason_buf, state_buf, pre_buf
 
-            # Parse <reason> tags incrementally
-            if "<reason>" in full_text and not in_reason:
-                idx = full_text.index("<reason>")
-                in_reason = True
-                reason_buf = full_text[idx + 8:]
-            elif in_reason:
-                if "</reason>" in full_text:
-                    idx = full_text.index("</reason>")
-                    reason_buf = full_text[full_text.index("<reason>") + 8:idx]
-                    in_reason = False
-                    state_buf = full_text[idx + 9:].lstrip()
-                else:
-                    reason_buf = full_text[full_text.index("<reason>") + 8:]
-            elif not in_reason and "<reason>" not in full_text:
-                # No reason tags at all — everything is state
-                state_buf = full_text
+            if parse_state == BEFORE_REASON:
+                pre_buf += text
+                # Check if <reason> tag appeared (may span chunks)
+                if "<reason>" in pre_buf:
+                    idx = pre_buf.index("<reason>")
+                    reason_buf = pre_buf[idx + 8:]  # after <reason>
+                    pre_buf = ""
+                    parse_state = IN_REASON
+                    # Check if </reason> is already in this chunk
+                    if "</reason>" in reason_buf:
+                        end_idx = reason_buf.index("</reason>")
+                        state_buf = reason_buf[end_idx + 9:].lstrip()
+                        reason_buf = reason_buf[:end_idx]
+                        parse_state = AFTER_REASON
+                # If no <reason> and buffer is growing, assume no reason tag
+                # (heuristic: if we see A11y tree patterns, it's state)
+                elif len(pre_buf) > 20 and not pre_buf.strip().startswith("<reason"):
+                    # No reason tag — everything is state
+                    state_buf = pre_buf.lstrip()
 
-            # Count lines for compact display
-            reason_lines = reason_buf.strip().split("\n") if reason_buf.strip() else []
-            state_lines = state_buf.strip().split("\n") if state_buf.strip() else []
+            elif parse_state == IN_REASON:
+                reason_buf += text
+                if "</reason>" in reason_buf:
+                    end_idx = reason_buf.index("</reason>")
+                    state_buf = reason_buf[end_idx + 9:].lstrip()
+                    reason_buf = reason_buf[:end_idx]
+                    parse_state = AFTER_REASON
+
+            elif parse_state == AFTER_REASON:
+                state_buf += text
 
             # Build display
             parts = []
             parts.append(Text(f"🌍 Step {step + 1} — generating...\n", style="bold cyan"))
 
-            if reason_lines:
-                # Show reasoning inline, truncated if long
+            if parse_state == IN_REASON or (parse_state == AFTER_REASON and reason_buf.strip()):
+                reason_lines = reason_buf.strip().split("\n")
                 display_reason = "\n".join(reason_lines[:6])
                 if len(reason_lines) > 6:
                     display_reason += f"\n  ... ({len(reason_lines) - 6} more lines)"
                 parts.append(Text("💭 Reasoning: ", style="dim bold"))
                 parts.append(Text(display_reason + "\n\n", style="dim italic"))
 
-            if state_lines:
-                # Show state being built
+            if state_buf.strip():
+                state_lines = state_buf.strip().split("\n")
                 display_state = "\n".join(state_lines[:20])
                 if len(state_lines) > 20:
                     display_state += f"\n  ... ({len(state_lines) - 20} more lines)"
                 parts.append(Text("📄 Next State:\n", style="bold cyan"))
                 parts.append(Text(display_state, style="cyan"))
-            elif not reason_lines and not state_lines:
+            elif parse_state == BEFORE_REASON and not pre_buf.strip():
                 parts.append(Text("⏳ Waiting for first token...", style="dim"))
 
             live.update(Panel(
