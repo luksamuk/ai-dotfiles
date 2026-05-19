@@ -160,23 +160,57 @@ DEFAULT_TASKS = {
 
 
 def chat_completion(model: str, messages: list, max_tokens: int = 2048,
-                    temperature: float = 0.0, timeout: int = 180) -> tuple:
-    """Call llama-swap chat completion. Returns (content, elapsed_seconds, total_tokens)."""
+                    temperature: float = 0.0, timeout: int = 180,
+                    ttft_timeout: int = 60) -> tuple:
+    """Call llama-swap chat completion with streaming.
+    
+    Uses streaming to separate TTFT timeout (first token) from total timeout.
+    llama-swap model swaps can take 15-30s, so ttft_timeout accounts for that.
+    Returns (content, elapsed_seconds, total_tokens).
+    """
     payload = {
         "model": model,
         "messages": messages,
         "max_tokens": max_tokens,
         "temperature": temperature,
+        "stream": True,
+        "stream_options": {"include_usage": True},
     }
     t0 = time.time()
     try:
-        resp = requests.post(f"{BASE_URL}/chat/completions", json=payload, timeout=timeout, stream=False)
-        elapsed = time.time() - t0
+        # ttft_timeout: generous for model swap, but won't hang forever
+        resp = requests.post(f"{BASE_URL}/chat/completions", json=payload,
+                             timeout=ttft_timeout, stream=True)
         resp.raise_for_status()
-        data = resp.json()
-        content = data["choices"][0]["message"]["content"]
-        tokens = data.get("usage", {}).get("total_tokens", 0)
-        return content, elapsed, tokens
+
+        content_chunks = []
+        total_tokens = 0
+        for line in resp.iter_lines(decode_unicode=True):
+            if time.time() - t0 > timeout:
+                break
+            if not line or not line.startswith("data: "):
+                continue
+            data_str = line[6:]
+            if data_str.strip() == "[DONE]":
+                break
+            try:
+                chunk = json.loads(data_str)
+                delta = chunk.get("choices", [{}])[0].get("delta", {})
+                text = delta.get("content")
+                if text:
+                    content_chunks.append(text)
+                # Capture usage from final chunk (stream_options include_usage)
+                usage = chunk.get("usage")
+                if usage:
+                    total_tokens = usage.get("total_tokens", 0)
+            except json.JSONDecodeError:
+                continue
+
+        content = "".join(content_chunks)
+        elapsed = time.time() - t0
+        if total_tokens == 0:
+            total_tokens = len(content) // 4  # rough fallback
+        return content, elapsed, total_tokens
     except requests.exceptions.Timeout:
         return "[TIMEOUT]", time.time() - t0, 0
     except Exception as e:
