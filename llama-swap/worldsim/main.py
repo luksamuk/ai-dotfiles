@@ -5,6 +5,7 @@ worldsim — Interactive web world model simulation using llama-swap.
 Agent + World Model loop with single-turn world model calls.
 The agent has conversation memory (knows what it already did).
 The world model receives only current state + action (no trajectory history).
+Streaming UI: see reasoning and A11y tree generation in real-time.
 
 Usage:
     llama-swap-cli worldsim
@@ -18,7 +19,7 @@ import json
 import time
 import re
 import argparse
-from typing import Optional
+from typing import Optional, Callable, Union
 
 import requests
 import questionary
@@ -28,6 +29,7 @@ from rich.panel import Panel
 from rich.text import Text
 from rich.table import Table
 from rich import box
+from rich.markdown import Markdown
 
 console = Console()
 
@@ -160,32 +162,97 @@ DEFAULT_TASKS = {
 
 
 def chat_completion(model: str, messages: list, max_tokens: int = 2048,
-                    temperature: float = 0.0, timeout: int = 180) -> tuple:
-    """Call llama-swap chat completion. Returns (content, elapsed_seconds, total_tokens)."""
+                    temperature: float = 0.0, timeout: int = 180,
+                    on_chunk: Union[Callable[[str], None], None] = None) -> tuple:
+    """Call llama-swap chat completion. Returns (content, elapsed_seconds, total_tokens).
+    
+    If on_chunk is provided, uses streaming and calls on_chunk(text) for each
+    chunk as it arrives. Otherwise uses simple non-streaming request.
+    """
+    t0 = time.time()
+    if on_chunk is None:
+        # Simple non-streaming path
+        payload = {
+            "model": model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        try:
+            resp = requests.post(f"{BASE_URL}/chat/completions", json=payload,
+                                 timeout=timeout, stream=False)
+            elapsed = time.time() - t0
+            resp.raise_for_status()
+            data = resp.json()
+            content = data["choices"][0]["message"]["content"]
+            tokens = data.get("usage", {}).get("total_tokens", 0)
+            return content, elapsed, tokens
+        except requests.exceptions.Timeout:
+            return "[TIMEOUT]", time.time() - t0, 0
+        except Exception as e:
+            return f"[ERROR: {e}]", time.time() - t0, 0
+
+    # Streaming path — calls on_chunk for each text delta
     payload = {
         "model": model,
         "messages": messages,
         "max_tokens": max_tokens,
         "temperature": temperature,
+        "stream": True,
+        "stream_options": {"include_usage": True},
     }
-    t0 = time.time()
     try:
-        resp = requests.post(f"{BASE_URL}/chat/completions", json=payload, timeout=timeout, stream=False)
-        elapsed = time.time() - t0
+        resp = requests.post(f"{BASE_URL}/chat/completions", json=payload,
+                             timeout=timeout, stream=True)
         resp.raise_for_status()
-        data = resp.json()
-        content = data["choices"][0]["message"]["content"]
-        tokens = data.get("usage", {}).get("total_tokens", 0)
-        return content, elapsed, tokens
+
+        content_chunks = []
+        total_tokens = 0
+        for line in resp.iter_lines(decode_unicode=True):
+            if not line or not line.startswith("data: "):
+                continue
+            data_str = line[6:]
+            if data_str.strip() == "[DONE]":
+                break
+            try:
+                chunk = json.loads(data_str)
+                choices = chunk.get("choices", [])
+                if choices:
+                    delta = choices[0].get("delta", {})
+                    text = delta.get("content")
+                    if text:
+                        content_chunks.append(text)
+                        on_chunk(text)
+                usage = chunk.get("usage")
+                if usage:
+                    total_tokens = usage.get("total_tokens", 0)
+            except json.JSONDecodeError:
+                continue
+
+        content = "".join(content_chunks)
+        elapsed = time.time() - t0
+        if total_tokens == 0:
+            total_tokens = len(content) // 4
+        return content, elapsed, total_tokens
     except requests.exceptions.Timeout:
         return "[TIMEOUT]", time.time() - t0, 0
     except Exception as e:
         return f"[ERROR: {e}]", time.time() - t0, 0
 
 
-def strip_reason(text: str) -> str:
-    """Remove <reason>...</reason> CoT tags from world model output."""
-    return re.sub(r"<reason>.*?</reason>\s*", "", text, flags=re.DOTALL).strip()
+def strip_reason(text: str) -> tuple:
+    """Split world model output into (reason, state).
+    
+    Returns (reason_text, a11y_state). If no <reason> tags, reason is empty.
+    """
+    match = re.search(r"<reason>(.*?)</reason>\s*", text, flags=re.DOTALL)
+    if match:
+        reason = match.group(1).strip()
+        state = text[match.end():].strip()
+    else:
+        reason = ""
+        state = text.strip()
+    return reason, state
 
 
 def extract_action(text: str) -> str:
@@ -242,22 +309,111 @@ def run_agent(agent_model: str, state: str, task: str,
     return action, elapsed, tokens
 
 
-def run_world_model(world_model: str, state: str, action: str) -> tuple:
-    """
-    Run world model to predict next page state.
-    Single-turn: always sends just (current state + action), no history.
-    The world model doesn't need trajectory context — given state + action, it predicts next state.
-    Trajectory coherence is the agent's responsibility (it has memory of past actions).
-    Returns (new_state, elapsed_seconds, tokens).
-    """
+def run_world_model_streamed(world_model: str, state: str, action: str, step: int) -> tuple:
+    """Run world model with streaming UI. Returns (new_state, reason, elapsed_seconds, tokens)."""
     user_msg = f"Initial Page State:\n{state}\n\nFirst Action: '{action}'\n\nNext Page State:"
     messages = [
         {"role": "system", "content": WORLD_SYSTEM},
         {"role": "user", "content": user_msg},
     ]
 
+    # Streaming state
+    full_text = ""
+    in_reason = False
+    reason_buf = ""
+    state_buf = ""
+    reason_line_count = 0
+    state_line_count = 0
+
+    # Build initial layout
+    reason_text_widget = Text("", style="dim italic")
+    state_text_widget = Text("", style="cyan")
+    title_text = Text(f"🌍 Predicting Step {step + 1}...", style="bold cyan")
+
+    layout = Panel(
+        Text.assemble(title_text, "\n\n", reason_text_widget, "\n", state_text_widget),
+        title="[bold]🌍 World Model[/bold]",
+        border_style="cyan",
+        box=box.ROUNDED,
+        padding=(1, 2),
+    )
+
+    with Live(layout, console=console, refresh_per_second=8, transient=True) as live:
+        def on_chunk(text: str):
+            nonlocal full_text, in_reason, reason_buf, state_buf
+            nonlocal reason_line_count, state_line_count
+            full_text += text
+
+            # Parse <reason> tags incrementally
+            if "<reason>" in full_text and not in_reason:
+                idx = full_text.index("<reason>")
+                in_reason = True
+                reason_buf = full_text[idx + 8:]
+            elif in_reason:
+                if "</reason>" in full_text:
+                    idx = full_text.index("</reason>")
+                    reason_buf = full_text[full_text.index("<reason>") + 8:idx]
+                    in_reason = False
+                    state_buf = full_text[idx + 9:].lstrip()
+                else:
+                    reason_buf = full_text[full_text.index("<reason>") + 8:]
+            elif not in_reason and "<reason>" not in full_text:
+                # No reason tags at all — everything is state
+                state_buf = full_text
+
+            # Count lines for compact display
+            reason_lines = reason_buf.strip().split("\n") if reason_buf.strip() else []
+            state_lines = state_buf.strip().split("\n") if state_buf.strip() else []
+
+            # Build display
+            parts = []
+            parts.append(Text(f"🌍 Step {step + 1} — generating...\n", style="bold cyan"))
+
+            if reason_lines:
+                # Show reasoning inline, truncated if long
+                display_reason = "\n".join(reason_lines[:6])
+                if len(reason_lines) > 6:
+                    display_reason += f"\n  ... ({len(reason_lines) - 6} more lines)"
+                parts.append(Text("💭 Reasoning: ", style="dim bold"))
+                parts.append(Text(display_reason + "\n\n", style="dim italic"))
+
+            if state_lines:
+                # Show state being built
+                display_state = "\n".join(state_lines[:20])
+                if len(state_lines) > 20:
+                    display_state += f"\n  ... ({len(state_lines) - 20} more lines)"
+                parts.append(Text("📄 Next State:\n", style="bold cyan"))
+                parts.append(Text(display_state, style="cyan"))
+            elif not reason_lines and not state_lines:
+                parts.append(Text("⏳ Waiting for first token...", style="dim"))
+
+            live.update(Panel(
+                Text.assemble(*parts),
+                title="[bold]🌍 World Model[/bold]",
+                border_style="cyan",
+                box=box.ROUNDED,
+                padding=(1, 2),
+            ))
+
+        content, elapsed, tokens = chat_completion(
+            world_model, messages, max_tokens=4096, temperature=0.0,
+            on_chunk=on_chunk,
+        )
+
+    # Final split
+    reason, a11y_state = strip_reason(content)
+    return a11y_state, reason, elapsed, tokens
+
+
+def run_world_model(world_model: str, state: str, action: str) -> tuple:
+    """Non-streamed fallback. Returns (new_state, elapsed_seconds, tokens)."""
+    user_msg = f"Initial Page State:\n{state}\n\nFirst Action: '{action}'\n\nNext Page State:"
+    messages = [
+        {"role": "system", "content": WORLD_SYSTEM},
+        {"role": "user", "content": user_msg},
+    ]
     content, elapsed, tokens = chat_completion(world_model, messages, max_tokens=4096, temperature=0.0)
-    new_state = strip_reason(content)
+    new_state = strip_reason(content)[1]
     return new_state, elapsed, tokens
 
 
@@ -306,11 +462,15 @@ def main():
                         help="Max simulation steps (default: 10)")
     parser.add_argument("--no-truncate", action="store_true",
                         help="Don't truncate states sent to agent")
+    parser.add_argument("--no-stream", action="store_true",
+                        help="Disable streaming UI for world model (use spinner instead)")
     args = parser.parse_args()
+
+    use_stream = not args.no_stream
 
     console.print(Panel(
         "[bold cyan]🌐 WorldSim[/bold cyan] — Agent + World Model → Web Trajectory Simulation\n"
-        "[dim]Single-turn world model · Agent with memory · Step-by-step display[/dim]",
+        "[dim]Single-turn world model · Agent with memory · Streaming display[/dim]",
         border_style="bright_blue",
         box=box.HEAVY,
     ))
@@ -379,6 +539,7 @@ def main():
     console.print(f"  Mode: {'👤 Manual' if args.manual else f'🤖 Agent ({agent_model})'}")
     console.print(f"  Task: [italic]{task if task else 'N/A (manual)'}[/italic]")
     console.print(f"  Max steps: {args.steps}")
+    console.print(f"  Streaming: {'✅' if use_stream else '❌'}")
     console.rule()
 
     # Print initial state
@@ -432,23 +593,43 @@ def main():
         console.print(f"  {'👤' if source == 'manual' else '🤖'} Action: [bold yellow]{action}[/bold yellow] [dim]({agent_time:.1f}s, {agent_tokens} tok)[/dim]")
 
         # --- World model predicts next state ---
-        with console.status("[bold cyan]🌍 World model predicting...[/bold cyan]"):
-            new_state, wm_time, wm_tokens = run_world_model(
-                world_model, current_state, action,
+        if use_stream:
+            new_state, reason, wm_time, wm_tokens = run_world_model_streamed(
+                world_model, current_state, action, step,
             )
+            # Show final state panel with reasoning summary
+            parts = []
+            if reason:
+                reason_short = reason[:200] + ("..." if len(reason) > 200 else "")
+                parts.append(Text("💭 ", style="dim"))
+                parts.append(Text(reason_short, style="dim italic"))
+                parts.append(Text("\n\n", style=""))
+            display = new_state[:1500] + ("..." if len(new_state) > 1500 else "")
+            parts.append(Text(display, style="cyan"))
+
+            console.print(Panel(
+                Text.assemble(*parts),
+                title=f"[bold]📄 State after Step {step + 1}[/bold] [dim]({wm_time:.1f}s, {wm_tokens} tok)[/dim]",
+                border_style="green",
+                box=box.ROUNDED,
+                padding=(1, 2),
+            ))
+        else:
+            with console.status("[bold cyan]🌍 World model predicting...[/bold cyan]"):
+                new_state, wm_time, wm_tokens = run_world_model(
+                    world_model, current_state, action,
+                )
+            display = new_state[:1500] + ("..." if len(new_state) > 1500 else "")
+            console.print(Panel(
+                Text(display, style="cyan"),
+                title=f"[bold]📄 State after Step {step + 1}[/bold] [dim]({wm_time:.1f}s, {wm_tokens} tok)[/dim]",
+                border_style="green",
+                box=box.ROUNDED,
+                padding=(1, 2),
+            ))
 
         trajectory.append((action, new_state, agent_time, wm_time))
         current_state = new_state
-
-        # Display new state
-        display = current_state[:1500] + ("..." if len(current_state) > 1500 else "")
-        console.print(Panel(
-            Text(display, style="cyan"),
-            title=f"[bold]📄 State after Step {step + 1}[/bold] [dim]({wm_time:.1f}s, {wm_tokens} tok)[/dim]",
-            border_style="green",
-            box=box.ROUNDED,
-            padding=(1, 2),
-        ))
 
         step += 1
 
@@ -471,7 +652,6 @@ def main():
     console.print(f"\n[bold green]✅ Simulation complete — {len(trajectory)} steps[/bold green]")
     if action_history:
         console.print(f"[dim]Full trajectory: {' → '.join(action_history)}[/dim]")
-
 
 if __name__ == "__main__":
     main()
