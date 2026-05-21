@@ -1,0 +1,54 @@
+  # -------------------------------------------
+  # GPT-OSS 20B — OpenAI MoE coding model
+  # MoE: 20.91B params, ~3.5B active per token (top-4/8 experts)
+  # Architecture: OPENAI_MOE (gpt_oss) — supported in llama.cpp v604+ and ik_llama.cpp v4524+
+  # Uses "Harmony" chat format with internal reasoning (always-on, not optional)
+  # Official guide: https://github.com/ggml-org/llama.cpp/discussions/15396
+  # Key ik_llama.cpp flags for limited VRAM (RTX 3050 6GB):
+  #   --defer-experts   — faster model loading, defers expert mmap on Linux
+  #   --k-cache-hadamard / --v-cache-hadamard — better KV cache quality at q4_0
+  #   --flash-attn auto — disables FA on short prompts (saves overhead on offloaded MoE)
+  #   --fit / --fit-margin 768 — partial GPU offload, MoE experts to RAM
+  #   --jinja — required for Harmony template
+  #   --reasoning on — extracts thinking from Harmony format
+  #   -ub 2048 -b 2048 — recommended batch sizes (official guide)
+  # -------------------------------------------
+  "gpt-oss-20b":
+    name: "GPT-OSS 20B"
+    description: "OpenAI MoE 20B coding — Harmony format, always reasons internally"
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/gpt-oss-20b-Q4_K_M.gguf
+      --jinja
+      --reasoning on
+      --fit
+      --fit-margin 768
+      --ctx-size 131072
+      --temp 0.6
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.01
+      --repeat-penalty 1.0
+      --ubatch-size 2048
+      --batch-size 2048
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --defer-experts
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+    ttl: 120
+    metadata:
+      size: "~10.8 GB (Q4_K_M)"
+      context: "16K-128K (dynamic)"
+      vram_usage: "~5GB VRAM + ~6GB RAM (heavy offload, MoE)"
+      source: "unsloth/gpt-oss-20b-GGUF"
+      kv_cache: "q4_0 + hadamard + attn_rot"
+      features:
+        thinking: true
+        vision: false
+        tools: true
+      warning: "Harmony format: ALWAYS reasons internally (not optional). --reasoning on extracts it properly. MoE offload to RAM — slower than pure GPU models."

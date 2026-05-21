@@ -4,10 +4,12 @@
 # Usage:
 #   llama-swap-cli list              Show configured models (aligned in TTY, TSV in pipe)
 #   llama-swap-cli list --pretty     Colored + emoji output
-#   llama-swap-cli ps                Show running models
+#   llama-swap-cli ps                Show running models (clean, ollama-style)
 #   llama-swap-cli ps --pretty      Show running models (colored + emoji)
-#   llama-swap-cli unload            Unload all models (free VRAM)
-#   llama-swap-cli logs [N]          Show recent logs (default: 50 lines)
+#   llama-swap-cli ps --legacy      Show running models (old verbose format)
+#   llama-swap-cli stats            Detailed metrics for running models
+#   llama-swap-cli unload           Unload all models (free VRAM)
+#   llama-swap-cli logs [N]         Show recent logs (default: 50 lines)
 #
 # Output in TTY: aligned columns via `column -t`
 # Output in pipe: tab-separated values (TSV) for awk/cut/jq
@@ -16,12 +18,14 @@ set -euo pipefail
 
 LLAMA_SWAP_URL="${LLAMA_SWAP_URL:-http://localhost:12434}"
 PRETTY="${LLAMA_SWAP_PRETTY:-}"
+LEGACY="${LLAMA_SWAP_LEGACY:-}"
 
 # Parse flags
 ARGS=()
 for arg in "$@"; do
   case "$arg" in
     --pretty) PRETTY=1 ;;
+    --legacy) LEGACY=1 ;;
     *) ARGS+=("$arg") ;;
   esac
 done
@@ -39,10 +43,8 @@ else
   BOLD='' DIM='' GREEN='' YELLOW='' CYAN='' RED='' RESET=''
 fi
 
-# Feature tag: pipe-friendly text
-# Input: dict-like string from llama-swap metadata, e.g. {"thinking":false,"vision":true,"tools":true}
-# Must check actual boolean values right after the key (not just key name presence)
-# jq outputs: {"thinking":false,"vision":true} — double quotes, lowercase true/false
+# ---- Shared helpers ----
+
 feat_tag() {
   local feats="$1" tags=""
   echo "$feats" | grep -qiP '["'"'"']thinking["'"'"']?\s*:\s*(true|True)'   && tags="${tags}+think"
@@ -53,7 +55,6 @@ feat_tag() {
   echo "$tags"
 }
 
-# Feature emoji: pretty output
 feat_emoji() {
   local feats="$1" emojis=""
   echo "$feats" | grep -qiP '["'"'"']thinking["'"'"']?\s*:\s*(true|True)'   && emojis="${emojis}🤔"
@@ -62,12 +63,96 @@ feat_emoji() {
   [[ -z "$emojis" ]] && emojis="📝"
   echo "$emojis"
 }
-
 # Extract short size: "3.11 GB" from "~3.11 GB (UD-Q3_K_XL ...)" etc.
 short_size() {
   echo "$1" | perl -ne 'if (/([\d.]+)\s*(GB|MB|KB)/i) { print "$1 $2" } else { print "-" }'
 }
 
+# Extract short context: "1K-131K" from "1K-131K (safe max; 200K works but zero VRAM headroom)" etc.
+# Handles both ranges (1K-131K) and single values (32K, 8K)
+short_context() {
+  echo "$1" | perl -ne '
+    if (/^([\d.]+[KMGT]?\s*[-–]\s*[\d.]+[KMGT]?)/i) {
+      my $c = $1; $c =~ s/\s//g; print $c;
+    } elsif (/^([\d.]+[KMGT])/i) {
+      my $c = $1; $c =~ s/\s//g; print $c;
+    } else {
+      print "-";
+    }
+  '
+}
+
+format_output() {
+  if [[ -t 1 ]]; then
+    column -t -s $'\t'
+  else
+    cat
+  fi
+}
+
+# Fetch llama-swap system Prometheus metrics (cached per call)
+_fetch_system_metrics() {
+  if [[ -z "${_SYSTEM_METRICS:-}" ]]; then
+    _SYSTEM_METRICS=$(curl -s "${LLAMA_SWAP_URL}/metrics" 2>/dev/null || echo "")
+  fi
+  echo "$_SYSTEM_METRICS"
+}
+
+# Fetch model-level metrics from a model's /metrics endpoint
+_fetch_model_metrics() {
+  local port="$1"
+  curl -s "http://localhost:${port}/metrics" 2>/dev/null || echo ""
+}
+
+# Extract GPU VRAM usage from system metrics
+# Returns: "used_gb / total_gb" or "-"
+gpu_vram_summary() {
+  local metrics
+  metrics=$(_fetch_system_metrics)
+  if [[ -z "$metrics" ]]; then
+    echo "-"
+    return
+  fi
+  local used_bytes total_bytes
+  # Prometheus metrics may have labels before value; value is always last field
+  used_bytes=$(echo "$metrics" | grep '^llamaswap_gpu_memory_used_bytes' | awk '{print $NF}' | head -1)
+  total_bytes=$(echo "$metrics" | grep '^llamaswap_gpu_memory_total_bytes' | awk '{print $NF}' | head -1)
+  if [[ -n "$used_bytes" ]] && [[ -n "$total_bytes" ]]; then
+    awk "BEGIN {printf \"%.1f / %.1f GB\", $used_bytes/1073741824, $total_bytes/1073741824}"
+  else
+    echo "-"
+  fi
+}
+
+# Extract GPU util% from system metrics
+gpu_util() {
+  local metrics
+  metrics=$(_fetch_system_metrics)
+  echo "$metrics" | grep '^llamaswap_gpu_util_percent' | awk '{print $NF}' | head -1 || echo "-"
+}
+
+# Extract GPU temp from system metrics
+gpu_temp() {
+  local metrics
+  metrics=$(_fetch_system_metrics)
+  echo "$metrics" | grep '^llamaswap_gpu_temperature_celsius' | awk '{print $NF}' | head -1 || echo "-"
+}
+
+# Format TTL as countdown
+format_ttl() {
+  local ttl="$1"
+  if [[ "$ttl" -eq 0 ]]; then
+    echo "-"
+  elif [[ "$ttl" -ge 3600 ]]; then
+    awk "BEGIN {printf \"%.1fh\", $ttl/3600}"
+  elif [[ "$ttl" -ge 60 ]]; then
+    awk "BEGIN {printf \"%.0fm\", $ttl/60}"
+  else
+    echo "${ttl}s"
+  fi
+}
+
+# State label (clean, ollama-style)
 state_label() {
   local state="$1"
   if [[ -n "$PRETTY" ]]; then
@@ -79,23 +164,16 @@ state_label() {
     esac
   else
     case "$state" in
-      ready|started|running|loaded) echo "OK" ;;
-      starting|loading|health_check) echo "LOADING" ;;
-      stopping|unloading) echo "STOPPING" ;;
-      error|failed) echo "ERROR" ;;
+      ready|started|running|loaded) echo "running" ;;
+      starting|loading|health_check) echo "loading" ;;
+      stopping|unloading) echo "stopping" ;;
+      error|failed) echo "error" ;;
       *) echo "$state" ;;
     esac
   fi
 }
 
-# Format output: column-aligned in TTY, TSV in pipe
-format_output() {
-  if [[ -t 1 ]]; then
-    column -t -s $'\t'
-  else
-    cat
-  fi
-}
+# ---- Commands ----
 
 cmd_list() {
   local data
@@ -132,6 +210,8 @@ cmd_list() {
   } | format_output
 }
 
+# ---- ps: clean ollama-style output ----
+
 cmd_ps() {
   local running_data
   running_data=$(curl -s "${LLAMA_SWAP_URL}/running" 2>/dev/null)
@@ -154,12 +234,122 @@ cmd_ps() {
     return
   fi
 
+  # Fetch model metadata from /v1/models for context/size info
+  local models_data
+  models_data=$(curl -s "${LLAMA_SWAP_URL}/v1/models" 2>/dev/null || echo '{"data":[]}')
+
+  # Pre-fetch system metrics once
+  _SYSTEM_METRICS=$(curl -s "${LLAMA_SWAP_URL}/metrics" 2>/dev/null || echo "")
+
+  local header="NAME\tSIZE\tCONTEXT\tTAGS\tT/S\tUNTIL"
+  local output=""
+
+  while IFS= read -r model_json; do
+    local id name state ttl port
+    id=$(echo "$model_json" | jq -r '.model')
+    name=$(echo "$model_json" | jq -r '.name')
+    state=$(echo "$model_json" | jq -r '.state')
+    proxy=$(echo "$model_json" | jq -r '.proxy')
+    ttl=$(echo "$model_json" | jq -r '.ttl // 0')
+    port=$(echo "$proxy" | grep -oP '\d+$' 2>/dev/null || echo "")
+
+    # State (clean label)
+    local icon
+    icon=$(state_label "$state")
+
+    # Features from metadata
+    local features="{}" tags=""
+    features=$(echo "$models_data" | jq -r --arg id "$id" '.data[] | select(.id == $id) | .meta.llamaswap.features // "{}" | tostring' 2>/dev/null || echo "{}")
+    if [[ -n "$PRETTY" ]]; then
+      tags=$(feat_emoji "$features")
+    else
+      tags=$(feat_tag "$features")
+    fi
+
+    # Context from metadata (short format)
+    local context_raw="-"
+    context_raw=$(echo "$models_data" | jq -r --arg id "$id" '.data[] | select(.id == $id) | .meta.llamaswap.context // "-"' 2>/dev/null || echo "-")
+    local context
+    context=$(short_context "$context_raw")
+
+    # Size from metadata (short format)
+    local size="-"
+    size=$(echo "$models_data" | jq -r --arg id "$id" '.data[] | select(.id == $id) | .meta.llamaswap.size // "-"' 2>/dev/null)
+    size=$(short_size "$size")
+
+    # Throughput from model's Prometheus /metrics
+    local gen_tps="-"
+    if [[ -n "$port" ]]; then
+      local model_metrics
+      model_metrics=$(_fetch_model_metrics "$port")
+      if [[ -n "$model_metrics" ]]; then
+        # llama.cpp metrics
+        gen_tps=$(echo "$model_metrics" | grep -P "^llamacpp:predicted_tokens_seconds\s" | awk '{print $2}' || true)
+        gen_tps="${gen_tps:-}"
+        # vLLM fallback
+        if [[ -z "$gen_tps" || "$gen_tps" == "0" ]]; then
+          gen_tps=$(echo "$model_metrics" | grep -oP "^vllm:generation_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1 || true)
+          gen_tps="${gen_tps:-}"
+        fi
+        if [[ -n "$gen_tps" ]] && [[ "$gen_tps" != "0" ]]; then
+          gen_tps=$(awk "BEGIN {printf \"%.1f\", $gen_tps}")
+        else
+          gen_tps="-"
+        fi
+      fi
+    fi
+
+    # TTL formatting
+    local ttl_display
+    ttl_display=$(format_ttl "$ttl")
+
+    # Build row: NAME  SIZE  CONTEXT  TAGS  T/S  UNTIL
+    output+=$(printf "${CYAN}%s${RESET}\t%s\t%s\t${DIM}%s${RESET}\t%s\t%s\n" \
+      "$name" "$size" "$context" "$tags" "$gen_tps" "$ttl_display")
+  done < <(echo "$running_data" | jq -r '.running[] | @json')
+
+  echo -e "${BOLD}${header}${RESET}\n${output}" | format_output
+
+  # Summary line (ps only)
+  if [[ -n "$PRETTY" ]]; then
+    local vram gpu_util_val gpu_temp_val
+    vram=$(gpu_vram_summary)
+    gpu_util_val=$(gpu_util)
+    gpu_temp_val=$(gpu_temp)
+    echo -e "\n${DIM}GPU: ${vram} | util: ${gpu_util_val}% | temp: ${gpu_temp_val}°C${RESET}"
+    echo -e "${DIM}SIZE = model file | T/S = generation throughput | UNTIL = TTL countdown${RESET}"
+  fi
+}
+
+# ---- ps-legacy: old verbose format ----
+
+cmd_ps_legacy() {
+  local running_data
+  running_data=$(curl -s "${LLAMA_SWAP_URL}/running" 2>/dev/null)
+
+  if [[ -z "$running_data" ]]; then
+    echo "Error: Could not reach llama-swap at ${LLAMA_SWAP_URL}" >&2
+    exit 1
+  fi
+
+  local running_count
+  running_count=$(echo "$running_data" | jq '.running | length')
+
+  if [[ "$running_count" -eq 0 ]]; then
+    if [[ -n "$PRETTY" ]]; then
+      echo -e "${YELLOW}No models currently loaded.${RESET}"
+    else
+      echo "No models currently loaded."
+    fi
+    echo "Models will load on-demand when you send a request."
+    return
+  fi
+
   # --- Live VRAM from nvidia-smi ---
-  # Build an associative array: PID -> VRAM_MiB (numeric only)
   declare -A vram_map
   while IFS=, read -r pid _pName vram_mib; do
     pid="${pid// /}"
-    # Extract just the number before " MiB"
+    local vram_num
     vram_num=$(echo "$vram_mib" | grep -oP '\d+' | head -1)
     [[ -n "$vram_num" ]] && vram_map["$pid"]="$vram_num"
   done < <(nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv,noheader 2>/dev/null)
@@ -190,11 +380,9 @@ cmd_ps() {
       local health hstatus
       health=$(curl -s "http://localhost:${port}/health" 2>/dev/null || echo "{}")
       if [[ -z "$health" ]]; then
-        # vLLM returns empty 200 on /health
         hstatus="ok"
       else
         hstatus=$(echo "$health" | jq -r '.status // "unknown"' 2>/dev/null || echo "unknown")
-        # vLLM may also return plain text or empty body
         [[ "$hstatus" == "null" || "$hstatus" == "" ]] && hstatus="ok"
       fi
       if [[ "$hstatus" != "ok" ]] && [[ "$hstatus" != "loading model" ]]; then
@@ -230,12 +418,11 @@ cmd_ps() {
       fi
     fi
 
-    # --- Parse --fit from cmd (detect ik_llama.cpp vs upstream) ---
+    # --- Parse --fit from cmd ---
     local fit="-"
     local cmd_str
     cmd_str=$(echo "$model_json" | jq -r '.cmd')
     if echo "$cmd_str" | grep -qP '\-\-fit\s'; then
-      # Detect backend: ik_llama.cpp vs upstream llama.cpp
       local backend
       if echo "$cmd_str" | grep -q 'ik_llama.cpp'; then
         backend="ik"
@@ -245,7 +432,6 @@ cmd_ps() {
       local fit_target fit_margin
       fit_target=$(echo "$cmd_str" | grep -oP '\-\-fit-target\s+\K\d+' || echo "")
       fit_margin=$(echo "$cmd_str" | grep -oP '\-\-fit-margin\s+\K\d+' || echo "")
-      # Build fit display: "<backend>/<target>MB" (+margin if present)
       if [[ -n "$fit_target" ]]; then
         fit="${backend}/${fit_target}MB"
       else
@@ -262,12 +448,10 @@ cmd_ps() {
       local metrics_raw
       metrics_raw=$(curl -s "http://localhost:${port}/metrics" 2>/dev/null || echo "")
       if [[ -n "$metrics_raw" ]]; then
-        # llama.cpp metrics (may not exist on vLLM)
         gen_tps=$(echo "$metrics_raw" | grep -P "^llamacpp:predicted_tokens_seconds\s" | awk '{print $2}' || true)
         gen_tps="${gen_tps:-}"
         prompt_tps=$(echo "$metrics_raw" | grep -P "^llamacpp:prompt_tokens_seconds\s" | awk '{print $2}' || true)
         prompt_tps="${prompt_tps:-}"
-        # vLLM metrics fallback
         if [[ -z "$gen_tps" || "$gen_tps" == "0" ]]; then
           gen_tps=$(echo "$metrics_raw" | grep -oP "^vllm:generation_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1 || true)
           gen_tps="${gen_tps:-}"
@@ -279,7 +463,7 @@ cmd_ps() {
       fi
     fi
 
-    # --- GPU layers from journalctl (last load of this model) ---
+    # --- GPU layers from journalctl ---
     local gpu_layers="-"
     if [[ "$pid" != "-" ]]; then
       local layer_info
@@ -361,7 +545,7 @@ cmd_stats() {
     gen_sec=$(echo "$metrics_raw" | grep "^llamacpp:tokens_predicted_seconds_total" | awk "{print \$2}" || true)
     processing=$(echo "$metrics_raw" | grep "^llamacpp:requests_processing" | awk "{print \$2}" || true)
     deferred=$(echo "$metrics_raw" | grep "^llamacpp:requests_deferred" | awk "{print \$2}" || true)
-    # vLLM fallback: use vllm: metrics if llama.cpp not found
+    # vLLM fallback
     if [[ -z "$prompt_total" ]]; then
       prompt_total=$(echo "$metrics_raw" | grep -oP "^vllm:prompt_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1 || true)
       gen_total=$(echo "$metrics_raw" | grep -oP "^vllm:generation_tokens_total\{[^}]*\}\s+\K[0-9.]+" | head -1 || true)
@@ -404,10 +588,8 @@ cmd_unload() {
   local endpoint result
 
   if [[ -n "$target" ]]; then
-    # Unload specific model
     endpoint="${LLAMA_SWAP_URL}/api/models/unload/${target}"
   else
-    # Unload all models
     endpoint="${LLAMA_SWAP_URL}/api/models/unload"
   fi
 
@@ -432,7 +614,6 @@ cmd_logs() {
 
 cmd_testchat() {
   local testchat_dir="$(dirname "$(readlink -f "$0")")/testchat"
-  # Fallback: check deployed config location
   if [[ ! -d "$testchat_dir" ]]; then
     testchat_dir="$HOME/.config/llama-swap/testchat"
   fi
@@ -444,14 +625,10 @@ cmd_testchat() {
     exit 1
   fi
 
-  # Forward LLAMA_SWAP_HOST/PORT to testchat
   export LLAMA_SWAP_HOST="${LLAMA_SWAP_HOST:-127.0.0.1}"
   export LLAMA_SWAP_PORT="${LLAMA_SWAP_PORT:-12434}"
-
-  # Pass any extra args to testchat (e.g. model name)
   local chat_args=("$@")
 
-  # Use venv if available, else uv run
   if [[ -x "$testchat_dir/.venv/bin/python" ]]; then
     exec "$testchat_dir/.venv/bin/python" "$testchat_dir/main.py" "${chat_args[@]}"
   else
@@ -481,7 +658,6 @@ cmd_voiceclone() {
 
 cmd_worldsim() {
   local worldsim_dir="$(dirname "$(readlink -f "$0")")/worldsim"
-  # Fallback: check deployed config location
   if [[ ! -d "$worldsim_dir" ]]; then
     worldsim_dir="$HOME/.config/llama-swap/worldsim"
   fi
@@ -493,14 +669,10 @@ cmd_worldsim() {
     exit 1
   fi
 
-  # Forward LLAMA_SWAP_HOST/PORT to worldsim
   export LLAMA_SWAP_HOST="${LLAMA_SWAP_HOST:-127.0.0.1}"
   export LLAMA_SWAP_PORT="${LLAMA_SWAP_PORT:-12434}"
-
-  # Pass any extra args to worldsim (e.g. --manual, --agent, --world)
   local sim_args=("$@")
 
-  # Use venv if available, else uv run
   if [[ -x "$worldsim_dir/.venv/bin/python" ]]; then
     exec "$worldsim_dir/.venv/bin/python" "$worldsim_dir/main.py" "${sim_args[@]}"
   else
@@ -513,7 +685,13 @@ CMD="${ARGS[0]:-help}"
 
 case "$CMD" in
   list|ls|models)     cmd_list ;;
-  ps|running|status)  cmd_ps ;;
+  ps|running|status)
+    if [[ -n "$LEGACY" ]]; then
+      cmd_ps_legacy
+    else
+      cmd_ps
+    fi
+    ;;
   stats|metrics)      cmd_stats ;;
   unload|free|eject)  cmd_unload "${ARGS[@]:1}" ;;
   logs|log)           cmd_logs "${ARGS[1]:-50}" ;;
@@ -523,20 +701,22 @@ case "$CMD" in
   help|--help|-h)
     echo "llama-swap-cli — Manage llama-swap models from the terminal"
     echo ""
-    echo "Usage: llama-swap-cli <command> [--pretty]"
+    echo "Usage: llama-swap-cli <command> [--pretty] [--legacy]"
     echo ""
     echo "Commands:"
-    echo "  list       List configured models"
-    echo "  ps         Show running models (live VRAM, RSS, t/s, GPU layers)"
-    echo "  stats      Detailed metrics for running models (tokens, speed, queue)"
-    echo "  unload [MODEL]  Unload all models, or a specific model (free VRAM)"
-    echo "  logs [N]   Show recent logs (default: 50 lines)"
-    echo "  testchat   Open interactive chat with model selection"
-    echo "  worldsim  Interactive web world model simulation (Agent + World Model loop)"
-    echo "  voiceclone Open voice clone TUI (Drácula, Alucard, etc.)"
+    echo "  list              List configured models"
+    echo "  ps                Show running models (clean ollama-style format)"
+    echo "  ps --legacy       Show running models (old verbose format)"
+    echo "  stats             Detailed metrics for running models"
+    echo "  unload [MODEL]    Unload all models, or a specific model"
+    echo "  logs [N]          Show recent logs (default: 50 lines)"
+    echo "  testchat          Open interactive chat with model selection"
+    echo "  worldsim          Interactive web world model simulation"
+    echo "  voiceclone        Open voice clone TUI"
     echo ""
     echo "Flags:"
     echo "  --pretty   Colored emoji output (default: plain)"
+    echo "  --legacy   Use old verbose ps format (with PID, VRAM, RSS, etc.)"
     echo ""
     echo "Output format:"
     echo "  TTY:  aligned columns (via column -t)"
@@ -545,6 +725,7 @@ case "$CMD" in
     echo "Environment:"
     echo "  LLAMA_SWAP_URL     llama-swap URL (default: http://localhost:12434)"
     echo "  LLAMA_SWAP_PRETTY=1 Always use pretty output"
+    echo "  LLAMA_SWAP_LEGACY=1 Always use legacy ps format"
     echo "  NO_COLOR=1         Disable colored output"
     echo ""
     echo "Examples:"
@@ -552,12 +733,11 @@ case "$CMD" in
     echo "  llama-swap-cli list --pretty              # colored + emojis"
     echo "  llama-swap-cli list | cut -f1             # just model names"
     echo '  llama-swap-cli list | awk -F"\t" '"'"'$3~/vision/'"'"' # filter by tag'
-    echo "  llama-swap-cli ps                        # live stats (VRAM, RSS, t/s, layers)"
-    echo "  llama-swap-cli stats                     # detailed metrics per model"
-    echo "  llama-swap-cli stats --pretty            # colored detailed metrics"
-    echo "  llama-swap-cli unload                    # unload all models"
-    echo "  llama-swap-cli unload qwen3.6-35b-moe    # unload specific model"
-    echo "  llama-swap-cli voiceclone                # open voice clone TUI"
+    echo "  llama-swap-cli ps                        # clean view (SIZE, CONTEXT, T/S, UNTIL)"
+    echo "  llama-swap-cli ps --legacy                # old view (PID, VRAM, RSS, GPU_LAYERS, FIT)"
+    echo "  llama-swap-cli stats                      # detailed metrics per model"
+    echo "  llama-swap-cli unload                     # unload all models"
+    echo "  llama-swap-cli unload qwen3.6-35b-moe     # unload specific model"
     ;;
   *)
     echo "Unknown command: ${CMD}" >&2

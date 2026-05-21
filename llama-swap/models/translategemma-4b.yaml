@@ -1,0 +1,47 @@
+  # -------------------------------------------
+  # TRANSLATEGEMMA 4B — Google translation model
+  # Gemma 3-based, 55 languages, translation-focused
+  # Arch: gemma3 — supported in upstream llama.cpp
+  # Q4_K_M ~2.7GB (mradermacher/TranslateGemma-4B-GGUF)
+  # NOTE: Native Jinja template uses custom content types
+  #   (source_lang_code, target_lang_code) which crash
+  #   llama.cpp chat template parser. Use --no-jinja
+  #   with gemma template instead. Sprachspiel sends
+  #   plain text prompts, so this works fine.
+  # Recommended params from Ollama: temp=0.2, top_k=40, repeat_penalty=1.1
+  # -------------------------------------------
+  "translategemma-4b":
+    name: "TranslateGemma 4B"
+    description: "Google translation model — 55 langs, Sprachspiel default (Q4_K_M, llama.cpp)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/translategemma-4b-it.Q4_K_M.gguf
+      --no-jinja
+      --chat-template gemma
+      --fit on
+      --fit-target 768
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.2
+      --top-p 0.9
+      --top-k 40
+      --repeat-penalty 1.1
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      size: "~2.4 GB (Q4_K_M)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~3.5GB (model + cache)"
+      source: "mradermacher/translategemma-4b-it-GGUF (Q4_K_M, from google/translategemma-4b-it)"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        thinking: false
+        vision: false
+        tools: false
+      caveats:
+        - "Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma"
+        - "Needs explicit translation prompt (Sprachspiel format works)"
+      note: "Translation model. Sprachspiel translate mode default. 55 languages."

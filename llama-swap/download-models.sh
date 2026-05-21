@@ -99,6 +99,14 @@ declare -A MODELS=(
   # Uses qwen35 arch — supported in both ik_llama.cpp and upstream
   # "Coder" name = agentic coding focus, but also does browser/memory/delegation traces
   ["qwopus-coder-9b"]="Jackrong/Qwopus3.5-9B-Coder-GGUF Qwopus3.5-9B-coder-Exp-Q4_K_M.gguf"
+  # Hy-MT2-1.8B — Tencent Hunyuan Translation Model v2.0, 33 langs + 5 dialects
+  # Uses hunyuan_v1_dense arch — upstream llama.cpp ONLY (no ik support)
+  # Potential TranslateGemma alternative for Sprachspiel translate mode
+  ["hy-mt2-1.8b"]="tencent/Hy-MT2-1.8B-GGUF Hy-MT2-1.8B-Q4_K_M.gguf"
+  # TranslateGemma 4B — Google translation model, 55 langs, Sprachspiel default
+  # Uses gemma3 arch — supported in both ik_llama.cpp and upstream
+  # Q4_K_M ~2.7GB — fits in 6GB VRAM with room to spare
+  ["translategemma-4b"]="mradermacher/translategemma-4b-it-GGUF translategemma-4b-it.Q4_K_M.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
