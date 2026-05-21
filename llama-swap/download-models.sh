@@ -18,11 +18,14 @@
 #   [REMOVED] glm-4.7-flash — superseded by Qwen3.6 35B MoE
 #   minicpm-v-4.6        - MiniCPM-V 4.6 Q5_K_M (~0.54 GB) + mmproj F16 (~1.03 GB) - VLM, video+text, 256K ctx
 #   smolllm3-3b           - SmolLM3-3B UD-Q5_K_XL (~2.06 GB) - dense, tool-calling, 128K ctx
+#   qwopus-coder-9b       - Qwopus3.5-9B-Coder Q4_K_M (~5.63 GB) + mmproj - agentic coding + tools
 #   littlelamb-0.3b-tc   - LittleLamb 0.3B Tool-Calling Q8_0 (~0.30 GB) - ultra-light agentic, 40K ctx
 #   webworld-8b          - WebWorld-8B i1-Q5_K_M (~5.9 GB) - web world model, predicts next page state
 #   qwen3.6-35b-moe      - Qwen3.6-35B-A3B APEX I-Compact (~17.3 GB) - MoE coding + tools
 #   gemma4-26b-moe       - Gemma 4 26B-A4B APEX I-Compact (~15.5 GB) - MoE reasoning + coding, text-only
 #   gpt-oss-20b          - GPT-OSS 20B Q4_K_M (~11 GB) - Dense coding, text-only
+#   granite-4.0-h-1b-vllm - (vLLM only, auto-downloads from HF: ibm-granite/granite-4.0-h-1b ~2.8 GB BF16)
+#   granite-4.0-h-1b      - Granite 4.0 H 1B Nano UD-Q3_K_XL (~708 MB) - hybrid Mamba-2, multilingual (PT), thinking+tools
 #   ds-r1-distill-14b    - [REMOVED] Dense 14B, poor perf on RTX 3050
 #   ds-r1-distill-32b    - [REMOVED] Dense 32B, very slow on limited VRAM
 #   qwopus-35b           - Qwopus3.6-35B-A3B-v1 APEX I-Compact (~16.5 GB) - MoE coding+reasoning SFT
@@ -65,6 +68,9 @@ declare -A MODELS=(
   #   python3 ~/git/ik_llama.cpp/convert_hf_to_gguf.py ~/.llama-models/gemma-4-E2B-it-assistant --outfile ~/.llama-models/gemma-4-E2B-it-assistant-Q4_K_M.gguf --outtype q4_k_m
   # glm-4.7-flash removed
   ["qwen3.6-35b-moe"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF Qwen3.5-35B-A3B-APEX-I-Compact.gguf Qwen3.6-35B-A3B-APEX-I-Compact.gguf"
+  # Granite 4.0 H 1B Nano — hybrid Mamba-2, Apache 2.0, 12 langs (incl. PT), thinking+tools
+  # Uses granite-4.0 arch — supported in llama.cpp v546+ and ik_llama.cpp v4504+
+  ["granite-4.0-h-1b"]="unsloth/granite-4.0-h-1b-GGUF granite-4.0-h-1b-UD-Q3_K_XL.gguf"
   ["qwopus-35b"]="mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf"
   ["gemma4-26b-moe"]="mudler/gemma-4-26B-A4B-it-APEX-GGUF gemma-4-26B-A4B-APEX-I-Compact.gguf"
   ["gpt-oss-20b"]="unsloth/gpt-oss-20b-GGUF gpt-oss-20b-Q4_K_M.gguf"
@@ -89,6 +95,10 @@ declare -A MODELS=(
   # [REMOVED] ds-r1-distill-14b — Dense 14B, poor perf on RTX 3050, SSD pressure
   # [REMOVED] ds-r1-distill-32b — Dense 32B, very slow on limited VRAM, SSD pressure
   # [REMOVED] qwen3.5-9b-ace — analyzed, worse perplexity than 9B regular (no imatrix)
+  # Qwopus3.5-9B-Coder — Qwen3.5-9B fine-tuned for agentic coding + tool calling (Trace Inversion + GLM-5.1 traces)
+  # Uses qwen35 arch — supported in both ik_llama.cpp and upstream
+  # "Coder" name = agentic coding focus, but also does browser/memory/delegation traces
+  ["qwopus-coder-9b"]="Jackrong/Qwopus3.5-9B-Coder-GGUF Qwopus3.5-9B-coder-Exp-Q4_K_M.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -105,6 +115,8 @@ declare -A MMPROJ=(
   ["ministral-3-3b"]="unsloth/Ministral-3-3B-Instruct-2512-GGUF mmproj-F16.gguf mmproj-Ministral-3-3B-F16.gguf"
   # MiniCPM-V 4.6 — mmproj includes SigLIP2-400M vision encoder (1.03 GB F16)
   ["minicpm-v-4.6"]="openbmb/MiniCPM-V-4.6-gguf mmproj-model-f16.gguf mmproj-MiniCPM-V-4.6-F16.gguf"
+  # Qwopus3.5-9B-Coder — vision model, mmproj renamed for clarity
+  ["qwopus-coder-9b"]="Jackrong/Qwopus3.5-9B-Coder-GGUF mmproj.gguf mmproj-Qwopus3.5-9B-coder-F16.gguf"
 
 )
 
@@ -130,7 +142,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-1.2b, lfm2-24b, minicpm-v-4.6, smolllm3-3b, littlelamb-0.3b-tc, webworld-8b, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, ministral-3-3b, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-1.2b, lfm2-24b, minicpm-v-4.6, smolllm3-3b, littlelamb-0.3b-tc, webworld-8b, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, ministral-3-3b, all (NOTE: granite-3.3-8b-vllm and granite-4.0-h-tiny-vllm are vLLM-only, auto-downloaded on first serve)"
     return 1
   fi
   
@@ -209,6 +221,13 @@ show_sizes() {
   echo "  ds-r1-distill-32b    [REMOVED] — very slow on limited VRAM"
   echo "  [REMOVED] nemotron-3-nano-4b"
   echo "  [REMOVED] qwen3.5-9b-ace — worse perplexity, no imatrix quant"
+  echo "  qwopus-coder-9b      ~5.63 GB  (Q4_K_M) + mmproj - Dense 9B, agentic coding + tools"
+  echo ""
+  echo "vLLM-only models (safetensors, auto-downloaded on first serve):"
+  echo "  granite-4.0-h-1b-vllm ~2.8 GB  (BF16) - IBM Granite 4.0 H 1B Nano, hybrid Mamba-2, multilingual (PT), thinking+tools"
+  echo ""
+  echo "GGUF models (also available as llama.cpp backend):"
+  echo "  granite-4.0-h-1b      ~708 MB  (UD-Q3_K_XL) - IBM Granite 4.0 H 1B Nano, hybrid Mamba-2, multilingual (PT), thinking+tools"
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
@@ -221,7 +240,7 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"lfm2.5-vl-450m"|"lfm2.5-1.2b"|"lfm2.5-1.2b-think"|"lfm2-24b"|"qwen3.6-35b-moe"|"qwopus-35b"|"gemma4-26b-moe"|"gpt-oss-20b"|"ministral-3-3b"|"minicpm-v-4.6"|"smolllm3-3b"|"littlelamb-0.3b-tc"|"webworld-8b")
+  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"lfm2.5-vl-450m"|"lfm2.5-1.2b"|"lfm2.5-1.2b-think"|"lfm2-24b"|"qwen3.6-35b-moe"|"qwopus-35b"|"gemma4-26b-moe"|"gpt-oss-20b"|"ministral-3-3b"|"minicpm-v-4.6"|"smolllm3-3b"|"littlelamb-0.3b-tc"|"webworld-8b"|"granite-4.0-h-1b"|"qwopus-coder-9b")
     download_model "$1"
     ;;
   "qwen3.5:4b"|"qwen3.5:9b"|"gemma4:e4b"|"gemma4:e2b")
@@ -241,7 +260,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-1.2b, lfm2.5-1.2b-think, lfm2-24b, webworld-8b, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-1.2b, lfm2.5-1.2b-think, lfm2-24b, webworld-8b, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, qwopus-coder-9b, all"
     exit 1
     ;;
 esac

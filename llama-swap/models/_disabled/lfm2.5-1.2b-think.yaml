@@ -1,18 +1,7 @@
-  # -------------------------------------------
-  # LFM2.5-1.2B-THINKING - DENSE HYBRID (CONV + GQA) WITH CHAIN-OF-THOUGHT
-  # Liquid AI's 1.2B reasoning model — CoT before answer, best for math/reasoning
-  # Treinado em 28T tokens + multi-stage RL. MATH-500: 88%, GSM8K: 85.6%
-  # Liquid AI recommends: temp=0.3, min_p=0.15, repeat_penalty=1.05
-  # head_dim=64 → attn_rot ✅ (64%64==0)
-  # Architecture: lfm2 (upstream llama.cpp b8145+)
-  # Q8_0 ~1.25GB — practically lossless, still fits entirely in VRAM
-  # Tool calling reliability: HOPELESS for agentic — CoT disperses reasoning away from tool-call structure
-  # UNLISTED: always-on CoT is useless for tool-calling, superseded by lfm2.5-1.2b (Instruct)
-  # -------------------------------------------
   "lfm2.5-1.2b-think":
+    unlisted: true
     name: "LFM2.5 1.2B Thinking"
     description: "Edge hybrid reasoning — conv+GQA dense, always thinks (Q8_0, llama.cpp)"
-    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/LFM2.5-1.2B-Thinking-Q8_0.gguf
@@ -45,3 +34,4 @@
         vision: false
         tools: true
       warning: "SEMPRE gera CoT internamente (como gpt-oss-20b). Pior pra tool-calling — use lfm2.5-1.2b (Instruct) para tarefas agenticas."
+  # Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM

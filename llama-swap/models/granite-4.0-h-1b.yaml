@@ -1,0 +1,36 @@
+  # -------------------------------------------
+  # GRANITE-4.0-H-1B - llama.cpp BACKEND (Hybrid Mamba-2/Transformer)
+  # IBM Granite 4.0 Nano H 1B, ~1.5B params, dense hybrid
+  # Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + SwiGLU
+  # Thinking mode: <thinking>/<response> via chat template (--reasoning on)
+  # Tool calling: granite4 PEG parser (--jinja)
+  # GGUF: unsloth/granite-4.0-h-1b-GGUF (UD-Q3_K_XL = 708 MB)
+  # Uses granite-4.0 arch — supported in llama.cpp v546+
+  # ✅ Fits entirely in 6GB VRAM with room to spare (~800-900MB)
+  # ✅ ~99 tok/s on RTX 3050 (GGUF vs ~5-10 tok/s with vLLM BF16)
+  # -------------------------------------------
+  "granite-4.0-h-1b":
+    name: "Granite 4.0 H 1B"
+    description: "IBM Granite 4.0 Nano H 1B — hybrid Mamba-2, multilingual (PT), thinking, tools"
+    cmd: |
+      ${llama_server}
+      --model ${models_dir}/granite-4.0-h-1b-UD-Q3_K_XL.gguf
+      --port ${PORT}
+      --host 0.0.0.0
+      --ctx-size 32768
+      --n-gpu-layers 99
+      --fit on
+      --reasoning on
+      --jinja
+    ttl: 900
+    metadata:
+      backend: llama_cpp
+      size: "708 MB (UD-Q3_K_XL)"
+      context: "32K (fits VRAM with --fit)"
+      vram_usage: "~800-900 MB"
+      source: "unsloth/granite-4.0-h-1b-GGUF (HuggingFace)"
+      note: "Granite .0 Nano — Mamba-2 hybrid. Ultra-compact, fits entirely in VRAM. Fast startup. ~99 tok/s."
+      features:
+        thinking: true
+        vision: false
+        tools: true

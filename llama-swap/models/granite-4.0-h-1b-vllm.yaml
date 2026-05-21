@@ -1,0 +1,37 @@
+  # -------------------------------------------
+  # GRANITE-4.0-H-1B - vLLM BACKEND (Hybrid Mamba-2/Transformer)
+  # IBM Granite 4.0 Nano H 1B, ~1.5B params, dense hybrid
+  # Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + SwiGLU
+  # Thinking mode: granite reasoning parser
+  # Tool calling: granite4 parser
+  # HF: ibm-granite/granite-4.0-h-1b (~2.8GB BF16 safetensors)
+  # ✅ Fits in 6GB VRAM with room for KV cache
+  # -------------------------------------------
+  "granite-4.0-h-1b-vllm":
+    name: "Granite 4.0 H 1B (vLLM)"
+    description: "IBM Granite 4.0 Nano H 1B — hybrid Mamba-2, multilingual (PT), thinking, tools"
+    cmd: |
+      ${vllm_bin} serve ibm-granite/granite-4.0-h-1b
+      --port ${PORT}
+      --served-model-name granite-4.0-h-1b-vllm
+      --gpu-memory-utilization 0.65
+      --max-model-len 8192
+      --max-num-seqs 2
+      --dtype half
+      --trust-remote-code
+      --default-chat-template-kwargs '{"enable_thinking": true}'
+      --reasoning-parser granite
+      --enable-auto-tool-choice
+      --tool-call-parser granite4
+    ttl: 900
+    metadata:
+      backend: vllm
+      size: "~2.8 GB (BF16 safetensors, auto-download from HF)"
+      context: "8K (comfortable fit on 6GB VRAM)"
+      vram_usage: "~3-3.5GB (BF16 model + KV cache)"
+      source: "ibm-granite/granite-4.0-h-1b (HuggingFace safetensors)"
+      note: "Granite 4.0 Nano — Mamba-2 hybrid. Fits VRAM comfortably. granite4 tool parser. Slow startup (~30-90s)."
+      features:
+        thinking: true
+        vision: false
+        tools: true

@@ -37,25 +37,20 @@ with pinned memory for expert offloading, which handles the memory pressure diff
 
 ## RTX 3050 6GB Limitation: Gemma 4 Dense + MTP
 
-**MTP is NOT beneficial for Gemma 4 dense models on the RTX 3050 (6GB VRAM).**
+**Gemma 4 MTP is NOT viable on RTX 3050 6GB.**
 
-Gemma 4 MTP uses a SEPARATE external assistant model (not built into the main GGUF like
-Qwen 3.5/3.6). This requires loading the assistant (~75MB) alongside the main model via
-`--model-draft` on ik_llama.cpp.
+Gemma 4 uses a separate external assistant model for MTP (not built-in like Qwen3.5/3.6).
+The assistant models (`gemma-4-E2B-it-assistant`, `gemma-4-E4B-it-assistant`) need to be loaded
+alongside the main model via `--model-draft` on ik_llama.cpp (which supports `Gemma4AssistantForCausalLM`
+architecture since v4524).
 
-Test results (2025-05-16):
+However:
+- E4B + E2B-assistant ≈ 4.5GB + 3.2GB = **7.7GB** — exceeds 6GB VRAM
+- E2B alone with MTP is slower (38.3→10.6 tok/s) — MTP overhead > speedup
+- `Gemma4AssistantForCausalLM` GGUF conversion is **not yet in upstream llama.cpp**
+  (see github.com/ggml-org/llama.cpp/discussions/22735)
 
-| Model | Without MTP | With MTP | Notes |
-|-------|-------------|----------|-------|
-| Gemma 4 E2B | 38.3 tok/s | 10.6 tok/s | MTP overhead > speedup |
-| Gemma 4 E4B | 27.5 tok/s | OOM | Exceeds 6GB VRAM |
-
-For small dense models that already run fast, the MTP verification overhead exceeds any
-draft acceptance gains. The assistant head adds compute that the 3050 can't offset.
-
-**For Gemma 4 dense models, continue using them without MTP speculative decoding.**
-
-The Gemma 4 26B MoE might benefit from MTP on higher-VRAM GPUs, but not on the 3050.
+**Conclusion: Use Gemma 4 without MTP on this hardware.**
 
 ## MTP Flags Reference (llama.cpp upstream b9174+)
 
@@ -109,6 +104,6 @@ as regular models (MTP tensors are loaded but ignored).
 
 | Binary | Version | MTP Support |
 |--------|---------|-------------|
-| llama.cpp | b9174+ (v528) | `--spec-type draft-mtp` |
-| ik_llama.cpp | v4496+ | `--multi-token-prediction` |
-| llama.cpp (pre-b9174) | none | ❌ No MTP |
+| llama.cpp | b604 | `--spec-type draft-mtp` |
+| ik_llama.cpp | v4524 | `--multi-token-prediction`, `--model-draft` (Gemma 4 assistant) |
+| BeeLlama.cpp | v9351+ | `--spec-type dflash` |

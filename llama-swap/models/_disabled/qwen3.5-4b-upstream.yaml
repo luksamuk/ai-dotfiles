@@ -1,14 +1,20 @@
-  # UNLISTED: nice-to-have 9B variant, disk freed for space. qwen3.5-4b covers daily use.
-  "qwen3.5-9b":
-    name: "Qwen3.5 9B"
-    description: "Multimodal reasoning, coding, and agentic chat with 201-language support"
+  # -------------------------------------------
+  # QWEN3.5-4B - MULTIMODAL (VISION + TEXT)
+  # Cabe inteiro na VRAM com mmproj
+  # mmproj ~400MB - --fit-target 512 para vision
+  # KV cache: q8_0 + attn_rot (auto)
+  # -------------------------------------------
+  # BACKUP: Original upstream config (q8_0 cache + --fit). Replaced by qwen3.5-4b-bee (TurboQuant).
+  "qwen3.5-4b-upstream":
     unlisted: true
+    name: "Qwen3.5 4B (upstream backup)"
+    description: "Multimodal reasoning and agentic chat with 201-language support"
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.5-9B-UD-Q3_K_XL.gguf
+      --model ${models_dir}/Qwen3.5-4B-UD-Q3_K_XL.gguf
       --no-mmproj
       --fit on
-      --fit-target 512
+      --fit-target 768
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
       --temp ${default_temp}
@@ -36,13 +42,13 @@
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "~5.05 GB (UD-Q3_K_XL Dynamic 2.0)"
-      context: "64K-128K (dynamic)"
-      vram_usage: "~5GB VRAM (text-only, mmproj offload needs fix)"
-      source: "unsloth/Qwen3.5-9B-GGUF"
+      size: "~2.27 GB (UD-Q3_K_XL Dynamic 2.0)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~3GB"
+      source: "unsloth/Qwen3.5-4B-GGUF (UD-Q3_K_XL)"
       kv_cache: "q8_0 + attn_rot"
       features:
         thinking: true
         tools: true
-        # vision: disabled temporarily — mmproj + fit doesn't handle offload yet
-      warning: "Vision disabled temporarily — mmproj offload with --fit causes OOM"
+        # vision: disabled — Gated Delta Net mmproj OOM on CUDA (issue #21323)
+      warning: "Vision disabled — Gated Delta Net mmproj crashes/CUDA OOM (llama.cpp issues #21323, #21402)"

@@ -17,6 +17,11 @@ The build process:
   5. Validate the merged result parses as correct YAML
   6. Write to config.yaml (repo) and sync to ~/.config/llama-swap/config.yaml
 
+Validations (in discover_fragments):
+  - Each fragment must parse as YAML with exactly 1 model key
+  - Model key must start at column 2+ (fragments live under "models:")
+  - Fragments in _disabled/ must have unlisted: true (auto-injected if missing)
+
 Usage:
   python3 build-config.py              # build, validate, and write
   python3 build-config.py --check      # validate only (don't write)
@@ -40,34 +45,43 @@ OUTPUT_FILE = os.path.join(SCRIPT_DIR, "config.yaml")
 LIVE_CONFIG = os.path.expanduser("~/.config/llama-swap/config.yaml")
 
 # Original model order from the canonical config — maintain for consistency
+# Only models with GGUF files or working backends should be listed here.
+# Disabled/unlisted models without GGUFs can stay in models/_disabled/ but don't need ordering.
 ORIGINAL_ORDER = [
-    "qwen3.5-0.8b",
-    "qwen3.5-0.8b-vllm",
-    "lfm2.5-1.2b-vllm",
-    "lfm2.5-sgl",
-    "qwen3.5-4b",
-    "qwen3.5-9b",
-    "gemma4-e4b",
-    "gemma4-e2b",
-    "lfm2.5-1.2b",
-    "lfm2.5-1.2b-think",
-    "lfm2.5-vl-450m",
-    "ministral-3-3b",       # Dense 3.4B + 0.4B vision — mistral3 arch, upstream only
-    "webworld-8b",          # Web world model Qwen3-8B fine-tune — qwen3 arch, upstream only
-    "gemma4-26b-moe",
-    "gpt-oss-20b",
-    "lfm2-24b",
-    "qwopus-35b",
-    "qwen3.6-35b-moe",
+    "qwen3.5-0.8b-vllm",     # vLLM backend (paused — no venv, auto-download on first serve)
+    "lfm2.5-1.2b-vllm",     # vLLM backend (paused — no venv, auto-download on first serve)
+    "granite-4.0-h-1b-vllm", # vLLM backend (has HF model, auto-download on first serve)
+    "granite-4.0-h-1b",      # llama.cpp GGUF ✅
+    "lfm2.5-sgl",            # SGLang backend (paused — no venv)
+    "qwen3.5-4b",      # ✅ Bee/TurboQuant (upstream backup em _disabled/)
+    "qwen3.5-9b",      # ✅ Bee/TurboQuant (upstream backup em _disabled/)
+    "gemma4-e4b",       # ✅ upstream ik backend (Bee was slower at 36 vs 40 tok/s)
+    "gemma4-e2b",            # ✅
+    "lfm2.5-1.2b",           # ✅
+    "lfm2.5-vl-450m",       # ✅
+    "ministral-3-3b",       # ✅
+    "webworld-8b",           # ✅
+    "gemma4-26b-moe",        # ✅
+    "qwen3.6-35b-moe",       # ✅
+    "qwopus-coder-9b",       # ✅
+    "littlelamb-0.3b-tc",    # ✅
+    "minicpm-v-4.6",         # ✅
 ]
 
 
 def discover_fragments():
-    """Discover all model fragments from models/ and models/_disabled/."""
+    """Discover all model fragments from models/ and models/_disabled/.
+
+    Fragments in _disabled/ MUST have unlisted: true. If missing, it is
+    auto-injected into the fragment content and a warning is printed.
+    """
     active = {}
     disabled = {}
 
-    for directory, target in [(MODELS_DIR, active), (DISABLED_DIR, disabled)]:
+    for directory, target, is_disabled in [
+        (MODELS_DIR, active, False),
+        (DISABLED_DIR, disabled, True),
+    ]:
         if not os.path.isdir(directory):
             continue
         for fname in sorted(os.listdir(directory)):
@@ -88,6 +102,56 @@ def discover_fragments():
             if not isinstance(data, dict) or len(data) != 1:
                 print(f"ERROR: {fpath}: expected 1 model key, got {len(data) if isinstance(data, dict) else 'non-dict'}", file=sys.stderr)
                 sys.exit(1)
+
+            # Validate indentation: model key must start at column 2+
+            # (fragments are concatenated under "models:" and need 2-space indent)
+            first_key_line = None
+            for line in content.split("\n"):
+                stripped = line.lstrip()
+                if stripped and not stripped.startswith("#"):
+                    first_key_line = line
+                    break
+            if first_key_line is not None:
+                indent = len(first_key_line) - len(first_key_line.lstrip())
+                if indent < 2:
+                    print(
+                        f"  ERROR: {fname} model key at column {indent} — must be 2+ "
+                        f"(fragments live under 'models:')",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+
+            # Enforce: fragments in _disabled/ must have unlisted: true
+            if is_disabled:
+                model_key = next(iter(data))
+                model_cfg = data[model_key]
+                if not model_cfg.get("unlisted", False):
+                    print(
+                        f"  WARNING: {fname} in _disabled/ missing unlisted: true — auto-injecting",
+                        file=sys.stderr,
+                    )
+                    # Rewrite the fragment with unlisted: true
+                    lines = content.split("\n")
+                    new_lines = []
+                    injected = False
+                    # Match key with or without YAML quotes: `model_key:` or `"model_key":`
+                    key_patterns = [f"{model_key}:", f'"{model_key}":', f"'{model_key}':"]
+                    # Determine model key indent to place unlisted at same level as other properties
+                    key_indent = 4  # default: properties are at indent 4 under "models:" (2) + model key (2)
+                    for line in lines:
+                        stripped = line.strip()
+                        if stripped in key_patterns:
+                            key_indent = len(line) - len(line.lstrip()) + 2
+                            break
+                    unlisted_line = " " * key_indent + "unlisted: true"
+                    for line in lines:
+                        new_lines.append(line)
+                        if not injected and line.strip() in key_patterns:
+                            new_lines.append(unlisted_line)
+                            injected = True
+                    content = "\n".join(new_lines)
+                    with open(fpath, "w") as f:
+                        f.write(content)
 
             target[model_id] = fpath
 

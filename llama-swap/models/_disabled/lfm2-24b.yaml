@@ -1,21 +1,7 @@
-  # -------------------------------------------
-  # LFM2-24B-A2B - MoE HYBRID (CONV + GQA + MOE)
-  # Liquid AI's 24B MoE — 2.3B active per token, 64 experts top-4 routing
-  # 40 layers: 30 conv + 10 GQA (first 2 dense for stability)
-  # Hybrid architecture: NOT a pure transformer, conv blocks replace most attention
-  # Liquid AI recommends: temp=0.3, min_p=0.15, repeat_penalty=1.05
-  # head_dim=128 → attn_rot ✅ (128%64==0)
-  # Architecture: lfm2moe (upstream llama.cpp b8145+, ik_llama.cpp DOES NOT SUPPORT)
-  # Using llama_server (upstream): no pinned memory for expert offload = slower than ik
-  # Q4_K_M ~14.4GB → heavy offload to RAM (~9GB), fits 32GB total system
-  # Context ceiling: 32K (LFM2 limitation, not our hardware)
-  # Tool calling reliability: INCONSISTENT — MoE varies, sometimes hallucinates instead of calling tools
-  # -------------------------------------------
-  # UNLISTED: tool-calling disappointing, superseded by lfm2.5-1.2b Instruct for edge use cases. Disk freed.
   "lfm2-24b":
+    unlisted: true
     name: "LFM2 24B"
     description: "Hybrid MoE — conv+GQA+MoE, 2.3B active/token (llama.cpp upstream)"
-    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/LFM2-24B-A2B-Q4_K_M.gguf

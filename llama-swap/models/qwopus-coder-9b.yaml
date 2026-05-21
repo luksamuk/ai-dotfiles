@@ -1,0 +1,61 @@
+  # -------------------------------------------
+  # QWOPUS3.5-9B-CODER - DENSE AGENTIC CODING (text-only, no vision)
+  # Qwen3.5-9B fine-tuned by Jackrong with Trace Inversion + agent traces SFT.
+  # Dense 9B params (all active per token), Q4_K_M ~5.63GB.
+  # Specialized for agentic coding and tool-calling — stronger than base Qwen3.5-9B for agent loops.
+  # Uses ik_llama.cpp: pinned memory for better offload performance.
+  # mmproj exists (880MB F16) but blocks partial expert offload → text-only.
+  # head_dim=256 → attn_rot ✅ (256%64==0)
+  # KV cache: k=q8_0 (precision for dense), v=q4_0 (save VRAM)
+  # Dual mode: base (chat, no think) and :think (reasoning)
+  # -------------------------------------------
+  "qwopus-coder-9b":
+    name: "Qwopus 9B Coder"
+    description: "Agentic coding and tool-calling specialist (Trace Inversion + agent traces)"
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/Qwopus3.5-9B-coder-Exp-Q4_K_M.gguf
+      # No --no-mmproj: ik_llama.cpp doesn't support this flag (upstream-only)
+      # No --fit-ctx: ik_llama.cpp doesn't support this flag; --ctx-size serves as ceiling
+      --fit
+      --fit-margin 512
+      --ctx-size 131072
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning on
+      --jinja
+      --parallel-tool-calls
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.85
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 120
+    metadata:
+      size: "~5.63 GB (Q4_K_M)"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~5.5GB VRAM (text-only, dense 9B all layers GPU via --fit)"
+      source: "Jackrong/Qwopus3.5-9B-Coder-GGUF"
+      kv_cache: "q8_0 (K) + q4_0 (V) + attn_rot + hadamard (ik -khad/-vhad)"
+      features:
+        thinking: true
+        vision: false
+        tools: true
+      warning: "Vision disabled — mmproj (880MB F16) blocks partial offload. Text-only = max GPU layers = max speed. Dense 9B = all params active per token (slower per token than MoE, but stronger for agentic)."

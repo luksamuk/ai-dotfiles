@@ -9,9 +9,9 @@
   # -------------------------------------------
   # UNLISTED: nice-to-have tiny model, disk freed for space
   "qwen3.5-0.8b":
+    unlisted: true
     name: "Qwen3.5 0.8B"
     description: "Compact multimodal reasoning model — text + vision (llama.cpp GGUF)"
-    unlisted: true
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-0.8B-UD-Q3_K_XL.gguf
@@ -54,3 +54,8 @@
         thinking: true
         vision: true
         tools: true
+  # -------------------------------------------
+  # QWEN3.5-0.8B - vLLM BACKEND (PAUSADO — venv + HF models deletados)
+  # Restaurar: pip install vllm em ~/.vllm, HF models re-downloaded no primeiro serve
+  # UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
+  # -------------------------------------------

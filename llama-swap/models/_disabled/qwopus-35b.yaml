@@ -1,19 +1,7 @@
-  # -------------------------------------------
-  # QWOPUS3.6-35B-A3B-V1 - MoE CODING+REASONING (text-only, no vision) (APEX I-Compact)
-  # Qwen3.6-35B-A3B fine-tuned by Jackrong with 3-stage curriculum SFT.
-  # Same MoE arch as qwen3.6-35b-moe (35B params, 3B active, 256 experts, top-8 routing)
-  # APEX I-Compact ~16.5GB — mixed-precision MoE quant com imatrix diversa
-  # --no-mmproj: same as vanilla Qwen3.6, mmproj blocks expert offload
-  # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
-  # Architecture: qwen35moe (Qwen3MoeForCausalLM)
-  # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-  # --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4496+). Use long form (not --mtp).
-  # -------------------------------------------
-  # UNLISTED: Redundant — Qwopus SFT variant superseded by qwen3.6-35b-moe (same arch, better base)
   "qwopus-35b":
+    unlisted: true
     name: "Qwopus 35B"
     description: "MoE coding+reasoning — Qwopus SFT, 3B active/token (APEX I-Compact)"
-    unlisted: true
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf
@@ -33,7 +21,10 @@
       --multi-token-prediction
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
-      --flash-attn on
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --defer-experts
       --metrics
     filters:
       stripParams: "temperature, top_p"
@@ -54,9 +45,23 @@
       context: "16K-128K (dynamic)"
       vram_usage: "~5GB VRAM + ~11GB RAM (APEX mixed-precision offload, ik_llama.cpp pinned memory)"
       source: "mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "q4_0 + attn_rot + hadamard (ik -khad/-vhad)"
       features:
         thinking: true
         vision: false
         tools: true
-      warning: "Vision disabled — mmproj blocks partial expert offload. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K."
+      warning: "Vision disabled — mmproj blocks partial expert offload. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. --defer-experts speeds up model loading. --flash-attn auto saves overhead on short prompts."
+  # -------------------------------------------
+  # QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
+  # MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
+  # 33 experts, top-8 routing. APEX I-Compact ~17.3GB
+  #   Mixed-precision MoE quant com imatrix diversa (chat, code, reasoning, tool-calling)
+  #   Perplexity comparable to Q8_0 (6.669 vs 6.533), beats UD-Q3_K_XL on real benchmarks
+  # --no-mmproj: mmproj ocupa 858MB VRAM e impede partial expert offload.
+  #   Sem mmproj: ALL 41 layers sobem pra GPU (partial expert partition) → 20+ t/s!
+  #   Com mmproj: só ~11 layers em GPU → ~5 t/s. Não vale a pena.
+  # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
+  # Architecture: qwen35moe (Qwen3MoeForCausalLM)
+  # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
+  # --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4496+). Use long form (not --mtp).
+  # -------------------------------------------

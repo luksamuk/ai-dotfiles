@@ -2,49 +2,51 @@
   # WEBWORLD-8B — Web World Model (Qwen3-8B fine-tune)
   # Qwen/WebWorld-8B — predicts next web page state given current state + action
   # Trained on 1M+ real web interaction trajectories
-  # Architecture: qwen3 — causes SEGFAULT in ik_llama.cpp, use upstream
+  # Architecture: qwen3 — previously segfaulted in ik, FIXED in v4524+
   # Supports: A11y Tree, HTML, XML, Markdown, NL state representations
   # Action space: click(bid), fill(bid,text), goto(url), scroll(dx,dy), keyboard_press(key)
   # NOT a chatbot — requires specialized prompt format (world model system prompt + state/action)
   # Multi-turn trajectory simulation (30+ steps) must be implemented client-side
   # Paper: arXiv 2602.14721
-  # i1-Q5_K_M ~5.9GB — fits in VRAM with --fit
-  # KV cache: q4_0 (8B model, q8_0 doesn't fit 40K context on 6GB VRAM)
-  # Uses ${llama_server} (upstream) — ik_llama.cpp segfaults with qwen3 GGUFs
+  # i1-Q5_K_M ~5.9GB — fits in VRAM with --fit --fit-margin 768
+  # KV cache: q8_0 (K) + q4_0 (V) + hadamard = near-fp16 quality
+  # Migrated from upstream to ik for -khad/-vhad quality improvement
   # No tool calling, no vision, no thinking — pure world model for web simulation
   # Apache 2.0 license
   # -------------------------------------------
   "webworld-8b":
     name: "WebWorld 8B"
-    description: "Web world model, predicts next page state (i1-Q5_K_M, upstream)"
+    description: "Web world model, predicts next page state (ik + hadamard)"
     tags: ["world-model"]
     cmd: |
-        ${llama_server} --port ${PORT}
-        --model ${models_dir}/WebWorld-8B.i1-Q5_K_M.gguf
-        --fit on
-        --fit-ctx 4096
-        --fit-target ${vram_margin}
-        --ctx-size 40960
-        --parallel 2
-        --cont-batching
-        --temp 0.6
-        --top-p 0.9
-        --top-k 20
-        --min-p 0.01
-        --repeat-penalty 1.05
-        --cache-type-k ${large_cache_k}
-        --cache-type-v ${large_cache_v}
-        --flash-attn on
-        --metrics
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/WebWorld-8B.i1-Q5_K_M.gguf
+      --fit
+      --fit-margin 768
+      --ctx-size 40960
+      --parallel 2
+      --cont-batching
+      --temp 0.6
+      --top-p 0.9
+      --top-k 20
+      --min-p 0.01
+      --repeat-penalty 1.05
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --jinja
+      --metrics
     ttl: 60
     metadata:
-        size: "~5.9 GB (i1-Q5_K_M)"
-        context: "4K-40K (dynamic, native max)"
-        vram_usage: "~4GB model + KV q4_0 (40K fits in VRAM)"
-        source: "mradermacher/WebWorld-8B-i1-GGUF (i1-Q5_K_M)"
-        kv_cache: "q4_0 + attn_rot (q8_0 doesn't fit 40K on 6GB)"
-        features:
-            thinking: false
-            vision: false
-            tools: false
-        warning: "ik_llama.cpp segfaults with this model — use llama.cpp upstream. Not a chatbot — requires specialized world model prompts."
+      size: "~5.9 GB (i1-Q5_K_M)"
+      context: "4K-40K (dynamic, native max)"
+      vram_usage: "~4GB model + KV q8_0+q4_0+hadoop ~80-83% VRAM"
+      source: "mradermacher/WebWorld-8B-i1-GGUF (i1-Q5_K_M)"
+      kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
+      features:
+        thinking: false
+        vision: false
+        tools: false
+      warning: "Not a chatbot — requires specialized world model prompts. ik backend (was upstream, qwen3 segfault fixed in v4524)."

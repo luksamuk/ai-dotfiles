@@ -4,9 +4,9 @@
   # UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
   # -------------------------------------------
   "qwen3.5-0.8b-vllm":
+    unlisted: true
     name: "Qwen3.5 0.8B (vLLM)"
     description: "vLLM backend test — Sprachspiel compatibility (NOT for daily use)"
-    unlisted: true
     cmd: |
       ${vllm_bin} serve Qwen/Qwen3.5-0.8B
       --port ${PORT}

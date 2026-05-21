@@ -1,0 +1,41 @@
+  # -------------------------------------------
+  # GRANITE-4.0-H-TINY - vLLM BACKEND (DISABLED — 14GB weights, OOM on 6GB VRAM)
+  # IBM Granite 4.0 H-Tiny, 7B total / 1B active (MoE 64 experts x 6 active)
+  # Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + MoE + SwiGLU
+  # HF: ibm-granite/granite-4.0-h-tiny (~14GB BF16 safetensors)
+  # ⚠️ OOM on 6GB VRAM — vLLM load all 7B params before MoE routing
+  # ⚠️ Mamba-2 hybrid arch — vLLM V0+V1 natively supported (PyTorch blog confirmed)
+  # Re-activate only on hardware with >=12GB VRAM
+  # -------------------------------------------
+  # UNLISTED: 14GB BF16 weights exceed 6GB VRAM, vLLM loads all params
+  # Restore: hardware with >=12GB VRAM
+  "granite-4.0-h-tiny-vllm":
+    unlisted: true
+    name: "Granite 4.0 H-Tiny (vLLM)"
+    description: "IBM Granite 4.0 H-Tiny MoE — 7B/1B active, hybrid Mamba-2, multilingual (PT)"
+    cmd: |
+      ${vllm_bin} serve ibm-granite/granite-4.0-h-tiny
+      --port ${PORT}
+      --served-model-name granite-4.0-h-tiny-vllm
+      --gpu-memory-utilization 0.82
+      --max-model-len 4096
+      --max-num-seqs 1
+      --dtype half
+      --trust-remote-code
+      --enforce-eager
+      --default-chat-template-kwargs '{"enable_thinking": true}'
+      --reasoning-parser granite
+      --enable-auto-tool-choice
+      --tool-call-parser granite4
+    ttl: 900
+    metadata:
+      backend: vllm
+      size: "~14 GB (BF16 safetensors, auto-download from HF)"
+      context: "4K (vLLM tight fit on 6GB VRAM + MoE)"
+      vram_usage: "~5.5GB (enforce-eager, MoE 1B active per token)"
+      source: "ibm-granite/granite-4.0-h-tiny (HuggingFace safetensors)"
+      note: "OOM on 6GB VRAM — vLLM loads all 7B params before MoE routing. Mamba-2 hybrid. Slow startup."
+      features:
+        thinking: true
+        vision: false
+        tools: true

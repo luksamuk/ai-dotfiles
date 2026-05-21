@@ -11,6 +11,12 @@
   # Architecture: qwen35moe (Qwen3MoeForCausalLM)
   # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
   # --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4496+). Use long form (not --mtp).
+  # --fit-margin 768: reserves ~0.75 GiB for desktop (Hyprland+browser+Kitty ~1.1GB idle)
+  #   Keeps model at ~80-83% VRAM, more GPU layers than 1536 for faster generation
+  #   Tested: densos aguentaram 85% sem issues, MoE should be fine at ~80%
+  # --k-cache-hadamard / --v-cache-hadamard: Hadamard transform before K/V cache quantization → much closer to f16 quality
+  # --defer-experts: defers expert mmap on Linux → faster model loading
+  # --flash-attn auto: disables FA on short prompts (saves overhead on MoE offloaded models)
   # -------------------------------------------
   "qwen3.6-35b-moe":
     name: "Qwen3.6 35B MoE"
@@ -21,7 +27,7 @@
       # No --no-mmproj: ik_llama.cpp doesn't support this flag (upstream-only)
       # No --fit-ctx: ik_llama.cpp doesn't support this flag; --ctx-size serves as ceiling
       --fit
-      --fit-margin 512
+      --fit-margin 768
       --ctx-size 131072
       --temp ${code_temp}
       --top-p ${code_top_p}
@@ -34,7 +40,10 @@
       --multi-token-prediction
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
-      --flash-attn on
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --defer-experts
       --metrics
     filters:
       stripParams: "temperature, top_p"
@@ -49,15 +58,15 @@
             enable_thinking: true
           temperature: 0.6
           top_p: 0.9
-    ttl: 120
+    ttl: 300
     metadata:
       size: "~17.3 GB (APEX I-Compact)"
       context: "1K-131K (safe max; 200K works but zero VRAM headroom)"
       vram_usage: "~5.4GB VRAM + 13.8GB pinned RAM (ik pinned memory, constant 33-34 t/s up to 131K)"
       source: "mudler/Qwen3.5-35B-A3B-APEX-GGUF"
-      kv_cache: "q4_0 + attn_rot"
+      kv_cache: "q4_0 + attn_rot + hadamard (ik -khad/-vhad)"
       features:
         thinking: true
         vision: false
         tools: true
-      warning: "Vision disabled — mmproj blocks partial expert offload (11→41 layers GPU). Text-only = 33-34 t/s vs 5 t/s with vision. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. Pinned memory gives constant speed up to 200K tokens."
+      warning: "Vision disabled — mmproj blocks partial expert offload (11→41 layers GPU). Text-only = 33-34 t/s vs 5 t/s with vision. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. Pinned memory gives constant speed up to 200K tokens. --defer-experts speeds up model loading. --flash-attn auto saves overhead on short prompts."

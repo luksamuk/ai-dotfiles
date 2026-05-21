@@ -10,9 +10,9 @@
   # Apache 2.0 license
   # -------------------------------------------
   "smolllm3-3b":
+    unlisted: true
     name: "SmolLM3 3B"
     description: "HuggingFace dense, dual tool-calling XML+Python (UD-Q5_K_XL, ik)"
-    unlisted: true
     tags: ["tools"]
     cmd: |
         ${ik_llama_server} --port ${PORT}
@@ -31,7 +31,9 @@
         --reasoning on
         --cache-type-k ${small_cache_k}
         --cache-type-v ${small_cache_v}
-        --flash-attn on
+        --k-cache-hadamard
+        --v-cache-hadamard
+        --flash-attn auto
         --metrics
     filters:
       stripParams: "temperature, top_p"
@@ -52,7 +54,7 @@
         context: "32K-128K (dynamic)"
         vram_usage: "~3GB (model + cache)"
         source: "unsloth/SmolLM3-3B-GGUF (UD-Q5_K_XL)"
-        kv_cache: "q8_0 + attn_rot"
+        kv_cache: "q8_0 + attn_rot + hadamard (ik -khad/-vhad)"
         features:
             thinking: true
             vision: false

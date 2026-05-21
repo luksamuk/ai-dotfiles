@@ -6,7 +6,14 @@
 # Modelos: ~/.llama-models/
 # Requer: llama-swap v212+ (Prometheus metrics, SIGHUP reload, reasoning UI, race fix, zstd captures)
 # Requer: llama.cpp build b9174+ (MTP support via --spec-type draft-mtp, Qwen3.5/3.6 tokenizer fix, WebGPU gpt-oss, /v1/models modalities, NCCL-free TP)
-# Requer: ik_llama.cpp v4504+ (MTP re-quant output tensor, Gemma4 MTP + imatrix, --threads-mtmd, MTP recurrent state restore, mmproj n_batch fix)
+# Requer: ik_llama.cpp v4524+ (--k-cache-hadamard, --v-cache-hadamard, --defer-experts, --flash-attn auto, MTP Qwen3.6-MoE fix, dual spec decoding, MLA TP)
+#
+# OTIMIZAÇÕES ik_llama.cpp (modelos MoE e dense offloaded):
+#   --k-cache-hadamard / --v-cache-hadamard (-khad/-vhad): Hadamard transform no K/V cache
+#     antes da quantização → qualidade muito mais próxima do f16 com cache q4_0/q8_0.
+#     Especialmente útil em 6GB VRAM onde q4_0 é necessário para contexto longo.
+#   --flash-attn auto: desliga FA automaticamente em contextos curtos (economia em MoE offloaded)
+#   --defer-experts: defere mmap de experts no Linux → carregamento mais rápido de modelos MoE
 
 # Schema para validação (VS Code)
 
@@ -32,6 +39,12 @@ macros:
   # Caminho para ik_llama.cpp — fork otimizado para MoE (pinned memory, faster expert offload)
   # Build local em ~/git/ik_llama.cpp/build/bin/llama-server
   "ik_llama_server": "${env.HOME}/git/ik_llama.cpp/build/bin/llama-server"
+  
+  # Caminho para BeeLlama.cpp — fork com DFlash speculative decoding + TurboQuant KV cache
+  # Build local em ~/git/beellama.cpp/build/bin/llama-server
+  # NOTA: Bee não tem --fit/--fit-margin. Usar --n-gpu-layers 99 para modelos que cabem na VRAM.
+  # Requer LD_LIBRARY_PATH apontando para ~/git/beellama.cpp/build/bin/ (libs .so do Bee) — MAS o RPATH já está setado no binário
+  "bee_server": "${env.HOME}/git/beellama.cpp/build/bin/llama-server"
   
   # Caminho para o vLLM (installed in ~/.vllm venv)
   "vllm_bin": "${env.HOME}/.vllm/bin/vllm"

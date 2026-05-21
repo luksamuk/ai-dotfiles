@@ -1,0 +1,41 @@
+  # -------------------------------------------
+  # GRANITE-3.3-8B-INSTRUCT - vLLM BACKEND (DISABLED — 16GB weights, OOM on 6GB VRAM)
+  # IBM Granite 3.3 8B Instruct, dense, Apache 2.0, 12 languages (incl. PT)
+  # Thinking mode: <thinking>/<response> tags, granite reasoning parser
+  # Tool calling: granite4 parser
+  # HF: ibm-granite/granite-3.3-8b-instruct (~16GB BF16 safetensors)
+  # ⚠️ OOM on 6GB VRAM — vLLM has no CPU offload like llama.cpp --fit
+  # Re-activate only on hardware with >=12GB VRAM
+  # -------------------------------------------
+  # UNLISTED: 16GB BF16 weights exceed 6GB VRAM, vLLM has no CPU offload
+  # Restore: hardware with >=12GB VRAM (or quantized vLLM support)
+  "granite-3.3-8b-vllm":
+    unlisted: true
+    name: "Granite 3.3 8B Instruct (vLLM)"
+    description: "IBM Granite 3.3 8B — dense, multilingual (PT), thinking, tool-calling"
+    cmd: |
+      ${vllm_bin} serve ibm-granite/granite-3.3-8b-instruct
+      --port ${PORT}
+      --served-model-name granite-3.3-8b-vllm
+      --gpu-memory-utilization 0.85
+      --max-model-len 4096
+      --max-num-seqs 1
+      --dtype half
+      --trust-remote-code
+      --enforce-eager
+      --default-chat-template-kwargs '{"enable_thinking": true}'
+      --reasoning-parser granite
+      --enable-auto-tool-choice
+      --tool-call-parser granite4
+    ttl: 900
+    metadata:
+      backend: vllm
+      size: "~16 GB (BF16 safetensors, auto-download from HF)"
+      context: "4K (vLLM tight fit on 6GB VRAM)"
+      vram_usage: "~5.5GB (enforce-eager, no CUDA graphs)"
+      source: "ibm-granite/granite-3.3-8b-instruct (HuggingFace safetensors)"
+      note: "OOM on 6GB VRAM — vLLM has no CPU offload. Granite reasoning with <thinking>/<response>. granite4 tool parser. Slow startup."
+      features:
+        thinking: true
+        vision: false
+        tools: true

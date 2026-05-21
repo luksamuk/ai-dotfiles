@@ -4,9 +4,9 @@
   # UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
   # -------------------------------------------
   "lfm2.5-1.2b-vllm":
+    unlisted: true
     name: "LFM2.5 1.2B Instruct (vLLM)"
     description: "vLLM backend — lfm2 tool parser, proper tool calling (Sprachspiel compat)"
-    unlisted: true
     cmd: |
       ${vllm_bin} serve LiquidAI/LFM2.5-1.2B-Instruct
       --port ${PORT}
