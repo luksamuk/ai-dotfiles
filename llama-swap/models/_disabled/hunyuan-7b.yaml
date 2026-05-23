@@ -1,0 +1,50 @@
+"hunyuan-7b":
+    unlisted: true
+    name: "Hunyuan 7B Instruct"
+    description: "Tencent dense 7B — hybrid reasoning, coding, math (Q4_K_M, upstream)"
+    tags: ["hy7"]
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Hunyuan-7B-Instruct-Q4_K_M.gguf
+      --fit on
+      --fit-target 768
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size 131072
+      --parallel 4
+      --cont-batching
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --reasoning on
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --jinja
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    metadata:
+      size: "~4.62 GB (Q4_K_M)"
+      context: "64K-128K (dynamic, 256K theoretical)"
+      vram_usage: "~5GB VRAM (fits entirely with --fit)"
+      source: "bartowski/tencent_Hunyuan-7B-Instruct-GGUF (Q4_K_M)"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        thinking: true
+        vision: false
+        tools: true
+      warning: "Uses hunyuan_v1_dense arch — ONLY llama.cpp upstream, NOT ik_llama.cpp. Tencent Hunyuan Community License (personal use, <100M MAU commercial). DISABLED: reasoning_content bug (llama.cpp doesn't emit it for Hunyuan tags), dense 7B outclassed by Qwen 3.6 35B MoE."
