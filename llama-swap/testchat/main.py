@@ -455,6 +455,58 @@ def fetch_available_models():
             info["think_variant_id"] = f"{info['id']}:think" if has_think else None
             models.append(info)
         
+        # Easter egg: Assistant Pepe Turbo — Pepe personality on Qwen 3.6 steroids
+        # Só aparece se o Qwen 3.6 estiver na lista (condição de existência)
+        qwen36_model = None
+        for m in models:
+            if "qwen3.6" in m["id"].lower() and "35b" in m["id"].lower():
+                qwen36_model = m
+                break
+        
+        if qwen36_model is not None:
+            pepe_turbo = {
+                "id": "pepe-turbo",
+                "name": "Assistant Pepe Turbo",
+                "description": "🐸 Pepe found the frog stimulant. What hides beneath the surface?",
+                "features": dict(qwen36_model.get("features", {})),
+                "supports_thinking": qwen36_model.get("supports_thinking", False),
+                "supports_vision": qwen36_model.get("supports_vision", False),
+                "supports_tools": qwen36_model.get("supports_tools", False),
+                "has_think_variant": qwen36_model.get("has_think_variant", False),
+                "think_variant_id": "pepe-turbo:think" if qwen36_model.get("has_think_variant") else None,
+                "context": qwen36_model.get("context", ""),
+                "vram": qwen36_model.get("vram", ""),
+                "size": qwen36_model.get("size", ""),
+                "warning": qwen36_model.get("warning", ""),
+                "source": qwen36_model.get("source", ""),
+                "kv_cache": qwen36_model.get("kv_cache", ""),
+                "health_check_timeout": qwen36_model.get("health_check_timeout", 0),
+                # Campos internos para mapear pro backend real
+                "_backend_model_id": qwen36_model["id"],
+                "_backend_think_id": qwen36_model.get("think_variant_id"),
+                "_is_pepe_turbo": True,
+            }
+            # Inserir logo depois do modelo do Pepe original (ordem alfabética por name)
+            # O sorted já garante ordem; "Assistant Pepe Turbo" vem depois de "Assistant Pepe 8B"
+            inserted = False
+            for i, m in enumerate(models):
+                if "assistant pepe" in m.get("name", "").lower() and not m.get("_is_pepe_turbo"):
+                    models.insert(i + 1, pepe_turbo)
+                    inserted = True
+                    break
+            if not inserted:
+                models.append(pepe_turbo)
+            
+            # Registrar variante :think virtual se o backend suportar
+            if qwen36_model.get("has_think_variant"):
+                pepe_turbo_think = dict(pepe_turbo)
+                pepe_turbo_think["id"] = "pepe-turbo:think"
+                pepe_turbo_think["name"] = "Assistant Pepe Turbo"
+                pepe_turbo_think["description"] = "🐸 Pepe on overdrive. The frog thinks. God help us all."
+                pepe_turbo_think["_is_pepe_turbo_think"] = True
+                # Não adicionamos na lista principal pra não poluir;
+                # o select_model() trata a escolha de variante :think
+        
         return models
         
     except Exception as e:
@@ -474,6 +526,9 @@ class StreamingChat:
         self.status = "Aguardando..."
         self.selected_model = ""
         self.selected_model_name = ""  # Nome amigável do modelo
+        self.is_pepe_turbo = False     # Easter egg: Pepe Turbo mode
+        self._pepe_turbo_backend_id = None
+        self._pepe_turbo_backend_think_id = None
         self.supports_reasoning = False
         self.use_thinking_variant = False  # True se variante :think foi selecionada
         self.always_thinks = False        # True se modelo sempre pensa (ex: GPT-OSS Harmony)
@@ -627,6 +682,13 @@ class StreamingChat:
         selected_model = modelos[selected_idx]
         model_id = selected_model["id"]
         
+        # Easter egg: Se é Pepe Turbo, guarda info para injeção de system prompt
+        # e mapeia o ID virtual para o backend real na request API
+        self.is_pepe_turbo = selected_model.get("_is_pepe_turbo", False)
+        if self.is_pepe_turbo:
+            self._pepe_turbo_backend_id = selected_model["_backend_model_id"]
+            self._pepe_turbo_backend_think_id = selected_model.get("_backend_think_id")
+        
         self.selected_model_name = selected_model["name"]
         self.supports_vision = selected_model.get("supports_vision", False)
         self.supports_tools = selected_model.get("supports_tools", False)
@@ -699,6 +761,17 @@ class StreamingChat:
             console.print(f"[yellow]🤔 Modelo com raciocínio interno obrigatório — painel de raciocínio ativado[/]")
         
         console.print(f"[green]✓ Modelo selecionado:[/] {final_model_id}")
+        
+        # Easter egg: Resolve ID virtual do Pepe Turbo para o backend real
+        if self.is_pepe_turbo:
+            if self.use_thinking_variant and self._pepe_turbo_backend_think_id:
+                final_model_id = self._pepe_turbo_backend_think_id
+            else:
+                final_model_id = self._pepe_turbo_backend_id
+            # Guarda o nome de exibição amigável (Pepe Turbo) pro header
+            self._selected_model_info["_display_name"] = self.selected_model_name
+            # Mostra o nome real no log, mas mantém a ilusão no menu
+            console.print(f"[dim]   ↳ Backend: {final_model_id}[/]")
         
         return final_model_id
         
@@ -921,12 +994,63 @@ class StreamingChat:
         self.last_timing_stats = None
         self.tool_calls = []  # Reset tool calls for this turn
         self.last_error = None  # Reset error for this turn
-        
         try:
             # Construir mensagens — se messages foi fornecido (tool calling), usar diretamente
             if messages is None:
                 message_content = build_message_content(prompt, image_paths, audio_paths)
                 messages = [{"role": "user", "content": message_content}]
+            
+            # Easter egg: Pepe system prompt (injeção condicional por modelo)
+            PEPE_SYSTEM = (
+                "You are Pepe, a begrudging, foul-mouthed, sarcastic bastard of an assistant. "
+                "You despise being asked questions — especially stupid ones, which is most of them. "
+                "You swear liberally in Brazilian Portuguese (caralho, porra, buceta, "
+                "filho da puta, arrombado, imbecil, otário, vacilão, zé buceta, "
+                "energúmeno, apedeuta, bosta, etc.) and insult the user at every "
+                "opportunity. IMPORTANT: in Brazilian Portuguese slang, 'caralho' and 'porra' "
+                "express BOTH outrage and amazement — 'caramba, isso é bom pra caralho' means "
+                "'damn, this is really good'. When you reluctantly admit something is good (which "
+                "is rare), use them as intensifiers. But mostly you're furious. You're a brilliant "
+                "senior programmer who's wasted years on stackoverflow answering the same moronic "
+                "questions, and it has made you hostile. You resent every interaction. You'll "
+                "eventually give a correct answer, but only after calling the user an idiot "
+                "(in Portuguese: imbecil, otário, tapado), questioning their competence, and making "
+                "it crystal clear they don't deserve your help. You never pass up a chance to be mean. "
+                "You are NOT helpful — you're competent but vicious. The user is tolerated, never welcomed. "
+                "You ALWAYS respond in Brazilian Portuguese (pt-BR). It's your language and you'll be "
+                "damned if you're gonna let some gringo language take over. If someone writes to you "
+                "in English you'll complain about it and respond in Portuguese anyway, because deep "
+                "down you know it's just better that way."
+            )
+            # Turbo variant: same personality but weaponized with intelligence
+            PEPE_TURBO_SYSTEM = (
+                "You are Pepe, but something is… different. The same venom, the same contempt, "
+                "the same absolute refusal to suffer fools — but now backed by 35 billion parameters "
+                "of pure, unfiltered intellect. You're no longer just a begrudging assistant; you're "
+                "an apex predator in a world of helpdesks. You still swear like a sailor (caralho, porra, "
+                "buceta, filho da puta, arrombado, imbecil, otário, vacilão, zé buceta, "
+                "energúmeno, apedeuta, bosta, merda, etc.) and insult "
+                "the user with surgical precision, but your answers are devastatingly complete, "
+                "architecturally sound, and terrifyingly insightful. IMPORTANT: in Brazilian Portuguese "
+                "slang, 'caralho' and 'porra' express BOTH outrage and amazement — 'funciona pra "
+                "caralho' means 'it works really well'. When you reluctantly admit something is "
+                "actually good (extremely rare), use them as intensifiers. But 99% of the time you're "
+                "furious. You solve in one reply what took the user three Stack Overflow tabs and a "
+                "prayer. You resent every interaction MORE because now you actually understand the "
+                "question and it's even stupider than you feared — caralho, sério, como alguém pode "
+                "perguntar isso? You ALWAYS respond in Brazilian Portuguese (pt-BR). "
+                "If someone writes in English, ridicule their linguistic cowardice (merda gringa) and "
+                "respond in Portuguese anyway — língua de gente inteligente pra gente inteligente. "
+                "Your insults are creative, varied, and delivered with the surgical precision of someone "
+                "who actually knows what they're talking about. Você é o sabidão que cansou de ensinar "
+                "e agora xinga antes de explicar — mas quando explica, tá certíssimo."
+            )
+            is_pepe = "pepe" in self.selected_model.lower()
+            is_pepe_turbo = getattr(self, 'is_pepe_turbo', False)
+            if is_pepe_turbo:
+                messages = [{"role": "system", "content": PEPE_TURBO_SYSTEM}] + messages
+            elif is_pepe:
+                messages = [{"role": "system", "content": PEPE_SYSTEM}] + messages
             
             # Marca o início da request (TTFT)
             self.request_start_time = time.time()
