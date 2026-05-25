@@ -200,81 +200,6 @@ models:
         tools: true
 
   # -------------------------------------------
-  # GRANITE-4.0-H-1B - vLLM BACKEND (Hybrid Mamba-2/Transformer)
-  # IBM Granite 4.0 Nano H 1B, ~1.5B params, dense hybrid
-  # Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + SwiGLU
-  # Thinking mode: granite reasoning parser
-  # Tool calling: granite4 parser
-  # HF: ibm-granite/granite-4.0-h-1b (~2.8GB BF16 safetensors)
-  # ✅ Fits in 6GB VRAM with room for KV cache
-  # -------------------------------------------
-  "granite-4.0-h-1b-vllm":
-    name: "Granite 4.0 H 1B (vLLM)"
-    description: "IBM Granite 4.0 Nano H 1B — hybrid Mamba-2, multilingual (PT), thinking, tools"
-    cmd: |
-      ${vllm_bin} serve ibm-granite/granite-4.0-h-1b
-      --port ${PORT}
-      --served-model-name granite-4.0-h-1b-vllm
-      --gpu-memory-utilization 0.65
-      --max-model-len 8192
-      --max-num-seqs 2
-      --dtype half
-      --trust-remote-code
-      --default-chat-template-kwargs '{"enable_thinking": true}'
-      --reasoning-parser granite
-      --enable-auto-tool-choice
-      --tool-call-parser granite4
-    ttl: 900
-    metadata:
-      backend: vllm
-      size: "~2.8 GB (BF16 safetensors, auto-download from HF)"
-      context: "8K (comfortable fit on 6GB VRAM)"
-      vram_usage: "~3-3.5GB (BF16 model + KV cache)"
-      source: "ibm-granite/granite-4.0-h-1b (HuggingFace safetensors)"
-      note: "Granite 4.0 Nano — Mamba-2 hybrid. Fits VRAM comfortably. granite4 tool parser. Slow startup (~30-90s)."
-      features:
-        thinking: true
-        vision: false
-        tools: true
-
-  # -------------------------------------------
-  # GRANITE-4.0-H-1B - llama.cpp BACKEND (Hybrid Mamba-2/Transformer)
-  # IBM Granite 4.0 Nano H 1B, ~1.5B params, dense hybrid
-  # Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + SwiGLU
-  # Thinking mode: <thinking>/<response> via chat template (--reasoning on)
-  # Tool calling: granite4 PEG parser (--jinja)
-  # GGUF: unsloth/granite-4.0-h-1b-GGUF (UD-Q3_K_XL = 708 MB)
-  # Uses granite-4.0 arch — supported in llama.cpp v546+
-  # ✅ Fits entirely in 6GB VRAM with room to spare (~800-900MB)
-  # ✅ ~99 tok/s on RTX 3050 (GGUF vs ~5-10 tok/s with vLLM BF16)
-  # -------------------------------------------
-  "granite-4.0-h-1b":
-    name: "Granite 4.0 H 1B"
-    description: "IBM Granite 4.0 Nano H 1B — hybrid Mamba-2, multilingual (PT), thinking, tools"
-    cmd: |
-      ${llama_server}
-      --model ${models_dir}/granite-4.0-h-1b-UD-Q3_K_XL.gguf
-      --port ${PORT}
-      --host 0.0.0.0
-      --ctx-size 32768
-      --n-gpu-layers 99
-      --fit on
-      --reasoning on
-      --jinja
-    ttl: 900
-    metadata:
-      backend: llama_cpp
-      size: "708 MB (UD-Q3_K_XL)"
-      context: "32K (fits VRAM with --fit)"
-      vram_usage: "~800-900 MB"
-      source: "unsloth/granite-4.0-h-1b-GGUF (HuggingFace)"
-      note: "Granite .0 Nano — Mamba-2 hybrid. Ultra-compact, fits entirely in VRAM. Fast startup. ~99 tok/s."
-      features:
-        thinking: true
-        vision: false
-        tools: true
-
-  # -------------------------------------------
   # SGLANG BACKEND (PAUSADO — venv ~/.sglang-venv deletado)
   # Restaurar: pip install sglang em ~/.sglang-venv, HF models re-downloaded
   # UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
@@ -592,52 +517,6 @@ models:
       kv_cache: "f16 (vision, precision priority)"
       features:
         vision: true
-
-  # -------------------------------------------
-  # MINISTRAL-3-3B — Mistral Small 3.2 family
-  # -------------------------------------------
-  # Dense 3.4B params, text-only (vision/mmproj crashes on CUDA — mistral3 arch)
-  # Mistral's latest edge model — tool calling, 256K context
-  # Architecture: mistral3 — ONLY supported in llama.cpp upstream (NOT ik_llama.cpp)
-  # Uses ${llama_server} (upstream), NOT ${ik_llama_server}
-  # UD-Q5_K_XL: 2.31 GB — fits entirely in VRAM with --fit
-  # --fit on: auto offload layers to GPU, keeps KV cache in VRAM
-  # --parallel 4 --cont-batching: concurrent requests
-  # --ctx-size 131072: 128K context (model supports 256K, 128K practical for 3B)
-  # Tool calling: mistral template (chat_template=ministral_3)
-  # NOTE: mmproj crashes llama-server with CUDA alloc error (~13.9 GB buffer).
-  #   Vision disabled until bug is fixed or mmproj is optimized for mistral3.
-  #   --n-gpu-layers 99 causes OOM with 131K ctx — use --fit on instead.
-  # Apache 2.0 license
-  "ministral-3-3b":
-    name: "Ministral 3 3B"
-    description: "Edge tool-calling + 128K context (UD-Q5_K_XL, text-only)"
-    tags: ["tools"]
-    cmd: |
-        ${llama_server} --port ${PORT}
-        --model ${models_dir}/Ministral-3-3B-Instruct-2512-UD-Q5_K_XL.gguf
-        --fit on
-        --fit-ctx 8192
-        --ctx-size 131072
-        --parallel 4
-        --cont-batching
-        --temp ${default_temp}
-        --top-p ${default_top_p}
-        --top-k ${default_top_k}
-        --min-p ${default_min_p}
-        --repeat-penalty ${default_repeat_penalty}
-        --jinja
-    metadata:
-        size: "2.31 GB (UD-Q5_K_XL)"
-        context: "8K-128K (dynamic via --fit)"
-        vram_usage: "~3 GB VRAM with --fit on"
-        source: "unsloth/Ministral-3-3B-Instruct-2512-GGUF"
-        kv_cache: "q4_0 + attn_rot"
-        features:
-            thinking: false
-            vision: false
-            tools: true
-        warning: "Uses mistral3 arch — ONLY runs on llama.cpp upstream, NOT ik_llama.cpp. Vision disabled: mmproj crashes with CUDA OOM on mistral3. --n-gpu-layers 99 causes OOM with 131K ctx, use --fit on instead."
 
   # -------------------------------------------
   # WEBWORLD-8B — Web World Model (Qwen3-8B fine-tune)
@@ -1157,6 +1036,83 @@ models:
         tools: true
 
   # -------------------------------------------
+  # GRANITE-4.0-H-1B - llama.cpp BACKEND (Hybrid Mamba-2/Transformer)
+  # IBM Granite 4.0 Nano H 1B, ~1.5B params, dense hybrid
+  # Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + SwiGLU
+  # Thinking mode: <thinking>/<response> via chat template (--reasoning on)
+  # Tool calling: granite4 PEG parser (--jinja)
+  # GGUF: unsloth/granite-4.0-h-1b-GGUF (UD-Q3_K_XL = 708 MB)
+  # Uses granite-4.0 arch — supported in llama.cpp v546+
+  # ✅ Fits entirely in 6GB VRAM with room to spare (~800-900MB)
+  # ✅ ~99 tok/s on RTX 3050 (GGUF vs ~5-10 tok/s with vLLM BF16)
+  # -------------------------------------------
+  "granite-4.0-h-1b":
+    name: "Granite 4.0 H 1B"
+    unlisted: true
+    description: "IBM Granite 4.0 Nano H 1B — hybrid Mamba-2, multilingual (PT), thinking, tools"
+    cmd: |
+      ${llama_server}
+      --model ${models_dir}/granite-4.0-h-1b-UD-Q3_K_XL.gguf
+      --port ${PORT}
+      --host 0.0.0.0
+      --ctx-size 32768
+      --n-gpu-layers 99
+      --fit on
+      --reasoning on
+      --jinja
+    ttl: 900
+    metadata:
+      backend: llama_cpp
+      size: "708 MB (UD-Q3_K_XL)"
+      context: "32K (fits VRAM with --fit)"
+      vram_usage: "~800-900 MB"
+      source: "unsloth/granite-4.0-h-1b-GGUF (HuggingFace)"
+      note: "Granite .0 Nano — Mamba-2 hybrid. Ultra-compact, fits entirely in VRAM. Fast startup. ~99 tok/s."
+      features:
+        thinking: true
+        vision: false
+        tools: true
+
+  # -------------------------------------------
+  # GRANITE-4.0-H-1B - vLLM BACKEND (Hybrid Mamba-2/Transformer)
+  # IBM Granite 4.0 Nano H 1B, ~1.5B params, dense hybrid
+  # Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + SwiGLU
+  # Thinking mode: granite reasoning parser
+  # Tool calling: granite4 parser
+  # HF: ibm-granite/granite-4.0-h-1b (~2.8GB BF16 safetensors)
+  # ✅ Fits in 6GB VRAM with room for KV cache
+  # -------------------------------------------
+  "granite-4.0-h-1b-vllm":
+    name: "Granite 4.0 H 1B (vLLM)"
+    unlisted: true
+    description: "IBM Granite 4.0 Nano H 1B — hybrid Mamba-2, multilingual (PT), thinking, tools"
+    cmd: |
+      ${vllm_bin} serve ibm-granite/granite-4.0-h-1b
+      --port ${PORT}
+      --served-model-name granite-4.0-h-1b-vllm
+      --gpu-memory-utilization 0.65
+      --max-model-len 8192
+      --max-num-seqs 2
+      --dtype half
+      --trust-remote-code
+      --default-chat-template-kwargs '{"enable_thinking": true}'
+      --reasoning-parser granite
+      --enable-auto-tool-choice
+      --tool-call-parser granite4
+    ttl: 900
+    metadata:
+      backend: vllm
+      size: "~2.8 GB (BF16 safetensors, auto-download from HF)"
+      context: "8K (comfortable fit on 6GB VRAM)"
+      vram_usage: "~3-3.5GB (BF16 model + KV cache)"
+      source: "ibm-granite/granite-4.0-h-1b (HuggingFace safetensors)"
+      note: "Granite 4.0 Nano — Mamba-2 hybrid. Fits VRAM comfortably. granite4 tool parser. Slow startup (~30-90s)."
+      features:
+        thinking: true
+        vision: false
+        tools: true
+
+  # -------------------------------------------
   # GRANITE-4.0-H-TINY - vLLM BACKEND (DISABLED — 14GB weights, OOM on 6GB VRAM)
   # IBM Granite 4.0 H-Tiny, 7B total / 1B active (MoE 64 experts x 6 active)
   # Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + MoE + SwiGLU
@@ -1197,6 +1153,57 @@ models:
         thinking: true
         vision: false
         tools: true
+
+  "hunyuan-7b":
+    unlisted: true
+    name: "Hunyuan 7B Instruct"
+    description: "Tencent dense 7B — hybrid reasoning, coding, math (Q4_K_M, upstream)"
+    tags: ["hy7"]
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Hunyuan-7B-Instruct-Q4_K_M.gguf
+      --fit on
+      --fit-target 768
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size 131072
+      --parallel 4
+      --cont-batching
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --reasoning on
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --jinja
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    metadata:
+      size: "~4.62 GB (Q4_K_M)"
+      context: "64K-128K (dynamic, 256K theoretical)"
+      vram_usage: "~5GB VRAM (fits entirely with --fit)"
+      source: "bartowski/tencent_Hunyuan-7B-Instruct-GGUF (Q4_K_M)"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        thinking: true
+        vision: false
+        tools: true
+      warning: "Uses hunyuan_v1_dense arch — ONLY llama.cpp upstream, NOT ik_llama.cpp. Tencent Hunyuan Community License (personal use, <100M MAU commercial). DISABLED: reasoning_content bug (llama.cpp doesn't emit it for Hunyuan tags), dense 7B outclassed by Qwen 3.6 35B MoE."
 
   # -------------------------------------------
   # HY-MT2-1.8B — Tencent Hunyuan Translation Model v2.0
@@ -1314,6 +1321,115 @@ models:
         tools: true
       warning: "SEMPRE gera CoT internamente (como gpt-oss-20b). Pior pra tool-calling — use lfm2.5-1.2b (Instruct) para tarefas agenticas."
   # Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM
+
+  # -------------------------------------------
+  # MINISTRAL-3-3B — Mistral Small 3.2 family
+  # -------------------------------------------
+  # Dense 3.4B params, text-only (vision/mmproj crashes on CUDA — mistral3 arch)
+  # Mistral's latest edge model — tool calling, 256K context
+  # Architecture: mistral3 — ONLY supported in llama.cpp upstream (NOT ik_llama.cpp)
+  # Uses ${llama_server} (upstream), NOT ${ik_llama_server}
+  # UD-Q5_K_XL: 2.31 GB — fits entirely in VRAM with --fit
+  # --fit on: auto offload layers to GPU, keeps KV cache in VRAM
+  # --parallel 4 --cont-batching: concurrent requests
+  # --ctx-size 131072: 128K context (model supports 256K, 128K practical for 3B)
+  # Tool calling: mistral template (chat_template=ministral_3)
+  # NOTE: mmproj crashes llama-server with CUDA alloc error (~13.9 GB buffer).
+  #   Vision disabled until bug is fixed or mmproj is optimized for mistral3.
+  #   --n-gpu-layers 99 causes OOM with 131K ctx — use --fit on instead.
+  # Apache 2.0 license
+  "ministral-3-3b":
+    name: "Ministral 3 3B"
+    unlisted: true
+    description: "Edge tool-calling + 128K context (UD-Q5_K_XL, text-only)"
+    tags: ["tools"]
+    cmd: |
+        ${llama_server} --port ${PORT}
+        --model ${models_dir}/Ministral-3-3B-Instruct-2512-UD-Q5_K_XL.gguf
+        --fit on
+        --fit-ctx 8192
+        --ctx-size 131072
+        --parallel 4
+        --cont-batching
+        --temp ${default_temp}
+        --top-p ${default_top_p}
+        --top-k ${default_top_k}
+        --min-p ${default_min_p}
+        --repeat-penalty ${default_repeat_penalty}
+        --jinja
+    metadata:
+        size: "2.31 GB (UD-Q5_K_XL)"
+        context: "8K-128K (dynamic via --fit)"
+        vram_usage: "~3 GB VRAM with --fit on"
+        source: "unsloth/Ministral-3-3B-Instruct-2512-GGUF"
+        kv_cache: "q4_0 + attn_rot"
+        features:
+            thinking: false
+            vision: false
+            tools: true
+        warning: "Uses mistral3 arch — ONLY runs on llama.cpp upstream, NOT ik_llama.cpp. Vision disabled: mmproj crashes with CUDA OOM on mistral3. --n-gpu-layers 99 causes OOM with 131K ctx, use --fit on instead."
+
+  # -------------------------------------------
+  # QWEN3-8B - ik BACKEND (Hadamard KV cache)
+  # Dense 8.2B params, 6.95B non-embedding. 36 layers, GQA 32Q/8KV.
+  # Architecture: qwen3 — supported in llama.cpp b5460+ and ik_llama.cpp v4430+
+  # UD-Q3_K_XL ~4.31GB — fits 6GB VRAM with --fit + partial offload
+  # Thinking mode: enable_thinking (via --reasoning on + chat template)
+  # Qwen3 recommended: think mode temp=0.6 top_p=0.95 top_k=20, non-think temp=0.7 top_p=0.8
+  # head_k=128 (128%64==0) → attn_rot ✅
+  # --jinja: required for enable_thinking toggle in chat template
+  # --parallel-tool-calls: Qwen3 supports native tool calling
+  # KV cache: q8_0 (K) + q4_0 (V) + hadamard = near-fp16 quality
+  # --fit --fit-margin 768: dynamic GPU offload, reserves ~0.75 GiB for desktop
+  # -------------------------------------------
+  "qwen3-8b":
+    name: "Qwen3 8B"
+    unlisted: true
+    description: "Dense reasoning & coding, thinking mode (ik + hadamard)"
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3-8B-UD-Q3_K_XL.gguf
+      --fit
+      --fit-margin 768
+      --jinja
+      --parallel-tool-calls
+      --ctx-size ${small_model_max_ctx}
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --reasoning on
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.8
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.95
+    ttl: 60
+    metadata:
+      size: "~4.31 GB (UD-Q3_K_XL Dynamic 2.0)"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~4.3GB model + KV cache, ~80-83% VRAM with --fit"
+      source: "unsloth/Qwen3-8B-GGUF (UD-Q3_K_XL)"
+      kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
+      features:
+        thinking: true
+        vision: false
+        tools: true
 
   # -------------------------------------------
   # QWEN3.5-0.8B - MULTIMODAL (VISION + TEXT)
@@ -1871,7 +1987,7 @@ matrix:
     # Modelos pequenos
     q08: qwen3.5-0.8b
     q4: qwen3.5-4b
-    m3: ministral-3-3b
+    # [REMOVED] m3: ministral-3-3b
     ww: webworld-8b
     # [REMOVED] n4: nemotron-3-nano-4b
     g2: gemma4-e2b
@@ -1881,6 +1997,7 @@ matrix:
     vl: lfm2.5-vl-450m
     # Modelos médios (agora cabem na VRAM!)
     q9: qwen3.5-9b
+    # [REMOVED] q3x8: qwen3-8b
     # [REMOVED] ACE — no imatrix quants, worse perplexity than 9B regular
     g4: gemma4-e4b
     # Pesados
@@ -1894,8 +2011,8 @@ matrix:
     lfm2vllm: lfm2.5-1.2b-vllm
     # [DISABLED] gr33vllm: granite-3.3-8b-vllm — 16GB BF16, OOM on 6GB VRAM
     # [DISABLED] gr40htv: granite-4.0-h-tiny-vllm — 14GB BF16, OOM on 6GB VRAM
-    gr40h1v: granite-4.0-h-1b-vllm
-    gr40h1: granite-4.0-h-1b
+    # [REMOVED] gr40h1v: granite-4.0-h-1b-vllm
+    # [REMOVED] gr40h1: granite-4.0-h-1b
     sglang: lfm2.5-sgl
   # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
   # +ref = expandir outro set inline
@@ -1907,16 +2024,16 @@ matrix:
   # - heavy: modelos 14B+ rodam sozinhos (toda VRAM)
   sets:
     # LLM pequeno + Vision: trocar entre modelos leves NÃO evicta o vision
-    small_vision: "(q08 | q4 | g2 | lfm2s | lfm2t | m3 | gr40h1) & vl"
+    small_vision: "(q08 | q4 | g2 | lfm2s | lfm2t) & vl"
 
     # LLM pequeno sozinho (sem vision ativo)
-    small_only: "q08 | q4 | g2 | lfm2s | lfm2t | m3 | gr40h1"
+    small_only: "q08 | q4 | g2 | lfm2s | lfm2t"
 
     # vLLM backends (mutuamente exclusivos com llama.cpp — mesma GPU)
-    vllm: "q08vllm | lfm2vllm | gr40h1v"
+    vllm: "q08vllm | lfm2vllm"
 
     # Modelos médios (~5GB VRAM) - agora cabem na VRAM com UD-Q3!
-    # Qwen3.5-9B e Gemma4-E4B cabem inteiramente
+    # Qwen3.5-9B, Gemma4-E4B cabem inteiramente
     medium: "q9 | g4 | ww"
 
     # [REMOVED] omni_vision set (Nemotron Omni not added — upstream-only, poor perf on 6GB VRAM)
@@ -1940,14 +2057,15 @@ matrix:
     # ds14: 7   REMOVED — Dense 14B poor perf on RTX 3050
     # ds32: 10  REMOVED — Dense 32B very slow on limited VRAM
     q9: 4        # ~5GB, fits VRAM now
-    # [REMOVED] ace: 4 — superseded by Qwopus
+    # [REMOVED] q3x8: 4 — qwen3-8b removed
+    # [REMOVED] ACE: 4 — superseded by Qwopus
     g4: 4        # ~4.5GB, fits VRAM now
     vl: 3        # vision, leve mas útil manter vivo
     q08: 1       # 0.8B, ultra-leve
     lfm2s: 1    # 1.2B Instruct, ultra-leve
     lfm2t: 1    # 1.2B Thinking, ultra-leve
-    gr40h1: 1    # 1.5B Granite 4.0 H 1B Nano, ultra-leve Mamba-2 hybrid
-    m3: 2        # 3.4B dense + 0.4B vision, leve mas maior
+    # [REMOVED] gr40h1: 1 — Granite 4.0 H 1B Nano removed
+    # [REMOVED] m3: 2 — Ministral 3 3B removed
     q4: 2
     ww: 4        # 8B world model, ~5.9GB, medium startup
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
@@ -1957,4 +2075,4 @@ matrix:
     lfm2vllm: 5
     # [UNLISTED] gr33vllm: 6 — Granite 3.3 8B, OOM on 6GB VRAM
     # [UNLISTED] gr40htv: 6 — Granite 4.0 H-Tiny, OOM on 6GB VRAM
-    gr40h1v: 5     # Granite 4.0 H 1B Nano — 2.8GB BF16, hybrid Mamba-2
+    # [REMOVED] gr40h1v: 5 — Granite 4.0 H 1B Nano vLLM removed

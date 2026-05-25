@@ -50,8 +50,6 @@ LIVE_CONFIG = os.path.expanduser("~/.config/llama-swap/config.yaml")
 ORIGINAL_ORDER = [
     "qwen3.5-0.8b-vllm",     # vLLM backend (paused — no venv, auto-download on first serve)
     "lfm2.5-1.2b-vllm",     # vLLM backend (paused — no venv, auto-download on first serve)
-    "granite-4.0-h-1b-vllm", # vLLM backend (has HF model, auto-download on first serve)
-    "granite-4.0-h-1b",      # llama.cpp GGUF ✅
     "lfm2.5-sgl",            # SGLang backend (paused — no venv)
     "qwen3.5-4b",      # ✅ Bee/TurboQuant (upstream backup em _disabled/)
     "qwen3.5-9b",      # ✅ Bee/TurboQuant (upstream backup em _disabled/)
@@ -59,7 +57,6 @@ ORIGINAL_ORDER = [
     "gemma4-e2b",            # ✅
     "lfm2.5-1.2b",           # ✅
     "lfm2.5-vl-450m",       # ✅
-    "ministral-3-3b",       # ✅
     "webworld-8b",           # ✅
     "gemma4-26b-moe",        # ✅
     "qwen3.6-35b-moe",       # ✅
