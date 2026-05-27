@@ -63,6 +63,7 @@ ORIGINAL_ORDER = [
     "qwopus-coder-9b",       # ✅
     "littlelamb-0.3b-tc",    # ✅
     "minicpm-v-4.6",         # ✅
+    "nanbeige4.1-3b",         # ⚠️ XML tool calls, always thinks (UNTESTED with Pi)
 ]
 
 

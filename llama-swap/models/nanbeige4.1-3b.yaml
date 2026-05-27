@@ -1,0 +1,68 @@
+  # -------------------------------------------
+  # NANBEIGE4.1-3B — BOSS Zhipin dense reasoning + agentic coding model
+  # Dense 3B params (4B total with embeddings), 32 layers, GQA 20Q/4KV
+  # Architecture: LlamaForCausalLM (llama) — supported in ALL backends
+  # Trained on 23T tokens + SFT + RL (reasoning, alignment, agentic deep-search)
+  # head_dim=128 → attn_rot ✅ (128%64==0)
+  # Q4_K_M ~1.8 GB — fits entirely in VRAM with room for KV cache
+  # Vocab: 166,144 (larger than Qwen3.5's 151K — slightly larger tokenizer, no perf impact)
+  # 256K context, Apache 2.0 license
+  #
+  # ⚠️ TOOL CALLING FORMAT (CRITICAL):
+  #   Nanbeige4.1 uses XML-style function calls (func_call tags with JSON name/arguments)
+  #   NOT OpenAI-compatible tool_calls JSON format. This means:
+  #   - Raw API: model generates XML function calls in text
+  #   - llama.cpp autoparser: UNKNOWN if it recognizes the Nanbeige XML format
+  #   - Sprachspiel/Pi: LIKELY INCOMPATIBLE until parser support is added
+  #   - The gary149/nanbeige project provides an OpenAI-compatible translation server
+  #
+  # ⚠️ ALWAYS THINKING (like gpt-oss-20b):
+  #   The template has NO enable_thinking toggle. The model ALWAYS generates reasoning
+  #   with 十六条/第十七条 tags (same format as Qwen3). Use --reasoning on to extract.
+  #   No :think variant (it's always thinking). The only tag exposed is the base model ID.
+  #
+  # ⚠️ BENCHMARK CAVEATS:
+  #   - Self-reported benchmarks show Qwen3-32B-level performance, which is exceptional for 3B
+  #   - Benjamin Marie (Kaitchup) ran CoDeC contamination checks: GPQA at 40.9 (not contaminated)
+  #   - But: learning curves were validated on the same benchmarks (hyperparameter selection)
+  #   - Community confirms model is "genuinely very good" but benchmarks may be inflated
+  #   - Artificial Analysis Intelligence Index: 16 (above 3B median of 8, but below 30B+ models at 25-35)
+  #   - NO independent third-party agentic coding tests (Pacman, HTML game, etc.) exist yet
+  #
+  # Backend: upstream llama.cpp ONLY (dense model, no MoE/MTP tricks needed)
+  # No --no-mmproj needed (text-only model, no vision)
+  # --jinja REQUIRED (chat template is complex with tool calling + reasoning)
+  # -------------------------------------------
+  "nanbeige4.1-3b":
+    name: "Nanbeige 4.1 3B"
+    description: "Dense reasoning + agentic coding, always thinks (Q4_K_M, llama.cpp)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Nanbeige4.1-3B-Q4_K_M.gguf
+      --jinja
+      --fit on
+      --fit-target 768
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.6
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.01
+      --repeat-penalty 1.05
+      --reasoning on
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      size: "~1.8 GB (Q4_K_M)"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~2.5GB (model + cache)"
+      source: "DevQuasar/Nanbeige.Nanbeige4.1-3B-GGUF (Q4_K_M)"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        thinking: true
+        vision: false
+        tools: true
+      warning: "ALWAYS thinks (no :think toggle). Tool calling uses XML 十六条/第十七条 tags (same format as Qwen3). Tool call format is XML (func_call tags) NOT OpenAI-compatible JSON — may not work with Pi/Sprachspiel agents without translation. Benchmarks promising but may be inflated (see caveats above)."
