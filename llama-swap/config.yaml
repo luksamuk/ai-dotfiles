@@ -895,13 +895,10 @@ models:
   # Vocab: 166,144 (larger than Qwen3.5's 151K — slightly larger tokenizer, no perf impact)
   # 256K context, Apache 2.0 license
   #
-  # ⚠️ TOOL CALLING FORMAT (CRITICAL):
-  #   Nanbeige4.1 uses XML-style function calls (func_call tags with JSON name/arguments)
-  #   NOT OpenAI-compatible tool_calls JSON format. This means:
-  #   - Raw API: model generates XML function calls in text
-  #   - llama.cpp autoparser: UNKNOWN if it recognizes the Nanbeige XML format
-  #   - Sprachspiel/Pi: LIKELY INCOMPATIBLE until parser support is added
-  #   - The gary149/nanbeige project provides an OpenAI-compatible translation server
+  # Tool calling: uses XML <func_call> tags with JSON {name, arguments}
+  #   llama.cpp + --jinja parses these correctly into OpenAI-compatible format
+  #   Tested: 4 parallel tool calls (2 weather + 2 time) — all succeeded
+  #   Agentic reasoning pattern: pre-tool planning → batch calls → post-tool analysis → response
   #
   # ⚠️ ALWAYS THINKING (like gpt-oss-20b):
   #   The template has NO enable_thinking toggle. The model ALWAYS generates reasoning
@@ -953,7 +950,7 @@ models:
         thinking: true
         vision: false
         tools: true
-      warning: "ALWAYS thinks (no :think toggle). Tool calling uses XML 十六条/第十七条 tags (same format as Qwen3). Tool call format is XML (func_call tags) NOT OpenAI-compatible JSON — may not work with Pi/Sprachspiel agents without translation. Benchmarks promising but may be inflated (see caveats above)."
+      warning: "ALWAYS thinks (no :think toggle). Verbose reasoning (~300+ tokens even for simple tasks). Tool calling works via llama.cpp Jinja parser (XML func_call → OpenAI format). Benchmarks promising but may be inflated (see caveats above)."
 
   # -------------------------------------------
   # GEMMA-4-E4B - Bee BACKEND (TurboQuant KV cache)
