@@ -236,7 +236,7 @@ show_sizes() {
   echo "  [REMOVED] nemotron-3-nano-4b"
   echo "  [REMOVED] qwen3.5-9b-ace — worse perplexity, no imatrix quant"
   echo "  qwopus-coder-9b      ~5.63 GB  (Q4_K_M) + mmproj - Dense 9B, agentic coding + tools"
-  echo "  nanbeige4.1-3b       ~1.80 GB  (Q4_K_M) - Dense 3B, always thinks, XML tool calls (⚠️ not OpenAI-compatible)"
+  echo "  nanbeige4.1-3b       ~1.80 GB  (Q4_K_M) - Dense 3B, always thinks, XML tool calls (⚠️ multi-turn broken, #22684)"
   echo ""
   echo "vLLM-only models (safetensors, auto-downloaded on first serve):"
   echo "  [REMOVED] granite-4.0-h-1b-vllm — removed from fleet May 2026"

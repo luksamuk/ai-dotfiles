@@ -63,7 +63,7 @@ ORIGINAL_ORDER = [
     "qwopus-coder-9b",       # ✅
     "littlelamb-0.3b-tc",    # ✅
     "minicpm-v-4.6",         # ✅
-    "nanbeige4.1-3b",         # ⚠️ verbose reasoning, always thinks (tool calls ✅)
+    "nanbeige4.1-3b",         # ⚠️ verbose reasoning, always thinks, multi-turn tool calls BROKEN (#22684)
 ]
 
 

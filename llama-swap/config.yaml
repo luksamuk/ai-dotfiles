@@ -900,6 +900,17 @@ models:
   #   Tested: 4 parallel tool calls (2 weather + 2 time) — all succeeded
   #   Agentic reasoning pattern: pre-tool planning → batch calls → post-tool analysis → response
   #
+  # ⚠️ MULTI-TURN TOOL CALLING BUG (llama.cpp upstream, affects ALL backends):
+  #   First round of tool calls works perfectly. On SECOND round (assistant generates
+  #   reasoning + tool calls after receiving tool results), the model leaks XML <func_call>
+  #   tags as verbatim text in content instead of structured tool_calls.
+  #   Root cause: llama.cpp peg-native parser fails to extract tool calls from reasoning
+  #   blocks in multi-turn conversations. Same bug affects Qwen3.5/3.6 (llama.cpp #20837,
+  #   #22684 — both OPEN, no fix merged yet). BeeLlama.cpp and ik_llama.cpp share the
+  #   same parser — switching backends does NOT help.
+  #   WORKAROUND: use for single-turn tool calling or non-agentic tasks only.
+  #   Monitor: https://github.com/ggml-org/llama.cpp/issues/22684
+  #
   # ⚠️ ALWAYS THINKING (like gpt-oss-20b):
   #   The template has NO enable_thinking toggle. The model ALWAYS generates reasoning
   #   with 十六条/第十七条 tags (same format as Qwen3). Use --reasoning on to extract.
@@ -950,7 +961,7 @@ models:
         thinking: true
         vision: false
         tools: true
-      warning: "ALWAYS thinks (no :think toggle). Verbose reasoning (~300+ tokens even for simple tasks). Tool calling works via llama.cpp Jinja parser (XML func_call → OpenAI format). Benchmarks promising but may be inflated (see caveats above)."
+      warning: "ALWAYS thinks (no :think toggle). Verbose reasoning (~300+ tokens even for simple tasks). MULTI-TURN TOOL CALL BUG: second round of tool calls leaks XML as text (llama.cpp #22684, no fix yet). Use single-turn tool calling only. Benchmarks promising but may be inflated."
 
   # -------------------------------------------
   # GEMMA-4-E4B - Bee BACKEND (TurboQuant KV cache)
