@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "searxng": {
+      "command": "npx",
+      "args": ["-y", "mcp-searxng"],
+      "env": {
+        "SEARXNG_URL": "http://192.168.3.8:8888"
+      },
+      "disabled": false,
+      "autoApprove": ["searxng_web_search", "web_url_read"]
+    },
+    "duckduckgo": {
+      "command": "uvx",
+      "args": ["duckduckgo-mcp-server"],
+      "disabled": false,
+      "autoApprove": ["search", "fetch_content"]
+    }
+  }
+}
