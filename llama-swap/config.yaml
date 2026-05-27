@@ -964,54 +964,6 @@ models:
       warning: "ALWAYS thinks (no :think toggle). Verbose reasoning (~300+ tokens even for simple tasks). MULTI-TURN TOOL CALL BUG: second round of tool calls leaks XML as text (llama.cpp #22684, no fix yet). Use single-turn tool calling only. Benchmarks promising but may be inflated."
 
   # -------------------------------------------
-  # PHI-4-MINI-INSTRUCT — Microsoft dense 3.8B tool-calling model
-  # Dense 3.8B params (200K vocab), 32 layers, GQA 32Q/8KV
-  # Architecture: phi3 (GGUF) — supported in ALL backends
-  # Tool calling: Phi-style <|tool|>...</|/tool|> tags with JSON schemas
-  #   llama.cpp --jinja + phi4_mini_json parser handles conversion
-  #   Different format from Qwen3/XML = likely immune to #22684 multi-turn bug
-  # MIT license
-  # Q4_K_M ~2.4 GB — fits comfortably in 6GB VRAM
-  # head_dim=96 → attn_rot ❌ (96%64≠0) — use q8_0 + q8_0 cache
-  # No enable_thinking toggle (instruct variant only — reasoning model is separate)
-  # 128K native context (sliding_window 262144)
-  # -------------------------------------------
-  "phi4-mini-instruct":
-    name: "Phi-4 Mini Instruct"
-    description: "Dense 3.8B tool-calling, phi3 arch (Q4_K_M, upstream)"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/Phi-4-mini-instruct-Q4_K_M.gguf
-      --jinja
-      --fit on
-      --fit-target 768
-      --fit-ctx ${small_model_min_ctx}
-      --ctx-size 131072
-      --parallel 4
-      --cont-batching
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
-      --min-p ${code_min_p}
-      --repeat-penalty ${code_repeat_penalty}
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      --flash-attn on
-      --metrics
-    ttl: 60
-    metadata:
-        size: "~2.4 GB (Q4_K_M)"
-        context: "64K-128K (dynamic)"
-        vram_usage: "~3.5GB (model + cache)"
-        source: "unsloth/Phi-4-mini-instruct-GGUF (Q4_K_M)"
-        kv_cache: "q8_0 + q8_0 (no attn_rot — head_dim=96)"
-        features:
-            thinking: false
-            vision: false
-            tools: true
-        warning: "No thinking/reasoning mode (instruct-only variant). Tool calling uses Phi-style <|tool|> tags, NOT Qwen3 XML. attn_rot not supported (head_dim=96)."
-
-  # -------------------------------------------
   # GEMMA-4-E4B - Bee BACKEND (TurboQuant KV cache)
   # Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
   # head_dim=256 → attn_rot ✅ (Bee supports iSWA attn_rot for Gemma 4)
@@ -2141,7 +2093,6 @@ matrix:
     # [REMOVED] gr40h1: granite-4.0-h-1b
     sglang: lfm2.5-sgl
     nb41: nanbeige4.1-3b
-    phi4: phi4-mini-instruct
   # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
   # +ref = expandir outro set inline
   #
@@ -2152,10 +2103,10 @@ matrix:
   # - heavy: modelos 14B+ rodam sozinhos (toda VRAM)
   sets:
     # LLM pequeno + Vision: trocar entre modelos leves NÃO evicta o vision
-    small_vision: "(q08 | q4 | g2 | lfm2s | lfm2t | nb41 | phi4) & vl"
+    small_vision: "(q08 | q4 | g2 | lfm2s | lfm2t | nb41) & vl"
 
     # LLM pequeno sozinho (sem vision ativo)
-    small_only: "q08 | q4 | g2 | lfm2s | lfm2t | nb41 | phi4"
+    small_only: "q08 | q4 | g2 | lfm2s | lfm2t | nb41"
 
     # vLLM backends (mutuamente exclusivos com llama.cpp — mesma GPU)
     vllm: "q08vllm | lfm2vllm"
@@ -2199,7 +2150,6 @@ matrix:
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1
     nb41: 2      # 3B dense Q4_K_M ~1.8GB, small but heavier than 1-2B
-    phi4: 2      # 3.8B dense Q4_K_M ~2.4GB, tool-calling specialist
     # vLLM backends — high startup cost (30-90s), high eviction cost
     q08vllm: 5
     lfm2vllm: 5

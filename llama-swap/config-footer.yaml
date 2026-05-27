@@ -68,7 +68,6 @@ matrix:
     # [REMOVED] gr40h1: granite-4.0-h-1b
     sglang: lfm2.5-sgl
     nb41: nanbeige4.1-3b
-    phi4: phi4-mini-instruct
   # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
   # +ref = expandir outro set inline
   #
@@ -79,10 +78,10 @@ matrix:
   # - heavy: modelos 14B+ rodam sozinhos (toda VRAM)
   sets:
     # LLM pequeno + Vision: trocar entre modelos leves NÃO evicta o vision
-    small_vision: "(q08 | q4 | g2 | lfm2s | lfm2t | nb41 | phi4) & vl"
+    small_vision: "(q08 | q4 | g2 | lfm2s | lfm2t | nb41) & vl"
 
     # LLM pequeno sozinho (sem vision ativo)
-    small_only: "q08 | q4 | g2 | lfm2s | lfm2t | nb41 | phi4"
+    small_only: "q08 | q4 | g2 | lfm2s | lfm2t | nb41"
 
     # vLLM backends (mutuamente exclusivos com llama.cpp — mesma GPU)
     vllm: "q08vllm | lfm2vllm"
@@ -126,7 +125,6 @@ matrix:
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1
     nb41: 2      # 3B dense Q4_K_M ~1.8GB, small but heavier than 1-2B
-    phi4: 2      # 3.8B dense Q4_K_M ~2.4GB, tool-calling specialist
     # vLLM backends — high startup cost (30-90s), high eviction cost
     q08vllm: 5
     lfm2vllm: 5

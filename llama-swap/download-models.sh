@@ -33,7 +33,6 @@
 #   qwopus-35b           - Qwopus3.6-35B-A3B-v1 APEX I-Compact (~16.5 GB) - MoE coding+reasoning SFT
 #   [REMOVED] qwen3.5-9b-ace — superseded by Qwopus for agentic tasks
 #   nanbeige4.1-3b       - Nanbeige4.1-3B Q4_K_M (~1.8 GB) - dense reasoning + agentic coding, always thinks
-#   phi4-mini-instruct  - Phi-4 Mini Instruct 3.8B Q4_K_M (~2.4GB) - Dense, phi3 arch, tool calling (no thinking)
 #   all                  - Download all models
 #
 # If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
@@ -114,8 +113,6 @@ declare -A MODELS=(
   # Tool calling uses XML func_call tags — NOT OpenAI-compatible JSON
   # head_dim=128 → attn_rot ✅, vocab 166K (larger than Qwen3.5's 151K)
   ["nanbeige4.1-3b"]="DevQuasar/Nanbeige.Nanbeige4.1-3B-GGUF Nanbeige.Nanbeige4.1-3B.Q4_K_M.gguf Nanbeige4.1-3B-Q4_K_M.gguf"
-  echo "  phi4-mini-instruct   ~2.40 GB  (Q4_K_M) - Dense 3.8B, phi3 arch, tool calling (no thinking, attn_rot N/A)"
-["phi4-mini-instruct"]="unsloth/Phi-4-mini-instruct-GGUF Phi-4-mini-instruct-Q4_K_M.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -158,7 +155,6 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-1.2b, lfm2-24b, minicpm-v-4.6, smolllm3-3b, littlelamb-0.3b-tc, webworld-8b, qwen3.6-35b-moe, qwopus-35b, gemma4-26b-moe, gpt-oss-20b, qwopus-coder-9b, nanbeige4.1-3b, phi4-mini-instruct, all"
     return 1
   fi
   
@@ -240,7 +236,6 @@ show_sizes() {
   echo "  [REMOVED] qwen3.5-9b-ace — worse perplexity, no imatrix quant"
   echo "  qwopus-coder-9b      ~5.63 GB  (Q4_K_M) + mmproj - Dense 9B, agentic coding + tools"
   echo "  nanbeige4.1-3b       ~1.80 GB  (Q4_K_M) - Dense 3B, always thinks, XML tool calls (⚠️ multi-turn broken, #22684)"
-  echo "  phi4-mini-instruct   ~2.40 GB  (Q4_K_M) - Dense 3.8B, phi3 arch, tool calling (no thinking, attn_rot N/A)"
   echo ""
   echo "vLLM-only models (safetensors, auto-downloaded on first serve):"
   echo "  [REMOVED] granite-4.0-h-1b-vllm — removed from fleet May 2026"
@@ -259,7 +254,6 @@ show_sizes() {
 
 # Main
 case "${1:-qwen3.5-4b}" in
-  "qwen3.5-0.8b"|"qwen3.5-4b"|"qwen3.5-9b"|"gemma4-e4b"|"gemma4-e2b"|"lfm2.5-vl-450m"|"lfm2.5-1.2b"|"lfm2.5-1.2b-think"|"lfm2-24b"|"qwen3.6-35b-moe"|"qwopus-35b"|"gemma4-26b-moe"|"gpt-oss-20b"|"minicpm-v-4.6"|"smolllm3-3b"|"littlelamb-0.3b-tc"|"webworld-8b"|"qwopus-coder-9b"|"nanbeige4.1-3b"|"phi4-mini-instruct")
     download_model "$1"
     ;;
   "qwen3.5:4b"|"qwen3.5:9b"|"gemma4:e4b"|"gemma4:e2b")
