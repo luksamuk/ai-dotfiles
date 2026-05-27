@@ -64,6 +64,7 @@ ORIGINAL_ORDER = [
     "littlelamb-0.3b-tc",    # ✅
     "minicpm-v-4.6",         # ✅
     "nanbeige4.1-3b",         # ⚠️ verbose reasoning, always thinks, multi-turn tool calls BROKEN (#22684)
+    "phi4-mini-instruct",    # phi3 arch, tool calling (no thinking), attn_rot N/A
 ]
 
 
