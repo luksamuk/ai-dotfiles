@@ -1401,6 +1401,48 @@ models:
   # Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM
 
   # -------------------------------------------
+  # MINICPM5-1B — OpenBMB small dense model
+  # LlamaForCausalLM (standard arch), GQA 16Q/2KV, 24 layers
+  # 1.08B params, 131K context, think/no-think dual mode
+  # Tool calling: XML format <function name="X"><param name="Y">val</param></function>
+  # llama.cpp bug #23781: tool calling broken (arg_name_suffix inference)
+  # Chat + think mode work fine; tool calling awaiting upstream fix
+  # Chat template built into GGUF works correctly in llama.cpp v712+
+  # ⚠️ NEVER use custom chat template — causes garbage output
+  # -------------------------------------------
+  "minicpm5-1b":
+    name: "MiniCPM5 1B"
+    description: "Small dense model, think/no-think + broken tool calling (Q8_0)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/MiniCPM5-1B-Q8_0.gguf
+      --jinja
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.3
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      size: "~1.1 GB (Q8_0)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~1.8GB (model + cache)"
+      source: "openbmb/MiniCPM5-1B-GGUF (Q8_0)"
+      note: "Tool calling broken (llama.cpp bug #23781). Chat + think work fine. NEVER use custom chat template."
+      features:
+        thinking: true
+        vision: false
+        tools: true
+
+  # -------------------------------------------
   # MINISTRAL-3-3B — Mistral Small 3.2 family
   # -------------------------------------------
   # Dense 3.4B params, text-only (vision/mmproj crashes on CUDA — mistral3 arch)
