@@ -1,0 +1,21 @@
+[project]
+name = "diffuse"
+version = "0.1.0"
+description = "diffuse — Local diffusion image generation CLI for NVIDIA GPUs"
+requires-python = ">=3.11"
+dependencies = [
+    "huggingface-hub",
+    "hf-transfer",
+    # GPU backend: installed from vendor/ (cloned from PrismML Bonsai-Image-Demo)
+    # Run: ./run.sh setup
+    "prism-image-studio-backend-gpu",
+    "gemlite",
+    "hqq",
+]
+
+[tool.uv]
+prerelease = "allow"
+
+# Vendor deps — cloned by run.sh setup from PrismML-Eng/Bonsai-Image-Demo
+[tool.uv.sources]
+prism-image-studio-backend-gpu = { path = "vendor/image-studio/backend_gpu", editable = true }
