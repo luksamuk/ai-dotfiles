@@ -31,9 +31,8 @@ from typing import Optional, Iterator
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
-from rich.markdown import Markdown
-from rich.layout import Layout
 from rich.text import Text
+from rich.layout import Layout
 from rich.align import Align
 from rich import box
 import questionary
@@ -1507,7 +1506,7 @@ class StreamingChat:
                 
                 if self.use_thinking_variant and self.reasoning_content:
                     console.print(Panel(
-                        Markdown(f"## 🤔 Raciocínio\n\n{self.reasoning_content}"),
+                        f"🤔 Raciocínio\n\n{self.reasoning_content}",
                         title="Raciocínio",
                         border_style="yellow"
                     ))
@@ -1532,15 +1531,15 @@ class StreamingChat:
                             mock = "(error)"
                         # Compact one-liner: name(args) → result
                         mock_preview = mock if len(mock) <= 80 else mock[:77] + "…"
-                        tc_lines.append(f"**{i}. {fn_name}**({args_compact}) → `{mock_preview}`")
+                        tc_lines.append(f"{i}. {fn_name}({args_compact}) → {mock_preview}")
                     console.print(Panel(
-                        Markdown("\n\n".join(tc_lines)),
+                        "\n\n".join(tc_lines),
                         title="🔧 Tool Calls",
                         border_style="cyan"
                     ))
                 
                 console.print(Panel(
-                    Markdown(f"## 💬 Resposta\n\n{self.response_content}"),
+                    f"💬 Resposta\n\n{self.response_content}",
                     title="Resposta",
                     border_style="green"
                 ))

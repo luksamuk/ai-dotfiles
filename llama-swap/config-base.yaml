@@ -5,8 +5,9 @@
 # Repositório: ~/git/ai-dotfiles/llama-swap/
 # Modelos: ~/.llama-models/
 # Requer: llama-swap v212+ (Prometheus metrics, SIGHUP reload, reasoning UI, race fix, zstd captures)
-# Requer: llama.cpp build b9174+ (MTP support via --spec-type draft-mtp, Qwen3.5/3.6 tokenizer fix, WebGPU gpt-oss, /v1/models modalities, NCCL-free TP)
-# Requer: ik_llama.cpp v4524+ (--k-cache-hadamard, --v-cache-hadamard, --defer-experts, --flash-attn auto, MTP Qwen3.6-MoE fix, dual spec decoding, MLA TP)
+# Requer: llama.cpp build b9371+ (CVE-2025-53630 fix, mmproj fixes, reasoning-format, WebGPU gpt-oss, /v1/models modalities, NCCL-free TP)
+# Requer: ik_llama.cpp v4547+ (Hadamard non-power-of-2, FA multi-slot fix, per-GPU fit margin, GLM MTP fix, MLA cache fix)
+# Requer: BeeLlama.cpp v0.3.0+ (TurboQuant, reasoning-loop-guard, q6_0 cache, tool-call guard, Gemma4 ISWA fixes)
 #
 # OTIMIZAÇÕES ik_llama.cpp (modelos MoE e dense offloaded):
 #   --k-cache-hadamard / --v-cache-hadamard (-khad/-vhad): Hadamard transform no K/V cache

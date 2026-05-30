@@ -1,0 +1,46 @@
+  # -------------------------------------------
+  # LFM2-8B-A1B MoE - Bee BACKEND (lfm2moe hybrid conv+attention)
+  # 8.3B total / 1.5B active, 32 experts x top-4, 18 conv + 6 GQA layers
+  # Context: 32K (model card says 32,768, not 128K)
+  # Tool calling: yes (ChatML-like with <|tool_list_start|>, <|tool_call_start|>)
+  # Reasoning: no /think mode
+  # Recommended: temp=0.3, min_p=0.15, rep_penalty=1.05
+  # Backend: BeeLlama (has lfm2moe + turbo3_tcq for attention layers)
+  # NOTE: ik_llama does NOT support lfm2moe (no conv/ssm/gated_delta_net kernels)
+  # -------------------------------------------
+  "lfm2-8b-moe":
+    unlisted: true
+    name: "LFM2-8B-A1B"
+    description: "Liquid AI MoE hybrid 8.3B/1.5B active, conv+GQA architecture, tool calling (Bee)"
+    cmd: |
+      ${bee_server} --port ${PORT}
+      --model ${models_dir}/LFM2-8B-A1B-Q4_0.gguf
+      --n-gpu-layers 99
+      --ctx-size 32768
+      --temp 0.3
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --flash-attn on
+      --jinja
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 0.3
+          min_p: 0.15
+    ttl: 60
+    metadata:
+      size: "~4.73 GB (Q4_0)"
+      context: "32K"
+      vram_usage: "~5GB VRAM (4.73 GB model + KV)"
+      source: "LiquidAI/LFM2-8B-A1B-GGUF"
+      kv_cache: "q8_0 (K) + q4_0 (V) — turbo3_tcq incompatible (block_size=128 doesn't divide head_dim=64)"
+      features:
+        thinking: false
+        tools: true
+      note: "Pet project — MoE 1.5B active, hybrid conv+GQA. No /think mode. ik_llama does NOT support lfm2moe."

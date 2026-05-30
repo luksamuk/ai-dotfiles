@@ -5,8 +5,9 @@
 # Repositório: ~/git/ai-dotfiles/llama-swap/
 # Modelos: ~/.llama-models/
 # Requer: llama-swap v212+ (Prometheus metrics, SIGHUP reload, reasoning UI, race fix, zstd captures)
-# Requer: llama.cpp build b9174+ (MTP support via --spec-type draft-mtp, Qwen3.5/3.6 tokenizer fix, WebGPU gpt-oss, /v1/models modalities, NCCL-free TP)
-# Requer: ik_llama.cpp v4524+ (--k-cache-hadamard, --v-cache-hadamard, --defer-experts, --flash-attn auto, MTP Qwen3.6-MoE fix, dual spec decoding, MLA TP)
+# Requer: llama.cpp build b9371+ (CVE-2025-53630 fix, mmproj fixes, reasoning-format, WebGPU gpt-oss, /v1/models modalities, NCCL-free TP)
+# Requer: ik_llama.cpp v4547+ (Hadamard non-power-of-2, FA multi-slot fix, per-GPU fit margin, GLM MTP fix, MLA cache fix)
+# Requer: BeeLlama.cpp v0.3.0+ (TurboQuant, reasoning-loop-guard, q6_0 cache, tool-call guard, Gemma4 ISWA fixes)
 #
 # OTIMIZAÇÕES ik_llama.cpp (modelos MoE e dense offloaded):
 #   --k-cache-hadamard / --v-cache-hadamard (-khad/-vhad): Hadamard transform no K/V cache
@@ -253,6 +254,9 @@ models:
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
       --reasoning on
+      --reasoning-loop-guard force-close
+      --reasoning-loop-min-tokens 1024
+      --reasoning-loop-window 2048
       --cache-type-k turbo3_tcq
       --cache-type-v turbo3_tcq
       --flash-attn on
@@ -453,6 +457,7 @@ models:
   # Q8_0 ~1.25GB — practically lossless, still fits entirely in VRAM
   # -------------------------------------------
   "lfm2.5-1.2b":
+    unlisted: true
     name: "LFM2.5 1.2B Instruct"
     description: "Edge hybrid — conv+GQA dense, tool-calling optimized (Q8_0, llama.cpp)"
     cmd: |
@@ -963,6 +968,62 @@ models:
         tools: true
       warning: "ALWAYS thinks (no :think toggle). Verbose reasoning (~300+ tokens even for simple tasks). MULTI-TURN TOOL CALL BUG: second round of tool calls leaks XML as text (llama.cpp #22684, no fix yet). Use single-turn tool calling only. Benchmarks promising but may be inflated."
 
+# -------------------------------------------
+# AFM-4.5B (Arcee Fusion Model) - UPSTREAM backend
+# 4.5B dense, Llama-like arch (arcee), Q5_K_M ~3.11 GB
+# Context: 64K (rope scaling factor=20, original 4096)
+# Vocab: 128K, 36 layers, 2560 embed, 20 heads (GQA: 4 KV heads)
+# Features: tool calling (Hermes 2 Pro format), NO native thinking/reasoning
+# Backend: upstream llama.cpp (ik/Bee lack Arcee arch, no hadamard benefit at this size)
+# CRITICAL: GGUF ships with NO tool calling in chat_template — must use
+#   --chat-template-file pointing to the Hermes 2 Pro template for tool support.
+# Without --chat-template-file, AFM operates in plain chat mode only.
+# Recommended: temp=0.3, top_p=0.9, rep_penalty=1.05
+# -------------------------------------------
+  "afm-4.5b":
+    name: "AFM-4.5B"
+    description: "Arcee AFM-4.5B dense, tool calling via Hermes 2 Pro template (upstream)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/AFM-4.5B-Q5_K_M.gguf
+      --fit on --fit-target 768 --fit-ctx 65536
+      --ctx-size 32768
+      --parallel 1
+      --chat-template-file /home/alchemist/git/ai-dotfiles/llama-swap/templates/afm-4.5b-tool_use.jinja
+      --temp 0.3
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --flash-attn on
+      --n-predict -1
+      --jinja
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 0.3
+          min_p: 0.15
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.4
+    ttl: 60
+    metadata:
+      size: "~3.11 GB (Q5_K_M)"
+      context: "64K (rope scaling x20 from 4096)"
+      vram_usage: "~4GB VRAM (3.11 GB model + KV)"
+      source: "arcee-ai/AFM-4.5B-GGUF"
+      kv_cache: "q8_0 (K) + q4_0 (V)"
+      features:
+        thinking: false
+        tools: true
+        parallel_tool_calls: true
+      note: "Dense 4.5B by Arcee AI. No native thinking. Tool calling requires Hermes 2 Pro template override via --chat-template-file. Uses upstream (ik/Bee lack arcee arch support)."
+
   # -------------------------------------------
   # GEMMA-4-E4B - Bee BACKEND (TurboQuant KV cache)
   # Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
@@ -1362,6 +1423,53 @@ models:
         tools: true
       warning: "ik_llama.cpp does NOT support lfm2moe arch — running on upstream llama_server without pinned memory. 32K context ceiling (model limitation)."
 
+  # -------------------------------------------
+  # LFM2-8B-A1B MoE - Bee BACKEND (lfm2moe hybrid conv+attention)
+  # 8.3B total / 1.5B active, 32 experts x top-4, 18 conv + 6 GQA layers
+  # Context: 32K (model card says 32,768, not 128K)
+  # Tool calling: yes (ChatML-like with <|tool_list_start|>, <|tool_call_start|>)
+  # Reasoning: no /think mode
+  # Recommended: temp=0.3, min_p=0.15, rep_penalty=1.05
+  # Backend: BeeLlama (has lfm2moe + turbo3_tcq for attention layers)
+  # NOTE: ik_llama does NOT support lfm2moe (no conv/ssm/gated_delta_net kernels)
+  # -------------------------------------------
+  "lfm2-8b-moe":
+    unlisted: true
+    name: "LFM2-8B-A1B"
+    description: "Liquid AI MoE hybrid 8.3B/1.5B active, conv+GQA architecture, tool calling (Bee)"
+    cmd: |
+      ${bee_server} --port ${PORT}
+      --model ${models_dir}/LFM2-8B-A1B-Q4_0.gguf
+      --n-gpu-layers 99
+      --ctx-size 32768
+      --temp 0.3
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --flash-attn on
+      --jinja
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 0.3
+          min_p: 0.15
+    ttl: 60
+    metadata:
+      size: "~4.73 GB (Q4_0)"
+      context: "32K"
+      vram_usage: "~5GB VRAM (4.73 GB model + KV)"
+      source: "LiquidAI/LFM2-8B-A1B-GGUF"
+      kv_cache: "q8_0 (K) + q4_0 (V) — turbo3_tcq incompatible (block_size=128 doesn't divide head_dim=64)"
+      features:
+        thinking: false
+        tools: true
+      note: "Pet project — MoE 1.5B active, hybrid conv+GQA. No /think mode. ik_llama does NOT support lfm2moe."
+
   "lfm2.5-1.2b-think":
     unlisted: true
     name: "LFM2.5 1.2B Thinking"
@@ -1399,6 +1507,64 @@ models:
         tools: true
       warning: "SEMPRE gera CoT internamente (como gpt-oss-20b). Pior pra tool-calling — use lfm2.5-1.2b (Instruct) para tarefas agenticas."
   # Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM
+
+  # -------------------------------------------
+  # LFM2.5-8B-A1B MoE - UPSTREAM backend (lfm2moe hybrid conv+attention)
+  # 8.3B total / 1.5B active, 32 experts x top-4, 18 conv + 6 GQA layers
+  # Context: 131K (128K rope), vocab 128K, reasoning + tool calling
+  # Recommended: temp=0.2, top_p=0.8, rep_penalty=1.05
+  # Backend: upstream llama.cpp (BeeLlama segfaults on LFM2.5, works fine on LFM2)
+  # NOTE: TurboQuant INCOMPATIBLE (all turbo types have block_size=128, head_dim=64 doesn't divide)
+  # NOTE: ik_llama does NOT support lfm2moe (no conv/ssm/gated_delta_net kernels)
+  # NOTE: GGUF ships with EMPTY chat_template — must use --chat-template-file with the Jinja
+  # NOTE: --reasoning-format deepseek parses  tags into reasoning_content field
+  # -------------------------------------------
+  "lfm2.5-8b-moe":
+    name: "LFM2.5-8B-A1B"
+    description: "Liquid AI MoE hybrid 8.3B/1.5B active, conv+GQA, reasoning + tool calling (upstream)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/LFM2.5-8B-A1B-Q4_0.gguf
+      --fit on
+      --fit-ctx 16384
+      --ctx-size 131072
+      --parallel 1
+      --no-cont-batching
+      --reasoning-format deepseek-legacy
+      --reasoning on
+      --chat-template-file /home/alchemist/git/ai-dotfiles/llama-swap/templates/lfm2.5-chat-template.jinja
+      --temp 0.2
+      --top-p 0.8
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --flash-attn on
+      --n-predict -1
+      --jinja
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 0.2
+          min_p: 0.15
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.3
+    ttl: 60
+    metadata:
+      size: "~4.84 GB (Q4_0)"
+      context: "128K"
+      vram_usage: "~5.5GB VRAM (4.84 GB model + KV)"
+      source: "LiquidAI/LFM2.5-8B-A1B-GGUF"
+      kv_cache: "q8_0 (K) + q4_0 (V) — TurboQuant INCOMPATIBLE (all blocks=128, head_dim=64)"
+      features:
+        thinking: true
+        tools: true
+      note: "Pet project — MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek."
 
   # -------------------------------------------
   # MINICPM5-1B — OpenBMB small dense model

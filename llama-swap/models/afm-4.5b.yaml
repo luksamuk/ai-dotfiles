@@ -1,0 +1,55 @@
+# -------------------------------------------
+# AFM-4.5B (Arcee Fusion Model) - UPSTREAM backend
+# 4.5B dense, Llama-like arch (arcee), Q5_K_M ~3.11 GB
+# Context: 64K (rope scaling factor=20, original 4096)
+# Vocab: 128K, 36 layers, 2560 embed, 20 heads (GQA: 4 KV heads)
+# Features: tool calling (Hermes 2 Pro format), NO native thinking/reasoning
+# Backend: upstream llama.cpp (ik/Bee lack Arcee arch, no hadamard benefit at this size)
+# CRITICAL: GGUF ships with NO tool calling in chat_template — must use
+#   --chat-template-file pointing to the Hermes 2 Pro template for tool support.
+# Without --chat-template-file, AFM operates in plain chat mode only.
+# Recommended: temp=0.3, top_p=0.9, rep_penalty=1.05
+# -------------------------------------------
+  "afm-4.5b":
+    name: "AFM-4.5B"
+    description: "Arcee AFM-4.5B dense, tool calling via Hermes 2 Pro template (upstream)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/AFM-4.5B-Q5_K_M.gguf
+      --fit on --fit-target 768 --fit-ctx 65536
+      --ctx-size 32768
+      --parallel 1
+      --chat-template-file /home/alchemist/git/ai-dotfiles/llama-swap/templates/afm-4.5b-tool_use.jinja
+      --temp 0.3
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --flash-attn on
+      --n-predict -1
+      --jinja
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 0.3
+          min_p: 0.15
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.4
+    ttl: 60
+    metadata:
+      size: "~3.11 GB (Q5_K_M)"
+      context: "64K (rope scaling x20 from 4096)"
+      vram_usage: "~4GB VRAM (3.11 GB model + KV)"
+      source: "arcee-ai/AFM-4.5B-GGUF"
+      kv_cache: "q8_0 (K) + q4_0 (V)"
+      features:
+        thinking: false
+        tools: true
+        parallel_tool_calls: true
+      note: "Dense 4.5B by Arcee AI. No native thinking. Tool calling requires Hermes 2 Pro template override via --chat-template-file. Uses upstream (ik/Bee lack arcee arch support)."

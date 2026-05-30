@@ -1,5 +1,24 @@
 # Changelog
 
+### 2026-05-31 — AFM-4.5B, Backend Rebuild, Template Versioning
+
+**New model:**
+- `afm-4.5b`: Arcee Fusion Model 4.5B dense (Q5_K_M, ~3.11 GB). Upstream backend only (ik/Bee lack arcee arch). Tool calling via Hermes 2 Pro template override (`--chat-template-file`). No native thinking. 64K context (rope scaling x20 from 4096).
+
+**Templates:**
+- `afm-4.5b-tool_use.jinja`: Versioned copy of Hermes 2 Pro template from llama.cpp b766. Required for AFM tool calling — the GGUF ships with an empty `tool_use` chat_template. Verified: `finish_reason=tool_calls`, correct JSON arguments, ~44 tok/s.
+- `afm-4.5b-tool_use.md`: Documentation covering format detection, template behavior, and pitfalls.
+
+**Backend builds (2026-05-30):**
+- `llama.cpp`: b766 (was b604)
+- `ik_llama.cpp`: v4550 (was v4524)
+- `BeeLlama.cpp`: b9868 (rebuilt)
+- `llama-swap`: v219 (was v216)
+
+**Known issues:**
+- Custom Jinja templates that deviate from known format signatures cause `COMMON_CHAT_FORMAT_CONTENT_ONLY` fallback in llama.cpp's PEG auto-parser, breaking tool calling. Always use the original Hermes 2 Pro template for AFM, not a modified version.
+- Laguna XS.2: upstream PR exists but not merged. No ik/Bee support yet.
+
 ### 2026-05-28 — Engine Updates, Bee/TurboQuant, ik Hadamard, Config Overhaul
 
 **Binaries updated:**

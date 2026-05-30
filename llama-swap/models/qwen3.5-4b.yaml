@@ -20,6 +20,9 @@
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
       --reasoning on
+      --reasoning-loop-guard force-close
+      --reasoning-loop-min-tokens 1024
+      --reasoning-loop-window 2048
       --cache-type-k turbo3_tcq
       --cache-type-v turbo3_tcq
       --flash-attn on

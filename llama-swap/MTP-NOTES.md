@@ -104,6 +104,69 @@ as regular models (MTP tensors are loaded but ignored).
 
 | Binary | Version | MTP Support |
 |--------|---------|-------------|
-| llama.cpp | b604 | `--spec-type draft-mtp` |
-| ik_llama.cpp | v4524 | `--multi-token-prediction`, `--model-draft` (Gemma 4 assistant) |
-| BeeLlama.cpp | v9351+ | `--spec-type dflash` |
+| llama.cpp | b9371+ | `--spec-type draft-mtp`, CVE-2025-53630 fix |
+| ik_llama.cpp | v4547+ | `--multi-token-prediction`, `--model-draft` (Gemma 4 assistant), Hadamard non-pow2 |
+| BeeLlama.cpp | v0.3.0+ | `--spec-type dflash`, reasoning-loop-guard, adaptive draft-max |
+
+## DFlash Speculative Decoding (BeeLlama.cpp)
+
+DFlash uses a small **drafter model** that cross-attends to the target model's hidden states
+to predict multiple tokens at once. Unlike MTP (which uses built-in draft heads), DFlash uses
+a separate drafter GGUF that's loaded alongside the target.
+
+### How DFlash Works
+
+1. Target model processes each token and **captures hidden states** into a per-layer ring buffer
+2. Drafter model **cross-attends** to recent hidden states (default: 512 tokens, configurable via `--spec-dflash-cross-ctx`)
+3. Drafter proposes 8-16 **draft tokens** based on the hidden state context
+4. Target **verifies all drafts in a single batch** — accepted tokens are kept, rejected ones are discarded
+5. Adaptive `profit` controller automatically enables/disables DFlash based on throughput
+
+### DFlash vs MTP on RTX 3050 6GB
+
+| Technique | Model | Extra VRAM | Speedup | Status |
+|-----------|-------|------------|---------|--------|
+| MTP (built-in) | Qwen3.5-4B | ~1.3GB (GDN buffer) | N/A | ❌ OOM — GDN buffer exceeds 6GB |
+| DFlash (external) | Qwen3.5-4B | ~0.3GB (IQ4_XS drafter) | ~2-3x | ✅ Fits in 6GB with turbo3_tcq |
+
+### Available DFlash Drafters
+
+| Target Model | Drafter | Size | Source |
+|-------------|---------|------|--------|
+| Qwen3.5-4B | `qwen35-4b-dflash-IQ4_XS.gguf` | ~285 MB | `Anbeeld/Qwen3.5-4B-DFlash-GGUF` |
+| Qwen3.5-4B | `qwen35-4b-dflash-Q4_K_M.gguf` | ~312 MB | `Anbeeld/Qwen3.5-4B-DFlash-GGUF` |
+
+**Recommendation:** IQ4_XS for 6GB VRAM (smaller drafter = less overhead). Heavier quants (Q8_0, BF16)
+are consistently a net negative for tok/s — the drafter only guesses 8-16 tokens at a time.
+
+### DFlash Launch Example
+
+```bash
+llama-server \
+  --model Qwen3.5-4B-UD-Q3_K_XL.gguf \
+  --spec-type dflash \
+  --spec-draft-model qwen35-4b-dflash-IQ4_XS.gguf \
+  --spec-draft-n-max 8 \
+  --spec-branch-budget 0 \
+  --spec-draft-temp auto \
+  --spec-dflash-cross-ctx 256 \
+  --spec-dm-controller profit \
+  -ngl all --spec-draft-ngl all \
+  --cache-type-k turbo3_tcq --cache-type-v turbo3_tcq \
+  --flash-attn on --jinja --metrics
+```
+
+### DFlash Key Flags (BeeLlama v0.3.0+)
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--spec-type dflash` | none | Enable DFlash speculative decoding |
+| `--spec-draft-model PATH` | unset | Path to DFlash drafter GGUF |
+| `--spec-draft-n-max N` | 16 | Max draft tokens per verification round |
+| `--spec-branch-budget N` | 0 | DDTree branch nodes (0 = flat DFlash) |
+| `--spec-draft-temp auto/0/N` | 0 | Drafter temperature (auto=mirror target) |
+| `--spec-dflash-cross-ctx N` | 512 | Hidden-state window visible to drafter |
+| `--spec-dm-controller profit/fringe` | profit | Adaptive depth controller |
+| `--reasoning-loop-guard off/force-close/stop` | force-close | Prevent infinite thinking loops |
+| `--reasoning-loop-min-tokens N` | 1024 | Don't check before N hidden reasoning tokens |
+| `--reasoning-loop-window N` | 2048 | Tail window scanned for repeated loops |

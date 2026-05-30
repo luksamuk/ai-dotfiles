@@ -1,10 +1,11 @@
 # Model Selection Guide
 
-### Active Listed Models (2026-05-28)
+### Active Listed Models (2026-05-31)
 
-| Model | Engine | VRAM | Context | Features |
-|-------|--------|------|---------|----------|
-| **qwen3.5-4b** | Bee/TurboQuant | ~3GB | 64K-128K | `thinking`, `tools` |
+|| Model | Engine | VRAM | Context | Features ||
+-------|--------|------|---------|----------|--
+|| **afm-4.5b** | upstream (Hermes2Pro template) | ~3.1GB | 64K | `tools`, `parallel-tool-calls` ||
+|| **qwen3.5-4b** | Bee/TurboQuant | ~3GB | 64K-128K | `thinking`, `tools` ||
 | **qwen3.5-9b** | ik + hadamard | ~5GB | 64K-128K | `thinking`, `tools`, `parallel-tool-calls` |
 | **gemma4-e4b** | ik + hadamard | ~5GB | 64K-128K | `thinking`, `tools` |
 | **gemma4-e2b** | upstream | ~3GB | 32K-128K | `thinking`, `vision` |
@@ -46,3 +47,4 @@
 - **Bee + `--parallel-tool-calls`**: Not supported. Use ik for tool-calling.
 - **ik + `--no-mmproj`**: Flag doesn't exist. ik ignores mmproj files automatically.
 - **ik + Gemma 4**: Must use `--jinja` for custom chat templates.
+- **AFM-4.5B**: GGUF has empty `tool_use` chat_template. Must use `--chat-template-file` with Hermes 2 Pro template for tool calling. Without it, AFM runs in plain chat mode only.
