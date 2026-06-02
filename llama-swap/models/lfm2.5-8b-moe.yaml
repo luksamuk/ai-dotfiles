@@ -52,6 +52,17 @@
       source: "LiquidAI/LFM2.5-8B-A1B-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V) — TurboQuant INCOMPATIBLE (all blocks=128, head_dim=64)"
       features:
-        thinking: true
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2moe
+      parameters: 8470000000
+      context_length: 128000
+      embedding_length: 2048
+      quantization: Q4_0
       note: "Pet project — MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek."

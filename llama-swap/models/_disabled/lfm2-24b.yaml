@@ -30,7 +30,17 @@
       source: "LiquidAI/LFM2-24B-A2B-GGUF (Q4_K_M)"
       kv_cache: "q4_0 + attn_rot"
       features:
-        thinking: false
-        vision: false
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2moe
+      parameters: 24000000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: Q4_K_M
       warning: "ik_llama.cpp does NOT support lfm2moe arch — running on upstream llama_server without pinned memory. 32K context ceiling (model limitation)."

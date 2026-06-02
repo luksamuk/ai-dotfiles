@@ -163,9 +163,19 @@ models:
       source: "Qwen/Qwen3.5-0.8B (HuggingFace safetensors)"
       note: "vLLM test backend for Sprachspiel — slow startup (~30-90s), use only for API compat testing"
       features:
-        thinking: true
-        vision: false
+        completion: true
         tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 819000000
+      context_length: 262144
+      embedding_length: 768
+      quantization: UD-Q3_K_XL
 
   # -------------------------------------------
   # LFM2.5-1.2B-INSTRUCT - vLLM BACKEND (PAUSADO — venv + HF models deletados)
@@ -196,9 +206,19 @@ models:
       source: "LiquidAI/LFM2.5-1.2B-Instruct (HuggingFace safetensors)"
       note: "vLLM backend with native lfm2 tool parser — no --jinja workaround needed"
       features:
-        thinking: false
+        completion: true
+        tools: false
+        thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 1200000000
+      context_length: 128000
+      embedding_length: 1536
+      quantization: Q4_K_M
 
   # -------------------------------------------
   # SGLANG BACKEND (PAUSADO — venv ~/.sglang-venv deletado)
@@ -228,9 +248,19 @@ models:
       note: "SGLang backend for Sprachspiel compat testing — RadixAttention cache, slower startup (~2 min JIT compile)."
       health_check_timeout: 300
       features:
-        thinking: false
-        vision: false
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2moe
+      parameters: 8470000000
+      context_length: 128000
+      embedding_length: 2048
+      quantization: Q4_0
 
   # -------------------------------------------
   # QWEN3.5-4B - Bee BACKEND (TurboQuant KV cache)
@@ -282,9 +312,19 @@ models:
       source: "unsloth/Qwen3.5-4B-GGUF (UD-Q3_K_XL)"
       kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 4210000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: Q3_K_XL
       warning: "TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99)."
 
   # -------------------------------------------
@@ -342,8 +382,19 @@ models:
       source: "unsloth/Qwen3.5-9B-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
       features:
-        thinking: true
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 8950000000
+      context_length: 262144
+      embedding_length: 4096
+      quantization: Q3_K_XL
         # vision: disabled temporarily — mmproj + fit doesn't handle offload yet
       warning: "Vision disabled temporarily. Bee/TurboQuant segfaults with this model — use ik backend."
 
@@ -396,8 +447,19 @@ models:
       source: "unsloth/gemma-4-E4B-it-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
       features:
-        thinking: true
+        completion: true
         tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4
+      parameters: 7520000000
+      context_length: 131072
+      embedding_length: 2560
+      quantization: Q3_K_XL
         # vision: disabled — mmproj crashes on CUDA (issue #21402)
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."
 
@@ -443,8 +505,19 @@ models:
       source: "unsloth/gemma-4-E2B-it-GGUF (UD-Q3_K_XL)"
       kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
       features:
-        thinking: true
+        completion: true
         tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4
+      parameters: 4650000000
+      context_length: 131072
+      embedding_length: 1536
+      quantization: Q3_K_XL
 
   # -------------------------------------------
   # LFM2.5-1.2B-INSTRUCT - DENSE HYBRID (CONV + GQA)
@@ -485,9 +558,19 @@ models:
       source: "LiquidAI/LFM2.5-1.2B-Instruct-GGUF (Q8_0)"
       kv_cache: "q8_0 + attn_rot"
       features:
-        thinking: false
+        completion: true
+        tools: false
+        thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 1200000000
+      context_length: 128000
+      embedding_length: 1536
+      quantization: Q4_K_M
 
   # Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM
   "lfm2.5-vl-450m":
@@ -521,7 +604,19 @@ models:
       source: "LiquidAI/LFM2.5-VL-450M-GGUF"
       kv_cache: "f16 (vision, precision priority)"
       features:
+        completion: true
+        tools: false
+        thinking: false
         vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 354480000
+      context_length: 128000
+      embedding_length: 1024
+      quantization: Q8_0
 
   # -------------------------------------------
   # WEBWORLD-8B — Web World Model (Qwen3-8B fine-tune)
@@ -571,9 +666,19 @@ models:
       source: "mradermacher/WebWorld-8B-i1-GGUF (i1-Q5_K_M)"
       kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
       features:
+        completion: true
+        tools: false
         thinking: false
         vision: false
-        tools: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen3
+      parameters: 8190000000
+      context_length: 40960
+      embedding_length: 4096
+      quantization: Q5_K_M
       warning: "Not a chatbot — requires specialized world model prompts. ik backend (was upstream, qwen3 segfault fixed in v4524)."
 
   # -------------------------------------------
@@ -628,9 +733,19 @@ models:
       source: "mudler/gemma-4-26B-A4B-it-APEX-GGUF"
       kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4
+      parameters: 25230000000
+      context_length: 262144
+      embedding_length: 2816
+      quantization: I-Compact
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (issue #21402). Text-only. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K."
 
   # -------------------------------------------
@@ -701,9 +816,19 @@ models:
       source: "mudler/Qwen3.5-35B-A3B-APEX-GGUF"
       kv_cache: "q4_0 + attn_rot + hadamard (ik -khad/-vhad)"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 34660000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: I-Compact
       warning: "Vision disabled — mmproj blocks partial expert offload (11→41 layers GPU). Text-only = 33-34 t/s vs 5 t/s with vision. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. Pinned memory gives constant speed up to 200K tokens. --defer-experts speeds up model loading. --flash-attn auto saves overhead on short prompts."
 
   # -------------------------------------------
@@ -763,9 +888,19 @@ models:
       source: "Jackrong/Qwopus3.5-9B-Coder-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V) + attn_rot + hadamard (ik -khad/-vhad)"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 8950000000
+      context_length: 262144
+      embedding_length: 4096
+      quantization: Q4_K_M
       warning: "Vision disabled — mmproj (880MB F16) blocks partial offload. Text-only = max GPU layers = max speed. Dense 9B = all params active per token (slower per token than MoE, but stronger for agentic)."
 
   # -------------------------------------------
@@ -819,16 +954,26 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-        size: "~303 MB (Q8_0)"
-        context: "8K-40K (dynamic)"
-        vram_usage: "~0.5GB (model + cache)"
-        source: "mradermacher/LittleLamb-ToolCalling-GGUF (Q8_0)"
-        kv_cache: "q8_0 + attn_rot"
-        features:
-            thinking: true
-            vision: false
-            tools: true
-        warning: "ik_llama.cpp segfaults with this model — use llama.cpp upstream"
+      size: "~303 MB (Q8_0)"
+      context: "8K-40K (dynamic)"
+      vram_usage: "~0.5GB (model + cache)"
+      source: "mradermacher/LittleLamb-ToolCalling-GGUF (Q8_0)"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        completion: true
+        tools: true
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen3
+      parameters: 293260000
+      context_length: 40960
+      embedding_length: 544
+      quantization: Q8_0
+      warning: "ik_llama.cpp segfaults with this model — use llama.cpp upstream"
 
   # -------------------------------------------
   # MINICPM-V 4.6 — VLM (Vision-Language Model)
@@ -880,15 +1025,25 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-        size: "0.55 GB (Q5_K_M) + 1.1 GB mmproj"
-        context: "8K-256K (dynamic)"
-        vram_usage: "~2GB (model + mmproj + cache)"
-        source: "openbmb/MiniCPM-V-4.6-gguf"
-        kv_cache: "f16 (vision model, precision priority)"
-        features:
-            thinking: true
-            vision: true
-            tools: false
+      size: "0.55 GB (Q5_K_M) + 1.1 GB mmproj"
+      context: "8K-256K (dynamic)"
+      vram_usage: "~2GB (model + mmproj + cache)"
+      source: "openbmb/MiniCPM-V-4.6-gguf"
+      kv_cache: "f16 (vision model, precision priority)"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 752160000
+      context_length: 262144
+      embedding_length: 1024
+      quantization: Q5_K_M
 
   # -------------------------------------------
   # NANBEIGE4.1-3B — BOSS Zhipin dense reasoning + agentic coding model
@@ -963,9 +1118,19 @@ models:
       source: "DevQuasar/Nanbeige.Nanbeige4.1-3B-GGUF (Q4_K_M)"
       kv_cache: "q8_0 + attn_rot"
       features:
+        completion: true
+        tools: false
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: llama
+      parameters: 3930000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: Q4_K_M
       warning: "ALWAYS thinks (no :think toggle). Verbose reasoning (~300+ tokens even for simple tasks). MULTI-TURN TOOL CALL BUG: second round of tool calls leaks XML as text (llama.cpp #22684, no fix yet). Use single-turn tool calling only. Benchmarks promising but may be inflated."
 
 # -------------------------------------------
@@ -1016,9 +1181,19 @@ models:
       source: "arcee-ai/AFM-4.5B-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V)"
       features:
-        thinking: false
+        completion: true
         tools: true
-        parallel_tool_calls: true
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: llama
+      parameters: 4500000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: UD-Q3_K_XL
       note: "Dense 4.5B by Arcee AI. No native thinking. Tool calling requires Hermes 2 Pro template override via --chat-template-file. Uses upstream (ik/Bee lack arcee arch support)."
 
   # -------------------------------------------
@@ -1069,10 +1244,76 @@ models:
       source: "unsloth/gemma-4-E4B-it-GGUF (UD-Q3_K_XL)"
       kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
       features:
-        thinking: true
-        vision: false
+        completion: true
         tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4
+      parameters: 7520000000
+      context_length: 131072
+      embedding_length: 2560
+      quantization: UD-Q3_K_XL
       warning: "TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99)."
+
+# -------------------------------------------
+# GLM-OCR - UPSTREAM BACKEND (mmproj required)
+# GLM-4V-based OCR/Vision specialist — #1 on OmniDocBench V1.5 (94.62 score)
+# Architecture: glm4 — supported in upstream llama.cpp b766+ and ik_llama.cpp v4547+
+# mmproj required: CogViT vision encoder + cross-modal connector
+# Complements LFM2.5-VL-450M (general VLM) — this is OCR/table/formula specialist
+# Prompt must be "OCR", "OCR markdown", or "Table Recognition:" for best results
+# NOT a general chat model — use for document extraction tasks only
+# Temperature 0.1 for OCR precision, no reasoning (vision model)
+# KV cache: f16 (vision models need precision, not compression)
+# --jinja: required for chat template auto-detection (glm4 template)
+# -------------------------------------------
+  "glm-ocr":
+    name: "GLM-OCR"
+    description: "OCR and document understanding specialist (upstream + mmproj)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/GLM-OCR-Q8_0.gguf
+      --mmproj ${models_dir}/mmproj-GLM-OCR-Q8_0.gguf
+      --jinja
+      --media-path ${media_path}
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.1
+      --top-p 0.9
+      --top-k 40
+      --repeat-penalty 1.0
+      --reasoning off
+      --cache-type-k f16
+      --cache-type-v f16
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      architecture: glm4
+      parameters: 940000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: Q8_0
+      size: "~0.95 GB (Q8_0) + ~0.48 GB mmproj (Q8_0)"
+      vram_usage: "~2GB (model + mmproj + cache)"
+      source: "ggml-org/GLM-OCR-GGUF (Q8_0 + mmproj Q8_0)"
+      kv_cache: "f16 (vision, precision priority)"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      note: "Specialized OCR model — use prompts like 'OCR', 'OCR markdown', 'Table Recognition:'. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction."
 
   # -------------------------------------------
   # GPT-OSS 20B — OpenAI MoE coding model
@@ -1124,9 +1365,19 @@ models:
       source: "unsloth/gpt-oss-20b-GGUF"
       kv_cache: "q4_0 + hadamard + attn_rot"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gpt-oss
+      parameters: 20910000000
+      context_length: 131072
+      embedding_length: 2880
+      quantization: Q4_K_M
       warning: "Harmony format: ALWAYS reasons internally (not optional). --reasoning on extracts it properly. MoE offload to RAM — slower than pure GPU models."
 
   # -------------------------------------------
@@ -1167,9 +1418,19 @@ models:
       source: "ibm-granite/granite-3.3-8b-instruct (HuggingFace safetensors)"
       note: "OOM on 6GB VRAM — vLLM has no CPU offload. Granite reasoning with <thinking>/<response>. granite4 tool parser. Slow startup."
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: granite3
+      parameters: 8000000000
+      context_length: 131072
+      embedding_length: 4096
+      quantization: Q4_K_M
 
   # -------------------------------------------
   # GRANITE-4.0-H-1B - llama.cpp BACKEND (Hybrid Mamba-2/Transformer)
@@ -1205,9 +1466,19 @@ models:
       source: "unsloth/granite-4.0-h-1b-GGUF (HuggingFace)"
       note: "Granite .0 Nano — Mamba-2 hybrid. Ultra-compact, fits entirely in VRAM. Fast startup. ~99 tok/s."
       features:
-        thinking: true
-        vision: false
+        completion: true
         tools: true
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: granite4
+      parameters: 1300000000
+      context_length: 131072
+      embedding_length: 1536
+      quantization: Q4_K_M
 
   # -------------------------------------------
   # GRANITE-4.0-H-1B - vLLM BACKEND (Hybrid Mamba-2/Transformer)
@@ -1244,9 +1515,19 @@ models:
       source: "ibm-granite/granite-4.0-h-1b (HuggingFace safetensors)"
       note: "Granite 4.0 Nano — Mamba-2 hybrid. Fits VRAM comfortably. granite4 tool parser. Slow startup (~30-90s)."
       features:
-        thinking: true
+        completion: true
+        tools: false
+        thinking: false
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: granite4
+      parameters: 1300000000
+      context_length: 131072
+      embedding_length: 1536
+      quantization: Q4_K_M
 
   # -------------------------------------------
   # GRANITE-4.0-H-TINY - vLLM BACKEND (DISABLED — 14GB weights, OOM on 6GB VRAM)
@@ -1286,9 +1567,19 @@ models:
       source: "ibm-granite/granite-4.0-h-tiny (HuggingFace safetensors)"
       note: "OOM on 6GB VRAM — vLLM loads all 7B params before MoE routing. Mamba-2 hybrid. Slow startup."
       features:
-        thinking: true
+        completion: true
+        tools: false
+        thinking: false
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: granite4
+      parameters: 300000000
+      context_length: 131072
+      embedding_length: 1024
+      quantization: Q8_0
 
   "hunyuan-7b":
     unlisted: true
@@ -1336,9 +1627,19 @@ models:
       source: "bartowski/tencent_Hunyuan-7B-Instruct-GGUF (Q4_K_M)"
       kv_cache: "q8_0 + attn_rot"
       features:
-        thinking: true
+        completion: true
+        tools: false
+        thinking: false
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: hunyuan-dense
+      parameters: 7000000000
+      context_length: 262144
+      embedding_length: 4096
+      quantization: Q4_K_M
       warning: "Uses hunyuan_v1_dense arch — ONLY llama.cpp upstream, NOT ik_llama.cpp. Tencent Hunyuan Community License (personal use, <100M MAU commercial). DISABLED: reasoning_content bug (llama.cpp doesn't emit it for Hunyuan tags), dense 7B outclassed by Qwen 3.6 35B MoE."
 
   # -------------------------------------------
@@ -1378,9 +1679,19 @@ models:
       source: "tencent/Hy-MT2-1.8B-GGUF (Q4_K_M)"
       kv_cache: "q8_0 + attn_rot"
       features:
+        completion: true
+        tools: false
         thinking: false
         vision: false
-        tools: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: hunyuan-dense
+      parameters: 1790000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: Q4_K_M
       note: "Translation-only model. No system prompt needed (per Hy-MT2 docs). Official prompt: 'Translate the following text into {target_lang}. Note that you should only output the translated result without any additional explanation:\n\n{source_text}'. Supports terminology, style, personalization, delimiter preservation, and structured data translation. See https://github.com/Tencent-Hunyuan/Hy-MT2 for all prompt formats."
 
   "lfm2-24b":
@@ -1415,9 +1726,19 @@ models:
       source: "LiquidAI/LFM2-24B-A2B-GGUF (Q4_K_M)"
       kv_cache: "q4_0 + attn_rot"
       features:
-        thinking: false
-        vision: false
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2moe
+      parameters: 24000000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: Q4_K_M
       warning: "ik_llama.cpp does NOT support lfm2moe arch — running on upstream llama_server without pinned memory. 32K context ceiling (model limitation)."
 
   # -------------------------------------------
@@ -1463,8 +1784,19 @@ models:
       source: "LiquidAI/LFM2-8B-A1B-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V) — turbo3_tcq incompatible (block_size=128 doesn't divide head_dim=64)"
       features:
-        thinking: false
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2moe
+      parameters: 8300000000
+      context_length: 32768
+      embedding_length: 2048
+      quantization: Q4_K_M
       note: "Pet project — MoE 1.5B active, hybrid conv+GQA. No /think mode. ik_llama does NOT support lfm2moe."
 
   "lfm2.5-1.2b-think":
@@ -1499,9 +1831,19 @@ models:
       source: "LiquidAI/LFM2.5-1.2B-Thinking-GGUF (Q8_0)"
       kv_cache: "q8_0 + attn_rot"
       features:
+        completion: true
+        tools: false
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 1200000000
+      context_length: 128000
+      embedding_length: 1536
+      quantization: Q8_0
       warning: "SEMPRE gera CoT internamente (como gpt-oss-20b). Pior pra tool-calling — use lfm2.5-1.2b (Instruct) para tarefas agenticas."
   # Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM
 
@@ -1559,8 +1901,19 @@ models:
       source: "LiquidAI/LFM2.5-8B-A1B-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V) — TurboQuant INCOMPATIBLE (all blocks=128, head_dim=64)"
       features:
-        thinking: true
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2moe
+      parameters: 8470000000
+      context_length: 128000
+      embedding_length: 2048
+      quantization: Q4_0
       note: "Pet project — MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek."
 
   # -------------------------------------------
@@ -1618,8 +1971,19 @@ models:
       source: "JetBrains/Mellum2-12B-A2.5B-Thinking (HF) → Q4_K_M (manual)"
       kv_cache: "q8_0 (K) + q4_0 (V)"
       features:
-        thinking: true
+        completion: true
         tools: false
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen3moe
+      parameters: 12000000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: Q4_K_M
       note: "Manual GGUF conversion (2026-06-01). MoE expert offload via ik with --mlock. BFCL v4 45.6%, LiveCodeBench 69.9%. TOOL CALLING BROKEN: no embedded chat_template + --tool-call-parser hermes is vLLM-only. Both Hermes 2 Pro and Qwen3.5 templates produce garbled output with tools. Plain text works (37 tok/s). Instruct variant may work better. Swap for community GGUF when available."
 
   # -------------------------------------------
@@ -1660,9 +2024,19 @@ models:
       source: "openbmb/MiniCPM5-1B-GGUF (Q8_0)"
       note: "Tool calling broken (llama.cpp bug #23781). Chat + think work fine. NEVER use custom chat template."
       features:
+        completion: true
+        tools: false
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: llama
+      parameters: 1080000000
+      context_length: 131072
+      embedding_length: 1536
+      quantization: Q8_0
 
   # -------------------------------------------
   # MINISTRAL-3-3B — Mistral Small 3.2 family
@@ -1700,16 +2074,74 @@ models:
         --repeat-penalty ${default_repeat_penalty}
         --jinja
     metadata:
-        size: "2.31 GB (UD-Q5_K_XL)"
-        context: "8K-128K (dynamic via --fit)"
-        vram_usage: "~3 GB VRAM with --fit on"
-        source: "unsloth/Ministral-3-3B-Instruct-2512-GGUF"
-        kv_cache: "q4_0 + attn_rot"
-        features:
-            thinking: false
-            vision: false
-            tools: true
-        warning: "Uses mistral3 arch — ONLY runs on llama.cpp upstream, NOT ik_llama.cpp. Vision disabled: mmproj crashes with CUDA OOM on mistral3. --n-gpu-layers 99 causes OOM with 131K ctx, use --fit on instead."
+      size: "2.31 GB (UD-Q5_K_XL)"
+      context: "8K-128K (dynamic via --fit)"
+      vram_usage: "~3 GB VRAM with --fit on"
+      source: "unsloth/Ministral-3-3B-Instruct-2512-GGUF"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: mistral3
+      parameters: 3000000000
+      context_length: 131072
+      embedding_length: 3072
+      quantization: Q4_K_M
+      warning: "Uses mistral3 arch — ONLY runs on llama.cpp upstream, NOT ik_llama.cpp. Vision disabled: mmproj crashes with CUDA OOM on mistral3. --n-gpu-layers 99 causes OOM with 131K ctx, use --fit on instead."
+
+# -------------------------------------------
+# NOMIC-EMBED-TEXT-V2-MOE - UPSTREAM BACKEND (embedding model)
+# 475M params (305M active, MoE top-2/8 experts), 768-dim embeddings with Matryoshka → 256
+# Architecture: nomic-bert — supported in upstream llama.cpp
+# Embedding model — use via /v1/embeddings endpoint for RAG, semantic search, similarity
+# NOT a chat model — --embeddings flag required, --pooling mean for proper embeddings
+# Input prefix required: "search_query: " for queries, "search_document: " for documents
+# 512 max context — short but sufficient for most embedding tasks
+# 100+ language support (multilingual)
+# --cont-batching: safe for embedding (no generation, just encoding)
+# KV cache: f16 — embedding models benefit from precision, not compression
+# -------------------------------------------
+  "nomic-embed-text-v2-moe":
+    name: "Nomic Embed v2 MoE"
+    description: "Embedding model — 768-dim multilingual, RAG/search/similarity (upstream)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/nomic-embed-text-v2-moe-Q4_K_M.gguf
+      --embeddings
+      --pooling mean
+      --ctx-size 512
+      --cont-batching
+      --cache-type-k f16
+      --cache-type-v f16
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      architecture: nomic-bert
+      parameters: 475000000
+      context_length: 512
+      embedding_length: 768
+      quantization: Q4_K_M
+      size: "~0.33 GB (Q4_K_M)"
+      vram_usage: "~0.5GB"
+      source: "nomic-ai/nomic-embed-text-v2-moe-GGUF (Q4_K_M)"
+      kv_cache: "f16 (embedding, precision priority)"
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: true
+        insert: false
+        audio: false
+        image: false
+      note: "Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with 'search_query: ' or 'search_document: '. 100+ languages. Matryoshka → 256 dims."
 
   # -------------------------------------------
   # ORNSTEIN 3.6-35B-A3B-NSC-ACE-SABER - IK backend (expert offload, Hadamard)
@@ -1768,9 +2200,19 @@ models:
       source: "GestaltLabs/Qwen3.6-35B-A3B-NSC-ACE-SABER-GGUF"
       kv_cache: "q4_0 + attn_rot + hadamard (ik -khad/-vhad)"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 34660000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: Q4_K_M
       note: "NSC-ACE-SABER fine-tune of Qwen3.6-35B-A3B. +2.87pp BFCL over base, 98.33% HarmBench compliance, KLD 0.025. TEST ONLY — evaluating as potential replacement for Qwen3.6-APEX. Standard Q4_K_M quant (no APEX I-Compact available). No MTP in this variant."
 
   # -------------------------------------------
@@ -1831,9 +2273,19 @@ models:
       source: "unsloth/Qwen3-8B-GGUF (UD-Q3_K_XL)"
       kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen3
+      parameters: 8000000000
+      context_length: 40960
+      embedding_length: 4096
+      quantization: Q4_K_M
 
   # -------------------------------------------
   # QWEN3.5-0.8B - MULTIMODAL (VISION + TEXT)
@@ -1888,14 +2340,90 @@ models:
       source: "unsloth/Qwen3.5-0.8B-GGUF (UD-Q3_K_XL)"
       kv_cache: "q8_0 + attn_rot"
       features:
+        completion: true
+        tools: false
         thinking: true
         vision: true
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 819000000
+      context_length: 262144
+      embedding_length: 768
+      quantization: UD-Q3_K_XL
   # -------------------------------------------
   # QWEN3.5-0.8B - vLLM BACKEND (PAUSADO — venv + HF models deletados)
   # Restaurar: pip install vllm em ~/.vllm, HF models re-downloaded no primeiro serve
   # UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
   # -------------------------------------------
+
+# -------------------------------------------
+# QWEN3.5-4B-ABLITERATED - Bee BACKEND (TurboQuant KV cache)
+# Qwen3.5-4B with refusal behaviors removed via Abliterix (orthogonalized steering + Bayesian optimization)
+# KL divergence 0.0065 — minimal capability degradation. For Sprachspiel adversarial testing ONLY.
+# Same architecture as base Qwen3.5-4B (qwen35) — all llama-swap flags work identically
+# head_dim=256 → attn_rot ✅
+# Uses Bee backend with TurboQuant — same config as qwen3.5-4b (proven stable)
+# -------------------------------------------
+  "qwen3.5-4b-abliterated":
+    name: "Qwen3.5 4B Abliterated"
+    description: "Adversarial testing — no refusal (TurboQuant, Bee backend)"
+    cmd: |
+      ${bee_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.5-4B-abliterated-i1-Q4_K_M.gguf
+      --no-mmproj
+      --n-gpu-layers 99
+      --ctx-size 131072
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --reasoning on
+      --reasoning-loop-guard force-close
+      --reasoning-loop-min-tokens 1024
+      --reasoning-loop-window 2048
+      --cache-type-k turbo3_tcq
+      --cache-type-v turbo3_tcq
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    metadata:
+      architecture: qwen35
+      parameters: 4210000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: i1-Q4_K_M
+      size: "~2.71 GB (i1-Q4_K_M)"
+      context: "64K-128K (TurboQuant enables longer context)"
+      vram_usage: "~3.5GB VRAM (model + turbo3_tcq cache)"
+      source: "mradermacher/Qwen3.5-4B-abliterated-i1-GGUF (i1-Q4_K_M)"
+      kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      note: "Abliterated variant for Sprachspiel adversarial testing — no refusal. Same qwen35 arch as base 4B, identical config proven stable with TurboQuant."
 
   # -------------------------------------------
   # QWEN3.5-4B - MULTIMODAL (VISION + TEXT)
@@ -1947,8 +2475,19 @@ models:
       source: "unsloth/Qwen3.5-4B-GGUF (UD-Q3_K_XL)"
       kv_cache: "q8_0 + attn_rot"
       features:
-        thinking: true
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 4210000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: UD-Q3_K_XL
         # vision: disabled — Gated Delta Net mmproj OOM on CUDA (issue #21323)
       warning: "Vision disabled — Gated Delta Net mmproj crashes/CUDA OOM (llama.cpp issues #21323, #21402)"
 
@@ -2001,8 +2540,19 @@ models:
       source: "unsloth/Qwen3.5-9B-GGUF (UD-Q3_K_XL)"
       kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
       features:
-        thinking: true
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 8950000000
+      context_length: 262144
+      embedding_length: 4096
+      quantization: UD-Q3_K_XL
         # vision: disabled temporarily — mmproj + fit doesn't handle offload yet
       warning: "TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99)."
 
@@ -2049,8 +2599,19 @@ models:
       source: "unsloth/Qwen3.5-9B-GGUF"
       kv_cache: "q8_0 + attn_rot"
       features:
-        thinking: true
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 8950000000
+      context_length: 262144
+      embedding_length: 4096
+      quantization: UD-Q3_K_XL
         # vision: disabled temporarily — mmproj + fit doesn't handle offload yet
       warning: "Vision disabled temporarily — mmproj offload with --fit causes OOM"
 
@@ -2103,9 +2664,19 @@ models:
       source: "mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF"
       kv_cache: "q4_0 + attn_rot + hadamard (ik -khad/-vhad)"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 34660000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: I-Compact
       warning: "Vision disabled — mmproj blocks partial expert offload. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. --defer-experts speeds up model loading. --flash-attn auto saves overhead on short prompts."
   # -------------------------------------------
   # QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
@@ -2171,9 +2742,19 @@ models:
       source: "Jackrong/Qwopus3.5-9B-Coder-GGUF"
       kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 8950000000
+      context_length: 262144
+      embedding_length: 4096
+      quantization: Q4_K_M
       warning: "TurboQuant turbo3_tcq KV cache. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99). Dense 9B = all params active per token."
 
   # -------------------------------------------
@@ -2234,9 +2815,19 @@ models:
       source: "Jackrong/Qwopus3.5-9B-Coder-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V) + attn_rot + hadamard (ik -khad/-vhad)"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 8950000000
+      context_length: 262144
+      embedding_length: 4096
+      quantization: Q4_K_M
       warning: "Vision disabled — mmproj (880MB F16) blocks partial offload. Text-only = max GPU layers = max speed. Dense 9B = all params active per token (slower per token than MoE, but stronger for agentic)."
 
   # -------------------------------------------
@@ -2291,15 +2882,25 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-        size: "~2.1 GB (UD-Q5_K_XL)"
-        context: "32K-128K (dynamic)"
-        vram_usage: "~3GB (model + cache)"
-        source: "unsloth/SmolLM3-3B-GGUF (UD-Q5_K_XL)"
-        kv_cache: "q8_0 + attn_rot + hadamard (ik -khad/-vhad)"
-        features:
-            thinking: true
-            vision: false
-            tools: true
+      size: "~2.1 GB (UD-Q5_K_XL)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~3GB (model + cache)"
+      source: "unsloth/SmolLM3-3B-GGUF (UD-Q5_K_XL)"
+      kv_cache: "q8_0 + attn_rot + hadamard (ik -khad/-vhad)"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: smollm3
+      parameters: 3080000000
+      context_length: 65536
+      embedding_length: 2048
+      quantization: Q5_K_XL
 
   # -------------------------------------------
   # TRANSLATEGEMMA 4B — Google translation model
@@ -2341,9 +2942,19 @@ models:
       source: "mradermacher/translategemma-4b-it-GGUF (Q4_K_M, from google/translategemma-4b-it)"
       kv_cache: "q8_0 + attn_rot"
       features:
+        completion: true
+        tools: false
         thinking: false
         vision: false
-        tools: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma3
+      parameters: 3880000000
+      context_length: 131072
+      embedding_length: 2560
+      quantization: Q4_K_M
       caveats:
         - "Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma"
         - "Needs explicit translation prompt (Sprachspiel format works)"
@@ -2393,9 +3004,19 @@ models:
       source: "arcee-ai/Trinity-Nano-Preview-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V)"
       features:
-        thinking: true
+        completion: true
         tools: true
-        parallel_tool_calls: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen3
+      parameters: 600000000
+      context_length: 40960
+      embedding_length: 896
+      quantization: Q8_0
       license: "OpenMDW-1.1"
       note: "Preview model — experimental, may be unstable. AfmoeForCausalLM arch, upstream b766+."
 

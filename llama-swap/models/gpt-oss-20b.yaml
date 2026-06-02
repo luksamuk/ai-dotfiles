@@ -48,7 +48,17 @@
       source: "unsloth/gpt-oss-20b-GGUF"
       kv_cache: "q4_0 + hadamard + attn_rot"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gpt-oss
+      parameters: 20910000000
+      context_length: 131072
+      embedding_length: 2880
+      quantization: Q4_K_M
       warning: "Harmony format: ALWAYS reasons internally (not optional). --reasoning on extracts it properly. MoE offload to RAM — slower than pure GPU models."

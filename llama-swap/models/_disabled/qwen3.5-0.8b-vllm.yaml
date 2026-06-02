@@ -31,6 +31,16 @@
       source: "Qwen/Qwen3.5-0.8B (HuggingFace safetensors)"
       note: "vLLM test backend for Sprachspiel — slow startup (~30-90s), use only for API compat testing"
       features:
-        thinking: true
-        vision: false
+        completion: true
         tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 819000000
+      context_length: 262144
+      embedding_length: 768
+      quantization: UD-Q3_K_XL

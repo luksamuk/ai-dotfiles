@@ -49,13 +49,23 @@
           top_p: 0.9
     ttl: 60
     metadata:
-        size: "~303 MB (Q8_0)"
-        context: "8K-40K (dynamic)"
-        vram_usage: "~0.5GB (model + cache)"
-        source: "mradermacher/LittleLamb-ToolCalling-GGUF (Q8_0)"
-        kv_cache: "q8_0 + attn_rot"
-        features:
-            thinking: true
-            vision: false
-            tools: true
-        warning: "ik_llama.cpp segfaults with this model — use llama.cpp upstream"
+      size: "~303 MB (Q8_0)"
+      context: "8K-40K (dynamic)"
+      vram_usage: "~0.5GB (model + cache)"
+      source: "mradermacher/LittleLamb-ToolCalling-GGUF (Q8_0)"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        completion: true
+        tools: true
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen3
+      parameters: 293260000
+      context_length: 40960
+      embedding_length: 544
+      quantization: Q8_0
+      warning: "ik_llama.cpp segfaults with this model — use llama.cpp upstream"

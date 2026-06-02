@@ -27,6 +27,16 @@
       source: "LiquidAI/LFM2.5-1.2B-Instruct (HuggingFace safetensors)"
       note: "vLLM backend with native lfm2 tool parser — no --jinja workaround needed"
       features:
-        thinking: false
+        completion: true
+        tools: false
+        thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 1200000000
+      context_length: 128000
+      embedding_length: 1536
+      quantization: Q4_K_M

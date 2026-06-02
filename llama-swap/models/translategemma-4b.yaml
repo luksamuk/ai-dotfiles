@@ -38,9 +38,19 @@
       source: "mradermacher/translategemma-4b-it-GGUF (Q4_K_M, from google/translategemma-4b-it)"
       kv_cache: "q8_0 + attn_rot"
       features:
+        completion: true
+        tools: false
         thinking: false
         vision: false
-        tools: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma3
+      parameters: 3880000000
+      context_length: 131072
+      embedding_length: 2560
+      quantization: Q4_K_M
       caveats:
         - "Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma"
         - "Needs explicit translation prompt (Sprachspiel format works)"

@@ -53,6 +53,17 @@
       source: "JetBrains/Mellum2-12B-A2.5B-Thinking (HF) → Q4_K_M (manual)"
       kv_cache: "q8_0 (K) + q4_0 (V)"
       features:
-        thinking: true
+        completion: true
         tools: false
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen3moe
+      parameters: 12000000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: Q4_K_M
       note: "Manual GGUF conversion (2026-06-01). MoE expert offload via ik with --mlock. BFCL v4 45.6%, LiveCodeBench 69.9%. TOOL CALLING BROKEN: no embedded chat_template + --tool-call-parser hermes is vLLM-only. Both Hermes 2 Pro and Qwen3.5 templates produce garbled output with tools. Plain text works (37 tok/s). Instruct variant may work better. Swap for community GGUF when available."

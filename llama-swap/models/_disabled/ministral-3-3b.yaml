@@ -34,13 +34,23 @@
         --repeat-penalty ${default_repeat_penalty}
         --jinja
     metadata:
-        size: "2.31 GB (UD-Q5_K_XL)"
-        context: "8K-128K (dynamic via --fit)"
-        vram_usage: "~3 GB VRAM with --fit on"
-        source: "unsloth/Ministral-3-3B-Instruct-2512-GGUF"
-        kv_cache: "q4_0 + attn_rot"
-        features:
-            thinking: false
-            vision: false
-            tools: true
-        warning: "Uses mistral3 arch — ONLY runs on llama.cpp upstream, NOT ik_llama.cpp. Vision disabled: mmproj crashes with CUDA OOM on mistral3. --n-gpu-layers 99 causes OOM with 131K ctx, use --fit on instead."
+      size: "2.31 GB (UD-Q5_K_XL)"
+      context: "8K-128K (dynamic via --fit)"
+      vram_usage: "~3 GB VRAM with --fit on"
+      source: "unsloth/Ministral-3-3B-Instruct-2512-GGUF"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: mistral3
+      parameters: 3000000000
+      context_length: 131072
+      embedding_length: 3072
+      quantization: Q4_K_M
+      warning: "Uses mistral3 arch — ONLY runs on llama.cpp upstream, NOT ik_llama.cpp. Vision disabled: mmproj crashes with CUDA OOM on mistral3. --n-gpu-layers 99 causes OOM with 131K ctx, use --fit on instead."

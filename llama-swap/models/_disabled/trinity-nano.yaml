@@ -42,8 +42,18 @@
       source: "arcee-ai/Trinity-Nano-Preview-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V)"
       features:
-        thinking: true
+        completion: true
         tools: true
-        parallel_tool_calls: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen3
+      parameters: 600000000
+      context_length: 40960
+      embedding_length: 896
+      quantization: Q8_0
       license: "OpenMDW-1.1"
       note: "Preview model — experimental, may be unstable. AfmoeForCausalLM arch, upstream b766+."

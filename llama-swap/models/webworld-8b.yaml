@@ -46,7 +46,17 @@
       source: "mradermacher/WebWorld-8B-i1-GGUF (i1-Q5_K_M)"
       kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
       features:
+        completion: true
+        tools: false
         thinking: false
         vision: false
-        tools: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen3
+      parameters: 8190000000
+      context_length: 40960
+      embedding_length: 4096
+      quantization: Q5_K_M
       warning: "Not a chatbot — requires specialized world model prompts. ik backend (was upstream, qwen3 segfault fixed in v4524)."

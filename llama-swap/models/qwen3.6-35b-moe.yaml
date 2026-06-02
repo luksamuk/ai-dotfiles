@@ -66,7 +66,17 @@
       source: "mudler/Qwen3.5-35B-A3B-APEX-GGUF"
       kv_cache: "q4_0 + attn_rot + hadamard (ik -khad/-vhad)"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 34660000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: I-Compact
       warning: "Vision disabled — mmproj blocks partial expert offload (11→41 layers GPU). Text-only = 33-34 t/s vs 5 t/s with vision. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. Pinned memory gives constant speed up to 200K tokens. --defer-experts speeds up model loading. --flash-attn auto saves overhead on short prompts."

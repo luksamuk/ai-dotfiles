@@ -32,6 +32,16 @@
       source: "unsloth/granite-4.0-h-1b-GGUF (HuggingFace)"
       note: "Granite .0 Nano — Mamba-2 hybrid. Ultra-compact, fits entirely in VRAM. Fast startup. ~99 tok/s."
       features:
-        thinking: true
-        vision: false
+        completion: true
         tools: true
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: granite4
+      parameters: 1300000000
+      context_length: 131072
+      embedding_length: 1536
+      quantization: Q4_K_M

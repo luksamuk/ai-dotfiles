@@ -46,22 +46,62 @@ fi
 # ---- Shared helpers ----
 
 feat_tag() {
+  # Ollama-style capabilities: completion, tools, insert, vision, embedding, thinking, image, audio
   local feats="$1" tags=""
-  echo "$feats" | grep -qiP '["'"'"']thinking["'"'"']?\s*:\s*(true|True)'   && tags="${tags}+think"
-  echo "$feats" | grep -qiP '["'"'"']vision["'"'"']?\s*:\s*(true|True)'     && tags="${tags}+vision"
-  echo "$feats" | grep -qiP '["'"'"']tools["'"'"']?\s*:\s*(true|True)'      && tags="${tags}+tools"
+  echo "$feats" | grep -qiP '"embedding"\s*:\s*true'    && tags="${tags}+emb"
+  echo "$feats" | grep -qiP '"vision"\s*:\s*true'       && tags="${tags}+vis"
+  echo "$feats" | grep -qiP '"thinking"\s*:\s*true'    && tags="${tags}+think"
+  echo "$feats" | grep -qiP '"tools"\s*:\s*true'        && tags="${tags}+tools"
+  echo "$feats" | grep -qiP '"insert"\s*:\s*true'       && tags="${tags}+ins"
+  echo "$feats" | grep -qiP '"audio"\s*:\s*true'        && tags="${tags}+audio"
+  echo "$feats" | grep -qiP '"image"\s*:\s*true'        && tags="${tags}+img"
   tags="${tags#+}"
-  [[ -z "$tags" ]] && tags="text"
+  # completion=true and nothing else → chat
+  [[ -z "$tags" ]] && tags="chat"
   echo "$tags"
 }
 
 feat_emoji() {
+  # Ollama-style capabilities → emoji tags
   local feats="$1" emojis=""
-  echo "$feats" | grep -qiP '["'"'"']thinking["'"'"']?\s*:\s*(true|True)'   && emojis="${emojis}🤔"
-  echo "$feats" | grep -qiP '["'"'"']vision["'"'"']?\s*:\s*(true|True)'     && emojis="${emojis}👁"
-  echo "$feats" | grep -qiP '["'"'"']tools["'"'"']?\s*:\s*(true|True)'      && emojis="${emojis}🛠"
-  [[ -z "$emojis" ]] && emojis="📝"
+  echo "$feats" | grep -qiP '"embedding"\s*:\s*true'    && emojis="${emojis}🔢"
+  echo "$feats" | grep -qiP '"vision"\s*:\s*true'       && emojis="${emojis}👁"
+  echo "$feats" | grep -qiP '"thinking"\s*:\s*true'    && emojis="${emojis}🤔"
+  echo "$feats" | grep -qiP '"tools"\s*:\s*true'        && emojis="${emojis}🛠"
+  echo "$feats" | grep -qiP '"insert"\s*:\s*true'       && emojis="${emojis}✏️"
+  echo "$feats" | grep -qiP '"audio"\s*:\s*true'        && emojis="${emojis}🔊"
+  echo "$feats" | grep -qiP '"image"\s*:\s*true'        && emojis="${emojis}🖼"
+  [[ -z "$emojis" ]] && emojis="💬"
   echo "$emojis"
+}
+
+# Format parameter count: 4210000000 → 4.21B, 354480000 → 354.48M, 475000000 → 475.00M
+short_params() {
+  local n="$1"
+  if [[ -z "$n" || "$n" == "-" || "$n" == "null" ]]; then echo "-"; return; fi
+  if (( n >= 1000000000000 )); then
+    awk "BEGIN { printf \"%.2fT\", $n/1000000000000 }" | sed 's/\.00//'
+  elif (( n >= 1000000000 )); then
+    awk "BEGIN { printf \"%.2fB\", $n/1000000000 }" | sed 's/\.00//'
+  elif (( n >= 1000000 )); then
+    awk "BEGIN { printf \"%.2fM\", $n/1000000 }" | sed 's/\.00//'
+  elif (( n >= 1000 )); then
+    awk "BEGIN { printf \"%.2fK\", $n/1000 }" | sed 's/\.00//'
+  else
+    echo "$n"
+  fi
+}
+
+# Format context length as power-of-2 K: 262144 → 256K, 131072 → 128K, 512 → 512
+short_ctx() {
+  local n="$1"
+  if [[ -z "$n" || "$n" == "-" || "$n" == "null" ]]; then echo "-"; return; fi
+  n=$(( n ))
+  if (( n >= 1024 )); then
+    awk "BEGIN { printf \"%dK\", $n/1024 }"
+  else
+    echo "$n"
+  fi
 }
 # Extract short size: "3.11 GB" from "~3.11 GB (UD-Q3_K_XL ...)" etc.
 short_size() {
@@ -186,26 +226,31 @@ cmd_list() {
   fi
 
   {
-    printf "NAME\tSIZE\tTAGS\tDESCRIPTION\n"
+    printf "NAME\tARCH\tPARAMS\tCTX\tEMBED\tQUANT\tTAGS\n"
 
     echo "$data" | jq -r '
       .data[] |
       select(.id | endswith(":think") | not) |
       {
         id: .id,
-        desc: (.description // ""),
-        size: (.meta.llamaswap.size // "-"),
+        arch: (.meta.llamaswap.architecture // "-"),
+        params: (.meta.llamaswap.parameters // "-"),
+        ctx: (.meta.llamaswap.context_length // "-"),
+        embed: (.meta.llamaswap.embedding_length // "-"),
+        quant: (.meta.llamaswap.quantization // "-"),
         features: (.meta.llamaswap.features | tostring)
-      } | [.id, .features, .desc, .size] | @tsv
-    ' | while IFS=$'\t' read -r id features desc size; do
-      local tags sz
+      } | [.id, .arch, (.params | tostring), (.ctx | tostring), (.embed | tostring), .quant, .features] | @tsv
+    ' | while IFS=$'\t' read -r id arch params ctx embed quant features; do
+      local tags p c e
       if [[ -n "$PRETTY" ]]; then
         tags=$(feat_emoji "$features")
       else
         tags=$(feat_tag "$features")
       fi
-      sz=$(short_size "$size")
-      printf "${CYAN}%s\t%s\t${DIM}%s${RESET}\t%s\n" "$id" "$sz" "$tags" "$desc"
+      p=$(short_params "$params")
+      c=$(short_ctx "$ctx")
+      e=$(short_ctx "$embed")
+      printf "${CYAN}%s\t%s\t%s\t%s\t%s\t%s\t${DIM}%s${RESET}\n" "$id" "$arch" "$p" "$c" "$e" "$quant" "$tags"
     done
   } | format_output
 }

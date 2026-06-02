@@ -1,0 +1,47 @@
+# -------------------------------------------
+# NOMIC-EMBED-TEXT-V2-MOE - UPSTREAM BACKEND (embedding model)
+# 475M params (305M active, MoE top-2/8 experts), 768-dim embeddings with Matryoshka → 256
+# Architecture: nomic-bert — supported in upstream llama.cpp
+# Embedding model — use via /v1/embeddings endpoint for RAG, semantic search, similarity
+# NOT a chat model — --embeddings flag required, --pooling mean for proper embeddings
+# Input prefix required: "search_query: " for queries, "search_document: " for documents
+# 512 max context — short but sufficient for most embedding tasks
+# 100+ language support (multilingual)
+# --cont-batching: safe for embedding (no generation, just encoding)
+# KV cache: f16 — embedding models benefit from precision, not compression
+# -------------------------------------------
+  "nomic-embed-text-v2-moe":
+    name: "Nomic Embed v2 MoE"
+    description: "Embedding model — 768-dim multilingual, RAG/search/similarity (upstream)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/nomic-embed-text-v2-moe-Q4_K_M.gguf
+      --embeddings
+      --pooling mean
+      --ctx-size 512
+      --cont-batching
+      --cache-type-k f16
+      --cache-type-v f16
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      architecture: nomic-bert
+      parameters: 475000000
+      context_length: 512
+      embedding_length: 768
+      quantization: Q4_K_M
+      size: "~0.33 GB (Q4_K_M)"
+      vram_usage: "~0.5GB"
+      source: "nomic-ai/nomic-embed-text-v2-moe-GGUF (Q4_K_M)"
+      kv_cache: "f16 (embedding, precision priority)"
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: true
+        insert: false
+        audio: false
+        image: false
+      note: "Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with 'search_query: ' or 'search_document: '. 100+ languages. Matryoshka → 256 dims."

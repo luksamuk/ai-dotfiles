@@ -51,9 +51,19 @@
       source: "unsloth/Qwen3.5-0.8B-GGUF (UD-Q3_K_XL)"
       kv_cache: "q8_0 + attn_rot"
       features:
+        completion: true
+        tools: false
         thinking: true
         vision: true
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 819000000
+      context_length: 262144
+      embedding_length: 768
+      quantization: UD-Q3_K_XL
   # -------------------------------------------
   # QWEN3.5-0.8B - vLLM BACKEND (PAUSADO — venv + HF models deletados)
   # Restaurar: pip install vllm em ~/.vllm, HF models re-downloaded no primeiro serve

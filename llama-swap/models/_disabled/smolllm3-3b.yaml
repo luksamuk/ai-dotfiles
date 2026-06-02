@@ -50,12 +50,22 @@
           top_p: 0.9
     ttl: 60
     metadata:
-        size: "~2.1 GB (UD-Q5_K_XL)"
-        context: "32K-128K (dynamic)"
-        vram_usage: "~3GB (model + cache)"
-        source: "unsloth/SmolLM3-3B-GGUF (UD-Q5_K_XL)"
-        kv_cache: "q8_0 + attn_rot + hadamard (ik -khad/-vhad)"
-        features:
-            thinking: true
-            vision: false
-            tools: true
+      size: "~2.1 GB (UD-Q5_K_XL)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~3GB (model + cache)"
+      source: "unsloth/SmolLM3-3B-GGUF (UD-Q5_K_XL)"
+      kv_cache: "q8_0 + attn_rot + hadamard (ik -khad/-vhad)"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: smollm3
+      parameters: 3080000000
+      context_length: 65536
+      embedding_length: 2048
+      quantization: Q5_K_XL

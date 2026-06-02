@@ -41,6 +41,17 @@
       source: "LiquidAI/LFM2-8B-A1B-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V) — turbo3_tcq incompatible (block_size=128 doesn't divide head_dim=64)"
       features:
-        thinking: false
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2moe
+      parameters: 8300000000
+      context_length: 32768
+      embedding_length: 2048
+      quantization: Q4_K_M
       note: "Pet project — MoE 1.5B active, hybrid conv+GQA. No /think mode. ik_llama does NOT support lfm2moe."

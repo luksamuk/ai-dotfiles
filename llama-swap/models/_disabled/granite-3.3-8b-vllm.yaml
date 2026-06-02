@@ -36,6 +36,16 @@
       source: "ibm-granite/granite-3.3-8b-instruct (HuggingFace safetensors)"
       note: "OOM on 6GB VRAM — vLLM has no CPU offload. Granite reasoning with <thinking>/<response>. granite4 tool parser. Slow startup."
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: granite3
+      parameters: 8000000000
+      context_length: 131072
+      embedding_length: 4096
+      quantization: Q4_K_M

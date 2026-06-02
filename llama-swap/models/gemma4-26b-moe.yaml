@@ -50,7 +50,17 @@
       source: "mudler/gemma-4-26B-A4B-it-APEX-GGUF"
       kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4
+      parameters: 25230000000
+      context_length: 262144
+      embedding_length: 2816
+      quantization: I-Compact
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (issue #21402). Text-only. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K."

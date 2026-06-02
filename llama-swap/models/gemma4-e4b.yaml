@@ -47,7 +47,18 @@
       source: "unsloth/gemma-4-E4B-it-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
       features:
-        thinking: true
+        completion: true
         tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4
+      parameters: 7520000000
+      context_length: 131072
+      embedding_length: 2560
+      quantization: Q3_K_XL
         # vision: disabled — mmproj crashes on CUDA (issue #21402)
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."

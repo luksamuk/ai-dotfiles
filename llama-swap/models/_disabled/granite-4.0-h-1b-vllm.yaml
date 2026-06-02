@@ -33,6 +33,16 @@
       source: "ibm-granite/granite-4.0-h-1b (HuggingFace safetensors)"
       note: "Granite 4.0 Nano — Mamba-2 hybrid. Fits VRAM comfortably. granite4 tool parser. Slow startup (~30-90s)."
       features:
-        thinking: true
+        completion: true
+        tools: false
+        thinking: false
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: granite4
+      parameters: 1300000000
+      context_length: 131072
+      embedding_length: 1536
+      quantization: Q4_K_M

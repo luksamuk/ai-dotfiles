@@ -56,6 +56,16 @@
       source: "unsloth/Qwen3-8B-GGUF (UD-Q3_K_XL)"
       kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
       features:
+        completion: true
+        tools: true
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen3
+      parameters: 8000000000
+      context_length: 40960
+      embedding_length: 4096
+      quantization: Q4_K_M

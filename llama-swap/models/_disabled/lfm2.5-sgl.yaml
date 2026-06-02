@@ -26,6 +26,16 @@
       note: "SGLang backend for Sprachspiel compat testing — RadixAttention cache, slower startup (~2 min JIT compile)."
       health_check_timeout: 300
       features:
-        thinking: false
-        vision: false
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2moe
+      parameters: 8470000000
+      context_length: 128000
+      embedding_length: 2048
+      quantization: Q4_0

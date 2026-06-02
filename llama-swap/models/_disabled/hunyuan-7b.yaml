@@ -44,7 +44,17 @@
       source: "bartowski/tencent_Hunyuan-7B-Instruct-GGUF (Q4_K_M)"
       kv_cache: "q8_0 + attn_rot"
       features:
-        thinking: true
+        completion: true
+        tools: false
+        thinking: false
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: hunyuan-dense
+      parameters: 7000000000
+      context_length: 262144
+      embedding_length: 4096
+      quantization: Q4_K_M
       warning: "Uses hunyuan_v1_dense arch — ONLY llama.cpp upstream, NOT ik_llama.cpp. Tencent Hunyuan Community License (personal use, <100M MAU commercial). DISABLED: reasoning_content bug (llama.cpp doesn't emit it for Hunyuan tags), dense 7B outclassed by Qwen 3.6 35B MoE."

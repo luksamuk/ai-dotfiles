@@ -22,6 +22,9 @@
 #   minicpm-v-4.6        - MiniCPM-V 4.6 Q5_K_M (~0.54 GB) + mmproj F16 (~1.03 GB) - VLM, video+text, 256K ctx
 #   smolllm3-3b           - SmolLM3-3B UD-Q5_K_XL (~2.06 GB) - dense, tool-calling, 128K ctx
 #   qwopus-coder-9b       - Qwopus3.5-9B-Coder Q4_K_M (~5.63 GB) + mmproj - agentic coding + tools
+#   qwen3.5-4b-abliterated - Qwen3.5-4B abliterated i1-Q4_K_M (~2.71 GB) - no refusal, adversarial testing
+#   glm-ocr               - GLM-OCR Q8_0 (~0.95 GB + 0.48 GB mmproj) - OCR/document specialist
+#   nomic-embed-text-v2-moe - Nomic Embed v2 MoE Q4_K_M (~0.33 GB) - embedding, RAG/search
 #   littlelamb-0.3b-tc   - LittleLamb 0.3B Tool-Calling Q8_0 (~0.30 GB) - ultra-light agentic, 40K ctx
 #   webworld-8b          - WebWorld-8B i1-Q5_K_M (~5.9 GB) - web world model, predicts next page state
 #   qwen3.6-35b-moe      - Qwen3.6-35B-A3B APEX I-Compact (~17.3 GB) - MoE coding + tools
@@ -112,6 +115,18 @@ declare -A MODELS=(
   # Uses gemma3 arch — supported in both ik_llama.cpp and upstream
   # Q4_K_M ~2.7GB — fits in 6GB VRAM with room to spare
   ["translategemma-4b"]="mradermacher/translategemma-4b-it-GGUF translategemma-4b-it.Q4_K_M.gguf"
+  # Qwen3.5-4B-abliterated -- refusal-removed variant for adversarial testing
+  # Same qwen35 arch as base Qwen3.5-4B, Abliterix orthogonalized steering
+  # i1 (imatrix) quant for better quality at same bitrate
+  ["qwen3.5-4b-abliterated"]="mradermacher/Qwen3.5-4B-abliterated-i1-GGUF Qwen3.5-4B-abliterated-i1-Q4_K_M.gguf"
+  # GLM-OCR -- OCR and document understanding specialist (glm4 arch, mmproj required)
+  # #1 on OmniDocBench V1.5 (94.62). Complements LFM2.5-VL-450M.
+  # Q8_0 model + Q8_0 mmproj from official ggml-org release
+  ["glm-ocr"]="ggml-org/GLM-OCR-GGUF GLM-OCR-Q8_0.gguf"
+  # Nomic Embed v2 MoE -- embedding model for RAG/semantic search/similarity
+  # 475M params (305M active), 768-dim with Matryoshka, 100+ languages
+  # Q4_K_M only 328MB -- runs via /v1/embeddings with --embeddings --pooling mean
+  ["nomic-embed-text-v2-moe"]="nomic-ai/nomic-embed-text-v2-moe-GGUF nomic-embed-text-v2-moe-Q4_K_M.gguf"
   # Nanbeige4.1-3B — BOSS Zhipin dense 3B reasoning + agentic coding model
   # Architecture: LlamaForCausalLM (llama) — supported in ALL backends
   # Q4_K_M ~1.8 GB — fits entirely in 6GB VRAM with room to spare
@@ -147,6 +162,8 @@ declare -A MMPROJ=(
   ["minicpm-v-4.6"]="openbmb/MiniCPM-V-4.6-gguf mmproj-model-f16.gguf mmproj-MiniCPM-V-4.6-F16.gguf"
   # Qwopus3.5-9B-Coder — vision model, mmproj renamed for clarity
   ["qwopus-coder-9b"]="Jackrong/Qwopus3.5-9B-Coder-GGUF mmproj.gguf mmproj-Qwopus3.5-9B-coder-F16.gguf"
+  # GLM-OCR mmproj -- Q8_0 vision projection model
+  ["glm-ocr"]="ggml-org/GLM-OCR-GGUF mmproj-GLM-OCR-Q8_0.gguf"
 
 )
 
@@ -252,6 +269,9 @@ show_sizes() {
   echo "  [REMOVED] nemotron-3-nano-4b"
   echo "  [REMOVED] qwen3.5-9b-ace — worse perplexity, no imatrix quant"
   echo "  qwopus-coder-9b      ~5.63 GB  (Q4_K_M) + mmproj - Dense 9B, agentic coding + tools"
+  echo "  qwen3.5-4b-abliterated   ~2.71 GB  (i1-Q4_K_M) - Abliterated Qwen3.5-4B, no refusal"
+  echo "  glm-ocr             ~0.95 GB  (Q8_0) + 0.48 GB mmproj - OCR/document specialist"
+  echo "  nomic-embed-text-v2-moe  ~0.33 GB  (Q4_K_M) - Embedding, RAG/search/similarity"
   echo "  nanbeige4.1-3b       ~1.80 GB  (Q4_K_M) - Dense 3B, always thinks, XML tool calls (⚠️ multi-turn broken, #22684)"
   echo "  mellum2-12b-thinking  ~7.60 GB  (Q4_K_M) - JetBrains MoE 12B/2.5B, reasoning + tools (manual conversion)"
   echo "  ornstein-36-35b       ~21.70 GB (Q4_K_M) - Qwen3.6-35B NSC-ACE-SABER fine-tune, +2.87pp BFCL (test only)"

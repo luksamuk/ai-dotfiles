@@ -47,7 +47,18 @@
       source: "unsloth/Qwen3.5-9B-GGUF (UD-Q3_K_XL)"
       kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
       features:
-        thinking: true
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 8950000000
+      context_length: 262144
+      embedding_length: 4096
+      quantization: UD-Q3_K_XL
         # vision: disabled temporarily — mmproj + fit doesn't handle offload yet
       warning: "TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99)."

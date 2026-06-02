@@ -36,6 +36,16 @@
       source: "ibm-granite/granite-4.0-h-tiny (HuggingFace safetensors)"
       note: "OOM on 6GB VRAM — vLLM loads all 7B params before MoE routing. Mamba-2 hybrid. Slow startup."
       features:
-        thinking: true
+        completion: true
+        tools: false
+        thinking: false
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: granite4
+      parameters: 300000000
+      context_length: 131072
+      embedding_length: 1024
+      quantization: Q8_0

@@ -36,6 +36,16 @@
       source: "openbmb/MiniCPM5-1B-GGUF (Q8_0)"
       note: "Tool calling broken (llama.cpp bug #23781). Chat + think work fine. NEVER use custom chat template."
       features:
+        completion: true
+        tools: false
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: llama
+      parameters: 1080000000
+      context_length: 131072
+      embedding_length: 1536
+      quantization: Q8_0

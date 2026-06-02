@@ -35,7 +35,17 @@
       source: "tencent/Hy-MT2-1.8B-GGUF (Q4_K_M)"
       kv_cache: "q8_0 + attn_rot"
       features:
+        completion: true
+        tools: false
         thinking: false
         vision: false
-        tools: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: hunyuan-dense
+      parameters: 1790000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: Q4_K_M
       note: "Translation-only model. No system prompt needed (per Hy-MT2 docs). Official prompt: 'Translate the following text into {target_lang}. Note that you should only output the translated result without any additional explanation:\n\n{source_text}'. Supports terminology, style, personalization, delimiter preservation, and structured data translation. See https://github.com/Tencent-Hunyuan/Hy-MT2 for all prompt formats."

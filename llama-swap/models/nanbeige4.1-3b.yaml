@@ -71,7 +71,17 @@
       source: "DevQuasar/Nanbeige.Nanbeige4.1-3B-GGUF (Q4_K_M)"
       kv_cache: "q8_0 + attn_rot"
       features:
+        completion: true
+        tools: false
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: llama
+      parameters: 3930000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: Q4_K_M
       warning: "ALWAYS thinks (no :think toggle). Verbose reasoning (~300+ tokens even for simple tasks). MULTI-TURN TOOL CALL BUG: second round of tool calls leaks XML as text (llama.cpp #22684, no fix yet). Use single-turn tool calling only. Benchmarks promising but may be inflated."

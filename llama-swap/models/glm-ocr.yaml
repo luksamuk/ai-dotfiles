@@ -1,0 +1,55 @@
+# -------------------------------------------
+# GLM-OCR - UPSTREAM BACKEND (mmproj required)
+# GLM-4V-based OCR/Vision specialist — #1 on OmniDocBench V1.5 (94.62 score)
+# Architecture: glm4 — supported in upstream llama.cpp b766+ and ik_llama.cpp v4547+
+# mmproj required: CogViT vision encoder + cross-modal connector
+# Complements LFM2.5-VL-450M (general VLM) — this is OCR/table/formula specialist
+# Prompt must be "OCR", "OCR markdown", or "Table Recognition:" for best results
+# NOT a general chat model — use for document extraction tasks only
+# Temperature 0.1 for OCR precision, no reasoning (vision model)
+# KV cache: f16 (vision models need precision, not compression)
+# --jinja: required for chat template auto-detection (glm4 template)
+# -------------------------------------------
+  "glm-ocr":
+    name: "GLM-OCR"
+    description: "OCR and document understanding specialist (upstream + mmproj)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/GLM-OCR-Q8_0.gguf
+      --mmproj ${models_dir}/mmproj-GLM-OCR-Q8_0.gguf
+      --jinja
+      --media-path ${media_path}
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.1
+      --top-p 0.9
+      --top-k 40
+      --repeat-penalty 1.0
+      --reasoning off
+      --cache-type-k f16
+      --cache-type-v f16
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      architecture: glm4
+      parameters: 940000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: Q8_0
+      size: "~0.95 GB (Q8_0) + ~0.48 GB mmproj (Q8_0)"
+      vram_usage: "~2GB (model + mmproj + cache)"
+      source: "ggml-org/GLM-OCR-GGUF (Q8_0 + mmproj Q8_0)"
+      kv_cache: "f16 (vision, precision priority)"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      note: "Specialized OCR model — use prompts like 'OCR', 'OCR markdown', 'Table Recognition:'. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction."

@@ -46,7 +46,17 @@
       source: "arcee-ai/AFM-4.5B-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V)"
       features:
-        thinking: false
+        completion: true
         tools: true
-        parallel_tool_calls: true
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: llama
+      parameters: 4500000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: UD-Q3_K_XL
       note: "Dense 4.5B by Arcee AI. No native thinking. Tool calling requires Hermes 2 Pro template override via --chat-template-file. Uses upstream (ik/Bee lack arcee arch support)."

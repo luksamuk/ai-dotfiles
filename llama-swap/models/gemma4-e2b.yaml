@@ -40,5 +40,16 @@
       source: "unsloth/gemma-4-E2B-it-GGUF (UD-Q3_K_XL)"
       kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
       features:
-        thinking: true
+        completion: true
         tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4
+      parameters: 4650000000
+      context_length: 131072
+      embedding_length: 1536
+      quantization: Q3_K_XL

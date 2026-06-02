@@ -53,7 +53,18 @@
       source: "unsloth/Qwen3.5-9B-GGUF"
       kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
       features:
-        thinking: true
+        completion: true
         tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 8950000000
+      context_length: 262144
+      embedding_length: 4096
+      quantization: Q3_K_XL
         # vision: disabled temporarily — mmproj + fit doesn't handle offload yet
       warning: "Vision disabled temporarily. Bee/TurboQuant segfaults with this model — use ik backend."

@@ -46,7 +46,17 @@
       source: "unsloth/gemma-4-E4B-it-GGUF (UD-Q3_K_XL)"
       kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
       features:
-        thinking: true
-        vision: false
+        completion: true
         tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4
+      parameters: 7520000000
+      context_length: 131072
+      embedding_length: 2560
+      quantization: UD-Q3_K_XL
       warning: "TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99)."

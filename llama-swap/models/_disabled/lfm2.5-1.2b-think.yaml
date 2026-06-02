@@ -30,8 +30,18 @@
       source: "LiquidAI/LFM2.5-1.2B-Thinking-GGUF (Q8_0)"
       kv_cache: "q8_0 + attn_rot"
       features:
+        completion: true
+        tools: false
         thinking: true
         vision: false
-        tools: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 1200000000
+      context_length: 128000
+      embedding_length: 1536
+      quantization: Q8_0
       warning: "SEMPRE gera CoT internamente (como gpt-oss-20b). Pior pra tool-calling — use lfm2.5-1.2b (Instruct) para tarefas agenticas."
   # Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM
