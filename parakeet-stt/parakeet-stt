@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 # parakeet-stt — STT wrapper for Hermes Agent using parakeet.cpp
-# Usage: parakeet-stt <audio_file>
-# Outputs plain text transcription to stdout.
-# Falls back to CPU if CUDA is unavailable.
+# Compatible with Hermes local_command STT provider.
+#
+# Hermes calls this with: parakeet-stt {input_path} --model {model} --output_dir {output_dir} --language {language}
+# This script runs parakeet-cli and writes the transcript to {output_dir}/{stem}.txt
+#
+# Environment variables:
+#   PARAKEET_MODEL    — Path to GGUF model (default: ~/.parakeet-models/tdt-0.6b-v3-q4_k.gguf)
+#   PARAKEET_CLI      — Path to parakeet-cli binary (default: parakeet-cli)
+#   PARAKEET_DEVICE   — Device: cuda (default) or cpu
+#   PARAKEET_THREADS  — Thread count for CPU (default: 8)
 set -euo pipefail
 
 MODEL="${PARAKEET_MODEL:-$HOME/.parakeet-models/tdt-0.6b-v3-q4_k.gguf}"
@@ -10,44 +17,68 @@ CLI="${PARAKEET_CLI:-parakeet-cli}"
 DEVICE="${PARAKEET_DEVICE:-cuda}"
 THREADS="${PARAKEET_THREADS:-8}"
 
-if [[ $# -lt 1 ]]; then
-    echo "Usage: parakeet-stt <audio_file>" >&2
+# Parse arguments (Hermes passes: input_path --model x --output_dir y [--language z])
+INPUT_PATH=""
+OUTPUT_DIR=""
+LANGUAGE=""
+MODEL_NAME=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --model)        MODEL_NAME="$2"; shift 2 ;;
+        --output_dir)  OUTPUT_DIR="$2"; shift 2 ;;
+        --language)    LANGUAGE="$2"; shift 2 ;;
+        *)             INPUT_PATH="$1"; shift ;;
+    esac
+done
+
+if [[ -z "$INPUT_PATH" ]]; then
+    echo "Usage: parakeet-stt <input_path> [--model x] [--output_dir y] [--language z]" >&2
     exit 1
 fi
-
-INPUT="$1"
-shift
 
 if [[ ! -f "$MODEL" ]]; then
     echo "ERROR: Model not found: $MODEL" >&2
-    echo "Download with: parakeet-cli or manually from mudler/parakeet-cpp-gguf" >&2
+    echo "Download with: huggingface-cli download mudler/parakeet-cpp-gguf tdt-0.6b-v3-q4_k.gguf" >&2
     exit 1
 fi
 
-# Try CUDA first, fall back to CPU
-if [[ "$DEVICE" == "cuda" ]]; then
-    OUTPUT=$("$CLI" transcribe \
-        --model "$MODEL" \
-        --input "$INPUT" \
-        --threads "$THREADS" \
-        2>/dev/null) || \
-    OUTPUT=$("$CLI" transcribe \
-        --model "$MODEL" \
-        --input "$INPUT" \
-        --threads "$THREADS" \
-        2>/dev/null || \
-    PARAKEET_DEVICE=cpu "$CLI" transcribe \
-        --model "$MODEL" \
-        --input "$INPUT" \
-        --threads "$THREADS" \
-        2>/dev/null)
-else
-    OUTPUT=$(PARAKEET_DEVICE=cpu "$CLI" transcribe \
-        --model "$MODEL" \
-        --input "$INPUT" \
-        --threads "$THREADS" \
-        2>/dev/null)
+if [[ ! -f "$INPUT_PATH" ]]; then
+    echo "ERROR: Input file not found: $INPUT_PATH" >&2
+    exit 1
 fi
 
-# Output just the text (strip ggml init messages that may leak through)
-echo "$OUTPUT" | grep -v '^ggml_' | grep -v '^\[parakeet\]'
+# Run parakeet-cli transcription
+# Redirect stderr (ggml init messages) to /dev/null, capture stdout
+TRANSCRIPT=""
+if [[ "$DEVICE" == "cuda" ]]; then
+    TRANSCRIPT=$("$CLI" transcribe \
+        --model "$MODEL" \
+        --input "$INPUT_PATH" \
+        --threads "$THREADS" \
+        2>/dev/null) || \
+    TRANSCRIPT=$(PARAKEET_DEVICE=cpu "$CLI" transcribe \
+        --model "$MODEL" \
+        --input "$INPUT_PATH" \
+        --threads "$THREADS" \
+        2>/dev/null) || true
+else
+    TRANSCRIPT=$(PARAKEET_DEVICE=cpu "$CLI" transcribe \
+        --model "$MODEL" \
+        --input "$INPUT_PATH" \
+        --threads "$THREADS" \
+        2>/dev/null) || true
+fi
+
+# Clean up any ggml/parakeet init messages that leaked through
+TRANSCRIPT=$(echo "$TRANSCRIPT" | grep -v '^ggml_' | grep -v '^\[parakeet\]')
+
+# Write transcript to output directory (required by Hermes local_command provider)
+if [[ -n "$OUTPUT_DIR" ]]; then
+    mkdir -p "$OUTPUT_DIR"
+    STEM=$(basename "${INPUT_PATH%.*}")
+    echo "$TRANSCRIPT" > "$OUTPUT_DIR/${STEM}.txt"
+fi
+
+# Also print to stdout for direct use
+echo "$TRANSCRIPT"
