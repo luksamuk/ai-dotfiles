@@ -4,11 +4,13 @@
   # Architecture: qwen35moe — same as Qwen3.6-35B-A3B (34.7B total, 3B active, 33 experts top-8)
   # BFCL tool-calling: +2.87pp over base (95% call rate, 83.54% arg accuracy)
   # HarmBench compliance: 98.33%, KLD 0.025 (minimal distribution shift)
-  # APEX I-Compact not available — using standard Q4_K_M (21.7GB)
+  # DISABLED: standard Q4_K_M too large (21.7GB) — APEX I-Compact would reduce to ~16.1GB
+  # Future: convert to APEX I-Compact for better quant + less RAM usage
   # No MTP variant — running WITHOUT MTP (see references/config-mtp-speculative-decoding.md)
   # Different quant from Qwen3.6-APEX (standard Q4_K_M vs APEX I-Compact) — compare with care
   # -------------------------------------------
   "ornstein-36-35b":
+    unlisted: true
     name: "Ornstein 3.6 35B SABER"
     description: "Qwen3.6-35B NSC-ACE-SABER fine-tune, +2.87pp BFCL tool calling (ik backend)"
     cmd: |
