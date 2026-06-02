@@ -9,10 +9,15 @@
   # NOTE: Thinking variant emits  reasoning blocks. For fleet agents, consider Instruct (no reasoning trace)
   # NOTE: --parallel-tool-calls for ik's native parallel tool call support
   # NOTE: When community GGUF appears (Q4_K_M or better), swap out the manual conversion
+  # NOTE: TOOL CALLING NOT WORKING on Thinking variant with ik. Model has NO embedded
+  #   chat_template and --tool-call-parser hermes (vLLM-only) is not in ik_llama.
+  #   Both Hermes 2 Pro and Qwen3.5 chat-template-file produce garbled output with tools.
+  #   Plain text works (37 tok/s). Instruct variant may work better (no reasoning trace
+  #   contaminating tool call output). Re-test after community GGUF with template available.
   # -------------------------------------------
   "mellum2-12b-thinking":
     name: "Mellum2 12B Thinking"
-    description: "JetBrains MoE 12B/2.5B active, reasoning + tool calling (ik backend, expert offload)"
+    description: "JetBrains MoE 12B/2.5B active, reasoning (⚠️ tool calling broken — no chat_template)"
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Mellum2-12B-A2.5B-Thinking-Q4_K_M.gguf
@@ -23,6 +28,7 @@
       -np 1
       --reasoning on
       --parallel-tool-calls
+      --chat-template-file /home/alchemist/git/ik_llama.cpp/models/templates/NousResearch-Hermes-2-Pro-Llama-3-8B-tool_use.jinja
       --jinja
       --cache-type-k q8_0
       --cache-type-v q4_0
@@ -47,5 +53,5 @@
       kv_cache: "q8_0 (K) + q4_0 (V)"
       features:
         thinking: true
-        tools: true
-      note: "Manual GGUF conversion (2026-06-01). MoE expert offload via ik with --mlock. BFCL v4 45.6%, LiveCodeBench 69.9%. Reasoning traces contaminate history — prefer Instruct for fleet agents. Swap for community GGUF when available."
+        tools: false
+      note: "Manual GGUF conversion (2026-06-01). MoE expert offload via ik with --mlock. BFCL v4 45.6%, LiveCodeBench 69.9%. TOOL CALLING BROKEN: no embedded chat_template + --tool-call-parser hermes is vLLM-only. Both Hermes 2 Pro and Qwen3.5 templates produce garbled output with tools. Plain text works (37 tok/s). Instruct variant may work better. Swap for community GGUF when available."
