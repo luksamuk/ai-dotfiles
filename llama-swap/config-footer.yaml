@@ -68,6 +68,7 @@ matrix:
     # [REMOVED] gr40h1: granite-4.0-h-1b
     sglang: lfm2.5-sgl
     nb41: nanbeige4.1-3b
+    mel2: mellum2-12b-thinking
   # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
   # +ref = expandir outro set inline
   #
@@ -94,7 +95,7 @@ matrix:
 
     # Modelos pesados - toda VRAM + RAM offload
     # (qwopus, gptoss, lfm2l disabled — models unlisted)
-    heavy: "qw36 | gemma4m | qc9"
+    heavy: "qw36 | gemma4m | qc9 | mel2"
 
     # Vision sozinho
     vision_only: "vl"
@@ -125,6 +126,7 @@ matrix:
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1
     nb41: 2      # 3B dense Q4_K_M ~1.8GB, small but heavier than 1-2B
+    mel2: 8      # 12B MoE Q4_K_M ~7.6GB, heavy offload + mlock
     # vLLM backends — high startup cost (30-90s), high eviction cost
     q08vllm: 5
     lfm2vllm: 5

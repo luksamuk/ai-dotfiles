@@ -968,6 +968,58 @@ models:
         tools: true
       warning: "ALWAYS thinks (no :think toggle). Verbose reasoning (~300+ tokens even for simple tasks). MULTI-TURN TOOL CALL BUG: second round of tool calls leaks XML as text (llama.cpp #22684, no fix yet). Use single-turn tool calling only. Benchmarks promising but may be inflated."
 
+  # -------------------------------------------
+  # MELLUM2-12B-A2.5B-Thinking - IK backend (expert offload)
+  # JetBrains MoE: 12B total / 2.5B active, 64 experts x top-8, SWA 1024, 131K ctx
+  # Architecture: Qwen3-MoE derivative (MellumForCausalLM → registered alias in ik)
+  # Converted manually from BF16 safetensors → F16 GGUF → Q4_K_M (7.6GB)
+  # NOTE: No pre-made GGUF was available — converted in-house 2026-06-01
+  # NOTE: MoE ffn_down_exps dims (896x2304) not divisible by 256 → fallback to q8_0 for those tensors (expected)
+  # NOTE: Uses --mlock for memory pinning (CPU expert offload)
+  # NOTE: Thinking variant emits  reasoning blocks. For fleet agents, consider Instruct (no reasoning trace)
+  # NOTE: --parallel-tool-calls for ik's native parallel tool call support
+  # NOTE: When community GGUF appears (Q4_K_M or better), swap out the manual conversion
+  # -------------------------------------------
+  "mellum2-12b-thinking":
+    name: "Mellum2 12B Thinking"
+    description: "JetBrains MoE 12B/2.5B active, reasoning + tool calling (ik backend, expert offload)"
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/Mellum2-12B-A2.5B-Thinking-Q4_K_M.gguf
+      --host 127.0.0.1
+      -ngl 12
+      --mlock
+      -c 4096
+      -np 1
+      --reasoning on
+      --parallel-tool-calls
+      --jinja
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 0.6
+          min_p: 0.15
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.3
+    ttl: 60
+    metadata:
+      size: "~7.6 GB (Q4_K_M, manual conversion)"
+      context: "131K"
+      vram_usage: "~4.4 GB VRAM (12 layers GPU, rest CPU offload)"
+      source: "JetBrains/Mellum2-12B-A2.5B-Thinking (HF) → Q4_K_M (manual)"
+      kv_cache: "q8_0 (K) + q4_0 (V)"
+      features:
+        thinking: true
+        tools: true
+      note: "Manual GGUF conversion (2026-06-01). MoE expert offload via ik with --mlock. BFCL v4 45.6%, LiveCodeBench 69.9%. Reasoning traces contaminate history — prefer Instruct for fleet agents. Swap for community GGUF when available."
+
 # -------------------------------------------
 # AFM-4.5B (Arcee Fusion Model) - UPSTREAM backend
 # 4.5B dense, Llama-like arch (arcee), Q5_K_M ~3.11 GB
@@ -982,6 +1034,7 @@ models:
 # -------------------------------------------
   "afm-4.5b":
     name: "AFM-4.5B"
+    unlisted: true
     description: "Arcee AFM-4.5B dense, tool calling via Hermes 2 Pro template (upstream)"
     cmd: |
       ${llama_server} --port ${PORT}
@@ -2227,6 +2280,56 @@ models:
         - "Needs explicit translation prompt (Sprachspiel format works)"
       note: "Translation model. Sprachspiel translate mode default. 55 languages."
 
+# -------------------------------------------
+# Trinity Nano Preview (Arcee) - UPSTREAM backend
+# 6B MoE (128 experts, 8 active + 1 shared = ~1B active/token), Q5_K_M ~4.1 GB
+# Context: 128K (rope theta 10000, head_dim 128)
+# Vocab: 200K, 56 layers, 1024 embed, 8 heads (GQA: 2 KV heads), moe_intermediate 256
+# Features: tool calling, reasoning (preview — experimental, may be unstable)
+# License: OpenMDW-1.1 (permissive, commercial use OK)
+# Backend: upstream llama.cpp b766+ (AfmoeForCausalLM arch)
+# -------------------------------------------
+  "trinity-nano":
+    unlisted: true
+    name: "Trinity Nano Preview"
+    description: "Arcee 6B MoE (1B active), reasoning + tool calling preview (OpenMDW-1.1)"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Trinity-Nano-Preview-Q5_K_M.gguf
+      --fit on --fit-target 768 --fit-ctx 65536
+      --ctx-size 32768
+      --parallel 1
+      --temp 0.3
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --flash-attn on
+      --n-predict -1
+      --jinja
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 0.3
+          min_p: 0.15
+    ttl: 60
+    metadata:
+      size: "~4.1 GB (Q5_K_M)"
+      context: "128K"
+      vram_usage: "~5GB VRAM (4.1 GB model + KV)"
+      source: "arcee-ai/Trinity-Nano-Preview-GGUF"
+      kv_cache: "q8_0 (K) + q4_0 (V)"
+      features:
+        thinking: true
+        tools: true
+        parallel_tool_calls: true
+      license: "OpenMDW-1.1"
+      note: "Preview model — experimental, may be unstable. AfmoeForCausalLM arch, upstream b766+."
+
 # Hooks: ações na inicialização do llama-swap
 # preload: carrega modelos síncronamente antes de aceitar requests
 # Ideal para vLLM (startup lento = 30-90s sem warm-up)
@@ -2297,6 +2400,7 @@ matrix:
     # [REMOVED] gr40h1: granite-4.0-h-1b
     sglang: lfm2.5-sgl
     nb41: nanbeige4.1-3b
+    mel2: mellum2-12b-thinking
   # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
   # +ref = expandir outro set inline
   #
@@ -2323,7 +2427,7 @@ matrix:
 
     # Modelos pesados - toda VRAM + RAM offload
     # (qwopus, gptoss, lfm2l disabled — models unlisted)
-    heavy: "qw36 | gemma4m | qc9"
+    heavy: "qw36 | gemma4m | qc9 | mel2"
 
     # Vision sozinho
     vision_only: "vl"
@@ -2354,6 +2458,7 @@ matrix:
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1
     nb41: 2      # 3B dense Q4_K_M ~1.8GB, small but heavier than 1-2B
+    mel2: 8      # 12B MoE Q4_K_M ~7.6GB, heavy offload + mlock
     # vLLM backends — high startup cost (30-90s), high eviction cost
     q08vllm: 5
     lfm2vllm: 5

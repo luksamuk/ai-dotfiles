@@ -64,6 +64,7 @@ ORIGINAL_ORDER = [
     "littlelamb-0.3b-tc",    # ✅
     "minicpm-v-4.6",         # ✅
     "nanbeige4.1-3b",         # ⚠️ verbose reasoning, always thinks, multi-turn tool calls BROKEN (#22684)
+    "mellum2-12b-thinking",   # ✅ JetBrains MoE 12B/2.5B, ik backend, expert offload
 ]
 
 
