@@ -94,7 +94,7 @@ matrix:
 
     # Modelos pesados - toda VRAM + RAM offload
     # (qwopus, gptoss, lfm2l disabled — models unlisted)
-    heavy: "qw36 | gemma4m | qc9"
+    heavy: "qw36 | gemma4m | qc9 | orn"
 
     # Vision sozinho
     vision_only: "vl"
@@ -104,6 +104,7 @@ matrix:
   evict_costs:
     gemma4m: 10  # 26B MoE APEX I-Compact ~15.5GB, heavy offload
     qw36: 10     # 35B MoE APEX I-Compact ~17.3GB, heavy offload
+    orn: 9      # 35B MoE standard Q4_K_M ~20GB, heavy offload + hadamard
     qc9: 6      # 9B dense Q4_K_M ~5.6GB, medium startup
     # qwopus: 10   # DISABLED: model unlisted
     # gptoss: 8    # DISABLED: model unlisted
