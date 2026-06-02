@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# parakeet-stt — STT wrapper for Hermes Agent using parakeet.cpp
+# Usage: parakeet-stt <audio_file>
+# Outputs plain text transcription to stdout.
+# Falls back to CPU if CUDA is unavailable.
+set -euo pipefail
+
+MODEL="${PARAKEET_MODEL:-$HOME/.parakeet-models/tdt-0.6b-v3-q4_k.gguf}"
+CLI="${PARAKEET_CLI:-parakeet-cli}"
+DEVICE="${PARAKEET_DEVICE:-cuda}"
+THREADS="${PARAKEET_THREADS:-8}"
+
+if [[ $# -lt 1 ]]; then
+    echo "Usage: parakeet-stt <audio_file>" >&2
+    exit 1
+fi
+
+INPUT="$1"
+shift
+
+if [[ ! -f "$MODEL" ]]; then
+    echo "ERROR: Model not found: $MODEL" >&2
+    echo "Download with: parakeet-cli or manually from mudler/parakeet-cpp-gguf" >&2
+    exit 1
+fi
+
+# Try CUDA first, fall back to CPU
+if [[ "$DEVICE" == "cuda" ]]; then
+    OUTPUT=$("$CLI" transcribe \
+        --model "$MODEL" \
+        --input "$INPUT" \
+        --threads "$THREADS" \
+        2>/dev/null) || \
+    OUTPUT=$("$CLI" transcribe \
+        --model "$MODEL" \
+        --input "$INPUT" \
+        --threads "$THREADS" \
+        2>/dev/null || \
+    PARAKEET_DEVICE=cpu "$CLI" transcribe \
+        --model "$MODEL" \
+        --input "$INPUT" \
+        --threads "$THREADS" \
+        2>/dev/null)
+else
+    OUTPUT=$(PARAKEET_DEVICE=cpu "$CLI" transcribe \
+        --model "$MODEL" \
+        --input "$INPUT" \
+        --threads "$THREADS" \
+        2>/dev/null)
+fi
+
+# Output just the text (strip ggml init messages that may leak through)
+echo "$OUTPUT" | grep -v '^ggml_' | grep -v '^\[parakeet\]'
