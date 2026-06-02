@@ -65,6 +65,7 @@ ORIGINAL_ORDER = [
     "minicpm-v-4.6",         # ✅
     "nanbeige4.1-3b",         # ⚠️ verbose reasoning, always thinks, multi-turn tool calls BROKEN (#22684)
     # "mellum2-12b-thinking",   # DISABLED: tool calling broken (no chat_template in GGUF, --tool-call-parser hermes is vLLM-only). Awaiting community GGUF.
+    # "ornstein-36-35b",        # DISABLED: test only, evaluating as Qwen3.6-APEX replacement
 ]
 
 

@@ -1712,6 +1712,67 @@ models:
         warning: "Uses mistral3 arch — ONLY runs on llama.cpp upstream, NOT ik_llama.cpp. Vision disabled: mmproj crashes with CUDA OOM on mistral3. --n-gpu-layers 99 causes OOM with 131K ctx, use --fit on instead."
 
   # -------------------------------------------
+  # ORNSTEIN 3.6-35B-A3B-NSC-ACE-SABER - IK backend (expert offload, Hadamard)
+  # Qwen3.6-35B-A3B fine-tune by GestaltLabs (NSC-ACE + SABER calibration)
+  # Architecture: qwen35moe — same as Qwen3.6-35B-A3B (34.7B total, 3B active, 33 experts top-8)
+  # BFCL tool-calling: +2.87pp over base (95% call rate, 83.54% arg accuracy)
+  # HarmBench compliance: 98.33%, KLD 0.025 (minimal distribution shift)
+  # APEX I-Compact not available — using standard Q4_K_M (21.7GB)
+  # No MTP variant — tested WITHOUT MTP (see references/config-mtp-speculative-decoding.md)
+  # TEST ONLY: evaluating as potential replacement for Qwen3.6-35B-A3B-APEX
+  # -------------------------------------------
+  "ornstein-36-35b":
+    name: "Ornstein 3.6 35B SABER"
+    description: "Qwen3.6-35B NSC-ACE-SABER fine-tune, +2.87pp BFCL tool calling (ik backend)"
+    unlisted: true
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.6-35B-A3B-NSC-ACE-SABER-Q4_K_M.gguf
+      --fit
+      --fit-margin 768
+      --ctx-size 131072
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning on
+      --jinja
+      --parallel-tool-calls
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --defer-experts
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.85
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 300
+    metadata:
+      size: "~21.7 GB (Q4_K_M)"
+      context: "1K-131K (safe max; 200K works but zero VRAM headroom)"
+      vram_usage: "~5.4GB VRAM + ~18GB pinned RAM (ik pinned memory, estimated)"
+      source: "GestaltLabs/Qwen3.6-35B-A3B-NSC-ACE-SABER-GGUF"
+      kv_cache: "q4_0 + attn_rot + hadamard (ik -khad/-vhad)"
+      features:
+        thinking: true
+        vision: false
+        tools: true
+      note: "NSC-ACE-SABER fine-tune of Qwen3.6-35B-A3B. +2.87pp BFCL over base, 98.33% HarmBench compliance, KLD 0.025. TEST ONLY — evaluating as potential replacement for Qwen3.6-APEX. Standard Q4_K_M quant (no APEX I-Compact available). No MTP in this variant."
+
+  # -------------------------------------------
   # QWEN3-8B - ik BACKEND (Hadamard KV cache)
   # Dense 8.2B params, 6.95B non-embedding. 36 layers, GQA 32Q/8KV.
   # Architecture: qwen3 — supported in llama.cpp b5460+ and ik_llama.cpp v4430+
@@ -2464,7 +2525,8 @@ matrix:
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1
     nb41: 2      # 3B dense Q4_K_M ~1.8GB, small but heavier than 1-2B
-    # mel2: 8      # 12B MoE Q4_K_M ~7.6GB, heavy offload + mlock — DISABLED (tool calling broken)
+    # mel2: mellum2-12b-thinking  # DISABLED: tool calling broken
+    orn: ornstein-36-35b
     # vLLM backends — high startup cost (30-90s), high eviction cost
     q08vllm: 5
     lfm2vllm: 5
