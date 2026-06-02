@@ -1,66 +1,66 @@
-  # -------------------------------------------
-  # GEMMA-4-26B-A4B - MoE REASONING + CODING (APEX I-Compact)
-  # MoE 26B params, 4B ativo por token. 128 experts, top-8 routing.
-  # Google recomenda: temp=1.0 para reasoning, temp=0.7 para coding
-  # Variantes via setParamsByID: base (chat), :think (reasoning)
-  # APEX I-Compact ~15.5GB — mixed-precision MoE quant com imatrix diversa
-  #   (edges Q4_K, middle Q3_K, shared experts Q6_K, attention Q4_K)
-  #   Perplexity comparable to Q8_0, real-world benchmarks better than UD-Q3_K_XL
-  # head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
-  # mmproj crashes on CUDA (bug #21402) → text-only
-  # Architecture: gemma4 (Gemma4ForCausalLM)
-  # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-  # -------------------------------------------
-  "gemma4-26b-moe":
-    name: "Gemma 4 26B MoE"
-    description: "MoE reasoning + coding — 128 experts, 4B active/token (APEX I-Compact)"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-26B-A4B-APEX-I-Compact.gguf
-      --no-mmproj
-      --fit on
-      --fit-target 96
-      --fit-ctx 16384
-      --ctx-size 131072
-      --temp 1.0
-      --top-p 0.95
-      --reasoning on
-      --cache-type-k q4_0
-      --cache-type-v q4_0
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.95
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-    ttl: 300
-    metadata:
-      size: "~15.5 GB (APEX I-Compact)"
-      context: "16K-128K (dynamic)"
-      vram_usage: "~5GB VRAM + ~10GB RAM (q4_0 cache, APEX mixed-precision offload)"
-      source: "mudler/gemma-4-26B-A4B-it-APEX-GGUF"
-      kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: gemma4
-      parameters: 25230000000
-      context_length: 262144
-      embedding_length: 2816
-      quantization: I-Compact
-      warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (issue #21402). Text-only. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K."
+# -------------------------------------------
+# GEMMA-4-26B-A4B - MoE REASONING + CODING (APEX I-Compact)
+# MoE 26B params, 4B ativo por token. 128 experts, top-8 routing.
+# Google recomenda: temp=1.0 para reasoning, temp=0.7 para coding
+# Variantes via setParamsByID: base (chat), :think (reasoning)
+# APEX I-Compact ~15.5GB — mixed-precision MoE quant com imatrix diversa
+#   (edges Q4_K, middle Q3_K, shared experts Q6_K, attention Q4_K)
+#   Perplexity comparable to Q8_0, real-world benchmarks better than UD-Q3_K_XL
+# head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
+# mmproj crashes on CUDA (bug #21402) → text-only
+# Architecture: gemma4 (Gemma4ForCausalLM)
+# Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
+# -------------------------------------------
+"gemma4-26b-moe":
+  name: "Gemma 4 26B MoE"
+  description: "MoE reasoning + coding — 128 experts, 4B active/token (APEX I-Compact)"
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/gemma-4-26B-A4B-APEX-I-Compact.gguf
+    --no-mmproj
+    --fit on
+    --fit-target 96
+    --fit-ctx 16384
+    --ctx-size 131072
+    --temp 1.0
+    --top-p 0.95
+    --reasoning on
+    --cache-type-k q4_0
+    --cache-type-v q4_0
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+  ttl: 300
+  metadata:
+    size: "~15.5 GB (APEX I-Compact)"
+    context: "16K-128K (dynamic)"
+    vram_usage: "~5GB VRAM + ~10GB RAM (q4_0 cache, APEX mixed-precision offload)"
+    source: "mudler/gemma-4-26B-A4B-it-APEX-GGUF"
+    kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: gemma4
+    parameters: 25230000000
+    context_length: 262144
+    embedding_length: 2816
+    quantization: I-Compact
+    warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (issue #21402). Text-only. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K."

@@ -1,69 +1,69 @@
-  # -------------------------------------------
-  # MINICPM-V 4.6 — VLM (Vision-Language Model)
-  # OpenBMB/Tsinghua, Qwen3.5-0.8B backbone + SigLIP2-400M vision encoder
-  # Architecture: qwen35 (text) + clip (mmproj) — supported in llama.cpp v528+
-  # 1.3B total params — video+image+text, 256K context, LLaVA-UHD v4 compression
-  # Uses ${llama_server} (upstream) — mmproj uses libmtmd multimodal pipeline
-  # Q5_K_M ~552 MB + mmproj F16 ~1.1 GB — fits in VRAM with --fit
-  # Dual mode: base (chat, no think) and :think (reasoning)
-  # Apache 2.0 license
-  # -------------------------------------------
-  "minicpm-v-4.6":
-    name: "MiniCPM-V 4.6"
-    description: "VLM Qwen3.5-0.8B + SigLIP2-400M, video+image+text (Q5_K_M, llama.cpp)"
-    tags: ["vision"]
-    cmd: |
-        ${llama_server} --port ${PORT}
-        --model ${models_dir}/MiniCPM-V-4_6-Q5_K_M.gguf
-        --mmproj ${models_dir}/mmproj-MiniCPM-V-4.6-F16.gguf
-        --media-path ${media_path}
-        --jinja
-        --fit on
-        --fit-ctx 8192
-        --ctx-size 262144
-        --parallel 4
-        --cont-batching
-        --temp ${default_temp}
-        --top-p 0.8
-        --top-k 100
-        --min-p ${default_min_p}
-        --repeat-penalty 1.05
-        --reasoning on
-        --cache-type-k f16
-        --cache-type-v f16
-        --flash-attn on
-        --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    metadata:
-      size: "0.55 GB (Q5_K_M) + 1.1 GB mmproj"
-      context: "8K-256K (dynamic)"
-      vram_usage: "~2GB (model + mmproj + cache)"
-      source: "openbmb/MiniCPM-V-4.6-gguf"
-      kv_cache: "f16 (vision model, precision priority)"
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 752160000
-      context_length: 262144
-      embedding_length: 1024
-      quantization: Q5_K_M
+# -------------------------------------------
+# MINICPM-V 4.6 — VLM (Vision-Language Model)
+# OpenBMB/Tsinghua, Qwen3.5-0.8B backbone + SigLIP2-400M vision encoder
+# Architecture: qwen35 (text) + clip (mmproj) — supported in llama.cpp v528+
+# 1.3B total params — video+image+text, 256K context, LLaVA-UHD v4 compression
+# Uses ${llama_server} (upstream) — mmproj uses libmtmd multimodal pipeline
+# Q5_K_M ~552 MB + mmproj F16 ~1.1 GB — fits in VRAM with --fit
+# Dual mode: base (chat, no think) and :think (reasoning)
+# Apache 2.0 license
+# -------------------------------------------
+"minicpm-v-4.6":
+  name: "MiniCPM-V 4.6"
+  description: "VLM Qwen3.5-0.8B + SigLIP2-400M, video+image+text (Q5_K_M, llama.cpp)"
+  tags: ["vision"]
+  cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/MiniCPM-V-4_6-Q5_K_M.gguf
+      --mmproj ${models_dir}/mmproj-MiniCPM-V-4.6-F16.gguf
+      --media-path ${media_path}
+      --jinja
+      --fit on
+      --fit-ctx 8192
+      --ctx-size 262144
+      --parallel 4
+      --cont-batching
+      --temp ${default_temp}
+      --top-p 0.8
+      --top-k 100
+      --min-p ${default_min_p}
+      --repeat-penalty 1.05
+      --reasoning on
+      --cache-type-k f16
+      --cache-type-v f16
+      --flash-attn on
+      --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 60
+  metadata:
+    size: "0.55 GB (Q5_K_M) + 1.1 GB mmproj"
+    context: "8K-256K (dynamic)"
+    vram_usage: "~2GB (model + mmproj + cache)"
+    source: "openbmb/MiniCPM-V-4.6-gguf"
+    kv_cache: "f16 (vision model, precision priority)"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 752160000
+    context_length: 262144
+    embedding_length: 1024
+    quantization: Q5_K_M

@@ -1,62 +1,62 @@
-  # -------------------------------------------
-  # GEMMA-4-E4B - Bee BACKEND (TurboQuant KV cache)
-  # Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
-  # head_dim=256 → attn_rot ✅ (Bee supports iSWA attn_rot for Gemma 4)
-  # --n-gpu-layers 99: model fits entirely in 6GB VRAM at Q3_XL (4.5GB model + cache)
-  # Original upstream config moved to _disabled/gemma4-e4b.yaml (q4_0 cache + --fit)
-  # -------------------------------------------
-  "gemma4-e4b-bee":
-    unlisted: true
-    name: "Gemma 4 E4B"
-    description: "TurboQuant KV cache — turbo3_tcq, 5x compression (Bee backend)"
-    cmd: |
-      ${bee_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-E4B-it-UD-Q3_K_XL.gguf
-      --no-mmproj
-      --n-gpu-layers 99
-      --ctx-size 131072
-      --temp 0.7
-      --top-p 0.9
-      --top-k 40
-      --min-p 0.01
-      --repeat-penalty 1.0
-      --reasoning on
-      --cache-type-k turbo3_tcq
-      --cache-type-v turbo3_tcq
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    metadata:
-      size: "~4.5 GB (UD-Q3_K_XL Dynamic 2.0)"
-      context: "64K-128K (TurboQuant enables longer context)"
-      vram_usage: "~5GB VRAM (model + turbo3_tcq cache, ~5x less KV memory)"
-      source: "unsloth/gemma-4-E4B-it-GGUF (UD-Q3_K_XL)"
-      kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: gemma4
-      parameters: 7520000000
-      context_length: 131072
-      embedding_length: 2560
-      quantization: UD-Q3_K_XL
-      warning: "TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99)."
+# -------------------------------------------
+# GEMMA-4-E4B - Bee BACKEND (TurboQuant KV cache)
+# Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
+# head_dim=256 → attn_rot ✅ (Bee supports iSWA attn_rot for Gemma 4)
+# --n-gpu-layers 99: model fits entirely in 6GB VRAM at Q3_XL (4.5GB model + cache)
+# Original upstream config moved to _disabled/gemma4-e4b.yaml (q4_0 cache + --fit)
+# -------------------------------------------
+"gemma4-e4b-bee":
+  unlisted: true
+  name: "Gemma 4 E4B"
+  description: "TurboQuant KV cache — turbo3_tcq, 5x compression (Bee backend)"
+  cmd: |
+    ${bee_server} --port ${PORT}
+    --model ${models_dir}/gemma-4-E4B-it-UD-Q3_K_XL.gguf
+    --no-mmproj
+    --n-gpu-layers 99
+    --ctx-size 131072
+    --temp 0.7
+    --top-p 0.9
+    --top-k 40
+    --min-p 0.01
+    --repeat-penalty 1.0
+    --reasoning on
+    --cache-type-k turbo3_tcq
+    --cache-type-v turbo3_tcq
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 60
+  metadata:
+    size: "~4.5 GB (UD-Q3_K_XL Dynamic 2.0)"
+    context: "64K-128K (TurboQuant enables longer context)"
+    vram_usage: "~5GB VRAM (model + turbo3_tcq cache, ~5x less KV memory)"
+    source: "unsloth/gemma-4-E4B-it-GGUF (UD-Q3_K_XL)"
+    kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: gemma4
+    parameters: 7520000000
+    context_length: 131072
+    embedding_length: 2560
+    quantization: UD-Q3_K_XL
+    warning: "TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99)."

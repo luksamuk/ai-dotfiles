@@ -1,71 +1,71 @@
-  # -------------------------------------------
-  # SMOLLM3-3B — HuggingFace dense transformer
-  # Custom SmolLM3ForCausalLM (GQA + NoPE, 36 layers, SiLU, tied embeddings)
-  # Architecture: smollm3 — supported in ik_llama.cpp (build_smollm3)
-  # 3B params, dual tool-calling (XML+JSON / Python), dual thinking mode
-  # BFCL v4 score: 92.3 (no-think) — excellent tool-calling for 3B
-  # UD-Q5_K_XL ~2.1 GB — fits in VRAM with --fit
-  # 65K native ctx, 128K with YaRN rope_scaling
-  # Dual mode: base (chat, no think) and :think (reasoning)
-  # Apache 2.0 license
-  # -------------------------------------------
-  "smolllm3-3b":
-    unlisted: true
-    name: "SmolLM3 3B"
-    description: "HuggingFace dense, dual tool-calling XML+Python (UD-Q5_K_XL, ik)"
-    tags: ["tools"]
-    cmd: |
-        ${ik_llama_server} --port ${PORT}
-        --model ${models_dir}/SmolLM3-3B-UD-Q5_K_XL.gguf
-        --jinja
-        --fit
-        --fit-margin 768
-        --ctx-size 131072
-        --parallel 4
-        --cont-batching
-        --temp ${default_temp}
-        --top-p ${default_top_p}
-        --top-k ${code_top_k}
-        --min-p ${code_min_p}
-        --repeat-penalty ${code_repeat_penalty}
-        --reasoning on
-        --cache-type-k ${small_cache_k}
-        --cache-type-v ${small_cache_v}
-        --k-cache-hadamard
-        --v-cache-hadamard
-        --flash-attn auto
-        --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.9
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    metadata:
-      size: "~2.1 GB (UD-Q5_K_XL)"
-      context: "32K-128K (dynamic)"
-      vram_usage: "~3GB (model + cache)"
-      source: "unsloth/SmolLM3-3B-GGUF (UD-Q5_K_XL)"
-      kv_cache: "q8_0 + attn_rot + hadamard (ik -khad/-vhad)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: smollm3
-      parameters: 3080000000
-      context_length: 65536
-      embedding_length: 2048
-      quantization: Q5_K_XL
+# -------------------------------------------
+# SMOLLM3-3B — HuggingFace dense transformer
+# Custom SmolLM3ForCausalLM (GQA + NoPE, 36 layers, SiLU, tied embeddings)
+# Architecture: smollm3 — supported in ik_llama.cpp (build_smollm3)
+# 3B params, dual tool-calling (XML+JSON / Python), dual thinking mode
+# BFCL v4 score: 92.3 (no-think) — excellent tool-calling for 3B
+# UD-Q5_K_XL ~2.1 GB — fits in VRAM with --fit
+# 65K native ctx, 128K with YaRN rope_scaling
+# Dual mode: base (chat, no think) and :think (reasoning)
+# Apache 2.0 license
+# -------------------------------------------
+"smolllm3-3b":
+  unlisted: true
+  name: "SmolLM3 3B"
+  description: "HuggingFace dense, dual tool-calling XML+Python (UD-Q5_K_XL, ik)"
+  tags: ["tools"]
+  cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/SmolLM3-3B-UD-Q5_K_XL.gguf
+      --jinja
+      --fit
+      --fit-margin 768
+      --ctx-size 131072
+      --parallel 4
+      --cont-batching
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning on
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 60
+  metadata:
+    size: "~2.1 GB (UD-Q5_K_XL)"
+    context: "32K-128K (dynamic)"
+    vram_usage: "~3GB (model + cache)"
+    source: "unsloth/SmolLM3-3B-GGUF (UD-Q5_K_XL)"
+    kv_cache: "q8_0 + attn_rot + hadamard (ik -khad/-vhad)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: smollm3
+    parameters: 3080000000
+    context_length: 65536
+    embedding_length: 2048
+    quantization: Q5_K_XL

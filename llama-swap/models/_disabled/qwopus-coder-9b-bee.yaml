@@ -1,63 +1,63 @@
-  # -------------------------------------------
-  # QWOPUS3.5-9B-CODER - Bee BACKEND (TurboQuant KV cache)
-  # Dense 9B agentic coding model, Q4_K_M ~5.63GB.
-  # Bee/TurboQuant turbo3_tcq — ~5x KV cache compression at near-fp16 quality.
-  # No --fit needed: model fits entirely in VRAM with --n-gpu-layers 99.
-  # Active: ik backend (qwopus-coder-9b.yaml) with -khad/-vhad/q8_0+q4_0 cache.
-  # Switch: mv qwopus-coder-9b.yaml _disabled/qwopus-coder-9b-ik.yaml && mv _disabled/qwopus-coder-9b-bee.yaml qwopus-coder-9b.yaml && build
-  # -------------------------------------------
-  "qwopus-coder-9b-bee":
-    unlisted: true
-    name: "Qwopus 9B Coder"
-    description: "Agentic coding — TurboQuant KV cache (Bee backend)"
-    cmd: |
-      ${bee_server} --port ${PORT}
-      --model ${models_dir}/Qwopus3.5-9B-coder-Exp-Q4_K_M.gguf
-      --no-mmproj
-      --n-gpu-layers 99
-      --ctx-size 131072
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
-      --min-p ${code_min_p}
-      --repeat-penalty ${code_repeat_penalty}
-      --reasoning on
-      --cache-type-k turbo3_tcq
-      --cache-type-v turbo3_tcq
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.85
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 120
-    metadata:
-      size: "~5.63 GB (Q4_K_M)"
-      context: "64K-128K (TurboQuant enables longer context)"
-      vram_usage: "~5.5GB VRAM (model + turbo3_tcq cache, ~5x less KV memory)"
-      source: "Jackrong/Qwopus3.5-9B-Coder-GGUF"
-      kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 8950000000
-      context_length: 262144
-      embedding_length: 4096
-      quantization: Q4_K_M
-      warning: "TurboQuant turbo3_tcq KV cache. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99). Dense 9B = all params active per token."
+# -------------------------------------------
+# QWOPUS3.5-9B-CODER - Bee BACKEND (TurboQuant KV cache)
+# Dense 9B agentic coding model, Q4_K_M ~5.63GB.
+# Bee/TurboQuant turbo3_tcq — ~5x KV cache compression at near-fp16 quality.
+# No --fit needed: model fits entirely in VRAM with --n-gpu-layers 99.
+# Active: ik backend (qwopus-coder-9b.yaml) with -khad/-vhad/q8_0+q4_0 cache.
+# Switch: mv qwopus-coder-9b.yaml _disabled/qwopus-coder-9b-ik.yaml && mv _disabled/qwopus-coder-9b-bee.yaml qwopus-coder-9b.yaml && build
+# -------------------------------------------
+"qwopus-coder-9b-bee":
+  unlisted: true
+  name: "Qwopus 9B Coder"
+  description: "Agentic coding — TurboQuant KV cache (Bee backend)"
+  cmd: |
+    ${bee_server} --port ${PORT}
+    --model ${models_dir}/Qwopus3.5-9B-coder-Exp-Q4_K_M.gguf
+    --no-mmproj
+    --n-gpu-layers 99
+    --ctx-size 131072
+    --temp ${code_temp}
+    --top-p ${code_top_p}
+    --top-k ${code_top_k}
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --reasoning on
+    --cache-type-k turbo3_tcq
+    --cache-type-v turbo3_tcq
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.85
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 120
+  metadata:
+    size: "~5.63 GB (Q4_K_M)"
+    context: "64K-128K (TurboQuant enables longer context)"
+    vram_usage: "~5.5GB VRAM (model + turbo3_tcq cache, ~5x less KV memory)"
+    source: "Jackrong/Qwopus3.5-9B-Coder-GGUF"
+    kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 8950000000
+    context_length: 262144
+    embedding_length: 4096
+    quantization: Q4_K_M
+    warning: "TurboQuant turbo3_tcq KV cache. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99). Dense 9B = all params active per token."

@@ -1,51 +1,51 @@
-  # -------------------------------------------
-  # HY-MT2-1.8B — Tencent Hunyuan Translation Model v2.0
-  # Dedicated translation model (33 languages + 5 dialects)
-  # Arch: hunyuan_v1_dense — upstream llama.cpp ONLY (no ik support)
-  # Potential alternative to TranslateGemma for Sprachspiel translate mode
-  # Q4_K_M ~1.1GB — fits entirely in VRAM with room to spare
-  # No thinking/reasoning, no tool-calling, translation-only
-  # Recommended params: temp=0.7, top_p=0.6, top_k=20, repeat_penalty=1.05
-  # --jinja REQUIRED (chat template needed for proper prompt formatting)
-  # -------------------------------------------
-  "hy-mt2-1.8b":
-    name: "Hy-MT2 1.8B"
-    description: "Tencent translation model — 33 langs, translation-only (Q4_K_M, llama.cpp)"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/Hy-MT2-1.8B-Q4_K_M.gguf
-      --jinja
-      --fit on
-      --fit-target 768
-      --fit-ctx ${small_model_min_ctx}
-      --ctx-size ${small_model_max_ctx}
-      --temp 0.7
-      --top-p 0.6
-      --top-k 20
-      --repeat-penalty 1.05
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
-      --flash-attn on
-      --metrics
-    ttl: 60
-    metadata:
-      size: "~1.1 GB (Q4_K_M)"
-      context: "32K-128K (dynamic)"
-      vram_usage: "~2GB (model + cache)"
-      source: "tencent/Hy-MT2-1.8B-GGUF (Q4_K_M)"
-      kv_cache: "q8_0 + attn_rot"
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: hunyuan-dense
-      parameters: 1790000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: Q4_K_M
-      note: "Translation-only model. No system prompt needed (per Hy-MT2 docs). Official prompt: 'Translate the following text into {target_lang}. Note that you should only output the translated result without any additional explanation:\n\n{source_text}'. Supports terminology, style, personalization, delimiter preservation, and structured data translation. See https://github.com/Tencent-Hunyuan/Hy-MT2 for all prompt formats."
+# -------------------------------------------
+# HY-MT2-1.8B — Tencent Hunyuan Translation Model v2.0
+# Dedicated translation model (33 languages + 5 dialects)
+# Arch: hunyuan_v1_dense — upstream llama.cpp ONLY (no ik support)
+# Potential alternative to TranslateGemma for Sprachspiel translate mode
+# Q4_K_M ~1.1GB — fits entirely in VRAM with room to spare
+# No thinking/reasoning, no tool-calling, translation-only
+# Recommended params: temp=0.7, top_p=0.6, top_k=20, repeat_penalty=1.05
+# --jinja REQUIRED (chat template needed for proper prompt formatting)
+# -------------------------------------------
+"hy-mt2-1.8b":
+  name: "Hy-MT2 1.8B"
+  description: "Tencent translation model — 33 langs, translation-only (Q4_K_M, llama.cpp)"
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/Hy-MT2-1.8B-Q4_K_M.gguf
+    --jinja
+    --fit on
+    --fit-target 768
+    --fit-ctx ${small_model_min_ctx}
+    --ctx-size ${small_model_max_ctx}
+    --temp 0.7
+    --top-p 0.6
+    --top-k 20
+    --repeat-penalty 1.05
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --flash-attn on
+    --metrics
+  ttl: 60
+  metadata:
+    size: "~1.1 GB (Q4_K_M)"
+    context: "32K-128K (dynamic)"
+    vram_usage: "~2GB (model + cache)"
+    source: "tencent/Hy-MT2-1.8B-GGUF (Q4_K_M)"
+    kv_cache: "q8_0 + attn_rot"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: hunyuan-dense
+    parameters: 1790000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: Q4_K_M
+    note: "Translation-only model. No system prompt needed (per Hy-MT2 docs). Official prompt: 'Translate the following text into {target_lang}. Note that you should only output the translated result without any additional explanation:\n\n{source_text}'. Supports terminology, style, personalization, delimiter preservation, and structured data translation. See https://github.com/Tencent-Hunyuan/Hy-MT2 for all prompt formats."

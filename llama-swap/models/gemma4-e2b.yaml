@@ -1,55 +1,55 @@
-  "gemma4-e2b":
-    name: "Gemma 4 E2B"
-    description: "Compact on-device multimodal reasoning with text, image, and audio"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-E2B-it-UD-Q3_K_XL.gguf
-      --no-mmproj
-      --fit on
-      --fit-target 1024
-      --fit-ctx ${small_model_min_ctx}
-      --ctx-size ${small_model_max_ctx}
-      --temp 0.7
-      --top-p 0.9
-      --top-k 40
-      --min-p 0.01
-      --repeat-penalty 1.0
-      --reasoning on
-      --cache-type-k ${gemma_cache_k}
-      --cache-type-v ${gemma_cache_v}
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    metadata:
-      size: "~2.72 GB (UD-Q3_K_XL Dynamic 2.0)"
-      context: "32K-128K (dynamic)"
-      vram_usage: "~3GB"
-      source: "unsloth/gemma-4-E2B-it-GGUF (UD-Q3_K_XL)"
-      kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: gemma4
-      parameters: 4650000000
-      context_length: 131072
-      embedding_length: 1536
-      quantization: Q3_K_XL
+"gemma4-e2b":
+  name: "Gemma 4 E2B"
+  description: "Compact on-device multimodal reasoning with text, image, and audio"
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/gemma-4-E2B-it-UD-Q3_K_XL.gguf
+    --no-mmproj
+    --fit on
+    --fit-target 1024
+    --fit-ctx ${small_model_min_ctx}
+    --ctx-size ${small_model_max_ctx}
+    --temp 0.7
+    --top-p 0.9
+    --top-k 40
+    --min-p 0.01
+    --repeat-penalty 1.0
+    --reasoning on
+    --cache-type-k ${gemma_cache_k}
+    --cache-type-v ${gemma_cache_v}
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 60
+  metadata:
+    size: "~2.72 GB (UD-Q3_K_XL Dynamic 2.0)"
+    context: "32K-128K (dynamic)"
+    vram_usage: "~3GB"
+    source: "unsloth/gemma-4-E2B-it-GGUF (UD-Q3_K_XL)"
+    kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: gemma4
+    parameters: 4650000000
+    context_length: 131072
+    embedding_length: 1536
+    quantization: Q3_K_XL

@@ -1,68 +1,68 @@
-  # -------------------------------------------
-  # LFM2.5-8B-A1B MoE - UPSTREAM backend (lfm2moe hybrid conv+attention)
-  # 8.3B total / 1.5B active, 32 experts x top-4, 18 conv + 6 GQA layers
-  # Context: 131K (128K rope), vocab 128K, reasoning + tool calling
-  # Recommended: temp=0.2, top_p=0.8, rep_penalty=1.05
-  # Backend: upstream llama.cpp (BeeLlama segfaults on LFM2.5, works fine on LFM2)
-  # NOTE: TurboQuant INCOMPATIBLE (all turbo types have block_size=128, head_dim=64 doesn't divide)
-  # NOTE: ik_llama does NOT support lfm2moe (no conv/ssm/gated_delta_net kernels)
-  # NOTE: GGUF ships with EMPTY chat_template — must use --chat-template-file with the Jinja
-  # NOTE: --reasoning-format deepseek parses  tags into reasoning_content field
-  # -------------------------------------------
-  "lfm2.5-8b-moe":
-    name: "LFM2.5-8B-A1B"
-    description: "Liquid AI MoE hybrid 8.3B/1.5B active, conv+GQA, reasoning + tool calling (upstream)"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/LFM2.5-8B-A1B-Q4_0.gguf
-      --fit on
-      --fit-ctx 16384
-      --ctx-size 131072
-      --parallel 1
-      --no-cont-batching
-      --reasoning-format deepseek-legacy
-      --reasoning on
-      --chat-template-file /home/alchemist/git/ai-dotfiles/llama-swap/templates/lfm2.5-chat-template.jinja
-      --temp 0.2
-      --top-p 0.8
-      --top-k 40
-      --min-p 0.15
-      --repeat-penalty 1.05
-      --cache-type-k q8_0
-      --cache-type-v q4_0
-      --flash-attn on
-      --n-predict -1
-      --jinja
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          temperature: 0.2
-          min_p: 0.15
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.3
-    ttl: 60
-    metadata:
-      size: "~4.84 GB (Q4_0)"
-      context: "128K"
-      vram_usage: "~5.5GB VRAM (4.84 GB model + KV)"
-      source: "LiquidAI/LFM2.5-8B-A1B-GGUF"
-      kv_cache: "q8_0 (K) + q4_0 (V) — TurboQuant INCOMPATIBLE (all blocks=128, head_dim=64)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: lfm2moe
-      parameters: 8470000000
-      context_length: 128000
-      embedding_length: 2048
-      quantization: Q4_0
-      note: "Pet project — MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek."
+# -------------------------------------------
+# LFM2.5-8B-A1B MoE - UPSTREAM backend (lfm2moe hybrid conv+attention)
+# 8.3B total / 1.5B active, 32 experts x top-4, 18 conv + 6 GQA layers
+# Context: 131K (128K rope), vocab 128K, reasoning + tool calling
+# Recommended: temp=0.2, top_p=0.8, rep_penalty=1.05
+# Backend: upstream llama.cpp (BeeLlama segfaults on LFM2.5, works fine on LFM2)
+# NOTE: TurboQuant INCOMPATIBLE (all turbo types have block_size=128, head_dim=64 doesn't divide)
+# NOTE: ik_llama does NOT support lfm2moe (no conv/ssm/gated_delta_net kernels)
+# NOTE: GGUF ships with EMPTY chat_template — must use --chat-template-file with the Jinja
+# NOTE: --reasoning-format deepseek parses  tags into reasoning_content field
+# -------------------------------------------
+"lfm2.5-8b-moe":
+  name: "LFM2.5-8B-A1B"
+  description: "Liquid AI MoE hybrid 8.3B/1.5B active, conv+GQA, reasoning + tool calling (upstream)"
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/LFM2.5-8B-A1B-Q4_0.gguf
+    --fit on
+    --fit-ctx 16384
+    --ctx-size 131072
+    --parallel 1
+    --no-cont-batching
+    --reasoning-format deepseek-legacy
+    --reasoning on
+    --chat-template-file /home/alchemist/git/ai-dotfiles/llama-swap/templates/lfm2.5-chat-template.jinja
+    --temp 0.2
+    --top-p 0.8
+    --top-k 40
+    --min-p 0.15
+    --repeat-penalty 1.05
+    --cache-type-k q8_0
+    --cache-type-v q4_0
+    --flash-attn on
+    --n-predict -1
+    --jinja
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 0.2
+        min_p: 0.15
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.3
+  ttl: 60
+  metadata:
+    size: "~4.84 GB (Q4_0)"
+    context: "128K"
+    vram_usage: "~5.5GB VRAM (4.84 GB model + KV)"
+    source: "LiquidAI/LFM2.5-8B-A1B-GGUF"
+    kv_cache: "q8_0 (K) + q4_0 (V) — TurboQuant INCOMPATIBLE (all blocks=128, head_dim=64)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: lfm2moe
+    parameters: 8470000000
+    context_length: 128000
+    embedding_length: 2048
+    quantization: Q4_0
+    note: "Pet project — MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek."

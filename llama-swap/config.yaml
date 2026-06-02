@@ -32,24 +32,24 @@ globalTTL: 0
 macros:
   "models_dir": "${env.HOME}/.llama-models"
   "media_path": "${env.HOME}/testfiles/vision"
-  
+
   # Caminho para o llama-server compilado com CUDA (--fit disponível)
   # Build local em ~/git/llama.cpp/build/bin/llama-server
   "llama_server": "${env.HOME}/git/llama.cpp/build/bin/llama-server"
-  
+
   # Caminho para ik_llama.cpp — fork otimizado para MoE (pinned memory, faster expert offload)
   # Build local em ~/git/ik_llama.cpp/build/bin/llama-server
   "ik_llama_server": "${env.HOME}/git/ik_llama.cpp/build/bin/llama-server"
-  
+
   # Caminho para BeeLlama.cpp — fork com DFlash speculative decoding + TurboQuant KV cache
   # Build local em ~/git/beellama.cpp/build/bin/llama-server
   # NOTA: Bee não tem --fit/--fit-margin. Usar --n-gpu-layers 99 para modelos que cabem na VRAM.
   # Requer LD_LIBRARY_PATH apontando para ~/git/beellama.cpp/build/bin/ (libs .so do Bee) — MAS o RPATH já está setado no binário
   "bee_server": "${env.HOME}/git/beellama.cpp/build/bin/llama-server"
-  
+
   # Caminho para o vLLM (installed in ~/.vllm venv)
   "vllm_bin": "${env.HOME}/.vllm/bin/vllm"
-  
+
   # ===========================================
   # PARÂMETROS DE INFERÊNCIA (baseados no Unsloth)
   # ===========================================
@@ -58,37 +58,34 @@ macros:
   # Gemma: temp 0.7, top_p 0.9
   # Referência: https://unsloth.ai/docs/models/qwen3.5
   # ===========================================
-  
   # Parâmetros padrão (uso geral)
   "default_temp": "0.7"
   "default_top_p": "0.9"
   "default_top_k": "20"
   "default_min_p": "0.01"
   "default_repeat_penalty": "1.05"
-  
+
   # Parâmetros para código/tool-calling (mais determinístico)
   "code_temp": "0.6"
   "code_top_p": "0.85"
   "code_top_k": "40"
   "code_min_p": "0.02"
   "code_repeat_penalty": "1.05"
-  
+
   # Parâmetros para thinking/reasoning
   "think_temp": "0.6"
   "think_top_p": "0.9"
   "think_top_k": "20"
   "think_min_p": "0.0"
   "think_repeat_penalty": "1.0"
-  
+
   # Contexto para modelos pequenos (cabem inteiros na VRAM)
   # fit-ctx: mínimo garantido, ctx-size: máximo teto
   "small_model_min_ctx": "65536"   # 64K mínimo (tool-calling/agentes)
   "small_model_max_ctx": "131072"  # 128K máximo
-  
   # Contexto para modelos grandes (requerem offload)
   "large_model_min_ctx": "65536"   # 64K mínimo (tool-calling/agentes)
   "large_model_max_ctx": "131072"  # 128K máximo
-  
   # Margem de segurança para VRAM (MiB) - usada pelo --fit-target
   "vram_margin": "512"
 
@@ -125,16 +122,12 @@ macros:
   "large_cache_v": "q4_0"
   "gemma_cache_k": "q4_0"
   "gemma_cache_v": "q4_0"
-# ===========================================
-# MODELOS (nomes estilo Ollama: modelo:tamanho)
-# ===========================================
 models:
-
-  # -------------------------------------------
-  # QWEN3.5-0.8B - vLLM BACKEND (PAUSADO — venv + HF models deletados)
-  # Restaurar: pip install vllm em ~/.vllm, HF models re-downloaded no primeiro serve
-  # UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
-  # -------------------------------------------
+# -------------------------------------------
+# QWEN3.5-0.8B - vLLM BACKEND (PAUSADO — venv + HF models deletados)
+# Restaurar: pip install vllm em ~/.vllm, HF models re-downloaded no primeiro serve
+# UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
+# -------------------------------------------
   "qwen3.5-0.8b-vllm":
     unlisted: true
     name: "Qwen3.5 0.8B (vLLM)"
@@ -176,12 +169,11 @@ models:
       context_length: 262144
       embedding_length: 768
       quantization: UD-Q3_K_XL
-
-  # -------------------------------------------
-  # LFM2.5-1.2B-INSTRUCT - vLLM BACKEND (PAUSADO — venv + HF models deletados)
-  # Restaurar: pip install vllm em ~/.vllm, HF models re-downloaded no primeiro serve
-  # UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
-  # -------------------------------------------
+# -------------------------------------------
+# LFM2.5-1.2B-INSTRUCT - vLLM BACKEND (PAUSADO — venv + HF models deletados)
+# Restaurar: pip install vllm em ~/.vllm, HF models re-downloaded no primeiro serve
+# UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
+# -------------------------------------------
   "lfm2.5-1.2b-vllm":
     unlisted: true
     name: "LFM2.5 1.2B Instruct (vLLM)"
@@ -219,12 +211,11 @@ models:
       context_length: 128000
       embedding_length: 1536
       quantization: Q4_K_M
-
-  # -------------------------------------------
-  # SGLANG BACKEND (PAUSADO — venv ~/.sglang-venv deletado)
-  # Restaurar: pip install sglang em ~/.sglang-venv, HF models re-downloaded
-  # UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
-  # -------------------------------------------
+# -------------------------------------------
+# SGLANG BACKEND (PAUSADO — venv ~/.sglang-venv deletado)
+# Restaurar: pip install sglang em ~/.sglang-venv, HF models re-downloaded
+# UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
+# -------------------------------------------
   "lfm2.5-sgl":
     unlisted: true
     name: "LFM2.5 1.2B (SGLang)"
@@ -261,14 +252,13 @@ models:
       context_length: 128000
       embedding_length: 2048
       quantization: Q4_0
-
-  # -------------------------------------------
-  # QWEN3.5-4B - Bee BACKEND (TurboQuant KV cache)
-  # Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
-  # head_dim=256 → attn_rot ✅
-  # --n-gpu-layers 99: model fits entirely in 6GB VRAM at Q3_XL (2.27GB model + cache)
-  # Original upstream config moved to _disabled/qwen3.5-4b.yaml (q8_0 cache + --fit)
-  # -------------------------------------------
+# -------------------------------------------
+# QWEN3.5-4B - Bee BACKEND (TurboQuant KV cache)
+# Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
+# head_dim=256 → attn_rot ✅
+# --n-gpu-layers 99: model fits entirely in 6GB VRAM at Q3_XL (2.27GB model + cache)
+# Original upstream config moved to _disabled/qwen3.5-4b.yaml (q8_0 cache + --fit)
+# -------------------------------------------
   "qwen3.5-4b":
     name: "Qwen3.5 4B"
     description: "TurboQuant KV cache — turbo3_tcq, 5x compression (Bee backend)"
@@ -326,17 +316,16 @@ models:
       embedding_length: 2560
       quantization: Q3_K_XL
       warning: "TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99)."
-
-  # -------------------------------------------
-  # QWEN3.5-9B - ik BACKEND (Hadamard KV cache)
-  # Dense 9B params, UD-Q3_K_XL ~5.05GB.
-  # Bee/TurboQuant segfaults with this model — use ik with hadamard instead.
-  # --flash-attn auto: disables FA on short contexts for MoE/offload savings
-  # KV cache: q8_0 (K) + q4_0 (V) + hadamard = quality near-fp16
-  # --fit on --fit-target 512: dynamic GPU offload
-  # Dual mode: base (chat, no think) and :think (reasoning)
-  # Bee backup: _disabled/qwen3.5-9b-bee.yaml (seg fault with turbo3_tcq)
-  # -------------------------------------------
+# -------------------------------------------
+# QWEN3.5-9B - ik BACKEND (Hadamard KV cache)
+# Dense 9B params, UD-Q3_K_XL ~5.05GB.
+# Bee/TurboQuant segfaults with this model — use ik with hadamard instead.
+# --flash-attn auto: disables FA on short contexts for MoE/offload savings
+# KV cache: q8_0 (K) + q4_0 (V) + hadamard = quality near-fp16
+# --fit on --fit-target 512: dynamic GPU offload
+# Dual mode: base (chat, no think) and :think (reasoning)
+# Bee backup: _disabled/qwen3.5-9b-bee.yaml (seg fault with turbo3_tcq)
+# -------------------------------------------
   "qwen3.5-9b":
     name: "Qwen3.5 9B"
     description: "Multimodal reasoning, coding, and agentic chat (ik + hadamard)"
@@ -395,14 +384,12 @@ models:
       context_length: 262144
       embedding_length: 4096
       quantization: Q3_K_XL
-        # vision: disabled temporarily — mmproj + fit doesn't handle offload yet
       warning: "Vision disabled temporarily. Bee/TurboQuant segfaults with this model — use ik backend."
-
-  # -------------------------------------------
-  # GEMMA-4-E4B - ik BACKEND (Hadamard KV cache)
-  # Upstream config with q4_0 cache. Bee/TurboQuant was slower (36 vs 40 tok/s).
-  # Switched from upstream to ik for -khad/-vhad quality improvement.
-  # -------------------------------------------
+# -------------------------------------------
+# GEMMA-4-E4B - ik BACKEND (Hadamard KV cache)
+# Upstream config with q4_0 cache. Bee/TurboQuant was slower (36 vs 40 tok/s).
+# Switched from upstream to ik for -khad/-vhad quality improvement.
+# -------------------------------------------
   "gemma4-e4b":
     name: "Gemma 4 E4B"
     description: "On-device multimodal reasoning with text, image, and audio understanding (ik + hadamard)"
@@ -460,9 +447,7 @@ models:
       context_length: 131072
       embedding_length: 2560
       quantization: Q3_K_XL
-        # vision: disabled — mmproj crashes on CUDA (issue #21402)
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."
-
   "gemma4-e2b":
     name: "Gemma 4 E2B"
     description: "Compact on-device multimodal reasoning with text, image, and audio"
@@ -518,17 +503,16 @@ models:
       context_length: 131072
       embedding_length: 1536
       quantization: Q3_K_XL
-
-  # -------------------------------------------
-  # LFM2.5-1.2B-INSTRUCT - DENSE HYBRID (CONV + GQA)
-  # Liquid AI's 1.2B dense instruct model — best tool-calling / agentic
-  # Treinado em 28T tokens + RL. Melhor pra tool-calling (sem CoT forçado).
-  # Tool calling reliability: CONSISTENT — best LFM2 for agentic tasks
-  # Liquid AI recommends: temp=0.3, min_p=0.15, repeat_penalty=1.05
-  # head_dim=64 → attn_rot ✅ (64%64==0)
-  # Architecture: lfm2 (upstream llama.cpp b8145+)
-  # Q8_0 ~1.25GB — practically lossless, still fits entirely in VRAM
-  # -------------------------------------------
+# -------------------------------------------
+# LFM2.5-1.2B-INSTRUCT - DENSE HYBRID (CONV + GQA)
+# Liquid AI's 1.2B dense instruct model — best tool-calling / agentic
+# Treinado em 28T tokens + RL. Melhor pra tool-calling (sem CoT forçado).
+# Tool calling reliability: CONSISTENT — best LFM2 for agentic tasks
+# Liquid AI recommends: temp=0.3, min_p=0.15, repeat_penalty=1.05
+# head_dim=64 → attn_rot ✅ (64%64==0)
+# Architecture: lfm2 (upstream llama.cpp b8145+)
+# Q8_0 ~1.25GB — practically lossless, still fits entirely in VRAM
+# -------------------------------------------
   "lfm2.5-1.2b":
     unlisted: true
     name: "LFM2.5 1.2B Instruct"
@@ -571,8 +555,7 @@ models:
       context_length: 128000
       embedding_length: 1536
       quantization: Q4_K_M
-
-  # Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM
+# Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM
   "lfm2.5-vl-450m":
     name: "LFM2.5-VL 450M"
     description: "Edge vision-language model for object detection and captioning"
@@ -617,27 +600,27 @@ models:
       context_length: 128000
       embedding_length: 1024
       quantization: Q8_0
-
-  # -------------------------------------------
-  # WEBWORLD-8B — Web World Model (Qwen3-8B fine-tune)
-  # Qwen/WebWorld-8B — predicts next web page state given current state + action
-  # Trained on 1M+ real web interaction trajectories
-  # Architecture: qwen3 — previously segfaulted in ik, FIXED in v4524+
-  # Supports: A11y Tree, HTML, XML, Markdown, NL state representations
-  # Action space: click(bid), fill(bid,text), goto(url), scroll(dx,dy), keyboard_press(key)
-  # NOT a chatbot — requires specialized prompt format (world model system prompt + state/action)
-  # Multi-turn trajectory simulation (30+ steps) must be implemented client-side
-  # Paper: arXiv 2602.14721
-  # i1-Q5_K_M ~5.9GB — fits in VRAM with --fit --fit-margin 768
-  # KV cache: q8_0 (K) + q4_0 (V) + hadamard = near-fp16 quality
-  # Migrated from upstream to ik for -khad/-vhad quality improvement
-  # No tool calling, no vision, no thinking — pure world model for web simulation
-  # Apache 2.0 license
-  # -------------------------------------------
+# -------------------------------------------
+# WEBWORLD-8B — Web World Model (Qwen3-8B fine-tune)
+# Qwen/WebWorld-8B — predicts next web page state given current state + action
+# Trained on 1M+ real web interaction trajectories
+# Architecture: qwen3 — previously segfaulted in ik, FIXED in v4524+
+# Supports: A11y Tree, HTML, XML, Markdown, NL state representations
+# Action space: click(bid), fill(bid,text), goto(url), scroll(dx,dy), keyboard_press(key)
+# NOT a chatbot — requires specialized prompt format (world model system prompt + state/action)
+# Multi-turn trajectory simulation (30+ steps) must be implemented client-side
+# Paper: arXiv 2602.14721
+# i1-Q5_K_M ~5.9GB — fits in VRAM with --fit --fit-margin 768
+# KV cache: q8_0 (K) + q4_0 (V) + hadamard = near-fp16 quality
+# Migrated from upstream to ik for -khad/-vhad quality improvement
+# No tool calling, no vision, no thinking — pure world model for web simulation
+# Apache 2.0 license
+# -------------------------------------------
   "webworld-8b":
     name: "WebWorld 8B"
     description: "Web world model, predicts next page state (ik + hadamard)"
-    tags: ["world-model"]
+    tags:
+      - "world-model"
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/WebWorld-8B.i1-Q5_K_M.gguf
@@ -680,20 +663,19 @@ models:
       embedding_length: 4096
       quantization: Q5_K_M
       warning: "Not a chatbot — requires specialized world model prompts. ik backend (was upstream, qwen3 segfault fixed in v4524)."
-
-  # -------------------------------------------
-  # GEMMA-4-26B-A4B - MoE REASONING + CODING (APEX I-Compact)
-  # MoE 26B params, 4B ativo por token. 128 experts, top-8 routing.
-  # Google recomenda: temp=1.0 para reasoning, temp=0.7 para coding
-  # Variantes via setParamsByID: base (chat), :think (reasoning)
-  # APEX I-Compact ~15.5GB — mixed-precision MoE quant com imatrix diversa
-  #   (edges Q4_K, middle Q3_K, shared experts Q6_K, attention Q4_K)
-  #   Perplexity comparable to Q8_0, real-world benchmarks better than UD-Q3_K_XL
-  # head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
-  # mmproj crashes on CUDA (bug #21402) → text-only
-  # Architecture: gemma4 (Gemma4ForCausalLM)
-  # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-  # -------------------------------------------
+# -------------------------------------------
+# GEMMA-4-26B-A4B - MoE REASONING + CODING (APEX I-Compact)
+# MoE 26B params, 4B ativo por token. 128 experts, top-8 routing.
+# Google recomenda: temp=1.0 para reasoning, temp=0.7 para coding
+# Variantes via setParamsByID: base (chat), :think (reasoning)
+# APEX I-Compact ~15.5GB — mixed-precision MoE quant com imatrix diversa
+#   (edges Q4_K, middle Q3_K, shared experts Q6_K, attention Q4_K)
+#   Perplexity comparable to Q8_0, real-world benchmarks better than UD-Q3_K_XL
+# head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
+# mmproj crashes on CUDA (bug #21402) → text-only
+# Architecture: gemma4 (Gemma4ForCausalLM)
+# Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
+# -------------------------------------------
   "gemma4-26b-moe":
     name: "Gemma 4 26B MoE"
     description: "MoE reasoning + coding — 128 experts, 4B active/token (APEX I-Compact)"
@@ -747,27 +729,26 @@ models:
       embedding_length: 2816
       quantization: I-Compact
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (issue #21402). Text-only. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K."
-
-  # -------------------------------------------
-  # QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
-  # MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
-  # 33 experts, top-8 routing. APEX I-Compact ~17.3GB
-  #   Mixed-precision MoE quant com imatrix diversa (chat, code, reasoning, tool-calling)
-  #   Perplexity comparable to Q8_0 (6.669 vs 6.533), beats UD-Q3_K_XL on real benchmarks
-  # --no-mmproj: mmproj ocupa 858MB VRAM e impede partial expert offload.
-  #   Sem mmproj: ALL 41 layers sobem pra GPU (partial expert partition) → 20+ t/s!
-  #   Com mmproj: só ~11 layers em GPU → ~5 t/s. Não vale a pena.
-  # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
-  # Architecture: qwen35moe (Qwen3MoeForCausalLM)
-  # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-  # --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4496+). Use long form (not --mtp).
-  # --fit-margin 768: reserves ~0.75 GiB for desktop (Hyprland+browser+Kitty ~1.1GB idle)
-  #   Keeps model at ~80-83% VRAM, more GPU layers than 1536 for faster generation
-  #   Tested: densos aguentaram 85% sem issues, MoE should be fine at ~80%
-  # --k-cache-hadamard / --v-cache-hadamard: Hadamard transform before K/V cache quantization → much closer to f16 quality
-  # --defer-experts: defers expert mmap on Linux → faster model loading
-  # --flash-attn auto: disables FA on short prompts (saves overhead on MoE offloaded models)
-  # -------------------------------------------
+# -------------------------------------------
+# QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
+# MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
+# 33 experts, top-8 routing. APEX I-Compact ~17.3GB
+#   Mixed-precision MoE quant com imatrix diversa (chat, code, reasoning, tool-calling)
+#   Perplexity comparable to Q8_0 (6.669 vs 6.533), beats UD-Q3_K_XL on real benchmarks
+# --no-mmproj: mmproj ocupa 858MB VRAM e impede partial expert offload.
+#   Sem mmproj: ALL 41 layers sobem pra GPU (partial expert partition) → 20+ t/s!
+#   Com mmproj: só ~11 layers em GPU → ~5 t/s. Não vale a pena.
+# KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
+# Architecture: qwen35moe (Qwen3MoeForCausalLM)
+# Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
+# --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4496+). Use long form (not --mtp).
+# --fit-margin 768: reserves ~0.75 GiB for desktop (Hyprland+browser+Kitty ~1.1GB idle)
+#   Keeps model at ~80-83% VRAM, more GPU layers than 1536 for faster generation
+#   Tested: densos aguentaram 85% sem issues, MoE should be fine at ~80%
+# --k-cache-hadamard / --v-cache-hadamard: Hadamard transform before K/V cache quantization → much closer to f16 quality
+# --defer-experts: defers expert mmap on Linux → faster model loading
+# --flash-attn auto: disables FA on short prompts (saves overhead on MoE offloaded models)
+# -------------------------------------------
   "qwen3.6-35b-moe":
     name: "Qwen3.6 35B MoE"
     description: "Efficient MoE for agentic coding — 3B active/token (APEX I-Compact)"
@@ -830,18 +811,17 @@ models:
       embedding_length: 2048
       quantization: I-Compact
       warning: "Vision disabled — mmproj blocks partial expert offload (11→41 layers GPU). Text-only = 33-34 t/s vs 5 t/s with vision. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. Pinned memory gives constant speed up to 200K tokens. --defer-experts speeds up model loading. --flash-attn auto saves overhead on short prompts."
-
-  # -------------------------------------------
-  # QWOPUS3.5-9B-CODER - DENSE AGENTIC CODING (text-only, no vision)
-  # Qwen3.5-9B fine-tuned by Jackrong with Trace Inversion + agent traces SFT.
-  # Dense 9B params (all active per token), Q4_K_M ~5.63GB.
-  # Specialized for agentic coding and tool-calling — stronger than base Qwen3.5-9B for agent loops.
-  # Uses ik_llama.cpp: pinned memory for better offload performance.
-  # mmproj exists (880MB F16) but blocks partial expert offload → text-only.
-  # head_dim=256 → attn_rot ✅ (256%64==0)
-  # KV cache: k=q8_0 (precision for dense), v=q4_0 (save VRAM)
-  # Dual mode: base (chat, no think) and :think (reasoning)
-  # -------------------------------------------
+# -------------------------------------------
+# QWOPUS3.5-9B-CODER - DENSE AGENTIC CODING (text-only, no vision)
+# Qwen3.5-9B fine-tuned by Jackrong with Trace Inversion + agent traces SFT.
+# Dense 9B params (all active per token), Q4_K_M ~5.63GB.
+# Specialized for agentic coding and tool-calling — stronger than base Qwen3.5-9B for agent loops.
+# Uses ik_llama.cpp: pinned memory for better offload performance.
+# mmproj exists (880MB F16) but blocks partial expert offload → text-only.
+# head_dim=256 → attn_rot ✅ (256%64==0)
+# KV cache: k=q8_0 (precision for dense), v=q4_0 (save VRAM)
+# Dual mode: base (chat, no think) and :think (reasoning)
+# -------------------------------------------
   "qwopus-coder-9b":
     name: "Qwopus 9B Coder"
     description: "Agentic coding and tool-calling specialist (Trace Inversion + agent traces)"
@@ -902,43 +882,43 @@ models:
       embedding_length: 4096
       quantization: Q4_K_M
       warning: "Vision disabled — mmproj (880MB F16) blocks partial offload. Text-only = max GPU layers = max speed. Dense 9B = all params active per token (slower per token than MoE, but stronger for agentic)."
-
-  # -------------------------------------------
-  # LITTLELAMB 0.3B TC — Ultra-light tool-calling model
-  # Compressed from Qwen3-0.6B to 290M params via CompactifAI (50% compression)
-  # Architecture: qwen3 — causes SEGFAULT in ik_llama.cpp, use upstream
-  # Q8_0 ~303 MB — fits ENTIRELY in VRAM with room to spare
-  # Tool calling: Qwen3-style JSON format, BFCL v4 51.5%
-  # 40K context, English only for tool-calling variant
-  # Dual mode: base (chat, no think) and :think (reasoning)
-  # Uses ${llama_server} (upstream) — ik_llama.cpp segfaults with this model
-  # NOTE: BFCL 51.5% is low — test if sufficient for simple agentic loops
-  # Apache 2.0 license
-  # -------------------------------------------
+# -------------------------------------------
+# LITTLELAMB 0.3B TC — Ultra-light tool-calling model
+# Compressed from Qwen3-0.6B to 290M params via CompactifAI (50% compression)
+# Architecture: qwen3 — causes SEGFAULT in ik_llama.cpp, use upstream
+# Q8_0 ~303 MB — fits ENTIRELY in VRAM with room to spare
+# Tool calling: Qwen3-style JSON format, BFCL v4 51.5%
+# 40K context, English only for tool-calling variant
+# Dual mode: base (chat, no think) and :think (reasoning)
+# Uses ${llama_server} (upstream) — ik_llama.cpp segfaults with this model
+# NOTE: BFCL 51.5% is low — test if sufficient for simple agentic loops
+# Apache 2.0 license
+# -------------------------------------------
   "littlelamb-0.3b-tc":
     name: "LittleLamb 0.3B TC"
     description: "Ultra-light tool-calling, Qwen3-compressed (Q8_0, upstream)"
-    tags: ["tools"]
+    tags:
+      - "tools"
     cmd: |
-        ${llama_server} --port ${PORT}
-        --model ${models_dir}/LittleLamb-ToolCalling.Q8_0.gguf
-        --jinja
-        --fit on
-        --fit-target 768
-        --fit-ctx ${small_model_min_ctx}
-        --ctx-size 40960
-        --parallel 4
-        --cont-batching
-        --temp ${code_temp}
-        --top-p ${code_top_p}
-        --top-k ${code_top_k}
-        --min-p ${code_min_p}
-        --repeat-penalty ${code_repeat_penalty}
-        --reasoning on
-        --cache-type-k ${small_cache_k}
-        --cache-type-v ${small_cache_v}
-        --flash-attn on
-        --metrics
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/LittleLamb-ToolCalling.Q8_0.gguf
+      --jinja
+      --fit on
+      --fit-target 768
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size 40960
+      --parallel 4
+      --cont-batching
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning on
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
@@ -974,42 +954,42 @@ models:
       embedding_length: 544
       quantization: Q8_0
       warning: "ik_llama.cpp segfaults with this model — use llama.cpp upstream"
-
-  # -------------------------------------------
-  # MINICPM-V 4.6 — VLM (Vision-Language Model)
-  # OpenBMB/Tsinghua, Qwen3.5-0.8B backbone + SigLIP2-400M vision encoder
-  # Architecture: qwen35 (text) + clip (mmproj) — supported in llama.cpp v528+
-  # 1.3B total params — video+image+text, 256K context, LLaVA-UHD v4 compression
-  # Uses ${llama_server} (upstream) — mmproj uses libmtmd multimodal pipeline
-  # Q5_K_M ~552 MB + mmproj F16 ~1.1 GB — fits in VRAM with --fit
-  # Dual mode: base (chat, no think) and :think (reasoning)
-  # Apache 2.0 license
-  # -------------------------------------------
+# -------------------------------------------
+# MINICPM-V 4.6 — VLM (Vision-Language Model)
+# OpenBMB/Tsinghua, Qwen3.5-0.8B backbone + SigLIP2-400M vision encoder
+# Architecture: qwen35 (text) + clip (mmproj) — supported in llama.cpp v528+
+# 1.3B total params — video+image+text, 256K context, LLaVA-UHD v4 compression
+# Uses ${llama_server} (upstream) — mmproj uses libmtmd multimodal pipeline
+# Q5_K_M ~552 MB + mmproj F16 ~1.1 GB — fits in VRAM with --fit
+# Dual mode: base (chat, no think) and :think (reasoning)
+# Apache 2.0 license
+# -------------------------------------------
   "minicpm-v-4.6":
     name: "MiniCPM-V 4.6"
     description: "VLM Qwen3.5-0.8B + SigLIP2-400M, video+image+text (Q5_K_M, llama.cpp)"
-    tags: ["vision"]
+    tags:
+      - "vision"
     cmd: |
-        ${llama_server} --port ${PORT}
-        --model ${models_dir}/MiniCPM-V-4_6-Q5_K_M.gguf
-        --mmproj ${models_dir}/mmproj-MiniCPM-V-4.6-F16.gguf
-        --media-path ${media_path}
-        --jinja
-        --fit on
-        --fit-ctx 8192
-        --ctx-size 262144
-        --parallel 4
-        --cont-batching
-        --temp ${default_temp}
-        --top-p 0.8
-        --top-k 100
-        --min-p ${default_min_p}
-        --repeat-penalty 1.05
-        --reasoning on
-        --cache-type-k f16
-        --cache-type-v f16
-        --flash-attn on
-        --metrics
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/MiniCPM-V-4_6-Q5_K_M.gguf
+      --mmproj ${models_dir}/mmproj-MiniCPM-V-4.6-F16.gguf
+      --media-path ${media_path}
+      --jinja
+      --fit on
+      --fit-ctx 8192
+      --ctx-size 262144
+      --parallel 4
+      --cont-batching
+      --temp ${default_temp}
+      --top-p 0.8
+      --top-k 100
+      --min-p ${default_min_p}
+      --repeat-penalty 1.05
+      --reasoning on
+      --cache-type-k f16
+      --cache-type-v f16
+      --flash-attn on
+      --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
@@ -1044,50 +1024,49 @@ models:
       context_length: 262144
       embedding_length: 1024
       quantization: Q5_K_M
+# -------------------------------------------
+# NANBEIGE4.1-3B — BOSS Zhipin dense reasoning + agentic coding model
+# Dense 3B params (4B total with embeddings), 32 layers, GQA 20Q/4KV
+# Architecture: LlamaForCausalLM (llama) — supported in ALL backends
+# Trained on 23T tokens + SFT + RL (reasoning, alignment, agentic deep-search)
+# head_dim=128 → attn_rot ✅ (128%64==0)
+# Q4_K_M ~1.8 GB — fits entirely in VRAM with room for KV cache
+# Vocab: 166,144 (larger than Qwen3.5's 151K — slightly larger tokenizer, no perf impact)
+# 256K context, Apache 2.0 license
 
-  # -------------------------------------------
-  # NANBEIGE4.1-3B — BOSS Zhipin dense reasoning + agentic coding model
-  # Dense 3B params (4B total with embeddings), 32 layers, GQA 20Q/4KV
-  # Architecture: LlamaForCausalLM (llama) — supported in ALL backends
-  # Trained on 23T tokens + SFT + RL (reasoning, alignment, agentic deep-search)
-  # head_dim=128 → attn_rot ✅ (128%64==0)
-  # Q4_K_M ~1.8 GB — fits entirely in VRAM with room for KV cache
-  # Vocab: 166,144 (larger than Qwen3.5's 151K — slightly larger tokenizer, no perf impact)
-  # 256K context, Apache 2.0 license
-  #
-  # Tool calling: uses XML <func_call> tags with JSON {name, arguments}
-  #   llama.cpp + --jinja parses these correctly into OpenAI-compatible format
-  #   Tested: 4 parallel tool calls (2 weather + 2 time) — all succeeded
-  #   Agentic reasoning pattern: pre-tool planning → batch calls → post-tool analysis → response
-  #
-  # ⚠️ MULTI-TURN TOOL CALLING BUG (llama.cpp upstream, affects ALL backends):
-  #   First round of tool calls works perfectly. On SECOND round (assistant generates
-  #   reasoning + tool calls after receiving tool results), the model leaks XML <func_call>
-  #   tags as verbatim text in content instead of structured tool_calls.
-  #   Root cause: llama.cpp peg-native parser fails to extract tool calls from reasoning
-  #   blocks in multi-turn conversations. Same bug affects Qwen3.5/3.6 (llama.cpp #20837,
-  #   #22684 — both OPEN, no fix merged yet). BeeLlama.cpp and ik_llama.cpp share the
-  #   same parser — switching backends does NOT help.
-  #   WORKAROUND: use for single-turn tool calling or non-agentic tasks only.
-  #   Monitor: https://github.com/ggml-org/llama.cpp/issues/22684
-  #
-  # ⚠️ ALWAYS THINKING (like gpt-oss-20b):
-  #   The template has NO enable_thinking toggle. The model ALWAYS generates reasoning
-  #   with 十六条/第十七条 tags (same format as Qwen3). Use --reasoning on to extract.
-  #   No :think variant (it's always thinking). The only tag exposed is the base model ID.
-  #
-  # ⚠️ BENCHMARK CAVEATS:
-  #   - Self-reported benchmarks show Qwen3-32B-level performance, which is exceptional for 3B
-  #   - Benjamin Marie (Kaitchup) ran CoDeC contamination checks: GPQA at 40.9 (not contaminated)
-  #   - But: learning curves were validated on the same benchmarks (hyperparameter selection)
-  #   - Community confirms model is "genuinely very good" but benchmarks may be inflated
-  #   - Artificial Analysis Intelligence Index: 16 (above 3B median of 8, but below 30B+ models at 25-35)
-  #   - NO independent third-party agentic coding tests (Pacman, HTML game, etc.) exist yet
-  #
-  # Backend: upstream llama.cpp ONLY (dense model, no MoE/MTP tricks needed)
-  # No --no-mmproj needed (text-only model, no vision)
-  # --jinja REQUIRED (chat template is complex with tool calling + reasoning)
-  # -------------------------------------------
+# Tool calling: uses XML <func_call> tags with JSON {name, arguments}
+#   llama.cpp + --jinja parses these correctly into OpenAI-compatible format
+#   Tested: 4 parallel tool calls (2 weather + 2 time) — all succeeded
+#   Agentic reasoning pattern: pre-tool planning → batch calls → post-tool analysis → response
+
+# ⚠️ MULTI-TURN TOOL CALLING BUG (llama.cpp upstream, affects ALL backends):
+#   First round of tool calls works perfectly. On SECOND round (assistant generates
+#   reasoning + tool calls after receiving tool results), the model leaks XML <func_call>
+#   tags as verbatim text in content instead of structured tool_calls.
+#   Root cause: llama.cpp peg-native parser fails to extract tool calls from reasoning
+#   blocks in multi-turn conversations. Same bug affects Qwen3.5/3.6 (llama.cpp #20837,
+#   #22684 — both OPEN, no fix merged yet). BeeLlama.cpp and ik_llama.cpp share the
+#   same parser — switching backends does NOT help.
+#   WORKAROUND: use for single-turn tool calling or non-agentic tasks only.
+#   Monitor: https://github.com/ggml-org/llama.cpp/issues/22684
+
+# ⚠️ ALWAYS THINKING (like gpt-oss-20b):
+#   The template has NO enable_thinking toggle. The model ALWAYS generates reasoning
+#   with 十六条/第十七条 tags (same format as Qwen3). Use --reasoning on to extract.
+#   No :think variant (it's always thinking). The only tag exposed is the base model ID.
+
+# ⚠️ BENCHMARK CAVEATS:
+#   - Self-reported benchmarks show Qwen3-32B-level performance, which is exceptional for 3B
+#   - Benjamin Marie (Kaitchup) ran CoDeC contamination checks: GPQA at 40.9 (not contaminated)
+#   - But: learning curves were validated on the same benchmarks (hyperparameter selection)
+#   - Community confirms model is "genuinely very good" but benchmarks may be inflated
+#   - Artificial Analysis Intelligence Index: 16 (above 3B median of 8, but below 30B+ models at 25-35)
+#   - NO independent third-party agentic coding tests (Pacman, HTML game, etc.) exist yet
+
+# Backend: upstream llama.cpp ONLY (dense model, no MoE/MTP tricks needed)
+# No --no-mmproj needed (text-only model, no vision)
+# --jinja REQUIRED (chat template is complex with tool calling + reasoning)
+# -------------------------------------------
   "nanbeige4.1-3b":
     name: "Nanbeige 4.1 3B"
     description: "Dense reasoning + agentic coding, always thinks (Q4_K_M, llama.cpp)"
@@ -1132,7 +1111,6 @@ models:
       embedding_length: 2560
       quantization: Q4_K_M
       warning: "ALWAYS thinks (no :think toggle). Verbose reasoning (~300+ tokens even for simple tasks). MULTI-TURN TOOL CALL BUG: second round of tool calls leaks XML as text (llama.cpp #22684, no fix yet). Use single-turn tool calling only. Benchmarks promising but may be inflated."
-
 # -------------------------------------------
 # AFM-4.5B (Arcee Fusion Model) - UPSTREAM backend
 # 4.5B dense, Llama-like arch (arcee), Q5_K_M ~3.11 GB
@@ -1195,14 +1173,13 @@ models:
       embedding_length: 2560
       quantization: UD-Q3_K_XL
       note: "Dense 4.5B by Arcee AI. No native thinking. Tool calling requires Hermes 2 Pro template override via --chat-template-file. Uses upstream (ik/Bee lack arcee arch support)."
-
-  # -------------------------------------------
-  # GEMMA-4-E4B - Bee BACKEND (TurboQuant KV cache)
-  # Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
-  # head_dim=256 → attn_rot ✅ (Bee supports iSWA attn_rot for Gemma 4)
-  # --n-gpu-layers 99: model fits entirely in 6GB VRAM at Q3_XL (4.5GB model + cache)
-  # Original upstream config moved to _disabled/gemma4-e4b.yaml (q4_0 cache + --fit)
-  # -------------------------------------------
+# -------------------------------------------
+# GEMMA-4-E4B - Bee BACKEND (TurboQuant KV cache)
+# Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
+# head_dim=256 → attn_rot ✅ (Bee supports iSWA attn_rot for Gemma 4)
+# --n-gpu-layers 99: model fits entirely in 6GB VRAM at Q3_XL (4.5GB model + cache)
+# Original upstream config moved to _disabled/gemma4-e4b.yaml (q4_0 cache + --fit)
+# -------------------------------------------
   "gemma4-e4b-bee":
     unlisted: true
     name: "Gemma 4 E4B"
@@ -1258,7 +1235,6 @@ models:
       embedding_length: 2560
       quantization: UD-Q3_K_XL
       warning: "TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99)."
-
 # -------------------------------------------
 # GLM-OCR - UPSTREAM BACKEND (mmproj required)
 # GLM-4V-based OCR/Vision specialist — #1 on OmniDocBench V1.5 (94.62 score)
@@ -1314,22 +1290,21 @@ models:
         audio: false
         image: false
       note: "Specialized OCR model — use prompts like 'OCR', 'OCR markdown', 'Table Recognition:'. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction."
-
-  # -------------------------------------------
-  # GPT-OSS 20B — OpenAI MoE coding model
-  # MoE: 20.91B params, ~3.5B active per token (top-4/8 experts)
-  # Architecture: OPENAI_MOE (gpt_oss) — supported in llama.cpp v604+ and ik_llama.cpp v4524+
-  # Uses "Harmony" chat format with internal reasoning (always-on, not optional)
-  # Official guide: https://github.com/ggml-org/llama.cpp/discussions/15396
-  # Key ik_llama.cpp flags for limited VRAM (RTX 3050 6GB):
-  #   --defer-experts   — faster model loading, defers expert mmap on Linux
-  #   --k-cache-hadamard / --v-cache-hadamard — better KV cache quality at q4_0
-  #   --flash-attn auto — disables FA on short prompts (saves overhead on offloaded MoE)
-  #   --fit / --fit-margin 768 — partial GPU offload, MoE experts to RAM
-  #   --jinja — required for Harmony template
-  #   --reasoning on — extracts thinking from Harmony format
-  #   -ub 2048 -b 2048 — recommended batch sizes (official guide)
-  # -------------------------------------------
+# -------------------------------------------
+# GPT-OSS 20B — OpenAI MoE coding model
+# MoE: 20.91B params, ~3.5B active per token (top-4/8 experts)
+# Architecture: OPENAI_MOE (gpt_oss) — supported in llama.cpp v604+ and ik_llama.cpp v4524+
+# Uses "Harmony" chat format with internal reasoning (always-on, not optional)
+# Official guide: https://github.com/ggml-org/llama.cpp/discussions/15396
+# Key ik_llama.cpp flags for limited VRAM (RTX 3050 6GB):
+#   --defer-experts   — faster model loading, defers expert mmap on Linux
+#   --k-cache-hadamard / --v-cache-hadamard — better KV cache quality at q4_0
+#   --flash-attn auto — disables FA on short prompts (saves overhead on offloaded MoE)
+#   --fit / --fit-margin 768 — partial GPU offload, MoE experts to RAM
+#   --jinja — required for Harmony template
+#   --reasoning on — extracts thinking from Harmony format
+#   -ub 2048 -b 2048 — recommended batch sizes (official guide)
+# -------------------------------------------
   "gpt-oss-20b":
     name: "GPT-OSS 20B"
     description: "OpenAI MoE 20B coding — Harmony format, always reasons internally"
@@ -1379,18 +1354,17 @@ models:
       embedding_length: 2880
       quantization: Q4_K_M
       warning: "Harmony format: ALWAYS reasons internally (not optional). --reasoning on extracts it properly. MoE offload to RAM — slower than pure GPU models."
-
-  # -------------------------------------------
-  # GRANITE-3.3-8B-INSTRUCT - vLLM BACKEND (DISABLED — 16GB weights, OOM on 6GB VRAM)
-  # IBM Granite 3.3 8B Instruct, dense, Apache 2.0, 12 languages (incl. PT)
-  # Thinking mode: <thinking>/<response> tags, granite reasoning parser
-  # Tool calling: granite4 parser
-  # HF: ibm-granite/granite-3.3-8b-instruct (~16GB BF16 safetensors)
-  # ⚠️ OOM on 6GB VRAM — vLLM has no CPU offload like llama.cpp --fit
-  # Re-activate only on hardware with >=12GB VRAM
-  # -------------------------------------------
-  # UNLISTED: 16GB BF16 weights exceed 6GB VRAM, vLLM has no CPU offload
-  # Restore: hardware with >=12GB VRAM (or quantized vLLM support)
+# -------------------------------------------
+# GRANITE-3.3-8B-INSTRUCT - vLLM BACKEND (DISABLED — 16GB weights, OOM on 6GB VRAM)
+# IBM Granite 3.3 8B Instruct, dense, Apache 2.0, 12 languages (incl. PT)
+# Thinking mode: <thinking>/<response> tags, granite reasoning parser
+# Tool calling: granite4 parser
+# HF: ibm-granite/granite-3.3-8b-instruct (~16GB BF16 safetensors)
+# ⚠️ OOM on 6GB VRAM — vLLM has no CPU offload like llama.cpp --fit
+# Re-activate only on hardware with >=12GB VRAM
+# -------------------------------------------
+# UNLISTED: 16GB BF16 weights exceed 6GB VRAM, vLLM has no CPU offload
+# Restore: hardware with >=12GB VRAM (or quantized vLLM support)
   "granite-3.3-8b-vllm":
     unlisted: true
     name: "Granite 3.3 8B Instruct (vLLM)"
@@ -1431,18 +1405,17 @@ models:
       context_length: 131072
       embedding_length: 4096
       quantization: Q4_K_M
-
-  # -------------------------------------------
-  # GRANITE-4.0-H-1B - llama.cpp BACKEND (Hybrid Mamba-2/Transformer)
-  # IBM Granite 4.0 Nano H 1B, ~1.5B params, dense hybrid
-  # Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + SwiGLU
-  # Thinking mode: <thinking>/<response> via chat template (--reasoning on)
-  # Tool calling: granite4 PEG parser (--jinja)
-  # GGUF: unsloth/granite-4.0-h-1b-GGUF (UD-Q3_K_XL = 708 MB)
-  # Uses granite-4.0 arch — supported in llama.cpp v546+
-  # ✅ Fits entirely in 6GB VRAM with room to spare (~800-900MB)
-  # ✅ ~99 tok/s on RTX 3050 (GGUF vs ~5-10 tok/s with vLLM BF16)
-  # -------------------------------------------
+# -------------------------------------------
+# GRANITE-4.0-H-1B - llama.cpp BACKEND (Hybrid Mamba-2/Transformer)
+# IBM Granite 4.0 Nano H 1B, ~1.5B params, dense hybrid
+# Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + SwiGLU
+# Thinking mode: <thinking>/<response> via chat template (--reasoning on)
+# Tool calling: granite4 PEG parser (--jinja)
+# GGUF: unsloth/granite-4.0-h-1b-GGUF (UD-Q3_K_XL = 708 MB)
+# Uses granite-4.0 arch — supported in llama.cpp v546+
+# ✅ Fits entirely in 6GB VRAM with room to spare (~800-900MB)
+# ✅ ~99 tok/s on RTX 3050 (GGUF vs ~5-10 tok/s with vLLM BF16)
+# -------------------------------------------
   "granite-4.0-h-1b":
     name: "Granite 4.0 H 1B"
     unlisted: true
@@ -1479,16 +1452,15 @@ models:
       context_length: 131072
       embedding_length: 1536
       quantization: Q4_K_M
-
-  # -------------------------------------------
-  # GRANITE-4.0-H-1B - vLLM BACKEND (Hybrid Mamba-2/Transformer)
-  # IBM Granite 4.0 Nano H 1B, ~1.5B params, dense hybrid
-  # Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + SwiGLU
-  # Thinking mode: granite reasoning parser
-  # Tool calling: granite4 parser
-  # HF: ibm-granite/granite-4.0-h-1b (~2.8GB BF16 safetensors)
-  # ✅ Fits in 6GB VRAM with room for KV cache
-  # -------------------------------------------
+# -------------------------------------------
+# GRANITE-4.0-H-1B - vLLM BACKEND (Hybrid Mamba-2/Transformer)
+# IBM Granite 4.0 Nano H 1B, ~1.5B params, dense hybrid
+# Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + SwiGLU
+# Thinking mode: granite reasoning parser
+# Tool calling: granite4 parser
+# HF: ibm-granite/granite-4.0-h-1b (~2.8GB BF16 safetensors)
+# ✅ Fits in 6GB VRAM with room for KV cache
+# -------------------------------------------
   "granite-4.0-h-1b-vllm":
     name: "Granite 4.0 H 1B (vLLM)"
     unlisted: true
@@ -1528,18 +1500,17 @@ models:
       context_length: 131072
       embedding_length: 1536
       quantization: Q4_K_M
-
-  # -------------------------------------------
-  # GRANITE-4.0-H-TINY - vLLM BACKEND (DISABLED — 14GB weights, OOM on 6GB VRAM)
-  # IBM Granite 4.0 H-Tiny, 7B total / 1B active (MoE 64 experts x 6 active)
-  # Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + MoE + SwiGLU
-  # HF: ibm-granite/granite-4.0-h-tiny (~14GB BF16 safetensors)
-  # ⚠️ OOM on 6GB VRAM — vLLM load all 7B params before MoE routing
-  # ⚠️ Mamba-2 hybrid arch — vLLM V0+V1 natively supported (PyTorch blog confirmed)
-  # Re-activate only on hardware with >=12GB VRAM
-  # -------------------------------------------
-  # UNLISTED: 14GB BF16 weights exceed 6GB VRAM, vLLM loads all params
-  # Restore: hardware with >=12GB VRAM
+# -------------------------------------------
+# GRANITE-4.0-H-TINY - vLLM BACKEND (DISABLED — 14GB weights, OOM on 6GB VRAM)
+# IBM Granite 4.0 H-Tiny, 7B total / 1B active (MoE 64 experts x 6 active)
+# Apache 2.0, 12 languages (incl. PT), GQA + Mamba2 + MoE + SwiGLU
+# HF: ibm-granite/granite-4.0-h-tiny (~14GB BF16 safetensors)
+# ⚠️ OOM on 6GB VRAM — vLLM load all 7B params before MoE routing
+# ⚠️ Mamba-2 hybrid arch — vLLM V0+V1 natively supported (PyTorch blog confirmed)
+# Re-activate only on hardware with >=12GB VRAM
+# -------------------------------------------
+# UNLISTED: 14GB BF16 weights exceed 6GB VRAM, vLLM loads all params
+# Restore: hardware with >=12GB VRAM
   "granite-4.0-h-tiny-vllm":
     unlisted: true
     name: "Granite 4.0 H-Tiny (vLLM)"
@@ -1580,12 +1551,12 @@ models:
       context_length: 131072
       embedding_length: 1024
       quantization: Q8_0
-
   "hunyuan-7b":
     unlisted: true
     name: "Hunyuan 7B Instruct"
     description: "Tencent dense 7B — hybrid reasoning, coding, math (Q4_K_M, upstream)"
-    tags: ["hy7"]
+    tags:
+      - "hy7"
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Hunyuan-7B-Instruct-Q4_K_M.gguf
@@ -1641,17 +1612,16 @@ models:
       embedding_length: 4096
       quantization: Q4_K_M
       warning: "Uses hunyuan_v1_dense arch — ONLY llama.cpp upstream, NOT ik_llama.cpp. Tencent Hunyuan Community License (personal use, <100M MAU commercial). DISABLED: reasoning_content bug (llama.cpp doesn't emit it for Hunyuan tags), dense 7B outclassed by Qwen 3.6 35B MoE."
-
-  # -------------------------------------------
-  # HY-MT2-1.8B — Tencent Hunyuan Translation Model v2.0
-  # Dedicated translation model (33 languages + 5 dialects)
-  # Arch: hunyuan_v1_dense — upstream llama.cpp ONLY (no ik support)
-  # Potential alternative to TranslateGemma for Sprachspiel translate mode
-  # Q4_K_M ~1.1GB — fits entirely in VRAM with room to spare
-  # No thinking/reasoning, no tool-calling, translation-only
-  # Recommended params: temp=0.7, top_p=0.6, top_k=20, repeat_penalty=1.05
-  # --jinja REQUIRED (chat template needed for proper prompt formatting)
-  # -------------------------------------------
+# -------------------------------------------
+# HY-MT2-1.8B — Tencent Hunyuan Translation Model v2.0
+# Dedicated translation model (33 languages + 5 dialects)
+# Arch: hunyuan_v1_dense — upstream llama.cpp ONLY (no ik support)
+# Potential alternative to TranslateGemma for Sprachspiel translate mode
+# Q4_K_M ~1.1GB — fits entirely in VRAM with room to spare
+# No thinking/reasoning, no tool-calling, translation-only
+# Recommended params: temp=0.7, top_p=0.6, top_k=20, repeat_penalty=1.05
+# --jinja REQUIRED (chat template needed for proper prompt formatting)
+# -------------------------------------------
   "hy-mt2-1.8b":
     name: "Hy-MT2 1.8B"
     description: "Tencent translation model — 33 langs, translation-only (Q4_K_M, llama.cpp)"
@@ -1693,7 +1663,6 @@ models:
       embedding_length: 2048
       quantization: Q4_K_M
       note: "Translation-only model. No system prompt needed (per Hy-MT2 docs). Official prompt: 'Translate the following text into {target_lang}. Note that you should only output the translated result without any additional explanation:\n\n{source_text}'. Supports terminology, style, personalization, delimiter preservation, and structured data translation. See https://github.com/Tencent-Hunyuan/Hy-MT2 for all prompt formats."
-
   "lfm2-24b":
     unlisted: true
     name: "LFM2 24B"
@@ -1740,17 +1709,16 @@ models:
       embedding_length: 2048
       quantization: Q4_K_M
       warning: "ik_llama.cpp does NOT support lfm2moe arch — running on upstream llama_server without pinned memory. 32K context ceiling (model limitation)."
-
-  # -------------------------------------------
-  # LFM2-8B-A1B MoE - Bee BACKEND (lfm2moe hybrid conv+attention)
-  # 8.3B total / 1.5B active, 32 experts x top-4, 18 conv + 6 GQA layers
-  # Context: 32K (model card says 32,768, not 128K)
-  # Tool calling: yes (ChatML-like with <|tool_list_start|>, <|tool_call_start|>)
-  # Reasoning: no /think mode
-  # Recommended: temp=0.3, min_p=0.15, rep_penalty=1.05
-  # Backend: BeeLlama (has lfm2moe + turbo3_tcq for attention layers)
-  # NOTE: ik_llama does NOT support lfm2moe (no conv/ssm/gated_delta_net kernels)
-  # -------------------------------------------
+# -------------------------------------------
+# LFM2-8B-A1B MoE - Bee BACKEND (lfm2moe hybrid conv+attention)
+# 8.3B total / 1.5B active, 32 experts x top-4, 18 conv + 6 GQA layers
+# Context: 32K (model card says 32,768, not 128K)
+# Tool calling: yes (ChatML-like with <|tool_list_start|>, <|tool_call_start|>)
+# Reasoning: no /think mode
+# Recommended: temp=0.3, min_p=0.15, rep_penalty=1.05
+# Backend: BeeLlama (has lfm2moe + turbo3_tcq for attention layers)
+# NOTE: ik_llama does NOT support lfm2moe (no conv/ssm/gated_delta_net kernels)
+# -------------------------------------------
   "lfm2-8b-moe":
     unlisted: true
     name: "LFM2-8B-A1B"
@@ -1798,7 +1766,6 @@ models:
       embedding_length: 2048
       quantization: Q4_K_M
       note: "Pet project — MoE 1.5B active, hybrid conv+GQA. No /think mode. ik_llama does NOT support lfm2moe."
-
   "lfm2.5-1.2b-think":
     unlisted: true
     name: "LFM2.5 1.2B Thinking"
@@ -1845,19 +1812,17 @@ models:
       embedding_length: 1536
       quantization: Q8_0
       warning: "SEMPRE gera CoT internamente (como gpt-oss-20b). Pior pra tool-calling — use lfm2.5-1.2b (Instruct) para tarefas agenticas."
-  # Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM
-
-  # -------------------------------------------
-  # LFM2.5-8B-A1B MoE - UPSTREAM backend (lfm2moe hybrid conv+attention)
-  # 8.3B total / 1.5B active, 32 experts x top-4, 18 conv + 6 GQA layers
-  # Context: 131K (128K rope), vocab 128K, reasoning + tool calling
-  # Recommended: temp=0.2, top_p=0.8, rep_penalty=1.05
-  # Backend: upstream llama.cpp (BeeLlama segfaults on LFM2.5, works fine on LFM2)
-  # NOTE: TurboQuant INCOMPATIBLE (all turbo types have block_size=128, head_dim=64 doesn't divide)
-  # NOTE: ik_llama does NOT support lfm2moe (no conv/ssm/gated_delta_net kernels)
-  # NOTE: GGUF ships with EMPTY chat_template — must use --chat-template-file with the Jinja
-  # NOTE: --reasoning-format deepseek parses  tags into reasoning_content field
-  # -------------------------------------------
+# -------------------------------------------
+# LFM2.5-8B-A1B MoE - UPSTREAM backend (lfm2moe hybrid conv+attention)
+# 8.3B total / 1.5B active, 32 experts x top-4, 18 conv + 6 GQA layers
+# Context: 131K (128K rope), vocab 128K, reasoning + tool calling
+# Recommended: temp=0.2, top_p=0.8, rep_penalty=1.05
+# Backend: upstream llama.cpp (BeeLlama segfaults on LFM2.5, works fine on LFM2)
+# NOTE: TurboQuant INCOMPATIBLE (all turbo types have block_size=128, head_dim=64 doesn't divide)
+# NOTE: ik_llama does NOT support lfm2moe (no conv/ssm/gated_delta_net kernels)
+# NOTE: GGUF ships with EMPTY chat_template — must use --chat-template-file with the Jinja
+# NOTE: --reasoning-format deepseek parses  tags into reasoning_content field
+# -------------------------------------------
   "lfm2.5-8b-moe":
     name: "LFM2.5-8B-A1B"
     description: "Liquid AI MoE hybrid 8.3B/1.5B active, conv+GQA, reasoning + tool calling (upstream)"
@@ -1915,24 +1880,23 @@ models:
       embedding_length: 2048
       quantization: Q4_0
       note: "Pet project — MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek."
-
-  # -------------------------------------------
-  # MELLUM2-12B-A2.5B-Thinking - IK backend (expert offload)
-  # JetBrains MoE: 12B total / 2.5B active, 64 experts x top-8, SWA 1024, 131K ctx
-  # Architecture: Qwen3-MoE derivative (MellumForCausalLM → registered alias in ik)
-  # Converted manually from BF16 safetensors → F16 GGUF → Q4_K_M (7.6GB)
-  # NOTE: No pre-made GGUF was available — converted in-house 2026-06-01
-  # NOTE: MoE ffn_down_exps dims (896x2304) not divisible by 256 → fallback to q8_0 for those tensors (expected)
-  # NOTE: Uses --mlock for memory pinning (CPU expert offload)
-  # NOTE: Thinking variant emits  reasoning blocks. For fleet agents, consider Instruct (no reasoning trace)
-  # NOTE: --parallel-tool-calls for ik's native parallel tool call support
-  # NOTE: When community GGUF appears (Q4_K_M or better), swap out the manual conversion
-  # NOTE: TOOL CALLING NOT WORKING on Thinking variant with ik. Model has NO embedded
-  #   chat_template and --tool-call-parser hermes (vLLM-only) is not in ik_llama.
-  #   Both Hermes 2 Pro and Qwen3.5 chat-template-file produce garbled output with tools.
-  #   Plain text works (37 tok/s). Instruct variant may work better (no reasoning trace
-  #   contaminating tool call output). Re-test after community GGUF with template available.
-  # -------------------------------------------
+# -------------------------------------------
+# MELLUM2-12B-A2.5B-Thinking - IK backend (expert offload)
+# JetBrains MoE: 12B total / 2.5B active, 64 experts x top-8, SWA 1024, 131K ctx
+# Architecture: Qwen3-MoE derivative (MellumForCausalLM → registered alias in ik)
+# Converted manually from BF16 safetensors → F16 GGUF → Q4_K_M (7.6GB)
+# NOTE: No pre-made GGUF was available — converted in-house 2026-06-01
+# NOTE: MoE ffn_down_exps dims (896x2304) not divisible by 256 → fallback to q8_0 for those tensors (expected)
+# NOTE: Uses --mlock for memory pinning (CPU expert offload)
+# NOTE: Thinking variant emits  reasoning blocks. For fleet agents, consider Instruct (no reasoning trace)
+# NOTE: --parallel-tool-calls for ik's native parallel tool call support
+# NOTE: When community GGUF appears (Q4_K_M or better), swap out the manual conversion
+# NOTE: TOOL CALLING NOT WORKING on Thinking variant with ik. Model has NO embedded
+#   chat_template and --tool-call-parser hermes (vLLM-only) is not in ik_llama.
+#   Both Hermes 2 Pro and Qwen3.5 chat-template-file produce garbled output with tools.
+#   Plain text works (37 tok/s). Instruct variant may work better (no reasoning trace
+#   contaminating tool call output). Re-test after community GGUF with template available.
+# -------------------------------------------
   "mellum2-12b-thinking":
     name: "Mellum2 12B Thinking"
     description: "JetBrains MoE 12B/2.5B active, reasoning (⚠️ tool calling broken — no chat_template)"
@@ -1985,17 +1949,16 @@ models:
       embedding_length: 2048
       quantization: Q4_K_M
       note: "Manual GGUF conversion (2026-06-01). MoE expert offload via ik with --mlock. BFCL v4 45.6%, LiveCodeBench 69.9%. TOOL CALLING BROKEN: no embedded chat_template + --tool-call-parser hermes is vLLM-only. Both Hermes 2 Pro and Qwen3.5 templates produce garbled output with tools. Plain text works (37 tok/s). Instruct variant may work better. Swap for community GGUF when available."
-
-  # -------------------------------------------
-  # MINICPM5-1B — OpenBMB small dense model
-  # LlamaForCausalLM (standard arch), GQA 16Q/2KV, 24 layers
-  # 1.08B params, 131K context, think/no-think dual mode
-  # Tool calling: XML format <function name="X"><param name="Y">val</param></function>
-  # llama.cpp bug #23781: tool calling broken (arg_name_suffix inference)
-  # Chat + think mode work fine; tool calling awaiting upstream fix
-  # Chat template built into GGUF works correctly in llama.cpp v712+
-  # ⚠️ NEVER use custom chat template — causes garbage output
-  # -------------------------------------------
+# -------------------------------------------
+# MINICPM5-1B — OpenBMB small dense model
+# LlamaForCausalLM (standard arch), GQA 16Q/2KV, 24 layers
+# 1.08B params, 131K context, think/no-think dual mode
+# Tool calling: XML format <function name="X"><param name="Y">val</param></function>
+# llama.cpp bug #23781: tool calling broken (arg_name_suffix inference)
+# Chat + think mode work fine; tool calling awaiting upstream fix
+# Chat template built into GGUF works correctly in llama.cpp v712+
+# ⚠️ NEVER use custom chat template — causes garbage output
+# -------------------------------------------
   "minicpm5-1b":
     name: "MiniCPM5 1B"
     description: "Small dense model, think/no-think + broken tool calling (Q8_0)"
@@ -2037,42 +2000,42 @@ models:
       context_length: 131072
       embedding_length: 1536
       quantization: Q8_0
-
-  # -------------------------------------------
-  # MINISTRAL-3-3B — Mistral Small 3.2 family
-  # -------------------------------------------
-  # Dense 3.4B params, text-only (vision/mmproj crashes on CUDA — mistral3 arch)
-  # Mistral's latest edge model — tool calling, 256K context
-  # Architecture: mistral3 — ONLY supported in llama.cpp upstream (NOT ik_llama.cpp)
-  # Uses ${llama_server} (upstream), NOT ${ik_llama_server}
-  # UD-Q5_K_XL: 2.31 GB — fits entirely in VRAM with --fit
-  # --fit on: auto offload layers to GPU, keeps KV cache in VRAM
-  # --parallel 4 --cont-batching: concurrent requests
-  # --ctx-size 131072: 128K context (model supports 256K, 128K practical for 3B)
-  # Tool calling: mistral template (chat_template=ministral_3)
-  # NOTE: mmproj crashes llama-server with CUDA alloc error (~13.9 GB buffer).
-  #   Vision disabled until bug is fixed or mmproj is optimized for mistral3.
-  #   --n-gpu-layers 99 causes OOM with 131K ctx — use --fit on instead.
-  # Apache 2.0 license
+# -------------------------------------------
+# MINISTRAL-3-3B — Mistral Small 3.2 family
+# -------------------------------------------
+# Dense 3.4B params, text-only (vision/mmproj crashes on CUDA — mistral3 arch)
+# Mistral's latest edge model — tool calling, 256K context
+# Architecture: mistral3 — ONLY supported in llama.cpp upstream (NOT ik_llama.cpp)
+# Uses ${llama_server} (upstream), NOT ${ik_llama_server}
+# UD-Q5_K_XL: 2.31 GB — fits entirely in VRAM with --fit
+# --fit on: auto offload layers to GPU, keeps KV cache in VRAM
+# --parallel 4 --cont-batching: concurrent requests
+# --ctx-size 131072: 128K context (model supports 256K, 128K practical for 3B)
+# Tool calling: mistral template (chat_template=ministral_3)
+# NOTE: mmproj crashes llama-server with CUDA alloc error (~13.9 GB buffer).
+#   Vision disabled until bug is fixed or mmproj is optimized for mistral3.
+#   --n-gpu-layers 99 causes OOM with 131K ctx — use --fit on instead.
+# Apache 2.0 license
   "ministral-3-3b":
     name: "Ministral 3 3B"
     unlisted: true
     description: "Edge tool-calling + 128K context (UD-Q5_K_XL, text-only)"
-    tags: ["tools"]
+    tags:
+      - "tools"
     cmd: |
-        ${llama_server} --port ${PORT}
-        --model ${models_dir}/Ministral-3-3B-Instruct-2512-UD-Q5_K_XL.gguf
-        --fit on
-        --fit-ctx 8192
-        --ctx-size 131072
-        --parallel 4
-        --cont-batching
-        --temp ${default_temp}
-        --top-p ${default_top_p}
-        --top-k ${default_top_k}
-        --min-p ${default_min_p}
-        --repeat-penalty ${default_repeat_penalty}
-        --jinja
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Ministral-3-3B-Instruct-2512-UD-Q5_K_XL.gguf
+      --fit on
+      --fit-ctx 8192
+      --ctx-size 131072
+      --parallel 4
+      --cont-batching
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --jinja
     metadata:
       size: "2.31 GB (UD-Q5_K_XL)"
       context: "8K-128K (dynamic via --fit)"
@@ -2094,7 +2057,6 @@ models:
       embedding_length: 3072
       quantization: Q4_K_M
       warning: "Uses mistral3 arch — ONLY runs on llama.cpp upstream, NOT ik_llama.cpp. Vision disabled: mmproj crashes with CUDA OOM on mistral3. --n-gpu-layers 99 causes OOM with 131K ctx, use --fit on instead."
-
 # -------------------------------------------
 # NOMIC-EMBED-TEXT-V2-MOE - UPSTREAM BACKEND (embedding model)
 # 475M params (305M active, MoE top-2/8 experts), 768-dim embeddings with Matryoshka → 256
@@ -2142,18 +2104,17 @@ models:
         audio: false
         image: false
       note: "Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with 'search_query: ' or 'search_document: '. 100+ languages. Matryoshka → 256 dims."
-
-  # -------------------------------------------
-  # ORNSTEIN 3.6-35B-A3B-NSC-ACE-SABER - IK backend (expert offload, Hadamard)
-  # Qwen3.6-35B-A3B fine-tune by GestaltLabs (NSC-ACE + SABER calibration)
-  # Architecture: qwen35moe — same as Qwen3.6-35B-A3B (34.7B total, 3B active, 33 experts top-8)
-  # BFCL tool-calling: +2.87pp over base (95% call rate, 83.54% arg accuracy)
-  # HarmBench compliance: 98.33%, KLD 0.025 (minimal distribution shift)
-  # DISABLED: standard Q4_K_M too large (21.7GB) — APEX I-Compact would reduce to ~16.1GB
-  # Future: convert to APEX I-Compact for better quant + less RAM usage
-  # No MTP variant — running WITHOUT MTP (see references/config-mtp-speculative-decoding.md)
-  # Different quant from Qwen3.6-APEX (standard Q4_K_M vs APEX I-Compact) — compare with care
-  # -------------------------------------------
+# -------------------------------------------
+# ORNSTEIN 3.6-35B-A3B-NSC-ACE-SABER - IK backend (expert offload, Hadamard)
+# Qwen3.6-35B-A3B fine-tune by GestaltLabs (NSC-ACE + SABER calibration)
+# Architecture: qwen35moe — same as Qwen3.6-35B-A3B (34.7B total, 3B active, 33 experts top-8)
+# BFCL tool-calling: +2.87pp over base (95% call rate, 83.54% arg accuracy)
+# HarmBench compliance: 98.33%, KLD 0.025 (minimal distribution shift)
+# DISABLED: standard Q4_K_M too large (21.7GB) — APEX I-Compact would reduce to ~16.1GB
+# Future: convert to APEX I-Compact for better quant + less RAM usage
+# No MTP variant — running WITHOUT MTP (see references/config-mtp-speculative-decoding.md)
+# Different quant from Qwen3.6-APEX (standard Q4_K_M vs APEX I-Compact) — compare with care
+# -------------------------------------------
   "ornstein-36-35b":
     unlisted: true
     name: "Ornstein 3.6 35B SABER"
@@ -2214,20 +2175,19 @@ models:
       embedding_length: 2048
       quantization: Q4_K_M
       note: "NSC-ACE-SABER fine-tune of Qwen3.6-35B-A3B. +2.87pp BFCL over base, 98.33% HarmBench compliance, KLD 0.025. TEST ONLY — evaluating as potential replacement for Qwen3.6-APEX. Standard Q4_K_M quant (no APEX I-Compact available). No MTP in this variant."
-
-  # -------------------------------------------
-  # QWEN3-8B - ik BACKEND (Hadamard KV cache)
-  # Dense 8.2B params, 6.95B non-embedding. 36 layers, GQA 32Q/8KV.
-  # Architecture: qwen3 — supported in llama.cpp b5460+ and ik_llama.cpp v4430+
-  # UD-Q3_K_XL ~4.31GB — fits 6GB VRAM with --fit + partial offload
-  # Thinking mode: enable_thinking (via --reasoning on + chat template)
-  # Qwen3 recommended: think mode temp=0.6 top_p=0.95 top_k=20, non-think temp=0.7 top_p=0.8
-  # head_k=128 (128%64==0) → attn_rot ✅
-  # --jinja: required for enable_thinking toggle in chat template
-  # --parallel-tool-calls: Qwen3 supports native tool calling
-  # KV cache: q8_0 (K) + q4_0 (V) + hadamard = near-fp16 quality
-  # --fit --fit-margin 768: dynamic GPU offload, reserves ~0.75 GiB for desktop
-  # -------------------------------------------
+# -------------------------------------------
+# QWEN3-8B - ik BACKEND (Hadamard KV cache)
+# Dense 8.2B params, 6.95B non-embedding. 36 layers, GQA 32Q/8KV.
+# Architecture: qwen3 — supported in llama.cpp b5460+ and ik_llama.cpp v4430+
+# UD-Q3_K_XL ~4.31GB — fits 6GB VRAM with --fit + partial offload
+# Thinking mode: enable_thinking (via --reasoning on + chat template)
+# Qwen3 recommended: think mode temp=0.6 top_p=0.95 top_k=20, non-think temp=0.7 top_p=0.8
+# head_k=128 (128%64==0) → attn_rot ✅
+# --jinja: required for enable_thinking toggle in chat template
+# --parallel-tool-calls: Qwen3 supports native tool calling
+# KV cache: q8_0 (K) + q4_0 (V) + hadamard = near-fp16 quality
+# --fit --fit-margin 768: dynamic GPU offload, reserves ~0.75 GiB for desktop
+# -------------------------------------------
   "qwen3-8b":
     name: "Qwen3 8B"
     unlisted: true
@@ -2286,17 +2246,16 @@ models:
       context_length: 40960
       embedding_length: 4096
       quantization: Q4_K_M
-
-  # -------------------------------------------
-  # QWEN3.5-0.8B - MULTIMODAL (VISION + TEXT)
-  # Smallest Qwen3.5 variant with native vision (early fusion)
-  # Cabe inteiro na VRAM: 0.55GB model + 0.20GB mmproj + ~1GB cache
-  # mmproj ~196MB (F16) — lightweight enough to fit with model+cache
-  # NOTE: Bug #21402 (Gemma 4 mmproj crash) does NOT affect Qwen3.5
-  # NOTE: Bug #22785 (Qwen-VL accuracy degraded in llama-server) — monitor
-  # KV cache: q8_0 + attn_rot (head_dim provavelmente 128, 128%64==0)
-  # -------------------------------------------
-  # UNLISTED: nice-to-have tiny model, disk freed for space
+# -------------------------------------------
+# QWEN3.5-0.8B - MULTIMODAL (VISION + TEXT)
+# Smallest Qwen3.5 variant with native vision (early fusion)
+# Cabe inteiro na VRAM: 0.55GB model + 0.20GB mmproj + ~1GB cache
+# mmproj ~196MB (F16) — lightweight enough to fit with model+cache
+# NOTE: Bug #21402 (Gemma 4 mmproj crash) does NOT affect Qwen3.5
+# NOTE: Bug #22785 (Qwen-VL accuracy degraded in llama-server) — monitor
+# KV cache: q8_0 + attn_rot (head_dim provavelmente 128, 128%64==0)
+# -------------------------------------------
+# UNLISTED: nice-to-have tiny model, disk freed for space
   "qwen3.5-0.8b":
     unlisted: true
     name: "Qwen3.5 0.8B"
@@ -2353,12 +2312,6 @@ models:
       context_length: 262144
       embedding_length: 768
       quantization: UD-Q3_K_XL
-  # -------------------------------------------
-  # QWEN3.5-0.8B - vLLM BACKEND (PAUSADO — venv + HF models deletados)
-  # Restaurar: pip install vllm em ~/.vllm, HF models re-downloaded no primeiro serve
-  # UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
-  # -------------------------------------------
-
 # -------------------------------------------
 # QWEN3.5-4B-ABLITERATED - Bee BACKEND (TurboQuant KV cache)
 # Qwen3.5-4B with refusal behaviors removed via Abliterix (orthogonalized steering + Bayesian optimization)
@@ -2424,14 +2377,13 @@ models:
         audio: false
         image: false
       note: "Abliterated variant for Sprachspiel adversarial testing — no refusal. Same qwen35 arch as base 4B, identical config proven stable with TurboQuant."
-
-  # -------------------------------------------
-  # QWEN3.5-4B - MULTIMODAL (VISION + TEXT)
-  # Cabe inteiro na VRAM com mmproj
-  # mmproj ~400MB - --fit-target 512 para vision
-  # KV cache: q8_0 + attn_rot (auto)
-  # -------------------------------------------
-  # BACKUP: Original upstream config (q8_0 cache + --fit). Replaced by qwen3.5-4b-bee (TurboQuant).
+# -------------------------------------------
+# QWEN3.5-4B - MULTIMODAL (VISION + TEXT)
+# Cabe inteiro na VRAM com mmproj
+# mmproj ~400MB - --fit-target 512 para vision
+# KV cache: q8_0 + attn_rot (auto)
+# -------------------------------------------
+# BACKUP: Original upstream config (q8_0 cache + --fit). Replaced by qwen3.5-4b-bee (TurboQuant).
   "qwen3.5-4b-upstream":
     unlisted: true
     name: "Qwen3.5 4B (upstream backup)"
@@ -2488,17 +2440,15 @@ models:
       context_length: 262144
       embedding_length: 2560
       quantization: UD-Q3_K_XL
-        # vision: disabled — Gated Delta Net mmproj OOM on CUDA (issue #21323)
       warning: "Vision disabled — Gated Delta Net mmproj crashes/CUDA OOM (llama.cpp issues #21323, #21402)"
-
-  # -------------------------------------------
-  # QWEN3.5-9B - Bee BACKEND (TurboQuant KV cache)
-  # Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
-  # head_dim=256 → attn_rot ✅
-  # --n-gpu-layers 99: model fits entirely in 6GB VRAM at Q3_XL (~5.05GB)
-  # Original upstream config moved to _disabled/qwen3.5-9b.yaml (q8_0 cache + --fit)
-  # Benchmark: 41.2 tok/s (Bee/TurboQuant) vs 27.7 tok/s (upstream) — ~49% faster
-  # -------------------------------------------
+# -------------------------------------------
+# QWEN3.5-9B - Bee BACKEND (TurboQuant KV cache)
+# Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
+# head_dim=256 → attn_rot ✅
+# --n-gpu-layers 99: model fits entirely in 6GB VRAM at Q3_XL (~5.05GB)
+# Original upstream config moved to _disabled/qwen3.5-9b.yaml (q8_0 cache + --fit)
+# Benchmark: 41.2 tok/s (Bee/TurboQuant) vs 27.7 tok/s (upstream) — ~49% faster
+# -------------------------------------------
   "qwen3.5-9b-bee":
     unlisted: true
     name: "Qwen3.5 9B"
@@ -2553,9 +2503,7 @@ models:
       context_length: 262144
       embedding_length: 4096
       quantization: UD-Q3_K_XL
-        # vision: disabled temporarily — mmproj + fit doesn't handle offload yet
       warning: "TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99)."
-
   "qwen3.5-9b-upstream":
     unlisted: true
     name: "Qwen3.5 9B"
@@ -2612,9 +2560,7 @@ models:
       context_length: 262144
       embedding_length: 4096
       quantization: UD-Q3_K_XL
-        # vision: disabled temporarily — mmproj + fit doesn't handle offload yet
       warning: "Vision disabled temporarily — mmproj offload with --fit causes OOM"
-
   "qwopus-35b":
     unlisted: true
     name: "Qwopus 35B"
@@ -2678,29 +2624,14 @@ models:
       embedding_length: 2048
       quantization: I-Compact
       warning: "Vision disabled — mmproj blocks partial expert offload. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. --defer-experts speeds up model loading. --flash-attn auto saves overhead on short prompts."
-  # -------------------------------------------
-  # QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
-  # MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
-  # 33 experts, top-8 routing. APEX I-Compact ~17.3GB
-  #   Mixed-precision MoE quant com imatrix diversa (chat, code, reasoning, tool-calling)
-  #   Perplexity comparable to Q8_0 (6.669 vs 6.533), beats UD-Q3_K_XL on real benchmarks
-  # --no-mmproj: mmproj ocupa 858MB VRAM e impede partial expert offload.
-  #   Sem mmproj: ALL 41 layers sobem pra GPU (partial expert partition) → 20+ t/s!
-  #   Com mmproj: só ~11 layers em GPU → ~5 t/s. Não vale a pena.
-  # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
-  # Architecture: qwen35moe (Qwen3MoeForCausalLM)
-  # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-  # --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4496+). Use long form (not --mtp).
-  # -------------------------------------------
-
-  # -------------------------------------------
-  # QWOPUS3.5-9B-CODER - Bee BACKEND (TurboQuant KV cache)
-  # Dense 9B agentic coding model, Q4_K_M ~5.63GB.
-  # Bee/TurboQuant turbo3_tcq — ~5x KV cache compression at near-fp16 quality.
-  # No --fit needed: model fits entirely in VRAM with --n-gpu-layers 99.
-  # Active: ik backend (qwopus-coder-9b.yaml) with -khad/-vhad/q8_0+q4_0 cache.
-  # Switch: mv qwopus-coder-9b.yaml _disabled/qwopus-coder-9b-ik.yaml && mv _disabled/qwopus-coder-9b-bee.yaml qwopus-coder-9b.yaml && build
-  # -------------------------------------------
+# -------------------------------------------
+# QWOPUS3.5-9B-CODER - Bee BACKEND (TurboQuant KV cache)
+# Dense 9B agentic coding model, Q4_K_M ~5.63GB.
+# Bee/TurboQuant turbo3_tcq — ~5x KV cache compression at near-fp16 quality.
+# No --fit needed: model fits entirely in VRAM with --n-gpu-layers 99.
+# Active: ik backend (qwopus-coder-9b.yaml) with -khad/-vhad/q8_0+q4_0 cache.
+# Switch: mv qwopus-coder-9b.yaml _disabled/qwopus-coder-9b-ik.yaml && mv _disabled/qwopus-coder-9b-bee.yaml qwopus-coder-9b.yaml && build
+# -------------------------------------------
   "qwopus-coder-9b-bee":
     unlisted: true
     name: "Qwopus 9B Coder"
@@ -2756,18 +2687,17 @@ models:
       embedding_length: 4096
       quantization: Q4_K_M
       warning: "TurboQuant turbo3_tcq KV cache. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99). Dense 9B = all params active per token."
-
-  # -------------------------------------------
-  # QWOPUS3.5-9B-CODER - DENSE AGENTIC CODING (text-only, no vision)
-  # Qwen3.5-9B fine-tuned by Jackrong with Trace Inversion + agent traces SFT.
-  # Dense 9B params (all active per token), Q4_K_M ~5.63GB.
-  # Specialized for agentic coding and tool-calling — stronger than base Qwen3.5-9B for agent loops.
-  # Uses ik_llama.cpp: pinned memory for better offload performance.
-  # mmproj exists (880MB F16) but blocks partial expert offload → text-only.
-  # head_dim=256 → attn_rot ✅ (256%64==0)
-  # KV cache: k=q8_0 (precision for dense), v=q4_0 (save VRAM)
-  # Dual mode: base (chat, no think) and :think (reasoning)
-  # -------------------------------------------
+# -------------------------------------------
+# QWOPUS3.5-9B-CODER - DENSE AGENTIC CODING (text-only, no vision)
+# Qwen3.5-9B fine-tuned by Jackrong with Trace Inversion + agent traces SFT.
+# Dense 9B params (all active per token), Q4_K_M ~5.63GB.
+# Specialized for agentic coding and tool-calling — stronger than base Qwen3.5-9B for agent loops.
+# Uses ik_llama.cpp: pinned memory for better offload performance.
+# mmproj exists (880MB F16) but blocks partial expert offload → text-only.
+# head_dim=256 → attn_rot ✅ (256%64==0)
+# KV cache: k=q8_0 (precision for dense), v=q4_0 (save VRAM)
+# Dual mode: base (chat, no think) and :think (reasoning)
+# -------------------------------------------
   "qwopus-coder-9b-ik":
     unlisted: true
     name: "Qwopus 9B Coder"
@@ -2829,44 +2759,44 @@ models:
       embedding_length: 4096
       quantization: Q4_K_M
       warning: "Vision disabled — mmproj (880MB F16) blocks partial offload. Text-only = max GPU layers = max speed. Dense 9B = all params active per token (slower per token than MoE, but stronger for agentic)."
-
-  # -------------------------------------------
-  # SMOLLM3-3B — HuggingFace dense transformer
-  # Custom SmolLM3ForCausalLM (GQA + NoPE, 36 layers, SiLU, tied embeddings)
-  # Architecture: smollm3 — supported in ik_llama.cpp (build_smollm3)
-  # 3B params, dual tool-calling (XML+JSON / Python), dual thinking mode
-  # BFCL v4 score: 92.3 (no-think) — excellent tool-calling for 3B
-  # UD-Q5_K_XL ~2.1 GB — fits in VRAM with --fit
-  # 65K native ctx, 128K with YaRN rope_scaling
-  # Dual mode: base (chat, no think) and :think (reasoning)
-  # Apache 2.0 license
-  # -------------------------------------------
+# -------------------------------------------
+# SMOLLM3-3B — HuggingFace dense transformer
+# Custom SmolLM3ForCausalLM (GQA + NoPE, 36 layers, SiLU, tied embeddings)
+# Architecture: smollm3 — supported in ik_llama.cpp (build_smollm3)
+# 3B params, dual tool-calling (XML+JSON / Python), dual thinking mode
+# BFCL v4 score: 92.3 (no-think) — excellent tool-calling for 3B
+# UD-Q5_K_XL ~2.1 GB — fits in VRAM with --fit
+# 65K native ctx, 128K with YaRN rope_scaling
+# Dual mode: base (chat, no think) and :think (reasoning)
+# Apache 2.0 license
+# -------------------------------------------
   "smolllm3-3b":
     unlisted: true
     name: "SmolLM3 3B"
     description: "HuggingFace dense, dual tool-calling XML+Python (UD-Q5_K_XL, ik)"
-    tags: ["tools"]
+    tags:
+      - "tools"
     cmd: |
-        ${ik_llama_server} --port ${PORT}
-        --model ${models_dir}/SmolLM3-3B-UD-Q5_K_XL.gguf
-        --jinja
-        --fit
-        --fit-margin 768
-        --ctx-size 131072
-        --parallel 4
-        --cont-batching
-        --temp ${default_temp}
-        --top-p ${default_top_p}
-        --top-k ${code_top_k}
-        --min-p ${code_min_p}
-        --repeat-penalty ${code_repeat_penalty}
-        --reasoning on
-        --cache-type-k ${small_cache_k}
-        --cache-type-v ${small_cache_v}
-        --k-cache-hadamard
-        --v-cache-hadamard
-        --flash-attn auto
-        --metrics
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/SmolLM3-3B-UD-Q5_K_XL.gguf
+      --jinja
+      --fit
+      --fit-margin 768
+      --ctx-size 131072
+      --parallel 4
+      --cont-batching
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning on
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
@@ -2901,19 +2831,18 @@ models:
       context_length: 65536
       embedding_length: 2048
       quantization: Q5_K_XL
-
-  # -------------------------------------------
-  # TRANSLATEGEMMA 4B — Google translation model
-  # Gemma 3-based, 55 languages, translation-focused
-  # Arch: gemma3 — supported in upstream llama.cpp
-  # Q4_K_M ~2.7GB (mradermacher/TranslateGemma-4B-GGUF)
-  # NOTE: Native Jinja template uses custom content types
-  #   (source_lang_code, target_lang_code) which crash
-  #   llama.cpp chat template parser. Use --no-jinja
-  #   with gemma template instead. Sprachspiel sends
-  #   plain text prompts, so this works fine.
-  # Recommended params from Ollama: temp=0.2, top_k=40, repeat_penalty=1.1
-  # -------------------------------------------
+# -------------------------------------------
+# TRANSLATEGEMMA 4B — Google translation model
+# Gemma 3-based, 55 languages, translation-focused
+# Arch: gemma3 — supported in upstream llama.cpp
+# Q4_K_M ~2.7GB (mradermacher/TranslateGemma-4B-GGUF)
+# NOTE: Native Jinja template uses custom content types
+#   (source_lang_code, target_lang_code) which crash
+#   llama.cpp chat template parser. Use --no-jinja
+#   with gemma template instead. Sprachspiel sends
+#   plain text prompts, so this works fine.
+# Recommended params from Ollama: temp=0.2, top_k=40, repeat_penalty=1.1
+# -------------------------------------------
   "translategemma-4b":
     name: "TranslateGemma 4B"
     description: "Google translation model — 55 langs, Sprachspiel default (Q4_K_M, llama.cpp)"
@@ -2959,7 +2888,6 @@ models:
         - "Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma"
         - "Needs explicit translation prompt (Sprachspiel format works)"
       note: "Translation model. Sprachspiel translate mode default. 55 languages."
-
 # -------------------------------------------
 # Trinity Nano Preview (Arcee) - UPSTREAM backend
 # 6B MoE (128 experts, 8 active + 1 shared = ~1B active/token), Q5_K_M ~4.1 GB
@@ -3019,7 +2947,6 @@ models:
       quantization: Q8_0
       license: "OpenMDW-1.1"
       note: "Preview model — experimental, may be unstable. AfmoeForCausalLM arch, upstream b766+."
-
 # Hooks: ações na inicialização do llama-swap
 # preload: carrega modelos síncronamente antes de aceitar requests
 # Ideal para vLLM (startup lento = 30-90s sem warm-up)

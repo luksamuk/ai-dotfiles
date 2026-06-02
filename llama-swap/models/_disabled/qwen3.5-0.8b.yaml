@@ -1,71 +1,71 @@
-  # -------------------------------------------
-  # QWEN3.5-0.8B - MULTIMODAL (VISION + TEXT)
-  # Smallest Qwen3.5 variant with native vision (early fusion)
-  # Cabe inteiro na VRAM: 0.55GB model + 0.20GB mmproj + ~1GB cache
-  # mmproj ~196MB (F16) — lightweight enough to fit with model+cache
-  # NOTE: Bug #21402 (Gemma 4 mmproj crash) does NOT affect Qwen3.5
-  # NOTE: Bug #22785 (Qwen-VL accuracy degraded in llama-server) — monitor
-  # KV cache: q8_0 + attn_rot (head_dim provavelmente 128, 128%64==0)
-  # -------------------------------------------
-  # UNLISTED: nice-to-have tiny model, disk freed for space
-  "qwen3.5-0.8b":
-    unlisted: true
-    name: "Qwen3.5 0.8B"
-    description: "Compact multimodal reasoning model — text + vision (llama.cpp GGUF)"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.5-0.8B-UD-Q3_K_XL.gguf
-      --mmproj ${models_dir}/mmproj-Qwen3.5-0.8B-F16.gguf
-      --fit on
-      --fit-target 768
-      --fit-ctx ${small_model_min_ctx}
-      --ctx-size ${small_model_max_ctx}
-      --temp ${default_temp}
-      --top-p ${default_top_p}
-      --top-k ${default_top_k}
-      --min-p ${default_min_p}
-      --repeat-penalty ${default_repeat_penalty}
-      --reasoning on
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    metadata:
-      size: "~0.47 GB (UD-Q3_K_XL Dynamic 2.0) + ~0.20 GB (mmproj F16)"
-      context: "64K-128K (dynamic)"
-      vram_usage: "~1.6GB (model + mmproj + cache)"
-      source: "unsloth/Qwen3.5-0.8B-GGUF (UD-Q3_K_XL)"
-      kv_cache: "q8_0 + attn_rot"
-      features:
-        completion: true
-        tools: false
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 819000000
-      context_length: 262144
-      embedding_length: 768
-      quantization: UD-Q3_K_XL
-  # -------------------------------------------
-  # QWEN3.5-0.8B - vLLM BACKEND (PAUSADO — venv + HF models deletados)
-  # Restaurar: pip install vllm em ~/.vllm, HF models re-downloaded no primeiro serve
-  # UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
-  # -------------------------------------------
+# -------------------------------------------
+# QWEN3.5-0.8B - MULTIMODAL (VISION + TEXT)
+# Smallest Qwen3.5 variant with native vision (early fusion)
+# Cabe inteiro na VRAM: 0.55GB model + 0.20GB mmproj + ~1GB cache
+# mmproj ~196MB (F16) — lightweight enough to fit with model+cache
+# NOTE: Bug #21402 (Gemma 4 mmproj crash) does NOT affect Qwen3.5
+# NOTE: Bug #22785 (Qwen-VL accuracy degraded in llama-server) — monitor
+# KV cache: q8_0 + attn_rot (head_dim provavelmente 128, 128%64==0)
+# -------------------------------------------
+# UNLISTED: nice-to-have tiny model, disk freed for space
+"qwen3.5-0.8b":
+  unlisted: true
+  name: "Qwen3.5 0.8B"
+  description: "Compact multimodal reasoning model — text + vision (llama.cpp GGUF)"
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/Qwen3.5-0.8B-UD-Q3_K_XL.gguf
+    --mmproj ${models_dir}/mmproj-Qwen3.5-0.8B-F16.gguf
+    --fit on
+    --fit-target 768
+    --fit-ctx ${small_model_min_ctx}
+    --ctx-size ${small_model_max_ctx}
+    --temp ${default_temp}
+    --top-p ${default_top_p}
+    --top-k ${default_top_k}
+    --min-p ${default_min_p}
+    --repeat-penalty ${default_repeat_penalty}
+    --reasoning on
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 60
+  metadata:
+    size: "~0.47 GB (UD-Q3_K_XL Dynamic 2.0) + ~0.20 GB (mmproj F16)"
+    context: "64K-128K (dynamic)"
+    vram_usage: "~1.6GB (model + mmproj + cache)"
+    source: "unsloth/Qwen3.5-0.8B-GGUF (UD-Q3_K_XL)"
+    kv_cache: "q8_0 + attn_rot"
+    features:
+      completion: true
+      tools: false
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 819000000
+    context_length: 262144
+    embedding_length: 768
+    quantization: UD-Q3_K_XL
+# -------------------------------------------
+# QWEN3.5-0.8B - vLLM BACKEND (PAUSADO — venv + HF models deletados)
+# Restaurar: pip install vllm em ~/.vllm, HF models re-downloaded no primeiro serve
+# UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
+# -------------------------------------------

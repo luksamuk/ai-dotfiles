@@ -1,65 +1,65 @@
-  # -------------------------------------------
-  # QWEN3.5-4B - MULTIMODAL (VISION + TEXT)
-  # Cabe inteiro na VRAM com mmproj
-  # mmproj ~400MB - --fit-target 512 para vision
-  # KV cache: q8_0 + attn_rot (auto)
-  # -------------------------------------------
-  # BACKUP: Original upstream config (q8_0 cache + --fit). Replaced by qwen3.5-4b-bee (TurboQuant).
-  "qwen3.5-4b-upstream":
-    unlisted: true
-    name: "Qwen3.5 4B (upstream backup)"
-    description: "Multimodal reasoning and agentic chat with 201-language support"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.5-4B-UD-Q3_K_XL.gguf
-      --no-mmproj
-      --fit on
-      --fit-target 768
-      --fit-ctx ${small_model_min_ctx}
-      --ctx-size ${small_model_max_ctx}
-      --temp ${default_temp}
-      --top-p ${default_top_p}
-      --top-k ${default_top_k}
-      --min-p ${default_min_p}
-      --repeat-penalty ${default_repeat_penalty}
-      --reasoning on
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    metadata:
-      size: "~2.27 GB (UD-Q3_K_XL Dynamic 2.0)"
-      context: "32K-128K (dynamic)"
-      vram_usage: "~3GB"
-      source: "unsloth/Qwen3.5-4B-GGUF (UD-Q3_K_XL)"
-      kv_cache: "q8_0 + attn_rot"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 4210000000
-      context_length: 262144
-      embedding_length: 2560
-      quantization: UD-Q3_K_XL
-        # vision: disabled — Gated Delta Net mmproj OOM on CUDA (issue #21323)
-      warning: "Vision disabled — Gated Delta Net mmproj crashes/CUDA OOM (llama.cpp issues #21323, #21402)"
+# -------------------------------------------
+# QWEN3.5-4B - MULTIMODAL (VISION + TEXT)
+# Cabe inteiro na VRAM com mmproj
+# mmproj ~400MB - --fit-target 512 para vision
+# KV cache: q8_0 + attn_rot (auto)
+# -------------------------------------------
+# BACKUP: Original upstream config (q8_0 cache + --fit). Replaced by qwen3.5-4b-bee (TurboQuant).
+"qwen3.5-4b-upstream":
+  unlisted: true
+  name: "Qwen3.5 4B (upstream backup)"
+  description: "Multimodal reasoning and agentic chat with 201-language support"
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/Qwen3.5-4B-UD-Q3_K_XL.gguf
+    --no-mmproj
+    --fit on
+    --fit-target 768
+    --fit-ctx ${small_model_min_ctx}
+    --ctx-size ${small_model_max_ctx}
+    --temp ${default_temp}
+    --top-p ${default_top_p}
+    --top-k ${default_top_k}
+    --min-p ${default_min_p}
+    --repeat-penalty ${default_repeat_penalty}
+    --reasoning on
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 60
+  metadata:
+    size: "~2.27 GB (UD-Q3_K_XL Dynamic 2.0)"
+    context: "32K-128K (dynamic)"
+    vram_usage: "~3GB"
+    source: "unsloth/Qwen3.5-4B-GGUF (UD-Q3_K_XL)"
+    kv_cache: "q8_0 + attn_rot"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 4210000000
+    context_length: 262144
+    embedding_length: 2560
+    quantization: UD-Q3_K_XL
+      # vision: disabled — Gated Delta Net mmproj OOM on CUDA (issue #21323)
+    warning: "Vision disabled — Gated Delta Net mmproj crashes/CUDA OOM (llama.cpp issues #21323, #21402)"

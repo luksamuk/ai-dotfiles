@@ -1,47 +1,47 @@
-  "lfm2.5-1.2b-think":
-    unlisted: true
-    name: "LFM2.5 1.2B Thinking"
-    description: "Edge hybrid reasoning — conv+GQA dense, always thinks (Q8_0, llama.cpp)"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/LFM2.5-1.2B-Thinking-Q8_0.gguf
-      --jinja
-      --fit on
-      --fit-target 768
-      --fit-ctx ${small_model_min_ctx}
-      --ctx-size ${small_model_max_ctx}
-      --temp 0.3
-      --top-p 0.9
-      --top-k 40
-      --min-p 0.15
-      --repeat-penalty 1.05
-      --reasoning on
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-    ttl: 60
-    metadata:
-      size: "~1.25 GB (Q8_0)"
-      context: "32K-128K (dynamic)"
-      vram_usage: "~2GB (model + cache)"
-      source: "LiquidAI/LFM2.5-1.2B-Thinking-GGUF (Q8_0)"
-      kv_cache: "q8_0 + attn_rot"
-      features:
-        completion: true
-        tools: false
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: lfm2
-      parameters: 1200000000
-      context_length: 128000
-      embedding_length: 1536
-      quantization: Q8_0
-      warning: "SEMPRE gera CoT internamente (como gpt-oss-20b). Pior pra tool-calling — use lfm2.5-1.2b (Instruct) para tarefas agenticas."
-  # Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM
+"lfm2.5-1.2b-think":
+  unlisted: true
+  name: "LFM2.5 1.2B Thinking"
+  description: "Edge hybrid reasoning — conv+GQA dense, always thinks (Q8_0, llama.cpp)"
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/LFM2.5-1.2B-Thinking-Q8_0.gguf
+    --jinja
+    --fit on
+    --fit-target 768
+    --fit-ctx ${small_model_min_ctx}
+    --ctx-size ${small_model_max_ctx}
+    --temp 0.3
+    --top-p 0.9
+    --top-k 40
+    --min-p 0.15
+    --repeat-penalty 1.05
+    --reasoning on
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+  ttl: 60
+  metadata:
+    size: "~1.25 GB (Q8_0)"
+    context: "32K-128K (dynamic)"
+    vram_usage: "~2GB (model + cache)"
+    source: "LiquidAI/LFM2.5-1.2B-Thinking-GGUF (Q8_0)"
+    kv_cache: "q8_0 + attn_rot"
+    features:
+      completion: true
+      tools: false
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: lfm2
+    parameters: 1200000000
+    context_length: 128000
+    embedding_length: 1536
+    quantization: Q8_0
+    warning: "SEMPRE gera CoT internamente (como gpt-oss-20b). Pior pra tool-calling — use lfm2.5-1.2b (Instruct) para tarefas agenticas."
+# Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM

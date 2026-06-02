@@ -1,69 +1,69 @@
-  # -------------------------------------------
-  # MELLUM2-12B-A2.5B-Thinking - IK backend (expert offload)
-  # JetBrains MoE: 12B total / 2.5B active, 64 experts x top-8, SWA 1024, 131K ctx
-  # Architecture: Qwen3-MoE derivative (MellumForCausalLM → registered alias in ik)
-  # Converted manually from BF16 safetensors → F16 GGUF → Q4_K_M (7.6GB)
-  # NOTE: No pre-made GGUF was available — converted in-house 2026-06-01
-  # NOTE: MoE ffn_down_exps dims (896x2304) not divisible by 256 → fallback to q8_0 for those tensors (expected)
-  # NOTE: Uses --mlock for memory pinning (CPU expert offload)
-  # NOTE: Thinking variant emits  reasoning blocks. For fleet agents, consider Instruct (no reasoning trace)
-  # NOTE: --parallel-tool-calls for ik's native parallel tool call support
-  # NOTE: When community GGUF appears (Q4_K_M or better), swap out the manual conversion
-  # NOTE: TOOL CALLING NOT WORKING on Thinking variant with ik. Model has NO embedded
-  #   chat_template and --tool-call-parser hermes (vLLM-only) is not in ik_llama.
-  #   Both Hermes 2 Pro and Qwen3.5 chat-template-file produce garbled output with tools.
-  #   Plain text works (37 tok/s). Instruct variant may work better (no reasoning trace
-  #   contaminating tool call output). Re-test after community GGUF with template available.
-  # -------------------------------------------
-  "mellum2-12b-thinking":
-    name: "Mellum2 12B Thinking"
-    description: "JetBrains MoE 12B/2.5B active, reasoning (⚠️ tool calling broken — no chat_template)"
-    unlisted: true
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/Mellum2-12B-A2.5B-Thinking-Q4_K_M.gguf
-      --host 127.0.0.1
-      -ngl 12
-      --mlock
-      -c 4096
-      -np 1
-      --reasoning on
-      --parallel-tool-calls
-      --chat-template-file /home/alchemist/git/ik_llama.cpp/models/templates/NousResearch-Hermes-2-Pro-Llama-3-8B-tool_use.jinja
-      --jinja
-      --cache-type-k q8_0
-      --cache-type-v q4_0
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          temperature: 0.6
-          min_p: 0.15
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.3
-    ttl: 60
-    metadata:
-      size: "~7.6 GB (Q4_K_M, manual conversion)"
-      context: "131K"
-      vram_usage: "~4.4 GB VRAM (12 layers GPU, rest CPU offload)"
-      source: "JetBrains/Mellum2-12B-A2.5B-Thinking (HF) → Q4_K_M (manual)"
-      kv_cache: "q8_0 (K) + q4_0 (V)"
-      features:
-        completion: true
-        tools: false
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen3moe
-      parameters: 12000000000
-      context_length: 131072
-      embedding_length: 2048
-      quantization: Q4_K_M
-      note: "Manual GGUF conversion (2026-06-01). MoE expert offload via ik with --mlock. BFCL v4 45.6%, LiveCodeBench 69.9%. TOOL CALLING BROKEN: no embedded chat_template + --tool-call-parser hermes is vLLM-only. Both Hermes 2 Pro and Qwen3.5 templates produce garbled output with tools. Plain text works (37 tok/s). Instruct variant may work better. Swap for community GGUF when available."
+# -------------------------------------------
+# MELLUM2-12B-A2.5B-Thinking - IK backend (expert offload)
+# JetBrains MoE: 12B total / 2.5B active, 64 experts x top-8, SWA 1024, 131K ctx
+# Architecture: Qwen3-MoE derivative (MellumForCausalLM → registered alias in ik)
+# Converted manually from BF16 safetensors → F16 GGUF → Q4_K_M (7.6GB)
+# NOTE: No pre-made GGUF was available — converted in-house 2026-06-01
+# NOTE: MoE ffn_down_exps dims (896x2304) not divisible by 256 → fallback to q8_0 for those tensors (expected)
+# NOTE: Uses --mlock for memory pinning (CPU expert offload)
+# NOTE: Thinking variant emits  reasoning blocks. For fleet agents, consider Instruct (no reasoning trace)
+# NOTE: --parallel-tool-calls for ik's native parallel tool call support
+# NOTE: When community GGUF appears (Q4_K_M or better), swap out the manual conversion
+# NOTE: TOOL CALLING NOT WORKING on Thinking variant with ik. Model has NO embedded
+#   chat_template and --tool-call-parser hermes (vLLM-only) is not in ik_llama.
+#   Both Hermes 2 Pro and Qwen3.5 chat-template-file produce garbled output with tools.
+#   Plain text works (37 tok/s). Instruct variant may work better (no reasoning trace
+#   contaminating tool call output). Re-test after community GGUF with template available.
+# -------------------------------------------
+"mellum2-12b-thinking":
+  name: "Mellum2 12B Thinking"
+  description: "JetBrains MoE 12B/2.5B active, reasoning (⚠️ tool calling broken — no chat_template)"
+  unlisted: true
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/Mellum2-12B-A2.5B-Thinking-Q4_K_M.gguf
+    --host 127.0.0.1
+    -ngl 12
+    --mlock
+    -c 4096
+    -np 1
+    --reasoning on
+    --parallel-tool-calls
+    --chat-template-file /home/alchemist/git/ik_llama.cpp/models/templates/NousResearch-Hermes-2-Pro-Llama-3-8B-tool_use.jinja
+    --jinja
+    --cache-type-k q8_0
+    --cache-type-v q4_0
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 0.6
+        min_p: 0.15
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.3
+  ttl: 60
+  metadata:
+    size: "~7.6 GB (Q4_K_M, manual conversion)"
+    context: "131K"
+    vram_usage: "~4.4 GB VRAM (12 layers GPU, rest CPU offload)"
+    source: "JetBrains/Mellum2-12B-A2.5B-Thinking (HF) → Q4_K_M (manual)"
+    kv_cache: "q8_0 (K) + q4_0 (V)"
+    features:
+      completion: true
+      tools: false
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen3moe
+    parameters: 12000000000
+    context_length: 131072
+    embedding_length: 2048
+    quantization: Q4_K_M
+    note: "Manual GGUF conversion (2026-06-01). MoE expert offload via ik with --mlock. BFCL v4 45.6%, LiveCodeBench 69.9%. TOOL CALLING BROKEN: no embedded chat_template + --tool-call-parser hermes is vLLM-only. Both Hermes 2 Pro and Qwen3.5 templates produce garbled output with tools. Plain text works (37 tok/s). Instruct variant may work better. Swap for community GGUF when available."

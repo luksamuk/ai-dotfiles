@@ -1,46 +1,46 @@
-  # -------------------------------------------
-  # QWEN3.5-0.8B - vLLM BACKEND (PAUSADO — venv + HF models deletados)
-  # Restaurar: pip install vllm em ~/.vllm, HF models re-downloaded no primeiro serve
-  # UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
-  # -------------------------------------------
-  "qwen3.5-0.8b-vllm":
-    unlisted: true
-    name: "Qwen3.5 0.8B (vLLM)"
-    description: "vLLM backend test — Sprachspiel compatibility (NOT for daily use)"
-    cmd: |
-      ${vllm_bin} serve Qwen/Qwen3.5-0.8B
-      --port ${PORT}
-      --served-model-name qwen3.5-0.8b-vllm
-      --gpu-memory-utilization 0.70
-      --max-model-len 8192
-      --max-num-seqs 2
-      --dtype half
-      --trust-remote-code
-      --default-chat-template-kwargs '{"enable_thinking": true}'
-      --reasoning-parser qwen3
-      --enable-auto-tool-choice
-      --tool-call-parser qwen3_coder
-      --skip-mm-profiling
-      --limit-mm-per-prompt '{"image": 0}'
-    ttl: 900
-    metadata:
-      backend: vllm
-      size: "~1.6 GB (BF16 safetensors, auto-download from HF)"
-      context: "8K (vLLM optimized for 6GB VRAM)"
-      vram_usage: "~2-2.5GB (vision disabled)"
-      source: "Qwen/Qwen3.5-0.8B (HuggingFace safetensors)"
-      note: "vLLM test backend for Sprachspiel — slow startup (~30-90s), use only for API compat testing"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 819000000
-      context_length: 262144
-      embedding_length: 768
-      quantization: UD-Q3_K_XL
+# -------------------------------------------
+# QWEN3.5-0.8B - vLLM BACKEND (PAUSADO — venv + HF models deletados)
+# Restaurar: pip install vllm em ~/.vllm, HF models re-downloaded no primeiro serve
+# UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
+# -------------------------------------------
+"qwen3.5-0.8b-vllm":
+  unlisted: true
+  name: "Qwen3.5 0.8B (vLLM)"
+  description: "vLLM backend test — Sprachspiel compatibility (NOT for daily use)"
+  cmd: |
+    ${vllm_bin} serve Qwen/Qwen3.5-0.8B
+    --port ${PORT}
+    --served-model-name qwen3.5-0.8b-vllm
+    --gpu-memory-utilization 0.70
+    --max-model-len 8192
+    --max-num-seqs 2
+    --dtype half
+    --trust-remote-code
+    --default-chat-template-kwargs '{"enable_thinking": true}'
+    --reasoning-parser qwen3
+    --enable-auto-tool-choice
+    --tool-call-parser qwen3_coder
+    --skip-mm-profiling
+    --limit-mm-per-prompt '{"image": 0}'
+  ttl: 900
+  metadata:
+    backend: vllm
+    size: "~1.6 GB (BF16 safetensors, auto-download from HF)"
+    context: "8K (vLLM optimized for 6GB VRAM)"
+    vram_usage: "~2-2.5GB (vision disabled)"
+    source: "Qwen/Qwen3.5-0.8B (HuggingFace safetensors)"
+    note: "vLLM test backend for Sprachspiel — slow startup (~30-90s), use only for API compat testing"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 819000000
+    context_length: 262144
+    embedding_length: 768
+    quantization: UD-Q3_K_XL

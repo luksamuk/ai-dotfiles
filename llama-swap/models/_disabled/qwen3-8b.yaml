@@ -1,71 +1,71 @@
-  # -------------------------------------------
-  # QWEN3-8B - ik BACKEND (Hadamard KV cache)
-  # Dense 8.2B params, 6.95B non-embedding. 36 layers, GQA 32Q/8KV.
-  # Architecture: qwen3 — supported in llama.cpp b5460+ and ik_llama.cpp v4430+
-  # UD-Q3_K_XL ~4.31GB — fits 6GB VRAM with --fit + partial offload
-  # Thinking mode: enable_thinking (via --reasoning on + chat template)
-  # Qwen3 recommended: think mode temp=0.6 top_p=0.95 top_k=20, non-think temp=0.7 top_p=0.8
-  # head_k=128 (128%64==0) → attn_rot ✅
-  # --jinja: required for enable_thinking toggle in chat template
-  # --parallel-tool-calls: Qwen3 supports native tool calling
-  # KV cache: q8_0 (K) + q4_0 (V) + hadamard = near-fp16 quality
-  # --fit --fit-margin 768: dynamic GPU offload, reserves ~0.75 GiB for desktop
-  # -------------------------------------------
-  "qwen3-8b":
-    name: "Qwen3 8B"
-    unlisted: true
-    description: "Dense reasoning & coding, thinking mode (ik + hadamard)"
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3-8B-UD-Q3_K_XL.gguf
-      --fit
-      --fit-margin 768
-      --jinja
-      --parallel-tool-calls
-      --ctx-size ${small_model_max_ctx}
-      --temp ${default_temp}
-      --top-p ${default_top_p}
-      --top-k ${default_top_k}
-      --min-p ${default_min_p}
-      --repeat-penalty ${default_repeat_penalty}
-      --reasoning on
-      --cache-type-k q8_0
-      --cache-type-v q4_0
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.8
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-    ttl: 60
-    metadata:
-      size: "~4.31 GB (UD-Q3_K_XL Dynamic 2.0)"
-      context: "64K-128K (dynamic)"
-      vram_usage: "~4.3GB model + KV cache, ~80-83% VRAM with --fit"
-      source: "unsloth/Qwen3-8B-GGUF (UD-Q3_K_XL)"
-      kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen3
-      parameters: 8000000000
-      context_length: 40960
-      embedding_length: 4096
-      quantization: Q4_K_M
+# -------------------------------------------
+# QWEN3-8B - ik BACKEND (Hadamard KV cache)
+# Dense 8.2B params, 6.95B non-embedding. 36 layers, GQA 32Q/8KV.
+# Architecture: qwen3 — supported in llama.cpp b5460+ and ik_llama.cpp v4430+
+# UD-Q3_K_XL ~4.31GB — fits 6GB VRAM with --fit + partial offload
+# Thinking mode: enable_thinking (via --reasoning on + chat template)
+# Qwen3 recommended: think mode temp=0.6 top_p=0.95 top_k=20, non-think temp=0.7 top_p=0.8
+# head_k=128 (128%64==0) → attn_rot ✅
+# --jinja: required for enable_thinking toggle in chat template
+# --parallel-tool-calls: Qwen3 supports native tool calling
+# KV cache: q8_0 (K) + q4_0 (V) + hadamard = near-fp16 quality
+# --fit --fit-margin 768: dynamic GPU offload, reserves ~0.75 GiB for desktop
+# -------------------------------------------
+"qwen3-8b":
+  name: "Qwen3 8B"
+  unlisted: true
+  description: "Dense reasoning & coding, thinking mode (ik + hadamard)"
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/Qwen3-8B-UD-Q3_K_XL.gguf
+    --fit
+    --fit-margin 768
+    --jinja
+    --parallel-tool-calls
+    --ctx-size ${small_model_max_ctx}
+    --temp ${default_temp}
+    --top-p ${default_top_p}
+    --top-k ${default_top_k}
+    --min-p ${default_min_p}
+    --repeat-penalty ${default_repeat_penalty}
+    --reasoning on
+    --cache-type-k q8_0
+    --cache-type-v q4_0
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.8
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 60
+  metadata:
+    size: "~4.31 GB (UD-Q3_K_XL Dynamic 2.0)"
+    context: "64K-128K (dynamic)"
+    vram_usage: "~4.3GB model + KV cache, ~80-83% VRAM with --fit"
+    source: "unsloth/Qwen3-8B-GGUF (UD-Q3_K_XL)"
+    kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen3
+    parameters: 8000000000
+    context_length: 40960
+    embedding_length: 4096
+    quantization: Q4_K_M

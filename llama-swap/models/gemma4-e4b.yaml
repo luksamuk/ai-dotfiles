@@ -1,64 +1,64 @@
-  # -------------------------------------------
-  # GEMMA-4-E4B - ik BACKEND (Hadamard KV cache)
-  # Upstream config with q4_0 cache. Bee/TurboQuant was slower (36 vs 40 tok/s).
-  # Switched from upstream to ik for -khad/-vhad quality improvement.
-  # -------------------------------------------
-  "gemma4-e4b":
-    name: "Gemma 4 E4B"
-    description: "On-device multimodal reasoning with text, image, and audio understanding (ik + hadamard)"
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-E4B-it-UD-Q3_K_XL.gguf
-      # No --no-mmproj: ik doesn't support this flag (upstream-only)
-      --fit
-      --fit-margin 512
-      --jinja
-      --ctx-size ${small_model_max_ctx}
-      --temp 0.7
-      --top-p 0.9
-      --top-k 40
-      --min-p 0.01
-      --repeat-penalty 1.0
-      --reasoning on
-      --cache-type-k q8_0
-      --cache-type-v q4_0
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    metadata:
-      size: "~4.5 GB (UD-Q3_K_XL Dynamic 2.0)"
-      context: "64K-128K (dynamic)"
-      vram_usage: "~5GB VRAM (fits with mmproj!)"
-      source: "unsloth/gemma-4-E4B-it-GGUF"
-      kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: gemma4
-      parameters: 7520000000
-      context_length: 131072
-      embedding_length: 2560
-      quantization: Q3_K_XL
-        # vision: disabled — mmproj crashes on CUDA (issue #21402)
-      warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."
+# -------------------------------------------
+# GEMMA-4-E4B - ik BACKEND (Hadamard KV cache)
+# Upstream config with q4_0 cache. Bee/TurboQuant was slower (36 vs 40 tok/s).
+# Switched from upstream to ik for -khad/-vhad quality improvement.
+# -------------------------------------------
+"gemma4-e4b":
+  name: "Gemma 4 E4B"
+  description: "On-device multimodal reasoning with text, image, and audio understanding (ik + hadamard)"
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/gemma-4-E4B-it-UD-Q3_K_XL.gguf
+    # No --no-mmproj: ik doesn't support this flag (upstream-only)
+    --fit
+    --fit-margin 512
+    --jinja
+    --ctx-size ${small_model_max_ctx}
+    --temp 0.7
+    --top-p 0.9
+    --top-k 40
+    --min-p 0.01
+    --repeat-penalty 1.0
+    --reasoning on
+    --cache-type-k q8_0
+    --cache-type-v q4_0
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 60
+  metadata:
+    size: "~4.5 GB (UD-Q3_K_XL Dynamic 2.0)"
+    context: "64K-128K (dynamic)"
+    vram_usage: "~5GB VRAM (fits with mmproj!)"
+    source: "unsloth/gemma-4-E4B-it-GGUF"
+    kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: gemma4
+    parameters: 7520000000
+    context_length: 131072
+    embedding_length: 2560
+    quantization: Q3_K_XL
+      # vision: disabled — mmproj crashes on CUDA (issue #21402)
+    warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."

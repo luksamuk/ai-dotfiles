@@ -1,71 +1,71 @@
-  # -------------------------------------------
-  # ORNSTEIN 3.6-35B-A3B-NSC-ACE-SABER - IK backend (expert offload, Hadamard)
-  # Qwen3.6-35B-A3B fine-tune by GestaltLabs (NSC-ACE + SABER calibration)
-  # Architecture: qwen35moe — same as Qwen3.6-35B-A3B (34.7B total, 3B active, 33 experts top-8)
-  # BFCL tool-calling: +2.87pp over base (95% call rate, 83.54% arg accuracy)
-  # HarmBench compliance: 98.33%, KLD 0.025 (minimal distribution shift)
-  # DISABLED: standard Q4_K_M too large (21.7GB) — APEX I-Compact would reduce to ~16.1GB
-  # Future: convert to APEX I-Compact for better quant + less RAM usage
-  # No MTP variant — running WITHOUT MTP (see references/config-mtp-speculative-decoding.md)
-  # Different quant from Qwen3.6-APEX (standard Q4_K_M vs APEX I-Compact) — compare with care
-  # -------------------------------------------
-  "ornstein-36-35b":
-    unlisted: true
-    name: "Ornstein 3.6 35B SABER"
-    description: "Qwen3.6-35B NSC-ACE-SABER fine-tune, +2.87pp BFCL tool calling (ik backend)"
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.6-35B-A3B-NSC-ACE-SABER-Q4_K_M.gguf
-      --fit
-      --fit-margin 768
-      --ctx-size 131072
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
-      --min-p ${code_min_p}
-      --repeat-penalty ${code_repeat_penalty}
-      --reasoning on
-      --jinja
-      --parallel-tool-calls
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --defer-experts
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.85
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 300
-    metadata:
-      size: "~21.7 GB (Q4_K_M)"
-      context: "1K-131K (safe max; 200K works but zero VRAM headroom)"
-      vram_usage: "~5.4GB VRAM + ~18GB pinned RAM (ik pinned memory, estimated)"
-      source: "GestaltLabs/Qwen3.6-35B-A3B-NSC-ACE-SABER-GGUF"
-      kv_cache: "q4_0 + attn_rot + hadamard (ik -khad/-vhad)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 34660000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: Q4_K_M
-      note: "NSC-ACE-SABER fine-tune of Qwen3.6-35B-A3B. +2.87pp BFCL over base, 98.33% HarmBench compliance, KLD 0.025. TEST ONLY — evaluating as potential replacement for Qwen3.6-APEX. Standard Q4_K_M quant (no APEX I-Compact available). No MTP in this variant."
+# -------------------------------------------
+# ORNSTEIN 3.6-35B-A3B-NSC-ACE-SABER - IK backend (expert offload, Hadamard)
+# Qwen3.6-35B-A3B fine-tune by GestaltLabs (NSC-ACE + SABER calibration)
+# Architecture: qwen35moe — same as Qwen3.6-35B-A3B (34.7B total, 3B active, 33 experts top-8)
+# BFCL tool-calling: +2.87pp over base (95% call rate, 83.54% arg accuracy)
+# HarmBench compliance: 98.33%, KLD 0.025 (minimal distribution shift)
+# DISABLED: standard Q4_K_M too large (21.7GB) — APEX I-Compact would reduce to ~16.1GB
+# Future: convert to APEX I-Compact for better quant + less RAM usage
+# No MTP variant — running WITHOUT MTP (see references/config-mtp-speculative-decoding.md)
+# Different quant from Qwen3.6-APEX (standard Q4_K_M vs APEX I-Compact) — compare with care
+# -------------------------------------------
+"ornstein-36-35b":
+  unlisted: true
+  name: "Ornstein 3.6 35B SABER"
+  description: "Qwen3.6-35B NSC-ACE-SABER fine-tune, +2.87pp BFCL tool calling (ik backend)"
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/Qwen3.6-35B-A3B-NSC-ACE-SABER-Q4_K_M.gguf
+    --fit
+    --fit-margin 768
+    --ctx-size 131072
+    --temp ${code_temp}
+    --top-p ${code_top_p}
+    --top-k ${code_top_k}
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --reasoning on
+    --jinja
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.85
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 300
+  metadata:
+    size: "~21.7 GB (Q4_K_M)"
+    context: "1K-131K (safe max; 200K works but zero VRAM headroom)"
+    vram_usage: "~5.4GB VRAM + ~18GB pinned RAM (ik pinned memory, estimated)"
+    source: "GestaltLabs/Qwen3.6-35B-A3B-NSC-ACE-SABER-GGUF"
+    kv_cache: "q4_0 + attn_rot + hadamard (ik -khad/-vhad)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 34660000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: Q4_K_M
+    note: "NSC-ACE-SABER fine-tune of Qwen3.6-35B-A3B. +2.87pp BFCL over base, 98.33% HarmBench compliance, KLD 0.025. TEST ONLY — evaluating as potential replacement for Qwen3.6-APEX. Standard Q4_K_M quant (no APEX I-Compact available). No MTP in this variant."

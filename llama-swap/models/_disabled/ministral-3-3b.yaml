@@ -1,56 +1,56 @@
-  # -------------------------------------------
-  # MINISTRAL-3-3B — Mistral Small 3.2 family
-  # -------------------------------------------
-  # Dense 3.4B params, text-only (vision/mmproj crashes on CUDA — mistral3 arch)
-  # Mistral's latest edge model — tool calling, 256K context
-  # Architecture: mistral3 — ONLY supported in llama.cpp upstream (NOT ik_llama.cpp)
-  # Uses ${llama_server} (upstream), NOT ${ik_llama_server}
-  # UD-Q5_K_XL: 2.31 GB — fits entirely in VRAM with --fit
-  # --fit on: auto offload layers to GPU, keeps KV cache in VRAM
-  # --parallel 4 --cont-batching: concurrent requests
-  # --ctx-size 131072: 128K context (model supports 256K, 128K practical for 3B)
-  # Tool calling: mistral template (chat_template=ministral_3)
-  # NOTE: mmproj crashes llama-server with CUDA alloc error (~13.9 GB buffer).
-  #   Vision disabled until bug is fixed or mmproj is optimized for mistral3.
-  #   --n-gpu-layers 99 causes OOM with 131K ctx — use --fit on instead.
-  # Apache 2.0 license
-  "ministral-3-3b":
-    name: "Ministral 3 3B"
-    unlisted: true
-    description: "Edge tool-calling + 128K context (UD-Q5_K_XL, text-only)"
-    tags: ["tools"]
-    cmd: |
-        ${llama_server} --port ${PORT}
-        --model ${models_dir}/Ministral-3-3B-Instruct-2512-UD-Q5_K_XL.gguf
-        --fit on
-        --fit-ctx 8192
-        --ctx-size 131072
-        --parallel 4
-        --cont-batching
-        --temp ${default_temp}
-        --top-p ${default_top_p}
-        --top-k ${default_top_k}
-        --min-p ${default_min_p}
-        --repeat-penalty ${default_repeat_penalty}
-        --jinja
-    metadata:
-      size: "2.31 GB (UD-Q5_K_XL)"
-      context: "8K-128K (dynamic via --fit)"
-      vram_usage: "~3 GB VRAM with --fit on"
-      source: "unsloth/Ministral-3-3B-Instruct-2512-GGUF"
-      kv_cache: "q4_0 + attn_rot"
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: mistral3
-      parameters: 3000000000
-      context_length: 131072
-      embedding_length: 3072
-      quantization: Q4_K_M
-      warning: "Uses mistral3 arch — ONLY runs on llama.cpp upstream, NOT ik_llama.cpp. Vision disabled: mmproj crashes with CUDA OOM on mistral3. --n-gpu-layers 99 causes OOM with 131K ctx, use --fit on instead."
+# -------------------------------------------
+# MINISTRAL-3-3B — Mistral Small 3.2 family
+# -------------------------------------------
+# Dense 3.4B params, text-only (vision/mmproj crashes on CUDA — mistral3 arch)
+# Mistral's latest edge model — tool calling, 256K context
+# Architecture: mistral3 — ONLY supported in llama.cpp upstream (NOT ik_llama.cpp)
+# Uses ${llama_server} (upstream), NOT ${ik_llama_server}
+# UD-Q5_K_XL: 2.31 GB — fits entirely in VRAM with --fit
+# --fit on: auto offload layers to GPU, keeps KV cache in VRAM
+# --parallel 4 --cont-batching: concurrent requests
+# --ctx-size 131072: 128K context (model supports 256K, 128K practical for 3B)
+# Tool calling: mistral template (chat_template=ministral_3)
+# NOTE: mmproj crashes llama-server with CUDA alloc error (~13.9 GB buffer).
+#   Vision disabled until bug is fixed or mmproj is optimized for mistral3.
+#   --n-gpu-layers 99 causes OOM with 131K ctx — use --fit on instead.
+# Apache 2.0 license
+"ministral-3-3b":
+  name: "Ministral 3 3B"
+  unlisted: true
+  description: "Edge tool-calling + 128K context (UD-Q5_K_XL, text-only)"
+  tags: ["tools"]
+  cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Ministral-3-3B-Instruct-2512-UD-Q5_K_XL.gguf
+      --fit on
+      --fit-ctx 8192
+      --ctx-size 131072
+      --parallel 4
+      --cont-batching
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --jinja
+  metadata:
+    size: "2.31 GB (UD-Q5_K_XL)"
+    context: "8K-128K (dynamic via --fit)"
+    vram_usage: "~3 GB VRAM with --fit on"
+    source: "unsloth/Ministral-3-3B-Instruct-2512-GGUF"
+    kv_cache: "q4_0 + attn_rot"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: mistral3
+    parameters: 3000000000
+    context_length: 131072
+    embedding_length: 3072
+    quantization: Q4_K_M
+    warning: "Uses mistral3 arch — ONLY runs on llama.cpp upstream, NOT ik_llama.cpp. Vision disabled: mmproj crashes with CUDA OOM on mistral3. --n-gpu-layers 99 causes OOM with 131K ctx, use --fit on instead."

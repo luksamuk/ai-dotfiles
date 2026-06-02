@@ -6,60 +6,60 @@
 # head_dim=256 → attn_rot ✅
 # Uses Bee backend with TurboQuant — same config as qwen3.5-4b (proven stable)
 # -------------------------------------------
-  "qwen3.5-4b-abliterated":
-    name: "Qwen3.5 4B Abliterated"
-    description: "Adversarial testing — no refusal (TurboQuant, Bee backend)"
-    cmd: |
-      ${bee_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.5-4B-abliterated-i1-Q4_K_M.gguf
-      --no-mmproj
-      --n-gpu-layers 99
-      --ctx-size 131072
-      --temp ${default_temp}
-      --top-p ${default_top_p}
-      --top-k ${default_top_k}
-      --min-p ${default_min_p}
-      --repeat-penalty ${default_repeat_penalty}
-      --reasoning on
-      --reasoning-loop-guard force-close
-      --reasoning-loop-min-tokens 1024
-      --reasoning-loop-window 2048
-      --cache-type-k turbo3_tcq
-      --cache-type-v turbo3_tcq
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    metadata:
-      architecture: qwen35
-      parameters: 4210000000
-      context_length: 262144
-      embedding_length: 2560
-      quantization: i1-Q4_K_M
-      size: "~2.71 GB (i1-Q4_K_M)"
-      context: "64K-128K (TurboQuant enables longer context)"
-      vram_usage: "~3.5GB VRAM (model + turbo3_tcq cache)"
-      source: "mradermacher/Qwen3.5-4B-abliterated-i1-GGUF (i1-Q4_K_M)"
-      kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      note: "Abliterated variant for Sprachspiel adversarial testing — no refusal. Same qwen35 arch as base 4B, identical config proven stable with TurboQuant."
+"qwen3.5-4b-abliterated":
+  name: "Qwen3.5 4B Abliterated"
+  description: "Adversarial testing — no refusal (TurboQuant, Bee backend)"
+  cmd: |
+    ${bee_server} --port ${PORT}
+    --model ${models_dir}/Qwen3.5-4B-abliterated-i1-Q4_K_M.gguf
+    --no-mmproj
+    --n-gpu-layers 99
+    --ctx-size 131072
+    --temp ${default_temp}
+    --top-p ${default_top_p}
+    --top-k ${default_top_k}
+    --min-p ${default_min_p}
+    --repeat-penalty ${default_repeat_penalty}
+    --reasoning on
+    --reasoning-loop-guard force-close
+    --reasoning-loop-min-tokens 1024
+    --reasoning-loop-window 2048
+    --cache-type-k turbo3_tcq
+    --cache-type-v turbo3_tcq
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 60
+  metadata:
+    architecture: qwen35
+    parameters: 4210000000
+    context_length: 262144
+    embedding_length: 2560
+    quantization: i1-Q4_K_M
+    size: "~2.71 GB (i1-Q4_K_M)"
+    context: "64K-128K (TurboQuant enables longer context)"
+    vram_usage: "~3.5GB VRAM (model + turbo3_tcq cache)"
+    source: "mradermacher/Qwen3.5-4B-abliterated-i1-GGUF (i1-Q4_K_M)"
+    kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    note: "Abliterated variant for Sprachspiel adversarial testing — no refusal. Same qwen35 arch as base 4B, identical config proven stable with TurboQuant."

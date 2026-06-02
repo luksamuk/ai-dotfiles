@@ -9,17 +9,21 @@ Architecture:
   models/_removed/*.yaml    — dead code (commented-out models, reference only)
   config-footer.yaml       — hooks + matrix section (everything after models)
 
-The build process:
-  1. Read config-base.yaml (header + macros)
-  2. Insert "models:" section header
-  3. Append each model fragment in ORIGINAL_ORDER (preserving comments/formatting)
-  4. Append config-footer.yaml (hooks + matrix)
-  5. Validate the merged result parses as correct YAML
-  6. Write to config.yaml (repo) and sync to ~/.config/llama-swap/config.yaml
+The build process (YAML merge):
+  1. Parse config-base.yaml as YAML dict (preserving comments via ruamel.yaml)
+  2. Parse each model fragment as YAML (preserving scalar styles via ruamel.yaml)
+  3. Collect models into ordered dict under "models" key
+  4. Parse config-footer.yaml as YAML dict (preserving comments via ruamel.yaml)
+  5. Merge: base + models + footer → single document
+  6. Validate the merged result parses as correct YAML
+  7. Write to config.yaml and sync to live config path
+
+Uses ruamel.yaml round-trip mode to preserve comments, key ordering,
+multiline block scalars (|), and quoted string styles. Falls back to
+pyyaml when ruamel.yaml is not available (with reduced formatting).
 
 Validations (in discover_fragments):
   - Each fragment must parse as YAML with exactly 1 model key
-  - Model key must start at column 2+ (fragments live under "models:")
   - Fragments in _disabled/ must have unlisted: true (auto-injected if missing)
 
 Usage:
@@ -31,9 +35,16 @@ Usage:
 
 import sys
 import os
-import re
-import yaml
 import difflib
+import yaml
+
+try:
+    from ruamel.yaml import YAML as RuamelYAML
+    from ruamel.yaml.comments import CommentedMap
+    HAS_RUAMEL = True
+except ImportError:
+    HAS_RUAMEL = False
+    CommentedMap = dict  # type: ignore[misc,assignment]
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(SCRIPT_DIR, "models")
@@ -69,11 +80,45 @@ ORIGINAL_ORDER = [
 ]
 
 
+def _make_ruamel_yaml():
+    """Create a ruamel.yaml instance for round-trip preservation."""
+    ry = RuamelYAML()
+    ry.preserve_quotes = True
+    ry.default_flow_style = False
+    ry.width = 4096  # Avoid line wrapping
+    ry.indent(mapping=2, sequence=2, offset=2)
+    return ry
+
+
+def _deep_copy_commented(obj):
+    """Deep copy a ruamel.yaml CommentedMap/CommentedSeq, preserving
+    scalar string types (LiteralScalarString, etc.) and comments.
+    Plain dicts/lists are returned as-is (caller should not mutate originals).
+    """
+    if isinstance(obj, CommentedMap):
+        new = CommentedMap()
+        for k, v in obj.items():
+            new[k] = _deep_copy_commented(v)
+        # Copy comment info if present
+        if hasattr(obj, "ca") and obj.ca.comment:
+            new.ca.comment = obj.ca.comment
+        return new
+    elif isinstance(obj, list):
+        # Could be CommentedSeq — just copy items
+        return [_deep_copy_commented(item) for item in obj]
+    else:
+        # Scalars (including LiteralScalarString etc.) are immutable;
+        # return as-is so scalar style is preserved in output.
+        return obj
+
+
 def discover_fragments():
     """Discover all model fragments from models/ and models/_disabled/.
 
-    Fragments in _disabled/ MUST have unlisted: true. If missing, it is
-    auto-injected into the fragment content and a warning is printed.
+    Each fragment is validated as YAML with exactly 1 model key.
+    Fragments in _disabled/ MUST have unlisted: true — auto-injected if missing.
+
+    Returns dict of {model_id: fpath} for active and disabled.
     """
     active = {}
     disabled = {}
@@ -90,7 +135,7 @@ def discover_fragments():
             fpath = os.path.join(directory, fname)
             model_id = fname.rsplit(".", 1)[0]
 
-            # Validate it parses as YAML with exactly 1 model key
+            # Validate: fragment must parse as YAML with exactly 1 model key
             with open(fpath, "r") as f:
                 content = f.read()
             try:
@@ -100,110 +145,331 @@ def discover_fragments():
                 sys.exit(1)
 
             if not isinstance(data, dict) or len(data) != 1:
-                print(f"ERROR: {fpath}: expected 1 model key, got {len(data) if isinstance(data, dict) else 'non-dict'}", file=sys.stderr)
+                n_keys = len(data) if isinstance(data, dict) else "non-dict"
+                print(
+                    f"ERROR: {fpath}: expected 1 model key, got {n_keys}",
+                    file=sys.stderr,
+                )
                 sys.exit(1)
 
-            # Validate indentation: model key must start at column 2+
-            # (fragments are concatenated under "models:" and need 2-space indent)
-            first_key_line = None
-            for line in content.split("\n"):
-                stripped = line.lstrip()
-                if stripped and not stripped.startswith("#"):
-                    first_key_line = line
-                    break
-            if first_key_line is not None:
-                indent = len(first_key_line) - len(first_key_line.lstrip())
-                if indent < 2:
-                    print(
-                        f"  ERROR: {fname} model key at column {indent} — must be 2+ "
-                        f"(fragments live under 'models:')",
-                        file=sys.stderr,
-                    )
-                    sys.exit(1)
-
             # Enforce: fragments in _disabled/ must have unlisted: true
-            if is_disabled:
-                model_key = next(iter(data))
-                model_cfg = data[model_key]
-                if not model_cfg.get("unlisted", False):
-                    print(
-                        f"  WARNING: {fname} in _disabled/ missing unlisted: true — auto-injecting",
-                        file=sys.stderr,
-                    )
-                    # Rewrite the fragment with unlisted: true
-                    lines = content.split("\n")
-                    new_lines = []
-                    injected = False
-                    # Match key with or without YAML quotes: `model_key:` or `"model_key":`
-                    key_patterns = [f"{model_key}:", f'"{model_key}":', f"'{model_key}':"]
-                    # Determine model key indent to place unlisted at same level as other properties
-                    key_indent = 4  # default: properties are at indent 4 under "models:" (2) + model key (2)
-                    for line in lines:
-                        stripped = line.strip()
-                        if stripped in key_patterns:
-                            key_indent = len(line) - len(line.lstrip()) + 2
-                            break
-                    unlisted_line = " " * key_indent + "unlisted: true"
-                    for line in lines:
-                        new_lines.append(line)
-                        if not injected and line.strip() in key_patterns:
-                            new_lines.append(unlisted_line)
-                            injected = True
-                    content = "\n".join(new_lines)
-                    with open(fpath, "w") as f:
-                        f.write(content)
+            model_key = next(iter(data))
+            model_cfg = data[model_key]
+            if is_disabled and not model_cfg.get("unlisted", False):
+                print(
+                    f"  WARNING: {fname} in _disabled/ missing unlisted: true — auto-injecting",
+                    file=sys.stderr,
+                )
+                inject_unlisted(fpath, model_key)
 
             target[model_id] = fpath
 
     return active, disabled
 
 
-def build_config():
-    """Build the full config.yaml text by assembling fragments."""
-    with open(BASE_FILE, "r") as f:
-        base_text = f.read().rstrip()
-    with open(FOOTER_FILE, "r") as f:
-        footer_text = f.read().rstrip()
+def inject_unlisted(fpath, model_key):
+    """Inject 'unlisted: true' into a fragment file after the model key line."""
+    with open(fpath, "r") as f:
+        content = f.read()
 
-    # Build models section
+    lines = content.split("\n")
+    new_lines = []
+    injected = False
+    key_patterns = [f"{model_key}:", f'"{model_key}":', f"'{model_key}':"]
+
+    # Determine indent for unlisted line (model key indent + 2)
+    key_indent = 2  # default for top-level model keys
+    for line in lines:
+        stripped = line.strip()
+        if stripped in key_patterns:
+            key_indent = len(line) - len(line.lstrip()) + 2
+            break
+
+    unlisted_line = " " * key_indent + "unlisted: true"
+    for line in lines:
+        new_lines.append(line)
+        if not injected and line.strip() in key_patterns:
+            new_lines.append(unlisted_line)
+            injected = True
+
+    content = "\n".join(new_lines)
+    with open(fpath, "w") as f:
+        f.write(content)
+
+
+def load_fragment_roundtrip(fpath):
+    """Load a model fragment using ruamel.yaml round-trip mode.
+
+    Preserves scalar styles (quoted strings, literal blocks |) and
+    fragment-internal comments. Returns (model_key, model_config)
+    where model_config is a CommentedMap.
+    """
+    ry = _make_ruamel_yaml()
+    with open(fpath, "r") as f:
+        data = ry.load(f)
+    model_key = next(iter(data))
+    return model_key, data[model_key]
+
+
+def load_fragment_plain(fpath):
+    """Load a model fragment using pyyaml (fallback).
+
+    Returns (model_key, model_config) as plain dicts.
+    """
+    with open(fpath, "r") as f:
+        content = f.read()
+    data = yaml.safe_load(content)
+    model_key = next(iter(data))
+    return model_key, data[model_key]
+
+
+def _extract_fragment_comment(fpath):
+    """Extract pre-key comment text from a model fragment file.
+
+    When ruamel.yaml loads a fragment, comments before the model key
+    are stored as document-level comments (data.ca.comment). This function
+    extracts those comments and returns them as plain text (without '#'
+    prefix, since ruamel adds that during serialization).
+
+    Returns the comment text string, or None if no comments.
+    """
+    if not HAS_RUAMEL:
+        return None
+
+    ry = _make_ruamel_yaml()
+    with open(fpath, "r") as f:
+        data = ry.load(f.read())
+
+    if data is None or not hasattr(data, 'ca') or data.ca.comment is None:
+        return None
+
+    # Document comments are stored as [None, [CommentToken, ...]]
+    doc_comment = data.ca.comment
+    if not isinstance(doc_comment, list) or len(doc_comment) < 2 or doc_comment[1] is None:
+        return None
+
+    lines = []
+    for ct in doc_comment[1]:
+        text = ct.value.rstrip('\n')
+        # Strip '#' prefix — ruamel adds it during serialization
+        if text.startswith('# '):
+            text = text[2:]
+        elif text.startswith('#'):
+            text = text[1:].lstrip()
+        else:
+            text = text  # blank line or non-comment text
+        lines.append(text)
+
+    comment_text = '\n'.join(lines)
+    return comment_text if comment_text.strip() else None
+
+
+def build_config():
+    """Build the full config.yaml by parsing and merging YAML dicts.
+
+    Instead of text concatenation, we parse each component as YAML,
+    merge the dicts programmatically, and dump the result. This ensures
+    structural correctness and eliminates format errors from concatenation.
+
+    When ruamel.yaml is available:
+      - Base and footer are parsed in round-trip mode (preserves comments)
+      - Fragment model data preserves scalar styles (|, quoted strings)
+      - Comments in base/footer survive; comments in fragment files are
+        lost (they're ephemeral build artifacts)
+    """
+    if HAS_RUAMEL:
+        # Load base and footer with round-trip to preserve comments
+        ry = _make_ruamel_yaml()
+        with open(BASE_FILE, "r") as f:
+            base_data = ry.load(f)
+        with open(FOOTER_FILE, "r") as f:
+            footer_data = ry.load(f)
+
+        if base_data is None:
+            base_data = CommentedMap()
+        if footer_data is None:
+            footer_data = CommentedMap()
+    else:
+        with open(BASE_FILE, "r") as f:
+            base_data = yaml.safe_load(f)
+        with open(FOOTER_FILE, "r") as f:
+            footer_data = yaml.safe_load(f)
+
+        if base_data is None:
+            base_data = {}
+        if footer_data is None:
+            footer_data = {}
+
+    # Build models section by loading each fragment
     active, disabled = discover_fragments()
     all_fragments = {**active, **disabled}
 
-    models_section = [
-        "",
-        "# ===========================================",
-        "# MODELOS (nomes estilo Ollama: modelo:tamanho)",
-        "# ===========================================",
-        "models:",
-    ]
-
+    # Collect model configs in ORIGINAL_ORDER, then alphabetically for new ones
+    models_ordered = []
     added = set()
+
+    load_fn = load_fragment_roundtrip if HAS_RUAMEL else load_fragment_plain
+
+    # Collect fragment comments (pre-key comment headers from each fragment file)
+    fragment_comments = {}
+
     for model_id in ORIGINAL_ORDER:
         if model_id not in all_fragments:
             continue
-        fpath = all_fragments[model_id]
-        with open(fpath, "r") as f:
-            frag_content = f.read().rstrip()
-        models_section.append("")
-        models_section.extend(frag_content.split("\n"))
+        model_key, model_cfg = load_fn(all_fragments[model_id])
+        models_ordered.append((model_key, model_cfg))
         added.add(model_id)
+        # Collect fragment pre-key comments if using ruamel
+        if HAS_RUAMEL:
+            fragment_comments[model_key] = _extract_fragment_comment(all_fragments[model_id])
 
     # Add any new models not in original order
     for model_id in sorted(all_fragments.keys()):
         if model_id in added:
             continue
-        fpath = all_fragments[model_id]
-        with open(fpath, "r") as f:
-            frag_content = f.read().rstrip()
-        models_section.append("")
-        models_section.extend(frag_content.split("\n"))
+        model_key, model_cfg = load_fn(all_fragments[model_id])
+        models_ordered.append((model_key, model_cfg))
         added.add(model_id)
         print(f"  NEW model (not in original order): {model_id}", file=sys.stderr)
+        # Collect fragment pre-key comments if using ruamel
+        if HAS_RUAMEL:
+            fragment_comments[model_key] = _extract_fragment_comment(all_fragments[model_id])
 
-    # Assemble: base + models + footer
-    output = base_text + "\n".join(models_section) + "\n\n" + footer_text + "\n"
+    # Merge into final config
+    if HAS_RUAMEL:
+        config_data = _merge_ruamel(base_data, models_ordered, footer_data, fragment_comments)
+    else:
+        config_data = _merge_plain(base_data, models_ordered, footer_data)
+
+    # Serialize
+    output = _serialize(config_data)
 
     return output, active, disabled
+
+
+def _merge_ruamel(base_data, models_ordered, footer_data, fragment_comments):
+    """Merge config parts using ruamel.yaml CommentedMaps.
+
+    Preserves comments from base_data, footer_data, and fragment files.
+    Models are inserted in order into a CommentedMap under 'models'.
+    Each model config is deep-copied to preserve scalar styles.
+    Fragment pre-key comments are attached as before-key comments.
+    Footer key-level comments are transferred to the base map.
+    """
+    import copy
+
+    # Build models section as CommentedMap with ordered keys
+    models_map = CommentedMap()
+    for model_key, model_cfg in models_ordered:
+        if isinstance(model_cfg, CommentedMap):
+            models_map[model_key] = _deep_copy_commented(model_cfg)
+        elif isinstance(model_cfg, dict):
+            models_map[model_key] = CommentedMap(model_cfg)
+        else:
+            models_map[model_key] = model_cfg
+
+        # Attach fragment pre-key comments as before-key comments on the model
+        if model_key in fragment_comments and fragment_comments[model_key]:
+            _set_before_key_comment(models_map, model_key, fragment_comments[model_key])
+
+    # Insert models into base
+    base_data["models"] = models_map
+
+    # Merge footer keys into base (hooks, matrix, etc.)
+    # Transfer footer key-level comments to base
+    if isinstance(footer_data, CommentedMap):
+        for key in footer_data:
+            base_data[key] = footer_data[key]
+            # Transfer before-key comments from footer to base
+            if hasattr(footer_data, 'ca') and footer_data.ca.items and key in footer_data.ca.items:
+                if not hasattr(base_data, 'ca') or base_data.ca.items is None:
+                    base_data.ca.items = {}
+                base_data.ca.items[key] = copy.deepcopy(footer_data.ca.items[key])
+
+        # Transfer footer document comment to the first footer key in base
+        if hasattr(footer_data, 'ca') and footer_data.ca.comment:
+            first_key = next(iter(footer_data))
+            _merge_document_comment(base_data, first_key, footer_data.ca.comment)
+    elif isinstance(footer_data, dict):
+        for key in footer_data:
+            base_data[key] = footer_data[key]
+
+    return base_data
+
+
+def _set_before_key_comment(commented_map, key, comment_text):
+    """Set a before-key comment on a key in a CommentedMap.
+
+    comment_text should be plain text without '#' prefix —
+    ruamel.yaml will add the '#' prefix when serializing.
+    """
+    commented_map.yaml_set_comment_before_after_key(key, before=comment_text)
+
+
+def _merge_document_comment(commented_map, key, doc_comment):
+    """Merge a document-level comment (from ruamel.yaml parsing) as a
+    before-key comment on the specified key in the map.
+
+    Handles the [None, [CommentToken...]] format from ruamel.yaml.
+    """
+    if doc_comment is None:
+        return
+
+    # Extract text from CommentTokens if present
+    if isinstance(doc_comment, list) and len(doc_comment) >= 2 and doc_comment[1]:
+        comment_tokens = doc_comment[1]
+        lines = []
+        for ct in comment_tokens:
+            text = ct.value.rstrip('\n')
+            # Strip '#' prefix since yaml_set_comment_before_after_key adds it
+            if text.startswith('# '):
+                text = text[2:]
+            elif text.startswith('#'):
+                text = text[1:].lstrip()
+            lines.append(text)
+        comment_text = '\n'.join(lines)
+        if comment_text:
+            commented_map.yaml_set_comment_before_after_key(key, before=comment_text)
+
+
+def _merge_plain(base_data, models_ordered, footer_data):
+    """Merge config parts using plain dicts (fallback)."""
+    models_dict = {}
+    for model_key, model_cfg in models_ordered:
+        models_dict[model_key] = model_cfg
+
+    merged = dict(base_data)
+    merged["models"] = models_dict
+    if footer_data:
+        for key, value in footer_data.items():
+            merged[key] = value
+    return merged
+
+
+def _serialize(config_data):
+    """Serialize config data to YAML string.
+
+    Uses ruamel.yaml for round-trip preservation if available,
+    otherwise falls back to pyyaml.
+    """
+    if HAS_RUAMEL:
+        import io
+        ry = _make_ruamel_yaml()
+        stream = io.StringIO()
+        ry.dump(config_data, stream)
+        yaml_output = stream.getvalue()
+    else:
+        yaml_output = yaml.dump(
+            config_data,
+            default_flow_style=False,
+            allow_unicode=True,
+            sort_keys=False,
+            width=4096,
+        )
+
+    # Ensure file ends with single newline
+    yaml_output = yaml_output.rstrip("\n") + "\n"
+    return yaml_output
 
 
 def validate_config(config_text):
@@ -229,8 +495,6 @@ def validate_config(config_text):
     model_ids = set(config.get("models", {}).keys())
     for var_name, model_id in matrix.get("vars", {}).items():
         if model_id not in model_ids:
-            # Disabled/unlisted models may still appear in the config with unlisted:true
-            # Only flag as error if the model fragment doesn't exist at all
             pass
 
     return errors
@@ -269,7 +533,8 @@ def main():
         list_fragments()
         return 0
 
-    print("Building config from fragments...", file=sys.stderr)
+    engine = "ruamel.yaml round-trip" if HAS_RUAMEL else "pyyaml"
+    print(f"Building config from fragments (YAML merge, {engine})...", file=sys.stderr)
     output_text, active, disabled = build_config()
 
     # Validate
