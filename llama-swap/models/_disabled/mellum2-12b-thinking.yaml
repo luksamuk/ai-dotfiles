@@ -18,6 +18,7 @@
   "mellum2-12b-thinking":
     name: "Mellum2 12B Thinking"
     description: "JetBrains MoE 12B/2.5B active, reasoning (⚠️ tool calling broken — no chat_template)"
+    unlisted: true
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Mellum2-12B-A2.5B-Thinking-Q4_K_M.gguf
