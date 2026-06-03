@@ -108,6 +108,40 @@ short_size() {
   echo "$1" | perl -ne 'if (/([\d.]+)\s*(GB|MB|KB)/i) { print "$1 $2" } else { print "-" }'
 }
 
+# Calculate total disk size from size field, summing mmproj for vision models.
+# Input: size="~0.55 GB (Q5_K_M) + 1.1 GB mmproj", vision=true
+# Output: "1.7 GB"  (0.55 + 1.1, rounded)
+disk_size() {
+  local size_raw="$1"
+  local vision="$2"
+  local total_mb=0
+
+  # Extract all "number UNIT" pairs and sum them in MB
+  while IFS= read -r match; do
+    local val unit
+    val=$(echo "$match" | awk '{print $1}')
+    unit=$(echo "$match" | awk '{print $2}')
+    case "$unit" in
+      TB|tb) total_mb=$(awk "BEGIN {printf \"%.0f\", $total_mb + $val * 1048576}") ;;
+      GB|gb) total_mb=$(awk "BEGIN {printf \"%.0f\", $total_mb + $val * 1024}") ;;
+      MB|mb) total_mb=$(awk "BEGIN {printf \"%.0f\", $total_mb + $val}") ;;
+      KB|kb) total_mb=$(awk "BEGIN {printf \"%.0f\", $total_mb + $val / 1024}") ;;
+      *)     total_mb=$(awk "BEGIN {printf \"%.0f\", $total_mb + $val * 1024}") ;;  # assume GB
+    esac
+  done < <(echo "$size_raw" | perl -ne 'while (/([\d.]+)\s*(TB|GB|MB|KB)/gi) { print "$1 $2\n" }')
+
+  if (( total_mb == 0 )); then
+    echo "-"
+    return
+  fi
+
+  if (( total_mb >= 1024 )); then
+    awk "BEGIN { printf \"%.1f GB\", $total_mb / 1024 }" | sed 's/\.0 GB/ GB/'
+  else
+    echo "${total_mb} MB"
+  fi
+}
+
 # Extract short context: "1K-131K" from "1K-131K (safe max; 200K works but zero VRAM headroom)" etc.
 # Handles both ranges (1K-131K) and single values (32K, 8K)
 short_context() {
@@ -251,7 +285,7 @@ cmd_list() {
   fi
 
   {
-    printf "NAME\tARCH\tPARAMS\tCTX\tEMBED\tQUANT\tTAGS\n"
+    printf "NAME\tTAGS\tARCH\tPARAMS\tCTX\tEMBED\tQUANT\tSIZE\n"
 
     echo "$data" | jq -r '
       .data[] |
@@ -263,10 +297,12 @@ cmd_list() {
         ctx: (.meta.llamaswap.context_length // "-"),
         embed: (.meta.llamaswap.embedding_length // "-"),
         quant: (.meta.llamaswap.quantization // "-"),
-        features: (.meta.llamaswap.features | tostring)
-      } | [.id, .arch, (.params | tostring), (.ctx | tostring), (.embed | tostring), .quant, .features] | @tsv
-    ' | while IFS=$'\t' read -r id arch params ctx embed quant features; do
-      local tags p c e
+        size: (.meta.llamaswap.size // "-"),
+        features: (.meta.llamaswap.features | tostring),
+        vision: (.meta.llamaswap.features.vision // false)
+      } | [.id, .arch, (.params | tostring), (.ctx | tostring), (.embed | tostring), .quant, .size, .features, .vision] | @tsv
+    ' | while IFS=$'\t' read -r id arch params ctx embed quant size features vision; do
+      local tags p c e s
       if [[ -n "$PRETTY" ]]; then
         tags=$(feat_emoji "$features")
       else
@@ -275,7 +311,8 @@ cmd_list() {
       p=$(short_params "$params")
       c=$(short_ctx "$ctx")
       e=$(short_ctx "$embed")
-      printf "${CYAN}%s\t%s\t%s\t%s\t%s\t%s\t${DIM}%s${RESET}\n" "$id" "$arch" "$p" "$c" "$e" "$quant" "$tags"
+      s=$(disk_size "$size" "$vision")
+      printf "${CYAN}%s\t${DIM}%s${RESET}\t%s\t%s\t%s\t%s\t%s\t${DIM}%s${RESET}\n" "$id" "$tags" "$arch" "$p" "$c" "$e" "$quant" "$s"
     done
   } | format_output
 }
