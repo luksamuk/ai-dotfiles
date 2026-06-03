@@ -20,6 +20,7 @@
     ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/gpt-oss-20b-Q4_K_M.gguf
     --jinja
+    --parallel-tool-calls
     --reasoning on
     --fit
     --fit-margin 768
