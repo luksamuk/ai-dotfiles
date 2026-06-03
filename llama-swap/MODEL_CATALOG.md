@@ -37,7 +37,7 @@
 
 ## Active Models
 
-### 1. gemma4-26b-moe — Gemma 4 26B A4B MoE
+### 1. gemma4-26b-a4b — Gemma 4 26B A4B MoE
 
 | Parameter | Value |
 |-----------|-------|
@@ -249,7 +249,7 @@
 
 ---
 
-### 12. qwen3.6-35b-moe — Qwen3.6 35B A3B MoE
+### 12. qwen3.6-35b-a3b — Qwen3.6 35B A3B MoE
 
 | Parameter | Value |
 |-----------|-------|
@@ -368,13 +368,13 @@ Configs in `models/_removed/` (dead code):
 
 | Issue | Affected Models | Details |
 |-------|-----------------|---------|
-| **Gemma 4 mmproj CUDA crash** | gemma4-26b-moe, gemma4-e2b, gemma4-e4b | llama.cpp issue [#21402](https://github.com/ggml-org/llama.cpp/issues/21402) — all Gemma 4 models are text-only |
+| **Gemma 4 mmproj CUDA crash** | gemma4-26b-a4b, gemma4-e2b, gemma4-e4b | llama.cpp issue [#21402](https://github.com/ggml-org/llama.cpp/issues/21402) — all Gemma 4 models are text-only |
 | **ik_llama segfault with LittleLamb 0.3B** | littlelamb-0.3b-tc | qwen3 arch incompatibility — use upstream only |
 | **ik_llama MTP OOM on 6 GB for dense** | Dense models with MTP | SSM buffer or overhead causes OOM — MTP disabled for dense models |
 | **BeeLlama turbo3_tcq MoE crash** | MoE models with 256 experts | Bug in Bee v0.1.2, may be fixed in v0.2.0 — avoid turbo3_tcq with MoE |
 | **MiniCPM5-1B tool calling broken** | (not in active roster) | llama.cpp autoparser `TAG_WITH_TAGGED` boundary bug |
 | **SGLang/vLLM OOM** | Any SGLang or vLLM backend | Both backends OOM on 6 GB VRAM — not viable |
-| **Gemma4 iSWA attn_rot** (FIXED) | gemma4-26b-moe, gemma4-e2b, gemma4-e4b | Fixed in commit `4eb19514d` (build b8815+) — `q4_0` cache now works correctly |
+| **Gemma4 iSWA attn_rot** (FIXED) | gemma4-26b-a4b, gemma4-e2b, gemma4-e4b | Fixed in commit `4eb19514d` (build b8815+) — `q4_0` cache now works correctly |
 | **BeeLlama lacks --fit** | qwen3.5-4b | Must use `--n-gpu-layers 99` instead; cannot use dynamic VRAM fitting |
 
 ---

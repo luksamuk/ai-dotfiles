@@ -676,7 +676,7 @@ models:
 # Architecture: gemma4 (Gemma4ForCausalLM)
 # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
 # -------------------------------------------
-  "gemma4-26b-moe":
+  "gemma4-26b-a4b":
     name: "Gemma 4 26B MoE"
     description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
     cmd: |
@@ -749,7 +749,7 @@ models:
 # --defer-experts: defers expert mmap on Linux → faster model loading
 # --flash-attn auto: disables FA on short prompts (saves overhead on MoE offloaded models)
 # -------------------------------------------
-  "qwen3.6-35b-moe":
+  "qwen3.6-35b-a3b":
     name: "Qwen3.6 35B MoE"
     description: "Qwen3.6 delivers substantial upgrades in agentic coding and thinking preservation. Built on direct community feedback for a more intuitive, responsive, and productive coding experience."
     cmd: |
@@ -1823,7 +1823,7 @@ models:
 # NOTE: GGUF ships with EMPTY chat_template — must use --chat-template-file with the Jinja
 # NOTE: --reasoning-format deepseek parses  tags into reasoning_content field
 # -------------------------------------------
-  "lfm2.5-8b-moe":
+  "lfm2.5-8b-a1b":
     name: "LFM2.5-8B-A1B"
     description: "Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Built for fast, reliable tool calling on consumer hardware."
     cmd: |
@@ -2982,7 +2982,7 @@ matrix:
   # NOTA: todo ID usado em sets/evict_costs DEVE estar definido aqui
   vars:
     # Atalhos para IDs longos (usados em sets e evict_costs)
-    gemma4m: gemma4-26b-moe
+    gemma4m: gemma4-26b-a4b
     # DeepSeek R1 Distill — REMOVED (poor perf on RTX 3050, SSD pressure)
     # ds14: ds-r1-distill-14b
     # ds32: ds-r1-distill-32b
@@ -3003,7 +3003,7 @@ matrix:
     # [REMOVED] ACE — no imatrix quants, worse perplexity than 9B regular
     g4: gemma4-e4b
     # Pesados
-    qw36: qwen3.6-35b-moe
+    qw36: qwen3.6-35b-a3b
     qc9: qwopus-coder-9b
     # qwopus: qwopus-35b         # DISABLED: model unlisted
     # gptoss: gpt-oss-20b        # DISABLED: model unlisted

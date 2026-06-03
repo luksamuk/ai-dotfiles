@@ -70,9 +70,9 @@ Notas:
 | =gemma4-e2b=                     | 🧠 Gemma 4 E2B                   |    131K  | sim    |
 | =gemma4-e4b=                     | 🧠 Gemma 4 E4B                   |    131K  | sim    |
 | =nemotron-3-nano-4b=             | 🧠 Nemotron 3 Nano 4B            |    131K  | sim    |
-| =gemma4-26b-moe=                 | 🧠 Gemma 4 26B MoE               |    131K  | sim    |
+| =gemma4-26b-a4b=                 | 🧠 Gemma 4 26B MoE               |    131K  | sim    |
 | =gpt-oss-20b=                    | 🧠 GPT-OSS 20B                   |    201K  | não    |
-| =qwen3.6-35b-moe=                | 🧠 Qwen3.6 35B MoE               |    131K  | sim    |
+| =qwen3.6-35b-a3b=                | 🧠 Qwen3.6 35B MoE               |    131K  | sim    |
 | =qwen3.6-35b-opus-4.7=           | 🧠 Qwen3.6 Opus 4.7 35B          |    131K  | sim    |
 
 Variantes =:think= ativam modo de raciocínio (ex.: =qwen3.6-35b-opus-4.7:think=). Todos os modelos acima possuem variante =:think= exceto =gpt-oss-20b=, totalizando 17 entradas.
@@ -156,7 +156,7 @@ Configuração recomendada em =settings.json= para modelos locais:
 pi --model glm-5.1:cloud
 
 # Usar modelo local (provider padrão já é llama.cpp)
-pi --model qwen3.6-35b-moe
+pi --model qwen3.6-35b-a3b
 
 # Usar modelo local com raciocínio
 pi --model "qwen3.6-35b-opus-4.7:think"
