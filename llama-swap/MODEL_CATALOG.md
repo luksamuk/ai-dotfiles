@@ -61,7 +61,7 @@
 | Parameter | Value |
 |-----------|-------|
 | **Source** | Google Gemma 4 E2B (2B dense) |
-| **Quant** | UD-Q3_K_XL Dynamic 2.0 (~2.72 GB) |
+| **Quant** | Q4_K_M (~2.89 GB) |
 | **Backend** | `llama_server` (upstream v674) |
 | **KV cache** | `${gemma_cache_k}`/`${gemma_cache_v}` = `q4_0`/`q4_0` + `attn_rot` (iSWA fix) |
 | **Flash attention** | `--flash-attn on` |
@@ -80,7 +80,7 @@
 | Parameter | Value |
 |-----------|-------|
 | **Source** | Google Gemma 4 E4B (4B dense) |
-| **Quant** | UD-Q3_K_XL (~4.5 GB) |
+| **Quant** | Q4_K_M (~4.63 GB) |
 | **Backend** | `ik_llama_server` (ik v4542) |
 | **KV cache** | `q8_0` K + `q4_0` V + hadamard (`-khad`/`-vhad`) |
 | **Flash attention** | `--flash-attn auto` |
@@ -215,7 +215,7 @@
 | Parameter | Value |
 |-----------|-------|
 | **Source** | Qwen3.5 4B (dense) |
-| **Quant** | UD-Q3_K_XL (~2.27 GB) |
+| **Quant** | i1-Q4_K_M (~2.52 GB) |
 | **Backend** | `bee_server` (BeeLlama v9459/v0.2.0) — TurboQuant KV cache |
 | **KV cache** | `turbo3_tcq` K+V (~5× compression) |
 | **Flash attention** | `--flash-attn on` |
@@ -235,7 +235,7 @@
 | Parameter | Value |
 |-----------|-------|
 | **Source** | Qwen3.5 9B (dense) |
-| **Quant** | UD-Q3_K_XL (~5.05 GB) |
+| **Quant** | UD-Q4_K_XL (~5.55 GB) |
 | **Backend** | `ik_llama_server` (ik v4542) — BeeLlama segfaults with this model |
 | **KV cache** | `q8_0` K + `q4_0` V + hadamard (`-khad`/`-vhad`) |
 | **Flash attention** | `--flash-attn auto` |

@@ -256,15 +256,16 @@ models:
 # QWEN3.5-4B - Bee BACKEND (TurboQuant KV cache)
 # Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
 # head_dim=256 → attn_rot ✅
-# --n-gpu-layers 99: model fits entirely in 6GB VRAM at Q3_XL (2.27GB model + cache)
-# Original upstream config moved to _disabled/qwen3.5-4b.yaml (q8_0 cache + --fit)
+# --n-gpu-layers 99: model fits entirely in 6GB VRAM at i1-Q4_K_M (2.52GB model + cache)
+# Upgraded from UD-Q3_K_XL (3.5 bpw) → i1-Q4_K_M (4.5 bpw): +0.25GB for ~3% PPL improvement
+# i1 imatrix calibrated on base Qwen3.5-4B weights by mradermacher
 # -------------------------------------------
   "qwen3.5-4b":
     name: "Qwen3.5 4B"
     description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
     cmd: |
       ${bee_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.5-4B-UD-Q3_K_XL.gguf
+      --model ${models_dir}/Qwen3.5-4B-i1-Q4_K_M.gguf
       --no-mmproj
       --n-gpu-layers 99
       --ctx-size 131072
@@ -296,10 +297,10 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "~2.27 GB (UD-Q3_K_XL Dynamic 2.0)"
+      size: "~2.52 GB (i1-Q4_K_M)"
       context: "64K-128K (TurboQuant enables longer context)"
-      vram_usage: "~3GB VRAM (model + turbo3_tcq cache, ~5x less KV memory)"
-      source: "unsloth/Qwen3.5-4B-GGUF (UD-Q3_K_XL)"
+      vram_usage: "~3.2GB VRAM (model + turbo3_tcq cache, ~5x less KV memory)"
+      source: "mradermacher/Qwen3.5-4B-i1-GGUF (i1-Q4_K_M)"
       kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
       features:
         completion: true
@@ -314,16 +315,17 @@ models:
       parameters: 4210000000
       context_length: 262144
       embedding_length: 2560
-      quantization: Q3_K_XL
-      warning: "TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99)."
+      quantization: i1-Q4_K_M
+      note: "Upgraded from UD-Q3_K_XL → i1-Q4_K_M. i1 imatrix calibrated on base Qwen3.5-4B. ~3% PPL improvement at +0.25GB cost."
 # -------------------------------------------
 # QWEN3.5-9B - ik BACKEND (Hadamard KV cache)
-# Dense 9B params, UD-Q3_K_XL ~5.05GB.
+# Dense 9B params, UD-Q4_K_XL ~5.55GB.
 # Bee/TurboQuant segfaults with this model — use ik with hadamard instead.
 # --flash-attn auto: disables FA on short contexts for MoE/offload savings
 # KV cache: q8_0 (K) + q4_0 (V) + hadamard = quality near-fp16
-# --fit on --fit-target 512: dynamic GPU offload
+# --fit on --fit-margin 512: dynamic GPU offload
 # Dual mode: base (chat, no think) and :think (reasoning)
+# Upgraded from UD-Q3_K_XL (3.5 bpw) → UD-Q4_K_XL (4.5 bpw): +0.85GB for ~3% PPL improvement
 # Bee backup: _disabled/qwen3.5-9b-bee.yaml (seg fault with turbo3_tcq)
 # -------------------------------------------
   "qwen3.5-9b":
@@ -331,7 +333,7 @@ models:
     description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
     cmd: |
       ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.5-9B-UD-Q3_K_XL.gguf
+      --model ${models_dir}/Qwen3.5-9B-UD-Q4_K_XL.gguf
       # No --no-mmproj: ik doesn't support this flag (upstream-only)
       --fit
       --fit-margin 512
@@ -365,10 +367,10 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "~5.05 GB (UD-Q3_K_XL Dynamic 2.0)"
+      size: "~5.55 GB (UD-Q4_K_XL Dynamic 2.0)"
       context: "64K-128K (dynamic)"
-      vram_usage: "~5GB VRAM (text-only, ik with hadamard cache)"
-      source: "unsloth/Qwen3.5-9B-GGUF"
+      vram_usage: "~5.5GB VRAM (text-only, ik with hadamard cache)"
+      source: "unsloth/Qwen3.5-9B-GGUF (UD-Q4_K_XL)"
       kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
       features:
         completion: true
@@ -383,19 +385,20 @@ models:
       parameters: 8950000000
       context_length: 262144
       embedding_length: 4096
-      quantization: Q3_K_XL
-      warning: "Vision disabled temporarily. Bee/TurboQuant segfaults with this model — use ik backend."
+      quantization: UD-Q4_K_XL
+      note: "Upgraded from UD-Q3_K_XL → UD-Q4_K_XL. UD Dynamic 2.0 allocates more bits to critical layers. ~3% PPL improvement at +0.85GB cost."
 # -------------------------------------------
 # GEMMA-4-E4B - ik BACKEND (Hadamard KV cache)
 # Upstream config with q4_0 cache. Bee/TurboQuant was slower (36 vs 40 tok/s).
 # Switched from upstream to ik for -khad/-vhad quality improvement.
+# Upgraded from UD-Q3_K_XL (3.5 bpw) → Q4_K_M (4.5 bpw): +0.36GB for ~3% PPL improvement
 # -------------------------------------------
   "gemma4-e4b":
     name: "Gemma 4 E4B"
     description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
     cmd: |
       ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-E4B-it-UD-Q3_K_XL.gguf
+      --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
       # No --no-mmproj: ik doesn't support this flag (upstream-only)
       --fit
       --fit-margin 512
@@ -428,10 +431,10 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "~4.5 GB (UD-Q3_K_XL Dynamic 2.0)"
+      size: "~4.63 GB (Q4_K_M)"
       context: "64K-128K (dynamic)"
-      vram_usage: "~5GB VRAM (fits with mmproj!)"
-      source: "unsloth/gemma-4-E4B-it-GGUF"
+      vram_usage: "~5.3GB VRAM (fits with mmproj)"
+      source: "unsloth/gemma-4-E4B-it-GGUF (Q4_K_M)"
       kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
       features:
         completion: true
@@ -446,14 +449,14 @@ models:
       parameters: 7520000000
       context_length: 131072
       embedding_length: 2560
-      quantization: Q3_K_XL
-      warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."
+      quantization: Q4_K_M
+      note: "Upgraded from UD-Q3_K_XL → Q4_K_M. ~3% PPL improvement at +0.36GB cost. Tightest VRAM model — monitor with mmproj."
   "gemma4-e2b":
     name: "Gemma 4 E2B"
     description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-E2B-it-UD-Q3_K_XL.gguf
+      --model ${models_dir}/gemma-4-E2B-it-Q4_K_M.gguf
       --no-mmproj
       --fit on
       --fit-target 1024
@@ -484,10 +487,10 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "~2.72 GB (UD-Q3_K_XL Dynamic 2.0)"
+      size: "~2.89 GB (Q4_K_M)"
       context: "32K-128K (dynamic)"
-      vram_usage: "~3GB"
-      source: "unsloth/gemma-4-E2B-it-GGUF (UD-Q3_K_XL)"
+      vram_usage: "~3.2GB"
+      source: "unsloth/gemma-4-E2B-it-GGUF (Q4_K_M)"
       kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
       features:
         completion: true
@@ -502,7 +505,7 @@ models:
       parameters: 4650000000
       context_length: 131072
       embedding_length: 1536
-      quantization: Q3_K_XL
+      quantization: Q4_K_M
 # -------------------------------------------
 # LFM2.5-1.2B-INSTRUCT - DENSE HYBRID (CONV + GQA)
 # Liquid AI's 1.2B dense instruct model — best tool-calling / agentic

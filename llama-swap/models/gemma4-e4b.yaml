@@ -2,13 +2,14 @@
 # GEMMA-4-E4B - ik BACKEND (Hadamard KV cache)
 # Upstream config with q4_0 cache. Bee/TurboQuant was slower (36 vs 40 tok/s).
 # Switched from upstream to ik for -khad/-vhad quality improvement.
+# Upgraded from UD-Q3_K_XL (3.5 bpw) → Q4_K_M (4.5 bpw): +0.36GB for ~3% PPL improvement
 # -------------------------------------------
 "gemma4-e4b":
   name: "Gemma 4 E4B"
   description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/gemma-4-E4B-it-UD-Q3_K_XL.gguf
+    --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
     # No --no-mmproj: ik doesn't support this flag (upstream-only)
     --fit
     --fit-margin 512
@@ -41,10 +42,10 @@
         top_p: 0.9
   ttl: 60
   metadata:
-    size: "~4.5 GB (UD-Q3_K_XL Dynamic 2.0)"
+    size: "~4.63 GB (Q4_K_M)"
     context: "64K-128K (dynamic)"
-    vram_usage: "~5GB VRAM (fits with mmproj!)"
-    source: "unsloth/gemma-4-E4B-it-GGUF"
+    vram_usage: "~5.3GB VRAM (fits with mmproj)"
+    source: "unsloth/gemma-4-E4B-it-GGUF (Q4_K_M)"
     kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
     features:
       completion: true
@@ -59,6 +60,6 @@
     parameters: 7520000000
     context_length: 131072
     embedding_length: 2560
-    quantization: Q3_K_XL
+    quantization: Q4_K_M
       # vision: disabled — mmproj crashes on CUDA (issue #21402)
-    warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."
+    note: "Upgraded from UD-Q3_K_XL → Q4_K_M. ~3% PPL improvement at +0.36GB cost. Tightest VRAM model — monitor with mmproj."

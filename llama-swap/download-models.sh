@@ -4,11 +4,11 @@
 #
 # Available models:
 #   qwen3.5-0.8b         - Qwen3.5-0.8B UD-Q3_K_XL (~0.46 GB) + mmproj (~196 MB) - fits in VRAM, vision+text
-#   qwen3.5-4b           - Qwen3.5-4B UD-Q3_K_XL (~2.27 GB) - fits in VRAM
+#   qwen3.5-4b           - Qwen3.5-4B i1-Q4_K_M (~2.52 GB) - fits in VRAM
 #   [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
-#   qwen3.5-9b           - Qwen3.5-9B UD-Q3_K_XL (~5.05 GB) - fits in VRAM
-#   gemma4-e4b           - Gemma-4 E4B UD-Q3_K_XL (~4.50 GB) - fits in VRAM
-#   gemma4-e2b           - Gemma-4 E2B UD-Q3_K_XL (~2.72 GB) - fits in VRAM
+#   qwen3.5-9b           - Qwen3.5-9B UD-Q4_K_XL (~5.55 GB) - fits in VRAM + mmproj
+#   gemma4-e4b           - Gemma-4 E4B Q4_K_M (~4.63 GB) - fits in VRAM + mmproj
+#   gemma4-e2b           - Gemma-4 E2B Q4_K_M (~2.89 GB) - fits in VRAM
 #   [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
 #   lfm2.5-vl-450m       - LFM2.5-VL-450M Q4_0 (0.22 GB) + mmproj F16 - vision/OCR
 #   [REMOVED] lfm2.5-1.2b — superseded by LFM2.5-8B-A1B, disabled May 2026
@@ -60,12 +60,12 @@ export HF_HUB_CACHE="${HOME}/.cache/huggingface"
 # requires ~1.3GB Gated Delta Net compute buffer per context, making MTP unusable on 6GB VRAM
 declare -A MODELS=(
   ["qwen3.5-0.8b"]="unsloth/Qwen3.5-0.8B-GGUF Qwen3.5-0.8B-UD-Q3_K_XL.gguf"
-  ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-UD-Q3_K_XL.gguf"
+  ["qwen3.5-4b"]="mradermacher/Qwen3.5-4B-i1-GGUF Qwen3.5-4B.i1-Q4_K_M.gguf"
   # [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
   ["lfm2.5-8b-a1b"]="LiquidAI/LFM2.5-8B-A1B-GGUF LFM2.5-8B-A1B-Q4_0.gguf"
-  ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-UD-Q3_K_XL.gguf"
-  ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-UD-Q3_K_XL.gguf"
-  ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-UD-Q3_K_XL.gguf"
+  ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-UD-Q4_K_XL.gguf"
+  ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
+  ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf"
   # [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF LFM2.5-VL-450M-Q8_0.gguf"
   # [REMOVED] lfm2.5-1.2b — superseded by LFM2.5-8B-A1B, disabled May 2026
@@ -243,10 +243,10 @@ show_sizes() {
   echo ""
   echo "Model Sizes (quantization noted):"
   echo "  qwen3.5-0.8b          ~0.47 GB  (UD-Q3_K_XL) + ~0.20 GB mmproj - Tiny, vision+text"
-  echo "  qwen3.5-4b            ~2.27 GB  (UD-Q3_K_XL) - Fits in VRAM"
-  echo "  qwen3.5-9b           ~5.05 GB  (UD-Q3_K_XL) - Fits in VRAM + mmproj"
-  echo "  gemma4-e4b           ~4.50 GB  (UD-Q3_K_XL) - Fits in VRAM + mmproj"
-  echo "  gemma4-e2b            ~2.72 GB  (UD-Q3_K_XL) - Fits in VRAM"
+  echo "  qwen3.5-4b            ~2.52 GB  (i1-Q4_K_M) - Fits in VRAM"
+  echo "  qwen3.5-9b           ~5.55 GB  (UD-Q4_K_XL) - Fits in VRAM + mmproj"
+  echo "  gemma4-e4b           ~4.63 GB  (Q4_K_M) - Fits in VRAM + mmproj"
+  echo "  gemma4-e2b            ~2.89 GB  (Q4_K_M) - Fits in VRAM"
   echo "  [REMOVED] nemotron-3-nano-4b — poor quality"
   echo "  lfm2.5-vl-450m        0.22 GB  (Q4_0) - Fits in VRAM, vision/OCR + mmproj"
   # [REMOVED] lfm2.5-1.2b — superseded by LFM2.5-8B-A1B

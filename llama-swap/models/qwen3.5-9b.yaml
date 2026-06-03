@@ -1,11 +1,12 @@
 # -------------------------------------------
 # QWEN3.5-9B - ik BACKEND (Hadamard KV cache)
-# Dense 9B params, UD-Q3_K_XL ~5.05GB.
+# Dense 9B params, UD-Q4_K_XL ~5.55GB.
 # Bee/TurboQuant segfaults with this model — use ik with hadamard instead.
 # --flash-attn auto: disables FA on short contexts for MoE/offload savings
 # KV cache: q8_0 (K) + q4_0 (V) + hadamard = quality near-fp16
-# --fit on --fit-target 512: dynamic GPU offload
+# --fit on --fit-margin 512: dynamic GPU offload
 # Dual mode: base (chat, no think) and :think (reasoning)
+# Upgraded from UD-Q3_K_XL (3.5 bpw) → UD-Q4_K_XL (4.5 bpw): +0.85GB for ~3% PPL improvement
 # Bee backup: _disabled/qwen3.5-9b-bee.yaml (seg fault with turbo3_tcq)
 # -------------------------------------------
 "qwen3.5-9b":
@@ -13,7 +14,7 @@
   description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/Qwen3.5-9B-UD-Q3_K_XL.gguf
+    --model ${models_dir}/Qwen3.5-9B-UD-Q4_K_XL.gguf
     # No --no-mmproj: ik doesn't support this flag (upstream-only)
     --fit
     --fit-margin 512
@@ -47,10 +48,10 @@
         top_p: 0.9
   ttl: 60
   metadata:
-    size: "~5.05 GB (UD-Q3_K_XL Dynamic 2.0)"
+    size: "~5.55 GB (UD-Q4_K_XL Dynamic 2.0)"
     context: "64K-128K (dynamic)"
-    vram_usage: "~5GB VRAM (text-only, ik with hadamard cache)"
-    source: "unsloth/Qwen3.5-9B-GGUF"
+    vram_usage: "~5.5GB VRAM (text-only, ik with hadamard cache)"
+    source: "unsloth/Qwen3.5-9B-GGUF (UD-Q4_K_XL)"
     kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
     features:
       completion: true
@@ -65,6 +66,6 @@
     parameters: 8950000000
     context_length: 262144
     embedding_length: 4096
-    quantization: Q3_K_XL
+    quantization: UD-Q4_K_XL
       # vision: disabled temporarily — mmproj + fit doesn't handle offload yet
-    warning: "Vision disabled temporarily. Bee/TurboQuant segfaults with this model — use ik backend."
+    note: "Upgraded from UD-Q3_K_XL → UD-Q4_K_XL. UD Dynamic 2.0 allocates more bits to critical layers. ~3% PPL improvement at +0.85GB cost."

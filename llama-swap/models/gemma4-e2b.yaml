@@ -3,7 +3,7 @@
   description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
   cmd: |
     ${llama_server} --port ${PORT}
-    --model ${models_dir}/gemma-4-E2B-it-UD-Q3_K_XL.gguf
+    --model ${models_dir}/gemma-4-E2B-it-Q4_K_M.gguf
     --no-mmproj
     --fit on
     --fit-target 1024
@@ -34,10 +34,10 @@
         top_p: 0.9
   ttl: 60
   metadata:
-    size: "~2.72 GB (UD-Q3_K_XL Dynamic 2.0)"
+    size: "~2.89 GB (Q4_K_M)"
     context: "32K-128K (dynamic)"
-    vram_usage: "~3GB"
-    source: "unsloth/gemma-4-E2B-it-GGUF (UD-Q3_K_XL)"
+    vram_usage: "~3.2GB"
+    source: "unsloth/gemma-4-E2B-it-GGUF (Q4_K_M)"
     kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
     features:
       completion: true
@@ -52,4 +52,4 @@
     parameters: 4650000000
     context_length: 131072
     embedding_length: 1536
-    quantization: Q3_K_XL
+    quantization: Q4_K_M
