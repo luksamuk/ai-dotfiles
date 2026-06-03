@@ -215,6 +215,31 @@ state_label() {
 
 # ---- Commands ----
 
+cmd_describe() {
+  local data
+  data=$(curl -s "${LLAMA_SWAP_URL}/v1/models" 2>/dev/null)
+
+  if [[ -z "$data" ]] || ! echo "$data" | jq -e '.data' &>/dev/null; then
+    echo "Error: Could not reach llama-swap at ${LLAMA_SWAP_URL}" >&2
+    echo "Make sure llama-swap is running: systemctl --user status llama-swap" >&2
+    exit 1
+  fi
+
+  {
+    printf "NAME\tDESCRIPTION\n"
+
+    echo "$data" | jq -r '
+      .data[] |
+      select(.id | endswith(":think") | not) |
+      {
+        id: .id,
+        name: (.name // .id),
+        desc: (.description // "-")
+      } | [.id, "\(.name) — \(.desc)"] | @tsv
+    '
+  } | format_output
+}
+
 cmd_list() {
   local data
   data=$(curl -s "${LLAMA_SWAP_URL}/v1/models" 2>/dev/null)
@@ -729,6 +754,7 @@ cmd_worldsim() {
 CMD="${ARGS[0]:-help}"
 
 case "$CMD" in
+  describe|desc)       cmd_describe ;;
   list|ls|models)     cmd_list ;;
   ps|running|status)
     if [[ -n "$LEGACY" ]]; then
@@ -750,6 +776,7 @@ case "$CMD" in
     echo ""
     echo "Commands:"
     echo "  list              List configured models"
+    echo "  describe          Show model name + description"
     echo "  ps                Show running models (clean ollama-style format)"
     echo "  ps --legacy       Show running models (old verbose format)"
     echo "  stats             Detailed metrics for running models"
