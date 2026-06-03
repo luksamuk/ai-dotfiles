@@ -1881,7 +1881,7 @@ models:
       context: "128K"
       vram_usage: "~5.5GB VRAM (4.84 GB model + KV)"
       source: "LiquidAI/LFM2.5-8B-A1B-GGUF"
-      kv_cache: "q8_0 + q4_0 hadamard — TurboQuant incompatible"
+      kv_cache: "q8_0 + q4_0 hadamard"
       features:
         completion: true
         tools: true
@@ -2003,6 +2003,7 @@ models:
       vram_usage: "~1.8GB (model + cache)"
       source: "openbmb/MiniCPM5-1B-GGUF (Q8_0)"
       note: "Tool calling broken (llama.cpp bug #23781). Chat + think work fine. NEVER use custom chat template."
+      kv_cache: "q8_0"
       features:
         completion: true
         tools: false

@@ -35,6 +35,7 @@
     vram_usage: "~1.8GB (model + cache)"
     source: "openbmb/MiniCPM5-1B-GGUF (Q8_0)"
     note: "Tool calling broken (llama.cpp bug #23781). Chat + think work fine. NEVER use custom chat template."
+    kv_cache: "q8_0"
     features:
       completion: true
       tools: false
