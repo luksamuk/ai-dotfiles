@@ -253,21 +253,24 @@ models:
       embedding_length: 2048
       quantization: Q4_0
 # -------------------------------------------
-# QWEN3.5-4B - Bee BACKEND (TurboQuant KV cache)
-# Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
-# head_dim=256 → attn_rot ✅
-# --n-gpu-layers 99: model fits entirely in 6GB VRAM at i1-Q4_K_M (2.52GB model + cache)
-# Upgraded from UD-Q3_K_XL (3.5 bpw) → i1-Q4_K_M (4.5 bpw): +0.25GB for ~3% PPL improvement
-# i1 imatrix calibrated on base Qwen3.5-4B weights by mradermacher
+# QWEN3.5-4B - ik BACKEND (Hadamard KV cache)
+# Dense 4B params, i1-Q4_K_M ~2.52GB.
+# Switched from Bee/TurboQuant to ik — i1 quant format incompatible with Bee (emits slashes).
+# ik with hadamard cache gives near-fp16 quality at smaller memory footprint than q8_0.
+# --flash-attn auto: disables FA on short contexts for savings
+# --parallel-tool-calls: enables multiple tool calls in single response
+# Dual mode: base (chat, no think) and :think (reasoning)
 # -------------------------------------------
   "qwen3.5-4b":
     name: "Qwen3.5 4B"
     description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
     cmd: |
-      ${bee_server} --port ${PORT}
+      ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B.i1-Q4_K_M.gguf
-      --no-mmproj
-      --n-gpu-layers 99
+      --jinja
+      --parallel-tool-calls
+      --fit
+      --fit-margin 512
       --ctx-size 131072
       --temp ${default_temp}
       --top-p ${default_top_p}
@@ -275,12 +278,11 @@ models:
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
       --reasoning on
-      --reasoning-loop-guard force-close
-      --reasoning-loop-min-tokens 1024
-      --reasoning-loop-window 2048
-      --cache-type-k turbo3_tcq
-      --cache-type-v turbo3_tcq
-      --flash-attn on
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
       --metrics
     filters:
       stripParams: "temperature, top_p"
@@ -298,10 +300,10 @@ models:
     ttl: 60
     metadata:
       size: "~2.52 GB (i1-Q4_K_M)"
-      context: "64K-128K (TurboQuant enables longer context)"
-      vram_usage: "~3.2GB VRAM (model + turbo3_tcq cache, ~5x less KV memory)"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~3.5GB VRAM (model + hadamard cache)"
       source: "mradermacher/Qwen3.5-4B-i1-GGUF (i1-Q4_K_M)"
-      kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
+      kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
       features:
         completion: true
         tools: true
@@ -316,7 +318,7 @@ models:
       context_length: 262144
       embedding_length: 2560
       quantization: i1-Q4_K_M
-      note: "Upgraded from UD-Q3_K_XL → i1-Q4_K_M. i1 imatrix calibrated on base Qwen3.5-4B. ~3% PPL improvement at +0.25GB cost."
+      note: "Switched from Bee/TurboQuant to ik — i1 format caused Bee slash bug. hadamard cache near-fp16 quality."
 # -------------------------------------------
 # QWEN3.5-9B - ik BACKEND (Hadamard KV cache)
 # Dense 9B params, UD-Q4_K_XL ~5.55GB.
