@@ -303,7 +303,7 @@ models:
       context: "64K-128K (dynamic)"
       vram_usage: "~3.5GB VRAM (model + hadamard cache)"
       source: "mradermacher/Qwen3.5-4B-i1-GGUF (i1-Q4_K_M)"
-      kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
+      kv_cache: "q8_0 + q4_0 hadamard"
       features:
         completion: true
         tools: true
@@ -373,7 +373,7 @@ models:
       context: "64K-128K (dynamic)"
       vram_usage: "~5.5GB VRAM (text-only, ik with hadamard cache)"
       source: "unsloth/Qwen3.5-9B-GGUF (UD-Q4_K_XL)"
-      kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
+      kv_cache: "q8_0 + q4_0 hadamard"
       features:
         completion: true
         tools: true
@@ -438,7 +438,7 @@ models:
       context: "64K-128K (dynamic)"
       vram_usage: "~5.3GB VRAM (fits with mmproj)"
       source: "unsloth/gemma-4-E4B-it-GGUF (Q4_K_M)"
-      kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
+      kv_cache: "q8_0 + q4_0 hadamard"
       features:
         completion: true
         tools: true
@@ -503,7 +503,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~3.2GB"
       source: "unsloth/gemma-4-E2B-it-GGUF (Q4_K_M)"
-      kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
+      kv_cache: "q4_0 + attn_rot"
       features:
         completion: true
         tools: true
@@ -601,7 +601,7 @@ models:
       context: "32K-128K (dynamic)"
       vram_usage: "~0.5GB"
       source: "LiquidAI/LFM2.5-VL-450M-GGUF"
-      kv_cache: "f16 (vision, precision priority)"
+      kv_cache: "f16"
       features:
         completion: true
         tools: false
@@ -663,7 +663,7 @@ models:
       context: "4K-40K (dynamic, native max)"
       vram_usage: "~4GB model + KV q8_0+q4_0+hadoop ~80-83% VRAM"
       source: "mradermacher/WebWorld-8B-i1-GGUF (i1-Q5_K_M)"
-      kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
+      kv_cache: "q8_0 + q4_0 hadamard"
       features:
         completion: true
         tools: false
@@ -678,7 +678,7 @@ models:
       context_length: 40960
       embedding_length: 4096
       quantization: Q5_K_M
-      warning: "Not a chatbot — requires specialized world model prompts. ik backend (was upstream, qwen3 segfault fixed in v4524)."
+      warning: "Not a chatbot — requires specialized world model prompts."
 # -------------------------------------------
 # GEMMA-4-26B-A4B - MoE REASONING + CODING (APEX I-Compact)
 # MoE 26B params, 4B ativo por token. 128 experts, top-8 routing.
@@ -729,7 +729,7 @@ models:
       context: "16K-128K (dynamic)"
       vram_usage: "~5GB VRAM + ~10GB RAM (q4_0 cache, APEX mixed-precision offload)"
       source: "mudler/gemma-4-26B-A4B-it-APEX-GGUF"
-      kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
+      kv_cache: "q4_0 + attn_rot"
       features:
         completion: true
         tools: true
@@ -744,7 +744,7 @@ models:
       context_length: 262144
       embedding_length: 2816
       quantization: I-Compact
-      warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (issue #21402). Text-only. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K."
+      warning: "Vision disabled — Gemma 4 mmproj crash on CUDA. Text-only."
 # -------------------------------------------
 # QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
 # MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
@@ -811,7 +811,7 @@ models:
       context: "1K-131K (safe max; 200K works but zero VRAM headroom)"
       vram_usage: "~5.4GB VRAM + 13.8GB pinned RAM (ik pinned memory, constant 33-34 t/s up to 131K)"
       source: "mudler/Qwen3.5-35B-A3B-APEX-GGUF"
-      kv_cache: "q4_0 + attn_rot + hadamard (ik -khad/-vhad)"
+      kv_cache: "q4_0 + attn_rot + hadamard"
       features:
         completion: true
         tools: true
@@ -826,7 +826,7 @@ models:
       context_length: 262144
       embedding_length: 2048
       quantization: I-Compact
-      warning: "Vision disabled — mmproj blocks partial expert offload (11→41 layers GPU). Text-only = 33-34 t/s vs 5 t/s with vision. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. Pinned memory gives constant speed up to 200K tokens. --defer-experts speeds up model loading. --flash-attn auto saves overhead on short prompts."
+      warning: "Vision disabled — mmproj blocks partial expert offload. Text-only = 33–34 t/s vs 5 t/s with vision."
 # -------------------------------------------
 # QWOPUS3.5-9B-CODER - DENSE AGENTIC CODING (text-only, no vision)
 # Qwen3.5-9B fine-tuned by Jackrong with Trace Inversion + agent traces SFT.
@@ -882,7 +882,7 @@ models:
       context: "64K-128K (dynamic)"
       vram_usage: "~5.5GB VRAM (text-only, dense 9B all layers GPU via --fit)"
       source: "Jackrong/Qwopus3.5-9B-Coder-GGUF"
-      kv_cache: "q8_0 (K) + q4_0 (V) + attn_rot + hadamard (ik -khad/-vhad)"
+      kv_cache: "q8_0 + q4_0 hadamard + attn_rot"
       features:
         completion: true
         tools: true
@@ -897,7 +897,7 @@ models:
       context_length: 262144
       embedding_length: 4096
       quantization: Q4_K_M
-      warning: "Vision disabled — mmproj (880MB F16) blocks partial offload. Text-only = max GPU layers = max speed. Dense 9B = all params active per token (slower per token than MoE, but stronger for agentic)."
+      warning: "Vision disabled — mmproj (880MB) blocks partial offload. Dense 9B — all params active per token."
 # -------------------------------------------
 # LITTLELAMB 0.3B TC — Ultra-light tool-calling model
 # Compressed from Qwen3-0.6B to 290M params via CompactifAI (50% compression)
@@ -969,7 +969,7 @@ models:
       context_length: 40960
       embedding_length: 544
       quantization: Q8_0
-      warning: "ik_llama.cpp segfaults with this model — use llama.cpp upstream"
+      warning: "ik_llama.cpp incompatible — use llama.cpp upstream"
 # -------------------------------------------
 # MINICPM-V 4.6 — VLM (Vision-Language Model)
 # OpenBMB/Tsinghua, Qwen3.5-0.8B backbone + SigLIP2-400M vision encoder
@@ -1025,7 +1025,7 @@ models:
       context: "8K-256K (dynamic)"
       vram_usage: "~2GB (model + mmproj + cache)"
       source: "openbmb/MiniCPM-V-4.6-gguf"
-      kv_cache: "f16 (vision model, precision priority)"
+      kv_cache: "f16"
       features:
         completion: true
         tools: false
@@ -1126,7 +1126,7 @@ models:
       context_length: 262144
       embedding_length: 2560
       quantization: Q4_K_M
-      warning: "ALWAYS thinks (no :think toggle). Verbose reasoning (~300+ tokens even for simple tasks). MULTI-TURN TOOL CALL BUG: second round of tool calls leaks XML as text (llama.cpp #22684, no fix yet). Use single-turn tool calling only. Benchmarks promising but may be inflated."
+      warning: "Always thinks (no toggle). Multi-turn tool calls broken — use single-turn only. Verbose reasoning."
 # -------------------------------------------
 # AFM-4.5B (Arcee Fusion Model) - UPSTREAM backend
 # 4.5B dense, Llama-like arch (arcee), Q5_K_M ~3.11 GB
@@ -1295,7 +1295,7 @@ models:
       size: "~0.95 GB (Q8_0) + ~0.48 GB mmproj (Q8_0)"
       vram_usage: "~2GB (model + mmproj + cache)"
       source: "ggml-org/GLM-OCR-GGUF (Q8_0 + mmproj Q8_0)"
-      kv_cache: "f16 (vision, precision priority)"
+      kv_cache: "f16"
       features:
         completion: true
         tools: false
@@ -1370,7 +1370,7 @@ models:
       context_length: 131072
       embedding_length: 2880
       quantization: Q4_K_M
-      warning: "Harmony format: ALWAYS reasons internally (not optional). --reasoning on extracts it properly. MoE offload to RAM — slower than pure GPU models."
+      warning: "Always reasons internally (not optional). MoE offload to RAM — slower than pure GPU models."
 # -------------------------------------------
 # GRANITE-3.3-8B-INSTRUCT - vLLM BACKEND (DISABLED — 16GB weights, OOM on 6GB VRAM)
 # IBM Granite 3.3 8B Instruct, dense, Apache 2.0, 12 languages (incl. PT)
@@ -1881,7 +1881,7 @@ models:
       context: "128K"
       vram_usage: "~5.5GB VRAM (4.84 GB model + KV)"
       source: "LiquidAI/LFM2.5-8B-A1B-GGUF"
-      kv_cache: "q8_0 (K) + q4_0 (V) — TurboQuant INCOMPATIBLE (all blocks=128, head_dim=64)"
+      kv_cache: "q8_0 + q4_0 hadamard — TurboQuant incompatible"
       features:
         completion: true
         tools: true
@@ -2110,7 +2110,7 @@ models:
       size: "~0.33 GB (Q4_K_M)"
       vram_usage: "~0.5GB"
       source: "nomic-ai/nomic-embed-text-v2-moe-GGUF (Q4_K_M)"
-      kv_cache: "f16 (embedding, precision priority)"
+      kv_cache: "f16"
       features:
         completion: false
         tools: false
@@ -2385,7 +2385,7 @@ models:
       context: "64K-128K (dynamic)"
       vram_usage: "~3.5GB VRAM (model + hadamard cache)"
       source: "mradermacher/Qwen3.5-4B-abliterated-i1-GGUF (i1-Q4_K_M)"
-      kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
+      kv_cache: "q8_0 + q4_0 hadamard"
       features:
         completion: true
         tools: true

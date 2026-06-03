@@ -44,7 +44,7 @@
     context: "4K-40K (dynamic, native max)"
     vram_usage: "~4GB model + KV q8_0+q4_0+hadoop ~80-83% VRAM"
     source: "mradermacher/WebWorld-8B-i1-GGUF (i1-Q5_K_M)"
-    kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
+    kv_cache: "q8_0 + q4_0 hadamard"
     features:
       completion: true
       tools: false
@@ -59,4 +59,4 @@
     context_length: 40960
     embedding_length: 4096
     quantization: Q5_K_M
-    warning: "Not a chatbot — requires specialized world model prompts. ik backend (was upstream, qwen3 segfault fixed in v4524)."
+    warning: "Not a chatbot — requires specialized world model prompts."

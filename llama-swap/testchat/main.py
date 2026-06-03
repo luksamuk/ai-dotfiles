@@ -44,7 +44,7 @@ from tools import MOCK_TOOLS, get_mock_response
 
 # Endpoint — use LLAMA_SWAP_HOST para acessar remotamente (ex: Termux via Tailscale)
 # Default: localhost (rode direto na máquina)
-# Remoto: export LLAMA_SWAP_HOST=100.65.187.74 (IP Tailscale)
+
 # NOTA: Goose (AAIF) usa LLAMA_SWAP_HOST como URL completa (http://host:port),
 #       enquanto o testchat espera hostname + porta separados.
 #       Se LLAMA_SWAP_HOST já contém http://, extraímos host/port da URL.

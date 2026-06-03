@@ -285,7 +285,7 @@ cmd_list() {
   fi
 
   {
-    printf "NAME\tTAGS\tARCH\tPARAMS\tCTX\tEMBED\tQUANT\tSIZE\n"
+    printf "NAME\tTAGS\tARCH\tPARAMS\tCTX\tEMBED\tQUANT\tKVCACHE\tSIZE\n"
 
     echo "$data" | jq -r '
       .data[] |
@@ -297,12 +297,13 @@ cmd_list() {
         ctx: (.meta.llamaswap.context_length // "-"),
         embed: (.meta.llamaswap.embedding_length // "-"),
         quant: (.meta.llamaswap.quantization // "-"),
+        kv_cache: (.meta.llamaswap.kv_cache // "-"),
         size: (.meta.llamaswap.size // "-"),
         features: (.meta.llamaswap.features | tostring),
         vision: (.meta.llamaswap.features.vision // false)
-      } | [.id, .arch, (.params | tostring), (.ctx | tostring), (.embed | tostring), .quant, .size, .features, .vision] | @tsv
-    ' | while IFS=$'\t' read -r id arch params ctx embed quant size features vision; do
-      local tags p c e s
+      } | [.id, .arch, (.params | tostring), (.ctx | tostring), (.embed | tostring), .quant, .kv_cache, .size, .features, .vision] | @tsv
+    ' | while IFS=$'\t' read -r id arch params ctx embed quant kv_cache size features vision; do
+      local tags p c e s k
       if [[ -n "$PRETTY" ]]; then
         tags=$(feat_emoji "$features")
       else
@@ -312,7 +313,8 @@ cmd_list() {
       c=$(short_ctx "$ctx")
       e=$(short_ctx "$embed")
       s=$(disk_size "$size" "$vision")
-      printf "${CYAN}%s\t${DIM}%s${RESET}\t%s\t%s\t%s\t%s\t%s\t${DIM}%s${RESET}\n" "$id" "$tags" "$arch" "$p" "$c" "$e" "$quant" "$s"
+      k=$([[ "$kv_cache" != "-" && -n "$kv_cache" ]] && echo "$kv_cache" || echo "-")
+      printf "${CYAN}%s\t${DIM}%s${RESET}\t%s\t%s\t%s\t%s\t%s\t${DIM}%s${RESET}\t${DIM}%s${RESET}\n" "$id" "$tags" "$arch" "$p" "$c" "$e" "$quant" "$k" "$s"
     done
   } | format_output
 }

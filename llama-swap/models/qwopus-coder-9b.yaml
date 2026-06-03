@@ -53,7 +53,7 @@
     context: "64K-128K (dynamic)"
     vram_usage: "~5.5GB VRAM (text-only, dense 9B all layers GPU via --fit)"
     source: "Jackrong/Qwopus3.5-9B-Coder-GGUF"
-    kv_cache: "q8_0 (K) + q4_0 (V) + attn_rot + hadamard (ik -khad/-vhad)"
+    kv_cache: "q8_0 + q4_0 hadamard + attn_rot"
     features:
       completion: true
       tools: true
@@ -68,4 +68,4 @@
     context_length: 262144
     embedding_length: 4096
     quantization: Q4_K_M
-    warning: "Vision disabled — mmproj (880MB F16) blocks partial offload. Text-only = max GPU layers = max speed. Dense 9B = all params active per token (slower per token than MoE, but stronger for agentic)."
+    warning: "Vision disabled — mmproj (880MB) blocks partial offload. Dense 9B — all params active per token."

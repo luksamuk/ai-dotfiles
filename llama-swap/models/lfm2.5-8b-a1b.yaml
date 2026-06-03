@@ -50,7 +50,7 @@
     context: "128K"
     vram_usage: "~5.5GB VRAM (4.84 GB model + KV)"
     source: "LiquidAI/LFM2.5-8B-A1B-GGUF"
-    kv_cache: "q8_0 (K) + q4_0 (V) — TurboQuant INCOMPATIBLE (all blocks=128, head_dim=64)"
+    kv_cache: "q8_0 + q4_0 hadamard — TurboQuant incompatible"
     features:
       completion: true
       tools: true

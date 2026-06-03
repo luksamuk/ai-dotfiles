@@ -49,7 +49,7 @@
     context: "64K-128K (dynamic)"
     vram_usage: "~3.5GB VRAM (model + hadamard cache)"
     source: "mradermacher/Qwen3.5-4B-i1-GGUF (i1-Q4_K_M)"
-    kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
+    kv_cache: "q8_0 + q4_0 hadamard"
     features:
       completion: true
       tools: true

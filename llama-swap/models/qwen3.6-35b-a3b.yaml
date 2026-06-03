@@ -64,7 +64,7 @@
     context: "1K-131K (safe max; 200K works but zero VRAM headroom)"
     vram_usage: "~5.4GB VRAM + 13.8GB pinned RAM (ik pinned memory, constant 33-34 t/s up to 131K)"
     source: "mudler/Qwen3.5-35B-A3B-APEX-GGUF"
-    kv_cache: "q4_0 + attn_rot + hadamard (ik -khad/-vhad)"
+    kv_cache: "q4_0 + attn_rot + hadamard"
     features:
       completion: true
       tools: true
@@ -79,4 +79,4 @@
     context_length: 262144
     embedding_length: 2048
     quantization: I-Compact
-    warning: "Vision disabled — mmproj blocks partial expert offload (11→41 layers GPU). Text-only = 33-34 t/s vs 5 t/s with vision. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. Pinned memory gives constant speed up to 200K tokens. --defer-experts speeds up model loading. --flash-attn auto saves overhead on short prompts."
+    warning: "Vision disabled — mmproj blocks partial expert offload. Text-only = 33–34 t/s vs 5 t/s with vision."

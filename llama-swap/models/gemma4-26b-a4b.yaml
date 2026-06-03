@@ -48,7 +48,7 @@
     context: "16K-128K (dynamic)"
     vram_usage: "~5GB VRAM + ~10GB RAM (q4_0 cache, APEX mixed-precision offload)"
     source: "mudler/gemma-4-26B-A4B-it-APEX-GGUF"
-    kv_cache: "q4_0 + attn_rot (iSWA fix b8815+)"
+    kv_cache: "q4_0 + attn_rot"
     features:
       completion: true
       tools: true
@@ -63,4 +63,4 @@
     context_length: 262144
     embedding_length: 2816
     quantization: I-Compact
-    warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (issue #21402). Text-only. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K."
+    warning: "Vision disabled — Gemma 4 mmproj crash on CUDA. Text-only."
