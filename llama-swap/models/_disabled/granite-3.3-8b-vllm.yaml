@@ -12,7 +12,7 @@
 "granite-3.3-8b-vllm":
   unlisted: true
   name: "Granite 3.3 8B Instruct (vLLM)"
-  description: "IBM Granite 3.3 8B — dense, multilingual (PT), thinking, tool-calling"
+  description: "IBM Granite 3.3 8B is a 128K context length language model fine-tuned for improved reasoning and instruction-following capabilities."
   cmd: |
     ${vllm_bin} serve ibm-granite/granite-3.3-8b-instruct
     --port ${PORT}

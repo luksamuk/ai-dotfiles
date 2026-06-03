@@ -12,7 +12,7 @@
 # -------------------------------------------
 "translategemma-4b":
   name: "TranslateGemma 4B"
-  description: "Google translation model — 55 langs, Sprachspiel default (Q4_K_M, llama.cpp)"
+  description: "Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices."
   cmd: |
     ${llama_server} --port ${PORT}
     --model ${models_dir}/translategemma-4b-it.Q4_K_M.gguf

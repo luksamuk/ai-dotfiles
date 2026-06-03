@@ -1,7 +1,7 @@
 # Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM
 "lfm2.5-vl-450m":
   name: "LFM2.5-VL 450M"
-  description: "Edge vision-language model for object detection and captioning"
+  description: "Edge vision-language model for image understanding, object detection, and captioning using LFM backbones and custom visual encoders."
   cmd: |
     ${llama_server} --port ${PORT}
     --model ${models_dir}/LFM2.5-VL-450M-Q8_0.gguf

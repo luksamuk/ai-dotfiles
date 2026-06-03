@@ -11,7 +11,7 @@
 "lfm2-8b-moe":
   unlisted: true
   name: "LFM2-8B-A1B"
-  description: "Liquid AI MoE hybrid 8.3B/1.5B active, conv+GQA architecture, tool calling (Bee)"
+  description: "Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Designed for on-device deployment with fast, reliable tool calling."
   cmd: |
     ${bee_server} --port ${PORT}
     --model ${models_dir}/LFM2-8B-A1B-Q4_0.gguf

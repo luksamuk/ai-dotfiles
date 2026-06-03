@@ -131,7 +131,7 @@ models:
   "qwen3.5-0.8b-vllm":
     unlisted: true
     name: "Qwen3.5 0.8B (vLLM)"
-    description: "vLLM backend test — Sprachspiel compatibility (NOT for daily use)"
+    description: "Qwen 3.5 0.8B — vLLM backend test for Sprachspiel compatibility."
     cmd: |
       ${vllm_bin} serve Qwen/Qwen3.5-0.8B
       --port ${PORT}
@@ -177,7 +177,7 @@ models:
   "lfm2.5-1.2b-vllm":
     unlisted: true
     name: "LFM2.5 1.2B Instruct (vLLM)"
-    description: "vLLM backend — lfm2 tool parser, proper tool calling (Sprachspiel compat)"
+    description: "LFM2.5-1.2B with vLLM backend for Sprachspiel compatibility and proper tool calling."
     cmd: |
       ${vllm_bin} serve LiquidAI/LFM2.5-1.2B-Instruct
       --port ${PORT}
@@ -219,7 +219,7 @@ models:
   "lfm2.5-sgl":
     unlisted: true
     name: "LFM2.5 1.2B (SGLang)"
-    description: "SGLang backend test — Sprachspiel compatibility (NOT for daily use)"
+    description: "SGLang backend test for LFM2.5-8B-A1B MoE — Sprachspiel compatibility testing only, not for daily use."
     cmd: |
       ${env.HOME}/.sglang-venv/bin/python -m sglang.launch_server
       --model-path LiquidAI/LFM2.5-1.2B-Instruct
@@ -261,7 +261,7 @@ models:
 # -------------------------------------------
   "qwen3.5-4b":
     name: "Qwen3.5 4B"
-    description: "TurboQuant KV cache — turbo3_tcq, 5x compression (Bee backend)"
+    description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
     cmd: |
       ${bee_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B-UD-Q3_K_XL.gguf
@@ -328,7 +328,7 @@ models:
 # -------------------------------------------
   "qwen3.5-9b":
     name: "Qwen3.5 9B"
-    description: "Multimodal reasoning, coding, and agentic chat (ik + hadamard)"
+    description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-9B-UD-Q3_K_XL.gguf
@@ -392,7 +392,7 @@ models:
 # -------------------------------------------
   "gemma4-e4b":
     name: "Gemma 4 E4B"
-    description: "On-device multimodal reasoning with text, image, and audio understanding (ik + hadamard)"
+    description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E4B-it-UD-Q3_K_XL.gguf
@@ -450,7 +450,7 @@ models:
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA (llama.cpp issue #21402). Text-only mode."
   "gemma4-e2b":
     name: "Gemma 4 E2B"
-    description: "Compact on-device multimodal reasoning with text, image, and audio"
+    description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E2B-it-UD-Q3_K_XL.gguf
@@ -516,7 +516,7 @@ models:
   "lfm2.5-1.2b":
     unlisted: true
     name: "LFM2.5 1.2B Instruct"
-    description: "Edge hybrid — conv+GQA dense, tool-calling optimized (Q8_0, llama.cpp)"
+    description: "LFM2.5-1.2B-Instruct is a general-purpose text model that rivals much larger models while being small enough for pocket deployment."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/LFM2.5-1.2B-Instruct-Q8_0.gguf
@@ -558,7 +558,7 @@ models:
 # Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM
   "lfm2.5-vl-450m":
     name: "LFM2.5-VL 450M"
-    description: "Edge vision-language model for object detection and captioning"
+    description: "Edge vision-language model for image understanding, object detection, and captioning using LFM backbones and custom visual encoders."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/LFM2.5-VL-450M-Q8_0.gguf
@@ -618,7 +618,7 @@ models:
 # -------------------------------------------
   "webworld-8b":
     name: "WebWorld 8B"
-    description: "Web world model, predicts next page state (ik + hadamard)"
+    description: "World model predicting next page state from web browsing context — trained for web navigation and interaction understanding."
     tags:
       - "world-model"
     cmd: |
@@ -678,7 +678,7 @@ models:
 # -------------------------------------------
   "gemma4-26b-moe":
     name: "Gemma 4 26B MoE"
-    description: "MoE reasoning + coding — 128 experts, 4B active/token (APEX I-Compact)"
+    description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-26B-A4B-APEX-I-Compact.gguf
@@ -751,7 +751,7 @@ models:
 # -------------------------------------------
   "qwen3.6-35b-moe":
     name: "Qwen3.6 35B MoE"
-    description: "Efficient MoE for agentic coding — 3B active/token (APEX I-Compact)"
+    description: "Qwen3.6 delivers substantial upgrades in agentic coding and thinking preservation. Built on direct community feedback for a more intuitive, responsive, and productive coding experience."
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.6-35B-A3B-APEX-I-Compact.gguf
@@ -824,7 +824,7 @@ models:
 # -------------------------------------------
   "qwopus-coder-9b":
     name: "Qwopus 9B Coder"
-    description: "Agentic coding and tool-calling specialist (Trace Inversion + agent traces)"
+    description: "Qwopus3.5 is a reasoning-enhanced model family fine-tuned from Qwen3.5 designed to improve reasoning stability and correctness, especially in programming."
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwopus3.5-9B-coder-Exp-Q4_K_M.gguf
@@ -896,7 +896,7 @@ models:
 # -------------------------------------------
   "littlelamb-0.3b-tc":
     name: "LittleLamb 0.3B TC"
-    description: "Ultra-light tool-calling, Qwen3-compressed (Q8_0, upstream)"
+    description: "Compact 0.3B-parameter model specialized for function and tool calling tasks in resource-constrained environments."
     tags:
       - "tools"
     cmd: |
@@ -966,7 +966,7 @@ models:
 # -------------------------------------------
   "minicpm-v-4.6":
     name: "MiniCPM-V 4.6"
-    description: "VLM Qwen3.5-0.8B + SigLIP2-400M, video+image+text (Q5_K_M, llama.cpp)"
+    description: "A series of multimodal LLMs designed for vision-language understanding, with strong OCR capability, multi-image understanding, and efficient visual token processing."
     tags:
       - "vision"
     cmd: |
@@ -1069,7 +1069,7 @@ models:
 # -------------------------------------------
   "nanbeige4.1-3b":
     name: "Nanbeige 4.1 3B"
-    description: "Dense reasoning + agentic coding, always thinks (Q4_K_M, llama.cpp)"
+    description: "Compact generalist language model that simultaneously achieves strong agentic behavior, code generation, and general reasoning with only 3B parameters."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Nanbeige4.1-3B-Q4_K_M.gguf
@@ -1126,7 +1126,7 @@ models:
   "afm-4.5b":
     name: "AFM-4.5B"
     unlisted: true
-    description: "Arcee AFM-4.5B dense, tool calling via Hermes 2 Pro template (upstream)"
+    description: "Arcee AFM-4.5B dense model with tool calling via Hermes 2 Pro template."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/AFM-4.5B-Q5_K_M.gguf
@@ -1183,7 +1183,7 @@ models:
   "gemma4-e4b-bee":
     unlisted: true
     name: "Gemma 4 E4B"
-    description: "TurboQuant KV cache — turbo3_tcq, 5x compression (Bee backend)"
+    description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
     cmd: |
       ${bee_server} --port ${PORT}
       --model ${models_dir}/gemma-4-E4B-it-UD-Q3_K_XL.gguf
@@ -1249,7 +1249,7 @@ models:
 # -------------------------------------------
   "glm-ocr":
     name: "GLM-OCR"
-    description: "OCR and document understanding specialist (upstream + mmproj)"
+    description: "Multimodal OCR model for complex document understanding, built on the GLM-V encoder-decoder architecture integrating CogViT visual encoder with a GLM-0.5B language decoder."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/GLM-OCR-Q8_0.gguf
@@ -1307,7 +1307,7 @@ models:
 # -------------------------------------------
   "gpt-oss-20b":
     name: "GPT-OSS 20B"
-    description: "OpenAI MoE 20B coding — Harmony format, always reasons internally"
+    description: "GPT-OSS is OpenAI's open-weight model designed for powerful reasoning, agentic tasks, and versatile developer use cases. The 20B MoE variant uses 32 experts per layer."
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/gpt-oss-20b-Q4_K_M.gguf
@@ -1368,7 +1368,7 @@ models:
   "granite-3.3-8b-vllm":
     unlisted: true
     name: "Granite 3.3 8B Instruct (vLLM)"
-    description: "IBM Granite 3.3 8B — dense, multilingual (PT), thinking, tool-calling"
+    description: "IBM Granite 3.3 8B is a 128K context length language model fine-tuned for improved reasoning and instruction-following capabilities."
     cmd: |
       ${vllm_bin} serve ibm-granite/granite-3.3-8b-instruct
       --port ${PORT}
@@ -1419,7 +1419,7 @@ models:
   "granite-4.0-h-1b":
     name: "Granite 4.0 H 1B"
     unlisted: true
-    description: "IBM Granite 4.0 Nano H 1B — hybrid Mamba-2, multilingual (PT), thinking, tools"
+    description: "IBM Granite 4.0 Nano H 1B — hybrid Mamba-2 architecture, multilingual, with controllable thinking applied only when required."
     cmd: |
       ${llama_server}
       --model ${models_dir}/granite-4.0-h-1b-UD-Q3_K_XL.gguf
@@ -1464,7 +1464,7 @@ models:
   "granite-4.0-h-1b-vllm":
     name: "Granite 4.0 H 1B (vLLM)"
     unlisted: true
-    description: "IBM Granite 4.0 Nano H 1B — hybrid Mamba-2, multilingual (PT), thinking, tools"
+    description: "IBM Granite 4.0 Nano H 1B — hybrid Mamba-2 architecture, multilingual, with controllable thinking applied only when required."
     cmd: |
       ${vllm_bin} serve ibm-granite/granite-4.0-h-1b
       --port ${PORT}
@@ -1514,7 +1514,7 @@ models:
   "granite-4.0-h-tiny-vllm":
     unlisted: true
     name: "Granite 4.0 H-Tiny (vLLM)"
-    description: "IBM Granite 4.0 H-Tiny MoE — 7B/1B active, hybrid Mamba-2, multilingual (PT)"
+    description: "IBM Granite 4.0 H-Tiny MoE — 7B total, 1B active, hybrid Mamba-2 architecture, multilingual, with controllable thinking."
     cmd: |
       ${vllm_bin} serve ibm-granite/granite-4.0-h-tiny
       --port ${PORT}
@@ -1554,7 +1554,7 @@ models:
   "hunyuan-7b":
     unlisted: true
     name: "Hunyuan 7B Instruct"
-    description: "Tencent dense 7B — hybrid reasoning, coding, math (Q4_K_M, upstream)"
+    description: "Hunyuan-MT-7B is Tencent's state-of-the-art translation model supporting mutual translation across 33 languages."
     tags:
       - "hy7"
     cmd: |
@@ -1624,7 +1624,7 @@ models:
 # -------------------------------------------
   "hy-mt2-1.8b":
     name: "Hy-MT2 1.8B"
-    description: "Tencent translation model — 33 langs, translation-only (Q4_K_M, llama.cpp)"
+    description: "Fast-thinking multilingual translation model from Tencent Hunyuan, supporting translation across 33 languages for complex real-world scenarios."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Hy-MT2-1.8B-Q4_K_M.gguf
@@ -1666,7 +1666,7 @@ models:
   "lfm2-24b":
     unlisted: true
     name: "LFM2 24B"
-    description: "Hybrid MoE — conv+GQA+MoE, 2.3B active/token (llama.cpp upstream)"
+    description: "LFM2 is a family of hybrid models designed for on-device deployment. LFM2-24B-A2B is the largest, scaling to 24B parameters with only 2B active per token."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/LFM2-24B-A2B-Q4_K_M.gguf
@@ -1722,7 +1722,7 @@ models:
   "lfm2-8b-moe":
     unlisted: true
     name: "LFM2-8B-A1B"
-    description: "Liquid AI MoE hybrid 8.3B/1.5B active, conv+GQA architecture, tool calling (Bee)"
+    description: "Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Designed for on-device deployment with fast, reliable tool calling."
     cmd: |
       ${bee_server} --port ${PORT}
       --model ${models_dir}/LFM2-8B-A1B-Q4_0.gguf
@@ -1769,7 +1769,7 @@ models:
   "lfm2.5-1.2b-think":
     unlisted: true
     name: "LFM2.5 1.2B Thinking"
-    description: "Edge hybrid reasoning — conv+GQA dense, always thinks (Q8_0, llama.cpp)"
+    description: "LFM2.5-1.2B-Thinking is a 1.2B thinking variant designed for on-device deployment with built-in reasoning capabilities."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/LFM2.5-1.2B-Thinking-Q8_0.gguf
@@ -1825,7 +1825,7 @@ models:
 # -------------------------------------------
   "lfm2.5-8b-moe":
     name: "LFM2.5-8B-A1B"
-    description: "Liquid AI MoE hybrid 8.3B/1.5B active, conv+GQA, reasoning + tool calling (upstream)"
+    description: "Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Built for fast, reliable tool calling on consumer hardware."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/LFM2.5-8B-A1B-Q4_0.gguf
@@ -1899,7 +1899,7 @@ models:
 # -------------------------------------------
   "mellum2-12b-thinking":
     name: "Mellum2 12B Thinking"
-    description: "JetBrains MoE 12B/2.5B active, reasoning (⚠️ tool calling broken — no chat_template)"
+    description: "JetBrains Mellum 2 is an open-source LLM optimized for code completion, providing contextually appropriate code suggestions for professional developer tooling."
     unlisted: true
     cmd: |
       ${ik_llama_server} --port ${PORT}
@@ -1961,7 +1961,7 @@ models:
 # -------------------------------------------
   "minicpm5-1b":
     name: "MiniCPM5 1B"
-    description: "Small dense model, think/no-think + broken tool calling (Q8_0)"
+    description: "Dense 1B Transformer built for on-device deployment, designed for local assistants, coding agents, tool-use workflows, and hybrid reasoning."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/MiniCPM5-1B-Q8_0.gguf
@@ -2019,7 +2019,7 @@ models:
   "ministral-3-3b":
     name: "Ministral 3 3B"
     unlisted: true
-    description: "Edge tool-calling + 128K context (UD-Q5_K_XL, text-only)"
+    description: "The Ministral 3 family is designed for edge deployment, with best-in-class agentic capabilities, native function calling, and multilingual support."
     tags:
       - "tools"
     cmd: |
@@ -2071,7 +2071,7 @@ models:
 # -------------------------------------------
   "nomic-embed-text-v2-moe":
     name: "Nomic Embed v2 MoE"
-    description: "Embedding model — 768-dim multilingual, RAG/search/similarity (upstream)"
+    description: "Multilingual MoE text embedding model that excels at multilingual retrieval, supporting ~100 languages with state-of-the-art performance at the 300M parameter scale."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/nomic-embed-text-v2-moe-Q4_K_M.gguf
@@ -2118,7 +2118,7 @@ models:
   "ornstein-36-35b":
     unlisted: true
     name: "Ornstein 3.6 35B SABER"
-    description: "Qwen3.6-35B NSC-ACE-SABER fine-tune, +2.87pp BFCL tool calling (ik backend)"
+    description: "Ornstein is a community fine-tune of Qwen3.6-35B using NSC-ACE-SABER, achieving +2.87pp on BFCL tool-calling benchmarks while preserving reasoning capabilities."
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.6-35B-A3B-NSC-ACE-SABER-Q4_K_M.gguf
@@ -2191,7 +2191,7 @@ models:
   "qwen3-8b":
     name: "Qwen3 8B"
     unlisted: true
-    description: "Dense reasoning & coding, thinking mode (ik + hadamard)"
+    description: "Qwen3 is the latest generation of large language models in the Qwen series, offering a comprehensive suite of dense and MoE models."
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3-8B-UD-Q3_K_XL.gguf
@@ -2259,7 +2259,7 @@ models:
   "qwen3.5-0.8b":
     unlisted: true
     name: "Qwen3.5 0.8B"
-    description: "Compact multimodal reasoning model — text + vision (llama.cpp GGUF)"
+    description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance. The 0.8B variant is optimized for edge deployment."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-0.8B-UD-Q3_K_XL.gguf
@@ -2322,7 +2322,7 @@ models:
 # -------------------------------------------
   "qwen3.5-4b-abliterated":
     name: "Qwen3.5 4B Abliterated"
-    description: "Adversarial testing — no refusal (TurboQuant, Bee backend)"
+    description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance. Abliterated variant with refusal behaviors removed for adversarial testing."
     cmd: |
       ${bee_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B-abliterated-i1-Q4_K_M.gguf
@@ -2387,7 +2387,7 @@ models:
   "qwen3.5-4b-upstream":
     unlisted: true
     name: "Qwen3.5 4B (upstream backup)"
-    description: "Multimodal reasoning and agentic chat with 201-language support"
+    description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B-UD-Q3_K_XL.gguf
@@ -2452,7 +2452,7 @@ models:
   "qwen3.5-9b-bee":
     unlisted: true
     name: "Qwen3.5 9B"
-    description: "TurboQuant KV cache — turbo3_tcq, 5x compression (Bee backend)"
+    description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
     cmd: |
       ${bee_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-9B-UD-Q3_K_XL.gguf
@@ -2507,7 +2507,7 @@ models:
   "qwen3.5-9b-upstream":
     unlisted: true
     name: "Qwen3.5 9B"
-    description: "Multimodal reasoning, coding, and agentic chat with 201-language support"
+    description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-9B-UD-Q3_K_XL.gguf
@@ -2564,7 +2564,7 @@ models:
   "qwopus-35b":
     unlisted: true
     name: "Qwopus 35B"
-    description: "MoE coding+reasoning — Qwopus SFT, 3B active/token (APEX I-Compact)"
+    description: "Qwopus3.5 is a reasoning-enhanced model family fine-tuned from Qwen3.5 designed to improve reasoning stability and correctness, especially in programming."
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf
@@ -2635,7 +2635,7 @@ models:
   "qwopus-coder-9b-bee":
     unlisted: true
     name: "Qwopus 9B Coder"
-    description: "Agentic coding — TurboQuant KV cache (Bee backend)"
+    description: "Qwopus3.5 is a reasoning-enhanced model family fine-tuned from Qwen3.5, especially optimized for programming agentic coding tasks."
     cmd: |
       ${bee_server} --port ${PORT}
       --model ${models_dir}/Qwopus3.5-9B-coder-Exp-Q4_K_M.gguf
@@ -2701,7 +2701,7 @@ models:
   "qwopus-coder-9b-ik":
     unlisted: true
     name: "Qwopus 9B Coder"
-    description: "Agentic coding and tool-calling specialist (Trace Inversion + agent traces)"
+    description: "Qwopus3.5 is a reasoning-enhanced model family fine-tuned from Qwen3.5, especially optimized for programming agentic coding tasks."
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwopus3.5-9B-coder-Exp-Q4_K_M.gguf
@@ -2773,7 +2773,7 @@ models:
   "smolllm3-3b":
     unlisted: true
     name: "SmolLM3 3B"
-    description: "HuggingFace dense, dual tool-calling XML+Python (UD-Q5_K_XL, ik)"
+    description: "SmolLM3 is a 3B parameter language model designed to push the boundaries of small models, supporting dual-mode reasoning, 6 languages, and long context up to 128K tokens."
     tags:
       - "tools"
     cmd: |
@@ -2845,7 +2845,7 @@ models:
 # -------------------------------------------
   "translategemma-4b":
     name: "TranslateGemma 4B"
-    description: "Google translation model — 55 langs, Sprachspiel default (Q4_K_M, llama.cpp)"
+    description: "Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/translategemma-4b-it.Q4_K_M.gguf
@@ -2900,7 +2900,7 @@ models:
   "trinity-nano":
     unlisted: true
     name: "Trinity Nano Preview"
-    description: "Arcee 6B MoE (1B active), reasoning + tool calling preview (OpenMDW-1.1)"
+    description: "Arcee Trinity Nano 6B MoE with 1B active parameters — community fine-tune for reasoning and tool calling preview."
     cmd: |
       ${llama_server} --port ${PORT}
       --model ${models_dir}/Trinity-Nano-Preview-Q5_K_M.gguf

@@ -12,7 +12,7 @@
 # -------------------------------------------
 "glm-ocr":
   name: "GLM-OCR"
-  description: "OCR and document understanding specialist (upstream + mmproj)"
+  description: "Multimodal OCR model for complex document understanding, built on the GLM-V encoder-decoder architecture integrating CogViT visual encoder with a GLM-0.5B language decoder."
   cmd: |
     ${llama_server} --port ${PORT}
     --model ${models_dir}/GLM-OCR-Q8_0.gguf

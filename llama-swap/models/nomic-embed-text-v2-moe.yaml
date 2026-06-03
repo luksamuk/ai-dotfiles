@@ -12,7 +12,7 @@
 # -------------------------------------------
 "nomic-embed-text-v2-moe":
   name: "Nomic Embed v2 MoE"
-  description: "Embedding model — 768-dim multilingual, RAG/search/similarity (upstream)"
+  description: "Multilingual MoE text embedding model that excels at multilingual retrieval, supporting ~100 languages with state-of-the-art performance at the 300M parameter scale."
   cmd: |
     ${llama_server} --port ${PORT}
     --model ${models_dir}/nomic-embed-text-v2-moe-Q4_K_M.gguf

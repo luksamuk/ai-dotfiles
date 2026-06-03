@@ -1,317 +1,348 @@
 {
-  "providers": {
-    "ollama": {
-      "api": "openai-completions",
-      "apiKey": "***",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "compat": {
-        "supportsDeveloperRole": false,
-        "supportsReasoningEffort": false
-      },
-      "models": [
-        {
-          "id": "deepseek-v4-flash:cloud",
-          "name": "\u2601\ufe0f DeepSeek V4 Flash",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 1048576,
-          "maxTokens": 16384
+    "providers": {
+        "ollama": {
+            "api": "openai-completions",
+            "apiKey": "***",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "compat": {
+                "supportsDeveloperRole": false,
+                "supportsReasoningEffort": false
+            },
+            "models": [
+                {
+                    "id": "deepseek-v4-flash:cloud",
+                    "name": "☁️ DeepSeek V4 Flash",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 1048576,
+                    "maxTokens": 16384
+                },
+                {
+                    "id": "deepseek-v4-pro:cloud",
+                    "name": "☁️ DeepSeek V4 Pro",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 1048576,
+                    "maxTokens": 16384
+                },
+                {
+                    "id": "gemini-3-flash-preview:cloud",
+                    "name": "☁️ Gemini 3 Flash Preview",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 1048576,
+                    "maxTokens": 16384
+                },
+                {
+                    "id": "gemma4:31b-cloud",
+                    "name": "☁️ Gemma 4 31B",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 262144,
+                    "maxTokens": 16384
+                },
+                {
+                    "id": "glm-5.1:cloud",
+                    "name": "☁️ GLM 5.1",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 202752,
+                    "maxTokens": 16384
+                },
+                {
+                    "id": "glm-5:cloud",
+                    "name": "☁️ GLM 5",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 202752,
+                    "maxTokens": 16384
+                },
+                {
+                    "id": "kimi-k2.6:cloud",
+                    "name": "☁️ Kimi K2.6",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 262144,
+                    "maxTokens": 16384
+                },
+                {
+                    "id": "kimi-k2.5:cloud",
+                    "name": "☁️ Kimi K2.5",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 262144,
+                    "maxTokens": 16384
+                },
+                {
+                    "id": "minimax-m2.5:cloud",
+                    "name": "☁️ MiniMax M2.5",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 204800,
+                    "maxTokens": 16384
+                },
+                {
+                    "id": "minimax-m2.7:cloud",
+                    "name": "☁️ MiniMax M2.7 1M",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 1048576,
+                    "maxTokens": 16384
+                },
+                {
+                    "id": "minimax-m3:cloud",
+                    "name": "☁️ MiniMax M3",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 524288,
+                    "maxTokens": 16384
+                },
+                {
+                    "id": "nemotron-3-super:cloud",
+                    "name": "☁️ Nemotron 3 Super",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 262144,
+                    "maxTokens": 16384
+                },
+                {
+                    "id": "nemotron-3-nano:30b-cloud",
+                    "name": "☁️ Nemotron 3 Nano 30B 1M",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 1048576,
+                    "maxTokens": 16384
+                },
+                {
+                    "id": "qwen3.5:cloud",
+                    "name": "☁️ Qwen 3.5 397B",
+                    "reasoning": true,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 262144,
+                    "maxTokens": 16384
+                }
+            ]
         },
-        {
-          "id": "deepseek-v4-pro:cloud",
-          "name": "\u2601\ufe0f DeepSeek V4 Pro",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 1048576,
-          "maxTokens": 16384
+        "sisyphus": {
+            "api": "openai-completions",
+            "apiKey": "not-needed",
+            "models": [
+                {
+                    "id": "qwen3-1.7b",
+                    "name": "Qwen3 1.7B 📟",
+                    "context": 16384,
+                    "maxTokens": 4096,
+                    "reasoning": true,
+                    "inputPrice": 0,
+                    "outputPrice": 0
+                },
+                {
+                    "id": "qwen3-0.6b",
+                    "name": "Qwen3 0.6B 📟",
+                    "context": 16384,
+                    "maxTokens": 4096,
+                    "reasoning": true,
+                    "inputPrice": 0,
+                    "outputPrice": 0
+                },
+                {
+                    "id": "gemma3-1b",
+                    "name": "Gemma 3 1B 📟",
+                    "context": 8192,
+                    "maxTokens": 4096,
+                    "reasoning": false,
+                    "inputPrice": 0,
+                    "outputPrice": 0
+                }
+            ],
+            "baseUrl": "http://192.168.3.8:8081/v1"
         },
-        {
-          "id": "gemini-3-flash-preview:cloud",
-          "name": "\u2601\ufe0f Gemini 3 Flash Preview",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 1048576,
-          "maxTokens": 16384
-        },
-        {
-          "id": "gemma4:31b-cloud",
-          "name": "\u2601\ufe0f Gemma 4 31B",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 262144,
-          "maxTokens": 16384
-        },
-        {
-          "id": "glm-5.1:cloud",
-          "name": "\u2601\ufe0f GLM 5.1",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 202752,
-          "maxTokens": 16384
-        },
-        {
-          "id": "glm-5:cloud",
-          "name": "\u2601\ufe0f GLM 5",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 202752,
-          "maxTokens": 16384
-        },
-        {
-          "id": "kimi-k2.6:cloud",
-          "name": "\u2601\ufe0f Kimi K2.6",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 262144,
-          "maxTokens": 16384
-        },
-        {
-          "id": "kimi-k2.5:cloud",
-          "name": "\u2601\ufe0f Kimi K2.5",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 262144,
-          "maxTokens": 16384
-        },
-        {
-          "id": "minimax-m2.5:cloud",
-          "name": "\u2601\ufe0f MiniMax M2.5",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 204800,
-          "maxTokens": 16384
-        },
-        {
-          "id": "minimax-m2.7:cloud",
-          "name": "\u2601\ufe0f MiniMax M2.7 1M",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 1048576,
-          "maxTokens": 16384
-        },
-        {
-          "id": "minimax-m3:cloud",
-          "name": "\u2601\ufe0f MiniMax M3",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 524288,
-          "maxTokens": 16384
-        },
-        {
-          "id": "nemotron-3-super:cloud",
-          "name": "\u2601\ufe0f Nemotron 3 Super",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 262144,
-          "maxTokens": 16384
-        },
-        {
-          "id": "nemotron-3-nano:30b-cloud",
-          "name": "\u2601\ufe0f Nemotron 3 Nano 30B 1M",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 1048576,
-          "maxTokens": 16384
-        },
-        {
-          "id": "qwen3.5:cloud",
-          "name": "\u2601\ufe0f Qwen 3.5 397B",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 262144,
-          "maxTokens": 16384
+        "llama-swap": {
+            "api": "openai-completions",
+            "apiKey": "***",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "compat": {
+                "supportsDeveloperRole": false,
+                "supportsReasoningEffort": false,
+                "thinkingFormat": "qwen-chat-template"
+            },
+            "models": [
+                {
+                    "id": "qwen3.5-4b",
+                    "name": "🧠 Qwen3.5 4B",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 32768
+                },
+                {
+                    "id": "qwen3.5-4b:think",
+                    "name": "🧠 Qwen3.5 4B Thinking",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 32768
+                },
+                {
+                    "id": "gemma4-e2b",
+                    "name": "🧠 Gemma 4 E2B",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 32768
+                },
+                {
+                    "id": "gemma4-e2b:think",
+                    "name": "🧠 Gemma 4 E2B Thinking",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 32768
+                },
+                {
+                    "id": "gemma4-e4b",
+                    "name": "🧠 Gemma 4 E4B",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 32768
+                },
+                {
+                    "id": "gemma4-e4b:think",
+                    "name": "🧠 Gemma 4 E4B Thinking",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 32768
+                },
+                {
+                    "id": "gemma4-26b-moe",
+                    "name": "🧠 Gemma 4 26B MoE",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 32768
+                },
+                {
+                    "id": "gemma4-26b-moe:think",
+                    "name": "🧠 Gemma 4 26B MoE Thinking",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 32768
+                },
+                {
+                    "id": "qwen3.6-35b-moe",
+                    "name": "🧠 Qwen3.6 35B MoE",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 32768
+                },
+                {
+                    "id": "qwen3.6-35b-moe:think",
+                    "name": "🧠 Qwen3.6 35B MoE Thinking",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 32768
+                },
+                {
+                    "id": "nanbeige4.1-3b",
+                    "name": "Nanbeige 4.1 3B 🧠",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 32768
+                },
+                {
+                    "id": "qwen3.5-4b-abliterated",
+                    "name": "Qwen3.5 4B Abliterated",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 32768
+                },
+                {
+                    "id": "qwen3.5-4b-abliterated:think",
+                    "name": "🧠 Qwen3.5 4B Abliterated",
+                    "reasoning": true,
+                    "input": [
+                        "text"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 32768
+                },
+                {
+                    "id": "glm-ocr",
+                    "name": "GLM OCR",
+                    "reasoning": false,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 131072,
+                    "maxTokens": 16384
+                }
+            ]
         }
-      ]
-    },
-    "sisyphus": {
-      "api": "openai-completions",
-      "apiKey": "not-needed",
-      "models": [
-        {
-          "id": "qwen3-1.7b",
-          "name": "Qwen3 1.7B \ud83d\udcdf",
-          "context": 16384,
-          "maxTokens": 4096,
-          "reasoning": true,
-          "inputPrice": 0,
-          "outputPrice": 0
-        },
-        {
-          "id": "qwen3-0.6b",
-          "name": "Qwen3 0.6B \ud83d\udcdf",
-          "context": 16384,
-          "maxTokens": 4096,
-          "reasoning": true,
-          "inputPrice": 0,
-          "outputPrice": 0
-        },
-        {
-          "id": "gemma3-1b",
-          "name": "Gemma 3 1B \ud83d\udcdf",
-          "context": 8192,
-          "maxTokens": 4096,
-          "reasoning": false,
-          "inputPrice": 0,
-          "outputPrice": 0
-        }
-      ],
-      "baseUrl": "http://192.168.3.8:8081/v1"
-    },
-    "llama-swap": {
-      "api": "openai-completions",
-      "apiKey": "***",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "compat": {
-        "supportsDeveloperRole": false,
-        "supportsReasoningEffort": false,
-        "thinkingFormat": "qwen-chat-template"
-      },
-      "models": [
-        {
-          "id": "qwen3.5-4b",
-          "name": "\ud83e\udde0 Qwen3.5 4B",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "qwen3.5-4b:think",
-          "name": "\ud83e\udde0 Qwen3.5 4B Thinking",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "gemma4-e2b",
-          "name": "\ud83e\udde0 Gemma 4 E2B",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "gemma4-e2b:think",
-          "name": "\ud83e\udde0 Gemma 4 E2B Thinking",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "gemma4-e4b",
-          "name": "\ud83e\udde0 Gemma 4 E4B",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "gemma4-e4b:think",
-          "name": "\ud83e\udde0 Gemma 4 E4B Thinking",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "gemma4-26b-moe",
-          "name": "\ud83e\udde0 Gemma 4 26B MoE",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "gemma4-26b-moe:think",
-          "name": "\ud83e\udde0 Gemma 4 26B MoE Thinking",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "qwen3.6-35b-moe",
-          "name": "\ud83e\udde0 Qwen3.6 35B MoE",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "qwen3.6-35b-moe:think",
-          "name": "\ud83e\udde0 Qwen3.6 35B MoE Thinking",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "nanbeige4.1-3b",
-          "name": "Nanbeige 4.1 3B \ud83e\udde0",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        }
-      ]
     }
-  }
 }

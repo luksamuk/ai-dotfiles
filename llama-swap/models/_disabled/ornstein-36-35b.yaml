@@ -12,7 +12,7 @@
 "ornstein-36-35b":
   unlisted: true
   name: "Ornstein 3.6 35B SABER"
-  description: "Qwen3.6-35B NSC-ACE-SABER fine-tune, +2.87pp BFCL tool calling (ik backend)"
+  description: "Ornstein is a community fine-tune of Qwen3.6-35B using NSC-ACE-SABER, achieving +2.87pp on BFCL tool-calling benchmarks while preserving reasoning capabilities."
   cmd: |
     ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/Qwen3.6-35B-A3B-NSC-ACE-SABER-Q4_K_M.gguf

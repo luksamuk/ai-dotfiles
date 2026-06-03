@@ -10,7 +10,7 @@
 # -------------------------------------------
 "minicpm5-1b":
   name: "MiniCPM5 1B"
-  description: "Small dense model, think/no-think + broken tool calling (Q8_0)"
+  description: "Dense 1B Transformer built for on-device deployment, designed for local assistants, coding agents, tool-use workflows, and hybrid reasoning."
   cmd: |
     ${llama_server} --port ${PORT}
     --model ${models_dir}/MiniCPM5-1B-Q8_0.gguf
