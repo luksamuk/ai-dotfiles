@@ -1,19 +1,22 @@
 # -------------------------------------------
-# QWEN3.5-4B-ABLITERATED - Bee BACKEND (TurboQuant KV cache)
+# QWEN3.5-4B-ABLITERATED - ik BACKEND (Hadamard KV cache)
 # Qwen3.5-4B with refusal behaviors removed via Abliterix (orthogonalized steering + Bayesian optimization)
 # KL divergence 0.0065 — minimal capability degradation. For Sprachspiel adversarial testing ONLY.
 # Same architecture as base Qwen3.5-4B (qwen35) — all llama-swap flags work identically
-# head_dim=256 → attn_rot ✅
-# Uses Bee backend with TurboQuant — same config as qwen3.5-4b (proven stable)
+# Switched from Bee/TurboQuant to ik — i1 quant format causes Bee slash bug.
+# ik with hadamard cache gives near-fp16 quality.
+# --parallel-tool-calls: enables multiple tool calls in single response
 # -------------------------------------------
 "qwen3.5-4b-abliterated":
   name: "Qwen3.5 4B Abliterated"
   description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance. Abliterated variant with refusal behaviors removed for adversarial testing."
   cmd: |
-    ${bee_server} --port ${PORT}
+    ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/Qwen3.5-4B-abliterated-i1-Q4_K_M.gguf
-    --no-mmproj
-    --n-gpu-layers 99
+    --jinja
+    --parallel-tool-calls
+    --fit
+    --fit-margin 512
     --ctx-size 131072
     --temp ${default_temp}
     --top-p ${default_top_p}
@@ -21,12 +24,11 @@
     --min-p ${default_min_p}
     --repeat-penalty ${default_repeat_penalty}
     --reasoning on
-    --reasoning-loop-guard force-close
-    --reasoning-loop-min-tokens 1024
-    --reasoning-loop-window 2048
-    --cache-type-k turbo3_tcq
-    --cache-type-v turbo3_tcq
-    --flash-attn on
+    --cache-type-k q8_0
+    --cache-type-v q4_0
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
     --metrics
   filters:
     stripParams: "temperature, top_p"
@@ -49,10 +51,10 @@
     embedding_length: 2560
     quantization: i1-Q4_K_M
     size: "~2.71 GB (i1-Q4_K_M)"
-    context: "64K-128K (TurboQuant enables longer context)"
-    vram_usage: "~3.5GB VRAM (model + turbo3_tcq cache)"
+    context: "64K-128K (dynamic)"
+    vram_usage: "~3.5GB VRAM (model + hadamard cache)"
     source: "mradermacher/Qwen3.5-4B-abliterated-i1-GGUF (i1-Q4_K_M)"
-    kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression, PPL ≈ fp16)"
+    kv_cache: "q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)"
     features:
       completion: true
       tools: true
@@ -62,4 +64,4 @@
       insert: false
       audio: false
       image: false
-    note: "Abliterated variant for Sprachspiel adversarial testing — no refusal. Same qwen35 arch as base 4B, identical config proven stable with TurboQuant."
+    note: "Abliterated variant for Sprachspiel adversarial testing — no refusal. Switched from Bee to ik — i1 format causes Bee slash bug."
