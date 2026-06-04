@@ -150,22 +150,17 @@ def check_resources_available() -> bool:
 
 
 # ── Generation ─────────────────────────────────────────────────────────────
-def generate_audio(
+def _build_mrt_cmd(
+    mrt_bin: str,
     model_name: str,
     prompt: str,
     duration: float,
-    output: Path | None,
-    cwd: Path | None,
-    mrt_bin: str,
-    temperature: float | None = None,
-    top_k: int | None = None,
-    cfg_musiccoca: float | None = None,
-    cfg_notes: float | None = None,
-) -> dict:
-    """Generate audio using mrt CLI. Returns metadata dict."""
-    model_info = MODELS[model_name]
-
-    # Build command: mrt jax generate --prompt "..." --duration 4.0 --model mrt2_small
+    temperature: float | None,
+    top_k: int | None,
+    cfg_musiccoca: float | None,
+    cfg_notes: float | None,
+) -> list[str]:
+    """Build the mrt jax generate command."""
     cmd = [
         mrt_bin, "jax", "generate",
         "--prompt", prompt,
@@ -180,6 +175,44 @@ def generate_audio(
         cmd.extend(["--cfg-musiccoca", str(cfg_musiccoca)])
     if cfg_notes is not None:
         cmd.extend(["--cfg-notes", str(cfg_notes)])
+    return cmd
+
+
+def _is_oom_error(stderr: str) -> bool:
+    """Check if the error output indicates an OOM (out of memory) condition."""
+    oom_patterns = [
+        "out of memory",
+        "OOM",
+        "CUDA_ERROR_OUT_OF_MEMORY",
+        "FAILED_PRECONDITION: Could not allocate",
+        "Allocator.*ran out of memory",
+        "RESOURCE_EXHAUSTED",
+    ]
+    lower = stderr.lower()
+    return any(p.lower() in lower for p in oom_patterns)
+
+
+def generate_audio(
+    model_name: str,
+    prompt: str,
+    duration: float,
+    output: Path | None,
+    cwd: Path | None,
+    mrt_bin: str,
+    temperature: float | None = None,
+    top_k: int | None = None,
+    cfg_musiccoca: float | None = None,
+    cfg_notes: float | None = None,
+    allow_cpu_fallback: bool = True,
+) -> dict:
+    """Generate audio using mrt CLI. Falls back to CPU on GPU OOM.
+
+    Returns metadata dict. If GPU OOM occurs and allow_cpu_fallback is True,
+    retries with JAX_PLATFORMS=cpu (slower but works).
+    """
+    model_info = MODELS[model_name]
+    cpu_fallback = False
+    cmd = _build_mrt_cmd(mrt_bin, model_name, prompt, duration, temperature, top_k, cfg_musiccoca, cfg_notes)
 
     log.info("Running: %s", " ".join(cmd))
     log.info("Model: %s (%s params)", model_name, model_info["params"])
@@ -194,7 +227,49 @@ def generate_audio(
     wall_time = time.perf_counter() - t0
     gpu_after = get_gpu_memory()
 
-    if result.returncode != 0:
+    # ── GPU OOM fallback ──
+    if result.returncode != 0 and allow_cpu_fallback and _is_oom_error(result.stderr):
+        model_size = model_info["params"]
+        log.warning("GPU OOM detected for %s (%s) — retrying on CPU", model_name, model_size)
+        print(f"  ⚠️  GPU out of memory for {model_name} ({model_size})")
+        print(f"     Retrying on CPU (will be much slower)...")
+        print()
+
+        # Evict LLMs if not already done — free as much VRAM as possible first
+        running = _llama_swap_running_models()
+        if running:
+            log.info("Evicting LLM models before CPU fallback retry")
+            evict_llm()
+            import time as _time
+            _time.sleep(1)
+
+        # Retry with CPU backend
+        cpu_env = os.environ.copy()
+        cpu_env["JAX_PLATFORMS"] = "cpu"
+
+        cmd_cpu = _build_mrt_cmd(mrt_bin, model_name, prompt, duration, temperature, top_k, cfg_musiccoca, cfg_notes)
+
+        log.info("Retrying on CPU: JAX_PLATFORMS=cpu %s", " ".join(cmd_cpu))
+        t0_cpu = time.perf_counter()
+        result = subprocess.run(cmd_cpu, capture_output=True, text=True, env=cpu_env)
+        wall_time = time.perf_counter() - t0_cpu
+        # Note: wall_time now covers only the CPU attempt
+
+        if result.returncode != 0:
+            log.error("CPU fallback also failed (rc=%d)", result.returncode)
+            if result.stderr:
+                for line in result.stderr.strip().split("\n"):
+                    log.error("  %s", line)
+            print(f"\n  ✗ Generation failed on both GPU and CPU")
+            print(f"    The {model_name} model may be too large for this machine.")
+            if model_name == "mrt2_base":
+                print(f"    Try: magenta-rt generate -p ... -m mrt2_small")
+            sys.exit(1)
+
+        # Mark that this was a CPU fallback run
+        cpu_fallback = True
+
+    elif result.returncode != 0:
         log.error("Generation failed (rc=%d)", result.returncode)
         if result.stderr:
             for line in result.stderr.strip().split("\n"):
@@ -257,6 +332,7 @@ def generate_audio(
         "output": str(final_path),
         "mrt_output": str(output_path),
         "file_size_mb": round(file_size_mb, 2),
+        "cpu_fallback": cpu_fallback,
     }
 
     return metadata
@@ -298,6 +374,8 @@ def print_debrief(metadata: dict, gpu_info: dict) -> None:
     print(f"  Model:       {model_name} ({model_info['params']} params)")
     print(f"  Prompt:      \"{metadata['prompt']}\"")
     print(f"  Duration:    {metadata['duration']:.1f}s")
+    if metadata.get("cpu_fallback"):
+        print("  ⚠️  GPU OOM — ran on CPU fallback (much slower)")
     print()
     print("  Timings:")
     print(f"    Wall:      {metadata['wall_seconds']:7.2f} s")
@@ -347,6 +425,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--evict-llm", action="store_true",
         help="Evict all running LLM models (via llama-swap) to free VRAM before generating.",
+    )
+    p.add_argument(
+        "--no-cpu-fallback", action="store_true",
+        help="Disable CPU fallback on GPU OOM. Exit immediately if GPU runs out of memory.",
     )
     return p.parse_args()
 
@@ -445,6 +527,7 @@ def main() -> None:
         top_k=args.top_k,
         cfg_musiccoca=args.cfg_musiccoca,
         cfg_notes=args.cfg_notes,
+        allow_cpu_fallback=not args.no_cpu_fallback,
     )
 
     # Save metadata
