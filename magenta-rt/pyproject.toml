@@ -1,0 +1,11 @@
+[project]
+name = "magenta-rt"
+version = "0.1.0"
+description = "Local music generation with Magenta RealTime 2 on NVIDIA GPU"
+requires-python = ">=3.12"
+dependencies = [
+    "magenta-rt[jax]",
+]
+
+[project.scripts]
+mrt-gen = "generate:main"
