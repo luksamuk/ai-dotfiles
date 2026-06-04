@@ -191,52 +191,49 @@ def generate_audio(
         print(f"    See log above for details.")
         sys.exit(1)
 
-    # mrt saves to MRT_DATA_DIR by default — find the output file
+    # mrt always saves to MRT_DATA_DIR/outputs/ — find the generated file there
+    # then copy it to the user's working directory
+    mrt_output_dir = MRT_DATA_DIR / "outputs"
     output_path = None
 
-    # If user specified output path, check there first
-    if output is not None:
-        output_path = Path(output).expanduser().resolve()
-        if output_path.exists():
-            pass  # found it
-        else:
-            log.warning("Specified output not found: %s", output_path)
+    # Parse stdout for the saved file path (mrt prints "Saved to <path>")
+    for line in result.stdout.strip().split("\n"):
+        if line.startswith("Saved to "):
+            candidate = Path(line[len("Saved to "):].strip())
+            if candidate.exists() and candidate.suffix == ".wav":
+                output_path = candidate
+                log.info("Found mrt output: %s", output_path)
+                break
 
-    # Otherwise, look for the most recent .wav in MRT_DATA_DIR
-    if output_path is None or not output_path.exists():
-        # mrt jax generate outputs to stdout or a default location
-        # Check if stdout contains a path
-        wav_files = []
-        # Search common output locations
-        for search_dir in [Path.cwd(), MRT_DATA_DIR]:
-            wav_files.extend(search_dir.rglob("*.wav"))
-
-        # Also check if mrt printed the output path
-        for line in result.stdout.strip().split("\n"):
-            for part in line.split():
-                candidate = Path(part)
-                if candidate.exists() and candidate.suffix == ".wav":
-                    wav_files.append(candidate)
-
+    # Fallback: find most recent .wav in mrt output dir
+    if output_path is None and mrt_output_dir.exists():
+        wav_files = sorted(mrt_output_dir.glob("*.wav"), key=lambda p: p.stat().st_mtime, reverse=True)
         if wav_files:
-            # Use the newest file
-            output_path = max(wav_files, key=lambda p: p.stat().st_mtime)
-        else:
-            log.error("No output WAV file found")
+            output_path = wav_files[0]
+            log.info("Found mrt output (most recent): %s", output_path)
 
-    # If still not found, create output in cwd
-    if output_path is None or not output_path.exists():
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        base_dir = cwd if cwd else Path.cwd()
-        output_path = base_dir / f"mrt2_{model_name}_{ts}.wav"
-        log.warning("Could not find mrt output — reporting expected path: %s", output_path)
+    if output_path is None:
+        log.error("No output WAV file found")
+        print("\n  ✗ No output file found")
+        sys.exit(1)
+
+    # Copy to user's working directory with a clean filename
+    import shutil
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    slug = prompt.lower()[:40].replace(" ", "_")
+    slug = "".join(c for c in slug if c.isalnum() or c == "_")[:30]
+    local_name = f"mrt2_{model_name}_{slug}_{ts}.wav"
+    base_dir = cwd if cwd else Path.cwd()
+    final_path = base_dir / local_name
+
+    shutil.copy2(output_path, final_path)
+    log.info("Copied %s → %s", output_path, final_path)
+    file_size_mb = final_path.stat().st_size / (1024 * 1024)
 
     # Calculate peak memory
     peak_hbm = 0.0
     if gpu_after:
         peak_hbm = max(gpu_after.get("used_mb", 0), gpu_before.get("used_mb", 0))
-
-    file_size_mb = output_path.stat().st_size / (1024 * 1024) if output_path.exists() else 0
 
     metadata = {
         "model": model_name,
@@ -245,7 +242,8 @@ def generate_audio(
         "duration": duration,
         "wall_seconds": round(wall_time, 3),
         "peak_hbm_mib": round(peak_hbm, 1),
-        "output": str(output_path),
+        "output": str(final_path),
+        "mrt_output": str(output_path),
         "file_size_mb": round(file_size_mb, 2),
     }
 
@@ -300,7 +298,9 @@ def print_debrief(metadata: dict, gpu_info: dict) -> None:
         print()
     if metadata.get("file_size_mb", 0) > 0:
         print(f"  Output:      {metadata['file_size_mb']:.2f} MB")
-    print(f"  File:        {metadata['output']}")
+    print(f"  Saved:       {metadata['output']}")
+    if metadata.get("mrt_output") and metadata["mrt_output"] != metadata["output"]:
+        print(f"  (original:   {metadata['mrt_output']})")
     print("══════════════════════════════════════")
 
 
