@@ -21,8 +21,11 @@ ai-dotfiles/
 │   ├── open-webui/             # Open WebUI Docker
 │   ├── pi/                     # Pi Coding Agent
 │   └── tui-studio/             # TUI Studio Docker
+├── diffuse/                    # Geração de imagens locais (Bonsai Image 4B)
 ├── llama-swap/                 # Config do llama-swap + modelos GGUF
+├── magenta-rt/                 # Geração de música local (Magenta RealTime 2)
 ├── modelfiles/                  # Ollama Modelfiles (Makefile)
+├── parakeet-stt/               # STT local (parakeet.cpp)
 ├── scripts/                     # DEPRECATED — script ask-ai.py antigo
 └── docs/                        # Documentação adicional
 #+END_SRC
@@ -120,6 +123,42 @@ Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) par
 - **Ferramenta**: TUI Studio — ambiente Docker para desenvolvimento de TUI apps.
 - **Diretório**: =configs/tui-studio/=
 - **Uso**: Configs para bind-mount no container Docker.
+
+* diffuse — Geração de Imagens Locais
+
+[[https://prismml.com/news/bonsai-image-4b][Bonsai Image 4B]] rodando localmente na RTX 3050 6GB via gemlite + CUDA. Load-and-unload — gera imagem e libera VRAM.
+
+- **Diretório**: =diffuse/=
+- **CLI**: =diffuse generate -p "prompt"= (symlink em =~/.local/bin/diffuse=)
+- **Comandos**: =diffuse setup=, =diffuse download=, =diffuse generate=, =diffuse evict=, =diffuse status=
+- **Modelos**: binary-gemlite (1-bit), ternary-gemlite (1.58-bit, recomendado)
+- **Workflow**: Evict LLM → load pipeline → generate → unload
+
+Ver documentação completa em =diffuse/README.md=.
+
+* magenta-rt — Geração de Música Local
+
+[[https://github.com/magenta/magenta-realtime][Magenta RealTime 2]] rodando localmente na RTX 3050 via JAX + CUDA. Offline inference (streaming em tempo real requer Apple Silicon).
+
+- **Diretório**: =magenta-rt/=
+- **CLI**: =magenta-rt generate -p "disco funk"= (symlink em =~/.local/bin/magenta-rt=)
+- **Comandos**: =magenta-rt setup=, =magenta-rt download=, =magenta-rt generate=, =magenta-rt evict=, =magenta-rt status=
+- **Modelos**: mrt2_small (230M, recomendado RTX 3050), mrt2_base (2.4B)
+- **Workflow**: Evict LLM → load model → generate audio → unload
+- **Saída**: WAV 48kHz stereo
+
+Ver documentação completa em =magenta-rt/README.md=.
+
+* parakeet-stt — STT Local
+
+[[https://github.com/mudler/parakeet.cpp][parakeet.cpp]] rodando nativamente com CUDA. NVIDIA Parakeet TDT 0.6B v3 (25 idiomas incluindo pt-BR).
+
+- **Diretório**: =parakeet-stt/=
+- **CLI**: =~/.local/bin/parakeet-stt <audio_file> --output_dir <tmp_dir>=
+- **Modelo**: tdt-0.6b-v3 Q4_K (~644MB)
+- **Integração Hermes**: =HERMES_LOCAL_STT_COMMAND= no =.env=
+
+Ver documentação completa em =parakeet-stt/README.md=.
 
 * llama-swap — Serviço de Modelos GGUF Locais
 
