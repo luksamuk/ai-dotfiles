@@ -157,6 +157,10 @@ def generate_audio(
     output: Path | None,
     cwd: Path | None,
     mrt_bin: str,
+    temperature: float | None = None,
+    top_k: int | None = None,
+    cfg_musiccoca: float | None = None,
+    cfg_notes: float | None = None,
 ) -> dict:
     """Generate audio using mrt CLI. Returns metadata dict."""
     model_info = MODELS[model_name]
@@ -168,6 +172,14 @@ def generate_audio(
         "--duration", str(duration),
         "--model", model_name,
     ]
+    if temperature is not None:
+        cmd.extend(["--temperature", str(temperature)])
+    if top_k is not None:
+        cmd.extend(["--top-k", str(top_k)])
+    if cfg_musiccoca is not None:
+        cmd.extend(["--cfg-musiccoca", str(cfg_musiccoca)])
+    if cfg_notes is not None:
+        cmd.extend(["--cfg-notes", str(cfg_notes)])
 
     log.info("Running: %s", " ".join(cmd))
     log.info("Model: %s (%s params)", model_name, model_info["params"])
@@ -313,6 +325,8 @@ def parse_args() -> argparse.Namespace:
             "Recommended:\n"
             "  Quick test:     magenta-rt generate -p 'disco funk'\n"
             "  Longer piece:   magenta-rt generate -p 'ambient pads' --duration 8.0\n"
+            "  Varied output:   magenta-rt generate -p 'jazz' --temperature 0.9\n"
+            "  Focused output:  magenta-rt generate -p 'piano' --temperature 0.6 --top-k 100\n"
             "  With eviction:  magenta-rt generate -p 'jazz piano' --evict-llm\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -325,6 +339,10 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("-p", "--prompt", help="Text prompt. If omitted, prompted interactively.")
     p.add_argument("--duration", type=float, default=4.0, help="Duration in seconds (default: 4.0).")
+    p.add_argument("--temperature", type=float, default=None, help="Sampling temperature (lower = more conservative, higher = more varied).")
+    p.add_argument("--top-k", type=int, default=None, help="Limit vocabulary to top-k tokens (lower = more focused).")
+    p.add_argument("--cfg-musiccoca", type=float, default=None, help="Classifier-free guidance scale for MusicCoCa.")
+    p.add_argument("--cfg-notes", type=float, default=None, help="Classifier-free guidance scale for MIDI notes.")
     p.add_argument("--output", type=Path, default=None, help="Output WAV path (auto-detected if not set).")
     p.add_argument(
         "--evict-llm", action="store_true",
@@ -419,6 +437,10 @@ def main() -> None:
         output=args.output,
         cwd=Path.cwd(),
         mrt_bin=mrt_bin,
+        temperature=args.temperature,
+        top_k=args.top_k,
+        cfg_musiccoca=args.cfg_musiccoca,
+        cfg_notes=args.cfg_notes,
     )
 
     # Save metadata
