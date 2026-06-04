@@ -66,16 +66,17 @@ cmd_setup() {
     cd "$SCRIPT_DIR"
     if [[ ! -d "$VENV_DIR" ]]; then
         log_info "Creating venv with Python 3.12..."
-        uv venv --python 3.12
+        uv venv --python 3.12 --python "$VENV_DIR"
     fi
 
-    log_info "Installing dependencies (magenta-rt[jax])..."
-    uv pip install "magenta-rt[jax]"
+    log_info "Installing dependencies (magenta-rt[jax] + jax[cuda12])..."
+    # Must use --python to target the correct venv (uv may pick wrong python)
+    uv pip install --python "$VENV_DIR/bin/python3" "magenta-rt[jax]" "jax[cuda12]"
 
     log_info ""
     log_info "Setup complete! Next steps:"
-    log_info "  1. magenta-rt download resources   # Download MusicCoCa + SpectroStream"
-    log_info "  2. magenta-rt download small        # Download mrt2_small model"
+    log_info "  1. magenta-rt download resources          # Download MusicCoCa + SpectroStream"
+    log_info "  2. magenta-rt download checkpoints-small   # Download JAX checkpoint (REQUIRED for CUDA)"
     log_info "  3. magenta-rt generate -p 'disco funk'"
 }
 
@@ -94,7 +95,7 @@ cmd_download() {
     check_mrt_cli || exit 1
 
     local mrt_bin="${VENV_DIR}/bin/mrt"
-    local target="${1:-small}"
+    local target="${1:-checkpoints-small}"
 
     case "$target" in
         resources)
@@ -108,7 +109,7 @@ cmd_download() {
                 log_info "Resources not found — downloading first..."
                 cmd_download resources
             fi
-            log_info "Downloading mrt2_small model (230M params)..."
+            log_info "Downloading mrt2_small MLX model (230M params)..."
             "$mrt_bin" models download mrt2_small
             log_info "Model downloaded to: $MRT_DATA_DIR/models/mrt2_small"
             ;;
@@ -117,19 +118,53 @@ cmd_download() {
                 log_info "Resources not found — downloading first..."
                 cmd_download resources
             fi
-            log_info "Downloading mrt2_base model (2.4B params)..."
+            log_info "Downloading mrt2_base MLX model (2.4B params)..."
             log_warn "This model requires ~5-6GB VRAM — may not fit on RTX 3050 6GB"
             "$mrt_bin" models download mrt2_base
             log_info "Model downloaded to: $MRT_DATA_DIR/models/mrt2_base"
             ;;
+        checkpoints-small)
+            log_info "Downloading mrt2_small JAX checkpoint (~1.1GB)..."
+            "$mrt_bin" checkpoints download mrt2_small 2>/dev/null || {
+                log_warn "mrt checkpoints download failed (known HF 404 issue)"
+                log_info "Downloading manually from HuggingFace..."
+                "$VENV_PY" -c "
+from huggingface_hub import hf_hub_download
+path = hf_hub_download(
+    repo_id='google/magenta-realtime-2',
+    filename='checkpoints/mrt2_small.safetensors',
+    local_dir='$HOME/Documents/Magenta/magenta-rt-v2',
+)
+print(f'Downloaded to: {path}')
+"
+            }
+            log_info "Checkpoint at: $MRT_DATA_DIR/checkpoints/mrt2_small.safetensors"
+            ;;
+        checkpoints-base)
+            log_info "Downloading mrt2_base JAX checkpoint (~4.8GB)..."
+            "$mrt_bin" checkpoints download mrt2_base 2>/dev/null || {
+                log_warn "mrt checkpoints download failed"
+                log_info "Downloading manually from HuggingFace..."
+                "$VENV_PY" -c "
+from huggingface_hub import hf_hub_download
+path = hf_hub_download(
+    repo_id='google/magenta-realtime-2',
+    filename='checkpoints/mrt2_base.safetensors',
+    local_dir='$HOME/Documents/Magenta/magenta-rt-v2',
+)
+print(f'Downloaded to: {path}')
+"
+            }
+            log_info "Checkpoint at: $MRT_DATA_DIR/checkpoints/mrt2_base.safetensors"
+            ;;
         all)
             cmd_download resources
             cmd_download small
-            cmd_download base
+            cmd_download checkpoints-small
             ;;
         *)
             log_error "Unknown download target: $target"
-            log_info "Usage: magenta-rt download [resources|small|base|all]"
+            log_info "Usage: magenta-rt download [resources|small|base|checkpoints-small|checkpoints-base|all]"
             exit 1
             ;;
     esac
@@ -262,13 +297,14 @@ Environment:
   LLAMA_SWAP_CLI   Path to llama-swap-cli (default: ~/git/ai-dotfiles/llama-swap/llama-swap-cli)
 
 Examples:
-  magenta-rt setup                          # First-time setup
-  magenta-rt download resources              # Download MusicCoCa + SpectroStream
-  magenta-rt download small                  # Download 230M model (recommended)
-  magenta-rt generate -p 'disco funk'        # Generate 4s of music
+  magenta-rt setup                                  # First-time setup (installs jax[cuda12])
+  magenta-rt download resources                      # Download MusicCoCa + SpectroStream
+  magenta-rt download checkpoints-small               # Download JAX checkpoint (REQUIRED for CUDA)
+  magenta-rt download small                          # Download MLX model (Apple Silicon only)
+  magenta-rt generate -p 'disco funk'                # Generate 4s of music
   magenta-rt generate -p 'jazz piano' --duration 8.0
-  magenta-rt generate -p 'ambient' --evict-llm  # Free VRAM first
-  magenta-rt status                          # Check everything
+  magenta-rt generate -p 'ambient' --evict-llm       # Free VRAM first
+  magenta-rt status                                  # Check everything
 EOF
 }
 

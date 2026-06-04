@@ -16,40 +16,6 @@
                 "baseURL": "http://127.0.0.1:11434/v1"
             },
             "models": {
-                "qwen3.5:4b": {
-                    "name": "Qwen 3.5 (4B)",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5:9b": {
-                    "name": "Qwen 3.5 (9B)",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
                 "glm-5:cloud": {
                     "name": "GLM 5",
                     "reasoning": true,
@@ -245,6 +211,34 @@
                     "capabilities": [
                         "tools"
                     ],
+                    "limit": {
+                        "context": 1048576,
+                        "output": 32768
+                    }
+                },
+                "nemotron-3-ultra:cloud": {
+                    "name": "Nemotron 3 Ultra",
+                    "reasoning": true,
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
+                    }
+                },
+                "gemini-3-flash-preview:cloud": {
+                    "name": "Gemini 3 Flash Preview",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
                     "limit": {
                         "context": 1048576,
                         "output": 32768
@@ -449,6 +443,46 @@
                         ]
                     }
                 },
+                "gemma4-12b": {
+                    "name": "Gemma 4 12B Unified",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    }
+                },
+                "gemma4-12b:think": {
+                    "name": "Gemma 4 12B Unified \ud83e\udde0",
+                    "reasoning": true,
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "modalities": {
+                        "input": [
+                            "text",
+                            "image"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    }
+                },
                 "qwen3.5-4b-abliterated": {
                     "name": "Qwen 3.5 4B Abliterated",
                     "reasoning": true,
@@ -564,7 +598,7 @@
                     ]
                 },
                 "gpt-oss-20b": {
-                    "name": "GPT-OSS 20B \ud83e\udde0",
+                    "name": "GPT-OSS 20B",
                     "reasoning": true,
                     "limit": {
                         "context": 131072,

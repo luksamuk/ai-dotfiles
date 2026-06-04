@@ -67,8 +67,8 @@ macros:
 
   # Parâmetros para código/tool-calling (mais determinístico)
   "code_temp": "0.6"
-  "code_top_p": "0.85"
-  "code_top_k": "40"
+  "code_top_p": "0.95"
+  "code_top_k": "20"
   "code_min_p": "0.02"
   "code_repeat_penalty": "1.05"
 
@@ -122,6 +122,13 @@ macros:
   "large_cache_v": "q4_0"
   "gemma_cache_k": "q4_0"
   "gemma_cache_v": "q4_0"
+
+  # Parâmetros oficiais Google Gemma 4 (todas as sizes): temp=1.0, top_p=0.95, top_k=64
+  # https://huggingface.co/google/gemma-4-12b-it#best-practices
+  # repeat_penalty=1.05 (não oficial, mas necessário pra evitar loops em código longo)
+  "gemma_temp": "1.0"
+  "gemma_top_p": "0.95"
+  "gemma_top_k": "64"
 models:
 # -------------------------------------------
 # QWEN3.5-0.8B - vLLM BACKEND (PAUSADO — venv + HF models deletados)
@@ -407,11 +414,11 @@ models:
       --jinja
       --parallel-tool-calls
       --ctx-size ${small_model_max_ctx}
-      --temp 0.7
-      --top-p 0.9
-      --top-k 40
+      --temp ${gemma_temp}
+      --top-p ${gemma_top_p}
+      --top-k ${gemma_top_k}
       --min-p 0.01
-      --repeat-penalty 1.0
+      --repeat-penalty ${default_repeat_penalty}
       --reasoning on
       --cache-type-k q8_0
       --cache-type-v q4_0
@@ -425,13 +432,13 @@ models:
         "${MODEL_ID}":
           chat_template_kwargs:
             enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
+          temperature: 1.0
+          top_p: 0.95
         "${MODEL_ID}:think":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
-          top_p: 0.9
+          top_p: 0.95
     ttl: 60
     metadata:
       size: "~4.63 GB (Q4_K_M)"
@@ -474,11 +481,11 @@ models:
       --fit-target 1024
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --temp 0.7
-      --top-p 0.9
-      --top-k 40
+      --temp ${gemma_temp}
+      --top-p ${gemma_top_p}
+      --top-k ${gemma_top_k}
       --min-p 0.01
-      --repeat-penalty 1.0
+      --repeat-penalty ${default_repeat_penalty}
       --reasoning on
       --cache-type-k ${gemma_cache_k}
       --cache-type-v ${gemma_cache_v}
@@ -490,13 +497,13 @@ models:
         "${MODEL_ID}":
           chat_template_kwargs:
             enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
+          temperature: 1.0
+          top_p: 0.95
         "${MODEL_ID}:think":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
-          top_p: 0.9
+          top_p: 0.95
     ttl: 60
     metadata:
       size: "~2.89 GB (Q4_K_M)"
@@ -703,8 +710,12 @@ models:
       --fit-target 96
       --fit-ctx 16384
       --ctx-size 131072
-      --temp 1.0
-      --top-p 0.95
+      --jinja
+      --temp ${gemma_temp}
+      --top-p ${gemma_top_p}
+      --top-k ${gemma_top_k}
+      --min-p 0.01
+      --repeat-penalty ${default_repeat_penalty}
       --reasoning on
       --cache-type-k q4_0
       --cache-type-v q4_0
@@ -716,12 +727,12 @@ models:
         "${MODEL_ID}":
           chat_template_kwargs:
             enable_thinking: false
-          temperature: 0.7
+          temperature: 1.0
           top_p: 0.95
         "${MODEL_ID}:think":
           chat_template_kwargs:
             enable_thinking: true
-          temperature: 1.0
+          temperature: 0.6
           top_p: 0.95
     ttl: 300
     metadata:
@@ -745,6 +756,79 @@ models:
       embedding_length: 2816
       quantization: I-Compact
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA. Text-only."
+# -------------------------------------------
+# GEMMA-4-12B UNIFIED - UPSTREAM BACKEND (Flash Attention + q4_0 cache)
+# First mid-size encoder-free multimodal model in Gemma 4 family.
+# Text + image + audio natively — no separate encoders!
+# 11.95B dense, Apache 2.0, 256K ctx, thinking mode, function calling
+# Q5_K_L (imatrix) ~8.4GB file, offloads partially to RAM on 6GB VRAM
+# --fit-target 1024: reserves ~1GB VRAM for desktop/browser (13% of 6144 MiB)
+# --no-mmproj: encoder-free model, no mmproj needed (vision/audio projected into LLM backbone)
+# ik_llama.cpp CRASHES with Flash Attention on gemma4 unified (fattn-new-mma.cu fatal)
+# Upstream llama.cpp b825+ works fine with FA + q4_0 cache
+# head_dim=256 (256%64==0) → attn_rot ✅
+# Gemma 4 sampling: temp 0.7, top_p 0.9, top_k 40, repeat_penalty 1.0
+# Dual mode: base (chat, no think) and :think (reasoning)
+# -------------------------------------------
+  "gemma4-12b":
+    name: "Gemma 4 12B Unified"
+    description: "Gemma 4 12B — encoder-free multimodal (text+image+audio), 11.95B dense, Apache 2.0. First mid-size Gemma 4 with native audio."
+    cmd: |-
+      ${bee_server} --port ${PORT}
+      --model ${models_dir}/gemma-4-12B-it-Q5_K_L.gguf
+      --no-mmproj
+      --fit on
+      --fit-target 1024
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${large_model_max_ctx}
+      --jinja
+      --temp 1.2
+      --top-p 0.95
+      --top-k 65
+      --min-p 0.01
+      --repeat-penalty ${default_repeat_penalty}
+      --reasoning on
+      --reasoning-format deepseek
+      --reasoning-loop-guard stop
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 1.0
+          top_p: 0.95
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.2
+          top_p: 0.95
+    ttl: 120
+    metadata:
+      size: "~9.0 GB (Q5_K_L imatrix)"
+      context: "64K-128K (dynamic, offload)"
+      vram_usage: "~5GB VRAM + ~3GB RAM (Bee q4_0 cache, partial offload --fit, reasoning-loop-guard)"
+      source: "bartowski/gemma-4-12B-it-GGUF (Q5_K_L imatrix)"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: true
+        image: true
+      architecture: gemma4
+      parameters: 11950000000
+      context_length: 262144
+      embedding_length: 3072
+      quantization: Q5_K_L
+      note: "Encoder-free unified model — no mmproj needed. Vision and audio projected directly into LLM backbone via lightweight linear layers. Q5_K_L imatrix + Q8_0 embeddings (bartowski) — significant quality gain vs Q4_K_M for 262K vocab. Bee backend for reasoning-loop-guard. --fit-target 1024 reserves ~1GB VRAM for desktop. ik crashes with FA on gemma4 unified."
 # -------------------------------------------
 # QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
 # MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
@@ -1855,8 +1939,7 @@ models:
       --reasoning on
       --chat-template-file /home/alchemist/git/ai-dotfiles/llama-swap/templates/lfm2.5-chat-template.jinja
       --temp 0.2
-      --top-p 0.8
-      --top-k 40
+      --top-k 80
       --min-p 0.15
       --repeat-penalty 1.05
       --cache-type-k q8_0
@@ -3089,6 +3172,7 @@ matrix:
     # [REMOVED] q3x8: qwen3-8b
     # [REMOVED] ACE — no imatrix quants, worse perplexity than 9B regular
     g4: gemma4-e4b
+    g12: gemma4-12b
     # Pesados
     qw36: qwen3.6-35b-a3b
     qc9: qwopus-coder-9b
@@ -3130,7 +3214,7 @@ matrix:
 
     # Modelos pesados - toda VRAM + RAM offload
     # (qwopus, gptoss, lfm2l disabled — models unlisted)
-    heavy: "qw36 | gemma4m | qc9"
+    heavy: "qw36 | gemma4m | qc9 | g12"
 
     # Vision sozinho
     vision_only: "vl"
@@ -3142,6 +3226,7 @@ matrix:
     qw36: 10     # 35B MoE APEX I-Compact ~17.3GB, heavy offload
     # orn: 9    # DISABLED: Ornstein Q4_K_M too large, needs APEX I-Compact
     qc9: 6      # 9B dense Q4_K_M ~5.6GB, medium startup
+    g12: 8      # 12B dense Q4_K_M ~7.8GB, heavy offload
     # qwopus: 10   # DISABLED: model unlisted
     # gptoss: 8    # DISABLED: model unlisted
     # lfm2l: 9    # DISABLED: model unlisted

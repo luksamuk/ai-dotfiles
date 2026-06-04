@@ -120,6 +120,11 @@ model_provider = "ollama-cloud"
 model = "qwen3.5:cloud"
 model_provider = "ollama-cloud"
 
+# Nemotron 3 Ultra — 550B, 256K context, tools
+[profiles."nemotron-3-ultra"]
+model = "nemotron-3-ultra:cloud"
+model_provider = "ollama-cloud"
+
 # ============================================================
 # Profiles — Local llama-swap (LIMITED — see note above)
 # These profiles register the provider but tool-calling FAILS.
