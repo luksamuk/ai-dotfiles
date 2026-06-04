@@ -85,9 +85,10 @@ cmd_generate() {
     check_mrt_cli || exit 1
 
     local mrt_bin="${VENV_DIR}/bin/mrt"
+    local orig_cwd="$(pwd)"
 
     cd "$SCRIPT_DIR"
-    exec "$VENV_PY" generate.py "$@"
+    DIFFUSE_ORIG_CWD="$orig_cwd" exec "$VENV_PY" generate.py "$@"
 }
 
 cmd_download() {

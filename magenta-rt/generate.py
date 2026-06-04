@@ -430,12 +430,16 @@ def main() -> None:
     print(f"     Prompt: \"{prompt}\"")
     print()
 
+    # Resolve CWD: use DIFFUSE_ORIG_CWD (set by run.sh) if available,
+    # otherwise fall back to os.getcwd()
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", os.getcwd()))
+
     metadata = generate_audio(
         model_name=model_name,
         prompt=prompt,
         duration=args.duration,
         output=args.output,
-        cwd=Path.cwd(),
+        cwd=orig_cwd,
         mrt_bin=mrt_bin,
         temperature=args.temperature,
         top_k=args.top_k,
