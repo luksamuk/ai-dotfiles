@@ -42,8 +42,9 @@ check_venv() {
 }
 
 check_mrt_cli() {
-    if ! "$VENV_PY" -m magenta_rt.cli --help &>/dev/null; then
-        log_error "magenta-rt CLI not found in venv."
+    local mrt_bin="${VENV_DIR}/bin/mrt"
+    if [[ ! -x "$mrt_bin" ]]; then
+        log_error "mrt CLI not found in venv: $mrt_bin"
         log_error "Run: magenta-rt setup"
         return 1
     fi
@@ -59,17 +60,6 @@ cmd_setup() {
     if ! command -v uv &>/dev/null; then
         log_error "uv not found. Install: https://docs.astral.sh/uv/"
         exit 1
-    fi
-
-    # Python 3.12+ required (magenta-rt needs 3.12)
-    local py_version
-    py_version=$(python3 --version 2>/dev/null | grep -oP '\d+\.\d+' || echo "0.0")
-    local py_major=$(echo "$py_version" | cut -d. -f1)
-    local py_minor=$(echo "$py_version" | cut -d. -f2)
-
-    if [[ "$py_major" -lt 3 ]] || [[ "$py_major" -eq 3 && "$py_minor" -lt 12 ]]; then
-        log_info "Python 3.12+ required (found $(python3 --version 2>/dev/null || echo 'unknown'))"
-        log_info "uv will create a 3.12 venv automatically"
     fi
 
     # Create venv and install
@@ -93,6 +83,8 @@ cmd_generate() {
     check_venv || exit 1
     check_mrt_cli || exit 1
 
+    local mrt_bin="${VENV_DIR}/bin/mrt"
+
     cd "$SCRIPT_DIR"
     exec "$VENV_PY" generate.py "$@"
 }
@@ -101,12 +93,13 @@ cmd_download() {
     check_venv || exit 1
     check_mrt_cli || exit 1
 
+    local mrt_bin="${VENV_DIR}/bin/mrt"
     local target="${1:-small}"
 
     case "$target" in
         resources)
             log_info "Downloading MusicCoCa + SpectroStream resources..."
-            "$VENV_PY" -m magenta_rt.cli models init
+            "$mrt_bin" models init
             log_info "Resources downloaded to: $MRT_DATA_DIR/resources"
             ;;
         small)
@@ -116,7 +109,7 @@ cmd_download() {
                 cmd_download resources
             fi
             log_info "Downloading mrt2_small model (230M params)..."
-            "$VENV_PY" -m magenta_rt.cli models download --model mrt2_small
+            "$mrt_bin" models download mrt2_small
             log_info "Model downloaded to: $MRT_DATA_DIR/models/mrt2_small"
             ;;
         base)
@@ -126,7 +119,7 @@ cmd_download() {
             fi
             log_info "Downloading mrt2_base model (2.4B params)..."
             log_warn "This model requires ~5-6GB VRAM — may not fit on RTX 3050 6GB"
-            "$VENV_PY" -m magenta_rt.cli models download --model mrt2_base
+            "$mrt_bin" models download mrt2_base
             log_info "Model downloaded to: $MRT_DATA_DIR/models/mrt2_base"
             ;;
         all)
@@ -170,13 +163,19 @@ cmd_status() {
     echo "=== magenta-rt Status ==="
     echo ""
 
+    local mrt_bin="${VENV_DIR}/bin/mrt"
+
     # Check venv
     if [[ -f "$VENV_PY" ]]; then
         echo -e "venv: ${GREEN}✓${NC} $VENV_DIR"
         # Check magenta-rt version
-        local mrt_ver
-        mrt_ver=$("$VENV_PY" -c "import magenta_rt; print(magenta_rt.__version__)" 2>/dev/null || echo "unknown")
-        echo -e "magenta-rt: ${GREEN}✓${NC} v$mrt_ver"
+        if [[ -x "$mrt_bin" ]]; then
+            local mrt_ver
+            mrt_ver=$("$mrt_bin" --version 2>/dev/null || echo "unknown")
+            echo -e "mrt CLI: ${GREEN}✓${NC} v$mrt_ver"
+        else
+            echo -e "mrt CLI: ${RED}✗${NC} not found in venv"
+        fi
     else
         echo -e "venv: ${RED}✗${NC} not found (run: magenta-rt setup)"
     fi

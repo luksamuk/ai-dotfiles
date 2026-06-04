@@ -20,7 +20,6 @@ import secrets
 import subprocess
 import sys
 import time
-import wave
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -33,7 +32,6 @@ log = logging.getLogger("magenta-rt")
 
 # ── Paths ──────────────────────────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).resolve().parent
-MODELS_DIR = SCRIPT_DIR / "models"
 OUTPUTS_DIR = SCRIPT_DIR / "outputs"
 MRT_DATA_DIR = Path(os.environ.get(
     "MRT_DATA_DIR",
@@ -105,7 +103,6 @@ def evict_llm() -> bool:
         except (urllib.error.URLError, OSError) as e:
             log.warning("Could not evict LLM models via API: %s", e)
 
-    # Verify eviction
     import time as _time
     for _ in range(10):
         _time.sleep(0.5)
@@ -157,37 +154,20 @@ def generate_audio(
     model_name: str,
     prompt: str,
     duration: float,
-    seed: int | None,
     output: Path | None,
     cwd: Path | None,
+    mrt_bin: str,
 ) -> dict:
     """Generate audio using mrt CLI. Returns metadata dict."""
     model_info = MODELS[model_name]
 
-    # Resolve output path
-    if output is not None:
-        output_path = Path(output).expanduser().resolve()
-    else:
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        base_dir = cwd if cwd else Path.cwd()
-        output_path = base_dir / f"mrt2_{model_name}_{ts}_seed{seed}.wav"
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Build command
-    # mrt jax generate --prompt "..." --duration 4.0 --model mrt2_small
+    # Build command: mrt jax generate --prompt "..." --duration 4.0 --model mrt2_small
     cmd = [
-        sys.executable, "-m", "magenta_rt.cli",
-        "jax", "generate",
+        mrt_bin, "jax", "generate",
         "--prompt", prompt,
         "--duration", str(duration),
         "--model", model_name,
     ]
-
-    if seed is not None:
-        cmd.extend(["--seed", str(seed)])
-
-    cmd.extend(["--output", str(output_path)])
 
     log.info("Running: %s", " ".join(cmd))
     log.info("Model: %s (%s params)", model_name, model_info["params"])
@@ -211,25 +191,51 @@ def generate_audio(
         print(f"    See log above for details.")
         sys.exit(1)
 
-    # Verify output file exists
-    if not output_path.exists():
-        log.error("Output file not found: %s", output_path)
-        # Try to find any .wav file in output dir
-        wav_files = list(Path(".").glob("*.wav")) + list(Path(MRT_DATA_DIR).rglob("*.wav"))
-        if wav_files:
-            newest = max(wav_files, key=lambda p: p.stat().st_mtime)
-            log.warning("Found wav file: %s", newest)
-            output_path = newest
+    # mrt saves to MRT_DATA_DIR by default — find the output file
+    output_path = None
+
+    # If user specified output path, check there first
+    if output is not None:
+        output_path = Path(output).expanduser().resolve()
+        if output_path.exists():
+            pass  # found it
         else:
-            print(f"\n  ✗ Output file not found at expected location")
-            sys.exit(1)
+            log.warning("Specified output not found: %s", output_path)
+
+    # Otherwise, look for the most recent .wav in MRT_DATA_DIR
+    if output_path is None or not output_path.exists():
+        # mrt jax generate outputs to stdout or a default location
+        # Check if stdout contains a path
+        wav_files = []
+        # Search common output locations
+        for search_dir in [Path.cwd(), MRT_DATA_DIR]:
+            wav_files.extend(search_dir.rglob("*.wav"))
+
+        # Also check if mrt printed the output path
+        for line in result.stdout.strip().split("\n"):
+            for part in line.split():
+                candidate = Path(part)
+                if candidate.exists() and candidate.suffix == ".wav":
+                    wav_files.append(candidate)
+
+        if wav_files:
+            # Use the newest file
+            output_path = max(wav_files, key=lambda p: p.stat().st_mtime)
+        else:
+            log.error("No output WAV file found")
+
+    # If still not found, create output in cwd
+    if output_path is None or not output_path.exists():
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        base_dir = cwd if cwd else Path.cwd()
+        output_path = base_dir / f"mrt2_{model_name}_{ts}.wav"
+        log.warning("Could not find mrt output — reporting expected path: %s", output_path)
 
     # Calculate peak memory
     peak_hbm = 0.0
     if gpu_after:
         peak_hbm = max(gpu_after.get("used_mb", 0), gpu_before.get("used_mb", 0))
 
-    # Get file size
     file_size_mb = output_path.stat().st_size / (1024 * 1024) if output_path.exists() else 0
 
     metadata = {
@@ -237,7 +243,6 @@ def generate_audio(
         "params": model_info["params"],
         "prompt": prompt,
         "duration": duration,
-        "seed": seed,
         "wall_seconds": round(wall_time, 3),
         "peak_hbm_mib": round(peak_hbm, 1),
         "output": str(output_path),
@@ -282,8 +287,6 @@ def print_debrief(metadata: dict, gpu_info: dict) -> None:
     print("═══ magenta-rt — Generation Report ═══")
     print(f"  Model:       {model_name} ({model_info['params']} params)")
     print(f"  Prompt:      \"{metadata['prompt']}\"")
-    if metadata.get("seed") is not None:
-        print(f"  Seed:        {metadata['seed']}")
     print(f"  Duration:    {metadata['duration']:.1f}s")
     print()
     print("  Timings:")
@@ -322,8 +325,7 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("-p", "--prompt", help="Text prompt. If omitted, prompted interactively.")
     p.add_argument("--duration", type=float, default=4.0, help="Duration in seconds (default: 4.0).")
-    p.add_argument("--seed", type=int, default=None, help="Random seed (random if not set).")
-    p.add_argument("--output", type=Path, default=None, help="Output WAV path (auto-generated in cwd if not set).")
+    p.add_argument("--output", type=Path, default=None, help="Output WAV path (auto-detected if not set).")
     p.add_argument(
         "--evict-llm", action="store_true",
         help="Evict all running LLM models (via llama-swap) to free VRAM before generating.",
@@ -354,20 +356,30 @@ def main() -> None:
 
     model_name = args.model
     model_info = MODELS[model_name]
-    seed = args.seed if args.seed is not None else secrets.randbits(31)
     prompt = args.prompt or get_prompt_interactive()
+
+    # Find mrt CLI in venv
+    venv_bin = SCRIPT_DIR / ".venv" / "bin" / "mrt"
+    if not venv_bin.exists():
+        # Fallback: try system PATH
+        import shutil
+        mrt_bin = shutil.which("mrt")
+        if mrt_bin is None:
+            print("\n  ✗ mrt CLI not found")
+            print("    Run: magenta-rt setup")
+            sys.exit(1)
+    else:
+        mrt_bin = str(venv_bin)
 
     # ── Preflight check ──
     if not check_resources_available():
         print("\n  ✗ Resources not found (MusicCoCa + SpectroStream)")
         print("    Run: magenta-rt download resources")
-        print("    Or:  mrt models init")
         sys.exit(1)
 
     if not check_model_available(model_name):
         print(f"\n  ✗ Model not found: {model_name}")
         print("    Run: magenta-rt download small")
-        print("    Or: mrt models download --model=" + model_name)
         sys.exit(1)
 
     # ── LLM eviction ──
@@ -398,17 +410,15 @@ def main() -> None:
     # ── Generate ──
     print(f"  🎵 Generating {args.duration:.1f}s of audio with {model_name}...")
     print(f"     Prompt: \"{prompt}\"")
-    if seed is not None:
-        print(f"     Seed: {seed}")
     print()
 
     metadata = generate_audio(
         model_name=model_name,
         prompt=prompt,
         duration=args.duration,
-        seed=seed,
         output=args.output,
         cwd=Path.cwd(),
+        mrt_bin=mrt_bin,
     )
 
     # Save metadata
