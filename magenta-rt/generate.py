@@ -138,9 +138,44 @@ def get_gpu_memory() -> dict[str, float]:
 
 # ── Model download check ──────────────────────────────────────────────────
 def check_model_available(model_name: str) -> bool:
-    """Check if model weights are downloaded."""
+    """Check if model weights are downloaded.
+
+    For JAX backend, needs checkpoints/<model>.safetensors.
+    For MLX backend (Apple Silicon), needs models/<model>/ directory.
+    We check JAX (checkpoints) first since that's what we use on NVIDIA.
+    """
+    # JAX checkpoint (required for NVIDIA GPU)
+    checkpoint_path = MRT_DATA_DIR / "checkpoints" / f"{model_name}.safetensors"
+    if checkpoint_path.exists():
+        return True
+    # MLX model (would work on Apple Silicon, not our primary path)
     model_dir = MRT_DATA_DIR / "models" / model_name
-    return model_dir.exists() and any(model_dir.iterdir())
+    if model_dir.exists() and any(model_dir.iterdir()):
+        return True
+    return False
+
+def get_missing_download_hint(model_name: str) -> str:
+    """Return a helpful hint for downloading the requested model."""
+    checkpoint_path = MRT_DATA_DIR / "checkpoints" / f"{model_name}.safetensors"
+    model_dir = MRT_DATA_DIR / "models" / model_name
+
+    has_checkpoint = checkpoint_path.exists()
+    has_mlx_model = model_dir.exists() and any(model_dir.iterdir())
+
+    if not has_checkpoint and not has_mlx_model:
+        return (
+            f"Neither JAX checkpoint nor MLX model found for {model_name}.\n"
+            f"    Run: magenta-rt download checkpoints-{model_name.replace('mrt2_', '')}\n"
+            f"    Or:  mrt checkpoints download {model_name}"
+        )
+    elif not has_checkpoint:
+        return (
+            f"JAX checkpoint not found: {checkpoint_path}\n"
+            f"    (MLX model exists but JAX backend needs the safetensors checkpoint)\n"
+            f"    Run: magenta-rt download checkpoints-{model_name.replace('mrt2_', '')}"
+        )
+    else:
+        return f"Model files incomplete for {model_name}. Try re-downloading."
 
 
 def check_resources_available() -> bool:
@@ -478,8 +513,7 @@ def main() -> None:
         sys.exit(1)
 
     if not check_model_available(model_name):
-        print(f"\n  ✗ Model not found: {model_name}")
-        print("    Run: magenta-rt download small")
+        print(f"\n  ✗ {get_missing_download_hint(model_name)}")
         sys.exit(1)
 
     # ── LLM eviction ──
