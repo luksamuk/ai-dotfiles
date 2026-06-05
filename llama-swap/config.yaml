@@ -823,76 +823,7 @@ models:
       quantization: I-Compact
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA. Text-only."
 # -------------------------------------------
-# QWEN3.6-27B - ik BACKEND (Hadamard KV cache, mlock, heavy CPU offload)
-# Dense 27B, state-of-the-art local LLM. Heavy offload on 6GB VRAM (~13/64 layers GPU).
-# i1-Q3_K_M (importance matrix quant) ~12.4GB — smaller per layer = more GPU layers = better speed.
-# i1 quants from mradermacher work with ik_llama.cpp (NOT Unsloth UD-XL which breaks).
-# Qwen3.6 sampling: temp 0.6-0.7, top_p 0.8-0.9, top_k 20-40
-# --mlock: pin model in RAM, prevent swap during heavy offload
-# --k-cache-hadamard / --v-cache-hadamard: near-fp16 quality with q4_0 cache
-# --flash-attn auto: disable FA on short contexts for savings
-# Dual mode: base (chat, no think) and :think (reasoning)
-# -------------------------------------------
-  "qwen3.6-27b":
-    name: "Qwen 3.6 27B"
-    description: "Qwen3.6-27B is a dense 27B parameter model delivering frontier-level performance in reasoning, coding, and multilingual tasks."
-    cmd: |-
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.6-27B.i1-Q3_K_M.gguf
-      --mlock
-      --fit
-      --fit-margin 512
-      --ctx-size ${large_model_max_ctx}
-      --jinja
-      --parallel-tool-calls
-      --temp ${default_temp}
-      --top-p ${default_top_p}
-      --top-k ${default_top_k}
-      --min-p ${default_min_p}
-      --repeat-penalty ${default_repeat_penalty}
-      --reasoning on
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 120
-    metadata:
-      size: "~12.4 GB (i1-Q3_K_M)"
-      context: "64K-128K (dynamic, heavy offload)"
-      vram_usage: "~5GB VRAM + ~7GB RAM (ik pinned memory, hadamard cache)"
-      source: "mradermacher/Qwen3.6-27B-i1-GGUF (i1-Q3_K_M)"
-      kv_cache: "q4_0 + hadamard (ik -khad/-vhad)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 27000000000
-      context_length: 262144
-      embedding_length: 4608
-      quantization: i1-Q3_K_M
-      note: "Encoder-free unified model — no mmproj needed. Vision and audio projected directly into LLM backbone via lightweight linear layers. Q5_K_L imatrix + Q8_0 embeddings (bartowski) — significant quality gain vs Q4_K_M for 262K vocab. Bee backend for reasoning-loop-guard. --fit-target 1024 reserves ~1GB VRAM for desktop. ik crashes with FA on gemma4 unified."
-# -------------------------------------------
+
 # QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
 # MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
 # 33 experts, top-8 routing. APEX I-Compact ~17.3GB
@@ -3237,7 +3168,7 @@ matrix:
     # [REMOVED] q3x8: qwen3-8b
     # [REMOVED] ACE — no imatrix quants, worse perplexity than 9B regular
     g4: gemma4-e4b
-    q27: qwen3.6-27b
+    # q27: DISABLED — qwen3.6-27b removed (3.65 tok/s too slow, 13GB disk). Config in _disabled/qwen3.6-27b.yaml
     # Pesados
     qw36: qwen3.6-35b-a3b
     qc9: qwopus-coder-9b
@@ -3279,7 +3210,7 @@ matrix:
 
     # Modelos pesados - toda VRAM + RAM offload
     # (qwopus, gptoss, lfm2l disabled — models unlisted)
-    heavy: "qw36 | gemma4m | qc9 | q27"
+    heavy: "qw36 | gemma4m | qc9"
 
     # Vision sozinho
     vision_only: "vl"
@@ -3291,7 +3222,7 @@ matrix:
     qw36: 10     # 35B MoE APEX I-Compact ~17.3GB, heavy offload
     # orn: 9    # DISABLED: Ornstein Q4_K_M too large, needs APEX I-Compact
     qc9: 6      # 9B dense Q4_K_M ~5.6GB, medium startup
-    q27: 9      # 27B dense i1-Q3_K_M ~12.4GB, heavy offload
+    # q27: 9      # DISABLED: 27B dense removed (3.65 tok/s too slow, 13GB disk)
     # qwopus: 10   # DISABLED: model unlisted
     # gptoss: 8    # DISABLED: model unlisted
     # lfm2l: 9    # DISABLED: model unlisted
