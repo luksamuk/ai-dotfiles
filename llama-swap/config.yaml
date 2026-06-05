@@ -2452,66 +2452,7 @@ models:
 # NOTE: Bug #21402 (Gemma 4 mmproj crash) does NOT affect Qwen3.5
 # NOTE: Bug #22785 (Qwen-VL accuracy degraded in llama-server) — monitor
 # KV cache: q8_0 + attn_rot (head_dim provavelmente 128, 128%64==0)
-# -------------------------------------------
-# UNLISTED: nice-to-have tiny model, disk freed for space
-  "qwen3.5-9b-moq":
-    name: "Qwen3.5 9B MoQ 3.6"
-    description: "Qwen3.5 9B with MoQ (Mixture of Quants) 3.6 bpw - low-bit quality benchmark"
-    cmd: |-
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.5-9B-MoQ-3.6.gguf
-      --jinja
-      --parallel-tool-calls
-      --fit
-      --fit-margin 512
-      --ctx-size ${small_model_max_ctx}
-      --temp ${default_temp}
-      --top-p ${default_top_p}
-      --top-k ${default_top_k}
-      --min-p ${default_min_p}
-      --repeat-penalty ${default_repeat_penalty}
-      --reasoning on
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --metrics
-      --mlock
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    metadata:
-      size: "~3.75 GB (MoQ 3.6 bpw)"
-      context: "64K-128K (dynamic)"
-      vram_usage: "~4GB VRAM (model + hadamard cache)"
-      source: "w-ahmad/Qwen3.5-9B-GGUF-MoQ (MoQ-3.6)"
-      kv_cache: "q8_0 + q4_0 hadamard"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 8953803264
-      context_length: 262144
-      embedding_length: 4096
-      quantization: MoQ-3.6
+
 
   "qwen3.5-0.8b":
     unlisted: true
