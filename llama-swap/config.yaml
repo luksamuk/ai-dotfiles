@@ -261,9 +261,11 @@ models:
       quantization: Q4_0
 # -------------------------------------------
 # QWEN3.5-4B - ik BACKEND (Hadamard KV cache)
-# Dense 4B params, i1-Q4_K_M ~2.52GB.
-# Switched from Bee/TurboQuant to ik — i1 quant format incompatible with Bee (emits slashes).
-# ik with hadamard cache gives near-fp16 quality at smaller memory footprint than q8_0.
+# Dense 4B params, MoQ-3.75 ~1.92GB.
+# Upgraded from i1-Q4_K_M (~2.52GB) → MoQ-3.75 (~1.92GB): 
+# 51% faster (45.7 vs 30.2 tok/s), 24% smaller, same Snake quality (23/25).
+# MoQ (Mixture of Quants) allocates more bits to critical tensors.
+# ik with hadamard cache gives near-fp16 quality at smaller memory footprint.
 # --flash-attn auto: disables FA on short contexts for savings
 # --parallel-tool-calls: enables multiple tool calls in single response
 # Dual mode: base (chat, no think) and :think (reasoning)
@@ -273,7 +275,7 @@ models:
     description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
     cmd: |
       ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.5-4B.i1-Q4_K_M.gguf
+      --model ${models_dir}/MoQ-3.75.gguf
       --jinja
       --parallel-tool-calls
       --fit
@@ -306,10 +308,10 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "~2.52 GB (i1-Q4_K_M)"
+      size: "~2.18 GB (MoQ-4.5)"
       context: "64K-128K (dynamic)"
-      vram_usage: "~3.5GB VRAM (model + hadamard cache)"
-      source: "mradermacher/Qwen3.5-4B-i1-GGUF (i1-Q4_K_M)"
+      vram_usage: "~2.8GB VRAM (text-only, ik with hadamard cache)"
+      source: "kaitchup/Qwen3.5-4B-GGUF-MoQ (MoQ-4.5)"
       kv_cache: "q8_0 + q4_0 hadamard"
       features:
         completion: true
@@ -324,8 +326,33 @@ models:
       parameters: 4210000000
       context_length: 262144
       embedding_length: 2560
-      quantization: i1-Q4_K_M
-      note: "Switched from Bee/TurboQuant to ik — i1 format caused Bee slash bug. hadamard cache near-fp16 quality."
+      quantization: MoQ-4.5
+      size: "~1.92 GB (MoQ-3.75)"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~2.5GB VRAM (text-only, ik with hadamard cache)"
+      source: "kaitchup/Qwen3.5-4B-GGUF-MoQ (MoQ-3.75)"
+      kv_cache: "q8_0 + q4_0 hadamard"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 4210000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: MoQ-3.75
+      note: "MoQ-3.75 — 51% faster than i1-Q4_K_M (45.7 vs 30.2 tok/s), 24% smaller (1.92 vs 2.52 GB), same Snake quality (23/25)."
+# -------------------------------------------
+# QWEN3.5-4B - BACKUP (i1-Q4_K_M) — REMOVED
+# Replaced by MoQ-3.75. i1-Q4_K_M file deleted from disk.
+# Switched from Bee/TurboQuant to ik — i1 format caused Bee slash bug.
+# hadamard cache gives near-fp16 quality at smaller memory footprint.
+# -------------------------------------------
 # -------------------------------------------
 # QWEN3.5-9B - ik BACKEND (Hadamard KV cache)
 # Dense 9B params, UD-Q4_K_XL ~5.55GB.
