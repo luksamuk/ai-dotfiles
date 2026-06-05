@@ -1,12 +1,13 @@
 # -------------------------------------------
 # QWEN3.5-9B - ik BACKEND (Hadamard KV cache)
-# Dense 9B params, UD-Q4_K_XL ~5.55GB.
-# Bee/TurboQuant segfaults with this model — use ik with hadamard instead.
+# Dense 9B params, MoQ-3.6 ~3.75GB.
+# MoQ-3.6: replaced UD-Q4_K_XL (~5.55GB) — same speed (12.2 tok/s),
+# equal+ quality (21/25 Snake vs 20/25), 32% smaller.
+# ik with hadamard cache gives near-fp16 quality at smaller memory footprint.
 # --flash-attn auto: disables FA on short contexts for MoE/offload savings
-# KV cache: q8_0 (K) + q4_0 (V) + hadamard = quality near-fp16
-# --fit on --fit-margin 512: dynamic GPU offload
+# --parallel-tool-calls: enables multiple tool calls in single response
 # Dual mode: base (chat, no think) and :think (reasoning)
-# Upgraded from UD-Q3_K_XL (3.5 bpw) → UD-Q4_K_XL (4.5 bpw): +0.85GB for ~3% PPL improvement
+# MTP tested but OOM on RTX 3050 6GB with --multi-token-prediction
 # Bee backup: _disabled/qwen3.5-9b-bee.yaml (seg fault with turbo3_tcq)
 # -------------------------------------------
 "qwen3.5-9b":
@@ -14,8 +15,7 @@
   description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/Qwen3.5-9B-UD-Q4_K_XL.gguf
-    # No --no-mmproj: ik doesn't support this flag (upstream-only)
+    --model ${models_dir}/Qwen3.5-9B-MoQ-3.6.gguf
     --fit
     --fit-margin 512
     --jinja
@@ -48,10 +48,10 @@
         top_p: 0.9
   ttl: 60
   metadata:
-    size: "~5.55 GB (UD-Q4_K_XL Dynamic 2.0)"
+    size: "~3.75 GB (MoQ-3.6)"
     context: "64K-128K (dynamic)"
-    vram_usage: "~5.5GB VRAM (text-only, ik with hadamard cache)"
-    source: "unsloth/Qwen3.5-9B-GGUF (UD-Q4_K_XL)"
+    vram_usage: "~4.8GB VRAM (text-only, ik with hadamard cache)"
+    source: "w-ahmad/Qwen3.5-9B-GGUF-MoQ (MoQ-3.6)"
     kv_cache: "q8_0 + q4_0 hadamard"
     features:
       completion: true
@@ -66,6 +66,5 @@
     parameters: 8950000000
     context_length: 262144
     embedding_length: 4096
-    quantization: UD-Q4_K_XL
-      # vision: disabled temporarily — mmproj + fit doesn't handle offload yet
-    note: "Upgraded from UD-Q3_K_XL → UD-Q4_K_XL. UD Dynamic 2.0 allocates more bits to critical layers. ~3% PPL improvement at +0.85GB cost."
+    quantization: MoQ-3.6
+    note: "MoQ-3.6 replaces UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25 vs 20/25 Snake), 32% smaller (3.75 vs 5.55 GB). MTP OOM on 6GB VRAM."
