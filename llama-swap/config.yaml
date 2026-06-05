@@ -342,7 +342,7 @@ models:
     description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
     cmd: |
       ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/Qwen3.5-9B-UD-Q4_K_XL.gguf
+      --model ${models_dir}/Qwen3.5-9B-MoQ-3.6.gguf
       # No --no-mmproj: ik doesn't support this flag (upstream-only)
       --fit
       --fit-margin 512
@@ -376,10 +376,10 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "~5.55 GB (UD-Q4_K_XL Dynamic 2.0)"
+      size: "~3.75 GB (MoQ-3.6)"
       context: "64K-128K (dynamic)"
-      vram_usage: "~5.5GB VRAM (text-only, ik with hadamard cache)"
-      source: "unsloth/Qwen3.5-9B-GGUF (UD-Q4_K_XL)"
+      vram_usage: "~3.8GB VRAM (text-only, ik with hadamard cache)"
+      source: "WaleedAhmed/Qwen3.5-9B-MoQ-GGUF (MoQ-3.6)"
       kv_cache: "q8_0 + q4_0 hadamard"
       features:
         completion: true
@@ -394,8 +394,14 @@ models:
       parameters: 8950000000
       context_length: 262144
       embedding_length: 4096
-      quantization: UD-Q4_K_XL
-      note: "Upgraded from UD-Q3_K_XL → UD-Q4_K_XL. UD Dynamic 2.0 allocates more bits to critical layers. ~3% PPL improvement at +0.85GB cost."
+      quantization: MoQ-3.6
+      note: "MoQ-3.6 (Mixture of Quants, ~3.6 bpw) — 32% smaller than UD-Q4_K_XL, same speed (12.2 tok/s), equal or better quality on Snake benchmark. Replaces UD-Q4_K_XL as default quant."
+# -------------------------------------------
+# QWEN3.5-9B-MTP - REMOVED
+# MTP (Multi-Token Prediction) tested on RTX 3050 6GB — OOMs with --fit + --multi-token-prediction.
+# Requires 493 MiB extra VRAM for speculative draft context that doesn't fit alongside --fit.
+# Only works with n-gpu-layers=15 (heavy CPU offload), losing hadamard cache and 131K context (drops to 8K).
+# Speed gain marginal (15.4 vs 15.1 tok/s), not worth the context/cache tradeoff. Stick with MoQ-3.6.
 # -------------------------------------------
 # GEMMA-4-E4B - ik BACKEND (Hadamard KV cache)
 # Upstream config with q4_0 cache. Bee/TurboQuant was slower (36 vs 40 tok/s).
@@ -2421,6 +2427,65 @@ models:
 # KV cache: q8_0 + attn_rot (head_dim provavelmente 128, 128%64==0)
 # -------------------------------------------
 # UNLISTED: nice-to-have tiny model, disk freed for space
+  "qwen3.5-9b-moq":
+    name: "Qwen3.5 9B MoQ 3.6"
+    description: "Qwen3.5 9B with MoQ (Mixture of Quants) 3.6 bpw - low-bit quality benchmark"
+    cmd: |-
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.5-9B-MoQ-3.6.gguf
+      --jinja
+      --parallel-tool-calls
+      --fit
+      --fit-margin 512
+      --ctx-size ${small_model_max_ctx}
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --reasoning on
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --metrics
+      --mlock
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    metadata:
+      size: "~3.75 GB (MoQ 3.6 bpw)"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~4GB VRAM (model + hadamard cache)"
+      source: "w-ahmad/Qwen3.5-9B-GGUF-MoQ (MoQ-3.6)"
+      kv_cache: "q8_0 + q4_0 hadamard"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 8953803264
+      context_length: 262144
+      embedding_length: 4096
+      quantization: MoQ-3.6
+
   "qwen3.5-0.8b":
     unlisted: true
     name: "Qwen3.5 0.8B"
@@ -3166,6 +3231,7 @@ matrix:
     vl: lfm2.5-vl-450m
     # Modelos médios (agora cabem na VRAM!)
     q9: qwen3.5-9b
+    # q9mtp: REMOVED — MTP OOMs on RTX 3050 6GB, speed gain not worth context/cache tradeoff
     # [REMOVED] q3x8: qwen3-8b
     # [REMOVED] ACE — no imatrix quants, worse perplexity than 9B regular
     g4: gemma4-e4b
@@ -3229,7 +3295,7 @@ matrix:
     # lfm2l: 9    # DISABLED: model unlisted
     # ds14: 7   REMOVED — Dense 14B poor perf on RTX 3050
     # ds32: 10  REMOVED — Dense 32B very slow on limited VRAM
-    q9: 4        # ~5GB, fits VRAM now
+    q9: 4        # ~3.75GB MoQ-3.6, fits VRAM
     # [REMOVED] q3x8: 4 — qwen3-8b removed
     # [REMOVED] ACE: 4 — superseded by Qwopus
     g4: 4        # ~4.5GB, fits VRAM now
