@@ -1,7 +1,8 @@
 # -------------------------------------------
-# GEMMA-4-26B-A4B-QAT - UPSTREAM BACKEND (llama.cpp)
-# Google Q4_0 Quantization-Aware Training — MoE 26B params, 4B active.
-# QAT won vs PTQ on E2B (10 vs 7/25) — testing on 26B MoE.
+# GEMMA-4-26B-A4B - MoE REASONING + CODING (QAT Q4_0, upstream backend)
+# Google Q4_0 Quantization-Aware Training — MoE 26B params, 4B active per token.
+# QAT won vs APEX on 26B: quality=TIE, speed=28 vs 27 tok/s, size=14.4 vs 15.5 GB.
+# APEX I-Compact deleted — crashes on ik (mul_mat_q_id CUDA illegal memory access).
 # Upstream backend: --fit on handles compute buffer, --flash-attn on stable.
 # --no-mmproj: text-only (mmproj crashes on CUDA, #21402)
 # --ctx-size 131072: native 262144 too large for 6GB, 131072 fits with --fit on
@@ -9,10 +10,11 @@
 # --fit-ctx 16384: minimum pre-allocated context at startup
 # Dual mode: base (chat, temp 0.7) and :think (reasoning, temp 1.0)
 # head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
+# Note: upstream doesn't support --parallel-tool-calls. Jinja template handles tool calling.
 # -------------------------------------------
-"gemma4-26b-a4b-qat-upstream":
-  name: "Gemma 4 26B MoE QAT (upstream)"
-  description: "Gemma 4 26B-A4B with Quantization-Aware Training (Q4_0). MoE reasoning + coding model — upstream llama.cpp backend."
+"gemma4-26b-a4b":
+  name: "Gemma 4 26B MoE"
+  description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
   cmd: |
     ${llama_server} --port ${PORT}
     --model ${models_dir}/gemma-4-26B_q4_0-it.gguf

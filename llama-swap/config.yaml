@@ -456,21 +456,17 @@ models:
       quantization: Q4_K_M
       note: "Upgraded from UD-Q3_K_XL → Q4_K_M. ~3% PPL improvement at +0.36GB cost. Tightest VRAM model — monitor with mmproj."
 # -------------------------------------------
-# GEMMA-4-E2B - upstream BACKEND (q4_0 KV cache)
-# Upgraded from UD-Q3_K_XL (3.5 bpw) → Q4_K_M (4.5 bpw): +0.17GB for ~3% PPL improvement
-# --no-mmproj: text-only mode (mmproj unused, saves VRAM)
-# --fit on: dynamic GPU offloading, fits in 6GB VRAM with Q4_K_M
-# --flash-attn on: faster attention on GPU
-# Note: upstream does NOT support --parallel-tool-calls, but Gemma 4 template
-# handles multiple tool calls natively via Jinja chat template.
+# GEMMA-4-E2B-QAT - Q4_0 Quantization-Aware Training
+# Google official QAT checkpoint: trained with quantization simulation,
+# preserves more quality than PTQ Q4_K_M at similar size.
+# Text-only — no mmproj (vision handled by dedicated VLMs in fleet).
 # -------------------------------------------
   "gemma4-e2b":
-    unlisted: true
-    name: "Gemma 4 E2B"
-    description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
+    name: "Gemma 4 E2B QAT"
+    description: "Gemma 4 E2B with Quantization-Aware Training (Q4_0). Official Google checkpoint — higher quality than PTQ at same quant level."
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-E2B-it-Q4_K_M.gguf
+      --model ${models_dir}/gemma-4-E2B_q4_0-it.gguf
       --no-mmproj
       --fit on
       --fit-target 1024
@@ -501,16 +497,16 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "~2.89 GB (Q4_K_M)"
+      size: "~3.2 GB (Q4_0 QAT)"
       context: "32K-128K (dynamic)"
       vram_usage: "~3.2GB"
-      source: "unsloth/gemma-4-E2B-it-GGUF (Q4_K_M)"
+      source: "google/gemma-4-E2B-it-qat-q4_0-gguf"
       kv_cache: "q4_0 + attn_rot"
       features:
         completion: true
         tools: true
         thinking: true
-        vision: true
+        vision: false
         embedding: false
         insert: false
         audio: false
@@ -519,8 +515,8 @@ models:
       parameters: 4650000000
       context_length: 131072
       embedding_length: 1536
-      quantization: Q4_K_M
-      note: "Upgraded from UD-Q3_K_XL → Q4_K_M. ~3% PPL improvement at +0.17GB cost."
+      quantization: Q4_0_QAT
+      note: "Google QAT checkpoint. Trained with quantization-aware training for Q4_0 format. Text-only — no mmproj."
 # -------------------------------------------
 # LFM2.5-1.2B-INSTRUCT - DENSE HYBRID (CONV + GQA)
 # Liquid AI's 1.2B dense instruct model — best tool-calling / agentic
@@ -682,25 +678,25 @@ models:
       quantization: Q5_K_M
       warning: "Not a chatbot — requires specialized world model prompts."
 # -------------------------------------------
-# GEMMA-4-26B-A4B - MoE REASONING + CODING (APEX I-Compact)
-# MoE 26B params, 4B ativo por token. 128 experts, top-8 routing.
-# Google recomenda: temp=1.0 para reasoning, temp=0.7 para coding
-# Variantes via setParamsByID: base (chat), :think (reasoning)
-# APEX I-Compact ~15.5GB — mixed-precision MoE quant com imatrix diversa
-#   (edges Q4_K, middle Q3_K, shared experts Q6_K, attention Q4_K)
-#   Perplexity comparable to Q8_0, real-world benchmarks better than UD-Q3_K_XL
+# GEMMA-4-26B-A4B - MoE REASONING + CODING (QAT Q4_0, upstream backend)
+# Google Q4_0 Quantization-Aware Training — MoE 26B params, 4B active per token.
+# QAT won vs APEX on 26B: quality=TIE, speed=28 vs 27 tok/s, size=14.4 vs 15.5 GB.
+# APEX I-Compact deleted — crashes on ik (mul_mat_q_id CUDA illegal memory access).
+# Upstream backend: --fit on handles compute buffer, --flash-attn on stable.
+# --no-mmproj: text-only (mmproj crashes on CUDA, #21402)
+# --ctx-size 131072: native 262144 too large for 6GB, 131072 fits with --fit on
+# --fit-target 96: leave 96 MiB headroom for system/other processes
+# --fit-ctx 16384: minimum pre-allocated context at startup
+# Dual mode: base (chat, temp 0.7) and :think (reasoning, temp 1.0)
 # head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
-# mmproj crashes on CUDA (bug #21402) → text-only
-# Architecture: gemma4 (Gemma4ForCausalLM)
-# Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
+# Note: upstream doesn't support --parallel-tool-calls. Jinja template handles tool calling.
 # -------------------------------------------
   "gemma4-26b-a4b":
-    unlisted: true
     name: "Gemma 4 26B MoE"
     description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-26B-A4B-APEX-I-Compact.gguf
+      --model ${models_dir}/gemma-4-26B_q4_0-it.gguf
       --no-mmproj
       --fit on
       --fit-target 96
@@ -712,6 +708,7 @@ models:
       --cache-type-k q4_0
       --cache-type-v q4_0
       --flash-attn on
+      --jinja
       --metrics
     filters:
       stripParams: "temperature, top_p"
@@ -728,10 +725,10 @@ models:
           top_p: 0.95
     ttl: 300
     metadata:
-      size: "~15.5 GB (APEX I-Compact)"
-      context: "16K-128K (dynamic)"
-      vram_usage: "~5GB VRAM + ~10GB RAM (q4_0 cache, APEX mixed-precision offload)"
-      source: "mudler/gemma-4-26B-A4B-it-APEX-GGUF"
+      size: "~14.4 GB (Q4_0 QAT)"
+      context: "16K-131K (dynamic)"
+      vram_usage: "~5GB VRAM + ~9GB RAM (upstream --fit on auto-offload)"
+      source: "google/gemma-4-26B-A4B-it-qat-q4_0-gguf"
       kv_cache: "q4_0 + attn_rot"
       features:
         completion: true
@@ -746,7 +743,7 @@ models:
       parameters: 25230000000
       context_length: 262144
       embedding_length: 2816
-      quantization: I-Compact
+      quantization: Q4_0_QAT
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA. Text-only."
 # -------------------------------------------
 # QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
@@ -1203,7 +1200,7 @@ models:
 # --flash-attn auto: disable FA on short contexts for savings.
 # Dual mode: base (chat, no think) and :think (reasoning)
 # -------------------------------------------
-  "gemma4-12b-qat":
+  "gemma4-12b":
     name: "Gemma 4 12B QAT"
     description: "Gemma 4 12B with Quantization-Aware Training (Q4_0). Won vs PTQ on ik (25 vs 24/25 Snake, speed progression bonus)."
     cmd: |
@@ -1262,6 +1259,73 @@ models:
       quantization: Q4_0_QAT
       note: "Google QAT checkpoint. Dense 12B — 24 GPU layers on RTX 3050 6GB (~83% VRAM). ik --gpu-layers 24, --fit causes OOM. Speed: ~8.5 tok/s."
 # -------------------------------------------
+# GEMMA-4-26B-A4B - MoE REASONING + CODING (APEX I-Compact)
+# MoE 26B params, 4B ativo por token. 128 experts, top-8 routing.
+# Google recomenda: temp=1.0 para reasoning, temp=0.7 para coding
+# Variantes via setParamsByID: base (chat), :think (reasoning)
+# APEX I-Compact ~15.5GB — mixed-precision MoE quant com imatrix diversa
+#   (edges Q4_K, middle Q3_K, shared experts Q6_K, attention Q4_K)
+#   Perplexity comparable to Q8_0, real-world benchmarks better than UD-Q3_K_XL
+# head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
+# mmproj crashes on CUDA (bug #21402) → text-only
+# Architecture: gemma4 (Gemma4ForCausalLM)
+# Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
+# -------------------------------------------
+  "gemma4-26b-a4b-apex":
+    unlisted: true
+    name: "Gemma 4 26B MoE"
+    description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gemma-4-26B-A4B-APEX-I-Compact.gguf
+      --no-mmproj
+      --fit on
+      --fit-target 96
+      --fit-ctx 16384
+      --ctx-size 131072
+      --temp 1.0
+      --top-p 0.95
+      --reasoning on
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.95
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+    ttl: 300
+    metadata:
+      size: "~15.5 GB (APEX I-Compact)"
+      context: "16K-128K (dynamic)"
+      vram_usage: "~5GB VRAM + ~10GB RAM (q4_0 cache, APEX mixed-precision offload)"
+      source: "mudler/gemma-4-26B-A4B-it-APEX-GGUF"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4
+      parameters: 25230000000
+      context_length: 262144
+      embedding_length: 2816
+      quantization: I-Compact
+      warning: "Vision disabled — Gemma 4 mmproj crash on CUDA. Text-only."
+# -------------------------------------------
 # GEMMA-4-26B-A4B-QAT - ik BACKEND (Hadamard KV cache)
 # Google Q4_0 Quantization-Aware Training — MoE 26B params, 4B active.
 # QAT won vs PTQ on E2B (10 vs 7/25) — testing on 26B MoE.
@@ -1275,7 +1339,7 @@ models:
 # Dual mode: base (chat, temp 0.7) and :think (reasoning, temp 1.0)
 # head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
 # -------------------------------------------
-  "gemma4-26b-a4b-qat":
+  "gemma4-26b-a4b-qat-ik":
     unlisted: true
     name: "Gemma 4 26B MoE QAT"
     description: "Gemma 4 26B-A4B with Quantization-Aware Training (Q4_0). MoE reasoning + coding model."
@@ -1333,83 +1397,21 @@ models:
       quantization: Q4_0_QAT
       note: "Google QAT checkpoint. MoE 26B/4B active — 24 GPU layers on RTX 3050 6GB. ik --gpu-layers 24, --fit causes OOM. Speed TBD after benchmark."
 # -------------------------------------------
-# GEMMA-4-26B-A4B-QAT - UPSTREAM BACKEND (llama.cpp)
-# Google Q4_0 Quantization-Aware Training — MoE 26B params, 4B active.
-# QAT won vs PTQ on E2B (10 vs 7/25) — testing on 26B MoE.
-# Upstream backend: --fit on handles compute buffer, --flash-attn on stable.
-# --no-mmproj: text-only (mmproj crashes on CUDA, #21402)
-# --ctx-size 131072: native 262144 too large for 6GB, 131072 fits with --fit on
-# --fit-target 96: leave 96 MiB headroom for system/other processes
-# --fit-ctx 16384: minimum pre-allocated context at startup
-# Dual mode: base (chat, temp 0.7) and :think (reasoning, temp 1.0)
-# head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
+# GEMMA-4-E2B - upstream BACKEND (q4_0 KV cache)
+# Upgraded from UD-Q3_K_XL (3.5 bpw) → Q4_K_M (4.5 bpw): +0.17GB for ~3% PPL improvement
+# --no-mmproj: text-only mode (mmproj unused, saves VRAM)
+# --fit on: dynamic GPU offloading, fits in 6GB VRAM with Q4_K_M
+# --flash-attn on: faster attention on GPU
+# Note: upstream does NOT support --parallel-tool-calls, but Gemma 4 template
+# handles multiple tool calls natively via Jinja chat template.
 # -------------------------------------------
-  "gemma4-26b-a4b-qat-upstream":
-    name: "Gemma 4 26B MoE QAT (upstream)"
-    description: "Gemma 4 26B-A4B with Quantization-Aware Training (Q4_0). MoE reasoning + coding model — upstream llama.cpp backend."
+  "gemma4-e2b-ptq":
+    unlisted: true
+    name: "Gemma 4 E2B"
+    description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-26B_q4_0-it.gguf
-      --no-mmproj
-      --fit on
-      --fit-target 96
-      --fit-ctx 16384
-      --ctx-size 131072
-      --temp 1.0
-      --top-p 0.95
-      --reasoning on
-      --cache-type-k q4_0
-      --cache-type-v q4_0
-      --flash-attn on
-      --jinja
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.95
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-    ttl: 300
-    metadata:
-      size: "~14.4 GB (Q4_0 QAT)"
-      context: "16K-131K (dynamic)"
-      vram_usage: "~5GB VRAM + ~9GB RAM (upstream --fit on auto-offload)"
-      source: "google/gemma-4-26B-A4B-it-qat-q4_0-gguf"
-      kv_cache: "q4_0 + attn_rot"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: gemma4
-      parameters: 25230000000
-      context_length: 262144
-      embedding_length: 2816
-      quantization: Q4_0_QAT
-      warning: "Vision disabled — Gemma 4 mmproj crash on CUDA. Text-only."
-# -------------------------------------------
-# GEMMA-4-E2B-QAT - Q4_0 Quantization-Aware Training
-# Google official QAT checkpoint: trained with quantization simulation,
-# preserves more quality than PTQ Q4_K_M at similar size.
-# Text-only — no mmproj (vision handled by dedicated VLMs in fleet).
-# -------------------------------------------
-  "gemma4-e2b-qat":
-    name: "Gemma 4 E2B QAT"
-    description: "Gemma 4 E2B with Quantization-Aware Training (Q4_0). Official Google checkpoint — higher quality than PTQ at same quant level."
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-E2B_q4_0-it.gguf
+      --model ${models_dir}/gemma-4-E2B-it-Q4_K_M.gguf
       --no-mmproj
       --fit on
       --fit-target 1024
@@ -1440,16 +1442,16 @@ models:
           top_p: 0.9
     ttl: 60
     metadata:
-      size: "~3.2 GB (Q4_0 QAT)"
+      size: "~2.89 GB (Q4_K_M)"
       context: "32K-128K (dynamic)"
       vram_usage: "~3.2GB"
-      source: "google/gemma-4-E2B-it-qat-q4_0-gguf"
+      source: "unsloth/gemma-4-E2B-it-GGUF (Q4_K_M)"
       kv_cache: "q4_0 + attn_rot"
       features:
         completion: true
         tools: true
         thinking: true
-        vision: false
+        vision: true
         embedding: false
         insert: false
         audio: false
@@ -1458,8 +1460,8 @@ models:
       parameters: 4650000000
       context_length: 131072
       embedding_length: 1536
-      quantization: Q4_0_QAT
-      note: "Google QAT checkpoint. Trained with quantization-aware training for Q4_0 format. Text-only — no mmproj."
+      quantization: Q4_K_M
+      note: "Upgraded from UD-Q3_K_XL → Q4_K_M. ~3% PPL improvement at +0.17GB cost."
 # -------------------------------------------
 # GEMMA-4-E4B - Bee BACKEND (TurboQuant KV cache)
 # Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
@@ -3545,8 +3547,8 @@ matrix:
     # [REMOVED] m3: ministral-3-3b
     ww: webworld-8b
     # [REMOVED] n4: nemotron-3-nano-4b
-    g2: gemma4-e2b-qat
-    g2q: gemma4-e2b-qat
+    g2: gemma4-e2b
+    g2q: gemma4-e2b
     lfm2s: lfm2.5-1.2b
     lfm2t: lfm2.5-1.2b-think
     # Vision
