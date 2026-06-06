@@ -71,7 +71,7 @@ Modelos com raciocínio têm variante =:think= que ativa modo de thinking.
 
 | Model ID                      | Nome                          | Contexto | Input          | :think |
 |--------------------------------+-------------------------------+----------+----------------+--------|
-| =gemma4-12b=                    | Gemma 4 12B                  |    262K  | text+image+audio | sim  |
+| =gemma4-12b=                    | Gemma 4 12B                  |    262K  | text+image      | sim  |
 | =gemma4-26b-a4b=               | Gemma 4 26B MoE              |    262K  | text           | sim    |
 | =gemma4-e2b=                   | Gemma 4 E2B                  |    131K  | text           | sim    |
 | =gemma4-e4b=                   | Gemma 4 E4B                  |    131K  | text           | sim    |
@@ -89,7 +89,7 @@ Modelos com raciocínio têm variante =:think= que ativa modo de thinking.
 
 | Model ID                      | Nome                          | Contexto | Input          | :think |
 |--------------------------------+-------------------------------+----------+----------------+--------|
-| =gemma4-12b=                    | Gemma 4 12B                  |    262K  | text+image+audio | sim  |
+| =gemma4-12b=                    | Gemma 4 12B                  |    262K  | text+image      | sim  |
 | =glm-ocr=                      | GLM-OCR                      |    131K  | text+image     | não    |
 | =lfm2.5-vl-1.6b-extract=       | LFM2.5-VL 1.6B Extract       |    128K  | text+image     | não    |
 | =lfm2.5-vl-450m=               | LFM2.5-VL 450M               |    128K  | text+image     | não    |
@@ -222,6 +222,6 @@ pi --list-models
 
 9. *=supportsDeveloperRole: false= e =supportsReasoningEffort: false=* no provider =ollama= são necessários porque a API Ollama não implementa essas features do spec OpenAI.
 
-10. *Modelos com vision/audio*. O campo =input= em cada modelo indica capacidades: ="image"= suporta envio de imagem (via =@caminho/arquivo.png= ou clipboard), ="audio"= suporta envio de áudio. Modelos sem =image= no input só operam em modo texto.
+10. *Modelos com vision/audio*. O campo =input= suporta ="text"= e ="image"= (envio de imagem via =@caminho/arquivo.png= ou clipboard). O Pi **não suporta ="audio"= no schema** — mesmo que o modelo tenha capacidade de áudio (como o Gemma 4 12B), use apenas ="text", ="image"=.
 
 11. *Pi recarrega =models.json= automaticamente* ao abrir o seletor de modelos (= /model = no TUI) — não é necessário reiniciar.
