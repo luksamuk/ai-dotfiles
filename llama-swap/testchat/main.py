@@ -305,15 +305,19 @@ def build_message_content(prompt: str, image_paths: list[str] = None, audio_path
             })
     
     # Adicionar cada áudio (formato OpenAI input_audio)
+    # NOTA: llama.cpp requer base64 PURO (sem data URI prefix), diferente de
+    # imagem que usa data URI. O campo "format" recebe a extensão do arquivo.
     for i, audio_path in enumerate(audio_paths):
         try:
-            data_uri, mime_type = encode_audio_base64(audio_path)
-            # OpenAI format for audio input
+            with open(audio_path, 'rb') as af:
+                audio_b64 = base64.b64encode(af.read()).decode('utf-8')
+            audio_ext = Path(audio_path).suffix.lstrip('.')  # wav, mp3, ogg, etc.
+            # OpenAI/llama.cpp format for audio input (raw base64, no data URI)
             content_parts.append({
                 "type": "input_audio",
                 "input_audio": {
-                    "data": data_uri,
-                    "format": mime_type.split('/')[-1]  # wav, mp3, ogg, etc.
+                    "data": audio_b64,
+                    "format": audio_ext
                 }
             })
         except Exception as e:
