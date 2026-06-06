@@ -4,21 +4,20 @@
 # GQA 32Q/4KV, sliding window 1024, vocab 98K
 # Apache 2.0 license
 # Variantes via setParamsByID: instruct (chat), :think (reasoning)
-# Upstream llama.cpp required — Mellum arch added in b9484 (PR #23966)
-# Upstream b9484: no --tool-call-parser, no --reasoning-parser (ik-only flags)
-# Tool calling and reasoning handled by chat template --jinja
+# ik_llama.cpp required — Mellum2 arch added in ik #1919, split mode in #1920
+# Upstream llama.cpp also supports Mellum (added b9484 PR #23966)
+# MoE offload much faster on ik — pin to ik_llama_server
 # RTX 3050 6GB: --fit on with partial offload
 # -------------------------------------------
 "mellum2-12b-a2.5b":
   name: "Mellum 2 12B MoE"
   description: "JetBrains coding MoE — 12B total, 2.5B active. Excels at tool use, agentic workflows, code generation and reasoning."
   cmd: |
-    ${llama_server} --port ${PORT}
+    ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/Mellum2-12B-A2.5B-Thinking-Q4_K_M.gguf
     --jinja
-    --fit on
-    --fit-target 96
-    --fit-ctx 16384
+    --fit
+    --fit-margin 512
     --ctx-size 131072
     --temp 0.6
     --top-p 0.95
@@ -26,6 +25,7 @@
     --min-p 0.1
     --repeat-penalty 1.05
     --reasoning on
+    --parallel-tool-calls
     --cache-type-k q8_0
     --cache-type-v q4_0
     --flash-attn on
@@ -49,7 +49,8 @@
     context: "16K-131K (dynamic)"
     vram_usage: "~4.5GB VRAM + ~3GB RAM (partial expert offload)"
     source: "RJ000/Mellum2-12B-A2.5B-Thinking-GGUF (Q4_K_M)"
-    note: "Community quant (RJ000). Upstream-only — Mellum arch not yet in ik. Testing phase."
+    note: "Community quant (RJ000). ik-pinned since #1919 (Mellum2 arch + split mode). MoE offload optimized."
+    caveat: "GGUF Thinking always produces reasoning. Base variant (enable_thinking: false) leaks inline text — use :think for clean separation (reasoning_content). Parallel tool calls work with --parallel-tool-calls. Occasional content leakage before tool calls on ambiguous prompts."
     kv_cache: "q8_0 + q4_0"
     features:
       completion: true

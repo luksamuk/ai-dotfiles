@@ -43,7 +43,8 @@ matrix:
     # [REMOVED] m3: ministral-3-3b
     ww: webworld-8b
     # [REMOVED] n4: nemotron-3-nano-4b
-    g2: gemma4-e2b
+    g2: gemma4-e2b-qat
+    g2q: gemma4-e2b-qat
     lfm2s: lfm2.5-1.2b
     lfm2t: lfm2.5-1.2b-think
     # Vision
@@ -78,10 +79,10 @@ matrix:
   # - heavy: modelos 14B+ rodam sozinhos (toda VRAM)
   sets:
     # LLM pequeno + Vision: trocar entre modelos leves NÃO evicta o vision
-    small_vision: "(q08 | q4 | g2 | lfm2s | lfm2t | nb41) & vl"
+    small_vision: "(q08 | q4 | g2 | g2q | lfm2s | lfm2t | nb41) & vl"
 
     # LLM pequeno sozinho (sem vision ativo)
-    small_only: "q08 | q4 | g2 | lfm2s | lfm2t | nb41"
+    small_only: "q08 | q4 | g2 | g2q | lfm2s | lfm2t | nb41"
 
     # vLLM backends (mutuamente exclusivos com llama.cpp — mesma GPU)
     vllm: "q08vllm | lfm2vllm"
@@ -125,6 +126,7 @@ matrix:
     ww: 4        # 8B world model, ~5.9GB, medium startup
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1
+    g2q: 1
     nb41: 2      # 3B dense Q4_K_M ~1.8GB, small but heavier than 1-2B
     # mel2: mellum2-12b-thinking  # DISABLED: tool calling broken
     # vLLM backends — high startup cost (30-90s), high eviction cost

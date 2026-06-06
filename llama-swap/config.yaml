@@ -67,8 +67,8 @@ macros:
 
   # Parâmetros para código/tool-calling (mais determinístico)
   "code_temp": "0.6"
-  "code_top_p": "0.95"
-  "code_top_k": "20"
+  "code_top_p": "0.85"
+  "code_top_k": "40"
   "code_min_p": "0.02"
   "code_repeat_penalty": "1.05"
 
@@ -122,13 +122,6 @@ macros:
   "large_cache_v": "q4_0"
   "gemma_cache_k": "q4_0"
   "gemma_cache_v": "q4_0"
-
-  # Parâmetros oficiais Google Gemma 4 (todas as sizes): temp=1.0, top_p=0.95, top_k=64
-  # https://huggingface.co/google/gemma-4-12b-it#best-practices
-  # repeat_penalty=1.05 (não oficial, mas necessário pra evitar loops em código longo)
-  "gemma_temp": "1.0"
-  "gemma_top_p": "0.95"
-  "gemma_top_k": "64"
 models:
 # -------------------------------------------
 # QWEN3.5-0.8B - vLLM BACKEND (PAUSADO — venv + HF models deletados)
@@ -262,10 +255,9 @@ models:
 # -------------------------------------------
 # QWEN3.5-4B - ik BACKEND (Hadamard KV cache)
 # Dense 4B params, MoQ-3.75 ~1.92GB.
-# Upgraded from i1-Q4_K_M (~2.52GB) → MoQ-3.75 (~1.92GB): 
-# 51% faster (45.7 vs 30.2 tok/s), 24% smaller, same Snake quality (23/25).
-# MoQ (Mixture of Quants) allocates more bits to critical tensors.
-# ik with hadamard cache gives near-fp16 quality at smaller memory footprint.
+# MoQ-3.75: 51% faster than i1-Q4_K_M (45.7 vs 30.2 tok/s),
+# same quality (23/25 Snake), 24% smaller (1.92 vs 2.52 GB).
+# ik with hadamard cache gives near-fp16 quality at smaller memory footprint than q8_0.
 # --flash-attn auto: disables FA on short contexts for savings
 # --parallel-tool-calls: enables multiple tool calls in single response
 # Dual mode: base (chat, no think) and :think (reasoning)
@@ -310,7 +302,7 @@ models:
     metadata:
       size: "~1.92 GB (MoQ-3.75)"
       context: "64K-128K (dynamic)"
-      vram_usage: "~2.5GB VRAM (text-only, ik with hadamard cache)"
+      vram_usage: "~2.8GB VRAM (model + hadamard cache)"
       source: "kaitchup/Qwen3.5-4B-GGUF-MoQ (MoQ-3.75)"
       kv_cache: "q8_0 + q4_0 hadamard"
       features:
@@ -327,22 +319,17 @@ models:
       context_length: 262144
       embedding_length: 2560
       quantization: MoQ-3.75
-      note: "MoQ-3.75 — 51% faster than i1-Q4_K_M (45.7 vs 30.2 tok/s), 24% smaller (1.92 vs 2.52 GB), same Snake quality (23/25)."
-# -------------------------------------------
-# QWEN3.5-4B - BACKUP (i1-Q4_K_M) — REMOVED
-# Replaced by MoQ-3.75. i1-Q4_K_M file deleted from disk.
-# Switched from Bee/TurboQuant to ik — i1 format caused Bee slash bug.
-# hadamard cache gives near-fp16 quality at smaller memory footprint.
-# -------------------------------------------
+      note: "MoQ-3.75 replaces i1-Q4_K_M: 51% faster, 24% smaller, same quality. Mixture of Quants by Waleed Ahmad."
 # -------------------------------------------
 # QWEN3.5-9B - ik BACKEND (Hadamard KV cache)
-# Dense 9B params, UD-Q4_K_XL ~5.55GB.
-# Bee/TurboQuant segfaults with this model — use ik with hadamard instead.
+# Dense 9B params, MoQ-3.6 ~3.75GB.
+# MoQ-3.6: replaced UD-Q4_K_XL (~5.55GB) — same speed (12.2 tok/s),
+# equal+ quality (21/25 Snake vs 20/25), 32% smaller.
+# ik with hadamard cache gives near-fp16 quality at smaller memory footprint.
 # --flash-attn auto: disables FA on short contexts for MoE/offload savings
-# KV cache: q8_0 (K) + q4_0 (V) + hadamard = quality near-fp16
-# --fit on --fit-margin 512: dynamic GPU offload
+# --parallel-tool-calls: enables multiple tool calls in single response
 # Dual mode: base (chat, no think) and :think (reasoning)
-# Upgraded from UD-Q3_K_XL (3.5 bpw) → UD-Q4_K_XL (4.5 bpw): +0.85GB for ~3% PPL improvement
+# MTP tested but OOM on RTX 3050 6GB with --multi-token-prediction
 # Bee backup: _disabled/qwen3.5-9b-bee.yaml (seg fault with turbo3_tcq)
 # -------------------------------------------
   "qwen3.5-9b":
@@ -351,7 +338,6 @@ models:
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-9B-MoQ-3.6.gguf
-      # No --no-mmproj: ik doesn't support this flag (upstream-only)
       --fit
       --fit-margin 512
       --jinja
@@ -386,8 +372,8 @@ models:
     metadata:
       size: "~3.75 GB (MoQ-3.6)"
       context: "64K-128K (dynamic)"
-      vram_usage: "~3.8GB VRAM (text-only, ik with hadamard cache)"
-      source: "WaleedAhmed/Qwen3.5-9B-MoQ-GGUF (MoQ-3.6)"
+      vram_usage: "~4.8GB VRAM (text-only, ik with hadamard cache)"
+      source: "w-ahmad/Qwen3.5-9B-GGUF-MoQ (MoQ-3.6)"
       kv_cache: "q8_0 + q4_0 hadamard"
       features:
         completion: true
@@ -403,13 +389,7 @@ models:
       context_length: 262144
       embedding_length: 4096
       quantization: MoQ-3.6
-      note: "MoQ-3.6 (Mixture of Quants, ~3.6 bpw) — 32% smaller than UD-Q4_K_XL, same speed (12.2 tok/s), equal or better quality on Snake benchmark. Replaces UD-Q4_K_XL as default quant."
-# -------------------------------------------
-# QWEN3.5-9B-MTP - REMOVED
-# MTP (Multi-Token Prediction) tested on RTX 3050 6GB — OOMs with --fit + --multi-token-prediction.
-# Requires 493 MiB extra VRAM for speculative draft context that doesn't fit alongside --fit.
-# Only works with n-gpu-layers=15 (heavy CPU offload), losing hadamard cache and 131K context (drops to 8K).
-# Speed gain marginal (15.4 vs 15.1 tok/s), not worth the context/cache tradeoff. Stick with MoQ-3.6.
+      note: "MoQ-3.6 replaces UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25 vs 20/25 Snake), 32% smaller (3.75 vs 5.55 GB). MTP OOM on 6GB VRAM."
 # -------------------------------------------
 # GEMMA-4-E4B - ik BACKEND (Hadamard KV cache)
 # Upstream config with q4_0 cache. Bee/TurboQuant was slower (36 vs 40 tok/s).
@@ -428,11 +408,11 @@ models:
       --jinja
       --parallel-tool-calls
       --ctx-size ${small_model_max_ctx}
-      --temp ${gemma_temp}
-      --top-p ${gemma_top_p}
-      --top-k ${gemma_top_k}
+      --temp 0.7
+      --top-p 0.9
+      --top-k 40
       --min-p 0.01
-      --repeat-penalty ${default_repeat_penalty}
+      --repeat-penalty 1.0
       --reasoning on
       --cache-type-k q8_0
       --cache-type-v q4_0
@@ -446,13 +426,13 @@ models:
         "${MODEL_ID}":
           chat_template_kwargs:
             enable_thinking: false
-          temperature: 1.0
-          top_p: 0.95
+          temperature: 0.7
+          top_p: 0.9
         "${MODEL_ID}:think":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
-          top_p: 0.95
+          top_p: 0.9
     ttl: 60
     metadata:
       size: "~4.63 GB (Q4_K_M)"
@@ -485,6 +465,7 @@ models:
 # handles multiple tool calls natively via Jinja chat template.
 # -------------------------------------------
   "gemma4-e2b":
+    unlisted: true
     name: "Gemma 4 E2B"
     description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
     cmd: |
@@ -495,11 +476,11 @@ models:
       --fit-target 1024
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --temp ${gemma_temp}
-      --top-p ${gemma_top_p}
-      --top-k ${gemma_top_k}
+      --temp 0.7
+      --top-p 0.9
+      --top-k 40
       --min-p 0.01
-      --repeat-penalty ${default_repeat_penalty}
+      --repeat-penalty 1.0
       --reasoning on
       --cache-type-k ${gemma_cache_k}
       --cache-type-v ${gemma_cache_v}
@@ -511,13 +492,13 @@ models:
         "${MODEL_ID}":
           chat_template_kwargs:
             enable_thinking: false
-          temperature: 1.0
-          top_p: 0.95
+          temperature: 0.7
+          top_p: 0.9
         "${MODEL_ID}:think":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
-          top_p: 0.95
+          top_p: 0.9
     ttl: 60
     metadata:
       size: "~2.89 GB (Q4_K_M)"
@@ -638,58 +619,6 @@ models:
       embedding_length: 1024
       quantization: Q8_0
 # -------------------------------------------
-# LFM2.5-VL-1.6B-EXTRACT — Structured Vision Extraction
-# Liquid AI — VLM that returns JSON, not free-form text
-# Pass image + YAML field list → get structured JSON object
-# Architecture: lfm2 — upstream llama.cpp ONLY (ik does not support lfm2)
-# Use cases: document scanning, dashboard reading, industrial inspection
-# -------------------------------------------
-  "lfm2.5-vl-1.6b-extract":
-    name: "LFM2.5-VL 1.6B Extract"
-    description: "Vision-language model specialized in structured extraction. Pass an image and a list of fields, get back a JSON object. No parsing layer needed."
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/LFM2.5-VL-1.6B-Extract-Q4_K_M.gguf
-      --jinja
-      --mmproj ${models_dir}/mmproj-LFM2.5-VL-1.6B-Extract-F16.gguf
-      --media-path ${media_path}
-      --fit on
-      --fit-target ${vram_margin}
-      --fit-ctx ${small_model_min_ctx}
-      --ctx-size ${small_model_max_ctx}
-      --temp 0.1
-      --top-p 0.9
-      --top-k 40
-      --min-p 0.15
-      --repeat-penalty 1.05
-      --reasoning off
-      --cache-type-k f16
-      --cache-type-v f16
-      --flash-attn on
-      --metrics
-    ttl: 60
-    metadata:
-      size: "0.70 GB (Q4_K_M) + 0.82 GB mmproj"
-      context: "32K (dynamic)"
-      vram_usage: "~2.7GB"
-      source: "LiquidAI/LFM2.5-VL-1.6B-Extract-GGUF"
-      kv_cache: "f16"
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: lfm2
-      parameters: 1600000000
-      context_length: 128000
-      embedding_length: 2048
-      quantization: Q4_K_M
-      note: "Structured extraction VLM — returns JSON instead of free-form text. lfm2 arch requires upstream llama.cpp (not ik)."
-# -------------------------------------------
 # WEBWORLD-8B — Web World Model (Qwen3-8B fine-tune)
 # Qwen/WebWorld-8B — predicts next web page state given current state + action
 # Trained on 1M+ real web interaction trajectories
@@ -776,12 +705,8 @@ models:
       --fit-target 96
       --fit-ctx 16384
       --ctx-size 131072
-      --jinja
-      --temp ${gemma_temp}
-      --top-p ${gemma_top_p}
-      --top-k ${gemma_top_k}
-      --min-p 0.01
-      --repeat-penalty ${default_repeat_penalty}
+      --temp 1.0
+      --top-p 0.95
       --reasoning on
       --cache-type-k q4_0
       --cache-type-v q4_0
@@ -793,12 +718,12 @@ models:
         "${MODEL_ID}":
           chat_template_kwargs:
             enable_thinking: false
-          temperature: 1.0
+          temperature: 0.7
           top_p: 0.95
         "${MODEL_ID}:think":
           chat_template_kwargs:
             enable_thinking: true
-          temperature: 0.6
+          temperature: 1.0
           top_p: 0.95
     ttl: 300
     metadata:
@@ -823,7 +748,6 @@ models:
       quantization: I-Compact
       warning: "Vision disabled — Gemma 4 mmproj crash on CUDA. Text-only."
 # -------------------------------------------
-
 # QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
 # MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
 # 33 experts, top-8 routing. APEX I-Compact ~17.3GB
@@ -1268,6 +1192,134 @@ models:
       quantization: UD-Q3_K_XL
       note: "Dense 4.5B by Arcee AI. No native thinking. Tool calling requires Hermes 2 Pro template override via --chat-template-file. Uses upstream (ik/Bee lack arcee arch support)."
 # -------------------------------------------
+# GEMMA-4-12B-QAT - Q4_0 Quantization-Aware Training
+# Google official QAT checkpoint for Gemma 4 12B dense model.
+# Benchmark-only: 6.98 GB dense, requires CPU offload on RTX 3050 6GB.
+# QAT won benchmark vs PTQ Q4_0 by 1 point (18 vs 17/25 Snake).
+# NOT for regular fleet use — too slow (~12 tok/s with offload).
+# Only upstream llama.cpp supported (ik crashes: fused KV in MoE layers).
+# ik #1921 unblocked head_dim 512 + gqa_ratio % 8 — 12B loads but QAT fused KV still crashes.
+# Re-benchmark pending with ik updated (t0002-737 → 6b9de3db).
+# -------------------------------------------
+  "gemma4-12b-qat":
+    unlisted: true
+    name: "Gemma 4 12B QAT"
+    description: "Gemma 4 12B with Quantization-Aware Training (Q4_0). Benchmark-only — dense 12B requires CPU offload on 6GB VRAM. QAT won vs PTQ by 1pt (18 vs 17)."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gemma-4-12b-it-qat-q4_0.gguf
+      --no-mmproj
+      --fit on
+      --fit-target 512
+      --ctx-size 8192
+      --temp 0.7
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.01
+      --repeat-penalty 1.0
+      --reasoning on
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    metadata:
+      size: "~6.98 GB (Q4_0 QAT)"
+      context: "8K (limited by VRAM)"
+      vram_usage: "~6.98GB + offload to RAM"
+      source: "google/gemma-4-12B-it-qat-q4_0-gguf"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4
+      parameters: 12000000000
+      context_length: 262144
+      embedding_length: 3072
+      quantization: Q4_0_QAT
+      note: "Google QAT checkpoint. Dense 12B — requires CPU offload on RTX 3050. Fused KV in MoE layers crashes ik_llama.cpp. Upstream only."
+# -------------------------------------------
+# GEMMA-4-E2B-QAT - Q4_0 Quantization-Aware Training
+# Google official QAT checkpoint: trained with quantization simulation,
+# preserves more quality than PTQ Q4_K_M at similar size.
+# Text-only — no mmproj (vision handled by dedicated VLMs in fleet).
+# -------------------------------------------
+  "gemma4-e2b-qat":
+    name: "Gemma 4 E2B QAT"
+    description: "Gemma 4 E2B with Quantization-Aware Training (Q4_0). Official Google checkpoint — higher quality than PTQ at same quant level."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gemma-4-E2B_q4_0-it.gguf
+      --no-mmproj
+      --fit on
+      --fit-target 1024
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.7
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.01
+      --repeat-penalty 1.0
+      --reasoning on
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    metadata:
+      size: "~3.2 GB (Q4_0 QAT)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~3.2GB"
+      source: "google/gemma-4-E2B-it-qat-q4_0-gguf"
+      kv_cache: "q4_0 + attn_rot"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4
+      parameters: 4650000000
+      context_length: 131072
+      embedding_length: 1536
+      quantization: Q4_0_QAT
+      note: "Google QAT checkpoint. Trained with quantization-aware training for Q4_0 format. Text-only — no mmproj."
+# -------------------------------------------
 # GEMMA-4-E4B - Bee BACKEND (TurboQuant KV cache)
 # Served by BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
 # head_dim=256 → attn_rot ✅ (Bee supports iSWA attn_rot for Gemma 4)
@@ -1329,6 +1381,73 @@ models:
       embedding_length: 2560
       quantization: UD-Q3_K_XL
       warning: "TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99)."
+# -------------------------------------------
+# GEMMA-4-E4B-QAT - Q4_0 Quantization-Aware Training
+# Google official QAT checkpoint: trained with quantization simulation,
+# preserves more quality than PTQ Q4_K_M at similar size.
+# Text-only — no mmproj (vision handled by dedicated VLMs in fleet).
+# Uses ik backend with Hadamard cache for quality (same as PTQ variant).
+# -------------------------------------------
+  "gemma4-e4b-qat":
+    unlisted: true
+    name: "Gemma 4 E4B QAT"
+    description: "Gemma 4 E4B with Quantization-Aware Training (Q4_0). Official Google checkpoint — higher quality than PTQ at same quant level."
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/gemma-4-E4B_q4_0-it.gguf
+      # No --no-mmproj: ik doesn't support this flag (upstream-only)
+      --fit
+      --fit-margin 512
+      --jinja
+      --parallel-tool-calls
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.7
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.01
+      --repeat-penalty 1.0
+      --reasoning on
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    metadata:
+      size: "~5.15 GB (Q4_0 QAT)"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~5.7GB VRAM"
+      source: "google/gemma-4-E4B-it-qat-q4_0-gguf"
+      kv_cache: "q8_0 + q4_0 hadamard"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4
+      parameters: 7520000000
+      context_length: 131072
+      embedding_length: 2560
+      quantization: Q4_0_QAT
+      note: "Google QAT checkpoint. Trained with quantization-aware training for Q4_0 format. Text-only — no mmproj."
 # -------------------------------------------
 # GLM-OCR - UPSTREAM BACKEND (mmproj required)
 # GLM-4V-based OCR/Vision specialist — #1 on OmniDocBench V1.5 (94.62 score)
@@ -1933,7 +2052,8 @@ models:
       --reasoning on
       --chat-template-file /home/alchemist/git/ai-dotfiles/llama-swap/templates/lfm2.5-chat-template.jinja
       --temp 0.2
-      --top-k 80
+      --top-p 0.8
+      --top-k 40
       --min-p 0.15
       --repeat-penalty 1.05
       --cache-type-k q8_0
@@ -1975,26 +2095,77 @@ models:
       quantization: Q4_0
       note: "Pet project — MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek."
 # -------------------------------------------
+# LFM2.5-VL-1.6B-EXTRACT — Structured Vision Extraction
+# Liquid AI — VLM that returns JSON, not free-form text
+# Pass image + YAML field list → get structured JSON object
+# Architecture: lfm2 — upstream llama.cpp ONLY (ik does not support lfm2)
+# Use cases: document scanning, dashboard reading, industrial inspection
+# -------------------------------------------
+  "lfm2.5-vl-1.6b-extract":
+    name: "LFM2.5-VL 1.6B Extract"
+    description: "Vision-language model specialized in structured extraction. Pass an image and a list of fields, get back a JSON object. No parsing layer needed."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/LFM2.5-VL-1.6B-Extract-Q4_K_M.gguf
+      --jinja
+      --mmproj ${models_dir}/mmproj-LFM2.5-VL-1.6B-Extract-F16.gguf
+      --media-path ${media_path}
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.1
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --reasoning off
+      --cache-type-k f16
+      --cache-type-v f16
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      size: "0.70 GB (Q4_K_M) + 0.82 GB mmproj"
+      context: "32K (dynamic)"
+      vram_usage: "~2.7GB"
+      source: "LiquidAI/LFM2.5-VL-1.6B-Extract-GGUF"
+      kv_cache: "f16"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 1600000000
+      context_length: 128000
+      embedding_length: 2048
+      quantization: Q4_K_M
+      note: "Structured extraction VLM — returns JSON instead of free-form text. lfm2 arch requires upstream llama.cpp (not ik)."
+# -------------------------------------------
 # MELLUM2-12B-A2.5B — JETBRAINS MoE CODING + REASONING
 # MoE 12B params, 2.5B ativo por token. 64 experts, top-8 routing.
 # GQA 32Q/4KV, sliding window 1024, vocab 98K
 # Apache 2.0 license
 # Variantes via setParamsByID: instruct (chat), :think (reasoning)
-# Upstream llama.cpp required — Mellum arch added in b9484 (PR #23966)
-# Upstream b9484: no --tool-call-parser, no --reasoning-parser (ik-only flags)
-# Tool calling and reasoning handled by chat template --jinja
+# ik_llama.cpp required — Mellum2 arch added in ik #1919, split mode in #1920
+# Upstream llama.cpp also supports Mellum (added b9484 PR #23966)
+# MoE offload much faster on ik — pin to ik_llama_server
 # RTX 3050 6GB: --fit on with partial offload
 # -------------------------------------------
   "mellum2-12b-a2.5b":
     name: "Mellum 2 12B MoE"
     description: "JetBrains coding MoE — 12B total, 2.5B active. Excels at tool use, agentic workflows, code generation and reasoning."
     cmd: |
-      ${llama_server} --port ${PORT}
+      ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Mellum2-12B-A2.5B-Thinking-Q4_K_M.gguf
       --jinja
-      --fit on
-      --fit-target 96
-      --fit-ctx 16384
+      --fit
+      --fit-margin 512
       --ctx-size 131072
       --temp 0.6
       --top-p 0.95
@@ -2002,6 +2173,7 @@ models:
       --min-p 0.1
       --repeat-penalty 1.05
       --reasoning on
+      --parallel-tool-calls
       --cache-type-k q8_0
       --cache-type-v q4_0
       --flash-attn on
@@ -2025,7 +2197,8 @@ models:
       context: "16K-131K (dynamic)"
       vram_usage: "~4.5GB VRAM + ~3GB RAM (partial expert offload)"
       source: "RJ000/Mellum2-12B-A2.5B-Thinking-GGUF (Q4_K_M)"
-      note: "Community quant (RJ000). Upstream-only — Mellum arch not yet in ik. Testing phase."
+      note: "Community quant (RJ000). ik-pinned since #1919 (Mellum2 arch + split mode). MoE offload optimized."
+      caveat: "GGUF Thinking always produces reasoning. Base variant (enable_thinking: false) leaks inline text — use :think for clean separation (reasoning_content). Parallel tool calls work with --parallel-tool-calls. Occasional content leakage before tool calls on ambiguous prompts."
       kv_cache: "q8_0 + q4_0"
       features:
         completion: true
@@ -2416,8 +2589,8 @@ models:
 # NOTE: Bug #21402 (Gemma 4 mmproj crash) does NOT affect Qwen3.5
 # NOTE: Bug #22785 (Qwen-VL accuracy degraded in llama-server) — monitor
 # KV cache: q8_0 + attn_rot (head_dim provavelmente 128, 128%64==0)
-
-
+# -------------------------------------------
+# UNLISTED: nice-to-have tiny model, disk freed for space
   "qwen3.5-0.8b":
     unlisted: true
     name: "Qwen3.5 0.8B"
@@ -2725,6 +2898,81 @@ models:
       embedding_length: 4096
       quantization: UD-Q3_K_XL
       warning: "Vision disabled temporarily — mmproj offload with --fit causes OOM"
+# -------------------------------------------
+# QWEN3.6-27B - ik BACKEND (Hadamard KV cache, mlock, heavy CPU offload)
+# Dense 27B, state-of-the-art local LLM. Heavy offload on 6GB VRAM (~13/64 layers GPU).
+# i1-Q3_K_M (importance matrix quant) ~12.4GB — smaller per layer = more GPU layers = better speed.
+# i1 quants from mradermacher work with ik_llama.cpp (NOT Unsloth UD-XL which breaks).
+# Qwen3.6 sampling: temp 0.6-0.7, top_p 0.8-0.9, top_k 20-40
+# --mlock: pin model in RAM, prevent swap during heavy offload
+# --k-cache-hadamard / --v-cache-hadamard: near-fp16 quality with q4_0 cache
+# --flash-attn auto: disable FA on short contexts for savings
+# Dual mode: base (chat, no think) and :think (reasoning)
+
+# DISABLED: 3.65 tok/s too slow for practical use. 13GB disk for ~4 tok/s not justified.
+# 35B MoE covers the heavy model niche at better speed. Snake 23/25 preserved in benchmarks.
+# Awaiting Qwen3.7-35B MoE to potentially replace 35B APEX.
+# -------------------------------------------
+  "qwen3.6-27b":
+    unlisted: true
+    name: "Qwen 3.6 27B"
+    description: "Qwen3.6-27B is a dense 27B parameter model delivering frontier-level performance in reasoning, coding, and multilingual tasks."
+    cmd: |-
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.6-27B.i1-Q3_K_M.gguf
+      --mlock
+      --fit
+      --fit-margin 512
+      --ctx-size ${large_model_max_ctx}
+      --jinja
+      --parallel-tool-calls
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --reasoning on
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 120
+    metadata:
+      size: "~12.4 GB (i1-Q3_K_M)"
+      context: "64K-128K (dynamic, heavy offload)"
+      vram_usage: "~5GB VRAM + ~7GB RAM (ik pinned memory, hadamard cache)"
+      source: "mradermacher/Qwen3.6-27B-i1-GGUF (i1-Q3_K_M)"
+      kv_cache: "q4_0 + hadamard (ik -khad/-vhad)"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 27000000000
+      context_length: 262144
+      embedding_length: 4608
+      quantization: i1-Q3_K_M
+      note: "Snake 23/25 (missed wasd, self_collision). 3.65 tok/s on RTX 3050 6GB. DISABLED: too slow + 13GB disk for ~4 tok/s not justified. 35B MoE covers heavy niche."
   "qwopus-35b":
     unlisted: true
     name: "Qwopus 35B"
@@ -3156,19 +3404,17 @@ matrix:
     # [REMOVED] m3: ministral-3-3b
     ww: webworld-8b
     # [REMOVED] n4: nemotron-3-nano-4b
-    g2: gemma4-e2b
+    g2: gemma4-e2b-qat
+    g2q: gemma4-e2b-qat
     lfm2s: lfm2.5-1.2b
     lfm2t: lfm2.5-1.2b-think
     # Vision
     vl: lfm2.5-vl-450m
-    vlx: lfm2.5-vl-1.6b-extract
     # Modelos médios (agora cabem na VRAM!)
     q9: qwen3.5-9b
-    # q9mtp: REMOVED — MTP OOMs on RTX 3050 6GB, speed gain not worth context/cache tradeoff
     # [REMOVED] q3x8: qwen3-8b
     # [REMOVED] ACE — no imatrix quants, worse perplexity than 9B regular
     g4: gemma4-e4b
-    # q27: DISABLED — qwen3.6-27b removed (3.65 tok/s too slow, 13GB disk). Config in _disabled/qwen3.6-27b.yaml
     # Pesados
     qw36: qwen3.6-35b-a3b
     qc9: qwopus-coder-9b
@@ -3194,10 +3440,10 @@ matrix:
   # - heavy: modelos 14B+ rodam sozinhos (toda VRAM)
   sets:
     # LLM pequeno + Vision: trocar entre modelos leves NÃO evicta o vision
-    small_vision: "(q08 | q4 | g2 | lfm2s | lfm2t | nb41) & vl"
+    small_vision: "(q08 | q4 | g2 | g2q | lfm2s | lfm2t | nb41) & vl"
 
     # LLM pequeno sozinho (sem vision ativo)
-    small_only: "q08 | q4 | g2 | lfm2s | lfm2t | nb41"
+    small_only: "q08 | q4 | g2 | g2q | lfm2s | lfm2t | nb41"
 
     # vLLM backends (mutuamente exclusivos com llama.cpp — mesma GPU)
     vllm: "q08vllm | lfm2vllm"
@@ -3222,13 +3468,12 @@ matrix:
     qw36: 10     # 35B MoE APEX I-Compact ~17.3GB, heavy offload
     # orn: 9    # DISABLED: Ornstein Q4_K_M too large, needs APEX I-Compact
     qc9: 6      # 9B dense Q4_K_M ~5.6GB, medium startup
-    # q27: 9      # DISABLED: 27B dense removed (3.65 tok/s too slow, 13GB disk)
     # qwopus: 10   # DISABLED: model unlisted
     # gptoss: 8    # DISABLED: model unlisted
     # lfm2l: 9    # DISABLED: model unlisted
     # ds14: 7   REMOVED — Dense 14B poor perf on RTX 3050
     # ds32: 10  REMOVED — Dense 32B very slow on limited VRAM
-    q9: 4        # ~3.75GB MoQ-3.6, fits VRAM
+    q9: 4        # ~5GB, fits VRAM now
     # [REMOVED] q3x8: 4 — qwen3-8b removed
     # [REMOVED] ACE: 4 — superseded by Qwopus
     g4: 4        # ~4.5GB, fits VRAM now
@@ -3242,6 +3487,7 @@ matrix:
     ww: 4        # 8B world model, ~5.9GB, medium startup
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1
+    g2q: 1
     nb41: 2      # 3B dense Q4_K_M ~1.8GB, small but heavier than 1-2B
     # mel2: mellum2-12b-thinking  # DISABLED: tool calling broken
     # vLLM backends — high startup cost (30-90s), high eviction cost

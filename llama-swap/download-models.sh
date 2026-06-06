@@ -8,7 +8,9 @@
 #   [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
 #   qwen3.5-9b           - Qwen3.5-9B MoQ-3.6 (~3.75 GB) - fits in VRAM + mmproj
 #   gemma4-e4b           - Gemma-4 E4B Q4_K_M (~4.63 GB) - fits in VRAM + mmproj
-#   gemma4-e2b           - Gemma-4 E2B Q4_K_M (~2.89 GB) - fits in VRAM
+#   gemma4-e2b-qat       - Gemma-4 E2B Q4_0 QAT (~3.2 GB) - higher quality than PTQ, text-only
+#   [BENCHMARK-ONLY] gemma4-12b-qat - Gemma-4 12B Q4_0 QAT (~6.98 GB) - dense, requires offload. QAT won by 1pt vs PTQ. Removed Jun 2026.
+#   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
 #   [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
 #   lfm2.5-vl-450m       - LFM2.5-VL-450M Q4_0 (0.22 GB) + mmproj F16 - vision/OCR
 #   lfm2.5-vl-1.6b-extract - LFM2.5-VL-1.6B-Extract Q4_K_M (0.70 GB) + mmproj F16 - structured vision extraction (JSON)
@@ -66,7 +68,11 @@ declare -A MODELS=(
   ["lfm2.5-8b-a1b"]="LiquidAI/LFM2.5-8B-A1B-GGUF LFM2.5-8B-A1B-Q4_0.gguf"
   ["qwen3.5-9b"]="w-ahmad/Qwen3.5-9B-GGUF-MoQ Qwen3.5-9B-MoQ-3.6.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
-  ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf"
+  # [REMOVED] gemma4-e2b — superseded by gemma4-e2b-qat (QAT won benchmark, Jun 2026)
+#   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
+  ["gemma4-e2b-qat"]="google/gemma-4-E2B-it-qat-q4_0-gguf gemma-4-E2B_q4_0-it.gguf"
+  # [BENCHMARK-ONLY] gemma4-12b-qat="google/gemma-4-12B-it-qat-q4_0-gguf gemma-4-12b-it-qat-q4_0.gguf" — dense 12B, offload only, removed Jun 2026
+#   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
   # [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF LFM2.5-VL-450M-Q8_0.gguf"
   # LFM2.5-VL-1.6B-Extract — structured vision extraction, returns JSON not free-form text
@@ -160,7 +166,7 @@ declare -A MMPROJ=(
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-4B-F16.gguf"
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-9B-F16.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF mmproj-F16.gguf mmproj-gemma-4-E4B-F16.gguf"
-  ["gemma4-e2b"]="unsloth/gemma-4-E2B-it-GGUF mmproj-F16.gguf mmproj-gemma-4-E2B-F16.gguf"
+# [REMOVED] gemma4-e2b mmproj — deleted Jun 2026, vision not needed (dedicated VLMs in fleet)
   ["qwen3.5-0.8b"]="unsloth/Qwen3.5-0.8B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-0.8B-F16.gguf"
   # [REMOVED] ministral-3-3b mmproj — removed from fleet May 2026
   # MiniCPM-V 4.6 — mmproj includes SigLIP2-400M vision encoder (1.03 GB F16)
@@ -251,7 +257,9 @@ show_sizes() {
   echo "  qwen3.5-4b            ~1.92 GB  (MoQ-3.75) - Fits in VRAM"
   echo "  qwen3.5-9b           ~3.75 GB  (MoQ-3.6) - Fits in VRAM + mmproj"
   echo "  gemma4-e4b           ~4.63 GB  (Q4_K_M) - Fits in VRAM + mmproj"
-  echo "  gemma4-e2b            ~2.89 GB  (Q4_K_M) - Fits in VRAM"
+  echo "  gemma4-e2b-qat       ~3.2 GB   (Q4_0 QAT) - Text-only, higher quality than PTQ"
+#   [BENCHMARK-ONLY] gemma4-12b-qat - Gemma-4 12B Q4_0 QAT (~6.98 GB) - dense, requires offload. QAT won by 1pt vs PTQ. Removed Jun 2026.
+#   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
   echo "  [REMOVED] nemotron-3-nano-4b — poor quality"
   echo "  lfm2.5-vl-450m        0.22 GB  (Q4_0) - Fits in VRAM, vision/OCR + mmproj"
   echo "  lfm2.5-vl-1.6b-extract 0.70 GB  (Q4_K_M) + 0.82 GB mmproj - Structured vision extraction (JSON), lfm2 arch (upstream llama.cpp only)"
