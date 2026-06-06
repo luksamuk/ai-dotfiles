@@ -1,0 +1,66 @@
+# -------------------------------------------
+# GEMMA-4-26B-A4B-QAT - UPSTREAM BACKEND (llama.cpp)
+# Google Q4_0 Quantization-Aware Training — MoE 26B params, 4B active.
+# QAT won vs PTQ on E2B (10 vs 7/25) — testing on 26B MoE.
+# Upstream backend: --fit on handles compute buffer, --flash-attn on stable.
+# --no-mmproj: text-only (mmproj crashes on CUDA, #21402)
+# --ctx-size 131072: native 262144 too large for 6GB, 131072 fits with --fit on
+# --fit-target 96: leave 96 MiB headroom for system/other processes
+# --fit-ctx 16384: minimum pre-allocated context at startup
+# Dual mode: base (chat, temp 0.7) and :think (reasoning, temp 1.0)
+# head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
+# -------------------------------------------
+"gemma4-26b-a4b-qat-upstream":
+  name: "Gemma 4 26B MoE QAT (upstream)"
+  description: "Gemma 4 26B-A4B with Quantization-Aware Training (Q4_0). MoE reasoning + coding model — upstream llama.cpp backend."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/gemma-4-26B_q4_0-it.gguf
+    --no-mmproj
+    --fit on
+    --fit-target 96
+    --fit-ctx 16384
+    --ctx-size 131072
+    --temp 1.0
+    --top-p 0.95
+    --reasoning on
+    --cache-type-k q4_0
+    --cache-type-v q4_0
+    --flash-attn on
+    --jinja
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+  ttl: 300
+  metadata:
+    size: "~14.4 GB (Q4_0 QAT)"
+    context: "16K-131K (dynamic)"
+    vram_usage: "~5GB VRAM + ~9GB RAM (upstream --fit on auto-offload)"
+    source: "google/gemma-4-26B-A4B-it-qat-q4_0-gguf"
+    kv_cache: "q4_0 + attn_rot"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: gemma4
+    parameters: 25230000000
+    context_length: 262144
+    embedding_length: 2816
+    quantization: Q4_0_QAT
+    warning: "Vision disabled — Gemma 4 mmproj crash on CUDA. Text-only."

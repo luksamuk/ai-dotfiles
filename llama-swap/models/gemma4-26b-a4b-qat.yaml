@@ -1,0 +1,70 @@
+# -------------------------------------------
+# GEMMA-4-26B-A4B-QAT - ik BACKEND (Hadamard KV cache)
+# Google Q4_0 Quantization-Aware Training — MoE 26B params, 4B active.
+# QAT won vs PTQ on E2B (10 vs 7/25) — testing on 26B MoE.
+# ik backend: pinned memory for MoE expert offload, hadamard KV cache.
+# --gpu-layers manual: ik --fit causes OOM on 6GB VRAM for dense/large models.
+# --no-mmproj: text-only (mmproj crashes on CUDA, #21402)
+# --k-cache-hadamard / --v-cache-hadamard: near-fp16 quality with q4_0 cache
+# --flash-attn auto: disable FA on short contexts for savings
+# --defer-experts: defer mmap of experts on Linux → faster model loading
+# --parallel-tool-calls: enables multiple tool calls in single response
+# Dual mode: base (chat, temp 0.7) and :think (reasoning, temp 1.0)
+# head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
+# -------------------------------------------
+"gemma4-26b-a4b-qat":
+  name: "Gemma 4 26B MoE QAT"
+  description: "Gemma 4 26B-A4B with Quantization-Aware Training (Q4_0). MoE reasoning + coding model."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/gemma-4-26B_q4_0-it.gguf
+    --no-mmproj
+    --gpu-layers 24
+    --jinja
+    --parallel-tool-calls
+    --ctx-size ${large_model_max_ctx}
+    --temp 1.0
+    --top-p 0.95
+    --reasoning on
+    --cache-type-k ${gemma_cache_k}
+    --cache-type-v ${gemma_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+  ttl: 300
+  metadata:
+    size: "~14.4 GB (Q4_0 QAT)"
+    context: "64K-128K (dynamic, heavy offload)"
+    vram_usage: "~5GB VRAM + ~9.5GB RAM (24 GPU layers, ik pinned memory)"
+    source: "google/gemma-4-26B-A4B-it-qat-q4_0-gguf"
+    kv_cache: "q4_0 + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: gemma4
+    parameters: 25230000000
+    context_length: 262144
+    embedding_length: 2816
+    quantization: Q4_0_QAT
+    note: "Google QAT checkpoint. MoE 26B/4B active — 24 GPU layers on RTX 3050 6GB. ik --gpu-layers 24, --fit causes OOM. Speed TBD after benchmark."
