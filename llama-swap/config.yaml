@@ -462,7 +462,7 @@ models:
 # Text-only — no mmproj (vision handled by dedicated VLMs in fleet).
 # -------------------------------------------
   "gemma4-e2b":
-    name: "Gemma 4 E2B QAT"
+    name: "Gemma 4 E2B"
     description: "Gemma 4 E2B with Quantization-Aware Training (Q4_0). Official Google checkpoint — higher quality than PTQ at same quant level."
     cmd: |
       ${llama_server} --port ${PORT}
@@ -692,7 +692,7 @@ models:
 # Note: upstream doesn't support --parallel-tool-calls. Jinja template handles tool calling.
 # -------------------------------------------
   "gemma4-26b-a4b":
-    name: "Gemma 4 26B MoE"
+    name: "Gemma 4 26B"
     description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
     cmd: |
       ${llama_server} --port ${PORT}
@@ -757,7 +757,7 @@ models:
 # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
 # Architecture: qwen35moe (Qwen3MoeForCausalLM)
 # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-# --multi-token-prediction: MTP now supported for Qwen3.5-MoE (#1745, v4496+). Use long form (not --mtp).
+# --spec-type mtp:n_max=1,p_min=0.0: MTP now supported for Qwen3.5-MoE. Replaces legacy --multi-token-prediction flag.
 # --fit-margin 768: reserves ~0.75 GiB for desktop (Hyprland+browser+Kitty ~1.1GB idle)
 #   Keeps model at ~80-83% VRAM, more GPU layers than 1536 for faster generation
 #   Tested: densos aguentaram 85% sem issues, MoE should be fine at ~80%
@@ -766,7 +766,7 @@ models:
 # --flash-attn auto: disables FA on short prompts (saves overhead on MoE offloaded models)
 # -------------------------------------------
   "qwen3.6-35b-a3b":
-    name: "Qwen3.6 35B MoE"
+    name: "Qwen 3.6 35B"
     description: "Qwen3.6 delivers substantial upgrades in agentic coding and thinking preservation. Built on direct community feedback for a more intuitive, responsive, and productive coding experience."
     cmd: |
       ${ik_llama_server} --port ${PORT}
@@ -784,7 +784,7 @@ models:
       --reasoning on
       --jinja
       --parallel-tool-calls
-      --multi-token-prediction
+      --spec-type mtp:n_max=1,p_min=0.0
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
       --k-cache-hadamard
@@ -1205,7 +1205,7 @@ models:
 # head_dim=512 → attn_rot ✅ (auto-activates on upstream with quantized cache).
 # -------------------------------------------
   "gemma4-12b":
-    name: "Gemma 4 12B QAT"
+    name: "Gemma 4 12B"
     description: "Gemma 4 12B QAT (Q4_0) — Unified multimodal (vision + audio). Won vs PTQ on ik (25 vs 24/25 Snake). Upstream --fit on for 128K ctx with mmproj."
     cmd: |
       ${llama_server} --port ${PORT}
@@ -2180,7 +2180,7 @@ models:
 # NOTE: --reasoning-format deepseek parses  tags into reasoning_content field
 # -------------------------------------------
   "lfm2.5-8b-a1b":
-    name: "LFM2.5-8B-A1B"
+    name: "LFM 2.5 8B"
     description: "Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Built for fast, reliable tool calling on consumer hardware."
     cmd: |
       ${llama_server} --port ${PORT}
@@ -2300,7 +2300,7 @@ models:
 # RTX 3050 6GB: --fit on with partial offload
 # -------------------------------------------
   "mellum2-12b-a2.5b":
-    name: "Mellum 2 12B MoE"
+    name: "Mellum 2 12B"
     description: "JetBrains coding MoE — 12B total, 2.5B active. Excels at tool use, agentic workflows, code generation and reasoning."
     cmd: |
       ${ik_llama_server} --port ${PORT}
@@ -2547,7 +2547,7 @@ models:
 # KV cache: f16 — embedding models benefit from precision, not compression
 # -------------------------------------------
   "nomic-embed-text-v2-moe":
-    name: "Nomic Embed v2 MoE"
+    name: "Nomic Embed v2"
     description: "Multilingual MoE text embedding model that excels at multilingual retrieval, supporting ~100 languages with state-of-the-art performance at the 300M parameter scale."
     cmd: |
       ${llama_server} --port ${PORT}

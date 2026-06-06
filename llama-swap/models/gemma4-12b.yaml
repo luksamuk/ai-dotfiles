@@ -14,7 +14,7 @@
 # head_dim=512 → attn_rot ✅ (auto-activates on upstream with quantized cache).
 # -------------------------------------------
 "gemma4-12b":
-  name: "Gemma 4 12B QAT"
+  name: "Gemma 4 12B"
   description: "Gemma 4 12B QAT (Q4_0) — Unified multimodal (vision + audio). Won vs PTQ on ik (25 vs 24/25 Snake). Upstream --fit on for 128K ctx with mmproj."
   cmd: |
     ${llama_server} --port ${PORT}
