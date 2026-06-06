@@ -695,6 +695,7 @@ models:
 # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
 # -------------------------------------------
   "gemma4-26b-a4b":
+    unlisted: true
     name: "Gemma 4 26B MoE"
     description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
     cmd: |
@@ -1275,6 +1276,7 @@ models:
 # head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
 # -------------------------------------------
   "gemma4-26b-a4b-qat":
+    unlisted: true
     name: "Gemma 4 26B MoE QAT"
     description: "Gemma 4 26B-A4B with Quantization-Aware Training (Q4_0). MoE reasoning + coding model."
     cmd: |

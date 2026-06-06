@@ -31,7 +31,7 @@
 #   littlelamb-0.3b-tc   - LittleLamb 0.3B Tool-Calling Q8_0 (~0.30 GB) - ultra-light agentic, 40K ctx
 #   webworld-8b          - WebWorld-8B i1-Q5_K_M (~5.9 GB) - web world model, predicts next page state
 #   qwen3.6-35b-a3b      - Qwen3.6-35B-A3B APEX I-Compact (~17.3 GB) - MoE coding + tools
-#   gemma4-26b-a4b       - Gemma 4 26B-A4B APEX I-Compact (~15.5 GB) - MoE reasoning + coding, text-only
+#   gemma4-26b-a4b-qat-upstream - Gemma 4 26B-A4B QAT Q4_0 (~14.4 GB) - MoE reasoning + coding, text-only (upstream)
 #   gpt-oss-20b          - GPT-OSS 20B Q4_K_M (~11 GB) - Dense coding, text-only
 #   [REMOVED] granite-4.0-h-1b-vllm — removed from fleet May 2026
 #   [REMOVED] granite-4.0-h-1b — removed from fleet May 2026
@@ -92,7 +92,8 @@ declare -A MODELS=(
   ["qwen3.6-35b-a3b"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF Qwen3.5-35B-A3B-APEX-I-Compact.gguf Qwen3.6-35B-A3B-APEX-I-Compact.gguf"
   # [REMOVED] granite-4.0-h-1b — removed from fleet May 2026
   ["qwopus-35b"]="mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf"
-  ["gemma4-26b-a4b"]="mudler/gemma-4-26B-A4B-it-APEX-GGUF gemma-4-26B-A4B-APEX-I-Compact.gguf"
+  # [REMOVED] gemma4-26b-a4b APEX I-Compact — superseded by QAT Q4_0 (faster, smaller, same quality)
+  ["gemma4-26b-a4b-qat-upstream"]="google/gemma-4-26B-A4B-it-qat-q4_0-gguf gemma-4-26B_q4_0-it.gguf"
   ["gpt-oss-20b"]="unsloth/gpt-oss-20b-GGUF gpt-oss-20b-Q4_K_M.gguf"
   # [REMOVED] ministral-3-3b — removed from fleet May 2026
   # MiniCPM-V 4.6 — VLM with SigLIP2-400M, Qwen3.5-0.8B backbone, 256K ctx, video+image+text
@@ -272,7 +273,7 @@ show_sizes() {
   # glm-4.7-flash removed
   echo "  qwen3.6-35b-a3b    ~17.30 GB  (APEX I-Compact) - Heavy offload, MoE coding + tools"
   echo "  qwopus-35b        ~16.50 GB  (APEX I-Compact) - Heavy offload, MoE coding+reasoning SFT"
-  echo "  gemma4-26b-a4b    ~15.50 GB  (APEX I-Compact) - Heavy offload, MoE reasoning + coding text-only"
+  echo "  gemma4-26b-a4b-qat-upstream    ~14.40 GB  (QAT Q4_0, upstream) - Heavy offload, MoE reasoning + coding text-only"
   echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"
   echo "  minicpm-v-4.6      ~0.54 GB  (Q5_K_M) + 1.03 GB mmproj - VLM video+image+text, 256K ctx"
   echo "  smolllm3-3b         ~2.06 GB  (UD-Q5_K_XL) - Dense, dual tool-calling (XML+Python), 128K ctx"
@@ -327,7 +328,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, lfm2-24b, webworld-8b, qwen3.6-35b-a3b, qwopus-35b, gemma4-26b-a4b, gpt-oss-20b, qwopus-coder-9b, mellum2-12b-thinking, ornstein-36-35b, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, lfm2-24b, webworld-8b, qwen3.6-35b-a3b, qwopus-35b, gemma4-26b-a4b-qat-upstream, gpt-oss-20b, qwopus-coder-9b, mellum2-12b-thinking, ornstein-36-35b, all"
     exit 1
     ;;
 esac
