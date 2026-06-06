@@ -56,6 +56,7 @@ matrix:
     g4: gemma4-e4b
     # Pesados
     qw36: qwen3.6-35b-a3b
+    g12: gemma4-12b
     qc9: qwopus-coder-9b
     # qwopus: qwopus-35b         # DISABLED: model unlisted
     # gptoss: gpt-oss-20b        # DISABLED: model unlisted
@@ -95,7 +96,7 @@ matrix:
 
     # Modelos pesados - toda VRAM + RAM offload
     # (qwopus, gptoss, lfm2l disabled — models unlisted)
-    heavy: "qw36 | gemma4m | qc9"
+    heavy: "qw36 | gemma4m | g12 | qc9"
 
     # Vision sozinho
     vision_only: "vl"
@@ -107,6 +108,7 @@ matrix:
     qw36: 10     # 35B MoE APEX I-Compact ~17.3GB, heavy offload
     # orn: 9    # DISABLED: Ornstein Q4_K_M too large, needs APEX I-Compact
     qc9: 6      # 9B dense Q4_K_M ~5.6GB, medium startup
+    g12: 7      # 12B dense Q4_0 QAT ~6.5GB, upstream --fit on
     # qwopus: 10   # DISABLED: model unlisted
     # gptoss: 8    # DISABLED: model unlisted
     # lfm2l: 9    # DISABLED: model unlisted

@@ -444,7 +444,7 @@ models:
         completion: true
         tools: true
         thinking: true
-        vision: true
+        vision: false
         embedding: false
         insert: false
         audio: false
@@ -454,7 +454,7 @@ models:
       context_length: 131072
       embedding_length: 2560
       quantization: Q4_K_M
-      note: "Upgraded from UD-Q3_K_XL → Q4_K_M. ~3% PPL improvement at +0.36GB cost. Tightest VRAM model — monitor with mmproj."
+      note: "Upgraded from UD-Q3_K_XL → Q4_K_M. Text-only (no mmproj). Tightest VRAM model — adding mmproj reduces ctx."
 # -------------------------------------------
 # GEMMA-4-E2B-QAT - Q4_0 Quantization-Aware Training
 # Google official QAT checkpoint: trained with quantization simulation,
@@ -1190,38 +1190,38 @@ models:
       quantization: UD-Q3_K_XL
       note: "Dense 4.5B by Arcee AI. No native thinking. Tool calling requires Hermes 2 Pro template override via --chat-template-file. Uses upstream (ik/Bee lack arcee arch support)."
 # -------------------------------------------
-# GEMMA-4-12B-QAT - ik BACKEND (Hadamard KV cache)
+# GEMMA-4-12B-QAT - UPSTREAM BACKEND (--fit on, UNIFIED MULTIMODAL)
 # Google Q4_0 Quantization-Aware Training — dense 12B params.
 # Won benchmark vs PTQ on ik: 25 vs 24/25 Snake (speed progression bonus).
-# ik commit 6b9de3db+ required (head_dim 512 support).
-# --gpu-layers 24: ik --fit causes OOM (compute buffer), manual GPU layers needed.
-# --no-mmproj: text-only (dense 12B needs all VRAM for text layers).
-# --k-cache-hadamard / --v-cache-hadamard: near-fp16 quality with q4_0 cache.
-# --flash-attn auto: disable FA on short contexts for savings.
-# Dual mode: base (chat, no think) and :think (reasoning)
+# Migrated from ik to upstream: ik --gpu-layers 24 OOMs on compute buffer
+# with ctx-size > 16K. Upstream --fit on handles compute buffer automatically.
+# UNIFIED MULTIMODAL: mmproj loads vision+audio projector (~168 MB QAT).
+# Speed impact: -8% with mmproj (9.2 vs 10.0 tok/s). Worth it for multimodal.
+# Upstream doesn't have --parallel-tool-calls. Jinja template handles tool calling.
+# --fit on + --fit-target 768: leave 768 MiB headroom for desktop use.
+# --fit-ctx 8192: minimum pre-allocated context at startup.
+# --flash-attn on: stable on upstream for gemma4 dense.
+# --reasoning on: dual mode base (chat, temp 0.7) and :think (reasoning, temp 1.2).
+# head_dim=512 → attn_rot ✅ (auto-activates on upstream with quantized cache).
 # -------------------------------------------
   "gemma4-12b":
     name: "Gemma 4 12B QAT"
-    description: "Gemma 4 12B with Quantization-Aware Training (Q4_0). Won vs PTQ on ik (25 vs 24/25 Snake, speed progression bonus)."
+    description: "Gemma 4 12B QAT (Q4_0) — Unified multimodal (vision + audio). Won vs PTQ on ik (25 vs 24/25 Snake). Upstream --fit on for 128K ctx with mmproj."
     cmd: |
-      ${ik_llama_server} --port ${PORT}
+      ${llama_server} --port ${PORT}
       --model ${models_dir}/gemma-4-12b-it-qat-q4_0.gguf
-      --no-mmproj
-      --gpu-layers 24
+      --mmproj ${models_dir}/mmproj-gemma-4-12b-it-qat-q4_0.gguf
+      --fit on
+      --fit-target 768
+      --fit-ctx 8192
+      --ctx-size 131072
       --jinja
-      --parallel-tool-calls
-      --ctx-size ${small_model_max_ctx}
-      --temp 0.7
-      --top-p 0.9
-      --top-k 40
-      --min-p 0.01
-      --repeat-penalty 1.0
       --reasoning on
-      --cache-type-k ${gemma_cache_k}
-      --cache-type-v ${gemma_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --flash-attn on
+      --min-p 0.01
+      --repeat-penalty 1.05
       --metrics
     filters:
       stripParams: "temperature, top_p"
@@ -1234,30 +1234,29 @@ models:
         "${MODEL_ID}:think":
           chat_template_kwargs:
             enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
+          temperature: 1.2
+          top_p: 0.95
+    ttl: 300
     metadata:
-      size: "~6.5 GB (Q4_0 QAT)"
-      context: "64K-128K (dynamic)"
-      vram_usage: "~5GB VRAM + ~1.5GB RAM offload (24 GPU layers)"
+      size: "~6.7 GB (Q4_0 QAT + 168 MB mmproj)"
+      context: "8K-128K (dynamic)"
+      vram_usage: "~5GB VRAM + ~354 MB mmproj (upstream --fit on)"
       source: "google/gemma-4-12B-it-qat-q4_0-gguf"
-      kv_cache: "q4_0 + hadamard"
+      kv_cache: "q4_0 + attn_rot"
       features:
         completion: true
         tools: true
         thinking: true
-        vision: false
+        vision: true
         embedding: false
         insert: false
-        audio: false
-        image: false
+        audio: true
+        image: true
       architecture: gemma4
       parameters: 12000000000
       context_length: 262144
       embedding_length: 3072
       quantization: Q4_0_QAT
-      note: "Google QAT checkpoint. Dense 12B — 24 GPU layers on RTX 3050 6GB (~83% VRAM). ik --gpu-layers 24, --fit causes OOM. Speed: ~8.5 tok/s."
 # -------------------------------------------
 # GEMMA-4-26B-A4B - MoE REASONING + CODING (APEX I-Compact)
 # MoE 26B params, 4B ativo por token. 128 experts, top-8 routing.
@@ -3560,6 +3559,7 @@ matrix:
     g4: gemma4-e4b
     # Pesados
     qw36: qwen3.6-35b-a3b
+    g12: gemma4-12b
     qc9: qwopus-coder-9b
     # qwopus: qwopus-35b         # DISABLED: model unlisted
     # gptoss: gpt-oss-20b        # DISABLED: model unlisted
@@ -3599,7 +3599,7 @@ matrix:
 
     # Modelos pesados - toda VRAM + RAM offload
     # (qwopus, gptoss, lfm2l disabled — models unlisted)
-    heavy: "qw36 | gemma4m | qc9"
+    heavy: "qw36 | gemma4m | g12 | qc9"
 
     # Vision sozinho
     vision_only: "vl"
@@ -3611,6 +3611,7 @@ matrix:
     qw36: 10     # 35B MoE APEX I-Compact ~17.3GB, heavy offload
     # orn: 9    # DISABLED: Ornstein Q4_K_M too large, needs APEX I-Compact
     qc9: 6      # 9B dense Q4_K_M ~5.6GB, medium startup
+    g12: 7      # 12B dense Q4_0 QAT ~6.5GB, upstream --fit on
     # qwopus: 10   # DISABLED: model unlisted
     # gptoss: 8    # DISABLED: model unlisted
     # lfm2l: 9    # DISABLED: model unlisted

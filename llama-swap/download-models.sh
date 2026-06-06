@@ -72,6 +72,8 @@ declare -A MODELS=(
 #   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
   ["gemma4-e2b"]="google/gemma-4-E2B-it-qat-q4_0-gguf gemma-4-E2B_q4_0-it.gguf"
   ["gemma4-12b"]="google/gemma-4-12B-it-qat-q4_0-gguf gemma-4-12b-it-qat-q4_0.gguf"
+  # mmproj for 12B Unified (vision+audio projector, ~168 MB)
+  ["gemma4-12b-mmproj"]="google/gemma-4-12B-it-qat-q4_0-gguf mmproj-gemma-4-12b-it-qat-q4_0.gguf"
 #   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
   # [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF LFM2.5-VL-450M-Q8_0.gguf"
@@ -259,7 +261,7 @@ show_sizes() {
   echo "  qwen3.5-9b           ~3.75 GB  (MoQ-3.6) - Fits in VRAM + mmproj"
   echo "  gemma4-e4b           ~4.63 GB  (Q4_K_M) - Fits in VRAM + mmproj"
   echo "  gemma4-e2b       ~3.2 GB   (Q4_0 QAT) - Text-only, higher quality than PTQ"
-  gemma4-12b          ~6.50 GB  (Q4_0 QAT) - Dense 12B, ik backend, 24 GPU layers offload
+  gemma4-12b          ~6.67 GB  (Q4_0 QAT + mmproj) - Dense 12B, upstream --fit on, unified multimodal
 #   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
   echo "  [REMOVED] nemotron-3-nano-4b — poor quality"
   echo "  lfm2.5-vl-450m        0.22 GB  (Q4_0) - Fits in VRAM, vision/OCR + mmproj"

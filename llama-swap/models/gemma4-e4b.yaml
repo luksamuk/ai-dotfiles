@@ -52,7 +52,7 @@
       completion: true
       tools: true
       thinking: true
-      vision: true
+      vision: false
       embedding: false
       insert: false
       audio: false
@@ -62,5 +62,5 @@
     context_length: 131072
     embedding_length: 2560
     quantization: Q4_K_M
-      # vision: disabled — mmproj crashes on CUDA (issue #21402)
-    note: "Upgraded from UD-Q3_K_XL → Q4_K_M. ~3% PPL improvement at +0.36GB cost. Tightest VRAM model — monitor with mmproj."
+      # vision: disabled — no mmproj loaded (text-only). mmproj available on HF (~980 MB F16) but not downloaded.
+    note: "Upgraded from UD-Q3_K_XL → Q4_K_M. Text-only (no mmproj). Tightest VRAM model — adding mmproj reduces ctx."
