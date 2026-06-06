@@ -1,0 +1,69 @@
+# -------------------------------------------
+# GEMMA-4-12B-QAT - ik BACKEND (Hadamard KV cache)
+# Google Q4_0 Quantization-Aware Training — dense 12B params.
+# Won benchmark vs PTQ on ik: 25 vs 24/25 Snake (speed progression bonus).
+# ik commit 6b9de3db+ required (head_dim 512 support).
+# --gpu-layers 24: ik --fit causes OOM (compute buffer), manual GPU layers needed.
+# --no-mmproj: text-only (dense 12B needs all VRAM for text layers).
+# --k-cache-hadamard / --v-cache-hadamard: near-fp16 quality with q4_0 cache.
+# --flash-attn auto: disable FA on short contexts for savings.
+# Dual mode: base (chat, no think) and :think (reasoning)
+# -------------------------------------------
+"gemma4-12b-qat":
+  name: "Gemma 4 12B QAT"
+  description: "Gemma 4 12B with Quantization-Aware Training (Q4_0). Won vs PTQ on ik (25 vs 24/25 Snake, speed progression bonus)."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/gemma-4-12b-it-qat-q4_0.gguf
+    --no-mmproj
+    --gpu-layers 24
+    --jinja
+    --parallel-tool-calls
+    --ctx-size ${small_model_max_ctx}
+    --temp 0.7
+    --top-p 0.9
+    --top-k 40
+    --min-p 0.01
+    --repeat-penalty 1.0
+    --reasoning on
+    --cache-type-k ${gemma_cache_k}
+    --cache-type-v ${gemma_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 60
+  metadata:
+    size: "~6.5 GB (Q4_0 QAT)"
+    context: "64K-128K (dynamic)"
+    vram_usage: "~5GB VRAM + ~1.5GB RAM offload (24 GPU layers)"
+    source: "google/gemma-4-12B-it-qat-q4_0-gguf"
+    kv_cache: "q4_0 + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: gemma4
+    parameters: 12000000000
+    context_length: 262144
+    embedding_length: 3072
+    quantization: Q4_0_QAT
+    note: "Google QAT checkpoint. Dense 12B — 24 GPU layers on RTX 3050 6GB (~83% VRAM). ik --gpu-layers 24, --fit causes OOM. Speed: ~8.5 tok/s."
