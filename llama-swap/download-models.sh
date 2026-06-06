@@ -41,7 +41,7 @@
 #   ds-r1-distill-32b    - [REMOVED] Dense 32B, very slow on limited VRAM
 #   qwopus-35b           - Qwopus3.6-35B-A3B-v1 APEX I-Compact (~16.5 GB) - MoE coding+reasoning SFT
 #   [REMOVED] qwen3.5-9b-ace — superseded by Qwopus for agentic tasks
-#   nanbeige4.1-3b       - Nanbeige4.1-3B Q4_K_M (~1.8 GB) - dense reasoning + agentic coding, always thinks
+#   [REMOVED] nanbeige4.1-3b — multi-turn tool calling broken (#22684), GGUF deleted
 #   all                  - Download all models
 #
 # If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
@@ -146,7 +146,7 @@ declare -A MODELS=(
   # ALWAYS THINKS (no :think toggle) — uses think/end_think format (same as Qwen3)
   # Tool calling uses XML func_call tags — NOT OpenAI-compatible JSON
   # head_dim=128 → attn_rot ✅, vocab 166K (larger than Qwen3.5's 151K)
-  ["nanbeige4.1-3b"]="DevQuasar/Nanbeige.Nanbeige4.1-3B-GGUF Nanbeige.Nanbeige4.1-3B.Q4_K_M.gguf Nanbeige4.1-3B-Q4_K_M.gguf"
+  # [REMOVED] nanbeige4.1-3b — multi-turn tool calling broken (#22684), GGUF deleted
   # Mellum2-12B-A2.5B-Thinking — JetBrains MoE 12B/2.5B, reasoning + tool calling
   # Architecture: Qwen3-MoE derivative (MellumForCausalLM alias registered in ik)
   # MANUAL CONVERSION (2026-06-01): no community GGUF available yet
@@ -289,7 +289,6 @@ show_sizes() {
   echo "  qwen3.5-4b-abliterated   ~2.71 GB  (i1-Q4_K_M) - Abliterated Qwen3.5-4B, no refusal"
   echo "  glm-ocr             ~0.95 GB  (Q8_0) + 0.48 GB mmproj - OCR/document specialist"
   echo "  nomic-embed-text-v2-moe  ~0.33 GB  (Q4_K_M) - Embedding, RAG/search/similarity"
-  echo "  nanbeige4.1-3b       ~1.80 GB  (Q4_K_M) - Dense 3B, always thinks, XML tool calls (⚠️ multi-turn broken, #22684)"
   echo "  mellum2-12b-thinking  ~7.60 GB  (Q4_K_M) - JetBrains MoE 12B/2.5B, reasoning + tools (manual conversion)"
   echo "  ornstein-36-35b       ~21.70 GB (Q4_K_M) - Qwen3.6-35B NSC-ACE-SABER fine-tune, +2.87pp BFCL (test only)"
   echo ""
