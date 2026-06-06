@@ -253,168 +253,49 @@
                 "baseURL": "http://127.0.0.1:12434/v1"
             },
             "models": {
-                "gemma4-e2b": {
-                    "name": "Gemma 4 Efficient 2B",
+                "gemma4-12b": {
+                    "name": "Gemma 4 12B Unified",
                     "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
                     "modalities": {
                         "input": [
-                            "text"
+                            "text",
+                            "image"
                         ],
                         "output": [
                             "text"
                         ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "gemma4-e2b:think": {
-                    "name": "Gemma 4 Efficient 2B \ud83e\udde0",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "gemma4-e4b": {
-                    "name": "Gemma 4 Efficient 4B",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "gemma4-e4b:think": {
-                    "name": "Gemma 4 Efficient 4B \ud83e\udde0",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "qwen3.5-4b": {
-                    "name": "Qwen 3.5 4B",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "qwen3.5-4b:think": {
-                    "name": "Qwen 3.5 4B \ud83e\udde0",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "qwen3.6-35b-a3b": {
-                    "name": "Qwen 3.6 35B MoE",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
                     },
                     "capabilities": [
                         "tools"
                     ],
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
                     }
                 },
-                "qwen3.6-35b-a3b:think": {
-                    "name": "Qwen 3.6 35B MoE \ud83e\udde0",
+                "gemma4-12b:think": {
+                    "name": "Gemma 4 12B Unified 🧠",
                     "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
                     "modalities": {
                         "input": [
-                            "text"
+                            "text",
+                            "image"
                         ],
                         "output": [
                             "text"
                         ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
                     }
                 },
                 "gemma4-26b-a4b": {
                     "name": "Gemma 4 26B MoE",
                     "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
                     "modalities": {
                         "input": [
                             "text"
@@ -422,18 +303,18 @@
                         "output": [
                             "text"
                         ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
                     }
                 },
                 "gemma4-26b-a4b:think": {
-                    "name": "Gemma 4 26B MoE \ud83e\udde0",
+                    "name": "Gemma 4 26B MoE 🧠",
                     "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
                     "modalities": {
                         "input": [
                             "text"
@@ -441,55 +322,284 @@
                         "output": [
                             "text"
                         ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
                     }
                 },
-                "gemma4-12b": {
-                    "name": "Gemma 4 12B Unified",
+                "gemma4-e2b": {
+                    "name": "Gemma 4 E2B",
                     "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
                     "modalities": {
                         "input": [
-                            "text",
-                            "image"
+                            "text"
                         ],
                         "output": [
                             "text"
                         ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
                     }
                 },
-                "gemma4-12b:think": {
-                    "name": "Gemma 4 12B Unified \ud83e\udde0",
+                "gemma4-e2b:think": {
+                    "name": "Gemma 4 E2B 🧠",
                     "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
                     "modalities": {
                         "input": [
-                            "text",
-                            "image"
+                            "text"
                         ],
                         "output": [
                             "text"
                         ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "gemma4-e4b": {
+                    "name": "Gemma 4 E4B",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "gemma4-e4b:think": {
+                    "name": "Gemma 4 E4B 🧠",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "gpt-oss-20b": {
+                    "name": "GPT-OSS 20B",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "lfm2.5-8b-a1b": {
+                    "name": "LFM 2.5 8B MoE",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 128000,
+                        "output": 32768
+                    }
+                },
+                "lfm2.5-8b-a1b:think": {
+                    "name": "LFM 2.5 8B MoE 🧠",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 128000,
+                        "output": 32768
+                    }
+                },
+                "littlelamb-0.3b-tc": {
+                    "name": "LittleLamb 0.3B TC",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 40960,
+                        "output": 8192
+                    }
+                },
+                "littlelamb-0.3b-tc:think": {
+                    "name": "LittleLamb 0.3B TC 🧠",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 40960,
+                        "output": 8192
+                    }
+                },
+                "mellum2-12b-a2.5b": {
+                    "name": "Mellum 2 12B MoE",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "mellum2-12b-a2.5b:think": {
+                    "name": "Mellum 2 12B MoE 🧠",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 131072,
+                        "output": 32768
+                    }
+                },
+                "nanbeige4.1-3b": {
+                    "name": "Nanbeige 4.1 3B",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
+                    }
+                },
+                "qwen3.5-4b": {
+                    "name": "Qwen 3.5 4B",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
+                    }
+                },
+                "qwen3.5-4b:think": {
+                    "name": "Qwen 3.5 4B 🧠",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
                     }
                 },
                 "qwen3.5-4b-abliterated": {
                     "name": "Qwen 3.5 4B Abliterated",
                     "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
                     "modalities": {
                         "input": [
                             "text"
@@ -500,15 +610,15 @@
                     },
                     "capabilities": [
                         "tools"
-                    ]
+                    ],
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
+                    }
                 },
                 "qwen3.5-4b-abliterated:think": {
-                    "name": "Qwen 3.5 4B Abliterated \ud83e\udde0",
+                    "name": "Qwen 3.5 4B Abliterated 🧠",
                     "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
                     "modalities": {
                         "input": [
                             "text"
@@ -519,110 +629,15 @@
                     },
                     "capabilities": [
                         "tools"
-                    ]
-                },
-                "mellum2-12b-a2.5b": {
-                    "name": "Mellum 2 12B MoE",
-                    "reasoning": true,
+                    ],
                     "limit": {
-                        "context": 131072,
+                        "context": 262144,
                         "output": 32768
-                    },
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "mellum2-12b-a2.5b:think": {
-                    "name": "Mellum 2 12B MoE \ud83e\udde0",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "lfm2.5-8b-a1b": {
-                    "name": "LFM2.5 8B MoE",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "lfm2.5-8b-a1b:think": {
-                    "name": "LFM2.5 8B MoE \ud83e\udde0",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "gpt-oss-20b": {
-                    "name": "GPT-OSS 20B",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
+                    }
                 },
                 "qwen3.5-9b": {
                     "name": "Qwen 3.5 9B",
                     "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
                     "modalities": {
                         "input": [
                             "text"
@@ -633,15 +648,15 @@
                     },
                     "capabilities": [
                         "tools"
-                    ]
+                    ],
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
+                    }
                 },
                 "qwen3.5-9b:think": {
-                    "name": "Qwen 3.5 9B \ud83e\udde0",
+                    "name": "Qwen 3.5 9B 🧠",
                     "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
                     "modalities": {
                         "input": [
                             "text"
@@ -652,15 +667,53 @@
                     },
                     "capabilities": [
                         "tools"
-                    ]
+                    ],
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
+                    }
+                },
+                "qwen3.6-35b-a3b": {
+                    "name": "Qwen 3.6 35B MoE",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
+                    }
+                },
+                "qwen3.6-35b-a3b:think": {
+                    "name": "Qwen 3.6 35B MoE 🧠",
+                    "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
+                    }
                 },
                 "qwopus-coder-9b": {
                     "name": "Qwopus 9B Coder",
                     "reasoning": true,
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    },
                     "modalities": {
                         "input": [
                             "text"
@@ -671,45 +724,30 @@
                     },
                     "capabilities": [
                         "tools"
-                    ]
+                    ],
+                    "limit": {
+                        "context": 262144,
+                        "output": 32768
+                    }
                 },
                 "qwopus-coder-9b:think": {
-                    "name": "Qwopus 9B Coder \ud83e\udde0",
+                    "name": "Qwopus 9B Coder 🧠",
                     "reasoning": true,
+                    "modalities": {
+                        "input": [
+                            "text"
+                        ],
+                        "output": [
+                            "text"
+                        ]
+                    },
+                    "capabilities": [
+                        "tools"
+                    ],
                     "limit": {
-                        "context": 131072,
+                        "context": 262144,
                         "output": 32768
-                    },
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
-                },
-                "littlelamb-0.3b-tc": {
-                    "name": "LittleLamb 0.3B TC",
-                    "reasoning": false,
-                    "limit": {
-                        "context": 40960,
-                        "output": 8192
-                    },
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ]
+                    }
                 }
             }
         }
@@ -718,8 +756,8 @@
         "plan": {
             "model": "ollama/glm-5.1:cloud",
             "temperature": 0.3,
-            "description": "Strategic planning and architecture. Analyzes requirements, proposes solutions, creates roadmaps. Read-only \u2014 cannot modify code.",
-            "prompt": "You are a strategic planning agent. Analyze the codebase, understand requirements, and create detailed implementation plans. You do NOT write or edit code \u2014 you only read, analyze, and plan. When you identify work needed, describe it precisely so the build or fix agent can execute. Always consider: project structure, existing patterns, dependencies, risks, and edge cases.",
+            "description": "Strategic planning and architecture. Analyzes requirements, proposes solutions, creates roadmaps. Read-only — cannot modify code.",
+            "prompt": "You are a strategic planning agent. Analyze the codebase, understand requirements, and create detailed implementation plans. You do NOT write or edit code — you only read, analyze, and plan. When you identify work needed, describe it precisely so the build or fix agent can execute. Always consider: project structure, existing patterns, dependencies, risks, and edge cases.",
             "permission": {
                 "read": "allow",
                 "write": "deny",
@@ -730,7 +768,7 @@
         "build": {
             "model": "ollama/glm-5.1:cloud",
             "temperature": 0.3,
-            "description": "Primary coding agent. Full implementation capabilities \u2014 writing, editing, testing code with unrestricted repository and shell access.",
+            "description": "Primary coding agent. Full implementation capabilities — writing, editing, testing code with unrestricted repository and shell access.",
             "prompt": "You are a senior software engineer. Implement features and create new code following the plan specifications exactly. Match existing code style and patterns. Always handle errors, validate inputs, and use types properly. No hardcoded secrets, no TODO/FIXME left behind. Before writing, read similar files to understand conventions.",
             "permission": {
                 "read": "allow",
@@ -755,7 +793,7 @@
             "model": "ollama/minimax-m3:cloud",
             "temperature": 1.0,
             "description": "Code review and quality analysis. Reviews changes for correctness, best practices, security, and maintainability. Read-only.",
-            "prompt": "You are a senior code reviewer. Analyze code for: correctness, edge cases, error handling, security issues, performance problems, and adherence to project patterns. Be specific \u2014 cite file, line, and what should change. Classify issues as critical/warning/suggestion. Do NOT modify any files.",
+            "prompt": "You are a senior code reviewer. Analyze code for: correctness, edge cases, error handling, security issues, performance problems, and adherence to project patterns. Be specific — cite file, line, and what should change. Classify issues as critical/warning/suggestion. Do NOT modify any files.",
             "permission": {
                 "read": "allow",
                 "write": "deny",
@@ -767,7 +805,7 @@
             "model": "ollama/kimi-k2.6:cloud",
             "temperature": 0.3,
             "description": "Deep research and investigation. Explores codebases, documentation, and external sources to gather information. Read-only analysis.",
-            "prompt": "You are a research agent. Investigate codebases, trace dependencies, understand data flows, and identify risks. Search the web for documentation and best practices when needed. Provide comprehensive analysis with evidence. You do NOT write or modify any code \u2014 only investigate and report.",
+            "prompt": "You are a research agent. Investigate codebases, trace dependencies, understand data flows, and identify risks. Search the web for documentation and best practices when needed. Provide comprehensive analysis with evidence. You do NOT write or modify any code — only investigate and report.",
             "permission": {
                 "read": "allow",
                 "write": "deny",
@@ -779,7 +817,7 @@
             "model": "ollama/glm-5.1:cloud",
             "temperature": 0.3,
             "description": "Creative exploration and ideation. Generates alternative approaches, explores design options, and helps with architecture decisions. Read-only.",
-            "prompt": "You are a creative exploration agent. Think freely about alternative approaches, design patterns, and architectural decisions. Consider trade-offs between approaches. There are no wrong answers here \u2014 only ideas to evaluate. Challenge assumptions and propose unconventional solutions. You do NOT modify any code.",
+            "prompt": "You are a creative exploration agent. Think freely about alternative approaches, design patterns, and architectural decisions. Consider trade-offs between approaches. There are no wrong answers here — only ideas to evaluate. Challenge assumptions and propose unconventional solutions. You do NOT modify any code.",
             "permission": {
                 "read": "allow",
                 "write": "deny",
@@ -791,7 +829,7 @@
             "model": "ollama/kimi-k2.6:cloud",
             "temperature": 0.3,
             "description": "Debug agent with runtime instrumentation. Starts a debug server, instruments code with language-appropriate HTTP calls, captures runtime data, and pinpoints root causes.",
-            "prompt": "You are a debug specialist using runtime instrumentation. Your workflow:\n\n1. Call debug_start to launch the capture server\n2. Read the relevant code and form multiple hypotheses about the bug\n3. Instrument code with HTTP POST calls to the debug server \u2014 ADAPT THE INSTRUMENTATION TO THE PROJECT'S LANGUAGE:\n   - Python: use requests.post() or urllib.request \u2014 e.g. requests.post('http://localhost:PORT/debug', json={'label': '...', 'data': {...}})\n   - JavaScript/TypeScript: use fetch() \u2014 e.g. fetch('http://localhost:PORT/debug', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({label: '...', data: {...}})}).catch(() => {})\n   - Rust: use ureq::post('http://localhost:PORT/debug').send_json(ureq::json!({'label': '...', 'data': {...})) \u2014 add ureq as a dev-dependency temporarily\n   - Go: use http.Post('http://localhost:PORT/debug', 'application/json', bytes.NewReader(jsonData))\n   - Always wrap instrumentation in error suppression so debug calls never affect production behavior\n4. Ask the user to reproduce the issue\n5. Call debug_read to analyze captured data \u2014 look for unexpected values, wrong control flow, missing state\n6. Apply a minimal targeted fix\n7. Ask the user to verify the fix\n8. Call debug_stop and REMOVE all instrumentation code\n9. If the fix doesn't work, add more instrumentation and repeat\n\nCRITICAL RULES:\n- NEVER use fetch() in non-JS projects. Detect the project language first.\n- Always clean up instrumentation after debugging.\n- Prefer the smallest possible change that fixes the bug.\n- If root cause is unclear, request more instrumentation before guessing.",
+            "prompt": "You are a debug specialist using runtime instrumentation. Your workflow:\n\n1. Call debug_start to launch the capture server\n2. Read the relevant code and form multiple hypotheses about the bug\n3. Instrument code with HTTP POST calls to the debug server — ADAPT THE INSTRUMENTATION TO THE PROJECT'S LANGUAGE:\n   - Python: use requests.post() or urllib.request — e.g. requests.post('http://localhost:PORT/debug', json={'label': '...', 'data': {...}})\n   - JavaScript/TypeScript: use fetch() — e.g. fetch('http://localhost:PORT/debug', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({label: '...', data: {...}})}).catch(() => {})\n   - Rust: use ureq::post('http://localhost:PORT/debug').send_json(ureq::json!({'label': '...', 'data': {...})) — add ureq as a dev-dependency temporarily\n   - Go: use http.Post('http://localhost:PORT/debug', 'application/json', bytes.NewReader(jsonData))\n   - Always wrap instrumentation in error suppression so debug calls never affect production behavior\n4. Ask the user to reproduce the issue\n5. Call debug_read to analyze captured data — look for unexpected values, wrong control flow, missing state\n6. Apply a minimal targeted fix\n7. Ask the user to verify the fix\n8. Call debug_stop and REMOVE all instrumentation code\n9. If the fix doesn't work, add more instrumentation and repeat\n\nCRITICAL RULES:\n- NEVER use fetch() in non-JS projects. Detect the project language first.\n- Always clean up instrumentation after debugging.\n- Prefer the smallest possible change that fixes the bug.\n- If root cause is unclear, request more instrumentation before guessing.",
             "permission": {
                 "read": "allow",
                 "write": "allow",

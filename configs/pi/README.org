@@ -1,6 +1,6 @@
 * Pi Coding Agent — Configs
 
-Configurações para o [[https://github.com/badlogic/pi-mono][Pi Coding Agent]], assistente de código AI via CLI.
+Configurações para o [[https://pi.dev/][Pi Coding Agent]], assistente de código AI via CLI.
 
 O Pi é um agente de codificação no terminal que suporta múltiplos providers (Ollama, llama.cpp/Serve, servers remotos), tool-calling, raciocínio (= :think =) e compação de contexto. Repositório: [[https://github.com/badlogic/pi-mono][github.com/badlogic/pi-mono]].
 
@@ -9,9 +9,9 @@ O Pi é um agente de codificação no terminal que suporta múltiplos providers 
 | Arquivo              | Destino                        | Descrição                                  |
 |----------------------+--------------------------------+--------------------------------------------|
 | =models.json=        | =~/.pi/agent/models.json=      | Providers, modelos e compatibility flags   |
-| =settings.json=      | =~/.pi/agent/settings.json=   | Modelo padrão, compação, pacotes           |
-| =auth.json=          | =~/.pi/agent/auth.json=       | Credenciais — **NÃO commit**               |
-| =mcp.json=           | =~/.pi/agent/mcp.json=        | Servidores MCP (DuckDuckGo, SearXNG)       |
+| =settings.json=      | =~/.pi/agent/settings.json=    | Modelo padrão, compação, pacotes           |
+| =auth.json=          | =~/.pi/agent/auth.json=        | Credenciais — **NÃO commit**               |
+| =mcp.json=           | =~/.pi/agent/mcp.json=         | Servidores MCP (DuckDuckGo, SearXNG)       |
 | =extensions/latency= | =~/.pi/agent/extensions/=     | Extensão de medição de latência por modelo |
 
 ** Sync
@@ -35,49 +35,84 @@ cp -r ~/git/ai-dotfiles/configs/pi/extensions ~/.pi/agent/extensions
 | Provider     | baseUrl                        | Porta  | Descrição                                  |
 |--------------+--------------------------------+--------+--------------------------------------------|
 | =ollama=     | =http://127.0.0.1:11434/v1=   |  11434 | Modelos cloud via Ollama                   |
-| =llama.cpp=  | =http://127.0.0.1:12434/v1=   |  12434 | Modelos locais via llama-swap/llama.cpp    |
+| =llama-swap= | =http://127.0.0.1:12434/v1=   |  12434 | Modelos locais via llama-swap/llama.cpp    |
 | =sisyphus=   | =http://192.168.3.8:8081/v1=  |   8081 | Modelos edge no servidor caseiro (Sisyphus)|
 
 Notas:
 - =ollama= usa =supportsDeveloperRole: false= e =supportsReasoningEffort: false= (API Ollama não suporta features OpenAI-specific)
-- =llama.cpp= usa =thinkingFormat: "qwen-chat-template"= (requer =chat_template_kwargs.enable_thinking= no llama.cpp)
+- =llama-swap= usa =thinkingFormat: "qwen-chat-template"= (requer =chat_template_kwargs.enable_thinking= no llama.cpp)
 - =sisyphus= não precisa de API key (=not-needed=)
 
-** Modelos Cloud (Ollama) — 13 modelos
+** Modelos Cloud (Ollama) — 14 modelos
 
 | Model ID                      | Nome                          | Contexto | Visão |
 |-------------------------------+-------------------------------+----------+-------|
-| =deepseek-v4-flash:cloud=      | ☁️ DeepSeek V4 Flash          |      1M  | não   |
-| =deepseek-v4-pro:cloud=        | ☁️ DeepSeek V4 Pro            |      1M  | não   |
-| =gemini-3-flash-preview:cloud= | ☁️ Gemini 3 Flash Preview    |      1M  | sim   |
-| =gemma4:31b-cloud=             | ☁️ Gemma 4 31B               |    262K  | sim   |
-| =glm-5.1:cloud=                | ☁️ GLM 5.1                   |    202K  | não   |
-| =glm-5:cloud=                  | ☁️ GLM 5                     |    202K  | não   |
-| =kimi-k2.6:cloud=              | ☁️ Kimi K2.6                |    262K  | sim   |
-| =kimi-k2.5:cloud=              | ☁️ Kimi K2.5                |    262K  | sim   |
-| =minimax-m2.5:cloud=           | ☁️ MiniMax M2.5             |    205K  | não   |
-| =minimax-m2.7:cloud=           | ☁️ MiniMax M2.7 1M          |      1M  | não   |
-| =nemotron-3-super:cloud=       | ☁️ Nemotron 3 Super          |    262K  | não   |
-| =nemotron-3-nano:30b-cloud=    | ☁️ Nemotron 3 Nano 30B 1M   |      1M  | não   |
-| =qwen3.5:cloud=                | ☁️ Qwen 3.5 397B            |    262K  | sim   |
+| =deepseek-v4-flash:cloud=      | DeepSeek V4 Flash          |      1M  | não   |
+| =deepseek-v4-pro:cloud=        | DeepSeek V4 Pro            |      1M  | não   |
+| =gemini-3-flash-preview:cloud= | Gemini 3 Flash Preview     |      1M  | sim   |
+| =gemma4:31b-cloud=             | Gemma 4 31B                |    262K  | sim   |
+| =glm-5.1:cloud=                | GLM 5.1                    |    202K  | não   |
+| =glm-5:cloud=                  | GLM 5                      |    202K  | não   |
+| =kimi-k2.6:cloud=              | Kimi K2.6                  |    262K  | sim   |
+| =kimi-k2.5:cloud=              | Kimi K2.5                  |    262K  | sim   |
+| =minimax-m2.5:cloud=           | MiniMax M2.5               |    205K  | não   |
+| =minimax-m2.7:cloud=           | MiniMax M2.7 1M            |      1M  | não   |
+| =minimax-m3:cloud=             | MiniMax M3                 |    524K  | sim   |
+| =nemotron-3-super:cloud=       | Nemotron 3 Super           |    262K  | não   |
+| =nemotron-3-nano:30b-cloud=    | Nemotron 3 Nano 30B 1M     |      1M  | não   |
+| =qwen3.5:cloud=                | Qwen 3.5 397B              |    262K  | sim   |
 
-** Modelos Locais (llama.cpp) — 17 modelos
+** Modelo Locais (llama-swap) — 22 modelos base + 16 variantes :think
 
-| Model ID                         | Nome                              | Contexto | :think |
-|-----------------------------------+-----------------------------------+----------+--------|
-| =qwen3.5-4b=                     | 🧠 Qwen3.5 4B                    |    131K  | sim    |
-| =qwen3.5-9b=                     | 🧠 Qwen3.5 9B                    |    131K  | sim    |
-| =gemma4-e2b=                     | 🧠 Gemma 4 E2B                   |    131K  | sim    |
-| =gemma4-e4b=                     | 🧠 Gemma 4 E4B                   |    131K  | sim    |
-| =nemotron-3-nano-4b=             | 🧠 Nemotron 3 Nano 4B            |    131K  | sim    |
-| =gemma4-26b-a4b=                 | 🧠 Gemma 4 26B MoE               |    131K  | sim    |
-| =gpt-oss-20b=                    | 🧠 GPT-OSS 20B                   |    201K  | não    |
-| =qwen3.6-35b-a3b=                | 🧠 Qwen3.6 35B MoE               |    131K  | sim    |
-| =qwen3.6-35b-opus-4.7=           | 🧠 Qwen3.6 Opus 4.7 35B          |    131K  | sim    |
+Todos os modelos do fleet estão disponíveis no Pi (exceção: modelo de embedding excluído).
+Modelos com raciocínio têm variante =:think= que ativa modo de thinking.
 
-Variantes =:think= ativam modo de raciocínio (ex.: =qwen3.6-35b-opus-4.7:think=). Todos os modelos acima possuem variante =:think= exceto =gpt-oss-20b=, totalizando 17 entradas.
+*** Modelos com Tool-Calling
 
-Nota: modelos Gated Delta Net (Qwen3.5, Gemma 4, etc.) têm visão *desabilitada* via =--no-mmproj= devido a bug CUDA no llama.cpp (#21394).
+| Model ID                      | Nome                          | Contexto | Input          | :think |
+|--------------------------------+-------------------------------+----------+----------------+--------|
+| =gemma4-12b=                    | Gemma 4 12B                  |    262K  | text+image+audio | sim  |
+| =gemma4-26b-a4b=               | Gemma 4 26B MoE              |    262K  | text           | sim    |
+| =gemma4-e2b=                   | Gemma 4 E2B                  |    131K  | text           | sim    |
+| =gemma4-e4b=                   | Gemma 4 E4B                  |    131K  | text           | sim    |
+| =gpt-oss-20b=                  | GPT-OSS 20B ★                |    131K  | text           | sempre |
+| =lfm2.5-8b-a1b=                | LFM 2.5 8B MoE               |    128K  | text           | sim    |
+| =littlelamb-0.3b-tc=           | LittleLamb 0.3B TC           |     40K  | text           | sim    |
+| =mellum2-12b-a2.5b=            | Mellum 2 12B MoE             |    131K  | text           | sim    |
+| =qwen3.5-4b=                   | Qwen3.5 4B                   |    262K  | text           | sim    |
+| =qwen3.5-4b-abliterated=       | Qwen3.5 4B Abliterated       |    262K  | text           | sim    |
+| =qwen3.5-9b=                   | Qwen3.5 9B                   |    262K  | text           | sim    |
+| =qwen3.6-35b-a3b=              | Qwen 3.6 35B MoE             |    262K  | text           | sim    |
+| =qwopus-coder-9b=              | Qwopus 9B Coder              |    262K  | text           | sim    |
+
+*** Modelos Multimodal (Visão/Audio)
+
+| Model ID                      | Nome                          | Contexto | Input          | :think |
+|--------------------------------+-------------------------------+----------+----------------+--------|
+| =gemma4-12b=                    | Gemma 4 12B                  |    262K  | text+image+audio | sim  |
+| =glm-ocr=                      | GLM-OCR                      |    131K  | text+image     | não    |
+| =lfm2.5-vl-1.6b-extract=       | LFM2.5-VL 1.6B Extract       |    128K  | text+image     | não    |
+| =lfm2.5-vl-450m=               | LFM2.5-VL 450M               |    128K  | text+image     | não    |
+| =minicpm-v-4.6=                | MiniCPM-V 4.6                 |    262K  | text+image     | sim    |
+
+*** Modelos de Propósito Específico (sem tool-calling)
+
+| Model ID                      | Nome                          | Contexto | :think |
+|--------------------------------+-------------------------------+----------+--------|
+| =minicpm5-1b=                  | MiniCPM5 1B                   |    131K  | sim    |
+| =nanbeige4.1-3b=               | Nanbeige 4.1 3B ★             |    262K  | sempre |
+| =hy-mt2-1.8b=                  | Hy-MT2 1.8B                  |    262K  | não    |
+| =translategemma-4b=            | TranslateGemma 4B             |    131K  | não    |
+| =webworld-8b=                  | WebWorld 8B                   |     40K  | não    |
+
+*** Variante :think
+
+Modelos com raciocínio toggável têm variante =:think= que ativa modo de thinking. Nome exibido com emoji 🧠.
+Exemplo: =gemma4-12b:think= → "🧠 Gemma 4 12B Thinking"
+
+Modelos marcados com ★ são /always thinking/ — sempre geram raciocínio, sem toggle. Não têm variante =:think=.
+- =gpt-oss-20b= (Harmony format)
+- =nanbeige4.1-3b= (十六/十七条 tags)
 
 ** Modelos Edge (Sisyphus) — 3 modelos
 
@@ -138,16 +173,15 @@ Configuração recomendada em =settings.json= para modelos locais:
 {
   "compaction": {
     "enabled": true,
-    "reserveTokens": 32768,
-    "keepRecentTokens": 15000
+    "reserveTokens": 16384,
+    "keepRecentTokens": 20000
   }
 }
 #+end_src
 
-- =reserveTokens: 32768= — reserva espaço suficiente para respostas longas (+ raciocínio em modelos =:think=)
-- =keepRecentTokens: 15000= — mantém as mensagens mais recentes intactas durante compação
-- Para modelos cloud com janela de 1M, pode-se aumentar =keepRecentTokens= para =30000= ou mais
-- Modelo padrão atual: =qwen3.6-35b-opus-4.7:think= (provider =llama.cpp=)
+- =reserveTokens: 16384= — reserva espaço suficiente para respostas longas (+ raciocínio em modelos =:think=)
+- =keepRecentTokens: 20000= — mantém as mensagens mais recentes intactas durante compação
+- Modelo padrão atual: =qwen3.6-35b-a3b:think= (provider =llama-swap=)
 
 ** Uso
 
@@ -155,11 +189,14 @@ Configuração recomendada em =settings.json= para modelos locais:
 # Usar modelo cloud
 pi --model glm-5.1:cloud
 
-# Usar modelo local (provider padrão já é llama.cpp)
+# Usar modelo local (provider padrão já é llama-swap)
 pi --model qwen3.6-35b-a3b
 
 # Usar modelo local com raciocínio
-pi --model "qwen3.6-35b-opus-4.7:think"
+pi --model "qwen3.6-35b-a3b:think"
+
+# Usar modelo local multimodal (visão + áudio)
+pi --model gemma4-12b
 
 # Usar modelo edge no Sisyphus
 pi --provider sisyphus --model qwen3-1.7b
@@ -176,19 +213,18 @@ pi --list-models
 
 3. *=PATH= deve incluir =~/.hermes/node/bin=. O Pi instala o runtime Node.js em =~/.hermes/node/bin=. Se o =$PATH= não incluir esse diretório, extensões e servidores MCP via =npx= falham silenciosamente.
 
-4. *Compatibilidade de tool-calling*. Modelos locais pequenos (< 7B) podem não suportar tool-calling corretamente. O Pi tenta adaptar, mas modelos como =qwen3-0.6b= e =gemma3-1b= no Sisyphus podem falhar em chamadas de ferramenta complexas.
+4. *Compatibilidade de tool-calling*. Modelos locais pequenos (< 7B) podem não suportar tool-calling corretamente. O Pi tenta adaptar, mas modelos como =littlelamb-0.3b-tc= são exceções especializadas.
 
 5. *Não instalar via AUR*. O pacote =pi-coding-agent= no AUR está frequentemente desatualizado e pode quebrar configs. Instalar sempre via =npm= ou =pnpm= global.
 
 6. *=auth.json= contém secrets* — **NUNCA** commitar no git. Manter fora do repositório.
 
-7. *=llama.cpp= é o nome do provider* (não =local= nem =llama-swap=). Deve bater com a chave em =models.json=.
+7. *=llama-swap= é o nome do provider* (não =local= nem =llama.cpp=). Deve bater com a chave em =models.json=.
 
-8. *=thinkingFormat: "qwen-chat-template"=* no provider =llama.cpp= é obrigatório para modelos =:think=. O llama.cpp requer =chat_template_kwargs.enable_thinking= no chat template.
+8. *=thinkingFormat: "qwen-chat-template"=* no provider =llama-swap= é obrigatório para modelos =:think=. O llama.cpp requer =chat_template_kwargs.enable_thinking= no chat template.
 
 9. *=supportsDeveloperRole: false= e =supportsReasoningEffort: false=* no provider =ollama= são necessários porque a API Ollama não implementa essas features do spec OpenAI.
 
-10. *Modelos Gated Delta Net* (Qwen3.5, Gemma 4 E2B/E4B, etc.) têm visão desabilitada via =--no-mmproj= devido a bug CUDA no llama.cpp (issue #21394). Usar =input: ["text"]= em vez de =input: ["text", "image"]=.
+10. *Modelos com vision/audio*. O campo =input= em cada modelo indica capacidades: ="image"= suporta envio de imagem (via =@caminho/arquivo.png= ou clipboard), ="audio"= suporta envio de áudio. Modelos sem =image= no input só operam em modo texto.
 
 11. *Pi recarrega =models.json= automaticamente* ao abrir o seletor de modelos (= /model = no TUI) — não é necessário reiniciar.
-

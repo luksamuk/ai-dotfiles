@@ -125,199 +125,218 @@
             "type": "openai-compat",
             "models": [
                 {
-                    "name": "Qwen 3.5 4B",
-                    "id": "qwen3.5-4b",
-                    "context_window": 131072,
+                    "name": "Gemma 4 12B Unified",
+                    "id": "gemma4-12b",
+                    "context_window": 262144,
                     "default_max_tokens": 32768,
-                    "can_reason": true
+                    "can_reason": true,
+                    "supports_attachments": true,
+                    "can_think": true
                 },
                 {
-                    "name": "Qwen 3.5 4B \ud83e\udde0",
-                    "id": "qwen3.5-4b:think",
-                    "context_window": 131072,
+                    "name": "Gemma 4 12B Unified 🧠",
+                    "id": "gemma4-12b:think",
+                    "context_window": 262144,
                     "default_max_tokens": 32768,
-                    "can_reason": true
+                    "can_reason": true,
+                    "can_think": true,
+                    "supports_attachments": true
                 },
                 {
-                    "name": "Qwen 3.5 9B",
-                    "id": "qwen3.5-9b",
-                    "context_window": 131072,
+                    "name": "Gemma 4 26B MoE",
+                    "id": "gemma4-26b-a4b",
+                    "context_window": 262144,
                     "default_max_tokens": 32768,
-                    "can_reason": true
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "Gemma 4 26B MoE 🧠",
+                    "id": "gemma4-26b-a4b:think",
+                    "context_window": 262144,
+                    "default_max_tokens": 32768,
+                    "can_reason": true,
+                    "can_think": true
                 },
                 {
                     "name": "Gemma 4 E2B",
                     "id": "gemma4-e2b",
                     "context_window": 131072,
                     "default_max_tokens": 32768,
-                    "can_reason": true
+                    "can_reason": true,
+                    "can_think": true
                 },
                 {
-                    "name": "Gemma 4 E2B \ud83e\udde0",
+                    "name": "Gemma 4 E2B 🧠",
                     "id": "gemma4-e2b:think",
                     "context_window": 131072,
                     "default_max_tokens": 32768,
-                    "can_reason": true
+                    "can_reason": true,
+                    "can_think": true
                 },
                 {
                     "name": "Gemma 4 E4B",
                     "id": "gemma4-e4b",
                     "context_window": 131072,
                     "default_max_tokens": 32768,
-                    "can_reason": true
+                    "can_reason": true,
+                    "can_think": true
                 },
                 {
-                    "name": "Gemma 4 E4B \ud83e\udde0",
+                    "name": "Gemma 4 E4B 🧠",
                     "id": "gemma4-e4b:think",
                     "context_window": 131072,
                     "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Nemotron 3 Nano 4B",
-                    "id": "nemotron-3-nano-4b",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Nemotron 3 Nano 4B \ud83e\udde0",
-                    "id": "nemotron-3-nano-4b:think",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Qwen 3.6 35B MoE",
-                    "id": "qwen3.6-35b-a3b",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Qwen 3.6 35B MoE \ud83e\udde0",
-                    "id": "qwen3.6-35b-a3b:think",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Gemma 4 26B MoE",
-                    "id": "gemma4-26b-a4b",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Gemma 4 26B MoE \ud83e\udde0",
-                    "id": "gemma4-26b-a4b:think",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Gemma 4 12B",
-                    "id": "gemma4-12b",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Gemma 4 12B \ud83e\udde0",
-                    "id": "gemma4-12b:think",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
+                    "can_reason": true,
+                    "can_think": true
                 },
                 {
                     "name": "GPT-OSS 20B",
                     "id": "gpt-oss-20b",
-                    "context_window": 201000,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Qwen 3.6 Opus 4.7 35B",
-                    "id": "qwen3.6-35b-opus-4.7",
                     "context_window": 131072,
                     "default_max_tokens": 32768,
                     "can_reason": true
                 },
                 {
-                    "name": "Qwen 3.5 4B Abliterated",
-                    "id": "qwen3.5-4b-abliterated",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Qwen 3.5 4B Abliterated \ud83e\udde0",
-                    "id": "qwen3.5-4b-abliterated:think",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Mellum 2 12B MoE",
-                    "id": "mellum2-12b-a2.5b",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Mellum 2 12B MoE \ud83e\udde0",
-                    "id": "mellum2-12b-a2.5b:think",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "LFM2.5 8B MoE",
+                    "name": "LFM 2.5 8B MoE",
                     "id": "lfm2.5-8b-a1b",
-                    "context_window": 131072,
+                    "context_window": 128000,
                     "default_max_tokens": 32768,
-                    "can_reason": true
+                    "can_reason": true,
+                    "can_think": true
                 },
                 {
-                    "name": "LFM2.5 8B MoE \ud83e\udde0",
+                    "name": "LFM 2.5 8B MoE 🧠",
                     "id": "lfm2.5-8b-a1b:think",
-                    "context_window": 131072,
+                    "context_window": 128000,
                     "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Qwen 3.5 9B \ud83e\udde0",
-                    "id": "qwen3.5-9b:think",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Qwopus 9B Coder",
-                    "id": "qwopus-coder-9b",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Qwopus 9B Coder \ud83e\udde0",
-                    "id": "qwopus-coder-9b:think",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
+                    "can_reason": true,
+                    "can_think": true
                 },
                 {
                     "name": "LittleLamb 0.3B TC",
                     "id": "littlelamb-0.3b-tc",
                     "context_window": 40960,
                     "default_max_tokens": 8192,
-                    "can_reason": false
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "LittleLamb 0.3B TC 🧠",
+                    "id": "littlelamb-0.3b-tc:think",
+                    "context_window": 40960,
+                    "default_max_tokens": 8192,
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "Mellum 2 12B MoE",
+                    "id": "mellum2-12b-a2.5b",
+                    "context_window": 131072,
+                    "default_max_tokens": 32768,
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "Mellum 2 12B MoE 🧠",
+                    "id": "mellum2-12b-a2.5b:think",
+                    "context_window": 131072,
+                    "default_max_tokens": 32768,
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "Nanbeige 4.1 3B",
+                    "id": "nanbeige4.1-3b",
+                    "context_window": 262144,
+                    "default_max_tokens": 32768,
+                    "can_reason": true
+                },
+                {
+                    "name": "Qwen 3.5 4B",
+                    "id": "qwen3.5-4b",
+                    "context_window": 262144,
+                    "default_max_tokens": 32768,
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "Qwen 3.5 4B 🧠",
+                    "id": "qwen3.5-4b:think",
+                    "context_window": 262144,
+                    "default_max_tokens": 32768,
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "Qwen 3.5 4B Abliterated",
+                    "id": "qwen3.5-4b-abliterated",
+                    "context_window": 262144,
+                    "default_max_tokens": 32768,
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "Qwen 3.5 4B Abliterated 🧠",
+                    "id": "qwen3.5-4b-abliterated:think",
+                    "context_window": 262144,
+                    "default_max_tokens": 32768,
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "Qwen 3.5 9B",
+                    "id": "qwen3.5-9b",
+                    "context_window": 262144,
+                    "default_max_tokens": 32768,
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "Qwen 3.5 9B 🧠",
+                    "id": "qwen3.5-9b:think",
+                    "context_window": 262144,
+                    "default_max_tokens": 32768,
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "Qwen 3.6 35B MoE",
+                    "id": "qwen3.6-35b-a3b",
+                    "context_window": 262144,
+                    "default_max_tokens": 32768,
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "Qwen 3.6 35B MoE 🧠",
+                    "id": "qwen3.6-35b-a3b:think",
+                    "context_window": 262144,
+                    "default_max_tokens": 32768,
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "Qwopus 9B Coder",
+                    "id": "qwopus-coder-9b",
+                    "context_window": 262144,
+                    "default_max_tokens": 32768,
+                    "can_reason": true,
+                    "can_think": true
+                },
+                {
+                    "name": "Qwopus 9B Coder 🧠",
+                    "id": "qwopus-coder-9b:think",
+                    "context_window": 262144,
+                    "default_max_tokens": 32768,
+                    "can_reason": true,
+                    "can_think": true
                 }
             ]
         },
         "sisyphus": {
             "npm": "@ai-sdk/openai-compatible",
-            "name": "\ud83d\udcdf Pi LLM",
+            "name": "📟 Pi LLM",
             "baseURL": "http://192.168.3.8:8081/v1"
         }
     },
@@ -332,21 +351,21 @@
             "provider": "llama-cpp",
             "think": true
         },
-        "\ud83d\udcdf Qwen3 1.7B (Pi)": {
+        "📟 Qwen3 1.7B (Pi)": {
             "provider": "sisyphus",
             "model": "qwen3-1.7b",
             "reasoning": true,
             "context": 4096,
             "maxOutputTokens": 2048
         },
-        "\ud83d\udcdf Qwen3 0.6B (Pi)": {
+        "📟 Qwen3 0.6B (Pi)": {
             "provider": "sisyphus",
             "model": "qwen3-0.6b",
             "reasoning": true,
             "context": 4096,
             "maxOutputTokens": 2048
         },
-        "\ud83d\udcdf Gemma 3 1B (Pi)": {
+        "📟 Gemma 3 1B (Pi)": {
             "provider": "sisyphus",
             "model": "gemma3-1b",
             "context": 4096,

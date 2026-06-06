@@ -1,305 +1,377 @@
 {
-  "enabledPlugins": {
-    "core@factory-plugins": true
-  },
-  "model": "custom-model",
-  "customModels": [
-    {
-      "model": "glm-5.1:cloud",
-      "displayName": "GLM 5.1 \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
+    "enabledPlugins": {
+        "core@factory-plugins": true
     },
-    {
-      "model": "glm-5:cloud",
-      "displayName": "GLM 5 \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "kimi-k2.6:cloud",
-      "displayName": "Kimi K2.6 \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": false
-    },
-    {
-      "model": "kimi-k2.5:cloud",
-      "displayName": "Kimi K2.5 \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": false
-    },
-    {
-      "model": "minimax-m3:cloud",
-      "displayName": "MiniMax M3 \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 16384,
-      "noImageSupport": false
-    },
-    {
-      "model": "minimax-m2.7:cloud",
-      "displayName": "MiniMax M2.7 1M \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 16384,
-      "noImageSupport": true
-    },
-    {
-      "model": "minimax-m2.5:cloud",
-      "displayName": "MiniMax M2.5 \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 16384,
-      "noImageSupport": true
-    },
-    {
-      "model": "qwen3.5:cloud",
-      "displayName": "Qwen 3.5 397B \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": false
-    },
-    {
-      "model": "gemma4:31b-cloud",
-      "displayName": "Gemma 4 31B \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 16384,
-      "noImageSupport": false
-    },
-    {
-      "model": "nemotron-3-ultra:cloud",
-      "displayName": "Nemotron 3 Ultra \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "nemotron-3-super:cloud",
-      "displayName": "Nemotron 3 Super \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 16384,
-      "noImageSupport": true
-    },
-    {
-      "model": "nemotron-3-nano:30b-cloud",
-      "displayName": "Nemotron 3 Nano 30B 1M \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 16384,
-      "noImageSupport": true
-    },
-    {
-      "model": "deepseek-v4-pro:cloud",
-      "displayName": "DeepSeek V4 Pro \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 16384,
-      "noImageSupport": true
-    },
-    {
-      "model": "deepseek-v4-flash:cloud",
-      "displayName": "DeepSeek V4 Flash \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 16384,
-      "noImageSupport": true
-    },
-    {
-      "model": "gemini-3-flash-preview:cloud",
-      "displayName": "Gemini 3 Flash \u2601\ufe0f",
-      "baseUrl": "http://127.0.0.1:11434/v1",
-      "apiKey": "ollama",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 16384,
-      "noImageSupport": false
-    },
-    {
-      "model": "qwen3.6-35b-a3b",
-      "displayName": "Qwen3.6 35B MoE [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "qwen3.6-35b-a3b:think",
-      "displayName": "Qwen3.6 35B MoE \ud83e\udde0 [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "gpt-oss-20b",
-      "displayName": "GPT-OSS 20B [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "gemma4-26b-a4b",
-      "displayName": "Gemma 4 26B MoE [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "gemma4-26b-a4b:think",
-      "displayName": "Gemma 4 26B MoE \ud83e\udde0 [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "gemma4-12b",
-      "displayName": "Gemma 4 12B [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": false
-    },
-    {
-      "model": "gemma4-12b:think",
-      "displayName": "Gemma 4 12B \ud83e\udde0 [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": false
-    },
-    {
-      "model": "qwen3.5-9b",
-      "displayName": "Qwen3.5 9B [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "qwen3.5-9b:think",
-      "displayName": "Qwen3.5 9B \ud83e\udde0 [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "qwen3.5-4b",
-      "displayName": "Qwen3.5 4B [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "qwen3.5-4b:think",
-      "displayName": "Qwen3.5 4B \ud83e\udde0 [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "gemma4-e4b",
-      "displayName": "Gemma 4 E4B [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "gemma4-e4b:think",
-      "displayName": "Gemma 4 E4B \ud83e\udde0 [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "gemma4-e2b",
-      "displayName": "Gemma 4 E2B [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "gemma4-e2b:think",
-      "displayName": "Gemma 4 E2B \ud83e\udde0 [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "nemotron-3-nano-4b",
-      "displayName": "Nemotron 3 Nano 4B [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "nemotron-3-nano-4b:think",
-      "displayName": "Nemotron 3 Nano 4B \ud83e\udde0 [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true
-    },
-    {
-      "model": "lfm2.5-vl-450m",
-      "displayName": "LFM2.5-VL 450M [Local]",
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "provider": "generic-chat-completion-api",
-      "maxOutputTokens": 32768,
-      "noImageSupport": false
-    }
-  ]
+    "model": "custom-model",
+    "customModels": [
+        {
+            "model": "glm-5.1:cloud",
+            "displayName": "GLM 5.1 ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "glm-5:cloud",
+            "displayName": "GLM 5 ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "kimi-k2.6:cloud",
+            "displayName": "Kimi K2.6 ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": false
+        },
+        {
+            "model": "kimi-k2.5:cloud",
+            "displayName": "Kimi K2.5 ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": false
+        },
+        {
+            "model": "minimax-m3:cloud",
+            "displayName": "MiniMax M3 ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 16384,
+            "noImageSupport": false
+        },
+        {
+            "model": "minimax-m2.7:cloud",
+            "displayName": "MiniMax M2.7 1M ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 16384,
+            "noImageSupport": true
+        },
+        {
+            "model": "minimax-m2.5:cloud",
+            "displayName": "MiniMax M2.5 ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 16384,
+            "noImageSupport": true
+        },
+        {
+            "model": "qwen3.5:cloud",
+            "displayName": "Qwen 3.5 397B ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": false
+        },
+        {
+            "model": "gemma4:31b-cloud",
+            "displayName": "Gemma 4 31B ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 16384,
+            "noImageSupport": false
+        },
+        {
+            "model": "nemotron-3-ultra:cloud",
+            "displayName": "Nemotron 3 Ultra ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "nemotron-3-super:cloud",
+            "displayName": "Nemotron 3 Super ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 16384,
+            "noImageSupport": true
+        },
+        {
+            "model": "nemotron-3-nano:30b-cloud",
+            "displayName": "Nemotron 3 Nano 30B 1M ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 16384,
+            "noImageSupport": true
+        },
+        {
+            "model": "deepseek-v4-pro:cloud",
+            "displayName": "DeepSeek V4 Pro ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 16384,
+            "noImageSupport": true
+        },
+        {
+            "model": "deepseek-v4-flash:cloud",
+            "displayName": "DeepSeek V4 Flash ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 16384,
+            "noImageSupport": true
+        },
+        {
+            "model": "gemini-3-flash-preview:cloud",
+            "displayName": "Gemini 3 Flash ☁️",
+            "baseUrl": "http://127.0.0.1:11434/v1",
+            "apiKey": "ollama",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 16384,
+            "noImageSupport": false
+        },
+        {
+            "model": "gemma4-12b",
+            "displayName": "Gemma 4 12B Unified [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": false
+        },
+        {
+            "model": "gemma4-12b:think",
+            "displayName": "Gemma 4 12B Unified 🧠 [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": false
+        },
+        {
+            "model": "gemma4-26b-a4b",
+            "displayName": "Gemma 4 26B MoE [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "gemma4-26b-a4b:think",
+            "displayName": "Gemma 4 26B MoE 🧠 [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "gemma4-e2b",
+            "displayName": "Gemma 4 E2B [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "gemma4-e2b:think",
+            "displayName": "Gemma 4 E2B 🧠 [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "gemma4-e4b",
+            "displayName": "Gemma 4 E4B [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "gemma4-e4b:think",
+            "displayName": "Gemma 4 E4B 🧠 [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "gpt-oss-20b",
+            "displayName": "GPT-OSS 20B [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "lfm2.5-8b-a1b",
+            "displayName": "LFM 2.5 8B MoE [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "lfm2.5-8b-a1b:think",
+            "displayName": "LFM 2.5 8B MoE 🧠 [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "littlelamb-0.3b-tc",
+            "displayName": "LittleLamb 0.3B TC [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 8192,
+            "noImageSupport": true
+        },
+        {
+            "model": "littlelamb-0.3b-tc:think",
+            "displayName": "LittleLamb 0.3B TC 🧠 [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 8192,
+            "noImageSupport": true
+        },
+        {
+            "model": "mellum2-12b-a2.5b",
+            "displayName": "Mellum 2 12B MoE [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "mellum2-12b-a2.5b:think",
+            "displayName": "Mellum 2 12B MoE 🧠 [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "nanbeige4.1-3b",
+            "displayName": "Nanbeige 4.1 3B [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "qwen3.5-4b",
+            "displayName": "Qwen 3.5 4B [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "qwen3.5-4b:think",
+            "displayName": "Qwen 3.5 4B 🧠 [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "qwen3.5-4b-abliterated",
+            "displayName": "Qwen 3.5 4B Abliterated [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "qwen3.5-4b-abliterated:think",
+            "displayName": "Qwen 3.5 4B Abliterated 🧠 [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "qwen3.5-9b",
+            "displayName": "Qwen 3.5 9B [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "qwen3.5-9b:think",
+            "displayName": "Qwen 3.5 9B 🧠 [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "qwen3.6-35b-a3b",
+            "displayName": "Qwen 3.6 35B MoE [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "qwen3.6-35b-a3b:think",
+            "displayName": "Qwen 3.6 35B MoE 🧠 [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "qwopus-coder-9b",
+            "displayName": "Qwopus 9B Coder [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        },
+        {
+            "model": "qwopus-coder-9b:think",
+            "displayName": "Qwopus 9B Coder 🧠 [Local]",
+            "baseUrl": "http://127.0.0.1:12434/v1",
+            "apiKey": "not-needed",
+            "provider": "generic-chat-completion-api",
+            "maxOutputTokens": 32768,
+            "noImageSupport": true
+        }
+    ]
 }
