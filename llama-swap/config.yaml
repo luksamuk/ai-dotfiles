@@ -1041,6 +1041,105 @@ models:
       embedding_length: 1024
       quantization: Q5_K_M
 # -------------------------------------------
+# NANBEIGE4.1-3B — BOSS Zhipin dense reasoning + agentic coding model
+# Dense 3B params (4B total with embeddings), 32 layers, GQA 20Q/4KV
+# Architecture: LlamaForCausalLM (llama) — supported in ALL backends
+# Trained on 23T tokens + SFT + RL (reasoning, alignment, agentic deep-search)
+# head_dim=128 → attn_rot ✅ (128%64==0)
+# Q4_K_M ~1.8 GB — fits entirely in VRAM with room for KV cache
+# Vocab: 166,144 (larger than Qwen3.5's 151K — slightly larger tokenizer, no perf impact)
+# 256K context, Apache 2.0 license
+
+# Tool calling: uses XML <func_call> tags with JSON {name, arguments}
+#   llama.cpp + --jinja parses these correctly into OpenAI-compatible format
+#   Tested: 4 parallel tool calls (2 weather + 2 time) — all succeeded
+#   Agentic reasoning pattern: pre-tool planning → batch calls → post-tool analysis → response
+
+# ⚠️ MULTI-TURN TOOL CALLING BUG (llama.cpp upstream, affects ALL backends):
+#   First round of tool calls works perfectly. On SECOND round (assistant generates
+#   reasoning + tool calls after receiving tool results), the model leaks XML <func_call>
+#   tags as verbatim text in content instead of structured tool_calls.
+#   Root cause: llama.cpp peg-native parser fails to extract tool calls from reasoning
+#   blocks in multi-turn conversations. Same bug affects Qwen3.5/3.6 (llama.cpp #20837,
+#   #22684 — both OPEN, no fix merged yet). BeeLlama.cpp and ik_llama.cpp share the
+#   same parser — switching backends does NOT help.
+#   WORKAROUND: use for single-turn tool calling or non-agentic tasks only.
+#   Monitor: https://github.com/ggml-org/llama.cpp/issues/22684
+
+# ⚠️ ALWAYS THINKING (like gpt-oss-20b):
+#   The template has NO enable_thinking toggle. The model ALWAYS generates reasoning
+#   with 十六条/第十七条 tags (same format as Qwen3). Use --reasoning on to extract.
+#   No :think variant (it's always thinking). The only tag exposed is the base model ID.
+
+# ⚠️ BENCHMARK CAVEATS:
+#   - Self-reported benchmarks show Qwen3-32B-level performance, which is exceptional for 3B
+#   - Benjamin Marie (Kaitchup) ran CoDeC contamination checks: GPQA at 40.9 (not contaminated)
+#   - But: learning curves were validated on the same benchmarks (hyperparameter selection)
+#   - Community confirms model is "genuinely very good" but benchmarks may be inflated
+#   - Artificial Analysis Intelligence Index: 16 (above 3B median of 8, but below 30B+ models at 25-35)
+#   - NO independent third-party agentic coding tests (Pacman, HTML game, etc.) exist yet
+
+# Backend: upstream llama.cpp ONLY (dense model, no MoE/MTP tricks needed)
+# No --no-mmproj needed (text-only model, no vision)
+# --jinja REQUIRED (chat template is complex with tool calling + reasoning)
+# -------------------------------------------
+  "nanbeige4.1-3b":
+    unlisted: true
+    name: "Nanbeige 4.1 3B"
+    description: "Compact generalist language model that simultaneously achieves strong agentic behavior, code generation, and general reasoning with only 3B parameters."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Nanbeige4.1-3B-Q4_K_M.gguf
+      --jinja
+      --fit on
+      --fit-target 768
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.6
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.01
+      --repeat-penalty 1.05
+      --reasoning on
+      --n-predict 32768
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      size: "~1.8 GB (Q4_K_M)"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~2.5GB (model + cache)"
+      source: "DevQuasar/Nanbeige.Nanbeige4.1-3B-GGUF (Q4_K_M)"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        completion: true
+        tools: false
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: llama
+      parameters: 3930000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: Q4_K_M
+      warning: "Always thinks (no toggle). Multi-turn tool calls broken — use single-turn only. Verbose reasoning."
+# -------------------------------------------
+# AFM-4.5B (Arcee Fusion Model) - UPSTREAM backend
+# 4.5B dense, Llama-like arch (arcee), Q5_K_M ~3.11 GB
+# Context: 64K (rope scaling factor=20, original 4096)
+# Vocab: 128K, 36 layers, 2560 embed, 20 heads (GQA: 4 KV heads)
+# Features: tool calling (Hermes 2 Pro format), NO native thinking/reasoning
+# Backend: upstream llama.cpp (ik/Bee lack Arcee arch, no hadamard benefit at this size)
+# CRITICAL: GGUF ships with NO tool calling in chat_template — must use
+#   --chat-template-file pointing to the Hermes 2 Pro template for tool support.
+# Without --chat-template-file, AFM operates in plain chat mode only.
+# Recommended: temp=0.3, top_p=0.9, rep_penalty=1.05
+# -------------------------------------------
   "afm-4.5b":
     name: "AFM-4.5B"
     unlisted: true
@@ -2139,6 +2238,69 @@ models:
       quantization: Q4_0
       note: "Pet project — MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek."
 # -------------------------------------------
+# LFM2.5-8B-A1B MoQ-4.0 - UPSTREAM backend (lfm2moe hybrid conv+attention)
+# MoQ (Mixture of Quants) 4.0 bpw = ~4.0 GB vs Q4_0 ~4.6 GB
+# Same architecture, same chat template, same reasoning format
+# Drop-in replacement candidate for lfm2.5-8b-a1b
+# -------------------------------------------
+  "lfm2.5-8b-a1b-moq":
+    name: "LFM 2.5 8B MoQ"
+    description: "LFM 2.5 8B MoE — MoQ-4.0 bpw quant. Testing vs Q4_0 baseline."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/LFM2.5-8B-A1B-MoQ-4.0.gguf
+      --fit on
+      --fit-ctx 16384
+      --ctx-size 131072
+      --parallel 1
+      --no-cont-batching
+      --reasoning-format deepseek-legacy
+      --reasoning on
+      --chat-template-file /home/alchemist/git/ai-dotfiles/llama-swap/templates/lfm2.5-chat-template.jinja
+      --temp 0.2
+      --top-p 0.8
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --flash-attn on
+      --n-predict -1
+      --jinja
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 0.2
+          min_p: 0.15
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.3
+    ttl: 60
+    metadata:
+      size: "~4.0 GB (MoQ 4.0 bpw)"
+      context: "128K"
+      vram_usage: "~5 GB VRAM (4.0 GB model + KV)"
+      source: "w-ahmad/LFM2.5-8B-A1B-GGUF-MoQ"
+      kv_cache: "q8_0 + q4_0 hadamard"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2moe
+      parameters: 8470000000
+      context_length: 128000
+      embedding_length: 2048
+      quantization: MoQ-4.0
+      note: "MoQ (Mixture of Quants) 4.0 bpw variant — benchmarking against Q4_0 baseline."
+# -------------------------------------------
 # LFM2.5-VL-1.6B-EXTRACT — Structured Vision Extraction
 # Liquid AI — VLM that returns JSON, not free-form text
 # Pass image + YAML field list → get structured JSON object
@@ -2328,6 +2490,74 @@ models:
       quantization: Q4_K_M
       note: "Manual GGUF conversion (2026-06-01). MoE expert offload via ik with --mlock. BFCL v4 45.6%, LiveCodeBench 69.9%. TOOL CALLING BROKEN: no embedded chat_template + --tool-call-parser hermes is vLLM-only. Both Hermes 2 Pro and Qwen3.5 templates produce garbled output with tools. Plain text works (37 tok/s). Instruct variant may work better. Swap for community GGUF when available."
 # -------------------------------------------
+# MINICPM5-1B — OpenBMB small dense model
+# LlamaForCausalLM (standard arch), GQA 16Q/2KV, 24 layers
+# 1.08B params, 131K context, think/no-think dual mode
+# Tool calling: XML format <function name="X"><param name="Y">val</param></function>
+# llama.cpp bug #23781: tool calling broken (arg_name_suffix inference)
+# Chat + think mode work fine; tool calling awaiting upstream fix
+# Chat template built into GGUF works correctly in llama.cpp v712+
+# ⚠️ NEVER use custom chat template — causes garbage output
+# -------------------------------------------
+  "minicpm5-1b":
+    unlisted: true
+    name: "MiniCPM5 1B"
+    description: "Dense 1B Transformer built for on-device deployment, designed for local assistants, coding agents, tool-use workflows, and hybrid reasoning."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/MiniCPM5-1B-Q8_0.gguf
+      --jinja
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.3
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.15
+      --repeat-penalty 1.05
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      size: "~1.1 GB (Q8_0)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~1.8GB (model + cache)"
+      source: "openbmb/MiniCPM5-1B-GGUF (Q8_0)"
+      note: "Tool calling broken (llama.cpp bug #23781). Chat + think work fine. NEVER use custom chat template."
+      kv_cache: "q8_0"
+      features:
+        completion: true
+        tools: false
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: llama
+      parameters: 1080000000
+      context_length: 131072
+      embedding_length: 1536
+      quantization: Q8_0
+# -------------------------------------------
+# MINISTRAL-3-3B — Mistral Small 3.2 family
+# -------------------------------------------
+# Dense 3.4B params, text-only (vision/mmproj crashes on CUDA — mistral3 arch)
+# Mistral's latest edge model — tool calling, 256K context
+# Architecture: mistral3 — ONLY supported in llama.cpp upstream (NOT ik_llama.cpp)
+# Uses ${llama_server} (upstream), NOT ${ik_llama_server}
+# UD-Q5_K_XL: 2.31 GB — fits entirely in VRAM with --fit
+# --fit on: auto offload layers to GPU, keeps KV cache in VRAM
+# --parallel 4 --cont-batching: concurrent requests
+# --ctx-size 131072: 128K context (model supports 256K, 128K practical for 3B)
+# Tool calling: mistral template (chat_template=ministral_3)
+# NOTE: mmproj crashes llama-server with CUDA alloc error (~13.9 GB buffer).
+#   Vision disabled until bug is fixed or mmproj is optimized for mistral3.
+#   --n-gpu-layers 99 causes OOM with 131K ctx — use --fit on instead.
+# Apache 2.0 license
   "ministral-3-3b":
     name: "Ministral 3 3B"
     unlisted: true
