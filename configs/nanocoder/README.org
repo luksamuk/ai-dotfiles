@@ -1,0 +1,159 @@
+#+TITLE: Nanocoder configuration
+
+Nanocoder (https://github.com/Nano-Collective/nanocoder) is a community-built
+terminal coding agent. This directory holds its configuration.
+
+- ~agents.config.json~: Full provider config — Ollama Cloud + llama-swap
+  local, context windows, auto-compact, and session settings.
+- ~/.mcp.json~: MCP servers — SearXNG meta-search engine.
+
+* Sync
+
+#+BEGIN_SRC sh
+cp ~/git/ai-dotfiles/configs/nanocoder/agents.config.json ~/.config/nanocoder/agents.config.json
+cp ~/git/ai-dotfiles/configs/nanocoder/.mcp.json ~/.config/nanocoder/.mcp.json
+#+END_SRC
+
+Or use ~/setup-providers~ inside Nanocoder for a guided wizard.
+
+* MCP servers
+
+Nanocoder loads MCP servers from =~/.config/nanocoder/.mcp.json= (global)
+and =.mcp.json= in the project root (project-level). Project-level takes
+precedence when the same server name exists in both.
+
+** Configured servers
+
+| Server  | Transport | Description                                                |
+|---------+-----------+------------------------------------------------------------|
+| searxng | stdio     | Meta-search via local SearXNG at http://192.168.3.8:8888 |
+
+SearXNG aggregates Google, Bing, DuckDuckGo, Wikipedia and dozens more
+engines. No API key needed (self-hosted on the RPi).
+
+** Adding new servers
+
+Edit =~/.config/nanocoder/.mcp.json= or the project-level =.mcp.json=.
+Use =/setup-mcp= inside Nanocoder for an interactive wizard, or =/mcp=
+to view connected servers and their tools.
+
+** Sync from ai-dotfiles
+
+#+BEGIN_SRC sh
+cp ~/git/ai-dotfiles/configs/nanocoder/.mcp.json ~/.config/nanocoder/.mcp.json
+#+END_SRC
+
+* Config format differences (nanocoder vs opencode)
+
+| Feature                | opencode (=opencode.json=)           | nanocoder (=agents.config.json=)              |
+|------------------------+--------------------------------------+------------------------------------------------|
+| Top-level key          | =provider=, =agent=, =mcp=           | =nanocoder.providers=, =nanocoder.autoCompact= |
+| Provider structure     | =provider.<name>.models.<id>={...}=   | =providers[].name + models[]=                 |
+| Context windows        | =limit.context= per model             | =contextWindows= dict on provider              |
+| Model capabilities     | =capabilities: ["tools"]=             | =disableTools= / =disableToolModels=           |
+| Vision support         | =modalities= per model                | Not declared in config; models.dev auto-resolve|
+| SDK providers          | =enabled_providers= + =npm=            | =sdkProvider= per provider                     |
+| Agent roles            | =agent.<role>.model=                  | Not in config (=systemPrompt= + =alwaysAllow=) |
+| MCP servers             | =mcp.<name>={...}=                    | =mcpServers=[{...}]=                           |
+
+* Model inventory
+
+** Ollama Cloud (port 11434)
+
+API-routed models served by Ollama's OpenAI-compatible endpoint. These are
+cloud models routed through Ollama Proxy — no local GPU needed.
+
+| Model ID                      | Context  | Notes                            |
+|-------------------------------+----------+----------------------------------|
+| =glm-5:cloud=                 |  131,072 | GLM 5, vision                    |
+| =glm-5.1:cloud=               |  202,752 | GLM 5.1, vision                  |
+| =minimax-m2.5:cloud=          |  202,752 | MiniMax M2.5, vision             |
+| =minimax-m2.7:cloud=          |  204,800 | MiniMax M2.7, vision             |
+| =minimax-m3:cloud=            |  524,288 | MiniMax M3, vision               |
+| =kimi-k2.5:cloud=             |  262,144 | Kimi K2.5, vision                |
+| =kimi-k2.6:cloud=             |  262,144 | Kimi K2.6, vision                |
+| =qwen3.5:cloud=               |  131,072 | Qwen 3.5, vision                 |
+| =nemotron-3-nano:30b-cloud=   | 1,048,576 | Nemotron 3 Nano Omni, vision    |
+| =nemotron-3-super:cloud=      | 1,048,576 | Nemotron 3 Super, text-only     |
+| =gemma4:31b-cloud=            |  131,072 | Gemma 4 31B MoE, vision          |
+| =deepseek-v4-pro:cloud=       | 1,048,576 | DeepSeek V4 Pro, tools          |
+| =deepseek-v4-flash:cloud=     | 1,048,576 | DeepSeek V4 Flash, tools        |
+| =nemotron-3-ultra:cloud=      |  262,144 | Nemotron 3 Ultra, tools           |
+| =gemini-3-flash-preview:cloud=| 1,048,576 | Gemini 3 Flash, vision          |
+
+** llama-swap local (port 12434)
+
+Local models on RTX 3050 (6 GB VRAM) via llama-swap + llama.cpp server.
+
+| Model ID                        | Context  | Notes                          |
+|---------------------------------+----------+--------------------------------|
+| =gemma4-12b=                    |  262,144 | Gemma 4 12B, tools             |
+| =gemma4-12b:think=              |  262,144 | Gemma 4 12B thinking variant    |
+| =gemma4-26b-a4b=                |  262,144 | Gemma 4 26B MoE, tools         |
+| =gemma4-26b-a4b:think=          |  262,144 | Gemma 4 26B MoE thinking        |
+| =gemma4-e2b=                    |  131,072 | Gemma 4 E2B, tools              |
+| =gemma4-e2b:think=              |  131,072 | Gemma 4 E2B thinking           |
+| =gemma4-e4b=                    |  131,072 | Gemma 4 E4B, tools              |
+| =gemma4-e4b:think=              |  131,072 | Gemma 4 E4B thinking           |
+| =gpt-oss-20b=                   |  131,072 | GPT-OSS 20B, tools              |
+| =lfm2.5-8b-a1b=                 |  128,000 | LFM 2.5 8B MoE, tools          |
+| =lfm2.5-8b-a1b:think=           |  128,000 | LFM 2.5 8B thinking            |
+| =littlelamb-0.3b-tc=            |   40,960 | LittleLamb 0.3B TC, tools       |
+| =littlelamb-0.3b-tc:think=      |   40,960 | LittleLamb 0.3B TC thinking    |
+| =mellum2-12b-a2.5b=             |  131,072 | Mellum 2 12B MoE, tools        |
+| =mellum2-12b-a2.5b:think=       |  131,072 | Mellum 2 12B thinking          |
+| =qwen3.5-4b=                   |  262,144 | Qwen 3.5 4B, tools              |
+| =qwen3.5-4b:think=             |  262,144 | Qwen 3.5 4B thinking           |
+| =qwen3.5-4b-abliterated=        |  262,144 | Qwen 3.5 4B Abliterated, tools |
+| =qwen3.5-4b-abliterated:think= |  262,144 | Qwen 3.5 4B Abliterated thinking|
+| =qwen3.5-9b=                   |  262,144 | Qwen 3.5 9B, tools              |
+| =qwen3.5-9b:think=             |  262,144 | Qwen 3.5 9B thinking           |
+| =qwen3.6-35b-a3b=              |  262,144 | Qwen 3.6 35B MoE, tools        |
+| =qwen3.6-35b-a3b:think=        |  262,144 | Qwen 3.6 35B MoE thinking       |
+| =qwopus-coder-9b=              |  262,144 | Qwopus 9B Coder, tools          |
+| =qwopus-coder-9b:think=        |  262,144 | Qwopus 9B Coder thinking        |
+
+** Excluded from config
+
+These models exist in Ollama/llama-swap but are NOT coding models and were
+excluded from the nanocoder config:
+
+| Model                  | Reason                                      |
+|------------------------+---------------------------------------------|
+| =nomic-embed-text-v2-moe= | Embedding model, not for generation       |
+| =translategemma:4b=    | Translation model, not coding               |
+| =glm-ocr:bf16=         | OCR model, not coding                      |
+| =qwen3-tts=            | TTS model, not coding                      |
+| =minicpm-v-4.6=        | Vision model, not coding-optimized         |
+| =lfm2.5-vl-1.6b-extract= | Vision extraction, not coding             |
+| =lfm2.5-vl-450m=      | Vision-only, not coding                    |
+| =hy-mt2-1.8b=         | Translation model                           |
+| =translategemma-4b=    | Translation model                           |
+| =webworld-8b=          | Web agent, not general coding              |
+| =qwen3.5-abliterated:4b= | Ollama cloud alias, duplicate of local   |
+
+* Key nanocoder config options
+
+** Auto-compact
+
+Configured at threshold 70% with LLM strategy (conservative mode). This
+means nanocoder automatically compresses context when it reaches 70% of the
+model's context window, using the model itself to write a structured summary.
+
+** Session management
+
+Auto-save enabled with 30-second intervals, max 100 sessions retained for
+30 days.
+
+** Timeouts
+
+Both cloud and local providers use =requestTimeout: -1= and =socketTimeout: -1=
+(disabled) to handle long inference times on local models.
+
+* Notes on =:think= variants
+
+llama-swap supports =:think= variants via =setParamsByID=, which enables
+thinking/reasoning mode on models that support it. In nanocoder, these appear
+as separate model names. They inherit the same context window as their base
+model — the =contextWindows= map explicitly sets both to the same value for
+clarity.

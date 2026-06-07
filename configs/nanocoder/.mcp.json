@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "searxng": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-searxng"],
+      "env": {
+        "SEARXNG_URL": "http://192.168.3.8:8888"
+      },
+      "description": "SearXNG meta-search engine — aggregates Google, Bing, DuckDuckGo, Wikipedia, etc.",
+      "timeout": 30000,
+      "alwaysAllow": ["search"]
+    }
+  }
+}
