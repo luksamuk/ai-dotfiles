@@ -446,8 +446,10 @@ def resolve_output_path(model_name: str, seed: int, output_arg: str | None, cwd:
         return Path(output_arg).expanduser().resolve()
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # Sanitize model name for filesystem (replace : and other problematic chars)
+    safe_model = model_name.replace(":", "_").replace("/", "_")
     base_dir = cwd if cwd else Path.cwd()
-    out = base_dir / f"diffuse_{model_name}_{ts}_seed{seed}.png"
+    out = base_dir / f"diffuse_{safe_model}_{ts}_seed{seed}.png"
     out.parent.mkdir(parents=True, exist_ok=True)
 
     # Also write to internal log dir for metadata
