@@ -35,7 +35,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 OUTPUTS_DIR = SCRIPT_DIR / "outputs"
 MRT_DATA_DIR = Path(os.environ.get(
     "MRT_DATA_DIR",
-    Path.home() / "Documents" / "Magenta" / "magenta-rt-v2",
+    Path.home() / "Documentos" / "Magenta" / "magenta-rt-v2",
 ))
 
 # ── Model registry ─────────────────────────────────────────────────────────

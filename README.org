@@ -17,6 +17,7 @@ ai-dotfiles/
 │   ├── droid/                  # Factory.ai Droid
 │   ├── hermes-workspace/       # Docker Compose para Hermes Agent
 │   ├── homepage-navi/          # Homepage dashboard
+│   ├── goose/                   # Goose AI Agent (AAIF)
 │   ├── opencode/               # OpenCode CLI
 │   ├── open-webui/             # Open WebUI Docker
 │   ├── pi/                     # Pi Coding Agent
@@ -83,6 +84,20 @@ Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) par
 - **Arquivos**: =settings.yaml=, =services.yaml=, =bookmarks.yaml=, =widgets.yaml=, =status-server.py=.
 - **Uso**: Copiar os YAMLs para o volume de config do container Docker do Homepage.
 
+** goose — Goose AI Agent (AAIF)
+
+- **Ferramenta**: [[https://github.com/aaif-goose/goose][Goose]] — agente de IA open source (AAIF/Linux Foundation) com Desktop, CLI e API. Suporta 15+ providers via config declarativa e MCP.
+- **Diretório**: =configs/goose/=
+- **Arquivos**: =config.yaml= (config principal).
+- **Provedor**: =ollama= (built-in — Ollama local na porta 11434, serve modelos =:cloud=). **Não usamos llama_swap** por causa de bug no canonical registry do Goose que renomeia modelos e causa 404.
+- **MCP**: DuckDuckGo (via =uvx duckduckgo-mcp-server=) e SearXNG (via =npx -y mcp-searxng=).
+- **Destino**: =~/.config/goose/config.yaml=
+- **Sync**:
+  #+BEGIN_SRC bash
+  DOTFILES=~/git/ai-dotfiles
+  cp "$DOTFILES/configs/goose/config.yaml" ~/.config/goose/config.yaml
+  #+END_SRC
+
 ** opencode — OpenCode CLI
 
 - **Ferramenta**: [[https://opencode.ai][OpenCode CLI]] — agente de código TUI com múltiplos agentes (build, fix, plan, review, debug, etc.).
@@ -106,6 +121,7 @@ Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) par
 | Codex       | Tools-only (perfis TOML)        | 15    | Local limitado (Responses API)          |
 | Droid       | Tools-only (14 base + 12 :think)| 15    | =noImageSupport= booleano               |
 | OpenCode    | Tools-only (14 base + 12 :think)| 15    | =modalities= + =capabilities= schema    |
+| Goose       | dynamic_models + lista explícita | 15+   | Providers declarativos JSON (SEM llama_swap — canonical registry bug) |
 
 Notas:
 - Modelos *always thinking* (GPT-OSS 20B) NÃO têm variante =:think=
@@ -225,6 +241,7 @@ A pasta =scripts/= contém apenas o script =ask-ai.py=, que está **obsoleto** e
 |-------------------------+------------------------------------+-------------------------------------|
 | =codex/=                | =~/.codex/=                        | =config.toml=                       |
 | =crush/=                | =~/.local/share/crush/=            | =crush.json=                        |
+| =goose/=                | =~/.config/goose/=                 | =config.yaml=                       |
 | =opencode/=             | =~/.config/opencode/=              | =opencode.json=, =tui.json=         |
 | =pi/=                   | =~/.pi/agent/=                     | =settings.json=, =mcp.json=, =models.json= |
 
@@ -241,6 +258,9 @@ cp "$DOTFILES/configs/codex/config.toml" ~/.codex/config.toml
 
 # Crush
 cp "$DOTFILES/configs/crush/crush.json" ~/.local/share/crush/crush.json
+
+# Goose
+cp "$DOTFILES/configs/goose/config.yaml" ~/.config/goose/config.yaml
 
 # OpenCode (máquina pessoal)
 cp "$DOTFILES/configs/opencode/opencode.json" ~/.config/opencode/opencode.json

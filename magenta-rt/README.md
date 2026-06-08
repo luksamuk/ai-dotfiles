@@ -96,10 +96,10 @@ The `mrt models download` command downloads **MLX format** files (`*.mlxfn`) whi
 
 ```bash
 # MLX format (Apple Silicon) — downloaded by 'mrt models download'
-~/Documents/Magenta/magenta-rt-v2/models/mrt2_small/
+~/Documentos/Magenta/magenta-rt-v2/models/mrt2_small/
 
 # JAX checkpoint (NVIDIA GPU) — downloaded by 'mrt checkpoints download' OR manual download
-~/Documents/Magenta/magenta-rt-v2/checkpoints/mrt2_small.safetensors
+~/Documentos/Magenta/magenta-rt-v2/checkpoints/mrt2_small.safetensors
 ```
 
 If `mrt checkpoints download mrt2_small` fails (404 on HuggingFace), download manually:
@@ -111,7 +111,7 @@ from huggingface_hub import hf_hub_download
 hf_hub_download(
     repo_id='google/magenta-realtime-2',
     filename='checkpoints/mrt2_small.safetensors',
-    local_dir='$HOME/Documents/Magenta/magenta-rt-v2',
+    local_dir='$HOME/Documentos/Magenta/magenta-rt-v2',
 )
 "
 ```

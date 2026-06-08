@@ -1,0 +1,57 @@
+#+TITLE: Goose AI Agent — Configuração
+#+AUTHOR: luksamuk
+#+LANGUAGE: pt-BR
+
+* Sobre
+
+[[https://github.com/aaif-goose/goose][Goose]] é um agente de IA open source (AAIF/Linux Foundation). Desktop, CLI e API. Rust, 15+ providers, 70+ extensões MCP.
+
+* ⚠️ Bug: Canonical Model Registry
+
+O Goose tem um bug que impede uso com o llama-swap: ele renomeia modelos internamente antes de enviar requests. Por exemplo, =qwen3.6-35b-a3b:think= vira =qwen3.6-35b-moe=. Como o llama-swap não conhece esse nome renomeado, resulta em erro 404.
+
+O flag =skip_canonical_filtering: true= só afeta a /listagem/ de modelos, /não/ o rename no request. Não tem como desabilitar esse comportamento.
+
+**Solução**: usamos só o provider =ollama= built-in, que manda modelos =:cloud= pro Ollama local na porta 11434. Esses nomes não são renomeados pelo canonical registry.
+
+* Estrutura
+
+#+BEGIN_SRC
+goose/
+├── config.yaml     # Config principal (provider, modelo, extensões)
+└── README.org      # Este arquivo
+#+END_SRC
+
+* Provider
+
+- **=ollama=** (built-in) — Ollama local na porta 11434, serve modelos =:cloud= (GLM, MiniMax, Kimi, DeepSeek, Nemotron, Gemini).
+
+* Instalação
+
+#+BEGIN_SRC bash
+curl -fsSL https://github.com/aaif-goose/goose/releases/download/stable/download_cli.sh | bash
+#+END_SRC
+
+* Sincronização
+
+#+BEGIN_SRC bash
+cp ~/git/ai-dotfiles/configs/goose/config.yaml ~/.config/goose/config.yaml
+#+END_SRC
+
+* Comandos Úteis
+
+#+BEGIN_SRC bash
+# Iniciar sessão (usa provider/model do config.yaml)
+goose session
+
+# Configurar interativamente (CUIDADO: pode sobrescrever o config.yaml)
+goose configure
+
+# Ver info
+goose info
+#+END_SRC
+
+* Referências
+
+- Docs: https://goose-docs.ai/docs/
+- GitHub: https://github.com/aaif-goose/goose
