@@ -393,7 +393,9 @@ def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, heig
         "--diffusion-fa",
         "--offload-to-cpu",
         "--clip-on-cpu",
-        "--max-vram", "5.5",
+        "--vae-on-cpu",
+        "--max-vram", "4.8",
+        "--stream-layers",
         "-H", str(height),
         "-W", str(width),
         "--seed", str(seed),
@@ -515,6 +517,26 @@ def print_debrief(
     print(f"  Seed:        {seed}")
     print(f"  Resolution:  {width} × {height}")
     print(f"  Steps:       {steps}")
+    if original_prompt and original_prompt != prompt and enhanced_prompt:
+        print()
+        print("  Enhanced prompt (JSON):")
+        try:
+            parsed = json.loads(enhanced_prompt)
+            for key, val in parsed.items():
+                if isinstance(val, dict):
+                    print(f"    {key}:")
+                    for k, v in val.items():
+                        if isinstance(v, list):
+                            print(f"      {k}:")
+                            for item in v:
+                                print(f"        {item}")
+                        else:
+                            print(f"      {k}: {v}")
+                else:
+                    print(f"    {key}: {val}")
+        except json.JSONDecodeError:
+            for line in enhanced_prompt.split("\n"):
+                print(f"    {line[:120]}")
     print()
     print("  Timings:")
     print(f"    Setup:      {load_time:7.2f} s   (imports + model load)")
@@ -547,27 +569,36 @@ def parse_size(s: str) -> tuple[int, int]:
     return w, h
 
 def _build_model_help() -> str:
-    """Build a formatted model list for --help. Escape % for argparse."""
+    """Build a brief model list for --help. Escape %% for argparse."""
     lines = []
+    for name in sorted(MODELS):
+        lines.append(f"  {name}")
+    return "\n".join(lines).replace("%", "%%")
+
+
+def print_models() -> None:
+    """Print detailed model info to stdout."""
+    print()
+    print("  ═══ diffuse — Available Models ═══")
+    print()
     for name in sorted(MODELS):
         info = MODELS[name]
         bits = info.get("bits", "?")
         desc = info.get("description", "")
         backend = info.get("backend_type", "gemlite")
         size = info.get("default_size")
-        size_str = f"{size[0]}x{size[1]}" if size else "512x512"
-        tag = f"[{backend}]" if backend != "gemlite" else ""
-        lines.append(f"  {name:24s} {bits:6s} {tag:8s} {size_str:9s} {desc}")
-    # argparse %'-expands help strings, so escape literal %
-    return "\n".join(lines).replace("%", "%%")
+        size_str = f"{size[0]}×{size[1]}" if size else "512×512"
+        enhance = info.get("enhance_model", "")
+        print(f"  {name}")
+        print(f"    {bits}  |  {backend}  |  default {size_str}")
+        if enhance:
+            think = " (thinking mode)" if info.get("enhance_think") else ""
+            print(f"    enhance: {enhance}{think}")
+        print(f"    {desc}")
+        print()
 
 
 def parse_args() -> argparse.Namespace:
-    model_help = (
-        "Model variant (default: ternary-gemlite).\n"
-        "Available models:\n"
-        + _build_model_help()
-    )
     p = argparse.ArgumentParser(
         prog="diffuse",
         description="diffuse — Local diffusion image generation CLI for NVIDIA RTX 3050 6GB",
@@ -577,6 +608,7 @@ def parse_args() -> argparse.Namespace:
             "  diffuse -m ideogram4-q4 --enhance -p 'a rainy day at a coffee shop'\n"
             "  diffuse -m ideogram4-q4:think --evict-llm --enhance -p 'cyberpunk city'\n"
             "  diffuse -m ideogram4-q4 -p '{\"high_level_description\": \"...\"}' --size 480x480\n"
+            "  diffuse --list                        # show model details\n"
             "\n"
             "Ideogram 4 requires structured JSON prompts for best results.\n"
             "Use --enhance to auto-expand simple text into JSON via LLM.\n"
@@ -593,7 +625,7 @@ def parse_args() -> argparse.Namespace:
         "-m", "--model",
         choices=sorted(MODELS),
         default="ternary-gemlite",
-        help=model_help,
+        help="Model variant (default: ternary-gemlite). Use --list for details.",
     )
     p.add_argument("-p", "--prompt", help="Text prompt. If omitted, prompted interactively.")
     p.add_argument("--seed", type=int, default=None, help="Random seed (random if not set).")
@@ -604,6 +636,10 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("--output", type=Path, default=None, help="Output PNG path (auto-generated in cwd if not set).")
     p.add_argument("--open", action="store_true", help="Open the generated image with feh after saving.")
+    p.add_argument(
+        "--list", action="store_true",
+        help="List available models with details and exit.",
+    )
     p.add_argument(
         "--evict-llm", action="store_true",
         help="Evict all running LLM models (via llama-swap) to free VRAM before generating. "
@@ -684,6 +720,11 @@ def open_image(path: Path) -> None:
 # ── Main ────────────────────────────────────────────────────────────────────
 def main() -> None:
     args = parse_args()
+
+    if args.list:
+        print_models()
+        sys.exit(0)
+
     setup_environment()
 
     model_name = args.model
