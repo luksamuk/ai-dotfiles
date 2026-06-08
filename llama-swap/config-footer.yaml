@@ -70,6 +70,12 @@ matrix:
     # [REMOVED] gr40h1: granite-4.0-h-1b
     sglang: lfm2.5-sgl
     # nb41: nanbeige4.1-3b   # REMOVED: multi-turn tool calling broken (#22684), GGUF deleted
+    # Audio models (lightweight — can run alongside small LLM + vision)
+    asr: qwen3-asr-0.6b
+    # aud: lfm2-audio-1.5b  # DISABLED: mmproj conformer crash (upstream bug)
+    asrg: granite-speech-4.1-2b
+    # External TTS server (Python FastAPI, separate GPU allocation)
+    ttsext: qwen3-tts
   # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
   # +ref = expandir outro set inline
   #
@@ -84,6 +90,18 @@ matrix:
 
     # LLM pequeno sozinho (sem vision ativo)
     small_only: "q08 | q4 | g2 | g2q | lfm2s | lfm2t"
+
+    # Audio models — rodam alongside modelos leves + vision
+    # Qwen3-ASR (~1.5GB) e Granite Speech (~3GB) são ASR, NÃO TTS
+    # LFM2-Audio DESABILITADO (mmproj conformer crash upstream)
+    # Qwen3-TTS é TTS externo (FastAPI porta 8880)
+    small_audio: "(q08) & asr"
+
+    # ASR only set (leve, cabe com vision + small)
+    asr_vision: "asr & vl & (q08 | lfm2s)"
+
+    # External TTS (separate process, same GPU — compete with heavy models)
+    tts_external: "ttsext"
 
     # vLLM backends (mutuamente exclusivos com llama.cpp — mesma GPU)
     vllm: "q08vllm | lfm2vllm"
@@ -119,6 +137,10 @@ matrix:
     # [REMOVED] ACE: 4 — superseded by Qwopus
     g4: 4        # ~4.5GB, fits VRAM now
     vl: 3        # vision, leve mas útil manter vivo
+    asr: 2        # Qwen3-ASR, leve (~1.5GB), multilingual
+    # aud: 3        # LFM2-Audio DISABLED (mmproj crash)
+    asrg: 3       # Granite Speech, médio (~3GB), ASR+AST multilingual (PT!)
+    ttsext: 4   # Qwen3-TTS, external FastAPI (~2GB VRAM), voice cloning
     q08: 1       # 0.8B, ultra-leve
     lfm2s: 1    # 1.2B Instruct, ultra-leve
     lfm2t: 1    # 1.2B Thinking, ultra-leve

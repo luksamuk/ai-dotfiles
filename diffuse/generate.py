@@ -4,9 +4,10 @@
 Load pipeline → prompt → generate → stats debrief → unload.
 Designed for NVIDIA RTX 3050 6GB. Model-agnostic — add new backends via MODELS registry.
 
-Currently supports: Bonsai Image 4B (gemlite + HQQ kernels on CUDA).
+Currently supports:
+  - Bonsai Image 4B (gemlite + HQQ kernels on CUDA)
+  - Ideogram 4 Q4 (sd-cli/stable-diffusion.cpp with CUDA offload)
 """
-
 from __future__ import annotations
 
 import argparse
@@ -34,16 +35,59 @@ MODELS_DIR = SCRIPT_DIR / "models"
 OUTPUTS_DIR = SCRIPT_DIR / "outputs"
 TRITON_CACHE_DIR = OUTPUTS_DIR / ".triton_cache"
 GEMLITE_PERSIST_PATH = OUTPUTS_DIR / ".gemlite_cache" / "autotune.json"
+SD_CLI_PATH = SCRIPT_DIR / "bin" / "sd-cli"
+
+# ── LLM prompt enhancement ─────────────────────────────────────────────────
+ENHANCE_SYSTEM_PROMPT = """You are a prompt engineer for Ideogram 4, a text-to-image model.
+Convert the user's simple text prompt into a structured JSON object that Ideogram 4 uses for image generation.
+
+REQUIRED format — respond ONLY with valid JSON, no markdown, no explanation:
+{
+  "high_level_description": "<detailed scene description in 2-3 sentences>",
+  "style_description": {
+    "aesthetics": "<art style, medium, visual qualities>",
+    "lighting": "<lighting description>",
+    "color_palette": ["<hex color 1>", "<hex color 2>", "<hex color 3>", "<hex color 4>", "<hex color 5>"]
+  }
+}
+
+GUIDELINES:
+- high_level_description: Expand the prompt into a rich, specific scene. Add details about position, pose, expression, setting.
+- aesthetics: Describe the art style (e.g. "vibrant digital illustration, clean lines, detailed", "photorealistic photography", "oil painting style"). Be specific.
+- lighting: Describe the lighting (e.g. "warm golden hour sunlight", "dramatic side lighting", "soft diffused studio lighting").
+- color_palette: 5 hex colors that define the mood. Use a cohesive palette. Prefer saturated, distinctive colors over generic ones.
+- The JSON must be parseable. No trailing commas, no comments.
+- Keep the description focused on what should APPEAR in the image, not abstract concepts.
+- If the prompt requests text in the image, include it in compositional_deconstruction elements."""
+
+THINK_ENHANCE_SYSTEM_PROMPT = """You are a prompt engineer for Ideogram 4, a text-to-image model.
+Convert the user's simple text prompt into a detailed structured JSON object for maximum quality image generation.
+
+REQUIRED format — respond ONLY with valid JSON, no markdown, no explanation:
+{
+  "high_level_description": "<detailed scene description in 2-4 sentences, very specific>",
+  "style_description": {
+    "aesthetics": "<detailed art style, medium, visual qualities>",
+    "lighting": "<detailed lighting description with direction and mood>",
+    "color_palette": ["<hex 1>", "<hex 2>", "<hex 3>", "<hex 4>", "<hex 5>"]
+  },
+  "compositional_deconstruction": {
+    "canvas": "<canvas description: size, orientation, layout style>",
+    "background": "<detailed background description>",
+    "layout": "<layout description: where elements are placed>",
+    "elements": [
+      {"type": "obj", "desc": "<detailed description of element 1>"},
+      {"type": "obj", "desc": "<detailed description of element 2>"},
+      {"type": "text", "desc": "<any text that should appear in the image, if requested>"}
+    ]
+  }
+}
+
+Be extremely detailed and specific. Think about the composition, colors, lighting, and every element carefully before writing the JSON."""
 
 # ── Model registry ─────────────────────────────────────────────────────────
-# Add new diffusion models here. Each entry needs:
-#   backend_id:     identifier for the pipeline backend
-#   hf_repo:        HuggingFace repo for download
-#   dir:            local directory name under models/
-#   backend_type:   "gemlite" (CUDA) — extend with "mlx", "diffusers", etc.
-#   bits:           human-readable weight format
-#   description:    short label for --help
 MODELS = {
+    # Bonsai Image 4B (gemlite CUDA)
     "binary-gemlite": {
         "backend_id": "bonsai-binary-gemlite",
         "hf_repo": "prism-ml/bonsai-image-binary-4B-gemlite-1bit",
@@ -62,8 +106,24 @@ MODELS = {
         "transformer_kwarg": "ternary_transformer_path",
         "description": "1.58-bit {−1, 0, +1} — 1.21 GB transformer, 95% of FP16 quality",
     },
+    # Ideogram 4 (sd-cli / stable-diffusion.cpp)
+    "ideogram4-q4": {
+        "backend_id": "ideogram4-q4-sd-cpp",
+        "dir": "ideogram-4-Q4_0",
+        "backend_type": "sd_cpp",
+        "bits": "4-bit",
+        "description": "Ideogram 4 Q4_0 — 9.3B DiT, structured JSON prompts, best-in-class text rendering",
+        "enhance_model": "qwen3.5-4b",
+    },
+    "ideogram4-q4:think": {
+        "backend_id": "ideogram4-q4-sd-cpp",
+        "dir": "ideogram-4-Q4_0",
+        "backend_type": "sd_cpp",
+        "bits": "4-bit",
+        "description": "Ideogram 4 Q4_0 — enhanced prompts via Gemma 4 12B",
+        "enhance_model": "gemma4-12b",
+    },
 }
-
 
 # ── Environment setup (must happen before torch/triton imports) ─────────────
 def setup_environment() -> None:
@@ -71,7 +131,6 @@ def setup_environment() -> None:
     TRITON_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     GEMLITE_PERSIST_PATH.parent.mkdir(parents=True, exist_ok=True)
     os.environ.setdefault("TRITON_CACHE_DIR", str(TRITON_CACHE_DIR))
-
 
 # ── Pipeline helpers ────────────────────────────────────────────────────────
 def _find_subdir(root: Path, *hints: str) -> Path:
@@ -83,7 +142,6 @@ def _find_subdir(root: Path, *hints: str) -> Path:
     matches.sort(key=lambda p: len(p.name), reverse=True)
     return matches[0]
 
-
 def require_model_dir(model_name: str) -> Path:
     """Ensure model weights are present and return path."""
     model_info = MODELS[model_name]
@@ -93,7 +151,6 @@ def require_model_dir(model_name: str) -> Path:
         print(f"    Run: diffuse download {model_name.split('-')[0]}")
         sys.exit(1)
     return model_root
-
 
 def load_pipeline_gemlite(model_name: str) -> tuple:
     """Load a gemlite-backed pipeline. Returns (pipeline, load_time_seconds)."""
@@ -107,9 +164,6 @@ def load_pipeline_gemlite(model_name: str) -> tuple:
 
     t0 = time.perf_counter()
 
-    # GpuPipeline requires ALL transformer paths to be set, even for
-    # backends you don't use. Pass the same transformer dir for both
-    # binary and ternary — the unused backend slot is simply ignored.
     pipeline = GpuPipeline(
         backend=model_info["backend_id"],
         binary_transformer_path=str(transformer_dir),
@@ -119,29 +173,56 @@ def load_pipeline_gemlite(model_name: str) -> tuple:
         tokenizer_path=str(text_encoder_dir / "tokenizer"),
     )
 
-    # Load persisted autotune cache (speeds up subsequent runs)
     if GEMLITE_PERSIST_PATH.exists():
         GemLiteLinearTriton.load_config(str(GEMLITE_PERSIST_PATH), print_error=False)
 
     pipeline.prewarm()
     load_time = time.perf_counter() - t0
 
-    # Persist any new autotune configs
     GemLiteLinearTriton.cache_config(str(GEMLITE_PERSIST_PATH))
 
     return pipeline, load_time
 
-
 def load_pipeline(model_name: str) -> tuple:
-    """Load a pipeline based on the model's backend_type. Returns (pipeline, load_time_seconds)."""
+    """Load a pipeline based on the model's backend_type. Returns (pipeline_or_config, load_time_seconds)."""
     model_info = MODELS[model_name]
     backend_type = model_info.get("backend_type", "gemlite")
 
     if backend_type == "gemlite":
         return load_pipeline_gemlite(model_name)
+    elif backend_type == "sd_cpp":
+        return load_pipeline_sd_cpp(model_name)
     else:
         raise ValueError(f"Unknown backend type: {backend_type}")
 
+def load_pipeline_sd_cpp(model_name: str) -> tuple:
+    """Prepare sd-cli configuration. Returns (config_dict, 0.0)."""
+    model_info = MODELS[model_name]
+    model_root = require_model_dir(model_name)
+
+    sd_cli = str(SD_CLI_PATH)
+    if not Path(sd_cli).exists():
+        # Try stable-diffusion.cpp build location
+        alt = Path.home() / "git" / "stable-diffusion.cpp" / "build" / "bin" / "sd-cli"
+        if alt.exists():
+            sd_cli = str(alt)
+        else:
+            raise FileNotFoundError(f"sd-cli not found at {SD_CLI_PATH}. Run: diffuse build-sd-cpp")
+
+    config = {
+        "sd_cli": sd_cli,
+        "diffusion_model": str(model_root / "ideogram4-Q4_0.gguf"),
+        "uncond_diffusion_model": str(model_root / "ideogram4_uncond-Q4_0.gguf"),
+        "llm": str(model_root / "Qwen3VL-8B-Instruct-Q4_K_M.gguf"),
+        "vae": str(model_root / "vae" / "flux2-vae.safetensors"),
+    }
+
+    # Verify all files exist
+    for key, path in config.items():
+        if key == "sd_cli" and not Path(path).exists():
+            raise FileNotFoundError(f"{key} not found: {path}")
+
+    return config, 0.0
 
 def unload_pipeline() -> None:
     """Force-unload pipeline from VRAM and system memory."""
@@ -152,11 +233,9 @@ def unload_pipeline() -> None:
     gc.collect()
     log.info("Pipeline unloaded from VRAM")
 
-
 # ── LLM eviction (llama-swap coordination) ──────────────────────────────────
 LLAMA_SWAP_URL = os.environ.get("LLAMA_SWAP_URL", "http://localhost:12434")
 LLAMA_SWAP_CLI = os.environ.get("LLAMA_SWAP_CLI", os.path.expanduser("~/git/ai-dotfiles/llama-swap/llama-swap-cli"))
-
 
 def _llama_swap_running_models() -> list[str]:
     """Query llama-swap /running endpoint. Returns list of model IDs or empty list."""
@@ -169,13 +248,8 @@ def _llama_swap_running_models() -> list[str]:
     except (urllib.error.URLError, OSError, json.JSONDecodeError):
         return []
 
-
 def evict_llm() -> bool:
-    """Evict all loaded LLM models from llama-swap to free VRAM for diffusion.
-
-    Uses llama-swap-cli unload which gracefully stops all running models.
-    Returns True if eviction happened (models were running), False if already empty.
-    """
+    """Evict all loaded LLM models from llama-swap to free VRAM for diffusion."""
     running = _llama_swap_running_models()
     if not running:
         log.info("No LLM models loaded — VRAM already free")
@@ -183,7 +257,6 @@ def evict_llm() -> bool:
 
     log.info("Evicting LLM models from llama-swap: %s", ", ".join(running))
 
-    # Try llama-swap-cli unload first (graceful, lets llama-swap manage shutdown)
     if os.path.isfile(LLAMA_SWAP_CLI) and os.access(LLAMA_SWAP_CLI, os.X_OK):
         result = subprocess.run(
             [LLAMA_SWAP_CLI, "unload"],
@@ -194,9 +267,6 @@ def evict_llm() -> bool:
         else:
             log.warning("llama-swap-cli unload failed (rc=%d): %s", result.returncode, result.stderr.strip())
     else:
-        # Fallback: POST to llama-swap /v1/unload (may not exist in all versions)
-        import urllib.request
-        import urllib.error
         log.info("llama-swap-cli not found — trying direct API eviction")
         try:
             req = urllib.request.Request(f"{LLAMA_SWAP_URL}/v1/unload", method="POST")
@@ -214,21 +284,75 @@ def evict_llm() -> bool:
             log.info("LLM models evicted — VRAM free for diffusion")
             return True
 
-    # Even if verification fails, proceed — llama-swap may report stale state
     log.warning("Could not confirm LLM eviction — proceeding anyway")
     return True
 
+# ── LLM prompt enhancement ─────────────────────────────────────────────────
+def enhance_prompt(prompt: str, model: str, think: bool = False) -> str:
+    """Use an LLM via llama-swap to expand a simple prompt into Ideogram 4 JSON."""
+    system = THINK_ENHANCE_SYSTEM_PROMPT if think else ENHANCE_SYSTEM_PROMPT
+
+    log.info("Enhancing prompt via %s (think=%s)", model, think)
+    t0 = time.perf_counter()
+
+    # Call llama-swap OpenAI-compatible API
+    import urllib.request
+    import urllib.error
+
+    payload = json.dumps({
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.7 if not think else 0.4,
+        "max_tokens": 1024,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        f"{LLAMA_SWAP_URL}/v1/chat/completions",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read())
+            enhanced = data["choices"][0]["message"]["content"].strip()
+    except (urllib.error.URLError, OSError, KeyError, json.JSONDecodeError) as e:
+        log.error("Prompt enhancement failed: %s — using raw prompt", e)
+        return prompt
+
+    elapsed = time.perf_counter() - t0
+    log.info("Prompt enhanced in %.1fs", elapsed)
+
+    # Try to extract JSON from the response
+    # The LLM might wrap it in ```json``` blocks
+    enhanced = enhanced.strip()
+    if enhanced.startswith("```json"):
+        enhanced = enhanced[7:]
+    if enhanced.startswith("```"):
+        enhanced = enhanced[3:]
+    if enhanced.endswith("```"):
+        enhanced = enhanced[:-3]
+    enhanced = enhanced.strip()
+
+    # Validate it's parseable JSON
+    try:
+        parsed = json.loads(enhanced)
+        if "high_level_description" not in parsed:
+            log.warning("Enhanced prompt missing 'high_level_description' — using raw prompt")
+            return prompt
+        # Return the JSON string as-is — sd-cli accepts JSON prompts
+        return enhanced
+    except json.JSONDecodeError:
+        log.warning("Enhanced prompt is not valid JSON — using raw prompt")
+        return prompt
 
 # ── Generation ─────────────────────────────────────────────────────────────
-def generate_image(
-    pipeline,
-    prompt: str,
-    seed: int,
-    steps: int,
-    width: int,
-    height: int,
-) -> tuple[bytes, float, float]:
-    """Generate a PNG image. Returns (png_bytes, diffusion_time, peak_hbm_mb)."""
+def generate_image_gemlite(pipeline, prompt: str, seed: int, steps: int, width: int, height: int) -> tuple:
+    """Generate a PNG image using gemlite pipeline. Returns (png_bytes, diffusion_time, peak_hbm_mb)."""
     log.info("Generating: prompt=%r seed=%d steps=%d size=%dx%d", prompt, seed, steps, width, height)
 
     t0 = time.perf_counter()
@@ -246,15 +370,49 @@ def generate_image(
 
     return png_bytes, diffusion_time, peak_hbm
 
+def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, height: int, output_path: Path) -> tuple:
+    """Generate image using sd-cli. Returns (output_path, wall_time_seconds, 0.0)."""
+    log.info("Generating via sd-cli: seed=%d size=%dx%d", seed, width, height)
+
+    cmd = [
+        config["sd_cli"],
+        "--diffusion-model", config["diffusion_model"],
+        "--uncond-diffusion-model", config["uncond_diffusion_model"],
+        "--llm", config["llm"],
+        "--vae", config["vae"],
+        "-p", prompt,
+        "--diffusion-fa",
+        "--offload-to-cpu",
+        "--clip-on-cpu",
+        "--max-vram", "5.5",
+        "-H", str(height),
+        "-W", str(width),
+        "--seed", str(seed),
+        "-o", str(output_path),
+    ]
+
+    t0 = time.perf_counter()
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    wall_time = time.perf_counter() - t0
+
+    if result.returncode != 0:
+        # Print last 20 lines of stderr for debugging
+        stderr_lines = result.stderr.strip().split("\n")[-20:]
+        for line in stderr_lines:
+            log.error("sd-cli: %s", line)
+        raise RuntimeError(f"sd-cli failed (rc={result.returncode}). Last error: {stderr_lines[-1] if stderr_lines else 'unknown'}")
+
+    if not output_path.exists():
+        raise FileNotFoundError(f"sd-cli did not produce output: {output_path}")
+
+    file_size_mb = output_path.stat().st_size / (1024 * 1024)
+    log.info("sd-cli completed in %.1fs, output %.2f MiB", wall_time, file_size_mb)
+
+    return output_path, wall_time, 0.0
 
 # ── Output helpers ─────────────────────────────────────────────────────────
 def resolve_output_path(model_name: str, seed: int, output_arg: str | None, cwd: Path | None = None) -> Path:
-    """Determine output PNG path.
-
-    If --output is given, use it directly.
-    Otherwise, save to the current working directory (where the user ran diffuse),
-    not to the script's own outputs/ dir.
-    """
+    """Determine output PNG path."""
     if output_arg is not None:
         return Path(output_arg).expanduser().resolve()
 
@@ -269,19 +427,10 @@ def resolve_output_path(model_name: str, seed: int, output_arg: str | None, cwd:
 
     return out
 
-
 def save_metadata(
-    model_name: str,
-    prompt: str,
-    seed: int,
-    width: int,
-    height: int,
-    steps: int,
-    load_time: float,
-    diffusion_time: float,
-    wall_time: float,
-    peak_hbm: float,
-    output_path: Path,
+    model_name: str, prompt: str, seed: int, width: int, height: int,
+    steps: int, load_time: float, diffusion_time: float, wall_time: float,
+    peak_hbm: float, output_path: Path, enhanced_prompt: str | None = None,
 ) -> Path:
     """Append generation record to JSON log."""
     meta_dir = OUTPUTS_DIR / model_name
@@ -302,6 +451,9 @@ def save_metadata(
         "peak_hbm_mib": round(peak_hbm, 1),
         "output": str(output_path),
     }
+    if enhanced_prompt:
+        record["enhanced_prompt"] = enhanced_prompt
+        record["prompt_enhanced"] = True
 
     existing = []
     if meta_path.exists():
@@ -316,34 +468,29 @@ def save_metadata(
     meta_path.write_text(json.dumps(existing, indent=2) + "\n")
     return meta_path
 
-
-# ── Debrief display ────────────────────────────────────────────────────────
+# ── Debrief display ───────────────────────────────────────────────────────
 def print_debrief(
-    model_name: str,
-    model_info: dict,
-    prompt: str,
-    seed: int,
-    width: int,
-    height: int,
-    steps: int,
-    load_time: float,
-    diffusion_time: float,
-    wall_time: float,
-    peak_hbm: float,
-    output_path: Path,
+    model_name: str, model_info: dict, prompt: str, seed: int,
+    width: int, height: int, steps: int, load_time: float,
+    diffusion_time: float, wall_time: float, peak_hbm: float,
+    output_path: Path, enhanced_prompt: str | None = None,
 ) -> None:
     """Print generation stats report."""
     print()
     print("═══ diffuse — Generation Report ═══")
     print(f"  Model:       {model_name} ({model_info['bits']})")
-    print(f"  Prompt:      \"{prompt}\"")
+    if enhanced_prompt:
+        print(f"  Prompt:      \"{prompt}\"")
+        print(f"  Enhanced:    Yes → Ideogram 4 JSON")
+    else:
+        print(f"  Prompt:      \"{prompt}\"")
     print(f"  Seed:        {seed}")
     print(f"  Resolution:  {width} × {height}")
     print(f"  Steps:       {steps}")
     print()
     print("  Timings:")
-    print(f"    Setup:      {load_time:7.2f} s   (imports + model load + kernel JIT)")
-    print(f"    Diffusion: {diffusion_time:7.2f} s   ({steps} denoising steps + VAE decode)")
+    print(f"    Setup:      {load_time:7.2f} s   (imports + model load)")
+    print(f"    Diffusion: {diffusion_time:7.2f} s   (denoising + VAE decode)")
     print(f"    ─────────────────────")
     print(f"    Wall:       {wall_time:7.2f} s")
     print()
@@ -371,7 +518,6 @@ def parse_size(s: str) -> tuple[int, int]:
             raise argparse.ArgumentTypeError(f"--size {name} {dim} must be a multiple of 16")
     return w, h
 
-
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="diffuse",
@@ -391,7 +537,7 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("-p", "--prompt", help="Text prompt. If omitted, prompted interactively.")
     p.add_argument("--seed", type=int, default=None, help="Random seed (random if not set).")
-    p.add_argument("--steps", type=int, default=4, help="Denoising steps (default: 4, recommended: 4).")
+    p.add_argument("--steps", type=int, default=4, help="Denoising steps (default: 4 for gemlite, 20 for ideogram4).")
     p.add_argument(
         "--size", type=parse_size, default=(512, 512),
         help="Image size as WxH (default: 512x512).",
@@ -401,6 +547,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--evict-llm", action="store_true",
         help="Evict all running LLM models (via llama-swap) to free VRAM before generating.",
+    )
+    p.add_argument(
+        "--enhance", action="store_true",
+        help="Use LLM to expand simple text prompt into Ideogram 4 JSON format (slow, much better quality).",
     )
     return p.parse_args()
 
@@ -421,7 +571,6 @@ def get_prompt_interactive() -> str:
         sys.exit(0)
     return prompt
 
-
 # ── Previous runs ───────────────────────────────────────────────────────────
 def get_previous_runs(model_name: str, width: int, height: int) -> list[float]:
     """Check historical generation times at this resolution."""
@@ -440,7 +589,6 @@ def get_previous_runs(model_name: str, width: int, height: int) -> list[float]:
         and e.get("height") == height
         and isinstance(e.get("wall_seconds"), (int, float))
     ]
-
 
 # ── Open image in viewer ────────────────────────────────────────────────────
 def open_image(path: Path) -> None:
@@ -461,7 +609,6 @@ def open_image(path: Path) -> None:
     )
     log.info("Opened in feh: %s", path)
 
-
 # ── Main ────────────────────────────────────────────────────────────────────
 def main() -> None:
     args = parse_args()
@@ -472,6 +619,11 @@ def main() -> None:
     seed = args.seed if args.seed is not None else secrets.randbits(31)
     width, height = args.size
     prompt = args.prompt or get_prompt_interactive()
+    backend_type = model_info.get("backend_type", "gemlite")
+
+    # Default steps for ideogram4 is 20, for gemlite is 4
+    if args.steps == 4 and backend_type == "sd_cpp":
+        args.steps = 20
 
     # Pre-flight
     require_model_dir(model_name)
@@ -490,6 +642,21 @@ def main() -> None:
             print(f"  ✅ No LLM models loaded — VRAM already free")
         print()
 
+    # ── Prompt enhancement ──
+    enhanced_prompt = None
+    if args.enhance or model_info.get("enhance_model"):
+        enhance_model = model_info.get("enhance_model", "lfm2.5-1.2b")
+        think = "think" in model_name
+        print(f"  ✨ Enhancing prompt via {enhance_model}{' (detailed)' if think else ''}...")
+        enhanced_prompt = enhance_prompt(prompt, enhance_model, think=think)
+        if enhanced_prompt != prompt:
+            print(f"     Expanded to JSON ({len(enhanced_prompt)} chars)")
+        else:
+            print(f"     Enhancement failed — using raw prompt")
+        # For sd_cpp, use the enhanced JSON prompt
+        if backend_type == "sd_cpp" and enhanced_prompt != prompt:
+            prompt = enhanced_prompt
+
     # Show warm/cold estimate
     prior = get_previous_runs(model_name, width, height)
     print()
@@ -499,42 +666,74 @@ def main() -> None:
         print(f"  ⚡ {len(prior)} prior run(s) at {width}×{height} — warmed kernels available")
         print(f"     Historical wall: mean {mean_s:.1f}s, best {best_s:.1f}s")
     else:
-        print(f"  ⏳ First run at {width}×{height}")
-        print(f"     Cold start: ~30-60s (imports + model load + kernel JIT)")
-        print(f"     Subsequent runs at this size will be faster (cached kernels)")
+        if backend_type == "sd_cpp":
+            print(f"  ⏳ First run at {width}×{height}")
+            print(f"     Expected: ~80s (model load + offload + 20 denoising steps)")
+        else:
+            print(f"  ⏳ First run at {width}×{height}")
+            print(f"     Cold start: ~30-60s (imports + model load + kernel JIT)")
+            print(f"     Subsequent runs at this size will be faster (cached kernels)")
     print()
+
+    # ── Phase 1.5: Evict LLMs after prompt enhancement ──
+    # If we used an LLM for enhancement, evict it before loading sd-cli
+    # (sd-cli also needs VRAM for the diffusion model)
+    if (args.enhance or model_info.get("enhance_model")) and backend_type == "sd_cpp":
+        running = _llama_swap_running_models()
+        if running:
+            print(f"  🔄 Evicting LLM models after enhancement: {', '.join(running)}")
+            evict_llm()
+            print(f"     VRAM freed for image generation")
+            print()
 
     # ── Phase 1: Load pipeline ──
     print(f"  [1/3] Loading pipeline ({model_info['bits']})...")
     pipeline, load_time = load_pipeline(model_name)
-    print(f"        Pipeline ready in {load_time:.1f}s")
+    if backend_type == "gemlite":
+        print(f"        Pipeline ready in {load_time:.1f}s")
+    else:
+        print(f"        sd-cli config ready")
 
     # ── Phase 2: Generate ──
     print(f"  [2/3] Generating ({width}×{height}, {args.steps} steps, seed={seed})...")
     wall_t0 = time.perf_counter()
 
-    png_bytes, diffusion_time, peak_hbm = generate_image(
-        pipeline, prompt, seed, args.steps, width, height,
-    )
+    if backend_type == "gemlite":
+        png_bytes, diffusion_time, peak_hbm = generate_image_gemlite(
+            pipeline, prompt, seed, args.steps, width, height,
+        )
+        # Use the caller's cwd, not the script's directory
+        orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+        output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+        output_path.write_bytes(png_bytes)
+    elif backend_type == "sd_cpp":
+        # For sd_cpp, we need an output path upfront
+        orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+        output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+        output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
+            pipeline, prompt, seed, width, height, output_path,
+        )
+        load_time = 0.0  # sd-cli handles its own loading
+
     wall_time = time.perf_counter() - wall_t0
 
     # ── Phase 3: Save + Unload ──
     print(f"  [3/3] Saving & unloading...")
-    # Use the caller's cwd, not the script's directory
-    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
-    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
-    output_path.write_bytes(png_bytes)
     save_metadata(
         model_name, prompt, seed, width, height, args.steps,
         load_time, diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced_prompt,
     )
-    unload_pipeline()
+
+    if backend_type == "gemlite":
+        unload_pipeline()
 
     # ── Debrief ──
     print_debrief(
         model_name, model_info, prompt, seed,
         width, height, args.steps,
         load_time, diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced_prompt,
     )
 
     # ── Open in viewer ──

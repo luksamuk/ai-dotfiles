@@ -1,0 +1,64 @@
+# Granite Speech 4.1 2B — IBM ASR + AST model (NOT TTS)
+# Architecture: granite (text) + clip/granite_speech (mmproj audio encoder)
+# Multilingual ASR and bidirectional AST (speech translation):
+#   EN, FR, DE, ES, PT, JA — includes Portuguese with punctuation/capitalization
+# Trained on 174K hours of audio. #1 on OpenASR Leaderboard for <8B models.
+# ASR: audio → text (with punctuation, capitalization, keyword biasing)
+# AST: audio in PT/FR/DE/ES/JA → text in EN, and EN → those languages
+# Q4_K_M ~1.1GB model + mmproj-f16 ~1.1GB = ~2.2GB total
+# Uses ${llama_server} (upstream) — granite_speech preprocessor in mtmd
+# NOTE: This is an ASR/AST model, NOT TTS. It receives audio input and outputs text.
+#       The mmproj has has_audio_encoder=true but NO vocoder/decoder for audio output.
+#       Do NOT use --model-vocoder with this model — it's audio INPUT only.
+"granite-speech-4.1-2b":
+  unlisted: true
+  name: "Granite Speech 4.1 2B"
+  description: "Multilingual ASR and speech translation model. Transcribes audio in EN/FR/DE/ES/PT/JA with punctuation and capitalization. Also translates speech bidirectionally between these languages and English."
+  tags: ["audio"]
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/granite-speech-4.1-2b-Q4_K_M.gguf
+    --mmproj ${models_dir}/mmproj-model-f16.gguf
+    --jinja
+    --fit on
+    --fit-target 768
+    --fit-ctx ${small_model_min_ctx}
+    --ctx-size ${small_model_max_ctx}
+    --parallel 4
+    --cont-batching
+    --temp 0.2
+    --top-p 0.9
+    --top-k 40
+    --min-p 0.01
+    --repeat-penalty 1.0
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --flash-attn on
+    --metrics
+  ttl: 60
+  metadata:
+    size: "~2.2 GB (Q4_K_M model 1.1GB + mmproj-f16 1.1GB)"
+    context: "32K-128K (dynamic)"
+    vram_usage: "~3GB (model + mmproj + cache)"
+    source: "ibm-granite/granite-speech-4.1-2b-GGUF (Q4_K_M)"
+    kv_cache: "q8_0 + attn_rot"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: true
+      image: false
+    architecture: granite
+    parameters: 2000000000
+    context_length: 131072
+    embedding_length: 2048
+    quantization: Q4_K_M
+    caveats:
+      - "ASR/AST model — receives audio IN and outputs text, NOT TTS"
+      - "Supports EN, FR, DE, ES, PT, JA with punctuation and capitalization"
+      - "Keyword biasing for names, acronyms, and technical jargon"
+      - "Do NOT use --model-vocoder — this model has no speech decoder"
+      - "Uses granite_speech preprocessor in mtmd audio pipeline"

@@ -1,0 +1,61 @@
+# LFM2-Audio 1.5B — Liquid AI audio model (ASR + TTS + speech-to-speech)
+# Architecture: lfm2 (text) + clip/conformer (mmproj audio encoder) + vocoder (audiodecoder)
+# DISABLED in llama-swap: upstream llama-server mmproj crash
+#   "unable to find tensor a.blk.0.conv_norm.weight" — conformer preprocessor not in upstream mtmd
+# WORKS with dedicated binaries from Liquid AI:
+#   ~/.llama-models/runners/ubuntu-x64/lfm2-audio-ubuntu-x64/llama-lfm2-audio (TTS + ASR)
+#   ~/.llama-models/runners/ubuntu-x64/lfm2-audio-ubuntu-x64/llama-mtmd-cli (ASR only)
+#       ASR-only mode works without --model-vocoder
+"lfm2-audio-1.5b":
+  unlisted: true
+  name: "LFM2-Audio 1.5B"
+  description: "Liquid Foundation Model for audio understanding and generation. Supports ASR (speech-to-text) via conformer preprocessor and speech-to-speech via vocoder decoder. English-focused."
+  tags: ["audio"]
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/LFM2-Audio-1.5B-Q8_0.gguf
+    --mmproj ${models_dir}/mmproj-audioencoder-LFM2-Audio-1.5B-Q8_0.gguf
+    --model-vocoder ${models_dir}/audiodecoder-LFM2-Audio-1.5B-Q8_0.gguf
+    --jinja
+    --fit on
+    --fit-target 768
+    --fit-ctx ${small_model_min_ctx}
+    --ctx-size ${small_model_max_ctx}
+    --parallel 4
+    --cont-batching
+    --temp ${default_temp}
+    --top-p ${default_top_p}
+    --top-k ${default_top_k}
+    --min-p ${default_min_p}
+    --repeat-penalty ${default_repeat_penalty}
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn on
+    --metrics
+  ttl: 60
+  metadata:
+    size: "~1.82 GB (Q8_0 model 1.2GB + mmproj 318MB + audiodecoder 358MB)"
+    context: "32K-128K (dynamic)"
+    vram_usage: "~2.5GB (model + mmproj + audiodecoder + cache)"
+    source: "LiquidAI/LFM2-Audio-1.5B-GGUF (Q8_0)"
+    kv_cache: "q8_0 + attn_rot + hadamard"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: true
+      image: false
+    architecture: lfm2
+    parameters: 1500000000
+    context_length: 131072
+    embedding_length: 2048
+    quantization: Q8_0
+    caveats:
+      - "English-only audio understanding and generation"
+      - "TTS/speech-to-speech requires --model-vocoder for audiodecoder"
+      - "ASR works via /v1/audio/transcriptions or chat completions with audio input"

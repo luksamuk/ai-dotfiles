@@ -5,9 +5,9 @@
 # Repositório: ~/git/ai-dotfiles/llama-swap/
 # Modelos: ~/.llama-models/
 # Requer: llama-swap v212+ (Prometheus metrics, SIGHUP reload, reasoning UI, race fix, zstd captures)
-# Requer: llama.cpp build b9371+ (CVE-2025-53630 fix, mmproj fixes, reasoning-format, WebGPU gpt-oss, /v1/models modalities, NCCL-free TP)
-# Requer: ik_llama.cpp v4547+ (Hadamard non-power-of-2, FA multi-slot fix, per-GPU fit margin, GLM MTP fix, MLA cache fix)
-# Requer: BeeLlama.cpp v0.3.0+ (TurboQuant, reasoning-loop-guard, q6_0 cache, tool-call guard, Gemma4 ISWA fixes)
+# Requer: llama.cpp build b9563+ (mtmd audio/TTS/video, 6 audio preprocessors: whisper/conformer/granite_speech/gemma4a/gemma4ua/qwen3a, LFM2.5 reasoning fix, Gemma4 MTP, Granite4 Vision, KV cache optimizations)
+# Requer: ik_llama.cpp v4566+ (bf16 graph reduce fix, threads-mtmd, mtmd checkpoint save/restore)
+# Requer: BeeLlama.cpp v0.3.1+ (DFlash speculative decoding, TurboQuant KV cache, Gemma4 audio fixes)
 #
 # OTIMIZAÇÕES ik_llama.cpp (modelos MoE e dense offloaded):
 #   --k-cache-hadamard / --v-cache-hadamard (-khad/-vhad): Hadamard transform no K/V cache
@@ -839,6 +839,7 @@ models:
 # Dual mode: base (chat, no think) and :think (reasoning)
 # -------------------------------------------
   "qwopus-coder-9b":
+    unlisted: true
     name: "Qwopus 9B Coder"
     description: "Qwopus3.5 is a reasoning-enhanced model family fine-tuned from Qwen3.5 designed to improve reasoning stability and correctness, especially in programming."
     cmd: |
@@ -1908,6 +1909,71 @@ models:
       context_length: 131072
       embedding_length: 1024
       quantization: Q8_0
+# Granite Speech 4.1 2B — IBM ASR + AST model (NOT TTS)
+# Architecture: granite (text) + clip/granite_speech (mmproj audio encoder)
+# Multilingual ASR and bidirectional AST (speech translation):
+#   EN, FR, DE, ES, PT, JA — includes Portuguese with punctuation/capitalization
+# Trained on 174K hours of audio. #1 on OpenASR Leaderboard for <8B models.
+# ASR: audio → text (with punctuation, capitalization, keyword biasing)
+# AST: audio in PT/FR/DE/ES/JA → text in EN, and EN → those languages
+# Q4_K_M ~1.1GB model + mmproj-f16 ~1.1GB = ~2.2GB total
+# Uses ${llama_server} (upstream) — granite_speech preprocessor in mtmd
+# NOTE: This is an ASR/AST model, NOT TTS. It receives audio input and outputs text.
+#       The mmproj has has_audio_encoder=true but NO vocoder/decoder for audio output.
+#       Do NOT use --model-vocoder with this model — it's audio INPUT only.
+  "granite-speech-4.1-2b":
+    unlisted: true
+    name: "Granite Speech 4.1 2B"
+    description: "Multilingual ASR and speech translation model. Transcribes audio in EN/FR/DE/ES/PT/JA with punctuation and capitalization. Also translates speech bidirectionally between these languages and English."
+    tags:
+      - "audio"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/granite-speech-4.1-2b-Q4_K_M.gguf
+      --mmproj ${models_dir}/mmproj-model-f16.gguf
+      --jinja
+      --fit on
+      --fit-target 768
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --parallel 4
+      --cont-batching
+      --temp 0.2
+      --top-p 0.9
+      --top-k 40
+      --min-p 0.01
+      --repeat-penalty 1.0
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      size: "~2.2 GB (Q4_K_M model 1.1GB + mmproj-f16 1.1GB)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~3GB (model + mmproj + cache)"
+      source: "ibm-granite/granite-speech-4.1-2b-GGUF (Q4_K_M)"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: true
+        image: false
+      architecture: granite
+      parameters: 2000000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: Q4_K_M
+      caveats:
+        - "ASR/AST model — receives audio IN and outputs text, NOT TTS"
+        - "Supports EN, FR, DE, ES, PT, JA with punctuation and capitalization"
+        - "Keyword biasing for names, acronyms, and technical jargon"
+        - "Do NOT use --model-vocoder — this model has no speech decoder"
+        - "Uses granite_speech preprocessor in mtmd audio pipeline"
   "hunyuan-7b":
     unlisted: true
     name: "Hunyuan 7B Instruct"
@@ -2123,6 +2189,68 @@ models:
       embedding_length: 2048
       quantization: Q4_K_M
       note: "Pet project — MoE 1.5B active, hybrid conv+GQA. No /think mode. ik_llama does NOT support lfm2moe."
+# LFM2-Audio 1.5B — Liquid AI audio model (ASR + TTS + speech-to-speech)
+# Architecture: lfm2 (text) + clip/conformer (mmproj audio encoder) + vocoder (audiodecoder)
+# DISABLED in llama-swap: upstream llama-server mmproj crash
+#   "unable to find tensor a.blk.0.conv_norm.weight" — conformer preprocessor not in upstream mtmd
+# WORKS with dedicated binaries from Liquid AI:
+#   ~/.llama-models/runners/ubuntu-x64/lfm2-audio-ubuntu-x64/llama-lfm2-audio (TTS + ASR)
+#   ~/.llama-models/runners/ubuntu-x64/lfm2-audio-ubuntu-x64/llama-mtmd-cli (ASR only)
+#       ASR-only mode works without --model-vocoder
+  "lfm2-audio-1.5b":
+    unlisted: true
+    name: "LFM2-Audio 1.5B"
+    description: "Liquid Foundation Model for audio understanding and generation. Supports ASR (speech-to-text) via conformer preprocessor and speech-to-speech via vocoder decoder. English-focused."
+    tags:
+      - "audio"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/LFM2-Audio-1.5B-Q8_0.gguf
+      --mmproj ${models_dir}/mmproj-audioencoder-LFM2-Audio-1.5B-Q8_0.gguf
+      --model-vocoder ${models_dir}/audiodecoder-LFM2-Audio-1.5B-Q8_0.gguf
+      --jinja
+      --fit on
+      --fit-target 768
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --parallel 4
+      --cont-batching
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      size: "~1.82 GB (Q8_0 model 1.2GB + mmproj 318MB + audiodecoder 358MB)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~2.5GB (model + mmproj + audiodecoder + cache)"
+      source: "LiquidAI/LFM2-Audio-1.5B-GGUF (Q8_0)"
+      kv_cache: "q8_0 + attn_rot + hadamard"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: true
+        image: false
+      architecture: lfm2
+      parameters: 1500000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: Q8_0
+      caveats:
+        - "English-only audio understanding and generation"
+        - "TTS/speech-to-speech requires --model-vocoder for audiodecoder"
+        - "ASR works via /v1/audio/transcriptions or chat completions with audio input"
   "lfm2.5-1.2b-think":
     unlisted: true
     name: "LFM2.5 1.2B Thinking"
@@ -2237,69 +2365,6 @@ models:
       embedding_length: 2048
       quantization: Q4_0
       note: "Pet project — MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek."
-# -------------------------------------------
-# LFM2.5-8B-A1B MoQ-4.0 - UPSTREAM backend (lfm2moe hybrid conv+attention)
-# MoQ (Mixture of Quants) 4.0 bpw = ~4.0 GB vs Q4_0 ~4.6 GB
-# Same architecture, same chat template, same reasoning format
-# Drop-in replacement candidate for lfm2.5-8b-a1b
-# -------------------------------------------
-  "lfm2.5-8b-a1b-moq":
-    name: "LFM 2.5 8B MoQ"
-    description: "LFM 2.5 8B MoE — MoQ-4.0 bpw quant. Testing vs Q4_0 baseline."
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/LFM2.5-8B-A1B-MoQ-4.0.gguf
-      --fit on
-      --fit-ctx 16384
-      --ctx-size 131072
-      --parallel 1
-      --no-cont-batching
-      --reasoning-format deepseek-legacy
-      --reasoning on
-      --chat-template-file /home/alchemist/git/ai-dotfiles/llama-swap/templates/lfm2.5-chat-template.jinja
-      --temp 0.2
-      --top-p 0.8
-      --top-k 40
-      --min-p 0.15
-      --repeat-penalty 1.05
-      --cache-type-k q8_0
-      --cache-type-v q4_0
-      --flash-attn on
-      --n-predict -1
-      --jinja
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          temperature: 0.2
-          min_p: 0.15
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.3
-    ttl: 60
-    metadata:
-      size: "~4.0 GB (MoQ 4.0 bpw)"
-      context: "128K"
-      vram_usage: "~5 GB VRAM (4.0 GB model + KV)"
-      source: "w-ahmad/LFM2.5-8B-A1B-GGUF-MoQ"
-      kv_cache: "q8_0 + q4_0 hadamard"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: lfm2moe
-      parameters: 8470000000
-      context_length: 128000
-      embedding_length: 2048
-      quantization: MoQ-4.0
-      note: "MoQ (Mixture of Quants) 4.0 bpw variant — benchmarking against Q4_0 baseline."
 # -------------------------------------------
 # LFM2.5-VL-1.6B-EXTRACT — Structured Vision Extraction
 # Liquid AI — VLM that returns JSON, not free-form text
@@ -2788,6 +2853,109 @@ models:
       context_length: 40960
       embedding_length: 4096
       quantization: Q4_K_M
+# Qwen3-ASR 0.6B — Lightweight ASR (Automatic Speech Recognition) model
+# Architecture: qwen3vl (text) + clip/qwen3a (mmproj audio encoder)
+# ASR-only model — converts speech to text, no audio generation
+# Q8_0 ~768MB model + mmproj Q8_0 ~205MB = ~973MB total
+# Supports multiple languages (better multilingual than LFM2-Audio)
+# Uses ${llama_server} (upstream) — qwen3a preprocessor in mtmd
+# Supports /v1/audio/transcriptions endpoint
+  "qwen3-asr-0.6b":
+    name: "Qwen3-ASR 0.6B"
+    description: "Lightweight multilingual ASR model for speech-to-text transcription. Supports multiple languages with high accuracy. Audio input via qwen3a preprocessor."
+    tags:
+      - "audio"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3-ASR-0.6B-Q8_0.gguf
+      --mmproj ${models_dir}/mmproj-Qwen3-ASR-0.6B-Q8_0.gguf
+      --jinja
+      --fit on
+      --fit-target 768
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --parallel 4
+      --cont-batching
+      --temp ${default_temp}
+      --top-p ${default_top_p}
+      --top-k ${default_top_k}
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+    ttl: 60
+    metadata:
+      size: "~1.0 GB (Q8_0 model 768MB + mmproj 205MB)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~1.5GB (model + mmproj + cache)"
+      source: "ggml-org/Qwen3-ASR-0.6B-GGUF (Q8_0)"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: true
+        image: false
+      architecture: qwen3vl
+      parameters: 600000000
+      context_length: 131072
+      embedding_length: 896
+      quantization: Q8_0
+      caveats:
+        - "ASR-only model — no audio generation capability"
+        - "Multilingual ASR support (better than English-only models)"
+        - "Very lightweight, can run alongside other small models"
+# -------------------------------------------
+# QWEN3-TTS — TTS API server (Python FastAPI, not llama.cpp)
+# Qwen3-TTS 0.6B-Base with voice cloning support (8 pt-BR voices)
+# Runs as external process on port 8880 with OpenAI-compatible /v1/audio/speech endpoint
+# NOT a GGUF model — uses torch-direct inference via qwen_tts library
+# Serves /v1/audio/speech, /v1/audio/voices, and /v1/models endpoints
+# Voice profiles: hermes, lucas, jessica, francisca, thalita, drácula, alucard, batman, bolso
+# Source: ~/projects/ai/tts-api/tts_server.py
+# -------------------------------------------
+  "qwen3-tts":
+    name: "Qwen3-TTS 0.6B"
+    description: "Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible /v1/audio/speech endpoint with voice profiles from voiceclone-tui."
+    tags:
+      - "tts"
+    proxy: "http://127.0.0.1:8880"
+    checkEndpoint: "/v1/audio/voices"
+    cmd: |
+      ${env.HOME}/projects/ai/tts-api/.venv/bin/python ${env.HOME}/projects/ai/tts-api/tts_server.py --port 8880 --host 127.0.0.1
+    cmdStop: "pkill -f tts_server.py"
+    ttl: 300
+    metadata:
+      size: "~600MB (Qwen3-TTS-12Hz-0.6B-Base, torch-direct)"
+      context: "N/A (TTS generation, not LLM context)"
+      vram_usage: "~2GB VRAM (torch-direct, separate GPU allocation)"
+      source: "Qwen/Qwen3-TTS-12Hz-0.6B-Base (HuggingFace)"
+      kv_cache: "N/A"
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: true
+        image: false
+      architecture: qwen3-tts
+      parameters: 600000000
+      context_length: 0
+      embedding_length: 0
+      quantization: "torch-direct (no GGUF)"
+      caveats:
+        - "External FastAPI server on port 8880 (not llama.cpp)"
+        - "Must install qwen_tts and dependencies in ~/projects/ai/tts-api/.venv"
+        - "Voice profiles loaded from ~/.config/voiceclone-tui/voices.json"
+        - "Supports voice cloning with reference audio samples"
+        - "Portuguese (pt-BR) voices with accent control"
 # -------------------------------------------
 # QWEN3.5-0.8B - MULTIMODAL (VISION + TEXT)
 # Smallest Qwen3.5 variant with native vision (early fusion)
@@ -3638,6 +3806,12 @@ matrix:
     # [REMOVED] gr40h1: granite-4.0-h-1b
     sglang: lfm2.5-sgl
     # nb41: nanbeige4.1-3b   # REMOVED: multi-turn tool calling broken (#22684), GGUF deleted
+    # Audio models (lightweight — can run alongside small LLM + vision)
+    asr: qwen3-asr-0.6b
+    # aud: lfm2-audio-1.5b  # DISABLED: mmproj conformer crash (upstream bug)
+    asrg: granite-speech-4.1-2b
+    # External TTS server (Python FastAPI, separate GPU allocation)
+    ttsext: qwen3-tts
   # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
   # +ref = expandir outro set inline
   #
@@ -3652,6 +3826,18 @@ matrix:
 
     # LLM pequeno sozinho (sem vision ativo)
     small_only: "q08 | q4 | g2 | g2q | lfm2s | lfm2t"
+
+    # Audio models — rodam alongside modelos leves + vision
+    # Qwen3-ASR (~1.5GB) e Granite Speech (~3GB) são ASR, NÃO TTS
+    # LFM2-Audio DESABILITADO (mmproj conformer crash upstream)
+    # Qwen3-TTS é TTS externo (FastAPI porta 8880)
+    small_audio: "(q08) & asr"
+
+    # ASR only set (leve, cabe com vision + small)
+    asr_vision: "asr & vl & (q08 | lfm2s)"
+
+    # External TTS (separate process, same GPU — compete with heavy models)
+    tts_external: "ttsext"
 
     # vLLM backends (mutuamente exclusivos com llama.cpp — mesma GPU)
     vllm: "q08vllm | lfm2vllm"
@@ -3687,6 +3873,10 @@ matrix:
     # [REMOVED] ACE: 4 — superseded by Qwopus
     g4: 4        # ~4.5GB, fits VRAM now
     vl: 3        # vision, leve mas útil manter vivo
+    asr: 2        # Qwen3-ASR, leve (~1.5GB), multilingual
+    # aud: 3        # LFM2-Audio DISABLED (mmproj crash)
+    asrg: 3       # Granite Speech, médio (~3GB), ASR+AST multilingual (PT!)
+    ttsext: 4   # Qwen3-TTS, external FastAPI (~2GB VRAM), voice cloning
     q08: 1       # 0.8B, ultra-leve
     lfm2s: 1    # 1.2B Instruct, ultra-leve
     lfm2t: 1    # 1.2B Thinking, ultra-leve

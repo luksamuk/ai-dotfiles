@@ -1,0 +1,45 @@
+# -------------------------------------------
+# QWEN3-TTS — TTS API server (Python FastAPI, not llama.cpp)
+# Qwen3-TTS 0.6B-Base with voice cloning support (8 pt-BR voices)
+# Runs as external process on port 8880 with OpenAI-compatible /v1/audio/speech endpoint
+# NOT a GGUF model — uses torch-direct inference via qwen_tts library
+# Serves /v1/audio/speech, /v1/audio/voices, and /v1/models endpoints
+# Voice profiles: hermes, lucas, jessica, francisca, thalita, drácula, alucard, batman, bolso
+# Source: ~/projects/ai/tts-api/tts_server.py
+# -------------------------------------------
+"qwen3-tts":
+  name: "Qwen3-TTS 0.6B"
+  description: "Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible /v1/audio/speech endpoint with voice profiles from voiceclone-tui."
+  tags: ["tts"]
+  proxy: "http://127.0.0.1:8880"
+  checkEndpoint: "/v1/audio/voices"
+  cmd: |
+    ${env.HOME}/projects/ai/tts-api/.venv/bin/python ${env.HOME}/projects/ai/tts-api/tts_server.py --port 8880 --host 127.0.0.1
+  cmdStop: "pkill -f tts_server.py"
+  ttl: 300
+  metadata:
+    size: "~600MB (Qwen3-TTS-12Hz-0.6B-Base, torch-direct)"
+    context: "N/A (TTS generation, not LLM context)"
+    vram_usage: "~2GB VRAM (torch-direct, separate GPU allocation)"
+    source: "Qwen/Qwen3-TTS-12Hz-0.6B-Base (HuggingFace)"
+    kv_cache: "N/A"
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: true
+      image: false
+    architecture: qwen3-tts
+    parameters: 600000000
+    context_length: 0
+    embedding_length: 0
+    quantization: "torch-direct (no GGUF)"
+    caveats:
+      - "External FastAPI server on port 8880 (not llama.cpp)"
+      - "Must install qwen_tts and dependencies in ~/projects/ai/tts-api/.venv"
+      - "Voice profiles loaded from ~/.config/voiceclone-tui/voices.json"
+      - "Supports voice cloning with reference audio samples"
+      - "Portuguese (pt-BR) voices with accent control"
