@@ -7,6 +7,12 @@ Designed for NVIDIA RTX 3050 6GB. Model-agnostic — add new backends via MODELS
 Currently supports:
   - Bonsai Image 4B (gemlite + HQQ kernels on CUDA)
   - Ideogram 4 Q4 (sd-cli/stable-diffusion.cpp with CUDA offload)
+
+Usage:
+  diffuse -m ternary-gemlite -p 'a cat on the moon'
+  diffuse -m ideogram4-q4 --enhance -p 'a rainy coffee shop' --show-enhanced
+  diffuse -m ideogram4-q4:think --enhance --evict-llm -p 'cyberpunk city'
+  diffuse -m ideogram4-q4 --cpu-fallback -p 'sunset'  # fallback if CUDA OOM
 """
 from __future__ import annotations
 
@@ -114,14 +120,17 @@ MODELS = {
         "bits": "4-bit",
         "description": "Ideogram 4 Q4_0 — 9.3B DiT, structured JSON prompts, best-in-class text rendering",
         "enhance_model": "qwen3.5-4b",
+        "default_size": (480, 480),
     },
     "ideogram4-q4:think": {
         "backend_id": "ideogram4-q4-sd-cpp",
         "dir": "ideogram-4-Q4_0",
         "backend_type": "sd_cpp",
         "bits": "4-bit",
-        "description": "Ideogram 4 Q4_0 — enhanced prompts via Gemma 4 12B",
-        "enhance_model": "gemma4-12b",
+        "description": "Ideogram 4 Q4_0 — enhanced prompts via Qwen 3.5 4B (thinking mode)",
+        "enhance_model": "qwen3.5-4b",
+        "enhance_think": True,
+        "default_size": (480, 480),
     },
 }
 
@@ -370,9 +379,9 @@ def generate_image_gemlite(pipeline, prompt: str, seed: int, steps: int, width: 
 
     return png_bytes, diffusion_time, peak_hbm
 
-def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, height: int, output_path: Path) -> tuple:
+def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, height: int, output_path: Path, cpu_fallback: bool = False) -> tuple:
     """Generate image using sd-cli. Returns (output_path, wall_time_seconds, 0.0)."""
-    log.info("Generating via sd-cli: seed=%d size=%dx%d", seed, width, height)
+    log.info("Generating via sd-cli: seed=%d size=%dx%d cpu_fallback=%s", seed, width, height, cpu_fallback)
 
     cmd = [
         config["sd_cli"],
@@ -391,8 +400,26 @@ def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, heig
         "-o", str(output_path),
     ]
 
+    # CPU fallback: remove VRAM limits and force everything on CPU
+    if cpu_fallback:
+        log.warning("Retrying with CPU-only backend — this will be very slow (~30+ minutes)")
+        cmd = [
+            config["sd_cli"],
+            "--diffusion-model", config["diffusion_model"],
+            "--uncond-diffusion-model", config["uncond_diffusion_model"],
+            "--llm", config["llm"],
+            "--vae", config["vae"],
+            "-p", prompt,
+            "--backend", "cpu",
+            "-H", str(height),
+            "-W", str(width),
+            "--seed", str(seed),
+            "-o", str(output_path),
+        ]
+
+    timeout_secs = 2400 if cpu_fallback else 600  # 40 min for CPU fallback, 10 min for CUDA
     t0 = time.perf_counter()
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_secs)
     wall_time = time.perf_counter() - t0
 
     if result.returncode != 0:
@@ -474,13 +501,14 @@ def print_debrief(
     width: int, height: int, steps: int, load_time: float,
     diffusion_time: float, wall_time: float, peak_hbm: float,
     output_path: Path, enhanced_prompt: str | None = None,
+    original_prompt: str | None = None,
 ) -> None:
     """Print generation stats report."""
     print()
     print("═══ diffuse — Generation Report ═══")
     print(f"  Model:       {model_name} ({model_info['bits']})")
-    if enhanced_prompt:
-        print(f"  Prompt:      \"{prompt}\"")
+    if original_prompt and original_prompt != prompt:
+        print(f"  Prompt:      \"{original_prompt}\"")
         print(f"  Enhanced:    Yes → Ideogram 4 JSON")
     else:
         print(f"  Prompt:      \"{prompt}\"")
@@ -518,14 +546,46 @@ def parse_size(s: str) -> tuple[int, int]:
             raise argparse.ArgumentTypeError(f"--size {name} {dim} must be a multiple of 16")
     return w, h
 
+def _build_model_help() -> str:
+    """Build a formatted model list for --help. Escape % for argparse."""
+    lines = []
+    for name in sorted(MODELS):
+        info = MODELS[name]
+        bits = info.get("bits", "?")
+        desc = info.get("description", "")
+        backend = info.get("backend_type", "gemlite")
+        size = info.get("default_size")
+        size_str = f"{size[0]}x{size[1]}" if size else "512x512"
+        tag = f"[{backend}]" if backend != "gemlite" else ""
+        lines.append(f"  {name:24s} {bits:6s} {tag:8s} {size_str:9s} {desc}")
+    # argparse %'-expands help strings, so escape literal %
+    return "\n".join(lines).replace("%", "%%")
+
+
 def parse_args() -> argparse.Namespace:
+    model_help = (
+        "Model variant (default: ternary-gemlite).\n"
+        "Available models:\n"
+        + _build_model_help()
+    )
     p = argparse.ArgumentParser(
         prog="diffuse",
-        description="diffuse — Local diffusion image generation CLI",
+        description="diffuse — Local diffusion image generation CLI for NVIDIA RTX 3050 6GB",
         epilog=(
-            "Recommended sizes:\n"
-            "  Fast (512x512):   512x512, 624x416, 416x624\n"
-            "  Quality (1024x1024): 1024x1024, 1248x832, 832x1248\n"
+            "Examples:\n"
+            "  diffuse -m ternary-gemlite -p 'a cat on the moon'\n"
+            "  diffuse -m ideogram4-q4 --enhance -p 'a rainy day at a coffee shop'\n"
+            "  diffuse -m ideogram4-q4:think --evict-llm --enhance -p 'cyberpunk city'\n"
+            "  diffuse -m ideogram4-q4 -p '{\"high_level_description\": \"...\"}' --size 480x480\n"
+            "\n"
+            "Ideogram 4 requires structured JSON prompts for best results.\n"
+            "Use --enhance to auto-expand simple text into JSON via LLM.\n"
+            "The ':think' suffix uses thinking mode for richer prompts.\n"
+            "\n"
+            "Recommended sizes for RTX 3050 6GB:\n"
+            "  Safe:  480x480, 624x416, 416x624 (fits VRAM comfortably)\n"
+            "  Max:   512x512, 624x448, 448x624 (may OOM with other GPU load)\n"
+            "  Bonsai: 512x512 is the default and safe for all models\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -533,24 +593,36 @@ def parse_args() -> argparse.Namespace:
         "-m", "--model",
         choices=sorted(MODELS),
         default="ternary-gemlite",
-        help="Model variant (default: ternary-gemlite)",
+        help=model_help,
     )
     p.add_argument("-p", "--prompt", help="Text prompt. If omitted, prompted interactively.")
     p.add_argument("--seed", type=int, default=None, help="Random seed (random if not set).")
-    p.add_argument("--steps", type=int, default=4, help="Denoising steps (default: 4 for gemlite, 20 for ideogram4).")
+    p.add_argument("--steps", type=int, default=None, help="Denoising steps (default: 4 for bonsai, 20 for ideogram4).")
     p.add_argument(
-        "--size", type=parse_size, default=(512, 512),
-        help="Image size as WxH (default: 512x512).",
+        "--size", type=parse_size, default=None,
+        help="Image size as WxH (default: 512x512 for bonsai, 480x480 for ideogram4).",
     )
     p.add_argument("--output", type=Path, default=None, help="Output PNG path (auto-generated in cwd if not set).")
     p.add_argument("--open", action="store_true", help="Open the generated image with feh after saving.")
     p.add_argument(
         "--evict-llm", action="store_true",
-        help="Evict all running LLM models (via llama-swap) to free VRAM before generating.",
+        help="Evict all running LLM models (via llama-swap) to free VRAM before generating. "
+             "Automatically done when --enhance is used (double-evict: before and after LLM call).",
     )
     p.add_argument(
         "--enhance", action="store_true",
-        help="Use LLM to expand simple text prompt into Ideogram 4 JSON format (slow, much better quality).",
+        help="Expand simple text prompt into Ideogram 4 JSON via LLM (qwen3.5-4b). "
+             "Essential for ideogram4 — plain text produces poor results. "
+             "Uses model's 'enhance_model' or qwen3.5-4b by default. "
+             "The ':think' suffix activates thinking mode for more detailed prompts.",
+    )
+    p.add_argument(
+        "--show-enhanced", action="store_true",
+        help="Print the full enhanced JSON prompt before generating.",
+    )
+    p.add_argument(
+        "--cpu-fallback", action="store_true",
+        help="If CUDA generation fails, automatically retry on CPU (very slow: ~30+ min).",
     )
     return p.parse_args()
 
@@ -617,13 +689,23 @@ def main() -> None:
     model_name = args.model
     model_info = MODELS[model_name]
     seed = args.seed if args.seed is not None else secrets.randbits(31)
-    width, height = args.size
-    prompt = args.prompt or get_prompt_interactive()
     backend_type = model_info.get("backend_type", "gemlite")
 
-    # Default steps for ideogram4 is 20, for gemlite is 4
-    if args.steps == 4 and backend_type == "sd_cpp":
-        args.steps = 20
+    # ── Defaults per backend ──
+    # Steps: bonsai=4, ideogram4=20
+    if args.steps is None:
+        args.steps = 20 if backend_type == "sd_cpp" else 4
+
+    # Size: model-specific defaults (480x480 for ideogram4 on 6GB VRAM, 512x512 for bonsai)
+    if args.size is None:
+        default_size = model_info.get("default_size", (512, 512))
+        width, height = default_size
+    else:
+        width, height = args.size
+
+    prompt = args.prompt or get_prompt_interactive()
+
+    original_prompt = prompt
 
     # Pre-flight
     require_model_dir(model_name)
@@ -644,13 +726,30 @@ def main() -> None:
 
     # ── Prompt enhancement ──
     enhanced_prompt = None
-    if args.enhance or model_info.get("enhance_model"):
-        enhance_model = model_info.get("enhance_model", "lfm2.5-1.2b")
-        think = "think" in model_name
-        print(f"  ✨ Enhancing prompt via {enhance_model}{' (detailed)' if think else ''}...")
-        enhanced_prompt = enhance_prompt(prompt, enhance_model, think=think)
+    enhance_think = model_info.get("enhance_think", False)
+    enhance_model = model_info.get("enhance_model")
+
+    if args.enhance:
+        if not enhance_model:
+            enhance_model = "qwen3.5-4b"
+        print(f"  ✨ Enhancing prompt via {enhance_model}{' (thinking mode)' if enhance_think else ''}...")
+        enhanced_prompt = enhance_prompt(prompt, enhance_model, think=enhance_think)
         if enhanced_prompt != prompt:
             print(f"     Expanded to JSON ({len(enhanced_prompt)} chars)")
+            if args.show_enhanced:
+                print(f"     ─── Enhanced prompt ───")
+                try:
+                    parsed = json.loads(enhanced_prompt)
+                    for key, val in parsed.items():
+                        if isinstance(val, dict):
+                            print(f"     {key}:")
+                            for k, v in val.items():
+                                print(f"       {k}: {v}")
+                        else:
+                            print(f"     {key}: {val}")
+                except json.JSONDecodeError:
+                    print(f"     {enhanced_prompt}")
+                print(f"     ────────────────────────")
         else:
             print(f"     Enhancement failed — using raw prompt")
         # For sd_cpp, use the enhanced JSON prompt
@@ -668,7 +767,7 @@ def main() -> None:
     else:
         if backend_type == "sd_cpp":
             print(f"  ⏳ First run at {width}×{height}")
-            print(f"     Expected: ~80s (model load + offload + 20 denoising steps)")
+            print(f"     Expected: ~80-100s (model load + offload + 20 denoising steps)")
         else:
             print(f"  ⏳ First run at {width}×{height}")
             print(f"     Cold start: ~30-60s (imports + model load + kernel JIT)")
@@ -678,7 +777,7 @@ def main() -> None:
     # ── Phase 1.5: Evict LLMs after prompt enhancement ──
     # If we used an LLM for enhancement, evict it before loading sd-cli
     # (sd-cli also needs VRAM for the diffusion model)
-    if (args.enhance or model_info.get("enhance_model")) and backend_type == "sd_cpp":
+    if args.enhance and backend_type == "sd_cpp":
         running = _llama_swap_running_models()
         if running:
             print(f"  🔄 Evicting LLM models after enhancement: {', '.join(running)}")
@@ -710,9 +809,19 @@ def main() -> None:
         # For sd_cpp, we need an output path upfront
         orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
         output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
-        output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
-            pipeline, prompt, seed, width, height, output_path,
-        )
+        try:
+            output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
+                pipeline, prompt, seed, width, height, output_path,
+            )
+        except RuntimeError as e:
+            if "CUDA" in str(e) and args.cpu_fallback:
+                print(f"  ⚠️  CUDA failed — retrying on CPU (this will be very slow)...")
+                output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
+                    pipeline, prompt, seed, width, height, output_path,
+                    cpu_fallback=True,
+                )
+            else:
+                raise
         load_time = 0.0  # sd-cli handles its own loading
 
     wall_time = time.perf_counter() - wall_t0
@@ -734,6 +843,7 @@ def main() -> None:
         width, height, args.steps,
         load_time, diffusion_time, wall_time, peak_hbm, output_path,
         enhanced_prompt=enhanced_prompt,
+        original_prompt=original_prompt,
     )
 
     # ── Open in viewer ──
