@@ -21,7 +21,8 @@ ai-dotfiles/
 │   ├── opencode/               # OpenCode CLI
 │   ├── open-webui/             # Open WebUI Docker
 │   ├── pi/                     # Pi Coding Agent
-│   └── tui-studio/             # TUI Studio Docker
+│   ├── tui-studio/             # TUI Studio Docker
+│   └── vscode/                 # VSCode language model providers
 ├── diffuse/                    # Geração de imagens locais (Bonsai Image 4B)
 ├── llama-swap/                 # Config do llama-swap + modelos GGUF
 ├── magenta-rt/                 # Geração de música local (Magenta RealTime 2)
@@ -216,6 +217,17 @@ curl http://127.0.0.1:12434/v1/models
 
 Ver documentação completa em =llama-swap/README.md=.
 
+** vscode — VSCode Language Model Providers
+
+- **Ferramenta**: [[https://code.visualstudio.com/][Visual Studio Code]] — editor com suporte a Language Models via API.
+- **Diretório**: =configs/vscode/=
+- **Arquivos**: =chatLanguageModels.json= — providers customizados (Llama-Swap local, Ollama Cloud) com todos os modelos que suportam tool calling.
+- **Destino**: =~/.config/Code/User/chatLanguageModels.json=
+- **Sync**:
+  #+BEGIN_SRC bash
+  cp ~/git/ai-dotfiles/configs/vscode/chatLanguageModels.json ~/.config/Code/User/chatLanguageModels.json
+  #+END_SRC
+
 * Ollama Modelfiles
 
 A pasta =modelfiles/= contém arquivos =.modelfile= e um =Makefile= para criar modelos especializados no Ollama.
@@ -244,6 +256,7 @@ A pasta =scripts/= contém apenas o script =ask-ai.py=, que está **obsoleto** e
 | =goose/=                | =~/.config/goose/=                 | =config.yaml=                       |
 | =opencode/=             | =~/.config/opencode/=              | =opencode.json=, =tui.json=         |
 | =pi/=                   | =~/.pi/agent/=                     | =settings.json=, =mcp.json=, =models.json= |
+| =vscode/=                | =~/.config/Code/User/=             | =chatLanguageModels.json=            |
 
 ** TODO Sincronizar tudo de uma vez
 
@@ -270,6 +283,9 @@ cp "$DOTFILES/configs/opencode/tui.json" ~/.config/opencode/tui.json
 cp "$DOTFILES/configs/pi/settings.json" ~/.pi/agent/settings.json
 cp "$DOTFILES/configs/pi/mcp.json" ~/.pi/agent/mcp.json
 cp "$DOTFILES/configs/pi/models.json" ~/.pi/agent/models.json
+
+# VSCode
+cp "$DOTFILES/configs/vscode/chatLanguageModels.json" ~/.config/Code/User/chatLanguageModels.json
 
 echo "✓ Sincronização concluída!"
 #+END_SRC
