@@ -273,6 +273,7 @@ models:
       --fit
       --fit-margin 512
       --ctx-size 131072
+      --timeout 0
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -343,6 +344,7 @@ models:
       --jinja
       --parallel-tool-calls
       --ctx-size ${small_model_max_ctx}
+      --timeout 0
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -408,6 +410,7 @@ models:
       --jinja
       --parallel-tool-calls
       --ctx-size ${small_model_max_ctx}
+      --timeout 0
       --temp 0.7
       --top-p 0.9
       --top-k 40
@@ -472,6 +475,7 @@ models:
       --fit-target 1024
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --timeout 0
       --temp 0.7
       --top-p 0.9
       --top-k 40
@@ -583,6 +587,7 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --timeout 0
       --temp 0.1
       --top-p 0.9
       --top-k 40
@@ -641,6 +646,7 @@ models:
       --fit
       --fit-margin 768
       --ctx-size 40960
+      --timeout 0
       --parallel 2
       --cont-batching
       --temp 0.6
@@ -702,6 +708,7 @@ models:
       --fit-target 96
       --fit-ctx 16384
       --ctx-size 131072
+      --timeout 0
       --temp 1.0
       --top-p 0.95
       --reasoning on
@@ -776,6 +783,7 @@ models:
       --fit
       --fit-margin 768
       --ctx-size 131072
+      --timeout 0
       --temp ${code_temp}
       --top-p ${code_top_p}
       --top-k ${code_top_k}
@@ -924,6 +932,7 @@ models:
       --fit-target 768
       --fit-ctx ${small_model_min_ctx}
       --ctx-size 40960
+      --timeout 0
       --parallel 4
       --cont-batching
       --temp ${code_temp}
@@ -995,6 +1004,7 @@ models:
       --fit on
       --fit-ctx 8192
       --ctx-size 262144
+      --timeout 0
       --parallel 4
       --cont-batching
       --temp ${default_temp}
@@ -1217,6 +1227,7 @@ models:
       --fit-target 768
       --fit-ctx 8192
       --ctx-size 131072
+      --timeout 0
       --jinja
       --reasoning on
       --cache-type-k q4_0
@@ -1617,6 +1628,7 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --timeout 0
       --temp 0.1
       --top-p 0.9
       --top-k 40
@@ -1674,6 +1686,7 @@ models:
       --fit
       --fit-margin 768
       --ctx-size 131072
+      --timeout 0
       --temp 0.6
       --top-p 0.9
       --top-k 40
@@ -2056,6 +2069,7 @@ models:
       --fit-target 768
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --timeout 0
       --temp 0.7
       --top-p 0.6
       --top-k 20
@@ -2086,6 +2100,86 @@ models:
       embedding_length: 2048
       quantization: Q4_K_M
       note: "Translation-only model. No system prompt needed (per Hy-MT2 docs). Official prompt: 'Translate the following text into {target_lang}. Note that you should only output the translated result without any additional explanation:\n\n{source_text}'. Supports terminology, style, personalization, delimiter preservation, and structured data translation. See https://github.com/Tencent-Hunyuan/Hy-MT2 for all prompt formats."
+# Laguna XS.2 — Poolside's 33B/3B MoE agentic coding model
+# Requantized Q3_K_M (15.5GB) to fit 6GB VRAM with --fit
+# Uses ik_llama.cpp: pinned memory + defer-experts for fast MoE loading
+# head_dim=128 → attn_rot ✅. KV cache: q8_0 (no hadamard — ik doesn't support it)
+# Custom chat_template.jinja (template embedded in GGUF uses {% include %} which isn't supported)
+# Dual mode: base (chat, no think) and :think (interleaved reasoning)
+
+# Performance: ~35 tok/s on RTX 3050 6GB (mostly CPU-offloaded MoE experts)
+# Known issues:
+#   - Model tends to over-generate tool calls (2-3x expected). repeat-penalty 1.12 mitigates.
+#   - parallel-tool-calls re-enabled — over-generates 3-4 calls when 2-3 needed; client dedupes.
+#   - stop: ["</assistant>"] required — template uses text close tags, not special tokens.
+# Thinking mode:
+#   --reasoning auto/format deepseek DON'T extract reasoning_content for this template.
+#   ik_llama.cpp auto-parser can't detect Brie/Brie in Laguna's Jinja2 (uses {generation} blocks).
+#   Ollama has a dedicated Go parser (laguna.go) that extracts thinking — ik_llama.cpp doesn't.
+#   Result: thinking: partial — thinking leaks into content as text between Brie/Brie tags.
+#   --reasoning ON (reserves extra KV cache) causes OOM with --fit on 6GB — not viable.
+# Context: dynamic 8K-131K via --fit --fit-margin 256
+  "laguna-xs2":
+    name: "Laguna XS.2"
+    description: "Poolside's 33B/3B MoE coding model with mixed SWA+global attention, native interleaved reasoning, and 131K context. Designed for agentic coding."
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/laguna-xs2-Q3_K_M.gguf
+      --fit
+      --fit-margin 256
+      --ctx-size 32768
+      --timeout 0
+      --batch-size 8
+      --temp 0.3
+      --top-p 0.85
+      --top-k 40
+      --min-p 0.02
+      --repeat-penalty 1.12
+      --parallel-tool-calls
+      --jinja
+      --chat-template-file ${models_dir}/laguna-xs2-chat-template.jinja
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --flash-attn auto
+      --defer-experts
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParams:
+        stop:
+          - "</assistant>"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.3
+          top_p: 0.85
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.7
+          top_p: 0.9
+    ttl: 300
+    metadata:
+      size: "~15.5 GB (Q3_K_M — requantized from Q4_K_M)"
+      context: "8K-131K (dynamic with --fit)"
+      vram_usage: "~5.5GB VRAM (model offload + attention on GPU, experts on CPU)"
+      source: "Lucebox/Laguna-XS.2-GGUF → local Q3_K_M requant"
+      kv_cache: "q8_0"
+      features:
+        completion: true
+        tools: true
+        thinking: partial
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: laguna
+      parameters: 33443000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: Q3_K_M
   "lfm2-24b":
     unlisted: true
     name: "LFM2 24B"
@@ -2317,6 +2411,7 @@ models:
       --fit on
       --fit-ctx 16384
       --ctx-size 131072
+      --timeout 0
       --parallel 1
       --no-cont-batching
       --reasoning-format deepseek-legacy
@@ -2385,6 +2480,7 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --timeout 0
       --temp 0.1
       --top-p 0.9
       --top-k 40
@@ -2438,6 +2534,7 @@ models:
       --fit
       --fit-margin 512
       --ctx-size 131072
+      --timeout 0
       --temp 0.6
       --top-p 0.95
       --top-k 20
@@ -2685,6 +2782,7 @@ models:
       --embeddings
       --pooling mean
       --ctx-size 512
+      --timeout 0
       --cont-batching
       --cache-type-k f16
       --cache-type-v f16
@@ -2874,6 +2972,7 @@ models:
       --fit-target 768
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --timeout 0
       --parallel 4
       --cont-batching
       --temp ${default_temp}
@@ -3042,6 +3141,7 @@ models:
       --fit
       --fit-margin 512
       --ctx-size 131072
+      --timeout 0
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -3642,6 +3742,7 @@ models:
       --fit-target 768
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --timeout 0
       --temp 0.2
       --top-p 0.9
       --top-k 40
