@@ -93,6 +93,41 @@ EXAMPLE OUTPUT: "Alucard from Castlevania: Symphony of the Night — a pale andr
 
 OUTPUT ONLY the expanded prompt. No commentary, no labels, no markdown."""
 
+# ── Image analysis & edit enhancement (for --edit + --enhance) ────────────────
+VISION_ANALYSIS_SYSTEM_PROMPT = """You are analyzing a reference image that will be edited by a diffusion model. Describe the image in precise visual detail so that another AI can understand what to preserve and what to change.
+
+RULES:
+1. Describe EVERY visible element: people (pose, expression, clothing, accessories, skin tone, hair, makeup), background (color, texture, objects, depth), lighting (direction, color temperature, shadows), and composition (framing, perspective).
+2. If the user's edit instruction references specific elements, give EXTRA detail on those elements — their exact appearance, position, and boundaries.
+3. Identify what is FOREGROUND (must be preserved) vs BACKGROUND (can be changed or replaced).
+4. Note any quality issues: blur, noise, compression artifacts, lens flare, color cast — these affect how the edit should proceed.
+5. Be SPECIFIC about colors, textures, and spatial relationships. "A woman in a dark top" is too vague. "A woman in her 30s with warm olive skin, long straight black hair past her shoulders, wearing a form-fitting black V-neck top with gold hoop earrings" is useful.
+6. Output in English. Single structured paragraph.
+
+OUTPUT ONLY the visual description. No commentary, no labels, no markdown."""
+
+EDIT_ENHANCE_SYSTEM_PROMPT = """You are refining an image editing instruction for a diffusion model (HiDream) that supports instruction-based image editing.
+
+INPUT:
+- A visual description of the reference image (from a vision model)
+- The user's original edit instruction
+
+YOUR JOB:
+Combine the visual description and the edit instruction into a SINGLE, precise, detailed English paragraph that tells the diffusion model EXACTLY what to do.
+
+RULES:
+1. Always write in English.
+2. Reference the subjects from the visual description using SPECIFIC visual details (not vague "the person" — use "the woman with burgundy lipstick and dark hair" or similar).
+3. Describe the DESIRED RESULT clearly — what should the final image look like, not what should be removed.
+4. Instead of "remove the background", say "the two women with burgundy lipstick standing against a clean white studio backdrop" — state the POSITIVE outcome.
+5. Preserve all subject details that are NOT being changed. If the instruction only changes the background, keep all person descriptions intact.
+6. Mention lighting and atmosphere appropriate for the edit (e.g., "soft diffused studio lighting" for a white background swap).
+7. Keep it as a SINGLE natural-language paragraph. No JSON, no bullet points.
+
+OUTPUT ONLY the refined edit instruction. No commentary, no labels, no markdown."""
+
+DEFAULT_VISION_MODEL = "minicpm-v-4.6"
+
 # ── Model registry ─────────────────────────────────────────────────────────
 MODELS = {
     # Bonsai Image 4B (gemlite CUDA)
@@ -570,6 +605,170 @@ def enhance_vision_prompt(prompt: str, model: str) -> tuple:
     if not enhanced:
         log.warning("Empty vision-enhancement response — using raw prompt")
         return prompt, enhanced
+
+    return enhanced, enhanced
+
+
+def _check_model_vision(model: str) -> bool:
+    """Check if a llama-swap model supports vision (image input) via the API."""
+    import urllib.request
+    import urllib.error
+    try:
+        req = urllib.request.Request(f"{LLAMA_SWAP_URL}/v1/models")
+        with urllib.request.urlopen(req, timeout=None) as resp:
+            data = json.loads(resp.read())
+            for m in data.get("data", []):
+                if m.get("id") == model:
+                    features = m.get("meta", {}).get("llamaswap", {}).get("features", {})
+                    return features.get("image", False) or features.get("vision", False)
+    except Exception as e:
+        log.warning("Could not check model vision capability: %s", e)
+    return False
+
+
+def analyze_image(image_path: str, model: str, user_prompt: str) -> str:
+    """Use a vision model to analyze a reference image for editing.
+
+    Sends the image plus the user's edit instruction to a vision model,
+    which returns a detailed visual description of what's in the image
+    and what elements matter for the edit.
+
+    Returns the visual description string, or empty string on failure.
+    """
+    import base64
+    import urllib.request
+    import urllib.error
+    from pathlib import Path as _Path
+
+    log.info("Analyzing reference image via %s", model)
+
+    # Read and base64-encode the image
+    img_data = _Path(image_path).read_bytes()
+    b64 = base64.b64encode(img_data).decode("ascii")
+
+    # Detect mime type from extension
+    ext = _Path(image_path).suffix.lower()
+    mime_map = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+                ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp"}
+    mime = mime_map.get(ext, "image/jpeg")
+
+    # Build the user message with image + edit instruction context
+    user_content = "I want to edit this image. My edit instruction: " + user_prompt + "\n\nDescribe this image in detail, focusing on elements relevant to the edit."
+    system = VISION_ANALYSIS_SYSTEM_PROMPT
+
+    def _build_payload():
+        return json.dumps({
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": [
+                    {"type": "image_url", "image_url": {"url": "data:" + mime + ";base64," + b64}},
+                    {"type": "text", "text": user_content},
+                ]},
+            ],
+            "temperature": 0.4,
+            "max_tokens": 2048,
+        }).encode("utf-8")
+
+    t0 = time.perf_counter()
+    max_retries = 12
+    analysis = ""
+    for attempt in range(max_retries):
+        try:
+            req = urllib.request.Request(
+                f"{LLAMA_SWAP_URL}/v1/chat/completions",
+                data=_build_payload(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=None) as resp:
+                data = json.loads(resp.read())
+                msg = data["choices"][0]["message"]
+                analysis = msg.get("content", "").strip()
+                reasoning = msg.get("reasoning_content", "")
+                if not analysis and reasoning:
+                    log.warning("Vision model returned empty content with %d chars of reasoning", len(reasoning))
+                    return ""
+                break
+        except urllib.error.HTTPError as e:
+            if e.code == 400 and attempt < max_retries - 1:
+                log.info("Model loading (attempt %d/%d), retrying in 10s...", attempt + 1, max_retries)
+                time.sleep(10)
+                continue
+            log.error("Image analysis failed: %s", e)
+            return ""
+        except (urllib.error.URLError, OSError, KeyError, json.JSONDecodeError) as e:
+            log.error("Image analysis failed: %s", e)
+            return ""
+
+    elapsed = time.perf_counter() - t0
+    log.info("Image analysis completed in %.1fs", elapsed)
+    return analysis
+
+
+def enhance_edit_prompt(image_description: str, user_prompt: str, model: str) -> tuple:
+    """Combine a visual description with the user's edit instruction into a
+    refined edit prompt for HiDream.
+
+    Returns (enhanced_prompt, raw_response).
+    On failure, enhanced_prompt is the original prompt and raw_response contains the LLM output.
+    """
+    import urllib.request
+    import urllib.error
+
+    system = EDIT_ENHANCE_SYSTEM_PROMPT
+    user_msg = "REFERENCE IMAGE DESCRIPTION:\n" + image_description + "\n\nUSER'S EDIT INSTRUCTION:\n" + user_prompt + "\n\nWrite the refined edit prompt:"
+
+    log.info("Enhancing edit prompt via %s", model)
+    t0 = time.perf_counter()
+
+    payload = json.dumps({
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_msg},
+        ],
+        "temperature": 0.7,
+        "max_tokens": 8192,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        f"{LLAMA_SWAP_URL}/v1/chat/completions",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    max_retries = 12
+    enhanced = ""
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=None) as resp:
+                data = json.loads(resp.read())
+                msg = data["choices"][0]["message"]
+                enhanced = msg.get("content", "").strip()
+                reasoning = msg.get("reasoning_content", "")
+                if not enhanced and reasoning:
+                    log.warning("Edit-enhancement model returned empty content with %d chars of reasoning", len(reasoning))
+                    return user_prompt, reasoning
+                break
+        except urllib.error.HTTPError as e:
+            if e.code == 400 and attempt < max_retries - 1:
+                log.info("Model loading (attempt %d/%d), retrying in 10s...", attempt + 1, max_retries)
+                time.sleep(10)
+                continue
+            log.error("Edit-enhancement failed: %s — using raw prompt", e)
+            return user_prompt, str(e)
+        except (urllib.error.URLError, OSError, KeyError, json.JSONDecodeError) as e:
+            log.error("Edit-enhancement failed: %s — using raw prompt", e)
+            return user_prompt, str(e)
+
+    elapsed = time.perf_counter() - t0
+    log.info("Edit-enhancement completed in %.1fs", elapsed)
+
+    if not enhanced:
+        log.warning("Empty edit-enhancement response — using raw prompt")
+        return user_prompt, enhanced
 
     return enhanced, enhanced
 
@@ -1233,51 +1432,115 @@ def main() -> None:
 
     if args.enhance:
         enhance_type = model_info.get("enhance_type", "ideogram")
-        if enhance_type == "vision":
-            print(f"  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
-            enhanced_result, raw_response = enhance_vision_prompt(prompt, enhance_model)
-        else:
-            print(f"  ✨ Enhancing prompt via {enhance_model} (Ideogram JSON)...")
-            enhanced_result, raw_response = enhance_prompt(prompt, enhance_model)
-        if enhanced_result != prompt:
-            enhanced_prompt = enhanced_result  # for metadata/debrief
-            if enhance_type == "vision":
-                print(f"     Expanded to English description ({len(enhanced_result)} chars)")
-                print(f"     ─── Enhanced prompt ───")
-                # Print wrapped text at 80 chars
-                import textwrap
-                for line in textwrap.wrap(enhanced_result, width=78):
-                    print(f"     {line}")
-                print(f"     ────────────────────────")
+
+        # ── Edit + Enhance: analyze image, then refine prompt ──
+        if ref_image_paths and enhance_type == "vision":
+            # Step 1: Determine vision model
+            vision_model = None
+            enhance_has_vision = _check_model_vision(enhance_model)
+            if enhance_has_vision:
+                vision_model = enhance_model
+                log.info("Enhance model %s supports vision — using it for image analysis", enhance_model)
+                print(f"  👁️  {enhance_model} supports vision — using it for image analysis")
+            elif args.vision_with:
+                vision_model = args.vision_with
+                print(f"  👁️  Using {vision_model} for image analysis (override)")
             else:
-                print(f"     Expanded to JSON ({len(enhanced_result)} chars)")
-                # ALWAYS print enhanced JSON — not just with --show-enhanced
-                print(f"     ─── Enhanced prompt ───")
-                try:
-                    parsed = json.loads(enhanced_result)
-                    for key, val in parsed.items():
-                        if isinstance(val, dict):
-                            print(f"     {key}:")
-                            for k, v in val.items():
-                                print(f"       {k}: {v}")
-                        else:
-                            print(f"     {key}: {val}")
-                except json.JSONDecodeError:
-                    print(f"     {enhanced_result}")
-                print(f"     ────────────────────────")
-        else:
-            print(f"     ⚠️ Enhancement failed — using raw prompt")
-            if raw_response and raw_response != prompt:
-                print(f"     ─── LLM response ───")
-                # Truncate very long responses
-                display = raw_response[:500] + ("..." if len(raw_response) > 500 else "")
-                print(f"     {display}")
-                print(f"     ────────────────────")
-        # For sd_cpp, use the enhanced JSON prompt; for vision models, use the expanded text
-        if backend_type == "sd_cpp" and enhanced_result != prompt:
-            prompt = enhanced_result
-        elif enhance_type == "vision" and enhanced_result != prompt:
-            prompt = enhanced_result
+                vision_model = DEFAULT_VISION_MODEL
+                print(f"  👁️  Using {vision_model} for image analysis (default)")
+
+            # Step 2: Analyze the image with the vision model
+            print(f"  📷 Analyzing reference image via {vision_model}...")
+            image_description = analyze_image(ref_image_paths[0], vision_model, prompt)
+            if not image_description:
+                print(f"     ⚠️  Image analysis failed — falling back to prompt-only enhancement")
+                # Fall through to normal vision enhancement below
+            else:
+                print(f"     ─── Image description ({len(image_description)} chars) ───")
+                import textwrap
+                for line in textwrap.wrap(image_description, width=78):
+                    print(f"     {line}")
+                print(f"     ────────────────────────────────────────")
+
+                # Evict vision model if it's different from enhance model
+                if vision_model != enhance_model:
+                    running = _llama_swap_running_models()
+                    if running:
+                        print(f"  🔄 Evicting {vision_model} after image analysis...")
+                        evict_llm()
+                        print(f"     VRAM freed for prompt enhancement")
+
+                # Step 3: Refine the edit prompt using the image description
+                print(f"  ✨ Enhancing edit prompt via {enhance_model} (vision + edit mode)...")
+                enhanced_result, raw_response = enhance_edit_prompt(image_description, prompt, enhance_model)
+                if enhanced_result != prompt:
+                    enhanced_prompt = enhanced_result
+                    print(f"     Expanded to edit instruction ({len(enhanced_result)} chars)")
+                    print(f"     ─── Enhanced edit prompt ───")
+                    import textwrap as _tw
+                    for line in _tw.wrap(enhanced_result, width=78):
+                        print(f"     {line}")
+                    print(f"     ────────────────────────────")
+                    prompt = enhanced_result
+                else:
+                    print(f"     ⚠️  Edit-enhancement failed — using raw prompt")
+                    if raw_response and raw_response != prompt:
+                        print(f"     ─── LLM response ───")
+                        display = raw_response[:500] + ("..." if len(raw_response) > 500 else "")
+                        print(f"     {display}")
+                        print(f"     ────────────────────")
+
+        # ── Normal enhancement (no edit, or ideogram type, or vision edit failed) ──
+        if not ref_image_paths or enhance_type != "vision" or (ref_image_paths and enhance_type == "vision" and not enhanced_prompt):
+            if enhance_type == "vision":
+                print(f"  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
+                enhanced_result, raw_response = enhance_vision_prompt(prompt, enhance_model)
+                if enhanced_result != prompt:
+                    enhanced_prompt = enhanced_result
+                    print(f"     Expanded to English description ({len(enhanced_result)} chars)")
+                    print(f"     ─── Enhanced prompt ───")
+                    import textwrap
+                    for line in textwrap.wrap(enhanced_result, width=78):
+                        print(f"     {line}")
+                    print(f"     ────────────────────────")
+                else:
+                    print(f"     ⚠️ Enhancement failed — using raw prompt")
+                    if raw_response and raw_response != prompt:
+                        print(f"     ─── LLM response ───")
+                        display = raw_response[:500] + ("..." if len(raw_response) > 500 else "")
+                        print(f"     {display}")
+                        print(f"     ────────────────────")
+            else:
+                print(f"  ✨ Enhancing prompt via {enhance_model} (Ideogram JSON)...")
+                enhanced_result, raw_response = enhance_prompt(prompt, enhance_model)
+                if enhanced_result != prompt:
+                    enhanced_prompt = enhanced_result
+                    print(f"     Expanded to JSON ({len(enhanced_result)} chars)")
+                    print(f"     ─── Enhanced prompt ───")
+                    try:
+                        parsed = json.loads(enhanced_result)
+                        for key, val in parsed.items():
+                            if isinstance(val, dict):
+                                print(f"     {key}:")
+                                for k, v in val.items():
+                                    print(f"       {k}: {v}")
+                            else:
+                                print(f"     {key}: {val}")
+                    except json.JSONDecodeError:
+                        print(f"     {enhanced_result}")
+                    print(f"     ────────────────────────")
+                else:
+                    print(f"     ⚠️ Enhancement failed — using raw prompt")
+                    if raw_response and raw_response != prompt:
+                        print(f"     ─── LLM response ───")
+                        display = raw_response[:500] + ("..." if len(raw_response) > 500 else "")
+                        print(f"     {display}")
+                        print(f"     ────────────────────")
+            # Apply enhanced prompt
+            if backend_type == "sd_cpp" and enhanced_result != prompt:
+                prompt = enhanced_result
+            elif enhance_type == "vision" and enhanced_result != prompt:
+                prompt = enhanced_result
 
     # Show warm/cold estimate
     prior = get_previous_runs(model_name, width, height)
