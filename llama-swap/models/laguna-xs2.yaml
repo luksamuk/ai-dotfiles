@@ -1,0 +1,80 @@
+# Laguna XS.2 — Poolside's 33B/3B MoE agentic coding model
+# Requantized Q3_K_M (15.5GB) to fit 6GB VRAM with --fit
+# Uses ik_llama.cpp: pinned memory + defer-experts for fast MoE loading
+# head_dim=128 → attn_rot ✅. KV cache: q8_0 (no hadamard — ik doesn't support it)
+# Custom chat_template.jinja (template embedded in GGUF uses {% include %} which isn't supported)
+# Dual mode: base (chat, no think) and :think (interleaved reasoning)
+#
+# Performance: ~35 tok/s on RTX 3050 6GB (mostly CPU-offloaded MoE experts)
+# Known issues:
+#   - Model tends to over-generate tool calls (2-3x expected). repeat-penalty 1.12 mitigates.
+#   - parallel-tool-calls re-enabled — over-generates 3-4 calls when 2-3 needed; client dedupes.
+#   - stop: ["</assistant>"] required — template uses text close tags, not special tokens.
+# Thinking mode:
+#   --reasoning auto/format deepseek DON'T extract reasoning_content for this template.
+#   ik_llama.cpp auto-parser can't detect Brie/Brie in Laguna's Jinja2 (uses {generation} blocks).
+#   Ollama has a dedicated Go parser (laguna.go) that extracts thinking — ik_llama.cpp doesn't.
+#   Result: thinking: partial — thinking leaks into content as text between Brie/Brie tags.
+#   --reasoning ON (reserves extra KV cache) causes OOM with --fit on 6GB — not viable.
+# Context: dynamic 8K-131K via --fit --fit-margin 256
+
+"laguna-xs2":
+  name: "Laguna XS.2"
+  description: "Poolside's 33B/3B MoE coding model with mixed SWA+global attention, native interleaved reasoning, and 131K context. Designed for agentic coding."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/laguna-xs2-Q3_K_M.gguf
+    --fit
+    --fit-margin 256
+    --ctx-size 32768
+    --timeout 0
+    --batch-size 8
+    --temp 0.3
+    --top-p 0.85
+    --top-k 40
+    --min-p 0.02
+    --repeat-penalty 1.12
+    --parallel-tool-calls
+    --jinja
+    --chat-template-file ${models_dir}/laguna-xs2-chat-template.jinja
+    --cache-type-k q8_0
+    --cache-type-v q8_0
+    --flash-attn auto
+    --defer-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParams:
+      stop: ["</assistant>"]
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.3
+        top_p: 0.85
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.7
+        top_p: 0.9
+  ttl: 300
+  metadata:
+    size: "~15.5 GB (Q3_K_M — requantized from Q4_K_M)"
+    context: "8K-131K (dynamic with --fit)"
+    vram_usage: "~5.5GB VRAM (model offload + attention on GPU, experts on CPU)"
+    source: "Lucebox/Laguna-XS.2-GGUF → local Q3_K_M requant"
+    kv_cache: "q8_0"
+    features:
+      completion: true
+      tools: true
+      thinking: partial
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: laguna
+    parameters: 33443000000
+    context_length: 131072
+    embedding_length: 2048
+    quantization: Q3_K_M
