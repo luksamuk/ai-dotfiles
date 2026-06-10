@@ -11,6 +11,11 @@ dependencies = [
     "prism-image-studio-backend-gpu",
     "gemlite",
     "hqq",
+    # HiDream backend: transformers + accelerate + sdnq
+    "transformers>=4.45,<5",
+    "accelerate>=1.0",
+    "sdnq",
+    "einops",
 ]
 
 [tool.uv]
