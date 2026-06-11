@@ -1,28 +1,27 @@
 # -------------------------------------------
-# GEMMA-4-E4B - Bee BACKEND (TurboQuant KV cache)
+# QWEN3.5-4B - Bee BACKEND (TurboQuant KV cache)
 # BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
-# head_dim=256 → attn_rot ✅ (auto-activates on Bee with quantized cache)
-# --n-gpu-layers 99: model fits in VRAM (~4.6GB)
-# No mmproj (text-only) — same as ik config
+# head_dim=128 → attn_rot ✅ (auto-activates on Bee with quantized cache)
+# MoQ-3.75 quant (~1.92GB), fits entirely in VRAM
 # Dual mode: base (chat) and :think (reasoning)
 # -------------------------------------------
-"gemma4-e4b-bee":
+"qwen3.5-4b-bee":
   unlisted: true
-  name: "Gemma 4 E4B (Bee)"
-  description: "Gemma 4 E4B Q4_K_M — BeeLlama.cpp backend with TurboQuant turbo3_tcq KV cache."
+  name: "Qwen3.5 4B (Bee)"
+  description: "Qwen 3.5 4B MoQ-3.75 — BeeLlama.cpp backend with TurboQuant turbo3_tcq KV cache."
   cmd: |
     ${bee_server} --port ${PORT}
-    --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
-    --no-mmproj
+    --model ${models_dir}/MoQ-3.75.gguf
+    --jinja
     --fit on
     --fit-target 768
-    --ctx-size ${small_model_max_ctx}
+    --ctx-size 131072
     --timeout 0
-    --temp 0.7
-    --top-p 0.9
-    --top-k 40
-    --min-p 0.01
-    --repeat-penalty 1.0
+    --temp ${default_temp}
+    --top-p ${default_top_p}
+    --top-k ${default_top_k}
+    --min-p ${default_min_p}
+    --repeat-penalty ${default_repeat_penalty}
     --reasoning on
     --cache-type-k turbo3_tcq
     --cache-type-v turbo3_tcq
@@ -43,10 +42,10 @@
         top_p: 0.9
   ttl: 60
   metadata:
-    size: "~4.63 GB (Q4_K_M)"
+    size: "~1.92 GB (MoQ-3.75)"
     context: "64K-128K (dynamic, TurboQuant)"
-    vram_usage: "~5.3GB VRAM (model + turbo3_tcq cache)"
-    source: "unsloth/gemma-4-E4B-it-GGUF (Q4_K_M)"
+    vram_usage: "~2.8GB VRAM (model + turbo3_tcq cache)"
+    source: "kaitchup/Qwen3.5-4B-GGUF-MoQ (MoQ-3.75)"
     kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression)"
     features:
       completion: true
@@ -57,9 +56,9 @@
       insert: false
       audio: false
       image: false
-    architecture: gemma4
-    parameters: 7520000000
-    context_length: 131072
+    architecture: qwen35
+    parameters: 4210000000
+    context_length: 262144
     embedding_length: 2560
-    quantization: Q4_K_M
+    quantization: MoQ-3.75
     note: "BeeLlama backend with TurboQuant. Was on ik for -khad/-vhad; Bee has TurboQuant instead."

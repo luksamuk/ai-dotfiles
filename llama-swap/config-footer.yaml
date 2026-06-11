@@ -41,7 +41,7 @@ matrix:
     q08: qwen3.5-0.8b
     q4: qwen3.5-4b
     # [REMOVED] m3: ministral-3-3b
-    ww: webworld-8b
+    # [REMOVED] ww: webworld-8b
     # [REMOVED] n4: nemotron-3-nano-4b
     g2: gemma4-e2b
     g2q: gemma4-e2b
@@ -108,7 +108,7 @@ matrix:
 
     # Modelos médios (~5GB VRAM) - agora cabem na VRAM com UD-Q3!
     # Qwen3.5-9B, Gemma4-E4B cabem inteiramente
-    medium: "q9 | g4 | ww"
+    medium: "q9 | g4"
 
     # [REMOVED] omni_vision set (Nemotron Omni not added — upstream-only, poor perf on 6GB VRAM)
 
@@ -147,7 +147,7 @@ matrix:
     # [REMOVED] gr40h1: 1 — Granite 4.0 H 1B Nano removed
     # [REMOVED] m3: 2 — Ministral 3 3B removed
     q4: 2
-    ww: 4        # 8B world model, ~5.9GB, medium startup
+    # [REMOVED] ww: 4 — webworld-8b removed
     # [REMOVED] n4: 1 — nemotron-3-nano-4b removed
     g2: 1
     g2q: 1

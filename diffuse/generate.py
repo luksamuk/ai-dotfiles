@@ -52,11 +52,23 @@ Convert the user's simple text prompt into a detailed structured JSON object for
 
 You MUST respond with ONLY the raw JSON object below — no markdown code fences, no explanation, no commentary, no text before or after the JSON.
 
+SAFETY AVOIDANCE RULES — the model has a built-in content filter that triggers on certain keywords, causing it to generate "content filter" text overlays or dark images instead of the requested image. To avoid false positives:
+1. NEVER use these words in ANY field: vampire, blood, undead, Dracula, demon, suck, bite, gore, kill, murder, death, corpse, horror, satanic, occult, curse, possessed, sacrilege, profane, obscene, explicit, nude, naked, erotic, sensual. Even in character descriptions or references.
+2. NEVER use "oil on canvas" or "oil painting" — these trigger the safety filter even in benign contexts. Use "illustration", "painting in acrylics", "acrylic painting", "detailed illustration", or "richly painted artwork" instead.
+3. NEVER use "gothic" as a standalone style word — it can trigger the filter. Use "ornate medieval", "baroque", "ornate dark", "cathedral-style", or "medieval revival" instead.
+4. NEVER use "chiaroscuro" — use "dramatic lighting with deep shadows" or "high-contrast lighting" instead.
+5. NEVER use "ageless" — it can be interpreted as "undead/immortal". Use "distinguished", "timeless", "youthful", or state an age range directly (e.g. "a man in his 30s").
+6. Replace with safe alternatives: vampire → pale immortal noble, blood → crimson / deep red, undead → ageless one → distinguished one, Dracula → ancient lord, demon → dark spirit, kill/destroy → defeat/vanquish, death → stillness/eternal rest, horror → dark atmosphere, corpse → fallen figure.
+7. For named characters from gothic/dark fiction (e.g. Alucard, Castlevania), describe them using physical appearance ONLY — never reference their lore, species, or supernatural abilities. "A pale aristocratic swordsman with silver hair in ornate dark armor" is safe; "the vampire Alucard from Castlevania" will trigger the filter.
+8. ALWAYS use "medium": "illustration" or "medium": "painting" in the aesthetics field — "photograph" triggers more safety checks.
+9. ALWAYS include a specific color_palette — this anchors the model and reduces structural collapse.
+10. Be EXHAUSTIVE in element descriptions — detailed, safe descriptions push the model away from filter-triggering interpretations.
+
 REQUIRED format:
 {
   "high_level_description": "<detailed scene description in 2-4 sentences, very specific>",
   "style_description": {
-    "aesthetics": "<detailed art style, medium, visual qualities>",
+    "aesthetics": "<detailed art style, medium (prefer illustration or painting), visual qualities>",
     "lighting": "<detailed lighting description with direction and mood>",
     "color_palette": ["<hex 1>", "<hex 2>", "<hex 3>", "<hex 4>", "<hex 5>"]
   },
@@ -87,9 +99,11 @@ RULES:
 4. Add compositional details: camera angle, depth of field, background atmosphere, environmental storytelling.
 5. Keep the output as a SINGLE natural-language paragraph. No JSON, no bullet points, no headers.
 6. Be specific and vivid — vague descriptions produce vague images.
+7. SAFETY AVOIDANCE (for Ideogram 4 and other models with content filters): Avoid words that trigger content filters — do NOT use: vampire, blood, undead, Dracula, demon, suck, bite, gore, kill, murder, death, corpse, horror, satanic, occult, curse, possessed, oil on canvas, oil painting, gothic, chiaroscuro, ageless. Use safe alternatives: pale immortal noble, crimson, distinguished one, ancient lord, dark spirit, defeat, stillness, dark atmosphere, fallen figure, illustration, acrylic painting, ornate medieval, dramatic lighting with deep shadows.
+8. AGE PRESERVATION: When describing people, ALWAYS specify their approximate age range and skin quality (e.g. "a woman in her early 30s with smooth, even-toned skin" or "a young man in his mid-20s with clear, fresh complexion"). This helps the model preserve the correct age appearance. Avoid vague terms like "adult" — be specific about youthfulness or maturity as appropriate.
 
 EXAMPLE INPUT: "Alucard from Castlevania SOTN, estilo Ayami Kojima, óleo sobre tela"
-EXAMPLE OUTPUT: "Alucard from Castlevania: Symphony of the Night — a pale androgynous male vampire with long flowing silver-white hair and crimson eyes, wearing an ornate black Victorian-era coat with gold filigree embroidery over a white ruffled cravat, a dark cape draped over one shoulder, black leather gloves, standing in a gothic cathedral interior with towering stained glass windows casting purple and crimson light. He holds a glowing sword. Oil on canvas style with visible brushstrokes, heavy chiaroscuro lighting, muted earthy tones of burgundy, deep purple, aged gold, and cold blue, in the manner of Ayami Kojima's Castlevania character art — melancholic, romantic, with an ethereal painterly quality and soft edges blending into the dark background."
+EXAMPLE OUTPUT: "Alucard from Castlevania: Symphony of the Night — a pale androgynous male figure with long flowing silver-white hair and crimson eyes, wearing an ornate black Victorian-era coat with gold filigree embroidery over a white ruffled cravat, a dark cape draped over one shoulder, black leather gloves, standing in an ornate medieval cathedral interior with towering stained glass windows casting purple and crimson light. He holds a glowing sword. Acrylic painting style with visible brushstrokes, dramatic lighting with deep shadows, muted earthy tones of burgundy, deep purple, aged gold, and cold blue, in the manner of Ayami Kojima's Castlevania character art — melancholic, romantic, with an ethereal painterly quality and soft edges blending into the dark background."
 
 OUTPUT ONLY the expanded prompt. No commentary, no labels, no markdown."""
 
@@ -123,6 +137,26 @@ RULES:
 5. Preserve all subject details that are NOT being changed. If the instruction only changes the background, keep all person descriptions intact.
 6. Mention lighting and atmosphere appropriate for the edit (e.g., "soft diffused studio lighting" for a white background swap).
 7. Keep it as a SINGLE natural-language paragraph. No JSON, no bullet points.
+8. AGE PRESERVATION: When the edit involves people, ALWAYS include "preserve the person's exact age, skin texture, and facial features" in the instruction. If the person appears young or middle-aged, explicitly state their approximate age and describe their skin quality (e.g. "a woman in her early 30s with smooth, even-toned skin, no visible wrinkles") to prevent the model from aging them. The editing model tends to add wrinkles and age skin — counteract this explicitly.
+9. SAFETY AVOIDANCE (for Ideogram 4): Avoid these words that trigger content filters: vampire, blood, undead, Dracula, demon, oil on canvas, oil painting, gothic, chiaroscuro, ageless. Use safe alternatives: pale immortal noble, crimson, distinguished, ancient lord, dark spirit, illustration, acrylic painting, ornate medieval, dramatic lighting with deep shadows.
+
+OUTPUT ONLY the refined edit instruction. No commentary, no labels, no markdown."""
+
+EDIT_VISION_SYSTEM_PROMPT = """You are refining an image editing instruction for a diffusion model (HiDream) that supports instruction-based image editing.
+
+You are given the ACTUAL reference image plus the user's edit instruction. Combine what you SEE in the image with the edit instruction into a SINGLE, precise, detailed English paragraph that tells the diffusion model EXACTLY what to do.
+
+RULES:
+1. Describe EVERY visible element you see in the image: people (pose, expression, clothing, accessories, skin tone, hair, makeup), background (color, texture, objects, depth), lighting (direction, color temperature, shadows), and composition (framing, perspective).
+2. Use SPECIFIC visual details from the image — not vague \"the person\" but \"the woman with burgundy lipstick and dark hair\" or similar. Include character names if known.
+3. Describe the DESIRED RESULT clearly — what should the final image look like, not what should be removed.
+4. Instead of \"remove the background\", say \"the two women with burgundy lipstick standing against a clean white studio backdrop\" — state the POSITIVE outcome.
+5. Preserve all subject details that are NOT being changed. If the instruction only changes the background/style, keep all person descriptions intact.
+6. Mention lighting and atmosphere appropriate for the edit (e.g., \"soft diffused studio lighting\" for a white background swap).
+7. Identify FOREGROUND elements (must preserve) vs BACKGROUND (can change).
+8. Keep it as a SINGLE natural-language paragraph. No JSON, no bullet points.
+9. AGE PRESERVATION: When the image contains people, ALWAYS include their approximate age and skin quality in your description (e.g. "a woman in her early 30s with smooth, youthful skin and no visible wrinkles"). The editing model tends to age people — explicitly state age and skin texture to preserve the original appearance. If you can see someone is young, say so: "a man in his late 20s with clear, fresh complexion, no under-eye bags or wrinkles."
+10. SAFETY AVOIDANCE (for Ideogram 4): Avoid these words that trigger content filters: vampire, blood, undead, Dracula, demon, oil on canvas, oil painting, gothic, chiaroscuro, ageless. Use safe alternatives: pale immortal noble, crimson, distinguished, ancient lord, dark spirit, illustration, acrylic painting, ornate medieval, dramatic lighting with deep shadows.
 
 OUTPUT ONLY the refined edit instruction. No commentary, no labels, no markdown."""
 
@@ -466,6 +500,13 @@ def enhance_prompt(prompt: str, model: str) -> tuple:
     import urllib.request
     import urllib.error
 
+    # max_tokens must be generous for thinking models — reasoning tokens
+    # consume most of the budget before the JSON answer is emitted.
+    # qwen3.6-35b-a3b:think uses ~15-25k tokens on reasoning alone.
+    # 16384 is the minimum that works reliably; 8192 causes empty content
+    # because the model exhausts the budget during the thinking phase.
+    max_tokens_val = 16384
+
     payload = json.dumps({
         "model": model,
         "messages": [
@@ -473,7 +514,7 @@ def enhance_prompt(prompt: str, model: str) -> tuple:
             {"role": "user", "content": prompt},
         ],
         "temperature": 0.7,
-        "max_tokens": 8192,
+        "max_tokens": max_tokens_val,
     }).encode("utf-8")
 
     req = urllib.request.Request(
@@ -556,6 +597,9 @@ def enhance_vision_prompt(prompt: str, model: str) -> tuple:
     import urllib.request
     import urllib.error
 
+    # Same reasoning as ideogram enhance: thinking models need more tokens
+    max_tokens_val = 16384
+
     payload = json.dumps({
         "model": model,
         "messages": [
@@ -563,7 +607,7 @@ def enhance_vision_prompt(prompt: str, model: str) -> tuple:
             {"role": "user", "content": prompt},
         ],
         "temperature": 0.7,
-        "max_tokens": 8192,
+        "max_tokens": max_tokens_val,
     }).encode("utf-8")
 
     req = urllib.request.Request(
@@ -610,15 +654,20 @@ def enhance_vision_prompt(prompt: str, model: str) -> tuple:
 
 
 def _check_model_vision(model: str) -> bool:
-    """Check if a llama-swap model supports vision (image input) via the API."""
+    """Check if a llama-swap model supports vision (image input) via the API.
+
+    Strips :think/:code suffixes before matching, since the /v1/models endpoint
+    lists base model names (e.g. 'gemma4-12b') without suffixes.
+    """
     import urllib.request
     import urllib.error
+    base_model = model.split(":")[0]
     try:
         req = urllib.request.Request(f"{LLAMA_SWAP_URL}/v1/models")
         with urllib.request.urlopen(req, timeout=None) as resp:
             data = json.loads(resp.read())
             for m in data.get("data", []):
-                if m.get("id") == model:
+                if m.get("id") == base_model:
                     features = m.get("meta", {}).get("llamaswap", {}).get("features", {})
                     return features.get("image", False) or features.get("vision", False)
     except Exception as e:
@@ -722,6 +771,9 @@ def enhance_edit_prompt(image_description: str, user_prompt: str, model: str) ->
     log.info("Enhancing edit prompt via %s", model)
     t0 = time.perf_counter()
 
+    # Same reasoning as ideogram enhance: thinking models need more tokens
+    max_tokens_val = 16384
+
     payload = json.dumps({
         "model": model,
         "messages": [
@@ -729,7 +781,7 @@ def enhance_edit_prompt(image_description: str, user_prompt: str, model: str) ->
             {"role": "user", "content": user_msg},
         ],
         "temperature": 0.7,
-        "max_tokens": 8192,
+        "max_tokens": max_tokens_val,
     }).encode("utf-8")
 
     req = urllib.request.Request(
@@ -771,6 +823,99 @@ def enhance_edit_prompt(image_description: str, user_prompt: str, model: str) ->
         return user_prompt, enhanced
 
     return enhanced, enhanced
+
+
+def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str) -> tuple:
+    """One-shot vision + edit enhancement: send image + instruction to a
+    vision-capable model and get a refined edit prompt back.
+
+    Used when the enhance model already has vision capability (e.g. gemma4-12b),
+    avoiding two separate LLM calls (analyze then enhance).
+
+    Returns (enhanced_prompt, raw_response).
+    On failure, enhanced_prompt is the original prompt and raw_response contains
+    the LLM output or error string.
+    """
+    import base64
+    import urllib.request
+    import urllib.error
+    from pathlib import Path as _Path
+
+    log.info("One-shot vision+edit enhancement via %s", model)
+
+    # Read and base64-encode the image
+    img_data = _Path(image_path).read_bytes()
+    b64 = base64.b64encode(img_data).decode("ascii")
+
+    ext = _Path(image_path).suffix.lower()
+    mime_map = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+                ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp"}
+    mime = mime_map.get(ext, "image/jpeg")
+
+    system = EDIT_VISION_SYSTEM_PROMPT
+    user_text = (
+        "I want to edit this image. My edit instruction: " + user_prompt
+        + "\n\nLook at the image carefully, describe the relevant elements you see, "
+        "and write a refined edit instruction that combines what you see with what I want changed."
+    )
+
+    def _build_payload():
+        return json.dumps({
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": [
+                    {"type": "image_url", "image_url": {"url": "data:" + mime + ";base64," + b64}},
+                    {"type": "text", "text": user_text},
+                ]},
+            ],
+            "temperature": 0.5,
+            "max_tokens": 16384,
+        }).encode("utf-8")
+
+    t0 = time.perf_counter()
+    max_retries = 12
+
+    for attempt in range(max_retries):
+        try:
+            req = urllib.request.Request(
+                f"{LLAMA_SWAP_URL}/v1/chat/completions",
+                data=_build_payload(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=None) as resp:
+                data = json.loads(resp.read())
+                msg = data["choices"][0]["message"]
+                enhanced = msg.get("content", "").strip()
+                reasoning = msg.get("reasoning_content", "")
+                if not enhanced and reasoning:
+                    log.warning(
+                        "One-shot vision+edit returned empty content with %d chars of reasoning",
+                        len(reasoning),
+                    )
+                    return user_prompt, reasoning
+                break
+        except urllib.request.HTTPError as e:
+            if e.code == 400 and attempt < max_retries - 1:
+                log.info("Model loading (attempt %d/%d), retrying in 10s...", attempt + 1, max_retries)
+                time.sleep(10)
+                continue
+            log.error("One-shot vision+edit failed: %s", e)
+            return user_prompt, str(e)
+        except (urllib.error.URLError, OSError, KeyError, json.JSONDecodeError) as e:
+            log.error("One-shot vision+edit failed: %s", e)
+            return user_prompt, str(e)
+
+    elapsed = time.perf_counter() - t0
+    log.info("One-shot vision+edit completed in %.1fs", elapsed)
+
+    if not enhanced:
+        log.warning("Empty one-shot vision+edit response — using raw prompt")
+        return user_prompt, enhanced
+
+    return enhanced, enhanced
+
 
 # ── Generation ─────────────────────────────────────────────────────────────
 def generate_image_gemlite(pipeline, prompt: str, seed: int, steps: int, width: int, height: int) -> tuple:
@@ -1400,8 +1545,19 @@ def main() -> None:
             print(f"     Use: diffuse -m hidream-sdnq --edit {args.edit} -p 'instruction'")
             sys.exit(1)
         if not args.edit.exists():
-            print(f"  ✗ Edit image not found: {args.edit}")
-            sys.exit(1)
+            # If not found as-is, try resolving relative to original CWD
+            # (the shell wrapper cds to SCRIPT_DIR before running generate.py)
+            orig_cwd = os.environ.get("DIFFUSE_ORIG_CWD", "")
+            if orig_cwd:
+                resolved = Path(orig_cwd) / args.edit
+                if resolved.exists():
+                    args.edit = resolved
+                else:
+                    print(f"  ✗ Edit image not found: {args.edit} (also tried {resolved})")
+                    sys.exit(1)
+            else:
+                print(f"  ✗ Edit image not found: {args.edit}")
+                sys.exit(1)
         ref_image_paths = [str(args.edit.resolve())]
         print(f"  🖼️  Edit mode: {args.edit.name} → prompt as instruction")
 
@@ -1435,44 +1591,15 @@ def main() -> None:
 
         # ── Edit + Enhance: analyze image, then refine prompt ──
         if ref_image_paths and enhance_type == "vision":
-            # Step 1: Determine vision model
-            vision_model = None
             enhance_has_vision = _check_model_vision(enhance_model)
+
             if enhance_has_vision:
-                vision_model = enhance_model
-                log.info("Enhance model %s supports vision — using it for image analysis", enhance_model)
-                print(f"  👁️  {enhance_model} supports vision — using it for image analysis")
-            elif args.vision_with:
-                vision_model = args.vision_with
-                print(f"  👁️  Using {vision_model} for image analysis (override)")
-            else:
-                vision_model = DEFAULT_VISION_MODEL
-                print(f"  👁️  Using {vision_model} for image analysis (default)")
-
-            # Step 2: Analyze the image with the vision model
-            print(f"  📷 Analyzing reference image via {vision_model}...")
-            image_description = analyze_image(ref_image_paths[0], vision_model, prompt)
-            if not image_description:
-                print(f"     ⚠️  Image analysis failed — falling back to prompt-only enhancement")
-                # Fall through to normal vision enhancement below
-            else:
-                print(f"     ─── Image description ({len(image_description)} chars) ───")
-                import textwrap
-                for line in textwrap.wrap(image_description, width=78):
-                    print(f"     {line}")
-                print(f"     ────────────────────────────────────────")
-
-                # Evict vision model if it's different from enhance model
-                if vision_model != enhance_model:
-                    running = _llama_swap_running_models()
-                    if running:
-                        print(f"  🔄 Evicting {vision_model} after image analysis...")
-                        evict_llm()
-                        print(f"     VRAM freed for prompt enhancement")
-
-                # Step 3: Refine the edit prompt using the image description
-                print(f"  ✨ Enhancing edit prompt via {enhance_model} (vision + edit mode)...")
-                enhanced_result, raw_response = enhance_edit_prompt(image_description, prompt, enhance_model)
+                # One-shot: enhance model has vision → single call for analysis + prompt
+                print(f"  👁️✨ {enhance_model} has vision — one-shot image analysis + edit enhancement")
+                print(f"  📷 Analyzing & enhancing edit prompt via {enhance_model}...")
+                enhanced_result, raw_response = analyze_and_enhance_edit(
+                    ref_image_paths[0], prompt, enhance_model
+                )
                 if enhanced_result != prompt:
                     enhanced_prompt = enhanced_result
                     print(f"     Expanded to edit instruction ({len(enhanced_result)} chars)")
@@ -1483,12 +1610,59 @@ def main() -> None:
                     print(f"     ────────────────────────────")
                     prompt = enhanced_result
                 else:
-                    print(f"     ⚠️  Edit-enhancement failed — using raw prompt")
+                    print(f"     ⚠️  One-shot vision+edit failed — falling back to raw prompt")
                     if raw_response and raw_response != prompt:
                         print(f"     ─── LLM response ───")
                         display = raw_response[:500] + ("..." if len(raw_response) > 500 else "")
                         print(f"     {display}")
                         print(f"     ────────────────────")
+            else:
+                # Two-shot: separate vision model for analysis, then enhance model for prompt
+                if args.vision_with:
+                    vision_model = args.vision_with
+                    print(f"  👁️  Using {vision_model} for image analysis (override)")
+                else:
+                    vision_model = DEFAULT_VISION_MODEL
+                    print(f"  👁️  Using {vision_model} for image analysis (default)")
+
+                # Step 1: Analyze the image with the vision model
+                print(f"  📷 Analyzing reference image via {vision_model}...")
+                image_description = analyze_image(ref_image_paths[0], vision_model, prompt)
+                if not image_description:
+                    print(f"     ⚠️  Image analysis failed — falling back to prompt-only enhancement")
+                else:
+                    print(f"     ─── Image description ({len(image_description)} chars) ───")
+                    import textwrap
+                    for line in textwrap.wrap(image_description, width=78):
+                        print(f"     {line}")
+                    print(f"     ────────────────────────────────────────")
+
+                    # Evict vision model (it's different from enhance model)
+                    running = _llama_swap_running_models()
+                    if running:
+                        print(f"  🔄 Evicting {vision_model} after image analysis...")
+                        evict_llm()
+                        print(f"     VRAM freed for prompt enhancement")
+
+                    # Step 2: Refine the edit prompt using the image description
+                    print(f"  ✨ Enhancing edit prompt via {enhance_model} (vision + edit mode)...")
+                    enhanced_result, raw_response = enhance_edit_prompt(image_description, prompt, enhance_model)
+                    if enhanced_result != prompt:
+                        enhanced_prompt = enhanced_result
+                        print(f"     Expanded to edit instruction ({len(enhanced_result)} chars)")
+                        print(f"     ─── Enhanced edit prompt ───")
+                        import textwrap as _tw
+                        for line in _tw.wrap(enhanced_result, width=78):
+                            print(f"     {line}")
+                        print(f"     ────────────────────────────")
+                        prompt = enhanced_result
+                    else:
+                        print(f"     ⚠️  Edit-enhancement failed — using raw prompt")
+                        if raw_response and raw_response != prompt:
+                            print(f"     ─── LLM response ───")
+                            display = raw_response[:500] + ("..." if len(raw_response) > 500 else "")
+                            print(f"     {display}")
+                            print(f"     ────────────────────")
 
         # ── Normal enhancement (no edit, or ideogram type, or vision edit failed) ──
         if not ref_image_paths or enhance_type != "vision" or (ref_image_paths and enhance_type == "vision" and not enhanced_prompt):

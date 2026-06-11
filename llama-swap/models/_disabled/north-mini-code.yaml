@@ -1,0 +1,65 @@
+# -------------------------------------------
+# NORTH MINI CODE — Cohere 30B-A3B MoE AGENTIC CODING (Q4_K_M, ik backend)
+# CohereLabs/North-Mini-Code-1.0 — MoE 30B params, 3B active per token (top-2/8 experts).
+# Architecture: cohere2_moe — added in ik_llama PR #1945 (merged 10/06), optimized in PR #1948 (merged 11/06).
+# Apache 2.0 license. Context: 256K, max output: 64K.
+# Text-only model — NO mmproj, NO vision.
+# Sampling: temp=1.0, top_p=0.95 per model card recommendation.
+# Supports MTP (multi-token prediction) draft — optional, not enabled by default.
+# Sliding window attention (SWA) 3:1 ratio with RoPE — same pattern as cohere2.
+# DISABLED: KQ mask crash — GGML_ASSERT(ggml_backend_buffer_is_host(lctx.inp_KQ_mask->buffer))
+# With --fit: OOM (needs 2884 MiB VRAM after all MoE offloaded, RTX 3050 only has ~2100 MiB free)
+# With -ngl 0 (CPU-only): same KQ mask assert — cohere2_moe + CPU path has this bug
+# PR #1948 fixed graph parallel but NOT the KQ mask host buffer assert
+# GGUF present (18.6 GB). Re-enable when ik_llama fixes cohere2_moe CPU-offload KQ mask.
+# -------------------------------------------
+"north-mini-code":
+  unlisted: true
+  name: "North Mini Code"
+  description: "Cohere's first open-source agentic coding model. 30B MoE with only 3B active params, optimized for code generation, agentic software engineering, and terminal tasks."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/north-mini-code-Q4_K_M.gguf
+    --jinja
+    --parallel-tool-calls
+    --reasoning on
+    --fit
+    --fit-margin 768
+    --ctx-size 131072
+    --timeout 0
+    --temp 1.0
+    --top-p 0.95
+    --repeat-penalty 1.0
+    --ubatch-size 2048
+    --batch-size 2048
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+  ttl: 120
+  metadata:
+    size: "~18.6 GB (Q4_K_M)"
+    context: "16K-128K (dynamic)"
+    vram_usage: "~5-6GB VRAM + ~13GB RAM (heavy offload, MoE)"
+    source: "heimann/North-Mini-Code-1.0-GGUF"
+    kv_cache: "q4_0 + hadamard + attn_rot"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: cohere2_moe
+    parameters: 30000000000
+    context_length: 262144
+    embedding_length: 3072
+    quantization: Q4_K_M
+    warning: "KQ mask crash on CPU-offload. Requires ik_llama fix. GGUF present (18.6 GB)."

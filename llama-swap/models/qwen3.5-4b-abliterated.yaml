@@ -12,7 +12,7 @@
   description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance. Abliterated variant with refusal behaviors removed for adversarial testing."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/Qwen3.5-4B-abliterated-i1-Q4_K_M.gguf
+    --model ${models_dir}/Qwen3.5-4B-abliterated.i1-Q4_K_M.gguf
     --jinja
     --parallel-tool-calls
     --fit
@@ -45,6 +45,7 @@
         temperature: 0.6
         top_p: 0.9
   ttl: 60
+  health_check_timeout: 120
   metadata:
     architecture: qwen35
     parameters: 4210000000

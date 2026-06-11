@@ -302,7 +302,9 @@ def build_config():
 
     # Build models section by loading each fragment
     active, disabled = discover_fragments()
-    all_fragments = {**active, **disabled}
+    # Only include active fragments in config — disabled models stay in _disabled/ YAMLs
+    # They're not listed in the API and shouldn't pollute the config.
+    all_fragments = active
 
     # Collect model configs in ORIGINAL_ORDER, then alphabetically for new ones
     models_ordered = []
