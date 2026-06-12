@@ -16,6 +16,7 @@
     ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/Mellum2-12B-A2.5B-Thinking-Q4_K_M.gguf
     --jinja
+    --parallel 2
     --fit
     --fit-margin 512
     --ctx-size 131072

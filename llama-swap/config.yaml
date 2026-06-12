@@ -50,6 +50,8 @@ models:
 
       --jinja
 
+      --parallel 2
+
       --parallel-tool-calls
 
       --fit
@@ -134,6 +136,8 @@ models:
 
       --jinja
 
+      --parallel 2
+
       --parallel-tool-calls
 
       --ctx-size ${small_model_max_ctx}
@@ -215,6 +219,8 @@ models:
       --fit-margin 512
 
       --jinja
+
+      --parallel 2
 
       --parallel-tool-calls
 
@@ -301,6 +307,8 @@ models:
       --ctx-size ${small_model_max_ctx}
 
       --timeout 0
+
+      --parallel 4
 
       --temp 0.7
 
@@ -456,6 +464,8 @@ models:
       --flash-attn on
 
       --jinja
+
+      --parallel 2
 
       --metrics
 
@@ -771,6 +781,8 @@ models:
 
       --jinja
 
+      --parallel 2
+
       --reasoning on
 
       --cache-type-k q4_0
@@ -839,6 +851,8 @@ models:
       --ctx-size ${small_model_max_ctx}
 
       --timeout 0
+
+      --parallel 4
 
       --temp 0.7
 
@@ -913,6 +927,8 @@ models:
 
       --jinja
 
+      --parallel 2
+
       --chat-template-file ${models_dir}/laguna-xs2-chat-template.jinja
 
       --cache-type-k q8_0
@@ -979,7 +995,7 @@ models:
 
       --timeout 0
 
-      --parallel 1
+      --parallel 2
 
       --no-cont-batching
 
@@ -1119,6 +1135,8 @@ models:
       --model ${models_dir}/Mellum2-12B-A2.5B-Thinking-Q4_K_M.gguf
 
       --jinja
+
+      --parallel 2
 
       --fit
 
@@ -1305,6 +1323,8 @@ models:
       --model ${models_dir}/Qwen3.5-4B-abliterated.i1-Q4_K_M.gguf
 
       --jinja
+
+      --parallel 2
 
       --parallel-tool-calls
 

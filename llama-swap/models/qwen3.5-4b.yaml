@@ -15,6 +15,7 @@
     ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/MoQ-3.75.gguf
     --jinja
+    --parallel 2
     --parallel-tool-calls
     --fit
     --fit-margin 512
