@@ -4,16 +4,15 @@
 # 33 experts, top-8 routing. APEX I-Compact ~17.3GB
 #   Mixed-precision MoE quant com imatrix diversa (chat, code, reasoning, tool-calling)
 #   Perplexity comparable to Q8_0 (6.669 vs 6.533), beats UD-Q3_K_XL on real benchmarks
-# --no-mmproj: mmproj ocupa 858MB VRAM e impede partial expert offload.
-#   Sem mmproj: ALL 41 layers sobem pra GPU (partial expert partition) → 20+ t/s!
-#   Com mmproj: só ~11 layers em GPU → ~5 t/s. Não vale a pena.
+# NO MMPROJ: mmproj (858 MiB F16) loads fine with --fit-margin 1536 (41/41 layers, ~28 t/s text).
+#   BUT vision inference crashes — CLIP compute graph exceeds VRAM at runtime (ggml_abort on alloc).
+#   Text-only with --fit-margin 768 is stable and faster. Vision blocked on 6GB RTX 3050.
 # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
 # Architecture: qwen35moe (Qwen3MoeForCausalLM)
 # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
 # --spec-type mtp:n_max=1,p_min=0.0: MTP now supported for Qwen3.5-MoE. Replaces legacy --multi-token-prediction flag.
 # --fit-margin 768: reserves ~0.75 GiB for desktop (Hyprland+browser+Kitty ~1.1GB idle)
-#   Keeps model at ~80-83% VRAM, more GPU layers than 1536 for faster generation
-#   Tested: densos aguentaram 85% sem issues, MoE should be fine at ~80%
+#   Keeps model at ~80-83% VRAM. 41/41 layers on GPU, ~13.8 GiB pinned RAM. Stable 33-34 t/s.
 # --k-cache-hadamard / --v-cache-hadamard: Hadamard transform before K/V cache quantization → much closer to f16 quality
 # --defer-experts: defers expert mmap on Linux → faster model loading
 # --flash-attn auto: disables FA on short prompts (saves overhead on MoE offloaded models)
@@ -24,7 +23,7 @@
   cmd: |
     ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/Qwen3.6-35B-A3B-APEX-I-Compact.gguf
-    # No --no-mmproj: ik_llama.cpp doesn't support this flag (upstream-only)
+    # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only = stable 33-34 t/s.
     # No --fit-ctx: ik_llama.cpp doesn't support this flag; --ctx-size serves as ceiling
     --fit
     --fit-margin 768
@@ -64,7 +63,7 @@
   metadata:
     size: "~17.3 GB (APEX I-Compact)"
     context: "1K-131K (safe max; 200K works but zero VRAM headroom)"
-    vram_usage: "~5.4GB VRAM + 13.8GB pinned RAM (ik pinned memory, constant 33-34 t/s up to 131K)"
+    vram_usage: "~5.4GB VRAM + 13.8GB pinned RAM (ik pinned memory, stable 33-34 t/s up to 131K)"
     source: "mudler/Qwen3.5-35B-A3B-APEX-GGUF"
     kv_cache: "q4_0 + attn_rot + hadamard"
     features:
@@ -81,4 +80,4 @@
     context_length: 262144
     embedding_length: 2048
     quantization: I-Compact
-    warning: "Vision disabled — mmproj blocks partial expert offload. Text-only = 33–34 t/s vs 5 t/s with vision."
+    note: "Vision blocked — mmproj loads fine (858 MiB F16, ~28 t/s text) but CLIP compute graph OOMs on 6GB RTX 3050 at inference time. Reverted to text-only (33-34 t/s, stable)."

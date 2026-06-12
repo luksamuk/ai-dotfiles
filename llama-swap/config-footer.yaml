@@ -38,15 +38,15 @@ matrix:
     # ds14: ds-r1-distill-14b
     # ds32: ds-r1-distill-32b
     # Modelos pequenos
-    q08: qwen3.5-0.8b
+    # [REMOVED] q08: qwen3.5-0.8b
     q4: qwen3.5-4b
     # [REMOVED] m3: ministral-3-3b
     # [REMOVED] ww: webworld-8b
     # [REMOVED] n4: nemotron-3-nano-4b
     g2: gemma4-e2b
     g2q: gemma4-e2b
-    lfm2s: lfm2.5-1.2b
-    lfm2t: lfm2.5-1.2b-think
+    # [REMOVED] lfm2s: lfm2.5-1.2b
+    # [REMOVED] lfm2t: lfm2.5-1.2b-think
     # Vision
     vl: lfm2.5-vl-450m
     # Modelos médios (agora cabem na VRAM!)
@@ -57,23 +57,23 @@ matrix:
     # Pesados
     qw36: qwen3.6-35b-a3b
     g12: gemma4-12b
-    qc9: qwopus-coder-9b
+    # [REMOVED] qc9: qwopus-coder-9b
     # qwopus: qwopus-35b         # DISABLED: model unlisted
     # gptoss: gpt-oss-20b        # DISABLED: model unlisted
     # lfm2l: lfm2-24b            # DISABLED: model unlisted
     # vLLM backends (separate process, same GPU)
-    q08vllm: qwen3.5-0.8b-vllm
-    lfm2vllm: lfm2.5-1.2b-vllm
+    # [REMOVED] q08vllm: qwen3.5-0.8b-vllm
+    # [REMOVED] lfm2vllm: lfm2.5-1.2b-vllm
     # [DISABLED] gr33vllm: granite-3.3-8b-vllm — 16GB BF16, OOM on 6GB VRAM
     # [DISABLED] gr40htv: granite-4.0-h-tiny-vllm — 14GB BF16, OOM on 6GB VRAM
     # [REMOVED] gr40h1v: granite-4.0-h-1b-vllm
     # [REMOVED] gr40h1: granite-4.0-h-1b
-    sglang: lfm2.5-sgl
+    # [REMOVED] sglang: lfm2.5-sgl
     # nb41: nanbeige4.1-3b   # REMOVED: multi-turn tool calling broken (#22684), GGUF deleted
     # Audio models (lightweight — can run alongside small LLM + vision)
     asr: qwen3-asr-0.6b
     # aud: lfm2-audio-1.5b  # DISABLED: mmproj conformer crash (upstream bug)
-    asrg: granite-speech-4.1-2b
+    # [REMOVED] asrg: granite-speech-4.1-2b
     # External TTS server (Python FastAPI, separate GPU allocation)
     ttsext: qwen3-tts
   # DSL: & = AND (rodar junto), | = OR (alternativa), () = agrupamento
@@ -86,25 +86,25 @@ matrix:
   # - heavy: modelos 14B+ rodam sozinhos (toda VRAM)
   sets:
     # LLM pequeno + Vision: trocar entre modelos leves NÃO evicta o vision
-    small_vision: "(q08 | q4 | g2 | g2q | lfm2s | lfm2t) & vl"
+    small_vision: "(q4 | g2 | g2q) & vl"
 
     # LLM pequeno sozinho (sem vision ativo)
-    small_only: "q08 | q4 | g2 | g2q | lfm2s | lfm2t"
+    small_only: "q4 | g2 | g2q"
 
     # Audio models — rodam alongside modelos leves + vision
     # Qwen3-ASR (~1.5GB) e Granite Speech (~3GB) são ASR, NÃO TTS
     # LFM2-Audio DESABILITADO (mmproj conformer crash upstream)
     # Qwen3-TTS é TTS externo (FastAPI porta 8880)
-    small_audio: "(q08) & asr"
+    # [REMOVED] small_audio: "(q08) & asr" — qwen3.5-0.8b removed
 
     # ASR only set (leve, cabe com vision + small)
-    asr_vision: "asr & vl & (q08 | lfm2s)"
+    # [REMOVED] asr_vision: "asr & vl & q08" — qwen3.5-0.8b removed
 
     # External TTS (separate process, same GPU — compete with heavy models)
     tts_external: "ttsext"
 
-    # vLLM backends (mutuamente exclusivos com llama.cpp — mesma GPU)
-    vllm: "q08vllm | lfm2vllm"
+    # vLLM backends (separate process, same GPU)
+    # [REMOVED] all vLLM backends (qwen3.5-0.8b-vllm, lfm2.5-1.2b-vllm)
 
     # Modelos médios (~5GB VRAM) - agora cabem na VRAM com UD-Q3!
     # Qwen3.5-9B, Gemma4-E4B cabem inteiramente
@@ -114,7 +114,7 @@ matrix:
 
     # Modelos pesados - toda VRAM + RAM offload
     # (qwopus, gptoss, lfm2l disabled — models unlisted)
-    heavy: "qw36 | gemma4m | g12 | qc9"
+    heavy: "qw36 | gemma4m | g12"
 
     # Vision sozinho
     vision_only: "vl"
@@ -125,7 +125,7 @@ matrix:
     gemma4m: 10  # 26B MoE APEX I-Compact ~15.5GB, heavy offload
     qw36: 10     # 35B MoE APEX I-Compact ~17.3GB, heavy offload
     # orn: 9    # DISABLED: Ornstein Q4_K_M too large, needs APEX I-Compact
-    qc9: 6      # 9B dense Q4_K_M ~5.6GB, medium startup
+    # [REMOVED] qc9: 6    # qwopus-coder-9b — model disabled
     g12: 7      # 12B dense Q4_0 QAT ~6.5GB, upstream --fit on
     # qwopus: 10   # DISABLED: model unlisted
     # gptoss: 8    # DISABLED: model unlisted
@@ -139,11 +139,11 @@ matrix:
     vl: 3        # vision, leve mas útil manter vivo
     asr: 2        # Qwen3-ASR, leve (~1.5GB), multilingual
     # aud: 3        # LFM2-Audio DISABLED (mmproj crash)
-    asrg: 3       # Granite Speech, médio (~3GB), ASR+AST multilingual (PT!)
+    # [REMOVED] asrg: 3       # Granite Speech, médio (~3GB), ASR+AST multilingual (PT!)
     ttsext: 4   # Qwen3-TTS, external FastAPI (~2GB VRAM), voice cloning
-    q08: 1       # 0.8B, ultra-leve
-    lfm2s: 1    # 1.2B Instruct, ultra-leve
-    lfm2t: 1    # 1.2B Thinking, ultra-leve
+    # [REMOVED] q08: 1       # 0.8B, ultra-leve
+    # [REMOVED] lfm2s: 1    # 1.2B Instruct, ultra-leve
+    # [REMOVED] lfm2t: 1    # 1.2B Thinking, ultra-leve
     # [REMOVED] gr40h1: 1 — Granite 4.0 H 1B Nano removed
     # [REMOVED] m3: 2 — Ministral 3 3B removed
     q4: 2
@@ -154,8 +154,8 @@ matrix:
     # nb41: 2   # REMOVED: nanbeige4.1-3b, GGUF deleted
     # mel2: mellum2-12b-thinking  # DISABLED: tool calling broken
     # vLLM backends — high startup cost (30-90s), high eviction cost
-    q08vllm: 5
-    lfm2vllm: 5
+    # [REMOVED] q08vllm: 5
+    # [REMOVED] lfm2vllm: 5
     # [UNLISTED] gr33vllm: 6 — Granite 3.3 8B, OOM on 6GB VRAM
     # [UNLISTED] gr40htv: 6 — Granite 4.0 H-Tiny, OOM on 6GB VRAM
     # [REMOVED] gr40h1v: 5 — Granite 4.0 H 1B Nano vLLM removed
