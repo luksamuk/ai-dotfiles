@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
-# claude-local — Claude Code 100% local via Qwen 3.6 35B (llama-swap)
+# claude-local — Claude Code 100% local via llama-swap
 #
 # Usage:
-#   claude-local              # Interactive session (Qwen 3.6 35B local)
-#   claude-local -p "task"    # Print mode
+#   claude-local                     # Interactive session (default: Qwen 3.6 35B)
+#   claude-local -p "task"           # Print mode
 #   claude-local --bare -p "task" --max-turns 5
+#   claude-local gemma4-26b          # Use Gemma 4 26B MoE
+#   claude-local gemma4-12b          # Use Gemma 4 12B
+#   claude-local gemma4-e4b          # Use Gemma 4 E4B
+#   claude-local qwen3.5-9b          # Use Qwen 3.5 9B
+#   claude-local qwen3.6-35b         # Use Qwen 3.6 35B (default)
 #
 # Requires: llama-swap on port 12434 with ik_llama.cpp backend
 
@@ -12,23 +17,46 @@
 export ANTHROPIC_BASE_URL=http://127.0.0.1:12434
 
 # Dummy API key — llama-swap ignores authentication
-export ANTHROPIC_API_KEY=*** Unset real Anthropic auth to prevent conflict
+export ANTHROPIC_API_KEY=llama-swap
+
+# Unset real Anthropic auth to prevent conflict
 unset ANTHROPIC_AUTH_TOKEN
 
-# Map "sonnet" alias → Qwen 3.6 35B with pretty display name
-export ANTHROPIC_DEFAULT_SONNET_MODEL=qwen3.6-35b-a3b:think
-export ANTHROPIC_DEFAULT_SONNET_MODEL_NAME="Qwen 3.6 35B (Local)"
-export ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION="Qwen 3.6 35B A3B running locally via llama-swap on RTX 3050"
+# ── Model selection ──
+# Default model (used when no argument is given)
+DEFAULT_MODEL="qwen3.6-35b-a3b:think"
 
-# Map "opus" alias → same model (single-GPU, no room for larger model)
-export ANTHROPIC_DEFAULT_OPUS_MODEL=qwen3.6-35b-a3b:think
-export ANTHROPIC_DEFAULT_OPUS_MODEL_NAME="Qwen 3.6 35B (Local)"
-export ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION="Qwen 3.6 35B A3B running locally via llama-swap on RTX 3050"
+# Model shortcuts: short name → llama-swap model ID
+declare -A MODELS=(
+  [qwen3.6-35b]="qwen3.6-35b-a3b:think"
+  [gemma4-26b]="gemma4-26b-a4b:think"
+  [gemma4-12b]="gemma4-12b:think"
+  [gemma4-e4b]="gemma4-e4b:think"
+  [qwen3.5-9b]="qwen3.5-9b:think"
+)
 
-# Add Qwen as custom model option in /model picker
-export ANTHROPIC_CUSTOM_MODEL_OPTION=qwen3.6-35b-a3b:think
-export ANTHROPIC_CUSTOM_MODEL_OPTION_NAME="Qwen 3.6 35B (Local)"
-export ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION="Qwen 3.6 35B A3B running locally via llama-swap on RTX 3050"
+# Check if first arg is a model shortcut
+SELECTED_MODEL="${DEFAULT_MODEL}"
+for key in "${!MODELS[@]}"; do
+  if [ "$1" = "$key" ]; then
+    SELECTED_MODEL="${MODELS[$key]}"
+    shift
+    break
+  fi
+done
 
-# Use "sonnet" alias — mapped to Qwen 3.6 35B via ANTHROPIC_DEFAULT_SONNET_MODEL
+# Map Claude aliases → selected model with display names
+export ANTHROPIC_DEFAULT_SONNET_MODEL="${SELECTED_MODEL}"
+export ANTHROPIC_DEFAULT_SONNET_MODEL_NAME="${SELECTED_MODEL} (Local)"
+export ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION="Running locally via llama-swap on RTX 3050"
+
+export ANTHROPIC_DEFAULT_OPUS_MODEL="${SELECTED_MODEL}"
+export ANTHROPIC_DEFAULT_OPUS_MODEL_NAME="${SELECTED_MODEL} (Local)"
+export ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION="Running locally via llama-swap on RTX 3050"
+
+# Add as custom model option in /model picker
+export ANTHROPIC_CUSTOM_MODEL_OPTION="${SELECTED_MODEL}"
+export ANTHROPIC_CUSTOM_MODEL_OPTION_NAME="${SELECTED_MODEL} (Local)"
+export ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION="Running locally via llama-swap on RTX 3050"
+
 exec claude --model sonnet "$@"
