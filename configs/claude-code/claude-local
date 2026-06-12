@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Claude Code wrapper — routes all requests through local llama-swap
+# Uses llama-swap's Anthropic-compatible /v1/messages endpoint
+#
+# Usage:
+#   claude-local              # Start interactive session
+#   claude-local -p "task"   # Print mode (one-shot)
+#   claude-local --resume    # Resume last session
+#
+# Model: Qwen 3.6 35B MoE (APEX I-Compact, ik_llama.cpp)
+# The model auto-loads in llama-swap on first request (TTL 300s)
+#
+# Config:
+#   ~/.claude/settings.json — modelOverrides maps Claude Sonnet → qwen3.6-35b-a3b:think
+#   ANTHROPIC_BASE_URL points to llama-swap (port 12434)
+#   ANTHROPIC_API_KEY is a dummy key (llama-swap ignores it)
+
+export ANTHROPIC_BASE_URL="http://127.0.0.1:12434"
+export ANTHROPIC_API_KEY="llam..."
+
+exec claude "$@"
