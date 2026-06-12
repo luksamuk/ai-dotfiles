@@ -1,17 +1,12 @@
 #!/usr/bin/env bash
-# claude-local — Run Claude Code with local Qwen 3.6 35B via llama-swap
-#
-# Routes ALL requests through llama-swap's Anthropic-compatible /v1/messages endpoint.
-# No Anthropic API key needed — everything stays local.
+# claude-local — Claude Code 100% local via Qwen 3.6 35B (llama-swap)
 #
 # Usage:
-#   claude-local              # Interactive session
-#   claude-local -p "task"    # Print mode (one-shot)
-#   claude-local --resume     # Resume last session
-#   claude-local --bare -p "task" --max-turns 5  # Bare mode (no plugins/hooks)
+#   claude-local              # Interactive session (Qwen 3.6 35B local)
+#   claude-local -p "task"    # Print mode
+#   claude-local --bare -p "task" --max-turns 5
 #
-# Requires: llama-swap running on port 12434 with ik_llama.cpp backend
-# Config: ~/.claude/settings.json — modelOverrides maps Claude Sonnet → qwen3.6-35b-a3b:think
+# Requires: llama-swap on port 12434 with ik_llama.cpp backend
 
 export ANTHROPIC_BASE_URL="http://127.0.0.1:12434"
-export ANTHROPIC_API_KEY="***exec claude "$@"
+export ANTHROPIC_API_KEY=*** exec claude --model qwen3.6-35b-a3b:think "$@"
