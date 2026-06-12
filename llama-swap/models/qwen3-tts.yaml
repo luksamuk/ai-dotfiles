@@ -16,6 +16,7 @@
   cmd: |
     ${env.HOME}/projects/ai/tts-api/.venv/bin/python ${env.HOME}/projects/ai/tts-api/tts_server.py --port 8880 --host 127.0.0.1
   cmdStop: "pkill -f tts_server.py"
+  health_check_timeout: 300
   ttl: 300
   metadata:
     size: "~600MB (Qwen3-TTS-12Hz-0.6B-Base, torch-direct)"

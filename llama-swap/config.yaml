@@ -101,7 +101,7 @@ models:
           temperature: 0.6
           top_p: 0.9
     ttl: 60
-    health_check_timeout: 120
+    health_check_timeout: 300
     metadata:
       size: ~1.92 GB (MoQ-3.75)
       context: 64K-128K (dynamic)
@@ -183,7 +183,7 @@ models:
           temperature: 0.6
           top_p: 0.9
     ttl: 60
-    health_check_timeout: 180
+    health_check_timeout: 300
     metadata:
       size: ~3.75 GB (MoQ-3.6)
       context: 64K-128K (dynamic)
@@ -267,7 +267,7 @@ models:
           temperature: 0.6
           top_p: 0.9
     ttl: 60
-    health_check_timeout: 180
+    health_check_timeout: 300
     metadata:
       size: ~4.63 GB (Q4_K_M)
       context: 64K-128K (dynamic)
@@ -345,7 +345,7 @@ models:
           temperature: 0.6
           top_p: 0.9
     ttl: 60
-    health_check_timeout: 120
+    health_check_timeout: 300
     metadata:
       size: ~2.5 GB (UD-Q4_K_XL)
       context: 32K-128K (dynamic)
@@ -411,6 +411,7 @@ models:
       --metrics
 
       '
+    health_check_timeout: 300
     ttl: 60
     metadata:
       size: 0.36 GB (Q8_0) + 0.18 GB mmproj
@@ -484,7 +485,7 @@ models:
           temperature: 1.0
           top_p: 0.95
     ttl: 300
-    health_check_timeout: 180
+    health_check_timeout: 300
     metadata:
       size: ~14.4 GB (Q4_0 QAT)
       context: 16K-131K (dynamic)
@@ -655,6 +656,7 @@ models:
             enable_thinking: true
           temperature: 0.6
           top_p: 0.9
+    health_check_timeout: 300
     ttl: 60
     metadata:
       size: ~303 MB (Q8_0)
@@ -739,7 +741,7 @@ models:
           temperature: 0.6
           top_p: 0.9
     ttl: 60
-    health_check_timeout: 120
+    health_check_timeout: 300
     metadata:
       size: 0.55 GB (Q5_K_M) + 1.1 GB mmproj
       context: 8K-256K (dynamic)
@@ -812,7 +814,7 @@ models:
           temperature: 1.2
           top_p: 0.95
     ttl: 300
-    health_check_timeout: 180
+    health_check_timeout: 300
     metadata:
       size: ~6.7 GB (Q4_0 QAT + 168 MB mmproj)
       context: 8K-128K (dynamic)
@@ -871,6 +873,7 @@ models:
       --metrics
 
       '
+    health_check_timeout: 300
     ttl: 60
     metadata:
       size: ~1.1 GB (Q4_K_M)
@@ -959,7 +962,7 @@ models:
           temperature: 0.7
           top_p: 0.9
     ttl: 300
-    health_check_timeout: 180
+    health_check_timeout: 300
     metadata:
       size: ~15.5 GB (Q3_K_M — requantized from Q4_K_M)
       context: 8K-131K (dynamic with --fit)
@@ -1039,7 +1042,7 @@ models:
             enable_thinking: true
           temperature: 0.3
     ttl: 60
-    health_check_timeout: 120
+    health_check_timeout: 300
     metadata:
       size: ~4.84 GB (Q4_0)
       context: 128K
@@ -1105,6 +1108,7 @@ models:
       --metrics
 
       '
+    health_check_timeout: 300
     ttl: 60
     metadata:
       size: 0.70 GB (Q4_K_M) + 0.82 GB mmproj
@@ -1183,7 +1187,7 @@ models:
           temperature: 0.6
           top_p: 0.95
     ttl: 300
-    health_check_timeout: 180
+    health_check_timeout: 300
     metadata:
       size: ~7.6 GB (Q4_K_M)
       context: 16K-131K (dynamic)
@@ -1252,6 +1256,7 @@ models:
       --metrics
 
       '
+    health_check_timeout: 300
     ttl: 60
     metadata:
       size: ~1.0 GB (Q8_0 model 768MB + mmproj 205MB)
@@ -1288,6 +1293,7 @@ models:
 
       '
     cmdStop: pkill -f tts_server.py
+    health_check_timeout: 300
     ttl: 300
     metadata:
       size: ~600MB (Qwen3-TTS-12Hz-0.6B-Base, torch-direct)
@@ -1375,7 +1381,7 @@ models:
           temperature: 0.6
           top_p: 0.9
     ttl: 60
-    health_check_timeout: 120
+    health_check_timeout: 300
     metadata:
       architecture: qwen35
       parameters: 4210000000
@@ -1435,6 +1441,7 @@ models:
       --metrics
 
       '
+    health_check_timeout: 300
     ttl: 60
     metadata:
       size: ~2.4 GB (Q4_K_M)
