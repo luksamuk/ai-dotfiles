@@ -12,9 +12,7 @@
 export ANTHROPIC_BASE_URL=http://127.0.0.1:12434
 
 # Dummy API key — llama-swap ignores authentication
-export ANTHROPIC_API_KEY=llama-swap
-
-# Unset real Anthropic auth to prevent conflict
+export ANTHROPIC_API_KEY=*** Unset real Anthropic auth to prevent conflict
 unset ANTHROPIC_AUTH_TOKEN
 
 # Map "sonnet" alias → Qwen 3.6 35B with pretty display name
@@ -22,9 +20,15 @@ export ANTHROPIC_DEFAULT_SONNET_MODEL=qwen3.6-35b-a3b:think
 export ANTHROPIC_DEFAULT_SONNET_MODEL_NAME="Qwen 3.6 35B (Local)"
 export ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION="Qwen 3.6 35B A3B running locally via llama-swap on RTX 3050"
 
+# Map "opus" alias → same model (single-GPU, no room for larger model)
+export ANTHROPIC_DEFAULT_OPUS_MODEL=qwen3.6-35b-a3b:think
+export ANTHROPIC_DEFAULT_OPUS_MODEL_NAME="Qwen 3.6 35B (Local)"
+export ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION="Qwen 3.6 35B A3B running locally via llama-swap on RTX 3050"
+
 # Add Qwen as custom model option in /model picker
 export ANTHROPIC_CUSTOM_MODEL_OPTION=qwen3.6-35b-a3b:think
 export ANTHROPIC_CUSTOM_MODEL_OPTION_NAME="Qwen 3.6 35B (Local)"
 export ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION="Qwen 3.6 35B A3B running locally via llama-swap on RTX 3050"
 
-exec claude --model qwen3.6-35b-a3b:think "$@"
+# Use "sonnet" alias — mapped to Qwen 3.6 35B via ANTHROPIC_DEFAULT_SONNET_MODEL
+exec claude --model sonnet "$@"
