@@ -139,7 +139,7 @@ declare -A MODELS=(
   # Nomic Embed v2 MoE -- embedding model for RAG/semantic search/similarity
   # 475M params (305M active), 768-dim with Matryoshka, 100+ languages
   # Q4_K_M only 328MB -- runs via /v1/embeddings with --embeddings --pooling mean
-  ["nomic-embed-text-v2-moe"]="nomic-ai/nomic-embed-text-v2-moe-GGUF nomic-embed-text-v2-moe-Q4_K_M.gguf"
+  ["nomic-embed-text-v2-moe"]="nomic-ai/nomic-embed-text-v2-moe-GGUF nomic-embed-text-v2-moe.Q4_K_M.gguf nomic-embed-text-v2-moe-Q4_K_M.gguf"
   # Nanbeige4.1-3B — BOSS Zhipin dense 3B reasoning + agentic coding model
   # Architecture: LlamaForCausalLM (llama) — supported in ALL backends
   # Q4_K_M ~1.8 GB — fits entirely in 6GB VRAM with room to spare

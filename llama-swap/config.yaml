@@ -1210,6 +1210,53 @@ models:
       context_length: 131072
       embedding_length: 2304
       quantization: Q4_K_M
+  nomic-embed-text-v2-moe:
+    name: Nomic Embed v2
+    description: Multilingual MoE text embedding model that excels at multilingual retrieval, supporting ~100 languages with state-of-the-art performance at the 300M parameter scale.
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/nomic-embed-text-v2-moe-Q4_K_M.gguf
+
+      --embeddings
+
+      --pooling mean
+
+      --ctx-size 512
+
+      --timeout 0
+
+      --cont-batching
+
+      --cache-type-k f16
+
+      --cache-type-v f16
+
+      --flash-attn on
+
+      --metrics
+
+      '
+    ttl: 60
+    metadata:
+      architecture: nomic-bert
+      parameters: 475000000
+      context_length: 512
+      embedding_length: 768
+      quantization: Q4_K_M
+      size: ~0.33 GB (Q4_K_M)
+      vram_usage: ~0.5GB
+      source: nomic-ai/nomic-embed-text-v2-moe-GGUF (Q4_K_M)
+      kv_cache: f16
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: true
+        insert: false
+        audio: false
+        image: false
+      note: 'Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with ''search_query: '' or ''search_document: ''. 100+ languages. Matryoshka → 256 dims.'
   qwen3-asr-0.6b:
     name: Qwen3-ASR 0.6B
     description: Lightweight multilingual ASR model for speech-to-text transcription. Supports multiple languages with high accuracy. Audio input via qwen3a preprocessor.

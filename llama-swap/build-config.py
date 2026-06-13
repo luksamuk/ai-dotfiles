@@ -5,7 +5,7 @@ build-config.py — Assemble fragmented llama-swap config into a single config.y
 Architecture:
   config-base.yaml         — header + macros (everything before models section)
   models/*.yaml            — active model fragments
-  models/_disabled/*.yaml   — disabled model fragments (each has unlisted: true)
+  models/_disabled/*.yaml   — disabled model fragments (excluded from config.yaml)
   models/_removed/*.yaml    — dead code (commented-out models, reference only)
   config-footer.yaml       — hooks + matrix section (everything after models)
 
@@ -24,7 +24,7 @@ pyyaml when ruamel.yaml is not available (with reduced formatting).
 
 Validations (in discover_fragments):
   - Each fragment must parse as YAML with exactly 1 model key
-  - Fragments in _disabled/ must have unlisted: true (auto-injected if missing)
+  - Fragments in _disabled/ are excluded from the generated config.yaml
 
 Usage:
   python3 build-config.py              # build, validate, and write
@@ -57,7 +57,7 @@ LIVE_CONFIG = os.path.expanduser("~/.config/llama-swap/config.yaml")
 
 # Original model order from the canonical config — maintain for consistency
 # Only models with GGUF files or working backends should be listed here.
-# Disabled/unlisted models without GGUFs can stay in models/_disabled/ but don't need ordering.
+# Disabled models without GGUFs can stay in models/_disabled/ but don't need ordering.
 ORIGINAL_ORDER = [
     "qwen3.5-0.8b-vllm",     # vLLM backend (paused — no venv, auto-download on first serve)
     "lfm2.5-1.2b-vllm",     # vLLM backend (paused — no venv, auto-download on first serve)
@@ -116,7 +116,7 @@ def discover_fragments():
     """Discover all model fragments from models/ and models/_disabled/.
 
     Each fragment is validated as YAML with exactly 1 model key.
-    Fragments in _disabled/ MUST have unlisted: true — auto-injected if missing.
+    Fragments in _disabled/ are excluded from the generated config.yaml.
 
     Returns dict of {model_id: fpath} for active and disabled.
     """
@@ -152,49 +152,11 @@ def discover_fragments():
                 )
                 sys.exit(1)
 
-            # Enforce: fragments in _disabled/ must have unlisted: true
-            model_key = next(iter(data))
-            model_cfg = data[model_key]
-            if is_disabled and not model_cfg.get("unlisted", False):
-                print(
-                    f"  WARNING: {fname} in _disabled/ missing unlisted: true — auto-injecting",
-                    file=sys.stderr,
-                )
-                inject_unlisted(fpath, model_key)
-
             target[model_id] = fpath
 
     return active, disabled
 
 
-def inject_unlisted(fpath, model_key):
-    """Inject 'unlisted: true' into a fragment file after the model key line."""
-    with open(fpath, "r") as f:
-        content = f.read()
-
-    lines = content.split("\n")
-    new_lines = []
-    injected = False
-    key_patterns = [f"{model_key}:", f'"{model_key}":', f"'{model_key}':"]
-
-    # Determine indent for unlisted line (model key indent + 2)
-    key_indent = 2  # default for top-level model keys
-    for line in lines:
-        stripped = line.strip()
-        if stripped in key_patterns:
-            key_indent = len(line) - len(line.lstrip()) + 2
-            break
-
-    unlisted_line = " " * key_indent + "unlisted: true"
-    for line in lines:
-        new_lines.append(line)
-        if not injected and line.strip() in key_patterns:
-            new_lines.append(unlisted_line)
-            injected = True
-
-    content = "\n".join(new_lines)
-    with open(fpath, "w") as f:
-        f.write(content)
 
 
 def load_fragment_roundtrip(fpath):
@@ -492,7 +454,7 @@ def validate_config(config_text):
         if "cmd" not in cfg:
             errors.append(f"Model '{model_id}' missing 'cmd' field")
 
-    # Check matrix vars reference real models (including unlisted/disabled)
+    # Check matrix vars reference real models (including disabled)
     matrix = config.get("matrix", {})
     model_ids = set(config.get("models", {}).keys())
     for var_name, model_id in matrix.get("vars", {}).items():
@@ -548,8 +510,8 @@ def main():
         return 1
 
     config = yaml.safe_load(output_text)
-    n_active = sum(1 for m in config["models"].values() if not m.get("unlisted", False))
-    n_disabled = sum(1 for m in config["models"].values() if m.get("unlisted", False))
+    n_active = len(config["models"])
+    n_disabled = len(disabled)
     print(f"  ✅ {n_active} active + {n_disabled} disabled = {n_active + n_disabled} models", file=sys.stderr)
 
     # Show diff if requested
