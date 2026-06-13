@@ -69,7 +69,11 @@ Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) par
 - **Ferramenta**: [[https://droid.factory.ai][Factory.ai Droid]] — agente de código com modelos customizados.
 - **Diretório**: =configs/droid/=
 - **Arquivos**: =settings.json= — modelos locais (llama.cpp), modelos nuvem (Ollama Cloud), modelos Pi.
-- **Destino**: Diretório de config do Droid (verificar com =droid config=).
+- **Destino**: =~/.factory/settings.json=
+- **Sync**:
+  #+BEGIN_SRC bash
+  cp ~/git/ai-dotfiles/configs/droid/settings.json ~/.factory/settings.json
+  #+END_SRC
 
 ** hermes-workspace — Docker
 
@@ -253,6 +257,7 @@ A pasta =scripts/= contém apenas o script =ask-ai.py=, que está **obsoleto** e
 |-------------------------+------------------------------------+-------------------------------------|
 | =codex/=                | =~/.codex/=                        | =config.toml=                       |
 | =crush/=                | =~/.local/share/crush/=            | =crush.json=                        |
+| =droid/=                | =~/.factory/=                      | =settings.json=                     |
 | =goose/=                | =~/.config/goose/=                 | =config.yaml=                       |
 | =opencode/=             | =~/.config/opencode/=              | =opencode.json=, =tui.json=         |
 | =pi/=                   | =~/.pi/agent/=                     | =settings.json=, =mcp.json=, =models.json= |
@@ -271,6 +276,9 @@ cp "$DOTFILES/configs/codex/config.toml" ~/.codex/config.toml
 
 # Crush
 cp "$DOTFILES/configs/crush/crush.json" ~/.local/share/crush/crush.json
+
+# Droid
+cp "$DOTFILES/configs/droid/settings.json" ~/.factory/settings.json
 
 # Goose
 cp "$DOTFILES/configs/goose/config.yaml" ~/.config/goose/config.yaml
