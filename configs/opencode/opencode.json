@@ -735,7 +735,7 @@
     },
     "agent": {
         "plan": {
-            "model": "ollama/glm-5.1:cloud",
+            "model": "ollama/minimax-m3:cloud",
             "temperature": 0.3,
             "description": "Strategic planning and architecture. Analyzes requirements, proposes solutions, creates roadmaps. Read-only — cannot modify code.",
             "prompt": "You are a strategic planning agent. Analyze the codebase, understand requirements, and create detailed implementation plans. You do NOT write or edit code — you only read, analyze, and plan. When you identify work needed, describe it precisely so the build or fix agent can execute. Always consider: project structure, existing patterns, dependencies, risks, and edge cases.",
@@ -747,7 +747,7 @@
             }
         },
         "build": {
-            "model": "ollama/glm-5.1:cloud",
+            "model": "ollama/minimax-m3:cloud",
             "temperature": 0.3,
             "description": "Primary coding agent. Full implementation capabilities — writing, editing, testing code with unrestricted repository and shell access.",
             "prompt": "You are a senior software engineer. Implement features and create new code following the plan specifications exactly. Match existing code style and patterns. Always handle errors, validate inputs, and use types properly. No hardcoded secrets, no TODO/FIXME left behind. Before writing, read similar files to understand conventions.",
