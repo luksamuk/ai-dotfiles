@@ -1236,7 +1236,7 @@ models:
       --metrics
 
       '
-    ttl: 60
+    ttl: 300
     metadata:
       architecture: nomic-bert
       parameters: 475000000
@@ -1529,14 +1529,17 @@ matrix:
     qw36: qwen3.6-35b-a3b
     g12: gemma4-12b
     asr: qwen3-asr-0.6b
+    nomic: nomic-embed-text-v2-moe
     ttsext: qwen3-tts
   sets:
-    small_vision: (q4 | g2 | g2q) & vl
+    small_vision: (q4 | g2 | g2q) & vl & nomic
+    small_embed: (q4 | g2 | g2q) & nomic
     small_only: q4 | g2 | g2q
     tts_external: ttsext
-    medium: q9 | g4
+    medium: (q9 | g4) & nomic
     heavy: qw36 | gemma4m | g12
-    vision_only: vl
+    vision_embed: vl & nomic
+    embed_only: nomic
   evict_costs:
     gemma4m: 10
     qw36: 10
@@ -1544,6 +1547,7 @@ matrix:
     q9: 4
     g4: 4
     vl: 3
+    nomic: 1
     asr: 2
     ttsext: 4
     q4: 2
