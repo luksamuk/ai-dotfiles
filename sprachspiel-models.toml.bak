@@ -1,0 +1,308 @@
+# =======================================
+# Provider configuration (Issue #120)
+# =======================================
+
+[provider."ollama"]
+kind = "ollama"
+base_url = "http://127.0.0.1:11434"
+
+[provider."llama-swap"]
+kind = "openai"
+base_url = "http://localhost:12434/v1"
+# W2 #121: removed `embedding = true` (the capability is now
+# declared per-model in `[models.*]` via `embeddings = true`).
+
+# =======================================
+# llama-swap local models (fleet nomenclature)
+# =======================================
+# All local models use provider = "llama-swap" and model_id
+# matching the fleet ID in config.yaml (:think suffix where applicable).
+# Alias naming convention: fleet name with - (not :), e.g. qwen3.5-4b
+
+# --- Small models (fit entirely in 6GB VRAM) ---
+
+[models."qwen3.5-4b"]
+provider = "llama-swap"
+model_id = "qwen3.5-4b:think"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
+thinking = true
+# W2 #121: routed to llama-swap (MoQ-3.75 quant, better quality than Ollama default)
+# W2 #121: llama-swap requires :think suffix on model_id to enable thinking
+
+[models."qwen3.5-9b"]
+provider = "llama-swap"
+model_id = "qwen3.5-9b:think"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
+thinking = true
+
+[models."gemma4-e2b"]
+provider = "llama-swap"
+model_id = "gemma4-e2b:think"
+num_ctx = 32768
+temperature = 0.7
+top_p = 0.95
+thinking = true
+tools = true
+# Gemma 4 E2B QAT (Unsloth Dynamic 2.0) — better accuracy than Google Q4_0
+# Top-1: 98.16% vs 89.29%, 22% smaller. 2.5 GB VRAM.
+
+[models."gemma4-e4b"]
+provider = "llama-swap"
+model_id = "gemma4-e4b:think"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+repeat_penalty = 1.1
+thinking = true
+tools = true
+
+[models."qwen3.5-4b-abliterated"]
+provider = "llama-swap"
+model_id = "qwen3.5-4b-abliterated:think"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
+thinking = true
+# Qwen3.5-4B abliterated i1-Q4_K_M — refusal-removed, adversarial testing
+
+[models."littlelamb-0.3b-tc"]
+provider = "llama-swap"
+model_id = "littlelamb-0.3b-tc"
+num_ctx = 40960
+temperature = 0.7
+top_p = 0.9
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
+# Ultra-light tool-calling model, 0.3B params, 40K context
+
+# --- Medium/Heavy models (offload to RAM) ---
+
+[models."laguna-xs2"]
+provider = "llama-swap"
+model_id = "laguna-xs2:think"
+num_ctx = 65536
+temperature = 0.7
+top_k = 20
+top_p = 0.9
+min_p = 0.02
+repeat_penalty = 1.05
+thinking = true
+# Laguna XS.2 — Poolside AI (Apr 2026)
+# 33B MoE (3B active), 256+1 experts, SWA 30/40 layers
+# Heavy offload (~2.5GB VRAM + ~19GB RAM), Q4_K_M ~21.5GB
+
+[models."qwen3.6-35b-a3b"]
+provider = "llama-swap"
+model_id = "qwen3.6-35b-a3b:think"
+num_ctx = 65536
+temperature = 0.6
+top_p = 0.9
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
+thinking = true
+# Qwen3.6-35B-A3B APEX I-Compact ~17.3GB, MoE coding + tools
+# Replaces former qwen3.5:27b (dense 27B, no fleet equivalent)
+
+[models."mellum2-12b-a2.5b"]
+provider = "llama-swap"
+model_id = "mellum2-12b-a2.5b:think"
+num_ctx = 131072
+temperature = 0.6
+top_p = 0.9
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
+thinking = true
+# JetBrains MoE 12B/2.5B, reasoning + tool calling
+
+# --- Translation ---
+
+[models."translategemma-4b"]
+provider = "llama-swap"
+model_id = "translategemma-4b"
+num_ctx = 32768
+temperature = 0.2
+top_k = 40
+top_p = 0.9
+repeat_penalty = 1.1
+# TranslateGemma 4B — dedicated translation model
+
+[models."hy-mt2-1.8b"]
+provider = "llama-swap"
+model_id = "hy-mt2-1.8b"
+num_ctx = 32768
+temperature = 0.2
+top_k = 40
+top_p = 0.9
+repeat_penalty = 1.1
+# Huawei NMT 1.8B — machine translation
+
+# --- Vision / OCR ---
+
+[models."lfm2.5-vl-450m"]
+provider = "llama-swap"
+model_id = "lfm2.5-vl-450m"
+num_ctx = 32768
+temperature = 0.7
+top_p = 0.9
+# LFM2.5-VL 450M — general VLM, tiny
+
+[models."minicpm-v-4.6"]
+provider = "llama-swap"
+model_id = "minicpm-v-4.6"
+num_ctx = 65536
+temperature = 0.7
+top_p = 0.9
+# MiniCPM-V 4.6 — VLM video+image+text
+
+[models."glm-ocr"]
+provider = "llama-swap"
+model_id = "glm-ocr"
+num_ctx = 131072
+temperature = 0.1
+top_p = 0.9
+top_k = 40
+repeat_penalty = 1.0
+# GLM-OCR — OCR/document specialist, #1 OmniDocBench V1.5
+# Prompt: "OCR", "OCR markdown", "Table Recognition:"
+
+# --- Embedding ---
+
+[models."nomic"]
+provider = "llama-swap"
+model_id = "nomic-embed-text-v2-moe"
+embeddings = true
+dimensions = 768
+# Nomic Embed v2 MoE — embedding for RAG/semantic search
+# Referenced by [indexing].model = "nomic" in config.toml
+
+# =======================================
+# Cloud models (Ollama cloud proxy, :cloud suffix)
+# =======================================
+
+[models."glm-5"]
+provider = "ollama"
+model_id = "glm-5:cloud"
+num_ctx = 202752
+thinking = true
+
+[models."glm-5.1"]
+provider = "ollama"
+model_id = "glm-5.1:cloud"
+num_ctx = 202752
+thinking = true
+
+[models."kimi-k2.5"]
+provider = "ollama"
+model_id = "kimi-k2.5:cloud"
+num_ctx = 202144
+thinking = true
+
+[models."kimi-k2.6"]
+provider = "ollama"
+model_id = "kimi-k2.6:cloud"
+num_ctx = 262144
+thinking = true
+
+[models."kimi-k2.7-code"]
+provider = "ollama"
+model_id = "kimi-k2.7-code:cloud"
+num_ctx = 262144
+thinking = true
+
+[models."minimax-m2.5"]
+provider = "ollama"
+model_id = "minimax-m2.5:cloud"
+num_ctx = 202752
+thinking = true
+
+[models."minimax-m2.7"]
+provider = "ollama"
+model_id = "minimax-m2.7:cloud"
+num_ctx = 204800
+thinking = true
+
+[models."minimax-m3"]
+provider = "ollama"
+model_id = "minimax-m3:cloud"
+num_ctx = 524288
+thinking = true
+
+[models."qwen3.5-cloud"]
+provider = "ollama"
+model_id = "qwen3.5:cloud"
+num_ctx = 262144
+thinking = true
+
+[models."qwen3-coder-next"]
+provider = "ollama"
+model_id = "qwen3-coder-next:cloud"
+num_ctx = 262144
+
+[models."nemotron-3-super"]
+provider = "ollama"
+model_id = "nemotron-3-super:cloud"
+num_ctx = 262144
+thinking = true
+
+[models."gemma4-31b-cloud"]
+provider = "ollama"
+model_id = "gemma4:31b-cloud"
+num_ctx = 262144
+thinking = true
+
+[models."nemotron-3-nano-30b-cloud"]
+provider = "ollama"
+model_id = "nemotron-3-nano:30b-cloud"
+num_ctx = 1048576
+thinking = true
+
+[models."gemini-3-flash-preview"]
+provider = "ollama"
+model_id = "gemini-3-flash-preview:cloud"
+num_ctx = 1048576
+thinking = true
+
+[models."deepseek-v4-flash"]
+provider = "ollama"
+model_id = "deepseek-v4-flash:cloud"
+num_ctx = 1048576
+thinking = true
+
+[models."nemotron-3-ultra"]
+provider = "ollama"
+model_id = "nemotron-3-ultra:cloud"
+num_ctx = 262144
+thinking = true
+
+[models."deepseek-v4-pro"]
+provider = "ollama"
+model_id = "deepseek-v4-pro:cloud"
+num_ctx = 1048576
+thinking = true
+
+# =======================================
+# Test / utility
+# =======================================
+
+[models."test-compact-normal"]
+provider = "ollama"
+model_id = "glm-5:cloud"
+num_ctx = 32768
+temperature = 0.7

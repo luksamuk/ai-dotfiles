@@ -1,0 +1,100 @@
+[model]
+default = "qwen3.5-9b"
+# thinking = false
+# Provider connection settings moved to models.toml [provider] section (PR #120)
+
+[model.query]
+model = "gemma4-e4b"
+tools = true
+
+[model.chat]
+model = "gemma4-e2b"
+tools = true
+
+[model.summarize]
+model = "gemma4-e4b"
+thinking = false
+tools = false
+
+[model.translate]
+model = "translategemma-4b"
+thinking = false
+tools = false
+
+# --- CODE MODE ---
+[model.code]
+model = "minimax-m3"
+thinking = true
+tools = true
+
+# --- VISION MODE ---
+[model.vision]
+model = "kimi-k2.6"
+#model = "gemma4:31b-cloud"
+#model = "qwen3.5"
+#model = "gemini-3-flash-preview"
+tools = false
+
+[tools]
+blacklist = []
+
+[output]
+plain_default = false
+verbosity = "normal"
+
+[display]
+skin = "dark"
+show_tool_calls = true
+
+# This one should be deprecated!
+[led]
+ip = "192.168.3.21"
+port = 80
+
+[facts]
+auto_extract = true
+auto_extract_notify = true
+max_facts = 3
+semantic_threshold = 0.85
+
+[feedback]
+access_reinforcement = true
+access_reinforcement_boost = 0.001
+content_decay = true
+content_prune_threshold = 0.05
+decay_half_life_bad = 7
+decay_half_life_correction = 14
+decay_half_life_good = 30
+enabled = true
+implicit_capture = true
+llm_feedback_weight = 0.3
+
+[retrieval]
+keyword_weight = 0.7
+semantic_weight = 0.3
+
+[thinking_trace]
+enabled = false
+
+# =============================================================================
+# INDEXING CONFIGURATION (W2 #121 — REQUIRED)
+# =============================================================================
+
+[indexing]
+# Embedding model alias (key in models.toml [models.*]). Required.
+# The alias must be declared with `embeddings = true` and
+# `dimensions = 768` in models.toml [models."nomic"]. The provider
+# is inferred from the alias — no provider override here.
+model = "nomic"
+
+# Probe /v1/embeddings at startup to verify the model is served.
+# When true (default), sprach makes 1 POST /v1/embeddings call.
+# The probe does NOT pass `dimensions` in the request body
+# (adaptive — some providers reject it); the response's vector
+# dim count is compared against the alias's declared `dimensions`.
+# Mismatch is a fatal error.
+probe = true
+
+# RRF weights (moved from the old [retrieval] section).
+keyword_weight = 0.7
+semantic_weight = 0.3
