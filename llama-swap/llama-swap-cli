@@ -413,11 +413,13 @@ cmd_ps() {
     ttl_display=$(format_ttl "$ttl")
 
     # Build row: NAME  SIZE  CONTEXT  TAGS  T/S  UNTIL
-    output+=$(printf "${CYAN}%s${RESET}\t%s\t%s\t${DIM}%s${RESET}\t%s\t%s\n" \
+    output+=$(printf "${CYAN}%s${RESET}\t%s\t%s\t${DIM}%s${RESET}\t%s\t%s" \
       "$name" "$size" "$context" "$tags" "$gen_tps" "$ttl_display")
+    output+=$'\n'
   done < <(echo "$running_data" | jq -r '.running[] | @json')
 
-  echo -e "${BOLD}${header}${RESET}\n${output}" | format_output
+  # Print header + rows; command substitution strips trailing \n so we add it back
+  { echo -e "${BOLD}${header}${RESET}"; printf '%s' "$output"; } | format_output
 
   # Summary line (ps only)
   if [[ -n "$PRETTY" ]]; then
