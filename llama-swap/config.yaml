@@ -835,6 +835,69 @@ models:
       context_length: 262144
       embedding_length: 3072
       quantization: Q4_0_QAT
+  glm-ocr:
+    name: GLM-OCR
+    description: Multimodal OCR model for complex document understanding, built on the GLM-V encoder-decoder architecture integrating CogViT visual encoder with a GLM-0.5B language decoder.
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/GLM-OCR-Q8_0.gguf
+
+      --mmproj ${models_dir}/mmproj-GLM-OCR-Q8_0.gguf
+
+      --jinja
+
+      --media-path ${media_path}
+
+      --fit on
+
+      --fit-target ${vram_margin}
+
+      --fit-ctx ${small_model_min_ctx}
+
+      --ctx-size ${small_model_max_ctx}
+
+      --timeout 0
+
+      --temp 0.1
+
+      --top-p 0.9
+
+      --top-k 40
+
+      --repeat-penalty 1.0
+
+      --reasoning off
+
+      --cache-type-k f16
+
+      --cache-type-v f16
+
+      --flash-attn on
+
+      --metrics
+
+      '
+    ttl: 60
+    metadata:
+      architecture: glm4
+      parameters: 940000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: Q8_0
+      size: ~0.95 GB (Q8_0) + ~0.48 GB mmproj (Q8_0)
+      vram_usage: ~2GB (model + mmproj + cache)
+      source: ggml-org/GLM-OCR-GGUF (Q8_0 + mmproj Q8_0)
+      kv_cache: f16
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      note: Specialized OCR model — use prompts like 'OCR', 'OCR markdown', 'Table Recognition:'. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.
   hy-mt2-1.8b:
     name: Hy-MT2 1.8B
     description: Fast-thinking multilingual translation model from Tencent Hunyuan, supporting translation across 33 languages for complex real-world scenarios.
@@ -1521,35 +1584,58 @@ matrix:
   vars:
     gemma4m: gemma4-26b-a4b
     q4: qwen3.5-4b
+    q4a: qwen3.5-4b-abliterated
     g2: gemma4-e2b
     g2q: gemma4-e2b
+    ll: littlelamb-0.3b-tc
+    lfm8: lfm2.5-8b-a1b
     vl: lfm2.5-vl-450m
+    vlx: lfm2.5-vl-1.6b-extract
+    ocr: glm-ocr
+    cpv: minicpm-v-4.6
     q9: qwen3.5-9b
     g4: gemma4-e4b
     qw36: qwen3.6-35b-a3b
     g12: gemma4-12b
+    lag: laguna-xs2
+    mel: mellum2-12b-a2.5b
+    tg: translategemma-4b
+    hmt: hy-mt2-1.8b
     asr: qwen3-asr-0.6b
-    nomic: nomic-embed-text-v2-moe
     ttsext: qwen3-tts
+    nomic: nomic-embed-text-v2-moe
   sets:
-    small_vision: (q4 | g2 | g2q) & vl & nomic
-    small_embed: (q4 | g2 | g2q) & nomic
-    small_only: q4 | g2 | g2q
-    tts_external: ttsext
+    small_vision: (q4 | q4a | g2 | g2q | ll | lfm8) & vl & nomic
+    small_embed: (q4 | q4a | g2 | g2q | ll | lfm8) & nomic
+    small_only: q4 | q4a | g2 | g2q | ll | lfm8
+    vision_only: vl | vlx | ocr | cpv
+    vision_embed: (vl | vlx | ocr | cpv) & nomic
     medium: (q9 | g4) & nomic
-    heavy: qw36 | gemma4m | g12
-    vision_embed: vl & nomic
+    heavy: (qw36 | gemma4m | g12 | lag | mel) & nomic
+    translate_embed: (tg | hmt) & nomic
+    translate_only: tg | hmt
+    tts_external: ttsext
     embed_only: nomic
   evict_costs:
     gemma4m: 10
     qw36: 10
+    lag: 9
     g12: 7
+    mel: 6
     q9: 4
     g4: 4
-    vl: 3
-    nomic: 1
-    asr: 2
     ttsext: 4
+    vl: 3
+    vlx: 3
+    ocr: 3
+    cpv: 3
     q4: 2
+    q4a: 2
+    lfm8: 2
+    asr: 2
+    tg: 2
+    nomic: 1
     g2: 1
     g2q: 1
+    ll: 1
+    hmt: 1
