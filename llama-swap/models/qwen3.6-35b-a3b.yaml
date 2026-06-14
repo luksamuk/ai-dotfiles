@@ -10,7 +10,6 @@
 # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
 # Architecture: qwen35moe (Qwen3MoeForCausalLM)
 # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-# --spec-type mtp:n_max=1,p_min=0.0: MTP now supported for Qwen3.5-MoE. Replaces legacy --multi-token-prediction flag.
 # --fit-margin 768: reserves ~0.75 GiB for desktop (Hyprland+browser+Kitty ~1.1GB idle)
 #   Keeps model at ~80-83% VRAM. 41/41 layers on GPU, ~13.8 GiB pinned RAM. Stable 33-34 t/s.
 # --k-cache-hadamard / --v-cache-hadamard: Hadamard transform before K/V cache quantization → much closer to f16 quality
@@ -38,7 +37,6 @@
     --jinja
     --parallel 2
     --parallel-tool-calls
-    --spec-type mtp:n_max=1,p_min=0.0
     --cache-type-k ${large_cache_k}
     --cache-type-v ${large_cache_v}
     --k-cache-hadamard
