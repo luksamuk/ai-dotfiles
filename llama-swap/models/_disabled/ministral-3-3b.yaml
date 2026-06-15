@@ -32,6 +32,12 @@
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
       --jinja
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 131072
   metadata:
     size: "2.31 GB (UD-Q5_K_XL)"
     context: "8K-128K (dynamic via --fit)"

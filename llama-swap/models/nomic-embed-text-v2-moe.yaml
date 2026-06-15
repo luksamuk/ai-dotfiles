@@ -26,6 +26,12 @@
     --flash-attn on
     --metrics
   ttl: 300
+  capabilities:
+    in: ['text']
+    out: []
+    tools: false
+    reranker: false
+    context: 512
   metadata:
     architecture: nomic-bert
     parameters: 475000000

@@ -16,6 +16,12 @@
     --tool-call-parser lfm2
   ttl: 900
   healthCheckTimeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 128000
   metadata:
     backend: sglang
     size: "~2.5 GB (BF16 safetensors, cached from HF)"

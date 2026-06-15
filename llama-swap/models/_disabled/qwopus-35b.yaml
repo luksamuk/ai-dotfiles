@@ -39,6 +39,12 @@
         temperature: 0.6
         top_p: 0.9
   ttl: 120
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 262144
   metadata:
     size: "~16.5 GB (APEX I-Compact)"
     context: "16K-128K (dynamic)"

@@ -34,6 +34,12 @@
     --flash-attn on
     --metrics
   ttl: 60
+  capabilities:
+    in: ['text', 'audio']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 131072
   metadata:
     size: "~1.82 GB (Q8_0 model 1.2GB + mmproj 318MB + audiodecoder 358MB)"
     context: "32K-128K (dynamic)"

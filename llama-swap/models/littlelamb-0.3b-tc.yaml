@@ -50,6 +50,12 @@
         top_p: 0.9
   health_check_timeout: 300
   ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 40960
   metadata:
     size: "~303 MB (Q8_0)"
     context: "8K-40K (dynamic)"

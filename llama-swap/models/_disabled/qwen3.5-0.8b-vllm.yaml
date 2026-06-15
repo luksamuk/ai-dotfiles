@@ -22,6 +22,12 @@
     --skip-mm-profiling
     --limit-mm-per-prompt '{"image": 0}'
   ttl: 900
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 262144
   metadata:
     backend: vllm
     size: "~1.6 GB (BF16 safetensors, auto-download from HF)"

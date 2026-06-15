@@ -24,6 +24,12 @@
     --enable-auto-tool-choice
     --tool-call-parser granite4
   ttl: 900
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 131072
   metadata:
     backend: vllm
     size: "~2.8 GB (BF16 safetensors, auto-download from HF)"

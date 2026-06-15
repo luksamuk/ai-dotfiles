@@ -40,6 +40,12 @@
     --jinja
     --metrics
   ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 40960
   metadata:
     size: "~5.9 GB (i1-Q5_K_M)"
     context: "4K-40K (dynamic, native max)"

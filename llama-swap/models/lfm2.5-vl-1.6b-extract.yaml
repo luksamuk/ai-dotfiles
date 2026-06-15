@@ -31,6 +31,12 @@
     --metrics
   health_check_timeout: 300
   ttl: 60
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 128000
   metadata:
     size: "0.70 GB (Q4_K_M) + 0.82 GB mmproj"
     context: "32K (dynamic)"

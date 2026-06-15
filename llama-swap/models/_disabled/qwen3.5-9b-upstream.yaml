@@ -33,6 +33,12 @@
         temperature: 0.6
         top_p: 0.9
   ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 262144
   metadata:
     size: "~5.05 GB (UD-Q3_K_XL Dynamic 2.0)"
     context: "64K-128K (dynamic)"

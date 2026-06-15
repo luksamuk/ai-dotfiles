@@ -43,6 +43,12 @@
         temperature: 0.6
         top_p: 0.9
   ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
   metadata:
     size: "~5.15 GB (Q4_0 QAT)"
     context: "64K-128K (dynamic)"

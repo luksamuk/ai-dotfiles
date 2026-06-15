@@ -38,6 +38,12 @@
         temperature: 0.3
         min_p: 0.15
   ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 262144
   metadata:
     size: "~3.11 GB (Q5_K_M)"
     context: "64K (rope scaling x20 from 4096)"

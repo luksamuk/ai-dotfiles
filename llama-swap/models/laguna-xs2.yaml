@@ -60,6 +60,12 @@
         top_p: 0.9
   ttl: 300
   health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
   metadata:
     size: "~15.5 GB (Q3_K_M — requantized from Q4_K_M)"
     context: "8K-131K (dynamic with --fit)"

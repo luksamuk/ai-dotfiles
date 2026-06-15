@@ -23,6 +23,12 @@
     --reasoning on
     --jinja
   ttl: 900
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
   metadata:
     backend: llama_cpp
     size: "708 MB (UD-Q3_K_XL)"

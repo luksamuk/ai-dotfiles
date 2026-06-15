@@ -48,6 +48,12 @@
         temperature: 0.6
         top_p: 0.9
   ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 65536
   metadata:
     size: "~2.1 GB (UD-Q5_K_XL)"
     context: "32K-128K (dynamic)"

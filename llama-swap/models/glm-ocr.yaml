@@ -34,6 +34,12 @@
     --flash-attn on
     --metrics
   ttl: 60
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 131072
   metadata:
     architecture: glm4
     parameters: 940000000

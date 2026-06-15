@@ -40,6 +40,12 @@
         temperature: 0.6
         top_p: 0.9
   ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 262144
   metadata:
     size: "~1.92 GB (MoQ-3.75)"
     context: "64K-128K (dynamic, TurboQuant)"

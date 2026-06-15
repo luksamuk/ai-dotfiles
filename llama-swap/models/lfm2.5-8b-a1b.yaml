@@ -47,6 +47,12 @@
         temperature: 0.3
   ttl: 60
   health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 128000
   metadata:
     size: "~4.84 GB (Q4_0)"
     context: "128K"

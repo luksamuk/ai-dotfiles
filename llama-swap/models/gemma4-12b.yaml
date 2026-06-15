@@ -49,6 +49,12 @@
         top_p: 0.95
   ttl: 300
   health_check_timeout: 300
+  capabilities:
+    in: ['text', 'image', 'audio']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 262144
   metadata:
     size: "~6.7 GB (Q4_0 QAT + 168 MB mmproj)"
     context: "8K-128K (dynamic)"

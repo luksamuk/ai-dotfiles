@@ -47,6 +47,12 @@
         top_p: 0.9
   ttl: 60
   health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 262144
   metadata:
     architecture: qwen35
     parameters: 4210000000

@@ -22,6 +22,12 @@
   filters:
     stripParams: "temperature, top_p"
   ttl: 120
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
   metadata:
     size: "~14.4 GB (Q4_K_M)"
     context: "16K-32K (dynamic, 32K max)"
