@@ -61,16 +61,17 @@ MODELS: dict[str, dict] = {
         "enhance_model": "qwen3.5-4b",
         "enhance_type": "vision",
     },
-    # FramePack I2V (HunyuanVideo-based image-to-video)
-    "framepack-i2v": {
-        "dir": "framepack-i2v",
-        "backend_type": "framepack",
-        "bits": "bf16 transformer (DynamicSwap on 6GB VRAM)",
-        "description": "FramePack I2V — image-to-video with HunyuanVideo, progressive next-frame prediction, ~5s video in 3-8min on 6GB",
-        "default_size": (640, 640),
-        "enhance_model": "qwen3.5-4b",
-        "enhance_type": "vision",
-        "default_seconds": 5.0,
-        "default_steps": 25,
-    },
+    # FramePack I2V — disabled: models removed (~41GB, 12min/1s video on RTX 3050)
+    # To re-enable: download models + uncomment this entry
+    # "framepack-i2v": {
+    #     "dir": "framepack-i2v",
+    #     "backend_type": "framepack",
+    #     "bits": "bf16 transformer (DynamicSwap on 6GB VRAM)",
+    #     "description": "FramePack I2V — image-to-video with HunyuanVideo, progressive next-frame prediction",
+    #     "default_size": (640, 640),
+    #     "enhance_model": "qwen3.5-4b",
+    #     "enhance_type": "vision",
+    #     "default_seconds": 5.0,
+    #     "default_steps": 25,
+    # },
 }
