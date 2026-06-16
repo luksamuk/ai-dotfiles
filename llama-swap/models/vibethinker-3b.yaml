@@ -4,7 +4,11 @@
 # Q6_K quant: 2.41 GB on disk. GQA (2 KV heads) enables 128K context in ~4.9 GB VRAM.
 # Specialized: competitive math/code/STEM reasoning (IMO-AnswerBench 76.4, LeetCode 96.1%).
 # NOT general-purpose — terrible at open-domain knowledge and casual chat.
-# Dual mode: base (no think) and :think (reasoning mode, temperature=1.0)
+# NO tool calling support — template has tool section but model not trained for structured tools.
+# NO --reasoning on — model generates <think> tags natively via RL training, not via template.
+#   The chat template is Qwen2.5 vanilla without enable_thinking, so --reasoning on
+#   would misparse: thinking text goes into content, not reasoning_content.
+# Dual mode: base (temp=0.7, concise) and :think (temp=1.0, model card recommendation)
 # -------------------------------------------
 "vibethinker-3b":
   name: "VibeThinker 3B"
@@ -18,12 +22,11 @@
     --fit-margin 512
     --ctx-size 131072
     --timeout 0
-    --temp 1.0
+    --temp ${default_temp}
     --top-p 0.95
     --top-k -1
     --min-p ${default_min_p}
     --repeat-penalty ${default_repeat_penalty}
-    --reasoning on
     --cache-type-k q8_0
     --cache-type-v q4_0
     --k-cache-hadamard
@@ -67,4 +70,4 @@
     context_length: 131072
     embedding_length: 2048
     quantization: Q6_K
-    note: "Reasoning specialist (IMO 76.4, LeetCode 96.1%). Q6_K preserves chain-of-thought quality. GQA 2 KV heads = 8x smaller KV cache. temperature=1.0 top_p=0.95 per model card for reasoning."
+    note: "Reasoning specialist (IMO 76.4, LeetCode 96.1%). Q6_K preserves chain-of-thought quality. GQA 2 KV heads = 8x smaller KV cache. Generates  tags natively (no --reasoning flag needed). NO tool calling — model not trained for structured tools. temperature=1.0 top_p=0.95 per model card for reasoning."
