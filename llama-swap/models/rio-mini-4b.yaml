@@ -1,0 +1,69 @@
+# -------------------------------------------
+# RIO 3.0 OPEN MINI 4B - IplanRIO (Prefeitura do Rio)
+# Fine-tune of Qwen3-4B-Thinking-2507 via distillation
+# Reasoning model with SwiReasoning (latent/explicit switching)
+# SwiReasoning NOT supported in llama.cpp — runs in explicit-only mode
+# Q4_K_M ~2.5GB, fits 6GB VRAM with room for cache
+# Dual mode: base (chat, no think) and :think (reasoning)
+# -------------------------------------------
+"rio-mini-4b":
+  name: "Rio 3.0 Open Mini 4B"
+  description: "IplanRIO/Prefeitura do Rio - distilled from Qwen3-4B-Thinking-2507 with reasoning traces from Rio 3.0. MIT license."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/rio-mini-4b/Rio-3.0-Open-Mini.Q4_K_M.gguf
+    --jinja
+    --parallel 2
+    --ctx-size 32768
+    --timeout 0
+    --temp ${default_temp}
+    --top-p ${default_top_p}
+    --top-k ${default_top_k}
+    --min-p ${default_min_p}
+    --repeat-penalty ${default_repeat_penalty}
+    --cache-type-k q8_0
+    --cache-type-v q4_0
+    --flash-attn auto
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 262144
+  metadata:
+    size: "~2.5 GB (Q4_K_M)"
+    context: "32K (configured)"
+    vram_usage: "~3.5GB VRAM (model + cache)"
+    source: "mradermacher/Rio-3.0-Open-Mini-GGUF (Q4_K_M)"
+    kv_cache: "q8_0 + q4_0"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen3
+    parameters: 4000000000
+    context_length: 262144
+    embedding_length: 2560
+    quantization: Q4_K_M
+    note: "IplanRIO distilled Qwen3-4B-Thinking with Rio 3.0 reasoning traces. SwiReasoning latent mode not available in llama.cpp."

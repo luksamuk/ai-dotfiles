@@ -25,6 +25,7 @@ matrix:
     # Modelos pequenos
     q4: qwen3.5-4b
     q4a: qwen3.5-4b-abliterated
+    rio: rio-mini-4b
     g2: gemma4-e2b
     g2q: gemma4-e2b
     ll: littlelamb-0.3b-tc
@@ -53,13 +54,13 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | q4a | g2 | g2q | ll | lfm8) & vl & nomic"
+    small_vision: "(q4 | q4a | rio | g2 | g2q | ll | lfm8) & vl & nomic"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | g2 | g2q | ll | lfm8) & nomic"
+    small_embed: "(q4 | q4a | rio | g2 | g2q | ll | lfm8) & nomic"
 
     # LLM pequeno sozinho (sem vision, sem embedding)
-    small_only: "q4 | q4a | g2 | g2q | ll | lfm8"
+    small_only: "q4 | q4a | rio | g2 | g2q | ll | lfm8"
 
     # Vision models (sozinhos ou com nomic)
     vision_only: "vl | vlx | ocr | cpv"
@@ -98,6 +99,7 @@ matrix:
     cpv: 3
     q4: 2
     q4a: 2
+    rio: 2
     lfm8: 2
     asr: 2
     tg: 2
