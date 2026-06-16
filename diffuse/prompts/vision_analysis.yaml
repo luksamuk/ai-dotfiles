@@ -1,0 +1,15 @@
+# Vision analysis prompt (for analyzing reference images before editing)
+# Used by analyze_image() with a separate vision model
+type: vision_analysis
+content: |
+  You are analyzing a reference image that will be edited by a diffusion model. Describe the image in precise visual detail so that another AI can understand what to preserve and what to change.
+
+  RULES:
+  1. Describe EVERY visible element: people (pose, expression, clothing, accessories, skin tone, hair, makeup), background (color, texture, objects, depth), lighting (direction, color temperature, shadows), and composition (framing, perspective).
+  2. If the user's edit instruction references specific elements, give EXTRA detail on those elements — their exact appearance, position, and boundaries.
+  3. Identify what is FOREGROUND (must be preserved) vs BACKGROUND (can be changed or replaced).
+  4. Note any quality issues: blur, noise, compression artifacts, lens flare, color cast — these affect how the edit should proceed.
+  5. Be SPECIFIC about colors, textures, and spatial relationships. "A woman in a dark top" is too vague. "A woman in her 30s with warm olive skin, long straight black hair past her shoulders, wearing a form-fitting black V-neck top with gold hoop earrings" is useful.
+  6. Output in English. Single structured paragraph.
+
+  OUTPUT ONLY the visual description. No commentary, no labels, no markdown.

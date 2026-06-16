@@ -6,17 +6,24 @@ requires-python = ">=3.11"
 dependencies = [
     "huggingface-hub",
     "hf-transfer",
+    "pyyaml",
     # GPU backend: installed from vendor/ (cloned from PrismML Bonsai-Image-Demo)
     # Run: ./run.sh setup
     "prism-image-studio-backend-gpu",
     "gemlite",
     "hqq",
     # HiDream backend: transformers + accelerate + sdnq
-    "transformers>=4.45,<5",
-    "accelerate>=1.0",
+    # FramePack also needs these (tested with transformers 4.47.x, accelerate 1.6.x)
+    "transformers>=4.46.2,<4.48",
+    "accelerate>=1.6.0,<1.7",
     "sdnq",
     "einops",
     "torchvision",
+    # FramePack I2V backend
+    "diffusers>=0.33.1,<0.34",
+    "av",
+    "torchsde",
+    "scipy",
 ]
 
 [tool.uv]

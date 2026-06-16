@@ -1,0 +1,1 @@
+"""FramePack diffusers_helper — vendored from lllyasviel/FramePack."""

@@ -136,7 +136,7 @@ cmd_generate() {
 
     DIFFUSE_ORIG_CWD="$(pwd)"
     cd "$SCRIPT_DIR"
-    DIFFUSE_ORIG_CWD="$DIFFUSE_ORIG_CWD" exec uv run generate.py "$@"
+    DIFFUSE_ORIG_CWD="$DIFFUSE_ORIG_CWD" exec uv run -m diffuse "$@"
 }
 
 cmd_download() {

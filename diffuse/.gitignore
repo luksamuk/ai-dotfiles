@@ -1,8 +1,14 @@
 # Model weights (large files, downloaded separately)
 models/
 
-# Vendor deps (cloned from Bonsai-Image-Demo)
+# Vendor deps (cloned from Bonsai-Image-Demo, FramePack)
 vendor/
+# But track our patches and __init__.py files for FramePack
+!vendor/framepack/
+!vendor/framepack/diffusers_helper/
+!vendor/framepack/diffusers_helper/__init__.py
+!vendor/framepack/diffusers_helper/utils.py
+!vendor/framepack/diffusers_helper/**/__init__.py
 
 # Generated images and caches
 outputs/
