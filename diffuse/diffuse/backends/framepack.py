@@ -77,6 +77,10 @@ def load_pipeline(editing: bool = False) -> tuple:
     """
     _add_helper_to_path()
 
+    # Ensure PyTorch uses expandable segments for fragmented VRAM on 6GB cards.
+    # Must be 'True'/'False' (not '1'/'0') — PyTorch raises ValueError otherwise.
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
     from diffusers import AutoencoderKLHunyuanVideo
     from transformers import (
         CLIPTextModel,
