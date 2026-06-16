@@ -3,18 +3,20 @@
 # Fine-tune of Qwen3-4B-Thinking-2507 via distillation
 # Reasoning model with SwiReasoning (latent/explicit switching)
 # SwiReasoning NOT supported in llama.cpp — runs in explicit-only mode
-# Q4_K_M ~2.5GB, fits 6GB VRAM with room for cache
+# Q4_K_M ~2.5GB, fits 6GB VRAM with --fit dynamic context
 # Dual mode: base (chat, no think) and :think (reasoning)
 # -------------------------------------------
 "rio-mini-4b":
   name: "Rio 3.0 Open Mini 4B"
   description: "IplanRIO/Prefeitura do Rio - distilled from Qwen3-4B-Thinking-2507 with reasoning traces from Rio 3.0. MIT license."
   cmd: |
-    ${llama_server} --port ${PORT}
+    ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/rio-mini-4b/Rio-3.0-Open-Mini.Q4_K_M.gguf
     --jinja
     --parallel 2
-    --ctx-size 32768
+    --fit
+    --fit-margin 512
+    --ctx-size 131072
     --timeout 0
     --temp ${default_temp}
     --top-p ${default_top_p}
@@ -23,6 +25,8 @@
     --repeat-penalty ${default_repeat_penalty}
     --cache-type-k q8_0
     --cache-type-v q4_0
+    --k-cache-hadamard
+    --v-cache-hadamard
     --flash-attn auto
     --metrics
   filters:
@@ -48,10 +52,10 @@
     context: 262144
   metadata:
     size: "~2.5 GB (Q4_K_M)"
-    context: "32K (configured)"
-    vram_usage: "~3.5GB VRAM (model + cache)"
+    context: "128K (fit dynamic, 262K native)"
+    vram_usage: "~3.5GB VRAM (model + hadamard cache)"
     source: "mradermacher/Rio-3.0-Open-Mini-GGUF (Q4_K_M)"
-    kv_cache: "q8_0 + q4_0"
+    kv_cache: "q8_0 + q4_0 hadamard"
     features:
       completion: true
       tools: true
