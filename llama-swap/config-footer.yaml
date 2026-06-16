@@ -29,6 +29,7 @@ matrix:
     g2q: gemma4-e2b
     ll: littlelamb-0.3b-tc
     lfm8: lfm2.5-8b-a1b
+    vt: vibethinker-3b
     # Vision
     vl: lfm2.5-vl-450m
     vlx: lfm2.5-vl-1.6b-extract
@@ -53,13 +54,13 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | q4a | g2 | g2q | ll | lfm8) & vl & nomic"
+    small_vision: "(q4 | q4a | g2 | g2q | ll | lfm8 | vt) & vl & nomic"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | g2 | g2q | ll | lfm8) & nomic"
+    small_embed: "(q4 | q4a | g2 | g2q | ll | lfm8 | vt) & nomic"
 
     # LLM pequeno sozinho (sem vision, sem embedding)
-    small_only: "q4 | q4a | g2 | g2q | ll | lfm8"
+    small_only: "q4 | q4a | g2 | g2q | ll | lfm8 | vt"
 
     # Vision models (sozinhos ou com nomic)
     vision_only: "vl | vlx | ocr | cpv"
@@ -106,3 +107,4 @@ matrix:
     g2q: 1
     ll: 1
     hmt: 1
+    vt: 2

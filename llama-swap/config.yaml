@@ -5,9 +5,9 @@
 # Repositório: ~/git/ai-dotfiles/llama-swap/
 # Modelos: ~/.llama-models/
 # Requer: llama-swap v212+ (Prometheus metrics, SIGHUP reload, reasoning UI, race fix, zstd captures)
-# Requer: llama.cpp build b9659+ (LFM2 tool-call parsing fix #24667, SYCL reorders, Vulkan col2im_1d, mtmd batching API, PWA support)
-# Requer: ik_llama.cpp v4608+ (Gemma4 vision mtmd blindness fix #1893, fattn_mma_gqa_16, Minimax M3 -muge crash fix)
-# Requer: BeeLlama.cpp v0.3.2+ (KVarN compact checkpoints, DFlash profit adaptive DM, TurboQuant CUDA FA fixes, prompt-cache host budget, HIP fixes)
+# Requer: llama.cpp build b9563+ (mtmd audio/TTS/video, 6 audio preprocessors: whisper/conformer/granite_speech/gemma4a/gemma4ua/qwen3a, LFM2.5 reasoning fix, Gemma4 MTP, Granite4 Vision, KV cache optimizations)
+# Requer: ik_llama.cpp v4566+ (bf16 graph reduce fix, threads-mtmd, mtmd checkpoint save/restore)
+# Requer: BeeLlama.cpp v0.3.1+ (DFlash speculative decoding, TurboQuant KV cache, Gemma4 audio fixes)
 #
 # OTIMIZAÇÕES ik_llama.cpp (modelos MoE e dense offloaded):
 #   --k-cache-hadamard / --v-cache-hadamard (-khad/-vhad): Hadamard transform no K/V cache
@@ -1662,6 +1662,78 @@ models:
         - "Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma"
         - "Needs explicit translation prompt (Sprachspiel format works)"
       note: "Translation model. Sprachspiel translate mode default. 55 languages."
+# -------------------------------------------
+# VIBETHINKER-3B - ik BACKEND (Hadamard KV cache)
+# WeiboAI/VibeThinker-3B — Qwen2.5-Coder-3B fine-tune for verifiable reasoning
+# Q6_K quant: 2.41 GB on disk. GQA (2 KV heads) enables 128K context in ~4.9 GB VRAM.
+# Specialized: competitive math/code/STEM reasoning (IMO-AnswerBench 76.4, LeetCode 96.1%).
+# NOT general-purpose — terrible at open-domain knowledge and casual chat.
+# Dual mode: base (no think) and :think (reasoning mode, temperature=1.0)
+# -------------------------------------------
+  "vibethinker-3b":
+    name: "VibeThinker 3B"
+    description: "VibeThinker-3B — verifiable reasoning specialist (math, code, STEM). Q6_K with hadamard KV cache for 128K context. NOT a general assistant."
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/vibethinker-3b-Q6_K.gguf
+      --jinja
+      --parallel 2
+      --fit
+      --fit-margin 512
+      --ctx-size 131072
+      --timeout 0
+      --temp 1.0
+      --top-p 0.95
+      --top-k -1
+      --min-p ${default_min_p}
+      --repeat-penalty ${default_repeat_penalty}
+      --reasoning on
+      --cache-type-k q8_0
+      --cache-type-v q4_0
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --metrics
+    filters:
+      stripParams: "temperature, top_p, top_k"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 0.7
+          top_p: 0.95
+        "${MODEL_ID}:think":
+          temperature: 1.0
+          top_p: 0.95
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: false
+      reranker: false
+      context: 131072
+    metadata:
+      size: "~2.41 GB (Q6_K)"
+      context: "128K (GQA, 2 KV heads)"
+      vram_usage: "~4.9 GB VRAM (Q6_K + KV-Q8 @ 128K)"
+      source: "WeiboAI/VibeThinker-3B (local Q6_K quantize via ik_llama.cpp)"
+      kv_cache: "q8_0 + q4_0 hadamard"
+      features:
+        completion: true
+        tools: false
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen2
+      parameters: 3086000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: Q6_K
+      note: "Reasoning specialist (IMO 76.4, LeetCode 96.1%). Q6_K preserves chain-of-thought quality. GQA 2 KV heads = 8x smaller KV cache. temperature=1.0 top_p=0.95 per model card for reasoning."
 # Hooks: ações na inicialização do llama-swap
 # preload: carrega modelos síncronamente antes de aceitar requests
 # Ideal para vLLM (startup lento = 30-90s sem warm-up)
@@ -1693,6 +1765,7 @@ matrix:
     g2q: gemma4-e2b
     ll: littlelamb-0.3b-tc
     lfm8: lfm2.5-8b-a1b
+    vt: vibethinker-3b
     # Vision
     vl: lfm2.5-vl-450m
     vlx: lfm2.5-vl-1.6b-extract
@@ -1717,13 +1790,13 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | q4a | g2 | g2q | ll | lfm8) & vl & nomic"
+    small_vision: "(q4 | q4a | g2 | g2q | ll | lfm8 | vt) & vl & nomic"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | g2 | g2q | ll | lfm8) & nomic"
+    small_embed: "(q4 | q4a | g2 | g2q | ll | lfm8 | vt) & nomic"
 
     # LLM pequeno sozinho (sem vision, sem embedding)
-    small_only: "q4 | q4a | g2 | g2q | ll | lfm8"
+    small_only: "q4 | q4a | g2 | g2q | ll | lfm8 | vt"
 
     # Vision models (sozinhos ou com nomic)
     vision_only: "vl | vlx | ocr | cpv"
@@ -1770,3 +1843,4 @@ matrix:
     g2q: 1
     ll: 1
     hmt: 1
+    vt: 2

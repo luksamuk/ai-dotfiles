@@ -1,0 +1,70 @@
+# -------------------------------------------
+# VIBETHINKER-3B - ik BACKEND (Hadamard KV cache)
+# WeiboAI/VibeThinker-3B — Qwen2.5-Coder-3B fine-tune for verifiable reasoning
+# Q6_K quant: 2.41 GB on disk. GQA (2 KV heads) enables 128K context in ~4.9 GB VRAM.
+# Specialized: competitive math/code/STEM reasoning (IMO-AnswerBench 76.4, LeetCode 96.1%).
+# NOT general-purpose — terrible at open-domain knowledge and casual chat.
+# Dual mode: base (no think) and :think (reasoning mode, temperature=1.0)
+# -------------------------------------------
+"vibethinker-3b":
+  name: "VibeThinker 3B"
+  description: "VibeThinker-3B — verifiable reasoning specialist (math, code, STEM). Q6_K with hadamard KV cache for 128K context. NOT a general assistant."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/vibethinker-3b-Q6_K.gguf
+    --jinja
+    --parallel 2
+    --fit
+    --fit-margin 512
+    --ctx-size 131072
+    --timeout 0
+    --temp 1.0
+    --top-p 0.95
+    --top-k -1
+    --min-p ${default_min_p}
+    --repeat-penalty ${default_repeat_penalty}
+    --reasoning on
+    --cache-type-k q8_0
+    --cache-type-v q4_0
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --metrics
+  filters:
+    stripParams: "temperature, top_p, top_k"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 0.7
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        temperature: 1.0
+        top_p: 0.95
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~2.41 GB (Q6_K)"
+    context: "128K (GQA, 2 KV heads)"
+    vram_usage: "~4.9 GB VRAM (Q6_K + KV-Q8 @ 128K)"
+    source: "WeiboAI/VibeThinker-3B (local Q6_K quantize via ik_llama.cpp)"
+    kv_cache: "q8_0 + q4_0 hadamard"
+    features:
+      completion: true
+      tools: false
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen2
+    parameters: 3086000000
+    context_length: 131072
+    embedding_length: 2048
+    quantization: Q6_K
+    note: "Reasoning specialist (IMO 76.4, LeetCode 96.1%). Q6_K preserves chain-of-thought quality. GQA 2 KV heads = 8x smaller KV cache. temperature=1.0 top_p=0.95 per model card for reasoning."
