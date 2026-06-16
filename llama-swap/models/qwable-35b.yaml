@@ -1,0 +1,76 @@
+# -------------------------------------------
+# QWABLE 3.6-35B - Mia-AiLab (Qwen + Fable 5 distillation)
+# Fine-tune of unsloth/Qwen3.6-35B on Fable 5 reasoning/instruction dataset
+# Same MoE A3B architecture as qwen3.6-35b-a3b (35B total, 3B active)
+# No MTP layers. MIT license. Experimental — 0 downloads at install time.
+# Q4_K_M 20GB (vs 17.3GB APEX I-Compact on the base model)
+# Installed for A/B comparison against qwen3.6-35b-a3b
+# -------------------------------------------
+"qwable-35b":
+  name: "Qwable 3.6 35B"
+  description: "Mia-AiLab/Qwable-3.6-35b — Qwen3.6-35B-A3B fine-tuned with Claude Fable 5 reasoning traces. Experimental. MIT license."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/qwable-35b/Qwable-3.6-35b_q4_k_m.gguf
+    --fit
+    --fit-margin 768
+    --ctx-size 131072
+    --timeout 0
+    --temp ${code_temp}
+    --top-p ${code_top_p}
+    --top-k ${code_top_k}
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --reasoning on
+    --jinja
+    --parallel 2
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.85
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 300
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 262144
+  metadata:
+    size: "~20 GB (Q4_K_M)"
+    context: "1K-131K (fit dynamic, 262K native)"
+    vram_usage: "~5.4GB VRAM + 15.5GB pinned RAM (ik pinned memory)"
+    source: "Mia-AiLab/Qwable-3.6-35b (Q4_K_M)"
+    kv_cache: "q4_0 + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 34660000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: Q4_K_M
+    note: "Fable 5 distillation on Qwen3.6-35B-A3B. Experimental, no benchmarks yet. Installed for A/B testing against qwen3.6-35b-a3b."
