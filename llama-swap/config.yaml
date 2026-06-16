@@ -5,9 +5,9 @@
 # Repositório: ~/git/ai-dotfiles/llama-swap/
 # Modelos: ~/.llama-models/
 # Requer: llama-swap v212+ (Prometheus metrics, SIGHUP reload, reasoning UI, race fix, zstd captures)
-# Requer: llama.cpp build b9563+ (mtmd audio/TTS/video, 6 audio preprocessors: whisper/conformer/granite_speech/gemma4a/gemma4ua/qwen3a, LFM2.5 reasoning fix, Gemma4 MTP, Granite4 Vision, KV cache optimizations)
-# Requer: ik_llama.cpp v4566+ (bf16 graph reduce fix, threads-mtmd, mtmd checkpoint save/restore)
-# Requer: BeeLlama.cpp v0.3.1+ (DFlash speculative decoding, TurboQuant KV cache, Gemma4 audio fixes)
+# Requer: llama.cpp build b9659+ (LFM2 tool-call parsing fix #24667, SYCL reorders, Vulkan col2im_1d, mtmd batching API, PWA support)
+# Requer: ik_llama.cpp v4608+ (Gemma4 vision mtmd blindness fix #1893, fattn_mma_gqa_16, Minimax M3 -muge crash fix)
+# Requer: BeeLlama.cpp v0.3.2+ (KVarN compact checkpoints, DFlash profit adaptive DM, TurboQuant CUDA FA fixes, prompt-cache host budget, HIP fixes)
 #
 # OTIMIZAÇÕES ik_llama.cpp (modelos MoE e dense offloaded):
 #   --k-cache-hadamard / --v-cache-hadamard (-khad/-vhad): Hadamard transform no K/V cache
