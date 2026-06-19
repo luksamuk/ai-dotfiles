@@ -490,85 +490,6 @@ models:
       embedding_length: 1024
       quantization: Q8_0
 # -------------------------------------------
-# GEMMA-4-26B-A4B - MoE REASONING + CODING (QAT Q4_0, upstream backend)
-# Google Q4_0 Quantization-Aware Training — MoE 26B params, 4B active per token.
-# QAT won vs APEX on 26B: quality=TIE, speed=28 vs 27 tok/s, size=14.4 vs 15.5 GB.
-# APEX I-Compact deleted — crashes on ik (mul_mat_q_id CUDA illegal memory access).
-# Upstream backend: --fit on handles compute buffer, --flash-attn on stable.
-# --no-mmproj: text-only (mmproj crashes on CUDA, #21402)
-# --ctx-size 131072: native 262144 too large for 6GB, 131072 fits with --fit on
-# --fit-target 96: leave 96 MiB headroom for system/other processes
-# --fit-ctx 16384: minimum pre-allocated context at startup
-# Dual mode: base (chat, temp 0.7) and :think (reasoning, temp 1.0)
-# head_dim=256 → attn_rot ✅, iSWA fix (b8815+) → q4_0 cache works now
-# Note: upstream doesn't support --parallel-tool-calls. Jinja template handles tool calling.
-# -------------------------------------------
-  "gemma4-26b-a4b":
-    name: "Gemma 4 26B"
-    description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-26B_q4_0-it.gguf
-      --no-mmproj
-      --fit on
-      --fit-target 96
-      --fit-ctx 16384
-      --ctx-size 131072
-      --timeout 0
-      --temp 1.0
-      --top-p 0.95
-      --reasoning on
-      --cache-type-k q4_0
-      --cache-type-v q4_0
-      --flash-attn on
-      --jinja
-      --parallel 2
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.95
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-    ttl: 300
-    health_check_timeout: 300
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 262144
-    metadata:
-      size: "~14.4 GB (Q4_0 QAT)"
-      context: "16K-131K (dynamic)"
-      vram_usage: "~5GB VRAM + ~9GB RAM (upstream --fit on auto-offload)"
-      source: "google/gemma-4-26B-A4B-it-qat-q4_0-gguf"
-      kv_cache: "q4_0 + attn_rot"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: gemma4
-      parameters: 25230000000
-      context_length: 262144
-      embedding_length: 2816
-      quantization: Q4_0_QAT
-      warning: "Vision disabled — Gemma 4 mmproj crash on CUDA. Text-only."
-# -------------------------------------------
 # QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
 # MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
 # 33 experts, top-8 routing. APEX I-Compact ~17.3GB
@@ -1395,113 +1316,55 @@ models:
         image: false
       note: "Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with 'search_query: ' or 'search_document: '. 100+ languages. Matryoshka → 256 dims."
 # -------------------------------------------
-# NORTH MINI CODE — Cohere 30B-A3B MoE AGENTIC CODING (NVFP4, upstream backend)
+# NORTH MINI CODE — Cohere 30B-A3B MoE AGENTIC CODING (Q4_K_M, ik_llama backend)
 # CohereLabs/North-Mini-Code-1.0 — MoE 30B params, 3B active per token (top-8/128 experts).
 # Architecture: cohere2moe — merged upstream in PR #24260 (2026-06-13), parser #24615, vocab #24601.
-# Apache 2.0 license. Context: 256K, max output: 64K.
+# ik_llama has cohere2moe arch + graph builder, but arch name mismatch: GGUF uses "cohere2moe"
+#   (no underscore), ik_llama used "cohere2_moe" (with underscore).
+#   Patched in ik_llama src/llama-arch.cpp L68: "cohere2_moe" -> "cohere2moe"
+#   Patched in ik_llama src/llama-vocab.cpp L2113: added "cohere2moe" to tiny_aya block
+#   (aligned with upstream PR #24601). Reapply both patches after ik_llama git pull.
+# Apache 2.0 license. Context: 256K native, max output: 64K.
 # Text-only model — NO mmproj, NO vision.
 # Sampling: temp=1.0, top_p=0.95 per model card recommendation.
 # Sliding window attention (SWA) 3:1 ratio with RoPE — same pattern as cohere2.
-# Quantization: NVFP4 (4-bit weights, 16-bit activations) — GGML_TYPE_NVFP4 supported in CPU + CUDA.
-# On RTX 3050 (Ampere): NVFP4 uses MMQ fallback (no native FP4 tensor cores). Functional but not optimal.
-# Backend: upstream llama.cpp (NOT ik_llama — cohere2moe KQ mask bug in ik_llama not fixed as of b4633).
-# GGUF: michaelw9999/North-Mini-Code-1.0-GGUF (NVFP4 = 17.3 GB) — author is the PR #24260 author.
-# Local fix: tokenizer.ggml.pre = "cohere2-moe" (with hyphen) — upstream expects "cohere2moe" (no hyphen).
-#   Patched in src/llama-vocab.cpp: added "cohere2-moe" as alias for cohere2moe pre-tokenizer.
+# Quantization: Q4_K_M (Arki05) — 18.6 GB, 91.3% Top-1, 93.29% HumanEval.
+#   NVFP4 (michaelw9999) deprecated: ik_llama SIGFPE on NVFP4, upstream only, 4.2 tok/s.
+#   Q4_K_M works on ik_llama: 20-25 tok/s with MoE offload + hadamard cache.
+# Backend: ik_llama.cpp (NOT upstream — ik gives 5-6x speedup with MoE offload).
+# GGUF: Arki05/North-Mini-Code-1.0-GGUF (Q4_K_M = 18.6 GB) — correct chat template, imatrix calibrated.
+# Context: 65536 max on RTX 3050 6GB (131072 OOM with Q4_K_M — 1.3GB larger than I-Compact).
 
-# SMOKE TEST RESULTS (2026-06-18, b1056, RTX 3050 6GB):
-#   - Model loads with --fit on --fit-target 512, ctx 8192
-#   - Code generation: correct, concise, with reasoning (1111 chars thinking)
-#   - Tool calling: working (finish_reason=tool_calls, correct function args)
-#   - Performance: 22.68 t/s prompt, 4.14 t/s generation
-#   - VRAM: fits with heavy offload (--fit adjusts automatically)
+# SMOKE TEST RESULTS (2026-06-19, ik b4633, RTX 3050 6GB):
+#   - Model loads with --fit --fit-margin 128, ctx 65536, parallel 1
+#   - Code generation: correct, concise, with reasoning
+#   - Performance: 20-25 t/s generation, 70+ t/s prompt processing
+#   - VRAM: ~5.6GB used (compute buffer 516MB + KV cache + non-MoE tensors)
+#   - Experts offloaded to CPU via --defer-experts
 
-# Flags changed from old ik_llama config:
-#   - ${ik_llama_server} -> ${llama_server} (upstream has cohere2moe support)
-#   - --fit-margin -> --fit-target (upstream renamed)
-#   - --parallel-tool-calls removed (ik_llama only, not in upstream)
-#   - --defer-experts removed (ik_llama only, not in upstream)
-#   - --k-cache-hadamard / --v-cache-hadamard removed (ik_llama only)
+# Flags (ik_llama specific):
+#   - --fit (no "on" argument — ik uses bare flag)
+#   - --fit-margin (ik uses margin in MiB, not --fit-target)
+#   - --k-cache-hadamard / --v-cache-hadamard (ik only, improves q4_0 cache quality)
+#   - --defer-experts (ik only, defers MoE expert mmap on Linux)
+#   - --parallel 1 (parallel 2 + ctx 65K OOM; Qwen 3.6 uses parallel 2 but with I-Compact)
 # -------------------------------------------
   "north-mini-code":
     name: "North Mini Code"
     description: "Cohere's first open-source agentic coding model. 30B MoE with only 3B active params, optimized for code generation, agentic software engineering, and terminal tasks."
     cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/north-mini-code/BLS-Mini-Code-1.0-NVFP4.gguf
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/north-mini-code-q4km/North-Mini-Code-1.0-Q4_K_M.gguf
       --jinja
       --reasoning on
-      --fit on
-      --fit-target 512
-      --ctx-size 131072
+      --fit
+      --fit-margin 128
+      --ctx-size 65536
       --timeout 0
       --temp 1.0
       --top-p 0.95
       --repeat-penalty 1.0
-      --ubatch-size 2048
-      --batch-size 2048
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --flash-attn auto
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-    ttl: 120
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 262144
-    metadata:
-      size: "~17.3 GB (NVFP4)"
-      context: "16K-128K (dynamic with --fit)"
-      vram_usage: "~5-6GB VRAM + ~12GB RAM (heavy offload, MoE)"
-      source: "michaelw9999/North-Mini-Code-1.0-GGUF"
-      kv_cache: "q4_0 + attn_rot"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: cohere2moe
-      parameters: 30484340938
-      context_length: 262144
-      embedding_length: 2048
-      quantization: NVFP4
-# -------------------------------------------
-# QWABLE 3.6-35B - Mia-AiLab (Qwen + Fable 5 distillation)
-# Fine-tune of unsloth/Qwen3.6-35B on Fable 5 reasoning/instruction dataset
-# Same MoE A3B architecture as qwen3.6-35b-a3b (35B total, 3B active)
-# No MTP layers. MIT license. Experimental — 0 downloads at install time.
-# Q4_K_M 20GB (vs 17.3GB APEX I-Compact on the base model)
-# Installed for A/B comparison against qwen3.6-35b-a3b
-# -------------------------------------------
-  "qwable-35b":
-    name: "Qwable 3.6 35B"
-    description: "Mia-AiLab/Qwable-3.6-35b — Qwen3.6-35B-A3B fine-tuned with Claude Fable 5 reasoning traces. Experimental. MIT license."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/qwable-35b/Qwable-3.6-35b_q4_k_m.gguf
-      --fit
-      --fit-margin 768
-      --ctx-size 131072
-      --timeout 0
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
-      --min-p ${code_min_p}
-      --repeat-penalty ${code_repeat_penalty}
-      --reasoning on
-      --jinja
-      --parallel 2
-      --parallel-tool-calls
+      --parallel 1
       --cache-type-k ${large_cache_k}
       --cache-type-v ${large_cache_v}
       --k-cache-hadamard
@@ -1515,13 +1378,13 @@ models:
         "${MODEL_ID}":
           chat_template_kwargs:
             enable_thinking: false
-          temperature: 0.6
-          top_p: 0.85
+          temperature: 1.0
+          top_p: 0.95
         "${MODEL_ID}:think":
           chat_template_kwargs:
             enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
+          temperature: 1.0
+          top_p: 0.95
     ttl: 300
     health_check_timeout: 300
     capabilities:
@@ -1531,12 +1394,12 @@ models:
         - 'text'
       tools: true
       reranker: false
-      context: 131072
+      context: 262144
     metadata:
-      size: "~20 GB (Q4_K_M)"
-      context: "1K-131K (fit dynamic, 262K native)"
-      vram_usage: "~5.4GB VRAM + 15.5GB pinned RAM (ik pinned memory)"
-      source: "Mia-AiLab/Qwable-3.6-35b (Q4_K_M)"
+      size: "~18.6 GB (Q4_K_M)"
+      context: "16K-65K (dynamic with --fit)"
+      vram_usage: "~5.6GB VRAM + ~14GB RAM (ik pinned memory, MoE offload)"
+      source: "Arki05/North-Mini-Code-1.0-GGUF"
       kv_cache: "q4_0 + hadamard"
       features:
         completion: true
@@ -1547,12 +1410,11 @@ models:
         insert: false
         audio: false
         image: false
-      architecture: qwen35moe
-      parameters: 34660000000
+      architecture: cohere2moe
+      parameters: 30484340938
       context_length: 262144
       embedding_length: 2048
       quantization: Q4_K_M
-      note: "Fable 5 distillation on Qwen3.6-35B-A3B. Experimental, no benchmarks yet. Installed for A/B testing against qwen3.6-35b-a3b."
 # Qwen3-ASR 0.6B — Lightweight ASR (Automatic Speech Recognition) model
 # Architecture: qwen3vl (text) + clip/qwen3a (mmproj audio encoder)
 # ASR-only model — converts speech to text, no audio generation
@@ -1911,7 +1773,6 @@ hooks:
 
 matrix:
   vars:
-    gemma4m: gemma4-26b-a4b
     # Modelos pequenos
     q4: qwen3.5-4b
     q4a: qwen3.5-4b-abliterated
@@ -1930,7 +1791,6 @@ matrix:
     g4: gemma4-e4b
     # Pesados (offload)
     qw36: qwen3.6-35b-a3b
-    qwab: qwable-35b
     g12: gemma4-12b
     lag: laguna-xs2
     mel: mellum2-12b-a2.5b
@@ -1963,7 +1823,7 @@ matrix:
 
     # Modelos pesados (offload) + Embedding
     # nomic (~0.5GB) cabe ao lado mesmo dos pesados — usa RAM pro offload
-    heavy: "(qw36 | qwab | gemma4m | g12 | lag | mel | nmc) & nomic"
+    heavy: "(qw36 | g12 | lag | mel | nmc) & nomic"
 
     # Tradução (leve, cabe com nomic)
     translate_embed: "(tg | hmt) & nomic"
@@ -1977,9 +1837,7 @@ matrix:
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
-    gemma4m: 10
     qw36: 10
-    qwab: 10
     lag: 9
     g12: 7
     mel: 6

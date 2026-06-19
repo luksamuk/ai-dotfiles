@@ -37,26 +37,7 @@
 
 ## Active Models
 
-### 1. gemma4-26b-a4b — Gemma 4 26B A4B MoE
-
-| Parameter | Value |
-|-----------|-------|
-| **Source** | Google Gemma 4 26B (Activations 4B, MoE) |
-| **Quant** | APEX I-Compact (~15.5 GB) — mixed-precision MoE: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K |
-| **Backend** | `llama_server` (upstream v674) |
-| **KV cache** | `q4_0` K + `q4_0` V + `attn_rot` (iSWA fix, b8815+) |
-| **Flash attention** | `--flash-attn on` |
-| **Context** | 16K–128K dynamic, `--fit on --fit-target 96 --fit-ctx 16384 --ctx-size 131072` |
-| **Thinking** | ✅ Yes — dual mode (`:think` variant available) |
-| **Tool calling** | ✅ Yes |
-| **Vision** | ❌ DISABLED — mmproj crashes on CUDA (issue [#21402](https://github.com/ggml-org/llama.cpp/issues/21402)) |
-| **Sampling** | `temp=1.0 / top-p=0.95` (think mode), `temp=0.7 / top-p=0.95` (chat mode) |
-| **TTL** | 300s |
-| **Known issues** | mmproj crash on CUDA; upstream backend used because mmproj crashes on CUDA even with ik |
-
----
-
-### 2. gemma4-e2b — Gemma 4 E2B Dense
+### 1. gemma4-e2b — Gemma 4 E2B Dense
 
 | Parameter | Value |
 |-----------|-------|
@@ -75,7 +56,7 @@
 
 ---
 
-### 3. gemma4-e4b — Gemma 4 E4B Dense
+### 2. gemma4-e4b — Gemma 4 E4B Dense
 
 | Parameter | Value |
 |-----------|-------|
@@ -94,7 +75,7 @@
 
 ---
 
-### 4. gpt-oss-20b — GPT-OSS 20B MoE
+### 3. gpt-oss-20b — GPT-OSS 20B MoE
 
 | Parameter | Value |
 |-----------|-------|
@@ -114,7 +95,7 @@
 
 ---
 
-### 5. hy-mt2-1.8b — Hunyuan MT2 1.8B Translation
+### 4. hy-mt2-1.8b — Hunyuan MT2 1.8B Translation
 
 | Parameter | Value |
 |-----------|-------|
@@ -133,7 +114,7 @@
 
 ---
 
-### 6. lfm2.5-1.2b — LFM2.5 1.2B Instruct Dense
+### 5. lfm2.5-1.2b — LFM2.5 1.2B Instruct Dense
 
 | Parameter | Value |
 |-----------|-------|
@@ -153,7 +134,7 @@
 
 ---
 
-### 7. lfm2.5-vl-450m — LFM2.5-VL 450M Vision
+### 6. lfm2.5-vl-450m — LFM2.5-VL 450M Vision
 
 | Parameter | Value |
 |-----------|-------|
@@ -172,7 +153,7 @@
 
 ---
 
-### 8. littlelamb-0.3b-tc — LittleLamb 0.3B Tool Calling
+### 7. littlelamb-0.3b-tc — LittleLamb 0.3B Tool Calling
 
 | Parameter | Value |
 |-----------|-------|
@@ -191,7 +172,7 @@
 
 ---
 
-### 9. minicpm-v-4.6 — MiniCPM-V 4.6 VLM
+### 8. minicpm-v-4.6 — MiniCPM-V 4.6 VLM
 
 | Parameter | Value |
 |-----------|-------|
@@ -210,7 +191,7 @@
 
 ---
 
-### 10. qwen3.5-4b — Qwen3.5 4B Dense
+### 9. qwen3.5-4b — Qwen3.5 4B Dense
 
 | Parameter | Value |
 |-----------|-------|
@@ -230,7 +211,7 @@
 
 ---
 
-### 11. qwen3.5-9b — Qwen3.5 9B Dense
+### 10. qwen3.5-9b — Qwen3.5 9B Dense
 
 | Parameter | Value |
 |-----------|-------|
@@ -249,7 +230,7 @@
 
 ---
 
-### 12. qwen3.6-35b-a3b — Qwen3.6 35B A3B MoE
+### 11. qwen3.6-35b-a3b — Qwen3.6 35B A3B MoE
 
 | Parameter | Value |
 |-----------|-------|
@@ -268,7 +249,7 @@
 
 ---
 
-### 13. qwopus-coder-9b — Qwopus 3.5-9B Coder
+### 12. qwopus-coder-9b — Qwopus 3.5-9B Coder
 
 | Parameter | Value |
 |-----------|-------|
@@ -286,7 +267,7 @@
 
 ---
 
-### 14. translategemma-4b — TranslateGemma 4B
+### 13. translategemma-4b — TranslateGemma 4B
 
 | Parameter | Value |
 |-----------|-------|
@@ -306,7 +287,7 @@
 
 ---
 
-### 15. webworld-8b — WebWorld 8B
+### 14. webworld-8b — WebWorld 8B
 
 | Parameter | Value |
 |-----------|-------|
@@ -368,13 +349,13 @@ Configs in `models/_removed/` (dead code):
 
 | Issue | Affected Models | Details |
 |-------|-----------------|---------|
-| **Gemma 4 mmproj CUDA crash** | gemma4-26b-a4b, gemma4-e2b, gemma4-e4b | llama.cpp issue [#21402](https://github.com/ggml-org/llama.cpp/issues/21402) — all Gemma 4 models are text-only |
+| **Gemma 4 mmproj CUDA crash** | gemma4-e2b, gemma4-e4b | llama.cpp issue [#21402](https://github.com/ggml-org/llama.cpp/issues/21402) — all Gemma 4 models are text-only |
 | **ik_llama segfault with LittleLamb 0.3B** | littlelamb-0.3b-tc | qwen3 arch incompatibility — use upstream only |
 | **ik_llama MTP OOM on 6 GB for dense** | Dense models with MTP | SSM buffer or overhead causes OOM — MTP disabled for dense models |
 | **BeeLlama turbo3_tcq MoE crash** | MoE models with 256 experts | Bug in Bee v0.1.2, may be fixed in v0.2.0 — avoid turbo3_tcq with MoE |
 | **MiniCPM5-1B tool calling broken** | (not in active roster) | llama.cpp autoparser `TAG_WITH_TAGGED` boundary bug |
 | **SGLang/vLLM OOM** | Any SGLang or vLLM backend | Both backends OOM on 6 GB VRAM — not viable |
-| **Gemma4 iSWA attn_rot** (FIXED) | gemma4-26b-a4b, gemma4-e2b, gemma4-e4b | Fixed in commit `4eb19514d` (build b8815+) — `q4_0` cache now works correctly |
+| **Gemma4 iSWA attn_rot** (FIXED) | gemma4-e2b, gemma4-e4b | Fixed in commit `4eb19514d` (build b8815+) — `q4_0` cache now works correctly |
 | **BeeLlama lacks --fit** | qwen3.5-4b | Must use `--n-gpu-layers 99` instead; cannot use dynamic VRAM fitting |
 
 ---

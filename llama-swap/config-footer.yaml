@@ -21,7 +21,6 @@ hooks:
 
 matrix:
   vars:
-    gemma4m: gemma4-26b-a4b
     # Modelos pequenos
     q4: qwen3.5-4b
     q4a: qwen3.5-4b-abliterated
@@ -40,7 +39,6 @@ matrix:
     g4: gemma4-e4b
     # Pesados (offload)
     qw36: qwen3.6-35b-a3b
-    qwab: qwable-35b
     g12: gemma4-12b
     lag: laguna-xs2
     mel: mellum2-12b-a2.5b
@@ -73,7 +71,7 @@ matrix:
 
     # Modelos pesados (offload) + Embedding
     # nomic (~0.5GB) cabe ao lado mesmo dos pesados — usa RAM pro offload
-    heavy: "(qw36 | qwab | gemma4m | g12 | lag | mel | nmc) & nomic"
+    heavy: "(qw36 | g12 | lag | mel | nmc) & nomic"
 
     # Tradução (leve, cabe com nomic)
     translate_embed: "(tg | hmt) & nomic"
@@ -87,9 +85,7 @@ matrix:
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
-    gemma4m: 10
     qw36: 10
-    qwab: 10
     lag: 9
     g12: 7
     mel: 6

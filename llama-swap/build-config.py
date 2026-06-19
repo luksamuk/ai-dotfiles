@@ -69,7 +69,6 @@ ORIGINAL_ORDER = [
     "lfm2.5-1.2b",           # ✅
     "lfm2.5-vl-450m",       # ✅
     "webworld-8b",           # ✅
-    "gemma4-26b-a4b",        # ✅
     "qwen3.6-35b-a3b",       # ✅
     "qwopus-coder-9b",       # ✅
     "littlelamb-0.3b-tc",    # ✅

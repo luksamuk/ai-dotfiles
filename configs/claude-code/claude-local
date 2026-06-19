@@ -5,7 +5,6 @@
 #   claude-local                     # Interactive session (default: Qwen 3.6 35B)
 #   claude-local -p "task"           # Print mode
 #   claude-local --bare -p "task" --max-turns 5
-#   claude-local gemma4-26b          # Use Gemma 4 26B MoE
 #   claude-local gemma4-12b          # Use Gemma 4 12B
 #   claude-local gemma4-e4b          # Use Gemma 4 E4B
 #   claude-local qwen3.5-9b          # Use Qwen 3.5 9B
@@ -29,7 +28,6 @@ DEFAULT_MODEL="qwen3.6-35b-a3b:think"
 # Model shortcuts: short name → llama-swap model ID
 declare -A MODELS=(
   [qwen3.6-35b]="qwen3.6-35b-a3b:think"
-  [gemma4-26b]="gemma4-26b-a4b:think"
   [gemma4-12b]="gemma4-12b:think"
   [gemma4-e4b]="gemma4-e4b:think"
   [qwen3.5-9b]="qwen3.5-9b:think"
