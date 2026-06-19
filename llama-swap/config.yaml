@@ -145,7 +145,7 @@ models:
       --fit
       --fit-margin 512
       --ctx-size 131072
-      --timeout 0
+
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -226,7 +226,7 @@ models:
       --parallel 2
       --parallel-tool-calls
       --ctx-size ${small_model_max_ctx}
-      --timeout 0
+
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -302,7 +302,7 @@ models:
       --parallel 2
       --parallel-tool-calls
       --ctx-size ${small_model_max_ctx}
-      --timeout 0
+
       --temp 0.7
       --top-p 0.9
       --top-k 40
@@ -377,7 +377,7 @@ models:
       --fit-target 1024
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --timeout 0
+
       --parallel 4
       --temp 0.7
       --top-p 0.9
@@ -447,7 +447,7 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --timeout 0
+
       --temp 0.1
       --top-p 0.9
       --top-k 40
@@ -518,7 +518,7 @@ models:
       --fit
       --fit-margin 768
       --ctx-size 131072
-      --timeout 0
+
       --temp ${code_temp}
       --top-p ${code_top_p}
       --top-k ${code_top_k}
@@ -604,7 +604,7 @@ models:
       --fit-target 768
       --fit-ctx ${small_model_min_ctx}
       --ctx-size 40960
-      --timeout 0
+
       --parallel 4
       --cont-batching
       --temp ${code_temp}
@@ -685,7 +685,7 @@ models:
       --fit on
       --fit-ctx 8192
       --ctx-size 262144
-      --timeout 0
+
       --parallel 4
       --cont-batching
       --temp ${default_temp}
@@ -768,7 +768,7 @@ models:
       --fit-target 768
       --fit-ctx 8192
       --ctx-size 131072
-      --timeout 0
+
       --jinja
       --parallel 2
       --reasoning on
@@ -848,7 +848,7 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --timeout 0
+
       --temp 0.1
       --top-p 0.9
       --top-k 40
@@ -909,7 +909,7 @@ models:
       --fit-target 768
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --timeout 0
+
       --parallel 4
       --temp 0.7
       --top-p 0.6
@@ -978,7 +978,7 @@ models:
       --fit
       --fit-margin 256
       --ctx-size 32768
-      --timeout 0
+
       --batch-size 8
       --temp 0.3
       --top-p 0.85
@@ -1060,7 +1060,7 @@ models:
       --fit on
       --fit-ctx 16384
       --ctx-size 131072
-      --timeout 0
+
       --parallel 2
       --no-cont-batching
       --reasoning-format deepseek-legacy
@@ -1138,7 +1138,7 @@ models:
       --fit-target ${vram_margin}
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --timeout 0
+
       --temp 0.1
       --top-p 0.9
       --top-k 40
@@ -1203,7 +1203,7 @@ models:
       --fit
       --fit-margin 512
       --ctx-size 131072
-      --timeout 0
+
       --temp 0.6
       --top-p 0.95
       --top-k 20
@@ -1281,7 +1281,7 @@ models:
       --embeddings
       --pooling mean
       --ctx-size 512
-      --timeout 0
+
       --cont-batching
       --cache-type-k f16
       --cache-type-v f16
@@ -1360,7 +1360,7 @@ models:
       --fit
       --fit-margin 128
       --ctx-size 65536
-      --timeout 0
+
       --temp 1.0
       --top-p 0.95
       --repeat-penalty 1.0
@@ -1436,7 +1436,7 @@ models:
       --fit-target 768
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --timeout 0
+
       --parallel 4
       --cont-batching
       --temp ${default_temp}
@@ -1559,7 +1559,7 @@ models:
       --fit
       --fit-margin 512
       --ctx-size 131072
-      --timeout 0
+
       --temp ${default_temp}
       --top-p ${default_top_p}
       --top-k ${default_top_k}
@@ -1634,7 +1634,7 @@ models:
       --fit
       --fit-margin 512
       --ctx-size 131072
-      --timeout 0
+
       --temp 0.6
       --top-p 0.95
       --top-k 20
@@ -1707,7 +1707,7 @@ models:
       --fit-target 768
       --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
-      --timeout 0
+
       --temp 0.2
       --top-p 0.9
       --top-k 40
