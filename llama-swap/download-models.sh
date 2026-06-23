@@ -42,6 +42,8 @@
 #   qwopus-35b           - Qwopus3.6-35B-A3B-v1 APEX I-Compact (~16.5 GB) - MoE coding+reasoning SFT
 #   [REMOVED] qwen3.5-9b-ace — superseded by Qwopus for agentic tasks
 #   [REMOVED] nanbeige4.1-3b — multi-turn tool calling broken (#22684), GGUF deleted
+#   ornstein-36-35b       - Ornstein 3.6 35B SABER Q4_K_M (~21.7 GB) - Qwen3.6 MoE NSC-ACE-SABER fine-tune, test only
+#   locate-anything       - LocateAnything-3B Q8_0 (~6.3 GB) - NVIDIA visual grounding, NOT llama-server (subprocess CLI)
 #   all                  - Download all models
 #
 # If no argument, downloads qwen3.5-4b (fits entirely in 6GB VRAM)
@@ -158,6 +160,11 @@ declare -A MODELS=(
   # Architecture: qwen35moe (same as Qwen3.6-35B-A3B-APEX), no APEX quant, standard Q4_K_M
   # TEST ONLY: evaluating as potential replacement for Qwen3.6-APEX
   ["ornstein-36-35b"]="GestaltLabs/Qwen3.6-35B-A3B-NSC-ACE-SABER-GGUF Qwen3.6-35B-A3B-NSC-ACE-SABER-Q4_K_M.gguf"
+  # LocateAnything-3B — NVIDIA visual grounding VLM with Parallel Box Decoding
+  # NOT llama-server compatible — uses locate-anything.cpp inference engine (subprocess CLI)
+  # Downloaded to subdir (no mmproj — vision tower embedded in GGUF)
+  # Build: git clone --recursive https://github.com/mudler/locate-anything.cpp && cd locate-anything.cpp && mkdir build && cd build && cmake .. -DLA_GGML_CUDA=ON && make -j
+  ["locate-anything"]="mudler/locate-anything.cpp-gguf locate-anything-q8_0.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -212,22 +219,28 @@ download_model() {
   
   # If no local filename specified, use remote filename
   local_file="${local_file:-$remote_file}"
-  
+
+  # LocateAnything downloads to a subdirectory (not llama-server, separate inference engine)
+  local target_dir="$MODELS_DIR"
+  if [[ "$key" == "locate-anything" ]]; then
+    target_dir="$MODELS_DIR/locate-anything"
+    mkdir -p "$target_dir"
+  fi
   echo "Downloading $remote_file from $repo..."
   
-  if [[ -f "$MODELS_DIR/$local_file" ]]; then
-    echo "  ✓ Already exists: $MODELS_DIR/$local_file"
+  if [[ -f "$target_dir/$local_file" ]]; then
+    echo "  ✓ Already exists: $target_dir/$local_file"
   else
-    # Download directly to models dir (avoids tmpfs /tmp for large models)
-    hf download "$repo" "$remote_file" --local-dir "$MODELS_DIR"
+    # Download directly to target dir (avoids tmpfs /tmp for large models)
+    hf download "$repo" "$remote_file" --local-dir "$target_dir"
     
     # Rename if needed
     if [[ "$remote_file" != "$local_file" ]]; then
       echo "  Renaming: $remote_file → $local_file"
-      mv "$MODELS_DIR/$remote_file" "$MODELS_DIR/$local_file"
+      mv "$target_dir/$remote_file" "$target_dir/$local_file"
     fi
     
-    echo "  ✓ Downloaded: $MODELS_DIR/$local_file"
+    echo "  ✓ Downloaded: $target_dir/$local_file"
   fi
   
   # Download mmproj if applicable
@@ -329,7 +342,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, lfm2-24b, webworld-8b, qwen3.6-35b-a3b, qwopus-35b, gpt-oss-20b, qwopus-coder-9b, mellum2-12b-thinking, ornstein-36-35b, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, lfm2-24b, webworld-8b, qwen3.6-35b-a3b, qwopus-35b, gpt-oss-20b, qwopus-coder-9b, mellum2-12b-thinking, ornstein-36-35b, locate-anything, all"
     exit 1
     ;;
 esac
