@@ -38,6 +38,8 @@
 #   [REMOVED] granite-4.0-h-1b — removed from fleet May 2026
 #   mellum2-12b-thinking  - Mellum2-12B-A2.5B-Thinking Q4_K_M (~7.6 GB) - JetBrains MoE, reasoning + tools, manual conversion
 #   ornstein-36-35b       - Ornstein 3.6 35B SABER Q4_K_M (~21.7 GB) - Qwen3.6 MoE NSC-ACE-SABER fine-tune, test only
+#   nemotron-omni-30b     - [REMOVED] NVIDIA Nemotron 3 Nano Omni 30B — audio didn't work in GGUF, replaced by AgentWorld
+#   agentworld-35b        - Qwen AgentWorld 35B-A3B Q4_K_M (~20 GB) - Native language world model, 7 agent domains (MCP/Search/Terminal/SWE/Android/Web/OS)
 #   ds-r1-distill-14b    - [REMOVED] Dense 14B, poor perf on RTX 3050
 #   ds-r1-distill-32b    - [REMOVED] Dense 32B, very slow on limited VRAM
 #   qwopus-35b           - Qwopus3.6-35B-A3B-v1 APEX I-Compact (~16.5 GB) - MoE coding+reasoning SFT
@@ -164,6 +166,10 @@ declare -A MODELS=(
   # Architecture: qwen35moe (same as Qwen3.6-35B-A3B-APEX), no APEX quant, standard Q4_K_M
   # TEST ONLY: evaluating as potential replacement for Qwen3.6-APEX
   ["ornstein-36-35b"]="GestaltLabs/Qwen3.6-35B-A3B-NSC-ACE-SABER-GGUF Qwen3.6-35B-A3B-NSC-ACE-SABER-Q4_K_M.gguf"
+  # Qwen-AgentWorld-35B-A3B — native language world model (7 agent domains)
+  # Architecture: qwen35moe (same as Qwen3.6) — ik_llama compatible
+  # Q4_K_M: standard K-quant, no XL (ik_llama compatible)
+  ["agentworld-35b"]="groxaxo/Qwen-AgentWorld-35B-A3B-GGUF Qwen-AgentWorld-35B-A3B-Q4_K_M.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -185,6 +191,7 @@ declare -A MMPROJ=(
   ["qwopus-coder-9b"]="Jackrong/Qwopus3.5-9B-Coder-GGUF mmproj.gguf mmproj-Qwopus3.5-9B-coder-F16.gguf"
   # GLM-OCR mmproj -- Q8_0 vision projection model
   ["glm-ocr"]="ggml-org/GLM-OCR-GGUF mmproj-GLM-OCR-Q8_0.gguf"
+  # [REMOVED] nemotron-omni-30b mmproj — model replaced by AgentWorld (no vision)
 
 )
 
@@ -298,6 +305,7 @@ show_sizes() {
   echo "  nomic-embed-text-v2-moe  ~0.33 GB  (Q4_K_M) - Embedding, RAG/search/similarity"
   echo "  mellum2-12b-thinking  ~7.60 GB  (Q4_K_M) - JetBrains MoE 12B/2.5B, reasoning + tools (manual conversion)"
   echo "  ornstein-36-35b       ~21.70 GB (Q4_K_M) - Qwen3.6-35B NSC-ACE-SABER fine-tune, +2.87pp BFCL (test only)"
+  echo "  nemotron-omni-30b    ~22.30 GB (UD-Q4_K_XL) + 1.5 GB mmproj - NVIDIA omnimodal MoE (text+image+audio), upstream only"
   echo ""
   echo "vLLM-only models (safetensors, auto-downloaded on first serve):"
   echo "  [REMOVED] granite-4.0-h-1b-vllm — removed from fleet May 2026"
@@ -336,7 +344,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, lfm2-24b, webworld-8b, qwen3.6-35b-a3b, qwopus-35b, gpt-oss-20b, qwopus-coder-9b, mellum2-12b-thinking, ornstein-36-35b, locate-anything, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, lfm2-24b, webworld-8b, qwen3.6-35b-a3b, qwopus-35b, gpt-oss-20b, qwopus-coder-9b, mellum2-12b-thinking, ornstein-36-35b, nemotron-omni-30b, locate-anything, all"
     exit 1
     ;;
 esac

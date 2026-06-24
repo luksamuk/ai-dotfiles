@@ -1,0 +1,98 @@
+# -------------------------------------------
+# QWEN-AGENTWORLD-35B-A3B — Native Language World Model
+#
+# Architecture: qwen35moe (Gated DeltaNet + MoE) — same as Qwen3.6-35B-A3B
+#   - 35B total params, 3B active per forward pass (8/256 experts)
+#   - 40 layers, hybrid attention (full every 4th, linear/Mamba otherwise)
+#   - 262K native context, thinking mode (reasoning before state prediction)
+#   - Trained: CPT -> SFT -> RL on 10M+ real-world interaction trajectories
+#
+# 7 domains: MCP, Search, Terminal, SWE, Android, Web, OS
+#   World model predicts next environment state given action + history
+#   Agent foundation model: LWM warm-up transfers to agentic tasks
+#
+# Backend: ik_llama.cpp (supports qwen35moe since PR #1288)
+#   Same architecture as Qwen3.6 — all ik optimizations apply
+#
+# Quant: Q4_K_M (20 GB) — standard K-quant from groxaxo
+#   No XL (ik_llama compatible), imatrix available separately
+#
+# Performance expectations (RTX 3050 6GB, ik_llama.cpp):
+#   ~15-20 tok/s text generation (MoE offload with ik optimizations)
+#   Cold start: 30-60s (loading 20 GB + mmap)
+#   VRAM: ~5GB model offload, rest in CPU RAM via --fit
+#   Thinking mode adds latency but improves simulation fidelity
+#
+# ik_llama flags:
+#   --fit + --fit-margin (auto offload to CPU)
+#   --defer-experts (load MoE experts on demand)
+#   --k/v-cache-hadamard (improve KV cache quality at q4_0)
+#   --reasoning on (extract thinking blocks)
+# -------------------------------------------
+"agentworld-35b":
+  name: "Qwen AgentWorld 35B"
+  description: "Qwen's native language world model. 35B params, 3B active. Simulates 7 agent environments (MCP, Search, Terminal, SWE, Android, Web, OS) via long chain-of-thought reasoning. Trained from CPT onward for environment modeling."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/agentworld-35b/Qwen-AgentWorld-35B-A3B-Q4_K_M.gguf
+    --fit
+    --fit-margin 768
+    --ctx-size 32768
+    --temp ${think_temp}
+    --top-p ${think_top_p}
+    --top-k ${think_top_k}
+    --min-p ${think_min_p}
+    --repeat-penalty ${think_repeat_penalty}
+    --reasoning on
+    --jinja
+    --parallel 1
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 600
+  health_check_timeout: 600
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 262144
+  metadata:
+    size: "~20 GB (Q4_K_M)"
+    context: "4K-32K (fit dynamic, 256K native)"
+    vram_usage: "~5GB VRAM + ~15GB RAM (CPU offload, ik --fit)"
+    source: "groxaxo/Qwen-AgentWorld-35B-A3B-GGUF"
+    kv_cache: "q4_0 + hadamard (ik optimized)"
+    domains: "MCP, Search, Terminal, SWE, Android, Web, OS"
+    features:
+      completion: true
+      tools: false
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 35000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: Q4_K_M
+    note: "World model — simulates 7 agent environments. Use with worldsim CLI. Thinking mode recommended for simulation fidelity. 32K ctx for VRAM safety (256K native but needs 128K+ for multi-turn trajectories)."

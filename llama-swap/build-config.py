@@ -70,6 +70,7 @@ ORIGINAL_ORDER = [
     "lfm2.5-vl-450m",       # ✅
     "webworld-8b",           # ✅
     "qwen3.6-35b-a3b",       # ✅
+    "agentworld-35b",         # ✅ World model (7 domains)
     "qwopus-coder-9b",       # ✅
     "littlelamb-0.3b-tc",    # ✅
     "minicpm-v-4.6",         # ✅

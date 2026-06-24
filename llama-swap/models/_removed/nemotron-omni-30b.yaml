@@ -1,0 +1,99 @@
+# -------------------------------------------
+# NEMOTRON-3-NANO-OMNI-30B-A3B-REASONING — NVIDIA omnimodal MoE
+#
+# Architecture: NemotronH (hybrid Mamba-2 + Attention MoE)
+#   - 30B total params, 3B active per forward pass
+#   - C-RADIO v4-H vision encoder + Parakeet-TDT audio encoder
+#   - 256K native context, English only
+#   - Reasoning model (chain-of-thought in template)
+#
+# Backend: llama.cpp upstream (b1085+)
+#   ik_llama.cpp does NOT support nemotron_h_moe arch.
+#   BeeLama.cpp DOES support nemotron_h_moe (same arch code as upstream).
+#
+# Quant: UD-Q4_K_XL (22.3 GB) — Unsloth Dynamic XL
+#   Mixed quant (i-quants in middle layers). Both upstream and Bee support i-quants.
+#   Slightly better quality than Q4_K_M at practically same size (+0.1 GB).
+#
+# mmproj: mmproj-F16.gguf (1.5 GB) — unified vision + audio projector
+#   Single mmproj handles BOTH vision (RADIO) and audio (Parakeet).
+#
+# Performance expectations (RTX 3050 6GB, upstream llama.cpp):
+#   ~3-8 tok/s text generation (no ik_llama MoE optimizations)
+#   Cold start: 60-120s (loading 22.3 GB + mmap)
+#   VRAM: ~5.5GB model offload + mmproj, rest in CPU RAM via --fit on
+#
+# Upstream flags (NOT ik_llama):
+#   --fit on / --fit-target (ik uses bare --fit / --fit-margin)
+#   No --defer-experts, no --k/v-cache-hadamard (ik only)
+#
+# Chat template: --jinja (model has reasoning + tool-calling in template)
+# Reasoning: model emits <think>...</think> in template; --reasoning on extracts it
+# Tool calling: supported via Jinja template
+# -------------------------------------------
+
+"nemotron-omni-30b":
+  name: "Nemotron 3 Nano Omni 30B"
+  description: "NVIDIA's omnimodal reasoning MoE model. 30B params, 3B active. Hybrid Mamba-2 + Attention architecture with C-RADIO v4-H vision encoder and Parakeet audio encoder. Supports text, image, audio, and video inputs."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/nemotron-omni-30b/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-UD-Q4_K_XL.gguf
+    --mmproj ${models_dir}/nemotron-omni-30b/mmproj-F16.gguf
+    --fit on
+    --fit-target 512
+    --ctx-size 65536
+    --batch-size 8
+    --temp 0.6
+    --top-p 0.95
+    --top-k 40
+    --repeat-penalty 1.05
+    --reasoning on
+    --jinja
+    --parallel 1
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --flash-attn auto
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.2
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+          reasoning_budget: 16384
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 600
+  health_check_timeout: 600
+  capabilities:
+    in: ['text', 'image', 'audio']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 262144
+  metadata:
+    size: "~22.3 GB (UD-Q4_K_XL) + 1.5 GB mmproj"
+    context: "4K-65K (dynamic with --fit on, 256K native)"
+    vram_usage: "~5.5GB VRAM + ~18GB RAM (CPU offload, upstream --fit)"
+    source: "unsloth/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-GGUF"
+    kv_cache: "q4_0 (no hadamard — ik only feature)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: true
+      image: true
+    architecture: nemotron_h_moe
+    parameters: 31000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: UD-Q4_K_XL
+    note: "Uses upstream llama.cpp (ik_llama lacks nemotron_h_moe support). BeeLama also supports this arch if DFlash/TurboQuant wanted later."
