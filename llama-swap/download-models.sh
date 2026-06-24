@@ -164,11 +164,6 @@ declare -A MODELS=(
   # Architecture: qwen35moe (same as Qwen3.6-35B-A3B-APEX), no APEX quant, standard Q4_K_M
   # TEST ONLY: evaluating as potential replacement for Qwen3.6-APEX
   ["ornstein-36-35b"]="GestaltLabs/Qwen3.6-35B-A3B-NSC-ACE-SABER-GGUF Qwen3.6-35B-A3B-NSC-ACE-SABER-Q4_K_M.gguf"
-  # LocateAnything-3B — NVIDIA visual grounding VLM with Parallel Box Decoding
-  # NOT llama-server compatible — uses locate-anything.cpp inference engine (subprocess CLI)
-  # Downloaded to subdir (no mmproj — vision tower embedded in GGUF)
-  # Build: git clone --recursive https://github.com/mudler/locate-anything.cpp && cd locate-anything.cpp && mkdir build && cd build && cmake .. -DLA_GGML_CUDA=ON && make -j
-  ["locate-anything"]="mudler/locate-anything.cpp-gguf locate-anything-q8_0.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -224,28 +219,22 @@ download_model() {
   
   # If no local filename specified, use remote filename
   local_file="${local_file:-$remote_file}"
-
-  # LocateAnything downloads to a subdirectory (not llama-server, separate inference engine)
-  local target_dir="$MODELS_DIR"
-  if [[ "$key" == "locate-anything" ]]; then
-    target_dir="$MODELS_DIR/locate-anything"
-    mkdir -p "$target_dir"
-  fi
+  
   echo "Downloading $remote_file from $repo..."
   
-  if [[ -f "$target_dir/$local_file" ]]; then
-    echo "  ✓ Already exists: $target_dir/$local_file"
+  if [[ -f "$MODELS_DIR/$local_file" ]]; then
+    echo "  ✓ Already exists: $MODELS_DIR/$local_file"
   else
-    # Download directly to target dir (avoids tmpfs /tmp for large models)
-    hf download "$repo" "$remote_file" --local-dir "$target_dir"
+    # Download directly to models dir (avoids tmpfs /tmp for large models)
+    hf download "$repo" "$remote_file" --local-dir "$MODELS_DIR"
     
     # Rename if needed
     if [[ "$remote_file" != "$local_file" ]]; then
       echo "  Renaming: $remote_file → $local_file"
-      mv "$target_dir/$remote_file" "$target_dir/$local_file"
+      mv "$MODELS_DIR/$remote_file" "$MODELS_DIR/$local_file"
     fi
     
-    echo "  ✓ Downloaded: $target_dir/$local_file"
+    echo "  ✓ Downloaded: $MODELS_DIR/$local_file"
   fi
   
   # Download mmproj if applicable
