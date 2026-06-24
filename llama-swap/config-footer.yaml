@@ -32,6 +32,7 @@ matrix:
     # Vision
     vl: lfm2.5-vl-450m
     vlx: lfm2.5-vl-1.6b-extract
+    vle: lfm2.5-vl-450m-extract
     ocr: glm-ocr
     cpv: minicpm-v-4.6
     # Modelos médios
@@ -63,8 +64,8 @@ matrix:
     small_only: "q4 | q4a | rio | g2 | g2q | ll | lfm8"
 
     # Vision models (sozinhos ou com nomic)
-    vision_only: "vl | vlx | ocr | cpv"
-    vision_embed: "(vl | vlx | ocr | cpv) & nomic"
+    vision_only: "vl | vlx | vle | ocr | cpv"
+    vision_embed: "(vl | vlx | vle | ocr | cpv) & nomic"
 
     # Modelos médios + Embedding
     medium: "(q9 | g4) & nomic"
@@ -95,6 +96,7 @@ matrix:
     ttsext: 4
     vl: 3
     vlx: 3
+    vle: 1
     ocr: 3
     cpv: 3
     q4: 2

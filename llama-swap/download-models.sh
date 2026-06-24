@@ -14,6 +14,7 @@
 #   [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
 #   lfm2.5-vl-450m       - LFM2.5-VL-450M Q4_0 (0.22 GB) + mmproj F16 - vision/OCR
 #   lfm2.5-vl-1.6b-extract - LFM2.5-VL-1.6B-Extract Q4_K_M (0.70 GB) + mmproj F16 - structured vision extraction (JSON)
+#   lfm2.5-vl-450m-extract - LFM2.5-VL-450M-Extract Q4_K_M (0.22 GB) + mmproj F16 - ultra-light structured extraction (JSON)
 #   [REMOVED] lfm2.5-1.2b — superseded by LFM2.5-8B-A1B, disabled May 2026
 #   lfm2.5-1.2b-think      - LFM2.5-1.2B-Thinking Q8_0 (~1.25 GB) - edge reasoning, CoT
 #   lfm2-24b              - LFM2-24B-A2B Q4_K_M (~14.4 GB) - MoE hybrid, 2.3B active
@@ -82,6 +83,9 @@ declare -A MODELS=(
   # LFM2.5-VL-1.6B-Extract — structured vision extraction, returns JSON not free-form text
   # lfm2 arch — upstream llama.cpp ONLY (ik_llama.cpp does not support lfm2)
   ["lfm2.5-vl-1.6b-extract"]="LiquidAI/LFM2.5-VL-1.6B-Extract-GGUF LFM2.5-VL-1.6B-Extract-Q4_K_M.gguf"
+  # LFM2.5-VL-450M-Extract — ultra-light structured extraction (450M params)
+  # Same Extract family as 1.6B but smaller — edge deployment, faster inference
+  ["lfm2.5-vl-450m-extract"]="LiquidAI/LFM2.5-VL-450M-Extract-GGUF LFM2.5-VL-450M-Extract-Q4_K_M.gguf"
   # [REMOVED] lfm2.5-1.2b — superseded by LFM2.5-8B-A1B, disabled May 2026
   # Only Instruct variant was in fleet; Thinking variant never downloaded
   # [REMOVED] lfm2.5-1.2b-think — superseded by LFM2.5-8B-A1B, disabled May 2026
@@ -172,6 +176,7 @@ declare -A MODELS=(
 declare -A MMPROJ=(
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF mmproj-LFM2.5-VL-450m-F16.gguf"
   ["lfm2.5-vl-1.6b-extract"]="LiquidAI/LFM2.5-VL-1.6B-Extract-GGUF mmproj-LFM2.5-VL-1.6B-Extract-F16.gguf"
+  ["lfm2.5-vl-450m-extract"]="LiquidAI/LFM2.5-VL-450M-Extract-GGUF mmproj-LFM2.5-VL-450M-Extract-F16.gguf"
   ["qwen3.6-35b-a3b"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF mmproj-F16.gguf mmproj-Qwen3.6-35B-A3B-F16.gguf"
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-4B-F16.gguf"
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-9B-F16.gguf"
