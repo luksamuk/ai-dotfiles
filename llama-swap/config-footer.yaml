@@ -56,15 +56,13 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    # q4/q4a (DFlash) excluídos — ctx 98K + DFlash consome ~5.7GB, não cabe com nomic
-    small_vision: "(rio | g2 | g2q | ll | lfm8) & vl & nomic"
+    # q4/q4a (DFlash) com ctx 32K + nomic ~700MiB headroom
+    small_vision: "(q4 | q4a | rio | g2 | g2q | ll | lfm8) & vl & nomic"
 
     # LLM pequeno + Embedding (sem vision)
-    # q4/q4a (DFlash) excluídos — OOM com nomic (117 MiB livres com ctx 98K)
-    small_embed: "(rio | g2 | g2q | ll | lfm8) & nomic"
+    small_embed: "(q4 | q4a | rio | g2 | g2q | ll | lfm8) & nomic"
 
     # LLM pequeno sozinho (sem vision, sem embedding)
-    # q4/q4a rodam aqui — DFlash sozinho cabe na VRAM
     small_only: "q4 | q4a | rio | g2 | g2q | ll | lfm8"
 
     # Vision models (sozinhos ou com nomic)

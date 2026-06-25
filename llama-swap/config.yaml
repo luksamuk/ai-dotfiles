@@ -66,7 +66,7 @@ models:
 
       -ngl all
 
-      --ctx-size 65536
+      --ctx-size 32768
 
       --temp ${default_temp}
 
@@ -111,10 +111,10 @@ models:
       - text
       tools: true
       reranker: false
-      context: 65536
+      context: 32768
     metadata:
       size: ~2.9 GB (Q4_K_M + DFlash drafter)
-      context: 64K (DFlash ring + q4_0 cache, ~800MB VRAM headroom)
+      context: 32K (DFlash ring + q4_0 cache, coexists with nomic ~700MB headroom)
       vram_usage: ~4.8GB VRAM (model 2.6GB + drafter 313MB + DFlash ring + q4_0 cache)
       source: Qwen3.5-4B-abliterated i1-Q4_K_M + Anbeeld/Qwen3.5-4B-DFlash-GGUF
       kv_cache: q4_0 (BeeLlama.cpp)
@@ -129,7 +129,7 @@ models:
         image: false
       architecture: qwen35
       parameters: 4210000000
-      context_length: 65536
+      context_length: 32768
       embedding_length: 2560
       quantization: i1-Q4_K_M + DFlash Q4_K_M
       note: DFlash speculative decoding via BeeLlama. 1.64x faster than ik+MoQ (86 vs 53 tok/s). Flat DFlash (branch-budget=0), adaptive draft-max (profit controller). Tool calling + thinking tested OK.
@@ -1909,8 +1909,8 @@ matrix:
     ttsext: qwen3-tts
     nomic: nomic-embed-text-v2-moe
   sets:
-    small_vision: (rio | g2 | g2q | ll | lfm8) & vl & nomic
-    small_embed: (rio | g2 | g2q | ll | lfm8) & nomic
+    small_vision: (q4 | q4a | rio | g2 | g2q | ll | lfm8) & vl & nomic
+    small_embed: (q4 | q4a | rio | g2 | g2q | ll | lfm8) & nomic
     small_only: q4 | q4a | rio | g2 | g2q | ll | lfm8
     vision_only: vl | vlx | vle | ocr | cpv
     vision_embed: (vl | vlx | vle | ocr | cpv) & nomic
