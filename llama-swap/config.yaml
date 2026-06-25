@@ -114,8 +114,8 @@ models:
       context: 32768
     metadata:
       size: ~2.9 GB (Q4_K_M + DFlash drafter)
-      context: 32K (DFlash ring + q4_0 cache, coexists with nomic ~700MB headroom)
-      vram_usage: ~4.8GB VRAM (model 2.6GB + drafter 313MB + DFlash ring + q4_0 cache)
+      context: '32K (DFlash max on 6GB: 4782 MiB. 98K needs 5678 MiB — doesn''t fit even alone)'
+      vram_usage: ~4.8GB VRAM (model 2.6GB + drafter 313MB + DFlash ring + q4_0 cache 32K)
       source: Qwen3.5-4B-abliterated i1-Q4_K_M + Anbeeld/Qwen3.5-4B-DFlash-GGUF
       kv_cache: q4_0 (BeeLlama.cpp)
       features:
@@ -1385,6 +1385,8 @@ models:
   nomic-embed-text-v2-moe:
     name: Nomic Embed v2
     description: Multilingual MoE text embedding model that excels at multilingual retrieval, supporting ~100 languages with state-of-the-art performance at the 300M parameter scale.
+    env:
+    - CUDA_VISIBLE_DEVICES=
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/nomic-embed-text-v2-moe-Q4_K_M.gguf
@@ -1401,7 +1403,7 @@ models:
 
       --cache-type-v f16
 
-      --flash-attn on
+      -ngl 0
 
       --metrics
 
@@ -1421,7 +1423,7 @@ models:
       embedding_length: 768
       quantization: Q4_K_M
       size: ~0.33 GB (Q4_K_M)
-      vram_usage: ~0.5GB
+      vram_usage: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)
       source: nomic-ai/nomic-embed-text-v2-moe-GGUF (Q4_K_M)
       kv_cache: f16
       features:

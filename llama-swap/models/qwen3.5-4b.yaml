@@ -59,8 +59,8 @@
     context: 32768
   metadata:
     size: "~2.9 GB (Q4_K_M + DFlash drafter)"
-    context: "32K (DFlash ring + q4_0 cache, coexists with nomic ~700MB headroom)"
-    vram_usage: "~4.8GB VRAM (model 2.6GB + drafter 313MB + DFlash ring + q4_0 cache)"
+    context: "32K (DFlash max on 6GB: 4782 MiB. 98K needs 5678 MiB — doesn't fit even alone)"
+    vram_usage: "~4.8GB VRAM (model 2.6GB + drafter 313MB + DFlash ring + q4_0 cache 32K)"
     source: "Qwen3.5-4B-abliterated i1-Q4_K_M + Anbeeld/Qwen3.5-4B-DFlash-GGUF"
     kv_cache: "q4_0 (BeeLlama.cpp)"
     features:

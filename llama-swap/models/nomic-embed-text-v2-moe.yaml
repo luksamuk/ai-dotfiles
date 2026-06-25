@@ -1,5 +1,5 @@
 # -------------------------------------------
-# NOMIC-EMBED-TEXT-V2-MOE - UPSTREAM BACKEND (embedding model)
+# NOMIC-EMBED-TEXT-V2-MOE - UPSTREAM BACKEND (embedding model, CPU-only)
 # 475M params (305M active, MoE top-2/8 experts), 768-dim embeddings with Matryoshka → 256
 # Architecture: nomic-bert — supported in upstream llama.cpp
 # Embedding model — use via /v1/embeddings endpoint for RAG, semantic search, similarity
@@ -9,10 +9,14 @@
 # 100+ language support (multilingual)
 # --cont-batching: safe for embedding (no generation, just encoding)
 # KV cache: f16 — embedding models benefit from precision, not compression
+# CPU-ONLY (-ngl 0): frees ~300 MiB VRAM for LLMs. Benchmark: 34.5ms avg vs 12.1ms GPU
+# (2.86x slower but imperceptible — 22.5ms difference per embedding).
 # -------------------------------------------
 "nomic-embed-text-v2-moe":
   name: "Nomic Embed v2"
   description: "Multilingual MoE text embedding model that excels at multilingual retrieval, supporting ~100 languages with state-of-the-art performance at the 300M parameter scale."
+  env:
+    - "CUDA_VISIBLE_DEVICES="
   cmd: |
     ${llama_server} --port ${PORT}
     --model ${models_dir}/nomic-embed-text-v2-moe-Q4_K_M.gguf
@@ -22,7 +26,7 @@
     --cont-batching
     --cache-type-k f16
     --cache-type-v f16
-    --flash-attn on
+    -ngl 0
     --metrics
   ttl: 300
   capabilities:
@@ -38,7 +42,7 @@
     embedding_length: 768
     quantization: Q4_K_M
     size: "~0.33 GB (Q4_K_M)"
-    vram_usage: "~0.5GB"
+    vram_usage: "~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)"
     source: "nomic-ai/nomic-embed-text-v2-moe-GGUF (Q4_K_M)"
     kv_cache: "f16"
     features:
