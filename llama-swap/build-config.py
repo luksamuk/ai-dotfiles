@@ -70,6 +70,7 @@ ORIGINAL_ORDER = [
     "lfm2.5-vl-450m",       # ✅
     "webworld-8b",           # ✅
     "qwen3.6-35b-a3b",       # ✅
+    "ornith-1.0-35b",        # ✅ Post-trained Qwen 3.5 35B MoE (agentic coding RL)
     "agentworld-35b",         # ✅ World model (7 domains)
     "qwopus-coder-9b",       # ✅
     # "littlelamb-0.3b-tc",   # REMOVED Jun 2026 — tool-calling broken, too small

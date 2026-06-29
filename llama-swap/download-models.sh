@@ -100,6 +100,10 @@ declare -A MODELS=(
   #   python3 ~/git/ik_llama.cpp/convert_hf_to_gguf.py ~/.llama-models/gemma-4-E2B-it-assistant --outfile ~/.llama-models/gemma-4-E2B-it-assistant-Q4_K_M.gguf --outtype q4_k_m
   # glm-4.7-flash removed
   ["qwen3.6-35b-a3b"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF Qwen3.5-35B-A3B-APEX-I-Compact.gguf Qwen3.6-35B-A3B-APEX-I-Compact.gguf"
+  # Ornith-1.0-35B — post-trained Qwen 3.5 35B MoE, self-scaffolding agentic coding RL
+  # Same qwen35moe arch as Qwen 3.6 — ik_llama compatible, K-quants standard
+  # Q4_K_M ~21.2GB — 3.9GB larger than Qwen 3.6 APEX I-Compact
+  ["ornith-1.0-35b"]="deepreinforce-ai/Ornith-1.0-35B-GGUF ornith-1.0-35b-Q4_K_M.gguf"
   # [REMOVED] granite-4.0-h-1b — removed from fleet May 2026
   ["qwopus-35b"]="mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf"
   # [REMOVED] gemma4-26b-a4b APEX I-Compact — superseded by QAT Q4_0 (faster, smaller, same quality)
@@ -285,6 +289,7 @@ show_sizes() {
   echo "  [REMOVED] granite-4.0-h-1b — removed from fleet May 2026"
   # glm-4.7-flash removed
   echo "  qwen3.6-35b-a3b    ~17.30 GB  (APEX I-Compact) - Heavy offload, MoE coding + tools"
+  echo "  ornith-1.0-35b     ~21.20 GB  (Q4_K_M) - Post-trained Qwen 3.5 35B MoE, agentic coding RL"
   echo "  qwopus-35b        ~16.50 GB  (APEX I-Compact) - Heavy offload, MoE coding+reasoning SFT"
   # [REMOVED] gemma4-26b-a4b — removed from fleet Jun 2026
   echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"
@@ -341,7 +346,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, lfm2-24b, webworld-8b, qwen3.6-35b-a3b, qwopus-35b, gpt-oss-20b, qwopus-coder-9b, mellum2-12b-thinking, ornstein-36-35b, nemotron-omni-30b, locate-anything, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, lfm2-24b, webworld-8b, qwen3.6-35b-a3b, ornith-1.0-35b, qwopus-35b, gpt-oss-20b, qwopus-coder-9b, mellum2-12b-thinking, ornstein-36-35b, nemotron-omni-30b, locate-anything, all"
     exit 1
     ;;
 esac

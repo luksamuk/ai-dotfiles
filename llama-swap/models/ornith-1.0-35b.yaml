@@ -1,0 +1,79 @@
+# -------------------------------------------
+# ORNITH-1.0-35B - MoE AGENTIC CODING (text-only)
+# MoE 35B params, ~3B ativo por token. 256 experts, 8+1 active.
+# Post-trained Qwen 3.5 35B MoE (self-scaffolding agentic coding RL).
+# Same qwen35moe architecture as Qwen3.6-35B-A3B.
+# Q4_K_M ~21.2GB — 3.9GB larger than Qwen 3.6 APEX I-Compact.
+# ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
+# --fit-margin 512: larger model needs more VRAM headroom than Qwen 3.6 (768)
+# --ctx-size 131072: same safe ceiling as Qwen 3.6
+# Dual mode: base (chat, no think) and :think (reasoning)
+# Identity: base Qwen 3.5 — should identify as Qwen, not Google (unlike 9B Gemma 4 base)
+# -------------------------------------------
+"ornith-1.0-35b":
+  name: "Ornith 1.0 35B"
+  description: "Ornith-1.0 is a family of open-source LLMs specialized for agentic coding, trained with a novel self-scaffolding reinforcement learning approach that jointly optimizes the scaffold and the solution."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/ornith-1.0-35b/ornith-1.0-35b-Q4_K_M.gguf
+    --fit
+    --fit-margin 512
+    --ctx-size 131072
+    --temp ${code_temp}
+    --top-p ${code_top_p}
+    --top-k ${code_top_k}
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --reasoning on
+    --jinja
+    --parallel 2
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.85
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 300
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~21.2 GB (Q4_K_M)"
+    context: "1K-131K (safe max)"
+    vram_usage: "~5.4GB VRAM + ~16GB pinned RAM (ik pinned memory, estimated 25-30 t/s)"
+    source: "deepreinforce-ai/Ornith-1.0-35B-GGUF"
+    kv_cache: "q4_0 + attn_rot + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 35000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: Q4_K_M
+    note: "Post-trained Qwen 3.5 35B MoE. Self-scaffolding RL for agentic coding. 256 experts, 8+1 active, ~3B active/token. 3.9GB larger than Qwen 3.6 APEX — expect lower tok/s from extra offload."
