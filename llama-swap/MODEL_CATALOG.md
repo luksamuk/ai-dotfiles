@@ -153,25 +153,6 @@
 
 ---
 
-### 7. littlelamb-0.3b-tc — LittleLamb 0.3B Tool Calling
-
-| Parameter | Value |
-|-----------|-------|
-| **Source** | LittleLamb 0.3B (Qwen3-style JSON tool calling) |
-| **Quant** | Q8_0 (~303 MB) |
-| **Backend** | `llama_server` (upstream v674) — ik segfaults with this model |
-| **KV cache** | `${small_cache_k}`/`${small_cache_v}` = `q8_0`/`q8_0` |
-| **Flash attention** | `--flash-attn on` |
-| **Context** | 8K–40K dynamic, `--fit on --fit-target 768 --parallel 4 --cont-batching` |
-| **Thinking** | ✅ Yes — dual mode |
-| **Tool calling** | ✅ Yes — Qwen3-style JSON, BFCL v4 51.5% |
-| **Vision** | ❌ No |
-| **Sampling** | Uses `${code_temp}`/`${code_top_p}`/`${code_top_k}`/`${code_min_p}`/`${code_repeat_penalty}` macros |
-| **TTL** | 60s |
-| **Known issues** | ik_llama segfaults with this model (qwen3 arch) — upstream only |
-
----
-
 ### 8. minicpm-v-4.6 — MiniCPM-V 4.6 VLM
 
 | Parameter | Value |
@@ -350,7 +331,7 @@ Configs in `models/_removed/` (dead code):
 | Issue | Affected Models | Details |
 |-------|-----------------|---------|
 | **Gemma 4 mmproj CUDA crash** | gemma4-e2b, gemma4-e4b | llama.cpp issue [#21402](https://github.com/ggml-org/llama.cpp/issues/21402) — all Gemma 4 models are text-only |
-| **ik_llama segfault with LittleLamb 0.3B** | littlelamb-0.3b-tc | qwen3 arch incompatibility — use upstream only |
+| **ik_llama segfault with LittleLamb 0.3B** | ~~littlelamb-0.3b-tc~~ | REMOVED Jun 2026 — tool-calling broken, too small |
 | **ik_llama MTP OOM on 6 GB for dense** | Dense models with MTP | SSM buffer or overhead causes OOM — MTP disabled for dense models |
 | **BeeLlama turbo3_tcq MoE crash** | MoE models with 256 experts | Bug in Bee v0.1.2, may be fixed in v0.2.0 — avoid turbo3_tcq with MoE |
 | **MiniCPM5-1B tool calling broken** | (not in active roster) | llama.cpp autoparser `TAG_WITH_TAGGED` boundary bug |

@@ -64,7 +64,6 @@ ORIGINAL_ORDER = [
     "lfm2.5-sgl",            # SGLang backend (paused — no venv)
     "qwen3.5-4b",      # ✅ Bee/TurboQuant (upstream backup em _disabled/)
     "qwen3.5-9b",      # ✅ Bee/TurboQuant (upstream backup em _disabled/)
-    "ornith-1.0-9b",     # ✅ Post-trained Qwen 3.5 9B + Gemma 4 (agentic coding RL)
     "gemma4-e4b",       # ✅ upstream ik backend (Bee was slower at 36 vs 40 tok/s)
     "gemma4-e2b",            # ✅
     "lfm2.5-1.2b",           # ✅
@@ -73,7 +72,7 @@ ORIGINAL_ORDER = [
     "qwen3.6-35b-a3b",       # ✅
     "agentworld-35b",         # ✅ World model (7 domains)
     "qwopus-coder-9b",       # ✅
-    "littlelamb-0.3b-tc",    # ✅
+    # "littlelamb-0.3b-tc",   # REMOVED Jun 2026 — tool-calling broken, too small
     "minicpm-v-4.6",         # ✅
     "nanbeige4.1-3b",         # ⚠️ verbose reasoning, always thinks, multi-turn tool calls BROKEN (#22684)
     # "mellum2-12b-thinking",   # DISABLED: tool calling broken (no chat_template in GGUF, --tool-call-parser hermes is vLLM-only). Awaiting community GGUF.

@@ -221,94 +221,6 @@ models:
       embedding_length: 4096
       quantization: MoQ-3.6
       note: 'MoQ-3.6 replaces UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25 vs 20/25 Snake), 32% smaller (3.75 vs 5.55 GB). MTP OOM on 6GB VRAM.'
-  ornith-1.0-9b:
-    name: Ornith 1.0 9B
-    description: Ornith-1.0 is a family of open-source LLMs specialized for agentic coding, trained with a novel self-scaffolding reinforcement learning approach that jointly optimizes the scaffold and the solution.
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/ornith-1.0-9b/ornith-1.0-9b-Q4_K_M.gguf
-
-      --fit
-
-      --fit-margin 512
-
-      --jinja
-
-      --parallel 2
-
-      --parallel-tool-calls
-
-      --ctx-size ${small_model_max_ctx}
-
-      --temp ${default_temp}
-
-      --top-p ${default_top_p}
-
-      --top-k ${default_top_k}
-
-      --min-p ${default_min_p}
-
-      --repeat-penalty ${default_repeat_penalty}
-
-      --reasoning on
-
-      --cache-type-k q8_0
-
-      --cache-type-v q4_0
-
-      --k-cache-hadamard
-
-      --v-cache-hadamard
-
-      --flash-attn auto
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    health_check_timeout: 300
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 262144
-    metadata:
-      size: ~5.63 GB (Q4_K_M)
-      context: 64K-128K (dynamic)
-      vram_usage: ~5.2GB VRAM (text-only, ik with hadamard cache)
-      source: deepreinforce-ai/Ornith-1.0-9B-GGUF
-      kv_cache: q8_0 + q4_0 hadamard
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 9000000000
-      context_length: 262144
-      embedding_length: 4096
-      quantization: Q4_K_M
-      note: Post-trained Qwen 3.5 9B Dense + Gemma 4. Self-scaffolding RL for agentic coding. Identity bleeds as 'trained by Google' — use system prompt to override.
   gemma4-e4b:
     name: Gemma 4 E4B
     description: Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding.
@@ -739,56 +651,6 @@ models:
       embedding_length: 2048
       quantization: Q4_K_M
       note: World model — simulates 7 agent environments. Use with worldsim CLI. Thinking mode recommended for simulation fidelity. 32K ctx for VRAM safety (256K native but needs 128K+ for multi-turn trajectories).
-  littlelamb-0.3b-tc:
-    name: LittleLamb 0.3B TC
-    description: Compact 0.3B-parameter model specialized for function and tool calling tasks in resource-constrained environments.
-    tags:
-    - tools
-    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LittleLamb-ToolCalling.Q8_0.gguf\n--jinja\n--fit on\n--fit-target 768\n--fit-ctx ${small_model_min_ctx}\n--ctx-size 40960\n  --parallel 4\n--cont-batching\n--temp ${code_temp}\n--top-p ${code_top_p}\n--top-k ${code_top_k}\n--min-p ${code_min_p}\n--repeat-penalty ${code_repeat_penalty}\n--reasoning on\n--cache-type-k ${small_cache_k}\n--cache-type-v ${small_cache_v}\n--flash-attn on\n--metrics\n"
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.9
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    health_check_timeout: 300
-    ttl: 60
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 40960
-    metadata:
-      size: ~303 MB (Q8_0)
-      context: 8K-40K (dynamic)
-      vram_usage: ~0.5GB (model + cache)
-      source: mradermacher/LittleLamb-ToolCalling-GGUF (Q8_0)
-      kv_cache: q8_0 + attn_rot
-      features:
-        completion: true
-        tools: true
-        thinking: false
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen3
-      parameters: 293260000
-      context_length: 40960
-      embedding_length: 544
-      quantization: Q8_0
-      warning: ik_llama.cpp incompatible — use llama.cpp upstream
   minicpm-v-4.6:
     name: MiniCPM-V 4.6
     description: A series of multimodal LLMs designed for vision-language understanding, with strong OCR capability, multi-image understanding, and efficient visual token processing.
@@ -1060,96 +922,6 @@ models:
 
 
         {source_text}''. Supports terminology, style, personalization, delimiter preservation, and structured data translation. See https://github.com/Tencent-Hunyuan/Hy-MT2 for all prompt formats.'
-  laguna-xs2:
-    name: Laguna XS.2
-    description: Poolside's 33B/3B MoE coding model with mixed SWA+global attention, native interleaved reasoning, and 131K context. Designed for agentic coding.
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/laguna-xs2-Q3_K_M.gguf
-
-      --fit
-
-      --fit-margin 256
-
-      --ctx-size 32768
-
-      --batch-size 8
-
-      --temp 0.3
-
-      --top-p 0.85
-
-      --top-k 40
-
-      --min-p 0.02
-
-      --repeat-penalty 1.12
-
-      --parallel-tool-calls
-
-      --jinja
-
-      --parallel 2
-
-      --chat-template-file ${models_dir}/laguna-xs2-chat-template.jinja
-
-      --cache-type-k q8_0
-
-      --cache-type-v q8_0
-
-      --flash-attn auto
-
-      --defer-experts
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParams:
-        stop:
-        - </assistant>
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.3
-          top_p: 0.85
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.9
-    ttl: 300
-    health_check_timeout: 300
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~15.5 GB (Q3_K_M — requantized from Q4_K_M)
-      context: 8K-131K (dynamic with --fit)
-      vram_usage: ~5.5GB VRAM (model offload + attention on GPU, experts on CPU)
-      source: Lucebox/Laguna-XS.2-GGUF → local Q3_K_M requant
-      kv_cache: q8_0
-      features:
-        completion: true
-        tools: true
-        thinking: partial
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: laguna
-      parameters: 33443000000
-      context_length: 131072
-      embedding_length: 2048
-      quantization: Q3_K_M
   lfm2.5-230m:
     name: LFM2.5 230M
     description: 'Liquid AI''s smallest model — 230M params, ultra-fast tool calling and data extraction. Runs anywhere: CPU, NPU, GPU.'
@@ -1900,83 +1672,6 @@ models:
         audio: false
         image: false
       note: Abliterated variant for Sprachspiel adversarial testing — no refusal. Switched from Bee to ik — i1 format causes Bee slash bug.
-  rio-mini-4b:
-    name: Rio 3.0 Open Mini 4B
-    description: IplanRIO/Prefeitura do Rio - distilled from Qwen3-4B-Thinking-2507 with reasoning traces from Rio 3.0. Thinking-only model. MIT license.
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/rio-mini-4b/Rio-3.0-Open-Mini.Q4_K_M.gguf
-
-      --jinja
-
-      --parallel 2
-
-      --fit
-
-      --fit-margin 512
-
-      --ctx-size 131072
-
-      --temp 0.6
-
-      --top-p 0.95
-
-      --top-k 20
-
-      --min-p 0.0
-
-      --repeat-penalty 1.1
-
-      --cache-type-k q8_0
-
-      --cache-type-v q4_0
-
-      --k-cache-hadamard
-
-      --v-cache-hadamard
-
-      --flash-attn auto
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          temperature: 0.6
-          top_p: 0.95
-    ttl: 60
-    health_check_timeout: 300
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 262144
-    metadata:
-      size: ~2.5 GB (Q4_K_M)
-      context: 128K (fit dynamic, 262K native)
-      vram_usage: ~3.5GB VRAM (model + hadamard cache)
-      source: mradermacher/Rio-3.0-Open-Mini-GGUF (Q4_K_M)
-      kv_cache: q8_0 + q4_0 hadamard
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen3
-      parameters: 4000000000
-      context_length: 262144
-      embedding_length: 2560
-      quantization: Q4_K_M
-      note: IplanRIO distilled Qwen3-4B-Thinking with Rio 3.0 reasoning traces. Thinking-only model — enable_thinking=false has no effect.
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
@@ -2054,10 +1749,8 @@ matrix:
   vars:
     q4: qwen3.5-4b
     q4a: qwen3.5-4b-abliterated
-    rio: rio-mini-4b
     g2: gemma4-e2b
     g2q: gemma4-e2b
-    ll: littlelamb-0.3b-tc
     lfm230: lfm2.5-230m
     lfm8: lfm2.5-8b-a1b
     vl: lfm2.5-vl-450m
@@ -2066,11 +1759,9 @@ matrix:
     ocr: glm-ocr
     cpv: minicpm-v-4.6
     q9: qwen3.5-9b
-    orn: ornith-1.0-9b
     g4: gemma4-e4b
     qw36: qwen3.6-35b-a3b
     g12: gemma4-12b
-    lag: laguna-xs2
     mel: mellum2-12b-a2.5b
     nmc: north-mini-code
     aw: agentworld-35b
@@ -2080,26 +1771,24 @@ matrix:
     ttsext: qwen3-tts
     nomic: nomic-embed-text-v2-moe
   sets:
-    small_vision: (q4 | q4a | rio | g2 | g2q | ll | lfm230 | lfm8) & vl & nomic
-    small_embed: (q4 | q4a | rio | g2 | g2q | ll | lfm230 | lfm8) & nomic
-    small_only: q4 | q4a | rio | g2 | g2q | ll | lfm230 | lfm8
+    small_vision: (q4 | q4a | g2 | g2q | lfm230 | lfm8) & vl & nomic
+    small_embed: (q4 | q4a | g2 | g2q | lfm230 | lfm8) & nomic
+    small_only: q4 | q4a | g2 | g2q | lfm230 | lfm8
     vision_only: vl | vlx | vle | ocr | cpv
     vision_embed: (vl | vlx | vle | ocr | cpv) & nomic
-    medium: (q9 | orn | g4) & nomic
-    heavy: (qw36 | g12 | lag | mel | nmc | aw) & nomic
+    medium: (q9 | g4) & nomic
+    heavy: (qw36 | g12 | mel | nmc | aw) & nomic
     translate_embed: (tg | hmt) & nomic
     translate_only: tg | hmt
     tts_external: ttsext
     embed_only: nomic
   evict_costs:
     qw36: 10
-    lag: 9
     g12: 7
     mel: 6
     nmc: 9
     aw: 9
     q9: 4
-    orn: 4
     g4: 4
     ttsext: 4
     vl: 3
@@ -2109,13 +1798,11 @@ matrix:
     cpv: 3
     q4: 2
     q4a: 2
-    rio: 2
     lfm8: 2
     asr: 2
     tg: 2
     nomic: 1
     g2: 1
     g2q: 1
-    ll: 1
     lfm230: 1
     hmt: 1

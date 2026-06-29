@@ -76,7 +76,6 @@ Modelos com raciocínio têm variante =:think= que ativa modo de thinking.
 | =gemma4-e4b=                   | Gemma 4 E4B                  |    131K  | text           | sim    |
 | =gpt-oss-20b=                  | GPT-OSS 20B ★                |    131K  | text           | sempre |
 | =lfm2.5-8b-a1b=                | LFM 2.5 8B MoE               |    128K  | text           | sim    |
-| =littlelamb-0.3b-tc=           | LittleLamb 0.3B TC           |     40K  | text           | sim    |
 | =mellum2-12b-a2.5b=            | Mellum 2 12B MoE             |    131K  | text           | sim    |
 | =qwen3.5-4b=                   | Qwen3.5 4B                   |    262K  | text           | sim    |
 | =qwen3.5-4b-abliterated=       | Qwen3.5 4B Abliterated       |    262K  | text           | sim    |
@@ -209,7 +208,7 @@ pi --list-models
 
 3. *=PATH= deve incluir =~/.hermes/node/bin=. O Pi instala o runtime Node.js em =~/.hermes/node/bin=. Se o =$PATH= não incluir esse diretório, extensões e servidores MCP via =npx= falham silenciosamente.
 
-4. *Compatibilidade de tool-calling*. Modelos locais pequenos (< 7B) podem não suportar tool-calling corretamente. O Pi tenta adaptar, mas modelos como =littlelamb-0.3b-tc= são exceções especializadas.
+4. *Compatibilidade de tool-calling*. Modelos locais pequenos (< 7B) podem não suportar tool-calling corretamente. O Pi tenta adaptar, mas alguns modelos especializados podem ser exceções.
 
 5. *Não instalar via AUR*. O pacote =pi-coding-agent= no AUR está frequentemente desatualizado e pode quebrar configs. Instalar sempre via =npm= ou =pnpm= global.
 

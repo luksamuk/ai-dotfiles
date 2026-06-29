@@ -29,7 +29,7 @@
 #   qwen3.5-4b-abliterated - Qwen3.5-4B abliterated i1-Q4_K_M (~2.71 GB) - no refusal, adversarial testing
 #   glm-ocr               - GLM-OCR Q8_0 (~0.95 GB + 0.48 GB mmproj) - OCR/document specialist
 #   nomic-embed-text-v2-moe - Nomic Embed v2 MoE Q4_K_M (~0.33 GB) - embedding, RAG/search
-#   littlelamb-0.3b-tc   - LittleLamb 0.3B Tool-Calling Q8_0 (~0.30 GB) - ultra-light agentic, 40K ctx
+#   [REMOVED] littlelamb-0.3b-tc — removed from fleet Jun 2026 (tool-calling broken, too small to be useful)
 #   webworld-8b          - WebWorld-8B i1-Q5_K_M (~5.9 GB) - web world model, predicts next page state
 #   qwen3.6-35b-a3b      - Qwen3.6-35B-A3B APEX I-Compact (~17.3 GB) - MoE coding + tools
 #   [REMOVED] gemma4-26b-a4b — removed from fleet Jun 2026 (replaced by Qwen 3.6 + North Mini Code)
@@ -72,7 +72,6 @@ declare -A MODELS=(
   # [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
   ["lfm2.5-8b-a1b"]="LiquidAI/LFM2.5-8B-A1B-GGUF LFM2.5-8B-A1B-Q4_0.gguf"
   ["qwen3.5-9b"]="w-ahmad/Qwen3.5-9B-GGUF-MoQ Qwen3.5-9B-MoQ-3.6.gguf"
-  ["ornith-1.0-9b"]="deepreinforce-ai/Ornith-1.0-9B-GGUF Ornith-1.0-9B-Q4_K_M.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
   # [REMOVED] gemma4-e2b — superseded by gemma4-e2b (QAT won benchmark, Jun 2026)
 #   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
@@ -114,10 +113,7 @@ declare -A MODELS=(
   # SmolLM3-3B — HuggingFace dense model, dual tool-calling (XML+Python), 128K ctx
   # Uses smollm3 arch — supported in both ik_llama.cpp and upstream
   ["smolllm3-3b"]="unsloth/SmolLM3-3B-GGUF SmolLM3-3B-UD-Q5_K_XL.gguf"
-  # LittleLamb 0.3B TC — ultra-light tool-calling model compressed from Qwen3-0.6B via CompactifAI
-  # Uses qwen3 arch — supported in both ik_llama.cpp and upstream
-  # Q8_0 preferred: 290M params tiny, quality matters more than size
-  ["littlelamb-0.3b-tc"]="mradermacher/LittleLamb-ToolCalling-GGUF LittleLamb-ToolCalling.Q8_0.gguf"
+  # [REMOVED] littlelamb-0.3b-tc — removed from fleet Jun 2026 (tool-calling broken, too small)
   # WebWorld-8B — Qwen3-8B web world model, predicts next page state given current state + action
   # Uses qwen3 arch — ik_llama.cpp segfaults, use upstream only
   # i1 (imatrix) quantization for better quality at aggressive compression
@@ -274,7 +270,6 @@ show_sizes() {
   echo "  qwen3.5-0.8b          ~0.47 GB  (UD-Q3_K_XL) + ~0.20 GB mmproj - Tiny, vision+text"
   echo "  qwen3.5-4b            ~1.92 GB  (MoQ-3.75) - Fits in VRAM"
   echo "  qwen3.5-9b           ~3.75 GB  (MoQ-3.6) - Fits in VRAM + mmproj"
-  echo "  ornith-1.0-9b        ~5.63 GB  (Q4_K_M) - Post-trained Qwen 3.5 9B + Gemma 4, agentic coding RL"
   echo "  gemma4-e4b           ~4.63 GB  (Q4_K_M) - Fits in VRAM + mmproj"
   echo "  gemma4-e2b       ~3.2 GB   (Q4_0 QAT) - Text-only, higher quality than PTQ"
   gemma4-12b          ~6.67 GB  (Q4_0 QAT + mmproj) - Dense 12B, upstream --fit on, unified multimodal
@@ -295,7 +290,7 @@ show_sizes() {
   echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"
   echo "  minicpm-v-4.6      ~0.54 GB  (Q5_K_M) + 1.03 GB mmproj - VLM video+image+text, 256K ctx"
   echo "  smolllm3-3b         ~2.06 GB  (UD-Q5_K_XL) - Dense, dual tool-calling (XML+Python), 128K ctx"
-  echo "  littlelamb-0.3b-tc  ~0.30 GB  (Q8_0) - Ultra-light tool-calling, 40K ctx"
+  echo "  [REMOVED] littlelamb-0.3b-tc — tool-calling broken, too small to be useful"
   echo "  webworld-8b         ~5.90 GB  (i1-Q5_K_M) - Web world model, predicts next page state"
   echo "  ds-r1-distill-14b    [REMOVED] — poor perf on RTX 3050"
   echo "  ds-r1-distill-32b    [REMOVED] — very slow on limited VRAM"
@@ -346,7 +341,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, ornith-1.0-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, lfm2-24b, webworld-8b, qwen3.6-35b-a3b, qwopus-35b, gpt-oss-20b, qwopus-coder-9b, mellum2-12b-thinking, ornstein-36-35b, nemotron-omni-30b, locate-anything, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, lfm2-24b, webworld-8b, qwen3.6-35b-a3b, qwopus-35b, gpt-oss-20b, qwopus-coder-9b, mellum2-12b-thinking, ornstein-36-35b, nemotron-omni-30b, locate-anything, all"
     exit 1
     ;;
 esac
