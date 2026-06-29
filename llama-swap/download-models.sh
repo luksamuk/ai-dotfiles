@@ -72,6 +72,7 @@ declare -A MODELS=(
   # [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
   ["lfm2.5-8b-a1b"]="LiquidAI/LFM2.5-8B-A1B-GGUF LFM2.5-8B-A1B-Q4_0.gguf"
   ["qwen3.5-9b"]="w-ahmad/Qwen3.5-9B-GGUF-MoQ Qwen3.5-9B-MoQ-3.6.gguf"
+  ["ornith-1.0-9b"]="deepreinforce-ai/Ornith-1.0-9B-GGUF Ornith-1.0-9B-Q4_K_M.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
   # [REMOVED] gemma4-e2b — superseded by gemma4-e2b (QAT won benchmark, Jun 2026)
 #   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
@@ -273,6 +274,7 @@ show_sizes() {
   echo "  qwen3.5-0.8b          ~0.47 GB  (UD-Q3_K_XL) + ~0.20 GB mmproj - Tiny, vision+text"
   echo "  qwen3.5-4b            ~1.92 GB  (MoQ-3.75) - Fits in VRAM"
   echo "  qwen3.5-9b           ~3.75 GB  (MoQ-3.6) - Fits in VRAM + mmproj"
+  echo "  ornith-1.0-9b        ~5.63 GB  (Q4_K_M) - Post-trained Qwen 3.5 9B + Gemma 4, agentic coding RL"
   echo "  gemma4-e4b           ~4.63 GB  (Q4_K_M) - Fits in VRAM + mmproj"
   echo "  gemma4-e2b       ~3.2 GB   (Q4_0 QAT) - Text-only, higher quality than PTQ"
   gemma4-12b          ~6.67 GB  (Q4_0 QAT + mmproj) - Dense 12B, upstream --fit on, unified multimodal
@@ -344,7 +346,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, lfm2-24b, webworld-8b, qwen3.6-35b-a3b, qwopus-35b, gpt-oss-20b, qwopus-coder-9b, mellum2-12b-thinking, ornstein-36-35b, nemotron-omni-30b, locate-anything, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, ornith-1.0-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, lfm2-24b, webworld-8b, qwen3.6-35b-a3b, qwopus-35b, gpt-oss-20b, qwopus-coder-9b, mellum2-12b-thinking, ornstein-36-35b, nemotron-omni-30b, locate-anything, all"
     exit 1
     ;;
 esac

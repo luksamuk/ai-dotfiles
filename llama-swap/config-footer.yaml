@@ -28,6 +28,7 @@ matrix:
     g2: gemma4-e2b
     g2q: gemma4-e2b
     ll: littlelamb-0.3b-tc
+    lfm230: lfm2.5-230m
     lfm8: lfm2.5-8b-a1b
     # Vision
     vl: lfm2.5-vl-450m
@@ -37,6 +38,7 @@ matrix:
     cpv: minicpm-v-4.6
     # Modelos médios
     q9: qwen3.5-9b
+    orn: ornith-1.0-9b
     g4: gemma4-e4b
     # Pesados (offload)
     qw36: qwen3.6-35b-a3b
@@ -57,20 +59,20 @@ matrix:
   sets:
     # LLM pequeno + Vision + Embedding
     # q4/q4a (DFlash) com ctx 32K + nomic ~700MiB headroom
-    small_vision: "(q4 | q4a | rio | g2 | g2q | ll | lfm8) & vl & nomic"
+    small_vision: "(q4 | q4a | rio | g2 | g2q | ll | lfm230 | lfm8) & vl & nomic"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | rio | g2 | g2q | ll | lfm8) & nomic"
+    small_embed: "(q4 | q4a | rio | g2 | g2q | ll | lfm230 | lfm8) & nomic"
 
     # LLM pequeno sozinho (sem vision, sem embedding)
-    small_only: "q4 | q4a | rio | g2 | g2q | ll | lfm8"
+    small_only: "q4 | q4a | rio | g2 | g2q | ll | lfm230 | lfm8"
 
     # Vision models (sozinhos ou com nomic)
     vision_only: "vl | vlx | vle | ocr | cpv"
     vision_embed: "(vl | vlx | vle | ocr | cpv) & nomic"
 
     # Modelos médios + Embedding
-    medium: "(q9 | g4) & nomic"
+    medium: "(q9 | orn | g4) & nomic"
 
     # Modelos pesados (offload) + Embedding
     # nomic (~0.5GB) cabe ao lado mesmo dos pesados — usa RAM pro offload
@@ -95,6 +97,7 @@ matrix:
     nmc: 9
     aw: 9
     q9: 4
+    orn: 4
     g4: 4
     ttsext: 4
     vl: 3
@@ -112,4 +115,5 @@ matrix:
     g2: 1
     g2q: 1
     ll: 1
+    lfm230: 1
     hmt: 1

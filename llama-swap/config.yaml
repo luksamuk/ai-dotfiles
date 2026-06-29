@@ -221,6 +221,94 @@ models:
       embedding_length: 4096
       quantization: MoQ-3.6
       note: 'MoQ-3.6 replaces UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25 vs 20/25 Snake), 32% smaller (3.75 vs 5.55 GB). MTP OOM on 6GB VRAM.'
+  ornith-1.0-9b:
+    name: Ornith 1.0 9B
+    description: Ornith-1.0 is a family of open-source LLMs specialized for agentic coding, trained with a novel self-scaffolding reinforcement learning approach that jointly optimizes the scaffold and the solution.
+    cmd: '${ik_llama_server} --port ${PORT}
+
+      --model ${models_dir}/ornith-1.0-9b/ornith-1.0-9b-Q4_K_M.gguf
+
+      --fit
+
+      --fit-margin 512
+
+      --jinja
+
+      --parallel 2
+
+      --parallel-tool-calls
+
+      --ctx-size ${small_model_max_ctx}
+
+      --temp ${default_temp}
+
+      --top-p ${default_top_p}
+
+      --top-k ${default_top_k}
+
+      --min-p ${default_min_p}
+
+      --repeat-penalty ${default_repeat_penalty}
+
+      --reasoning on
+
+      --cache-type-k q8_0
+
+      --cache-type-v q4_0
+
+      --k-cache-hadamard
+
+      --v-cache-hadamard
+
+      --flash-attn auto
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 262144
+    metadata:
+      size: ~5.63 GB (Q4_K_M)
+      context: 64K-128K (dynamic)
+      vram_usage: ~5.2GB VRAM (text-only, ik with hadamard cache)
+      source: deepreinforce-ai/Ornith-1.0-9B-GGUF
+      kv_cache: q8_0 + q4_0 hadamard
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 9000000000
+      context_length: 262144
+      embedding_length: 4096
+      quantization: Q4_K_M
+      note: Post-trained Qwen 3.5 9B Dense + Gemma 4. Self-scaffolding RL for agentic coding. Identity bleeds as 'trained by Google' — use system prompt to override.
   gemma4-e4b:
     name: Gemma 4 E4B
     description: Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding.
@@ -1062,6 +1150,85 @@ models:
       context_length: 131072
       embedding_length: 2048
       quantization: Q3_K_M
+  lfm2.5-230m:
+    name: LFM2.5 230M
+    description: 'Liquid AI''s smallest model — 230M params, ultra-fast tool calling and data extraction. Runs anywhere: CPU, NPU, GPU.'
+    tags:
+    - tools
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/LFM2.5-230M-Q8_0.gguf
+
+      --jinja
+
+      --fit on
+
+      --fit-target ${vram_margin}
+
+      --fit-ctx ${small_model_min_ctx}
+
+      --ctx-size 32768
+
+      --parallel 4
+
+      --cont-batching
+
+      --temp ${code_temp}
+
+      --top-p ${code_top_p}
+
+      --top-k ${code_top_k}
+
+      --min-p ${code_min_p}
+
+      --repeat-penalty ${code_repeat_penalty}
+
+      --cache-type-k ${small_cache_k}
+
+      --cache-type-v ${small_cache_v}
+
+      --flash-attn on
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          temperature: 0.3
+          top_p: 0.9
+    health_check_timeout: 300
+    ttl: 60
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 32768
+    metadata:
+      size: ~247 MB (Q8_0)
+      context: 32K (extendable to 128K)
+      vram_usage: ~0.4GB (model + cache)
+      source: LiquidAI/LFM2.5-230M-GGUF (Q8_0)
+      kv_cache: q8_0 + q8_0
+      features:
+        completion: true
+        tools: true
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 229693184
+      context_length: 128000
+      embedding_length: 1024
+      quantization: Q8_0
+      warning: NOT recommended for math, code generation, or creative writing
   lfm2.5-8b-a1b:
     name: LFM 2.5 8B
     description: Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Built for fast, reliable tool calling on consumer hardware.
@@ -1891,6 +2058,7 @@ matrix:
     g2: gemma4-e2b
     g2q: gemma4-e2b
     ll: littlelamb-0.3b-tc
+    lfm230: lfm2.5-230m
     lfm8: lfm2.5-8b-a1b
     vl: lfm2.5-vl-450m
     vlx: lfm2.5-vl-1.6b-extract
@@ -1898,6 +2066,7 @@ matrix:
     ocr: glm-ocr
     cpv: minicpm-v-4.6
     q9: qwen3.5-9b
+    orn: ornith-1.0-9b
     g4: gemma4-e4b
     qw36: qwen3.6-35b-a3b
     g12: gemma4-12b
@@ -1911,12 +2080,12 @@ matrix:
     ttsext: qwen3-tts
     nomic: nomic-embed-text-v2-moe
   sets:
-    small_vision: (q4 | q4a | rio | g2 | g2q | ll | lfm8) & vl & nomic
-    small_embed: (q4 | q4a | rio | g2 | g2q | ll | lfm8) & nomic
-    small_only: q4 | q4a | rio | g2 | g2q | ll | lfm8
+    small_vision: (q4 | q4a | rio | g2 | g2q | ll | lfm230 | lfm8) & vl & nomic
+    small_embed: (q4 | q4a | rio | g2 | g2q | ll | lfm230 | lfm8) & nomic
+    small_only: q4 | q4a | rio | g2 | g2q | ll | lfm230 | lfm8
     vision_only: vl | vlx | vle | ocr | cpv
     vision_embed: (vl | vlx | vle | ocr | cpv) & nomic
-    medium: (q9 | g4) & nomic
+    medium: (q9 | orn | g4) & nomic
     heavy: (qw36 | g12 | lag | mel | nmc | aw) & nomic
     translate_embed: (tg | hmt) & nomic
     translate_only: tg | hmt
@@ -1930,6 +2099,7 @@ matrix:
     nmc: 9
     aw: 9
     q9: 4
+    orn: 4
     g4: 4
     ttsext: 4
     vl: 3
@@ -1947,4 +2117,5 @@ matrix:
     g2: 1
     g2q: 1
     ll: 1
+    lfm230: 1
     hmt: 1

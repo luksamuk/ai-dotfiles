@@ -64,6 +64,7 @@ ORIGINAL_ORDER = [
     "lfm2.5-sgl",            # SGLang backend (paused — no venv)
     "qwen3.5-4b",      # ✅ Bee/TurboQuant (upstream backup em _disabled/)
     "qwen3.5-9b",      # ✅ Bee/TurboQuant (upstream backup em _disabled/)
+    "ornith-1.0-9b",     # ✅ Post-trained Qwen 3.5 9B + Gemma 4 (agentic coding RL)
     "gemma4-e4b",       # ✅ upstream ik backend (Bee was slower at 36 vs 40 tok/s)
     "gemma4-e2b",            # ✅
     "lfm2.5-1.2b",           # ✅

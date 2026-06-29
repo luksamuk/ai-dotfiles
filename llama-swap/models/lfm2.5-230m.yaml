@@ -1,0 +1,70 @@
+# -------------------------------------------
+# LFM2.5-230M — Ultra-light tool calling & data extraction
+# Liquid AI hybrid SSM/attention architecture (lfm2), 14 layers
+# 230M params, 1024 embedding, 65536 vocab, 128K context (32K extended)
+# Pre-trained 19T tokens, post-trained with distillation from LFM2.5-350M
+# Strong: instruction following (IFEval 71.71), tool use (BFCLv3 43.26), data extraction
+# Weak: NOT recommended for math, code generation, or creative writing
+# Chat template: embedded in GGUF (lfm2 format, <|im_start|>/<|im_end|>)
+# Backend: upstream llama.cpp (lfm2 supported since ~b4950)
+# NOTE: No --chat-template-file needed — GGUF has embedded template
+# LFM License (open-weight, no restrictions)
+# -------------------------------------------
+"lfm2.5-230m":
+  name: "LFM2.5 230M"
+  description: "Liquid AI's smallest model — 230M params, ultra-fast tool calling and data extraction. Runs anywhere: CPU, NPU, GPU."
+  tags: ["tools"]
+  cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/LFM2.5-230M-Q8_0.gguf
+      --jinja
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size 32768
+      --parallel 4
+      --cont-batching
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 0.3
+        top_p: 0.9
+  health_check_timeout: 300
+  ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 32768
+  metadata:
+    size: "~247 MB (Q8_0)"
+    context: "32K (extendable to 128K)"
+    vram_usage: "~0.4GB (model + cache)"
+    source: "LiquidAI/LFM2.5-230M-GGUF (Q8_0)"
+    kv_cache: "q8_0 + q8_0"
+    features:
+      completion: true
+      tools: true
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: lfm2
+    parameters: 229693184
+    context_length: 128000
+    embedding_length: 1024
+    quantization: Q8_0
+    warning: "NOT recommended for math, code generation, or creative writing"
