@@ -40,8 +40,9 @@ matrix:
     # Pesados (offload)
     qw36: qwen3.6-35b-a3b
     orn35: ornith-1.0-35b
+    orn: ornith-1.0-9b
     g12: gemma4-12b
-    mel: mellum2-12b-a2.5b
+
     nmc: north-mini-code
     aw: agentworld-35b
     # Tradução
@@ -69,11 +70,11 @@ matrix:
     vision_embed: "(vl | vlx | vle | ocr | cpv) & nomic"
 
     # Modelos médios + Embedding
-    medium: "(q9 | g4) & nomic"
+    medium: "(q9 | orn | g4) & nomic"
 
     # Modelos pesados (offload) + Embedding
     # nomic (~0.5GB) cabe ao lado mesmo dos pesados — usa RAM pro offload
-    heavy: "(qw36 | orn35 | g12 | mel | nmc | aw) & nomic"
+    heavy: "(qw36 | orn35 | g12 | nmc | aw) & nomic"
 
     # Tradução (leve, cabe com nomic)
     translate_embed: "(tg | hmt) & nomic"
@@ -90,10 +91,11 @@ matrix:
     qw36: 10
     orn35: 9
     g12: 7
-    mel: 6
+
     nmc: 9
     aw: 9
     q9: 4
+    orn: 4
     g4: 4
     ttsext: 4
     vl: 3
