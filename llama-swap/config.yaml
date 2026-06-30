@@ -199,7 +199,7 @@ models:
       - text
       tools: true
       reranker: false
-      context: 262144
+      context: 131072
     metadata:
       size: ~3.75 GB (MoQ-3.6)
       context: 64K-128K (dynamic)
@@ -499,7 +499,7 @@ models:
 
       --jinja
 
-      --parallel 2
+      --parallel 1
 
       --parallel-tool-calls
 
@@ -589,7 +589,7 @@ models:
 
       --jinja
 
-      --parallel 2
+      --parallel 1
 
       --parallel-tool-calls
 
@@ -718,7 +718,7 @@ models:
       - text
       tools: false
       reranker: false
-      context: 262144
+      context: 32768
     metadata:
       size: ~20 GB (Q4_K_M)
       context: 4K-32K (fit dynamic, 256K native)
@@ -851,7 +851,7 @@ models:
       - text
       tools: true
       reranker: false
-      context: 262144
+      context: 131072
     metadata:
       size: ~6.7 GB (Q4_0 QAT + 168 MB mmproj)
       context: 8K-128K (dynamic)
@@ -1156,7 +1156,7 @@ models:
       - text
       tools: true
       reranker: false
-      context: 128000
+      context: 131072
     metadata:
       size: ~4.84 GB (Q4_0)
       context: 128K
@@ -1527,7 +1527,7 @@ models:
       - text
       tools: true
       reranker: false
-      context: 262144
+      context: 65536
     metadata:
       size: ~18.6 GB (Q4_K_M)
       context: 16K-65K (dynamic with --fit)
@@ -1740,7 +1740,7 @@ models:
       - text
       tools: true
       reranker: false
-      context: 262144
+      context: 131072
     metadata:
       architecture: qwen35
       parameters: 4210000000

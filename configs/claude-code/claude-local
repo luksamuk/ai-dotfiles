@@ -9,6 +9,7 @@
 #   claude-local gemma4-e4b          # Use Gemma 4 E4B
 #   claude-local qwen3.5-9b          # Use Qwen 3.5 9B
 #   claude-local qwen3.6-35b         # Use Qwen 3.6 35B (default)
+#   claude-local ornith-35b          # Use Ornith 1.0 35B
 #
 # Requires: llama-swap on port 12434 with ik_llama.cpp backend
 
@@ -28,6 +29,7 @@ DEFAULT_MODEL="qwen3.6-35b-a3b:think"
 # Model shortcuts: short name → llama-swap model ID
 declare -A MODELS=(
   [qwen3.6-35b]="qwen3.6-35b-a3b:think"
+  [ornith-35b]="ornith-1.0-35b:think"
   [gemma4-12b]="gemma4-12b:think"
   [gemma4-e4b]="gemma4-e4b:think"
   [qwen3.5-9b]="qwen3.5-9b:think"

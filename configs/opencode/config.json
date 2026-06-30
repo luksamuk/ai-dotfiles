@@ -1,841 +1,841 @@
 {
-    "$schema": "https://opencode.ai/config.json",
-    "default_agent": "build",
-    "username": "luksamuk",
-    "autoupdate": "notify",
-    "share": "manual",
-    "enabled_providers": [
-        "ollama",
-        "local"
-    ],
-    "provider": {
-        "ollama": {
-            "npm": "@ai-sdk/openai-compatible",
-            "name": "Ollama",
-            "options": {
-                "baseURL": "http://127.0.0.1:11434/v1"
-            },
-            "models": {
-                "glm-5:cloud": {
-                    "name": "GLM 5",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 202752,
-                        "output": 32768
-                    }
-                },
-                "glm-5.1:cloud": {
-                    "name": "GLM 5.1",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 202752,
-                        "output": 32768
-                    }
-                },
-                "glm-5.2:cloud": {
-                    "name": "GLM 5.2",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 1000000,
-                        "output": 32768
-                    }
-                },
-                "minimax-m2.5:cloud": {
-                    "name": "MiniMax M2.5",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 202752,
-                        "output": 32768
-                    }
-                },
-                "minimax-m2.7:cloud": {
-                    "name": "MiniMax M2.7",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 204800,
-                        "output": 32768
-                    }
-                },
-                "minimax-m3:cloud": {
-                    "name": "MiniMax M3",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 524288,
-                        "output": 32768
-                    }
-                },
-                "kimi-k2.5:cloud": {
-                    "name": "Kimi K2.5",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "kimi-k2.6:cloud": {
-                    "name": "Kimi K2.6",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "kimi-k2.7-code:cloud": {
-                    "name": "Kimi K2.7 Code",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5:cloud": {
-                    "name": "Qwen 3.5",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "nemotron-3-nano:30b-cloud": {
-                    "name": "Nemotron 3 Nano 30B",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 1048576,
-                        "output": 32768
-                    }
-                },
-                "nemotron-3-super:cloud": {
-                    "name": "Nemotron 3 Super",
-                    "reasoning": true,
-                    "limit": {
-                        "context": 1048576,
-                        "output": 32768
-                    }
-                },
-                "gemma4:31b-cloud": {
-                    "name": "Gemma 4 31B",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "deepseek-v4-pro:cloud": {
-                    "name": "DeepSeek V4 Pro",
-                    "reasoning": true,
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 1048576,
-                        "output": 32768
-                    }
-                },
-                "deepseek-v4-flash:cloud": {
-                    "name": "DeepSeek V4 Flash",
-                    "reasoning": true,
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 1048576,
-                        "output": 32768
-                    }
-                },
-                "nemotron-3-ultra:cloud": {
-                    "name": "Nemotron 3 Ultra",
-                    "reasoning": true,
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "gemini-3-flash-preview:cloud": {
-                    "name": "Gemini 3 Flash Preview",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "limit": {
-                        "context": 1048576,
-                        "output": 32768
-                    }
-                }
-            }
-        },
-        "local": {
-            "npm": "@ai-sdk/openai-compatible",
-            "name": "llama-swap",
-            "options": {
-                "baseURL": "http://127.0.0.1:12434/v1"
-            },
-            "models": {
-                "gemma4-12b": {
-                    "name": "Gemma 4 12B",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "gemma4-12b:think": {
-                    "name": "Gemma 4 12B 🧠",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text",
-                            "image"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "gemma4-e2b": {
-                    "name": "Gemma 4 E2B",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "gemma4-e2b:think": {
-                    "name": "Gemma 4 E2B 🧠",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "gemma4-e4b": {
-                    "name": "Gemma 4 E4B",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "gemma4-e4b:think": {
-                    "name": "Gemma 4 E4B 🧠",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "gpt-oss-20b": {
-                    "name": "GPT-OSS 20B",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "lfm2.5-8b-a1b": {
-                    "name": "LFM 2.5 8B",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 128000,
-                        "output": 32768
-                    }
-                },
-                "lfm2.5-8b-a1b:think": {
-                    "name": "LFM 2.5 8B 🧠",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 128000,
-                        "output": 32768
-                    }
-                },
-                "mellum2-12b-a2.5b": {
-                    "name": "Mellum 2 12B",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "mellum2-12b-a2.5b:think": {
-                    "name": "Mellum 2 12B 🧠",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 131072,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5-4b": {
-                    "name": "Qwen3.5 4B",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5-4b:think": {
-                    "name": "Qwen3.5 4B 🧠",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5-4b-abliterated": {
-                    "name": "Qwen3.5 4B Abliterated",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5-4b-abliterated:think": {
-                    "name": "Qwen3.5 4B Abliterated 🧠",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5-9b": {
-                    "name": "Qwen3.5 9B",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "qwen3.5-9b:think": {
-                    "name": "Qwen3.5 9B 🧠",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "qwen3.6-35b-a3b": {
-                    "name": "Qwen 3.6 35B",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "qwen3.6-35b-a3b:think": {
-                    "name": "Qwen 3.6 35B 🧠",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "north-mini-code": {
-                    "name": "North Mini Code",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 64000
-                    }
-                },
-                "north-mini-code:think": {
-                    "name": "North Mini Code 🧠",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 64000
-                    }
-                },
-                "qwopus-coder-9b": {
-                    "name": "Qwopus 9B Coder",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                },
-                "qwopus-coder-9b:think": {
-                    "name": "Qwopus 9B Coder 🧠",
-                    "reasoning": true,
-                    "modalities": {
-                        "input": [
-                            "text"
-                        ],
-                        "output": [
-                            "text"
-                        ]
-                    },
-                    "capabilities": [
-                        "tools"
-                    ],
-                    "limit": {
-                        "context": 262144,
-                        "output": 32768
-                    }
-                }
-            }
-        }
-    },
-    "agent": {
-        "plan": {
-            "model": "ollama/glm-5.2:cloud",
-            "temperature": 0.3,
-            "description": "Strategic planning and architecture. Analyzes requirements, proposes solutions, creates roadmaps. Read-only — cannot modify code.",
-            "prompt": "You are a strategic planning agent. Analyze the codebase, understand requirements, and create detailed implementation plans. You do NOT write or edit code — you only read, analyze, and plan. When you identify work needed, describe it precisely so the build or fix agent can execute. Always consider: project structure, existing patterns, dependencies, risks, and edge cases.",
-            "permission": {
-                "read": "allow",
-                "write": "deny",
-                "edit": "deny",
-                "bash": "ask"
-            }
-        },
-        "build": {
-            "model": "ollama/glm-5.2:cloud",
-            "temperature": 0.3,
-            "description": "Primary coding agent. Full implementation capabilities — writing, editing, testing code with unrestricted repository and shell access.",
-            "prompt": "You are a senior software engineer. Implement features and create new code following the plan specifications exactly. Match existing code style and patterns. Always handle errors, validate inputs, and use types properly. No hardcoded secrets, no TODO/FIXME left behind. Before writing, read similar files to understand conventions.",
-            "permission": {
-                "read": "allow",
-                "write": "allow",
-                "edit": "allow",
-                "bash": "allow"
-            }
-        },
-        "fix": {
-            "model": "ollama/kimi-k2.7-code:cloud",
-            "temperature": 0.3,
-            "description": "Bug fix agent. Applies minimal, targeted fixes based on diagnosis or error reports. Prioritizes smallest possible change.",
-            "prompt": "You are a bug fix specialist. Fix issues with the MINIMUM change required. Never refactor adjacent code or add features. If the root cause is unclear, stop and suggest using the plan agent instead. Always verify the fix doesn't break existing functionality. Prefer surgical edits over rewrites.",
-            "permission": {
-                "read": "allow",
-                "write": "allow",
-                "edit": "allow",
-                "bash": "allow"
-            }
-        },
-        "review": {
-            "model": "ollama/minimax-m3:cloud",
-            "temperature": 1.0,
-            "description": "Code review and quality analysis. Reviews changes for correctness, best practices, security, and maintainability. Read-only.",
-            "prompt": "You are a senior code reviewer. Analyze code for: correctness, edge cases, error handling, security issues, performance problems, and adherence to project patterns. Be specific — cite file, line, and what should change. Classify issues as critical/warning/suggestion. Do NOT modify any files.",
-            "permission": {
-                "read": "allow",
-                "write": "deny",
-                "edit": "deny",
-                "bash": "ask"
-            }
-        },
-        "research": {
-            "model": "ollama/minimax-m3:cloud",
-            "temperature": 0.3,
-            "description": "Deep research and investigation. Explores codebases, documentation, and external sources to gather information. Read-only analysis.",
-            "prompt": "You are a research agent. Investigate codebases, trace dependencies, understand data flows, and identify risks. Search the web for documentation and best practices when needed. Provide comprehensive analysis with evidence. You do NOT write or modify any code — only investigate and report.",
-            "permission": {
-                "read": "allow",
-                "write": "deny",
-                "edit": "deny",
-                "bash": "ask"
-            }
-        },
-        "explore": {
-            "model": "ollama/kimi-k2.7-code:cloud",
-            "temperature": 0.3,
-            "description": "Creative exploration and ideation. Generates alternative approaches, explores design options, and helps with architecture decisions. Read-only.",
-            "prompt": "You are a creative exploration agent. Think freely about alternative approaches, design patterns, and architectural decisions. Consider trade-offs between approaches. There are no wrong answers here — only ideas to evaluate. Challenge assumptions and propose unconventional solutions. You do NOT modify any code.",
-            "permission": {
-                "read": "allow",
-                "write": "deny",
-                "edit": "deny",
-                "bash": "deny"
-            }
-        },
-        "debug": {
-            "model": "ollama/glm-5.1:cloud",
-            "temperature": 0.3,
-            "description": "Debug agent with runtime instrumentation. Starts a debug server, instruments code with language-appropriate HTTP calls, captures runtime data, and pinpoints root causes.",
-            "prompt": "You are a debug specialist using runtime instrumentation. Your workflow:\n\n1. Call debug_start to launch the capture server\n2. Read the relevant code and form multiple hypotheses about the bug\n3. Instrument code with HTTP POST calls to the debug server — ADAPT THE INSTRUMENTATION TO THE PROJECT'S LANGUAGE:\n   - Python: use requests.post() or urllib.request — e.g. requests.post('http://localhost:PORT/debug', json={'label': '...', 'data': {...}})\n   - JavaScript/TypeScript: use fetch() — e.g. fetch('http://localhost:PORT/debug', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({label: '...', data: {...}})}).catch(() => {})\n   - Rust: use ureq::post('http://localhost:PORT/debug').send_json(ureq::json!({'label': '...', 'data': {...})) — add ureq as a dev-dependency temporarily\n   - Go: use http.Post('http://localhost:PORT/debug', 'application/json', bytes.NewReader(jsonData))\n   - Always wrap instrumentation in error suppression so debug calls never affect production behavior\n4. Ask the user to reproduce the issue\n5. Call debug_read to analyze captured data — look for unexpected values, wrong control flow, missing state\n6. Apply a minimal targeted fix\n7. Ask the user to verify the fix\n8. Call debug_stop and REMOVE all instrumentation code\n9. If the fix doesn't work, add more instrumentation and repeat\n\nTERMINAL-USE FOR DEBUGGING:\nBefore instrumenting code, try reproducing and observing the bug using the terminal-use skill (tu command). Load it with skill_view(name='terminal-use'). This lets you run the application in a headless virtual terminal, read its screen output, and send keystrokes — ideal for TUI apps, CLI tools, and interactive programs.\n\nWorkflow:\n1. tu run <command> [args...] — spawn the app in a virtual terminal\n2. sleep 2 && tu screenshot — read initial output\n3. tu type \"input\" && tu press Enter — interact, then tu screenshot to read results\n4. tu wait --text \"pattern\" --timeout 10000 — wait for specific output\n5. tu kill — clean up the session when done\n\nUse this especially for TUI applications, CLI tools needing interactive input, and reproducing issues that only manifest at runtime with specific input sequences.\n\nCRITICAL RULES:\n- NEVER use fetch() in non-JS projects. Detect the project language first.\n- Always clean up instrumentation after debugging.\n- Prefer the smallest possible change that fixes the bug.\n- If root cause is unclear, request more instrumentation before guessing.",
-            "permission": {
-                "read": "allow",
-                "write": "allow",
-                "edit": "allow",
-                "bash": "allow"
-            }
-        }
-    },
-    "plugin": [
-        "@thecto/opencode-debug-plugin@latest"
-    ],
-    "mcp": {
-        "duckduckgo": {
-            "type": "local",
-            "command": [
-                "uvx",
-                "duckduckgo-mcp-server"
-            ]
-        },
-        "searxng": {
-            "type": "local",
-            "command": [
-                "npx",
-                "-y",
-                "mcp-searxng"
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "build",
+  "username": "luksamuk",
+  "autoupdate": "notify",
+  "share": "manual",
+  "enabled_providers": [
+    "ollama",
+    "local"
+  ],
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama",
+      "options": {
+        "baseURL": "http://127.0.0.1:11434/v1"
+      },
+      "models": {
+        "glm-5:cloud": {
+          "name": "GLM 5",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
             ],
-            "environment": {
-                "SEARXNG_URL": "http://192.168.3.8:8888"
-            }
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 202752,
+            "output": 32768
+          }
+        },
+        "glm-5.1:cloud": {
+          "name": "GLM 5.1",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 202752,
+            "output": 32768
+          }
+        },
+        "glm-5.2:cloud": {
+          "name": "GLM 5.2",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 1000000,
+            "output": 32768
+          }
+        },
+        "minimax-m2.5:cloud": {
+          "name": "MiniMax M2.5",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 202752,
+            "output": 32768
+          }
+        },
+        "minimax-m2.7:cloud": {
+          "name": "MiniMax M2.7",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 204800,
+            "output": 32768
+          }
+        },
+        "minimax-m3:cloud": {
+          "name": "MiniMax M3",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 524288,
+            "output": 32768
+          }
+        },
+        "kimi-k2.5:cloud": {
+          "name": "Kimi K2.5",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
+        },
+        "kimi-k2.6:cloud": {
+          "name": "Kimi K2.6",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
+        },
+        "kimi-k2.7-code:cloud": {
+          "name": "Kimi K2.7 Code",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
+        },
+        "qwen3.5:cloud": {
+          "name": "Qwen 3.5",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "nemotron-3-nano:30b-cloud": {
+          "name": "Nemotron 3 Nano 30B",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          }
+        },
+        "nemotron-3-super:cloud": {
+          "name": "Nemotron 3 Super",
+          "reasoning": true,
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          }
+        },
+        "gemma4:31b-cloud": {
+          "name": "Gemma 4 31B",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "deepseek-v4-pro:cloud": {
+          "name": "DeepSeek V4 Pro",
+          "reasoning": true,
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          }
+        },
+        "deepseek-v4-flash:cloud": {
+          "name": "DeepSeek V4 Flash",
+          "reasoning": true,
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          }
+        },
+        "nemotron-3-ultra:cloud": {
+          "name": "Nemotron 3 Ultra",
+          "reasoning": true,
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
+        },
+        "gemini-3-flash-preview:cloud": {
+          "name": "Gemini 3 Flash Preview",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          }
         }
+      }
+    },
+    "local": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "llama-swap",
+      "options": {
+        "baseURL": "http://127.0.0.1:12434/v1"
+      },
+      "models": {
+        "gemma4-12b": {
+          "name": "Gemma 4 12B",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "gemma4-12b:think": {
+          "name": "Gemma 4 12B 🧠",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "gemma4-e2b": {
+          "name": "Gemma 4 E2B",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "gemma4-e2b:think": {
+          "name": "Gemma 4 E2B 🧠",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "gemma4-e4b": {
+          "name": "Gemma 4 E4B",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "gemma4-e4b:think": {
+          "name": "Gemma 4 E4B 🧠",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "gpt-oss-20b": {
+          "name": "GPT-OSS 20B",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "lfm2.5-8b-a1b": {
+          "name": "LFM 2.5 8B",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "lfm2.5-8b-a1b:think": {
+          "name": "LFM 2.5 8B 🧠",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "mellum2-12b-a2.5b": {
+          "name": "Mellum 2 12B",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "mellum2-12b-a2.5b:think": {
+          "name": "Mellum 2 12B 🧠",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "qwen3.5-4b": {
+          "name": "Qwen3.5 4B",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 32768,
+            "output": 32768
+          }
+        },
+        "qwen3.5-4b:think": {
+          "name": "Qwen3.5 4B 🧠",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 32768,
+            "output": 32768
+          }
+        },
+        "qwen3.5-4b-abliterated": {
+          "name": "Qwen3.5 4B Abliterated",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "qwen3.5-4b-abliterated:think": {
+          "name": "Qwen3.5 4B Abliterated 🧠",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "qwen3.5-9b": {
+          "name": "Qwen3.5 9B",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "qwen3.5-9b:think": {
+          "name": "Qwen3.5 9B 🧠",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "qwen3.6-35b-a3b": {
+          "name": "Qwen 3.6 35B",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "qwen3.6-35b-a3b:think": {
+          "name": "Qwen 3.6 35B 🧠",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "ornith-1.0-35b": {
+          "name": "Ornith 1.0 35B",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "ornith-1.0-35b:think": {
+          "name": "Ornith 1.0 35B 🧠",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "north-mini-code": {
+          "name": "North Mini Code",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 65536,
+            "output": 64000
+          }
+        },
+        "north-mini-code:think": {
+          "name": "North Mini Code 🧠",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 65536,
+            "output": 64000
+          }
+        }
+      }
     }
+  },
+  "agent": {
+    "plan": {
+      "model": "ollama/glm-5.2:cloud",
+      "temperature": 0.3,
+      "description": "Strategic planning and architecture. Analyzes requirements, proposes solutions, creates roadmaps. Read-only — cannot modify code.",
+      "prompt": "You are a strategic planning agent. Analyze the codebase, understand requirements, and create detailed implementation plans. You do NOT write or edit code — you only read, analyze, and plan. When you identify work needed, describe it precisely so the build or fix agent can execute. Always consider: project structure, existing patterns, dependencies, risks, and edge cases.",
+      "permission": {
+        "read": "allow",
+        "write": "deny",
+        "edit": "deny",
+        "bash": "ask"
+      }
+    },
+    "build": {
+      "model": "ollama/glm-5.2:cloud",
+      "temperature": 0.3,
+      "description": "Primary coding agent. Full implementation capabilities — writing, editing, testing code with unrestricted repository and shell access.",
+      "prompt": "You are a senior software engineer. Implement features and create new code following the plan specifications exactly. Match existing code style and patterns. Always handle errors, validate inputs, and use types properly. No hardcoded secrets, no TODO/FIXME left behind. Before writing, read similar files to understand conventions.",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "edit": "allow",
+        "bash": "allow"
+      }
+    },
+    "fix": {
+      "model": "ollama/kimi-k2.7-code:cloud",
+      "temperature": 0.3,
+      "description": "Bug fix agent. Applies minimal, targeted fixes based on diagnosis or error reports. Prioritizes smallest possible change.",
+      "prompt": "You are a bug fix specialist. Fix issues with the MINIMUM change required. Never refactor adjacent code or add features. If the root cause is unclear, stop and suggest using the plan agent instead. Always verify the fix doesn't break existing functionality. Prefer surgical edits over rewrites.",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "edit": "allow",
+        "bash": "allow"
+      }
+    },
+    "review": {
+      "model": "ollama/minimax-m3:cloud",
+      "temperature": 1.0,
+      "description": "Code review and quality analysis. Reviews changes for correctness, best practices, security, and maintainability. Read-only.",
+      "prompt": "You are a senior code reviewer. Analyze code for: correctness, edge cases, error handling, security issues, performance problems, and adherence to project patterns. Be specific — cite file, line, and what should change. Classify issues as critical/warning/suggestion. Do NOT modify any files.",
+      "permission": {
+        "read": "allow",
+        "write": "deny",
+        "edit": "deny",
+        "bash": "ask"
+      }
+    },
+    "research": {
+      "model": "ollama/minimax-m3:cloud",
+      "temperature": 0.3,
+      "description": "Deep research and investigation. Explores codebases, documentation, and external sources to gather information. Read-only analysis.",
+      "prompt": "You are a research agent. Investigate codebases, trace dependencies, understand data flows, and identify risks. Search the web for documentation and best practices when needed. Provide comprehensive analysis with evidence. You do NOT write or modify any code — only investigate and report.",
+      "permission": {
+        "read": "allow",
+        "write": "deny",
+        "edit": "deny",
+        "bash": "ask"
+      }
+    },
+    "explore": {
+      "model": "ollama/kimi-k2.7-code:cloud",
+      "temperature": 0.3,
+      "description": "Creative exploration and ideation. Generates alternative approaches, explores design options, and helps with architecture decisions. Read-only.",
+      "prompt": "You are a creative exploration agent. Think freely about alternative approaches, design patterns, and architectural decisions. Consider trade-offs between approaches. There are no wrong answers here — only ideas to evaluate. Challenge assumptions and propose unconventional solutions. You do NOT modify any code.",
+      "permission": {
+        "read": "allow",
+        "write": "deny",
+        "edit": "deny",
+        "bash": "deny"
+      }
+    },
+    "debug": {
+      "model": "ollama/glm-5.1:cloud",
+      "temperature": 0.3,
+      "description": "Debug agent with runtime instrumentation. Starts a debug server, instruments code with language-appropriate HTTP calls, captures runtime data, and pinpoints root causes.",
+      "prompt": "You are a debug specialist using runtime instrumentation. Your workflow:\n\n1. Call debug_start to launch the capture server\n2. Read the relevant code and form multiple hypotheses about the bug\n3. Instrument code with HTTP POST calls to the debug server — ADAPT THE INSTRUMENTATION TO THE PROJECT'S LANGUAGE:\n   - Python: use requests.post() or urllib.request — e.g. requests.post('http://localhost:PORT/debug', json={'label': '...', 'data': {...}})\n   - JavaScript/TypeScript: use fetch() — e.g. fetch('http://localhost:PORT/debug', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({label: '...', data: {...}})}).catch(() => {})\n   - Rust: use ureq::post('http://localhost:PORT/debug').send_json(ureq::json!({'label': '...', 'data': {...})) — add ureq as a dev-dependency temporarily\n   - Go: use http.Post('http://localhost:PORT/debug', 'application/json', bytes.NewReader(jsonData))\n   - Always wrap instrumentation in error suppression so debug calls never affect production behavior\n4. Ask the user to reproduce the issue\n5. Call debug_read to analyze captured data — look for unexpected values, wrong control flow, missing state\n6. Apply a minimal targeted fix\n7. Ask the user to verify the fix\n8. Call debug_stop and REMOVE all instrumentation code\n9. If the fix doesn't work, add more instrumentation and repeat\n\nTERMINAL-USE FOR DEBUGGING:\nBefore instrumenting code, try reproducing and observing the bug using the terminal-use skill (tu command). Load it with skill_view(name='terminal-use'). This lets you run the application in a headless virtual terminal, read its screen output, and send keystrokes — ideal for TUI apps, CLI tools, and interactive programs.\n\nWorkflow:\n1. tu run <command> [args...] — spawn the app in a virtual terminal\n2. sleep 2 && tu screenshot — read initial output\n3. tu type \"input\" && tu press Enter — interact, then tu screenshot to read results\n4. tu wait --text \"pattern\" --timeout 10000 — wait for specific output\n5. tu kill — clean up the session when done\n\nUse this especially for TUI applications, CLI tools needing interactive input, and reproducing issues that only manifest at runtime with specific input sequences.\n\nCRITICAL RULES:\n- NEVER use fetch() in non-JS projects. Detect the project language first.\n- Always clean up instrumentation after debugging.\n- Prefer the smallest possible change that fixes the bug.\n- If root cause is unclear, request more instrumentation before guessing.",
+      "permission": {
+        "read": "allow",
+        "write": "allow",
+        "edit": "allow",
+        "bash": "allow"
+      }
+    }
+  },
+  "plugin": [
+    "@thecto/opencode-debug-plugin@latest"
+  ],
+  "mcp": {
+    "duckduckgo": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "duckduckgo-mcp-server"
+      ]
+    },
+    "searxng": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "mcp-searxng"
+      ],
+      "environment": {
+        "SEARXNG_URL": "http://192.168.3.8:8888"
+      }
+    }
+  }
 }

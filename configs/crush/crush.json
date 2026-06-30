@@ -1,426 +1,418 @@
 {
-    "$schema": "https://charm.land/crush.json",
-    "providers": {
-        "ollama": {
-            "name": "Ollama",
-            "base_url": "http://127.0.0.1:11434/v1/",
-            "type": "openai-compat",
-            "models": [
-                {
-                    "name": "GLM 5.1",
-                    "id": "glm-5.1:cloud",
-                    "context_window": 202752,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "GLM 5.2",
-                    "id": "glm-5.2:cloud",
-                    "context_window": 1000000,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "GLM 5",
-                    "id": "glm-5:cloud",
-                    "context_window": 202752,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "Kimi K2.6",
-                    "id": "kimi-k2.6:cloud",
-                    "context_window": 262144,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "supports_attachments": true
-                },
-                {
-                    "name": "Kimi K2.7 Code",
-                    "id": "kimi-k2.7-code:cloud",
-                    "context_window": 262144,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "supports_attachments": true
-                },
-                {
-                    "name": "Kimi K2.5",
-                    "id": "kimi-k2.5:cloud",
-                    "context_window": 262144,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "supports_attachments": true
-                },
-                {
-                    "name": "MiniMax M2.7 1M",
-                    "id": "minimax-m2.7:cloud",
-                    "context_window": 1048576,
-                    "default_max_tokens": 16384,
-                    "can_reason": true
-                },
-                {
-                    "name": "MiniMax M2.5",
-                    "id": "minimax-m2.5:cloud",
-                    "context_window": 204800,
-                    "default_max_tokens": 16384,
-                    "can_reason": true
-                },
-                {
-                    "name": "Nemotron 3 Super",
-                    "id": "nemotron-3-super:cloud",
-                    "context_window": 262144,
-                    "default_max_tokens": 16384,
-                    "can_reason": true
-                },
-                {
-                    "name": "Nemotron 3 Nano 30B 1M",
-                    "id": "nemotron-3-nano:30b-cloud",
-                    "context_window": 1048576,
-                    "default_max_tokens": 16384,
-                    "can_reason": true
-                },
-                {
-                    "name": "Qwen3.5 397B",
-                    "id": "qwen3.5:cloud",
-                    "context_window": 262144,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "supports_attachments": true
-                },
-                {
-                    "name": "Gemma 4 31B",
-                    "id": "gemma4:31b-cloud",
-                    "context_window": 131072,
-                    "default_max_tokens": 16384,
-                    "can_reason": true,
-                    "supports_attachments": true
-                },
-                {
-                    "name": "DeepSeek V4 Flash",
-                    "id": "deepseek-v4-flash:cloud",
-                    "context_window": 1048576,
-                    "default_max_tokens": 16384,
-                    "can_reason": true
-                },
-                {
-                    "name": "DeepSeek V4 Pro",
-                    "id": "deepseek-v4-pro:cloud",
-                    "context_window": 1048576,
-                    "default_max_tokens": 16384,
-                    "can_reason": true
-                },
-                {
-                    "name": "Gemini 3 Flash Preview",
-                    "id": "gemini-3-flash-preview:cloud",
-                    "context_window": 1048576,
-                    "default_max_tokens": 16384,
-                    "can_reason": true,
-                    "supports_attachments": true
-                },
-                {
-                    "name": "MiniMax M3",
-                    "id": "minimax-m3:cloud",
-                    "context_window": 524288,
-                    "default_max_tokens": 16384,
-                    "can_reason": true,
-                    "supports_attachments": true
-                }
-            ]
+  "$schema": "https://charm.land/crush.json",
+  "providers": {
+    "ollama": {
+      "name": "Ollama",
+      "base_url": "http://127.0.0.1:11434/v1/",
+      "type": "openai-compat",
+      "models": [
+        {
+          "name": "GLM 5.1",
+          "id": "glm-5.1:cloud",
+          "context_window": 202752,
+          "default_max_tokens": 32768,
+          "can_reason": true
         },
-        "llama-cpp": {
-            "name": "llama.cpp",
-            "base_url": "http://127.0.0.1:12434/v1/",
-            "type": "openai-compat",
-            "models": [
-                {
-                    "name": "Gemma 4 12B",
-                    "id": "gemma4-12b",
-                    "context_window": 262144,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "supports_attachments": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Gemma 4 12B 🧠",
-                    "id": "gemma4-12b:think",
-                    "context_window": 262144,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true,
-                    "supports_attachments": true
-                },
-                {
-                    "name": "Gemma 4 E2B",
-                    "id": "gemma4-e2b",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Gemma 4 E2B 🧠",
-                    "id": "gemma4-e2b:think",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Gemma 4 E4B",
-                    "id": "gemma4-e4b",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Gemma 4 E4B 🧠",
-                    "id": "gemma4-e4b:think",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "GPT-OSS 20B",
-                    "id": "gpt-oss-20b",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true
-                },
-                {
-                    "name": "LFM 2.5 8B",
-                    "id": "lfm2.5-8b-a1b",
-                    "context_window": 128000,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "LFM 2.5 8B 🧠",
-                    "id": "lfm2.5-8b-a1b:think",
-                    "context_window": 128000,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Mellum 2 12B",
-                    "id": "mellum2-12b-a2.5b",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Mellum 2 12B 🧠",
-                    "id": "mellum2-12b-a2.5b:think",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Qwen3.5 4B",
-                    "id": "qwen3.5-4b",
-                    "context_window": 262144,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Qwen3.5 4B 🧠",
-                    "id": "qwen3.5-4b:think",
-                    "context_window": 262144,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Qwen3.5 4B Abliterated",
-                    "id": "qwen3.5-4b-abliterated",
-                    "context_window": 262144,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Qwen3.5 4B Abliterated 🧠",
-                    "id": "qwen3.5-4b-abliterated:think",
-                    "context_window": 262144,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Qwen3.5 9B",
-                    "id": "qwen3.5-9b",
-                    "context_window": 262144,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Qwen3.5 9B 🧠",
-                    "id": "qwen3.5-9b:think",
-                    "context_window": 262144,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Qwen 3.6 35B",
-                    "id": "qwen3.6-35b-a3b",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Qwen 3.6 35B 🧠",
-                    "id": "qwen3.6-35b-a3b:think",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Qwable 3.6 35B",
-                    "id": "qwable-35b",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "Qwable 3.6 35B 🧠",
-                    "id": "qwable-35b:think",
-                    "context_window": 131072,
-                    "default_max_tokens": 32768,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "North Mini Code",
-                    "id": "north-mini-code",
-                    "context_window": 262144,
-                    "default_max_tokens": 64000,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "North Mini Code 🧠",
-                    "id": "north-mini-code:think",
-                    "context_window": 262144,
-                    "default_max_tokens": 64000,
-                    "can_reason": true,
-                    "can_think": true
-                },
-                {
-                    "name": "North Mini Code 🧠",
-                    "id": "north-mini-code:think",
-                    "context_window": 262144,
-                    "default_max_tokens": 64000,
-                    "can_reason": true,
-                    "can_think": true
-                }
-            ]
+        {
+          "name": "GLM 5.2",
+          "id": "glm-5.2:cloud",
+          "context_window": 1000000,
+          "default_max_tokens": 32768,
+          "can_reason": true
         },
-        "sisyphus": {
-            "npm": "@ai-sdk/openai-compatible",
-            "name": "📟 Pi LLM",
-            "baseURL": "http://192.168.3.8:8081/v1"
+        {
+          "name": "GLM 5",
+          "id": "glm-5:cloud",
+          "context_window": 202752,
+          "default_max_tokens": 32768,
+          "can_reason": true
+        },
+        {
+          "name": "Kimi K2.6",
+          "id": "kimi-k2.6:cloud",
+          "context_window": 262144,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "supports_attachments": true
+        },
+        {
+          "name": "Kimi K2.7 Code",
+          "id": "kimi-k2.7-code:cloud",
+          "context_window": 262144,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "supports_attachments": true
+        },
+        {
+          "name": "Kimi K2.5",
+          "id": "kimi-k2.5:cloud",
+          "context_window": 262144,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "supports_attachments": true
+        },
+        {
+          "name": "MiniMax M2.7 1M",
+          "id": "minimax-m2.7:cloud",
+          "context_window": 1048576,
+          "default_max_tokens": 16384,
+          "can_reason": true
+        },
+        {
+          "name": "MiniMax M2.5",
+          "id": "minimax-m2.5:cloud",
+          "context_window": 204800,
+          "default_max_tokens": 16384,
+          "can_reason": true
+        },
+        {
+          "name": "Nemotron 3 Super",
+          "id": "nemotron-3-super:cloud",
+          "context_window": 262144,
+          "default_max_tokens": 16384,
+          "can_reason": true
+        },
+        {
+          "name": "Nemotron 3 Nano 30B 1M",
+          "id": "nemotron-3-nano:30b-cloud",
+          "context_window": 1048576,
+          "default_max_tokens": 16384,
+          "can_reason": true
+        },
+        {
+          "name": "Qwen3.5 397B",
+          "id": "qwen3.5:cloud",
+          "context_window": 262144,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "supports_attachments": true
+        },
+        {
+          "name": "Gemma 4 31B",
+          "id": "gemma4:31b-cloud",
+          "context_window": 131072,
+          "default_max_tokens": 16384,
+          "can_reason": true,
+          "supports_attachments": true
+        },
+        {
+          "name": "DeepSeek V4 Flash",
+          "id": "deepseek-v4-flash:cloud",
+          "context_window": 1048576,
+          "default_max_tokens": 16384,
+          "can_reason": true
+        },
+        {
+          "name": "DeepSeek V4 Pro",
+          "id": "deepseek-v4-pro:cloud",
+          "context_window": 1048576,
+          "default_max_tokens": 16384,
+          "can_reason": true
+        },
+        {
+          "name": "Gemini 3 Flash Preview",
+          "id": "gemini-3-flash-preview:cloud",
+          "context_window": 1048576,
+          "default_max_tokens": 16384,
+          "can_reason": true,
+          "supports_attachments": true
+        },
+        {
+          "name": "MiniMax M3",
+          "id": "minimax-m3:cloud",
+          "context_window": 524288,
+          "default_max_tokens": 16384,
+          "can_reason": true,
+          "supports_attachments": true
         }
+      ]
     },
-    "models": {
-        "large": {
-            "model": "qwen3.6-35b-a3b",
-            "provider": "llama-cpp",
-            "think": true
+    "llama-cpp": {
+      "name": "llama.cpp",
+      "base_url": "http://127.0.0.1:12434/v1/",
+      "type": "openai-compat",
+      "models": [
+        {
+          "name": "Gemma 4 12B",
+          "id": "gemma4-12b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "supports_attachments": true,
+          "can_think": true
         },
-        "small": {
-            "model": "gpt-oss-20b",
-            "provider": "llama-cpp",
-            "think": true
+        {
+          "name": "Gemma 4 12B 🧠",
+          "id": "gemma4-12b:think",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true,
+          "supports_attachments": true
         },
-        "📟 Qwen3 1.7B (Pi)": {
-            "provider": "sisyphus",
-            "model": "qwen3-1.7b",
-            "reasoning": true,
-            "context": 4096,
-            "maxOutputTokens": 2048
+        {
+          "name": "Gemma 4 E2B",
+          "id": "gemma4-e2b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
         },
-        "📟 Qwen3 0.6B (Pi)": {
-            "provider": "sisyphus",
-            "model": "qwen3-0.6b",
-            "reasoning": true,
-            "context": 4096,
-            "maxOutputTokens": 2048
+        {
+          "name": "Gemma 4 E2B 🧠",
+          "id": "gemma4-e2b:think",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
         },
-        "📟 Gemma 3 1B (Pi)": {
-            "provider": "sisyphus",
-            "model": "gemma3-1b",
-            "context": 4096,
-            "maxOutputTokens": 2048
+        {
+          "name": "Gemma 4 E4B",
+          "id": "gemma4-e4b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "Gemma 4 E4B 🧠",
+          "id": "gemma4-e4b:think",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "GPT-OSS 20B",
+          "id": "gpt-oss-20b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true
+        },
+        {
+          "name": "LFM 2.5 8B",
+          "id": "lfm2.5-8b-a1b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "LFM 2.5 8B 🧠",
+          "id": "lfm2.5-8b-a1b:think",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "Mellum 2 12B",
+          "id": "mellum2-12b-a2.5b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "Mellum 2 12B 🧠",
+          "id": "mellum2-12b-a2.5b:think",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "Qwen3.5 4B",
+          "id": "qwen3.5-4b",
+          "context_window": 32768,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "Qwen3.5 4B 🧠",
+          "id": "qwen3.5-4b:think",
+          "context_window": 32768,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "Qwen3.5 4B Abliterated",
+          "id": "qwen3.5-4b-abliterated",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "Qwen3.5 4B Abliterated 🧠",
+          "id": "qwen3.5-4b-abliterated:think",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "Qwen3.5 9B",
+          "id": "qwen3.5-9b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "Qwen3.5 9B 🧠",
+          "id": "qwen3.5-9b:think",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "Qwen 3.6 35B",
+          "id": "qwen3.6-35b-a3b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "Qwen 3.6 35B 🧠",
+          "id": "qwen3.6-35b-a3b:think",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "Ornith 1.0 35B",
+          "id": "ornith-1.0-35b",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "Ornith 1.0 35B 🧠",
+          "id": "ornith-1.0-35b:think",
+          "context_window": 131072,
+          "default_max_tokens": 32768,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "North Mini Code",
+          "id": "north-mini-code",
+          "context_window": 65536,
+          "default_max_tokens": 64000,
+          "can_reason": true,
+          "can_think": true
+        },
+        {
+          "name": "North Mini Code 🧠",
+          "id": "north-mini-code:think",
+          "context_window": 65536,
+          "default_max_tokens": 64000,
+          "can_reason": true,
+          "can_think": true
         }
+      ]
     },
-    "mcp": {
-        "duckduckgo": {
-            "type": "stdio",
-            "command": "uvx",
-            "args": [
-                "duckduckgo-mcp-server"
-            ],
-            "timeout": 120,
-            "disabled": false
-        },
-        "searxng": {
-            "type": "stdio",
-            "command": "npx",
-            "args": [
-                "-y",
-                "mcp-searxng"
-            ],
-            "env": {
-                "SEARXNG_URL": "http://192.168.3.8:8888"
-            },
-            "timeout": 120,
-            "disabled": false
-        }
-    },
-    "lsp": {
-        "python": {
-            "command": "pylsp"
-        },
-        "go": {
-            "command": "gopls"
-        },
-        "typescript": {
-            "command": "typescript-language-server",
-            "args": [
-                "--stdio"
-            ]
-        },
-        "rust": {
-            "command": "rust-analyzer"
-        }
-    },
-    "permissions": {
-        "allowed_tools": [
-            "view",
-            "ls",
-            "grep",
-            "edit",
-            "bash",
-            "mcp_duckduckgo_search",
-            "mcp_duckduckgo_fetch_content",
-            "mcp_searxng_search"
-        ]
-    },
-    "options": {
-        "disable_metrics": true,
-        "disable_provider_auto_update": true,
-        "disable_default_providers": true
+    "sisyphus": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "📟 Pi LLM",
+      "baseURL": "http://192.168.3.8:8081/v1"
     }
+  },
+  "models": {
+    "large": {
+      "model": "qwen3.6-35b-a3b",
+      "provider": "llama-cpp",
+      "think": true
+    },
+    "small": {
+      "model": "gpt-oss-20b",
+      "provider": "llama-cpp",
+      "think": true
+    },
+    "📟 Qwen3 1.7B (Pi)": {
+      "provider": "sisyphus",
+      "model": "qwen3-1.7b",
+      "reasoning": true,
+      "context": 4096,
+      "maxOutputTokens": 2048
+    },
+    "📟 Qwen3 0.6B (Pi)": {
+      "provider": "sisyphus",
+      "model": "qwen3-0.6b",
+      "reasoning": true,
+      "context": 4096,
+      "maxOutputTokens": 2048
+    },
+    "📟 Gemma 3 1B (Pi)": {
+      "provider": "sisyphus",
+      "model": "gemma3-1b",
+      "context": 4096,
+      "maxOutputTokens": 2048
+    }
+  },
+  "mcp": {
+    "duckduckgo": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "duckduckgo-mcp-server"
+      ],
+      "timeout": 120,
+      "disabled": false
+    },
+    "searxng": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-searxng"
+      ],
+      "env": {
+        "SEARXNG_URL": "http://192.168.3.8:8888"
+      },
+      "timeout": 120,
+      "disabled": false
+    }
+  },
+  "lsp": {
+    "python": {
+      "command": "pylsp"
+    },
+    "go": {
+      "command": "gopls"
+    },
+    "typescript": {
+      "command": "typescript-language-server",
+      "args": [
+        "--stdio"
+      ]
+    },
+    "rust": {
+      "command": "rust-analyzer"
+    }
+  },
+  "permissions": {
+    "allowed_tools": [
+      "view",
+      "ls",
+      "grep",
+      "edit",
+      "bash",
+      "mcp_duckduckgo_search",
+      "mcp_duckduckgo_fetch_content",
+      "mcp_searxng_search"
+    ]
+  },
+  "options": {
+    "disable_metrics": true,
+    "disable_provider_auto_update": true,
+    "disable_default_providers": true
+  }
 }
