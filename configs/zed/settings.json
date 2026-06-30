@@ -1,5 +1,80 @@
 {
+  "ui_font_size": 14.0,
+  "buffer_font_size": 13.0,
+  "ui_font_family": ".ZedSans",
+  "agent_buffer_font_size": 13.0,
+  "agent_ui_font_size": 15.0,
+  "terminal": {
+    "font_size": 13.0
+  },
+  "agent": {
+    "tool_permissions": {
+      "tools": {
+        "terminal": {
+          "always_allow": [
+            {
+              "pattern": "^ls\\b"
+            }
+          ]
+        }
+      }
+    },
+    "default_model": {
+      "provider": "llama-swap",
+      "model": "ornith-1.0-35b:think",
+      "enable_thinking": false
+    },
+    "favorite_models": [
+      {
+        "provider": "llama-swap",
+        "model": "ornith-1.0-35b:think",
+        "enable_thinking": false
+      },
+      {
+        "provider": "llama-swap",
+        "model": "qwen3.6-35b-a3b:think",
+        "enable_thinking": false
+      },
+      {
+        "provider": "llama-swap",
+        "model": "north-mini-code:think",
+        "enable_thinking": false
+      },
+      {
+        "provider": "ollama",
+        "model": "glm-5.2:cloud",
+        "enable_thinking": true
+      },
+      {
+        "provider": "ollama",
+        "model": "kimi-k2.7-code:cloud",
+        "enable_thinking": true
+      },
+      {
+        "provider": "ollama",
+        "model": "minimax-m3:cloud",
+        "enable_thinking": true
+      }
+    ],
+    "model_parameters": []
+  },
+  "context_servers": {
+    "duckduckgo": {
+      "command": "uvx",
+      "args": ["duckduckgo-mcp-server"]
+    },
+    "searxng": {
+      "command": "npx",
+      "args": ["-y", "mcp-searxng"],
+      "env": {
+        "SEARXNG_URL": "http://192.168.3.8:8888"
+      }
+    }
+  },
   "agent_servers": {
+    "pi-acp": {
+      "type": "registry"
+    },
     "opencode": {
       "type": "registry"
     }
@@ -10,12 +85,10 @@
   },
   "base_keymap": "Emacs",
   "icon_theme": "Zed (Default)",
-  "ui_font_size": 16,
-  "buffer_font_size": 15,
   "theme": {
     "mode": "dark",
     "light": "Ayu Light",
-    "dark": "Catppuccin Mocha - No Italics"
+    "dark": "Catppuccin Macchiato"
   },
   "language_models": {
     "openai_compatible": {
