@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# copilot-local — GitHub Copilot CLI 100% local via llama-swap
+#
+# Usage:
+#   copilot-local                     # Interactive session (default: Ornith 1.0 35B :think)
+#   copilot-local ornith-35b          # Use Ornith 1.0 35B (think mode)
+#   copilot-local ornith-35b-base     # Use Ornith 1.0 35B (base, no thinking)
+#   copilot-local qwen3.6-35b         # Use Qwen 3.6 35B (think mode)
+#   copilot-local gemma4-12b          # Use Gemma 4 12B (think mode)
+#   copilot-local gemma4-e4b          # Use Gemma 4 E4B (think mode)
+#   copilot-local qwen3.5-9b          # Use Qwen 3.5 9B (think mode)
+#   copilot-local nmc                 # Use North Mini Code
+#   copilot-local -p "task"           # Print mode (non-interactive)
+#   copilot-local --bare -p "task" --max-turns 5
+#
+# Requires: llama-swap on port 12434 with ik_llama.cpp backend
+# Requires: copilot CLI installed (copilot --version)
+
+# Route all API calls to local llama-swap
+export COPILOT_PROVIDER_BASE_URL=http://127.0.0.1:12434/v1
+export COPILOT_PROVIDER_TYPE=openai
+export COPILOT_PROVIDER_WIRE_API=completions
+
+# Dummy API key — llama-swap ignores authentication
+export COPILOT_PROVIDER_API_KEY=***
+
+# Offline mode — don't contact GitHub servers
+export COPILOT_OFFLINE=true
+
+# Unset real GitHub auth to prevent conflict
+unset COPILOT_PROVIDER_BEARER_TOKEN
+
+# ── Model selection ──
+# Default model (used when no argument is given)
+DEFAULT_MODEL="ornith-1.0-35b:think"
+
+# Model shortcuts: short name → llama-swap model ID
+declare -A MODELS=(
+  [ornith-35b]="ornith-1.0-35b:think"
+  [ornith-35b-base]="ornith-1.0-35b"
+  [qwen3.6-35b]="qwen3.6-35b-a3b:think"
+  [gemma4-12b]="gemma4-12b:think"
+  [gemma4-e4b]="gemma4-e4b:think"
+  [qwen3.5-9b]="qwen3.5-9b:think"
+  [nmc]="north-mini-code:think"
+)
+
+# Check if first arg is a model shortcut
+SELECTED_MODEL="${DEFAULT_MODEL}"
+for key in "${!MODELS[@]}"; do
+  if [ "$1" = "$key" ]; then
+    SELECTED_MODEL="${MODELS[$key]}"
+    shift
+    break
+  fi
+done
+
+export COPILOT_MODEL="${SELECTED_MODEL}"
+
+# Token limits (matching fleet capabilities)
+export COPILOT_PROVIDER_MAX_PROMPT_TOKENS=131072
+export COPILOT_PROVIDER_MAX_OUTPUT_TOKENS=32768
+
+exec copilot "$@"
