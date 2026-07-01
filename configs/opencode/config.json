@@ -287,46 +287,6 @@
         "baseURL": "http://127.0.0.1:12434/v1"
       },
       "models": {
-        "gemma4-12b": {
-          "name": "Gemma 4 12B",
-          "reasoning": true,
-          "modalities": {
-            "input": [
-              "text",
-              "image"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "capabilities": [
-            "tools"
-          ],
-          "limit": {
-            "context": 131072,
-            "output": 32768
-          }
-        },
-        "gemma4-12b:think": {
-          "name": "Gemma 4 12B 🧠",
-          "reasoning": true,
-          "modalities": {
-            "input": [
-              "text",
-              "image"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "capabilities": [
-            "tools"
-          ],
-          "limit": {
-            "context": 131072,
-            "output": 32768
-          }
-        },
         "gemma4-e2b": {
           "name": "Gemma 4 E2B",
           "reasoning": true,
@@ -705,6 +665,44 @@
           "limit": {
             "context": 65536,
             "output": 64000
+          }
+        },
+        "agents-a1-35b": {
+          "name": "Agents-A1 35B",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          }
+        },
+        "agents-a1-35b:think": {
+          "name": "Agents-A1 35B 🧠",
+          "reasoning": true,
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "capabilities": [
+            "tools"
+          ],
+          "limit": {
+            "context": 131072,
+            "output": 8192
           }
         }
       }

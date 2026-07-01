@@ -221,30 +221,6 @@
       },
       "models": [
         {
-          "id": "gemma4-12b",
-          "name": "Gemma 4 12B",
-          "description": "Unified multimodal (vision + audio). Won vs PTQ on ik benchmark (25 vs 24/25 Snake). Upstream backend with mmproj enabled.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "gemma4-12b:think",
-          "name": "🧠 Gemma 4 12B Thinking",
-          "description": "Unified multimodal (vision + audio). Won vs PTQ on ik benchmark (25 vs 24/25 Snake). Upstream backend with mmproj enabled.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
           "id": "gemma4-e2b",
           "name": "Gemma 4 E2B",
           "description": "Gemma 4 E2B with Quantization-Aware Training (Q4_0). Official Google checkpoint — higher quality than PTQ at same quant level.",
@@ -443,6 +419,28 @@
           "maxTokens": 32768
         },
         {
+          "id": "agents-a1-35b",
+          "name": "Agents-A1 35B",
+          "description": "Agents-A1 35B — agentic coding model optimized for multi-step reasoning and tool use.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 8192
+        },
+        {
+          "id": "agents-a1-35b:think",
+          "name": "🧠 Agents-A1 35B Thinking",
+          "description": "Agents-A1 35B — agentic coding model optimized for multi-step reasoning and tool use.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 8192
+        },
+        {
           "id": "north-mini-code",
           "name": "North Mini Code",
           "description": "Cohere 30B-A3B MoE agentic coding model",
@@ -509,17 +507,6 @@
             "text"
           ],
           "contextWindow": 262144,
-          "maxTokens": 32768
-        },
-        {
-          "id": "translategemma-4b",
-          "name": "TranslateGemma 4B",
-          "description": "Open translation model built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for quality.",
-          "reasoning": false,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
           "maxTokens": 32768
         }
       ]

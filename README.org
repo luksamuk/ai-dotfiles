@@ -130,9 +130,9 @@ Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) par
 
 Notas:
 - Modelos *always thinking* (GPT-OSS 20B) NÃO têm variante =:think=
-- =gemma4-12b= é o único modelo local com vision+audio (=supports_attachments= / =input: [text, image, audio]=)
+- =minicpm-v-4.6= é o único modelo local com vision (=input: [text, image]=). Nenhum modelo local ativo suporta áudio.
 - O Codex local é limitado: llama-swap não suporta Responses API, usar =--oss --local-provider=ollama= como workaround
-- Modelos de embedding (=nomic-embed-text-v2-moe=) e propósito específico (=hy-mt2-1.8b=, =translategemma-4b=, =webworld-8b=) só aparecem no Pi
+- Modelos de embedding (=nomic-embed-text-v2-moe=) e propósito específico (=hy-mt2-1.8b=, =webworld-8b=) só aparecem no Pi
 
 ** open-webui — Open WebUI Docker
 
