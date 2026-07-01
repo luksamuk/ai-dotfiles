@@ -168,6 +168,9 @@ declare -A MODELS=(
   # ["agentworld-35b"]="groxaxo/Qwen-AgentWorld-35B-A3B-GGUF Qwen-AgentWorld-35B-A3B-Q4_K_M.gguf"
   # Agents-A1-35B — 35B MoE agentic model, Qwen3.5 base, long-horizon search + tool calling
   ["agents-a1-35b"]="mudler/Agents-A1-APEX-GGUF Agents-A1-APEX-I-Compact.gguf"
+  # GLM-4.7-Flash — 30B MoE with MLA (Multi-head Latent Attention), 4 active experts
+  # deepseek2 arch, smallest 35B-class in fleet (14.6GB), Apache-2.0
+  ["glm-4.7-flash"]="mudler/GLM-4.7-Flash-APEX-GGUF GLM-4.7-Flash-APEX-I-Compact.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -288,6 +291,7 @@ show_sizes() {
   echo "  qwen3.6-35b-a3b    ~17.30 GB  (APEX I-Compact) - Heavy offload, MoE coding + tools"
   echo "  ornith-1.0-35b     ~16.50 GB  (APEX I-Compact) - Post-trained Qwen 3.5 35B MoE, agentic coding RL"
   echo "  agents-a1-35b      ~16.50 GB  (APEX I-Compact) - 35B MoE, long-horizon search + tool calling"
+  echo "  glm-4.7-flash      ~14.60 GB  (APEX I-Compact) - 30B MoE MLA, smallest 35B-class, fast"
   echo "  qwopus-35b        ~16.50 GB  (APEX I-Compact) - Heavy offload, MoE coding+reasoning SFT"
   # [REMOVED] gemma4-26b-a4b — removed from fleet Jun 2026
   echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"

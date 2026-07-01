@@ -794,6 +794,86 @@ models:
       embedding_length: 2048
       quantization: I-Compact
       note: '35B MoE agentic model. Qwen3.5 35B-A3B base. Focused on long-horizon search, engineering, scientific research, tool calling. APEX I-Compact: imatrix v1.3 calibrated. Same arch/size as Qwen3.6/Ornith APEX — expects 33-34 t/s. Vision blocked on 6GB RTX 3050.'
+  glm-4.7-flash:
+    name: GLM 4.7 Flash
+    description: GLM-4.7-Flash is a 30B Mixture-of-Experts model with Multi-head Latent Attention (MLA), 64 experts with 4 active per token. Built for fast, efficient conversational AI and tool calling.
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/glm-4.7-flash/GLM-4.7-Flash-APEX-I-Compact.gguf
+
+      --fit on
+
+      --fit-target 128
+
+      --ctx-size 32768
+
+      --temp ${code_temp}
+
+      --top-p ${code_top_p}
+
+      --top-k ${code_top_k}
+
+      --min-p ${code_min_p}
+
+      --repeat-penalty ${code_repeat_penalty}
+
+      --jinja
+
+      --parallel 1
+
+      --cache-type-k q8_0
+
+      --cache-type-v q8_0
+
+      --flash-attn on
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.85
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 300
+    health_check_timeout: 300
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 32768
+    metadata:
+      size: ~14.6 GB (APEX I-Compact)
+      context: 1K-32K (MLA compute buffer limits ctx on 6GB VRAM)
+      vram_usage: ~5GB VRAM + ~10GB pinned RAM (upstream llama.cpp, 29-50 tok/s depending on ctx)
+      source: mudler/GLM-4.7-Flash-APEX-GGUF
+      kv_cache: q8_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: deepseek2
+      parameters: 30000000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: I-Compact
+      note: 30B MoE with MLA (Multi-head Latent Attention, DeepSeek-V2 style). 64 experts, 4 active, ~2B active/token. Smallest 35B-class in fleet (14.6GB). MLA compresses KV cache internally — no hadamard transform needed. Apache-2.0.
   glm-ocr:
     name: GLM-OCR
     description: Multimodal OCR model for complex document understanding, built on the GLM-V encoder-decoder architecture integrating CogViT visual encoder with a GLM-0.5B language decoder.
@@ -1620,6 +1700,7 @@ matrix:
     qw36: qwen3.6-35b-a3b
     orn35: ornith-1.0-35b
     a1: agents-a1-35b
+    glm: glm-4.7-flash
     nmc: north-mini-code
     hmt: hy-mt2-1.8b
     asr: qwen3-asr-0.6b
@@ -1632,7 +1713,7 @@ matrix:
     vision_only: vl | vlx | vle | ocr | cpv
     vision_embed: (vl | vlx | vle | ocr | cpv) & nomic
     medium: (q9 | g4) & nomic
-    heavy: (qw36 | orn35 | nmc | a1) & nomic
+    heavy: (qw36 | orn35 | nmc | a1 | glm) & nomic
     translate_embed: hmt & nomic
     translate_only: hmt
     tts_external: ttsext
@@ -1641,6 +1722,7 @@ matrix:
     qw36: 10
     orn35: 9
     a1: 9
+    glm: 9
     nmc: 9
     q9: 4
     g4: 4
