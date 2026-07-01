@@ -717,15 +717,17 @@ models:
 
       --ctx-size 131072
 
-      --temp ${code_temp}
+      --temp 0.85
 
-      --top-p ${code_top_p}
+      --top-p 0.95
 
-      --top-k ${code_top_k}
+      --top-k 20
 
-      --min-p ${code_min_p}
+      --min-p 0.0
 
-      --repeat-penalty ${code_repeat_penalty}
+      --repeat-penalty 1.0
+
+      --presence-penalty 1.1
 
       --reasoning on
 
@@ -756,13 +758,13 @@ models:
         ${MODEL_ID}:
           chat_template_kwargs:
             enable_thinking: false
-          temperature: 0.6
-          top_p: 0.85
+          temperature: 0.85
+          top_p: 0.95
         ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
+          temperature: 0.85
+          top_p: 0.95
     ttl: 300
     health_check_timeout: 300
     capabilities:
@@ -807,15 +809,15 @@ models:
 
       --ctx-size 131072
 
-      --temp ${code_temp}
+      --temp 0.7
 
-      --top-p ${code_top_p}
+      --top-p 1.0
 
-      --top-k ${code_top_k}
+      --top-k -1
 
-      --min-p ${code_min_p}
+      --min-p 0.01
 
-      --repeat-penalty ${code_repeat_penalty}
+      --repeat-penalty 1.0
 
       --jinja
 
@@ -836,13 +838,13 @@ models:
         ${MODEL_ID}:
           chat_template_kwargs:
             enable_thinking: false
-          temperature: 0.6
-          top_p: 0.85
+          temperature: 1.0
+          top_p: 0.95
         ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
+          temperature: 0.7
+          top_p: 1.0
     ttl: 300
     health_check_timeout: 300
     capabilities:
