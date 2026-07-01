@@ -7,6 +7,8 @@
 #   copilot-local ornith-35b-base     # Use Ornith 1.0 35B (base, no thinking)
 #   copilot-local agents-a1-35b      # Use Agents-A1 35B (think mode)
 #   copilot-local agents-a1-35b-base # Use Agents-A1 35B (base, no thinking)
+#   copilot-local glm-4.7-flash      # Use GLM 4.7 Flash (think mode)
+#   copilot-local glm-4.7-flash-base # Use GLM 4.7 Flash (base, no thinking)
 #   copilot-local qwen3.6-35b         # Use Qwen 3.6 35B (think mode)
 #   copilot-local gemma4-e4b          # Use Gemma 4 E4B (think mode)
 #   copilot-local qwen3.5-9b          # Use Qwen 3.5 9B (think mode)
@@ -41,6 +43,8 @@ declare -A MODELS=(
   [ornith-35b-base]="ornith-1.0-35b"
   [agents-a1-35b]="agents-a1-35b:think"
   [agents-a1-35b-base]="agents-a1-35b"
+  [glm-4.7-flash]="glm-4.7-flash:think"
+  [glm-4.7-flash-base]="glm-4.7-flash"
   [qwen3.6-35b]="qwen3.6-35b-a3b:think"
   [gemma4-e4b]="gemma4-e4b:think"
   [qwen3.5-9b]="qwen3.5-9b:think"
