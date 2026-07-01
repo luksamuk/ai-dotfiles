@@ -16,24 +16,25 @@ SNAKE_PROMPT = """Write one complete Python 3 file using only the standard libra
 # Bench configs: (key, name, model_file, backend_configs)
 # backend_configs: list of (label, server_bin, cache_k, cache_v, extra_args_list)
 BENCHES = [
-    {
-        "key": "gemma4-12b",
-        "name": "Gemma 4 12B",
-        "model_file": f"{MODELS_DIR}/gemma-4-12b-it-qat-q4_0.gguf",
-        "mmproj": f"{MODELS_DIR}/mmproj-gemma-4-12b-it-qat-q4_0.gguf",
-        "configs": [
-            ("upstream", UPSTREAM_SERVER, "q4_0", "q4_0",
-             ["--mmproj", f"{MODELS_DIR}/mmproj-gemma-4-12b-it-qat-q4_0.gguf",
-              "--fit", "on", "--fit-target", "768", "--fit-ctx", "8192",
-              "--jinja", "--reasoning", "on", "--flash-attn", "on",
-              "--min-p", "0.01", "--repeat-penalty", "1.05"]),
-            ("bee_turbo3_tcq", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
-             ["--mmproj", f"{MODELS_DIR}/mmproj-gemma-4-12b-it-qat-q4_0.gguf",
-              "--fit", "on", "--fit-target", "768", "--fit-ctx", "8192",
-              "--jinja", "--reasoning", "on", "--flash-attn", "on",
-              "--min-p", "0.01", "--repeat-penalty", "1.05"]),
-        ],
-    },
+    # [REMOVED] gemma4-12b — model deleted Jun 2026, benchmark entry kept for historical reference
+    # {
+    #     "key": "gemma4-12b",
+    #     "name": "Gemma 4 12B",
+    #     "model_file": f"{MODELS_DIR}/gemma-4-12b-it-qat-q4_0.gguf",
+    #     "mmproj": f"{MODELS_DIR}/mmproj-gemma-4-12b-it-qat-q4_0.gguf",
+    #     "configs": [
+    #         ("upstream", UPSTREAM_SERVER, "q4_0", "q4_0",
+    #          ["--mmproj", f"{MODELS_DIR}/mmproj-gemma-4-12b-it-qat-q4_0.gguf",
+    #           "--fit", "on", "--fit-target", "768", "--fit-ctx", "8192",
+    #           "--jinja", "--reasoning", "on", "--flash-attn", "on",
+    #           "--min-p", "0.01", "--repeat-penalty", "1.05"]),
+    #         ("bee_turbo3_tcq", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
+    #          ["--mmproj", f"{MODELS_DIR}/mmproj-gemma-4-12b-it-qat-q4_0.gguf",
+    #           "--fit", "on", "--fit-target", "768", "--fit-ctx", "8192",
+    #           "--jinja", "--reasoning", "on", "--flash-attn", "on",
+    #           "--min-p", "0.01", "--repeat-penalty", "1.05"]),
+    #     ],
+    # },
     {
         "key": "gemma4-e2b",
         "name": "Gemma 4 E2B",

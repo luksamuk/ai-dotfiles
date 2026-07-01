@@ -268,7 +268,7 @@ def _check_model_vision(model: str) -> bool:
     """Check if a llama-swap model supports vision (image input) via the API.
 
     Strips :think/:code suffixes before matching, since the /v1/models endpoint
-    lists base model names (e.g. 'gemma4-12b') without suffixes.
+    lists base model names (e.g. 'minicpm-v-4.6') without suffixes.
     """
     import urllib.request
     import urllib.error
@@ -443,7 +443,7 @@ def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str) -> t
     """One-shot vision + edit enhancement: send image + instruction to a
     vision-capable model and get a refined edit prompt back.
 
-    Used when the enhance model already has vision capability (e.g. gemma4-12b),
+    Used when the enhance model already has vision capability (e.g. minicpm-v-4.6),
     avoiding two separate LLM calls (analyze then enhance).
 
     Returns (enhanced_prompt, raw_response).

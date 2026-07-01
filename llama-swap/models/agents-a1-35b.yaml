@@ -1,21 +1,22 @@
 # -------------------------------------------
-# ORNITH-1.0-35B - MoE AGENTIC CODING (text-only)
-# MoE 35B params, ~3B ativo por token. 256 experts, 8+1 active.
-# Post-trained Qwen 3.5 35B MoE (self-scaffolding agentic coding RL).
-# Same qwen35moe architecture as Qwen3.6-35B-A3B.
-# APEX I-Compact ~16.5GB — 22% smaller than Q4_K_M (21.2GB), imatrix v1.3 calibrated.
+# AGENTS-A1-35B - MoE AGENTIC (text-only, no vision)
+# MoE 35B params, ~3B ativo por token. 256 routed + 1 shared expert, 8 active.
+# Built on Qwen3.5 35B-A3B MoE base. Same qwen35moe architecture as Qwen3.6/Ornith.
+# Focused on: long-horizon search, engineering, scientific research, tool calling.
+# APEX I-Compact ~16.5GB — imatrix v1.3 calibrated (chat, code, reasoning, tool-calling, agentic traces).
 # ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
-# --fit-margin 768: same as Qwen 3.6 APEX (similar size now)
+# --fit-margin 768: same as Qwen 3.6 APEX (identical size)
 # --ctx-size 131072: same safe ceiling as Qwen 3.6
 # Dual mode: base (chat, no think) and :think (reasoning)
-# Identity: base Qwen 3.5 — should identify as Qwen, not Google (unlike 9B Gemma 4 base)
+# License: Apache-2.0 (base model by InternScience)
 # -------------------------------------------
-"ornith-1.0-35b":
-  name: "Ornith 1.0 35B"
-  description: "Ornith-1.0 is a family of open-source LLMs specialized for agentic coding, trained with a novel self-scaffolding reinforcement learning approach that jointly optimizes the scaffold and the solution."
+"agents-a1-35b":
+  name: "Agents-A1 35B"
+  description: "Agents-A1 is a 35B Mixture-of-Experts agentic model built to scale heterogeneous agentic abilities across long-horizon search, engineering, scientific research, instruction following, and tool calling."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/ornith-1.0-35b/Ornith-1.0-35B-APEX-I-Compact.gguf
+    --model ${models_dir}/agents-a1-35b/Agents-A1-APEX-I-Compact.gguf
+    # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only = stable.
     --fit
     --fit-margin 768
     --ctx-size 131072
@@ -60,7 +61,7 @@
     size: "~16.5 GB (APEX I-Compact)"
     context: "1K-131K (safe max)"
     vram_usage: "~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s)"
-    source: "mudler/Ornith-1.0-35B-APEX-GGUF"
+    source: "mudler/Agents-A1-APEX-GGUF"
     kv_cache: "q4_0 + attn_rot + hadamard"
     features:
       completion: true
@@ -76,4 +77,4 @@
     context_length: 262144
     embedding_length: 2048
     quantization: I-Compact
-    note: "Post-trained Qwen 3.5 35B MoE. Self-scaffolding RL for agentic coding. 256 experts, 8+1 active, ~3B active/token. APEX I-Compact: 22% smaller than Q4_K_M, imatrix v1.3 calibrated. Expected 33-34 t/s matching Qwen 3.6 APEX."
+    note: "35B MoE agentic model. Qwen3.5 35B-A3B base. Focused on long-horizon search, engineering, scientific research, tool calling. APEX I-Compact: imatrix v1.3 calibrated. Same arch/size as Qwen3.6/Ornith APEX — expects 33-34 t/s. Vision blocked on 6GB RTX 3050."

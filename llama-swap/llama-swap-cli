@@ -284,6 +284,18 @@ cmd_list() {
     exit 1
   fi
 
+  # Fallback: read architecture from YAML fragments when API doesn't expose it
+  local models_dir="${HOME}/git/ai-dotfiles/llama-swap/models"
+  yaml_arch() {
+    local model_id="$1"
+    local yaml_file="${models_dir}/${model_id}.yaml"
+    if [[ -f "$yaml_file" ]]; then
+      grep -m1 '^\s*architecture:' "$yaml_file" | sed 's/.*architecture:\s*//' | tr -d '"'
+    else
+      echo "-"
+    fi
+  }
+
   {
     printf "NAME\tTAGS\tARCH\tPARAMS\tCTX\tEMBED\tQUANT\tSIZE\tKVCACHE\n"
 
@@ -294,7 +306,7 @@ cmd_list() {
         id: .id,
         arch: (.meta.llamaswap.architecture // "-"),
         params: (.meta.llamaswap.parameters // "-"),
-        ctx: (.meta.llamaswap.context_length // "-"),
+        ctx: (.context_length // .meta.llamaswap.context_length // "-"),
         embed: (.meta.llamaswap.embedding_length // "-"),
         quant: (.meta.llamaswap.quantization // "-"),
         size: (.meta.llamaswap.size // "-"),
@@ -314,6 +326,8 @@ cmd_list() {
       e=$(short_ctx "$embed")
       s=$(disk_size "$size" "$vision")
       k=$([[ "$kv_cache" != "-" && -n "$kv_cache" ]] && echo "$kv_cache" || echo "-")
+      # Fallback: read architecture from YAML if API didn't return it
+      [[ "$arch" == "-" ]] && arch=$(yaml_arch "$id")
       printf "${CYAN}%s\t${DIM}%s${RESET}\t%s\t%s\t%s\t%s\t%s\t${DIM}%s${RESET}\t${DIM}%s${RESET}\n" "$id" "$tags" "$arch" "$p" "$c" "$e" "$quant" "$s" "$k"
     done
   } | format_output

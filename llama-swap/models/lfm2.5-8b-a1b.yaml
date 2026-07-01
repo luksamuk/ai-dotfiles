@@ -14,7 +14,7 @@
   description: "Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Built for fast, reliable tool calling on consumer hardware."
   cmd: |
     ${llama_server} --port ${PORT}
-    --model ${models_dir}/LFM2.5-8B-A1B-Q4_0.gguf
+    --model ${models_dir}/lfm2.5-8b-a1b/LFM2.5-8B-A1B-APEX-I-Compact.gguf
     --fit on
     --fit-ctx 16384
     --ctx-size 131072
@@ -53,10 +53,10 @@
     reranker: false
     context: 131072
   metadata:
-    size: "~4.84 GB (Q4_0)"
+    size: "~4.2 GB (APEX I-Compact)"
     context: "128K"
-    vram_usage: "~5.5GB VRAM (4.84 GB model + KV)"
-    source: "LiquidAI/LFM2.5-8B-A1B-GGUF"
+    vram_usage: "~5.2GB VRAM (4.2 GB model + KV)"
+    source: "mudler/LFM2.5-8B-A1B-APEX-GGUF"
     kv_cache: "q8_0 + q4_0 hadamard"
     features:
       completion: true
@@ -71,5 +71,5 @@
     parameters: 8470000000
     context_length: 128000
     embedding_length: 2048
-    quantization: Q4_0
-    note: "Pet project — MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek."
+    quantization: APEX I-Compact
+    note: "MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. APEX I-Compact: 13% smaller than Q4_0, imatrix v1.3 calibrated. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek."

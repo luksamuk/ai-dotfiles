@@ -40,13 +40,10 @@ matrix:
     # Pesados (offload)
     qw36: qwen3.6-35b-a3b
     orn35: ornith-1.0-35b
-    orn: ornith-1.0-9b
-    g12: gemma4-12b
+    a1: agents-a1-35b
 
     nmc: north-mini-code
-    aw: agentworld-35b
     # Tradução
-    tg: translategemma-4b
     hmt: hy-mt2-1.8b
     # Audio
     asr: qwen3-asr-0.6b
@@ -70,15 +67,15 @@ matrix:
     vision_embed: "(vl | vlx | vle | ocr | cpv) & nomic"
 
     # Modelos médios + Embedding
-    medium: "(q9 | orn | g4) & nomic"
+    medium: "(q9 | g4) & nomic"
 
     # Modelos pesados (offload) + Embedding
     # nomic (~0.5GB) cabe ao lado mesmo dos pesados — usa RAM pro offload
-    heavy: "(qw36 | orn35 | g12 | nmc | aw) & nomic"
+    heavy: "(qw36 | orn35 | nmc | a1) & nomic"
 
     # Tradução (leve, cabe com nomic)
-    translate_embed: "(tg | hmt) & nomic"
-    translate_only: "tg | hmt"
+    translate_embed: "hmt & nomic"
+    translate_only: "hmt"
 
     # External TTS (separate process, same GPU)
     tts_external: "ttsext"
@@ -90,12 +87,10 @@ matrix:
   evict_costs:
     qw36: 10
     orn35: 9
-    g12: 7
+    a1: 9
 
     nmc: 9
-    aw: 9
     q9: 4
-    orn: 4
     g4: 4
     ttsext: 4
     vl: 3
@@ -107,7 +102,6 @@ matrix:
     q4a: 2
     lfm8: 2
     asr: 2
-    tg: 2
     nomic: 1
     g2: 1
     g2q: 1

@@ -91,22 +91,23 @@ BENCHES = [
               "--min-p", "0.01", "--repeat-penalty", "1.05"]),
         ],
     },
+    # [REMOVED] gemma4-12b — model deleted Jun 2026, benchmark entry kept for historical reference
     # 12B — NO mmproj (text-only), turbo3_tcq might be tight
-    {
-        "key": "gemma4-12b", "name": "Gemma 4 12B (text-only)",
-        "model_file": f"{MODELS_DIR}/gemma-4-12b-it-qat-q4_0.gguf",
-        "configs": [
-            ("upstream_q4_0_mmproj", UPSTREAM_SERVER, "q4_0", "q4_0",
-             ["--mmproj", f"{MODELS_DIR}/mmproj-gemma-4-12b-it-qat-q4_0.gguf",
-              "--fit", "on", "--fit-target", "768", "--fit-ctx", "4096",
-              "--jinja", "--reasoning", "on", "--flash-attn", "on",
-              "--min-p", "0.01", "--repeat-penalty", "1.05"]),
-            ("bee_turbo3_tcq_nomproj", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
-             ["--no-mmproj", "--fit", "on", "--fit-ctx", "4096",
-              "--jinja", "--reasoning", "on", "--flash-attn", "on",
-              "--min-p", "0.01", "--repeat-penalty", "1.05"]),
-        ],
-    },
+    # {
+    #     "key": "gemma4-12b", "name": "Gemma 4 12B (text-only)",
+    #     "model_file": f"{MODELS_DIR}/gemma-4-12b-it-qat-q4_0.gguf",
+    #     "configs": [
+    #         ("upstream_q4_0_mmproj", UPSTREAM_SERVER, "q4_0", "q4_0",
+    #          ["--mmproj", f"{MODELS_DIR}/mmproj-gemma-4-12b-it-qat-q4_0.gguf",
+    #           "--fit", "on", "--fit-target", "768", "--fit-ctx", "4096",
+    #           "--jinja", "--reasoning", "on", "--flash-attn", "on",
+    #           "--min-p", "0.01", "--repeat-penalty", "1.05"]),
+    #         ("bee_turbo3_tcq_nomproj", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
+    #          ["--no-mmproj", "--fit", "on", "--fit-ctx", "4096",
+    #           "--jinja", "--reasoning", "on", "--flash-attn", "on",
+    #           "--min-p", "0.01", "--repeat-penalty", "1.05"]),
+    #     ],
+    # },
 ]
 
 def get_vram():

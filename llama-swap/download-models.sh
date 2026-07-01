@@ -9,7 +9,7 @@
 #   qwen3.5-9b           - Qwen3.5-9B MoQ-3.6 (~3.75 GB) - fits in VRAM + mmproj
 #   gemma4-e4b           - Gemma-4 E4B Q4_K_M (~4.63 GB) - fits in VRAM + mmproj
 #   gemma4-e2b       - Gemma-4 E2B Q4_0 QAT (~3.2 GB) - higher quality than PTQ, text-only
-#   gemma4-12b - Gemma-4 12B Q4_0 QAT (~6.5 GB) - dense, ik backend with offload. Won vs PTQ 25/25 Snake.
+#   [REMOVED] gemma4-12b — incompetent at code, 6.7GB freed, Jun 2026
 #   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
 #   [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
 #   lfm2.5-vl-450m       - LFM2.5-VL-450M Q4_0 (0.22 GB) + mmproj F16 - vision/OCR
@@ -39,7 +39,8 @@
 #   mellum2-12b-thinking  - Mellum2-12B-A2.5B-Thinking Q4_K_M (~7.6 GB) - JetBrains MoE, reasoning + tools, manual conversion
 #   ornstein-36-35b       - Ornstein 3.6 35B SABER Q4_K_M (~21.7 GB) - Qwen3.6 MoE NSC-ACE-SABER fine-tune, test only
 #   nemotron-omni-30b     - [REMOVED] NVIDIA Nemotron 3 Nano Omni 30B — audio didn't work in GGUF, replaced by AgentWorld
-#   agentworld-35b        - Qwen AgentWorld 35B-A3B Q4_K_M (~20 GB) - Native language world model, 7 agent domains (MCP/Search/Terminal/SWE/Android/Web/OS)
+#   [REMOVED] agentworld-35b — removed from fleet Jun 2026 (unused)
+#   agents-a1-35b        - Agents-A1 35B-A3B APEX I-Compact (~16.5 GB) - 35B MoE, long-horizon search, engineering, research, tool calling
 #   ds-r1-distill-14b    - [REMOVED] Dense 14B, poor perf on RTX 3050
 #   ds-r1-distill-32b    - [REMOVED] Dense 32B, very slow on limited VRAM
 #   qwopus-35b           - Qwopus3.6-35B-A3B-v1 APEX I-Compact (~16.5 GB) - MoE coding+reasoning SFT
@@ -70,15 +71,13 @@ declare -A MODELS=(
   ["qwen3.5-0.8b"]="unsloth/Qwen3.5-0.8B-GGUF Qwen3.5-0.8B-UD-Q3_K_XL.gguf"
   ["qwen3.5-4b"]="kaitchup/Qwen3.5-4B-GGUF-MoQ MoQ-3.75.gguf"
   # [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
-  ["lfm2.5-8b-a1b"]="LiquidAI/LFM2.5-8B-A1B-GGUF LFM2.5-8B-A1B-Q4_0.gguf"
+  ["lfm2.5-8b-a1b"]="mudler/LFM2.5-8B-A1B-APEX-GGUF LFM2.5-8B-A1B-APEX-I-Compact.gguf"
   ["qwen3.5-9b"]="w-ahmad/Qwen3.5-9B-GGUF-MoQ Qwen3.5-9B-MoQ-3.6.gguf"
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
   # [REMOVED] gemma4-e2b — superseded by gemma4-e2b (QAT won benchmark, Jun 2026)
 #   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
   ["gemma4-e2b"]="google/gemma-4-E2B-it-qat-q4_0-gguf gemma-4-E2B_q4_0-it.gguf"
-  ["gemma4-12b"]="google/gemma-4-12B-it-qat-q4_0-gguf gemma-4-12b-it-qat-q4_0.gguf"
-  # mmproj for 12B Unified (vision+audio projector, ~168 MB)
-  ["gemma4-12b-mmproj"]="google/gemma-4-12B-it-qat-q4_0-gguf mmproj-gemma-4-12b-it-qat-q4_0.gguf"
+  # [REMOVED] gemma4-12b — incompetent at code, 6.7GB freed, Jun 2026
 #   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
   # [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF LFM2.5-VL-450M-Q8_0.gguf"
@@ -102,8 +101,8 @@ declare -A MODELS=(
   ["qwen3.6-35b-a3b"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF Qwen3.5-35B-A3B-APEX-I-Compact.gguf Qwen3.6-35B-A3B-APEX-I-Compact.gguf"
   # Ornith-1.0-35B — post-trained Qwen 3.5 35B MoE, self-scaffolding agentic coding RL
   # Same qwen35moe arch as Qwen 3.6 — ik_llama compatible, K-quants standard
-  # Q4_K_M ~21.2GB — 3.9GB larger than Qwen 3.6 APEX I-Compact
-  ["ornith-1.0-35b"]="deepreinforce-ai/Ornith-1.0-35B-GGUF ornith-1.0-35b-Q4_K_M.gguf"
+  # APEX I-Compact ~16.5GB — 22% smaller than Q4_K_M, imatrix v1.3 calibrated
+  ["ornith-1.0-35b"]="mudler/Ornith-1.0-35B-APEX-GGUF Ornith-1.0-35B-APEX-I-Compact.gguf"
   # [REMOVED] granite-4.0-h-1b — removed from fleet May 2026
   ["qwopus-35b"]="mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf"
   # [REMOVED] gemma4-26b-a4b APEX I-Compact — superseded by QAT Q4_0 (faster, smaller, same quality)
@@ -133,10 +132,8 @@ declare -A MODELS=(
   # Uses hunyuan_v1_dense arch — upstream llama.cpp ONLY (no ik support)
   # Potential TranslateGemma alternative for Sprachspiel translate mode
   ["hy-mt2-1.8b"]="tencent/Hy-MT2-1.8B-GGUF Hy-MT2-1.8B-Q4_K_M.gguf"
-  # TranslateGemma 4B — Google translation model, 55 langs, Sprachspiel default
-  # Uses gemma3 arch — supported in both ik_llama.cpp and upstream
-  # Q4_K_M ~2.7GB — fits in 6GB VRAM with room to spare
-  ["translategemma-4b"]="mradermacher/translategemma-4b-it-GGUF translategemma-4b-it.Q4_K_M.gguf"
+  # [REMOVED] translategemma-4b — removed from fleet Jun 2026 (unused)
+  # ["translategemma-4b"]="mradermacher/translategemma-4b-it-GGUF translategemma-4b-it.Q4_K_M.gguf"
   # Qwen3.5-4B-abliterated -- refusal-removed variant for adversarial testing
   # Same qwen35 arch as base Qwen3.5-4B, Abliterix orthogonalized steering
   # i1 (imatrix) quant for better quality at same bitrate
@@ -167,10 +164,10 @@ declare -A MODELS=(
   # Architecture: qwen35moe (same as Qwen3.6-35B-A3B-APEX), no APEX quant, standard Q4_K_M
   # TEST ONLY: evaluating as potential replacement for Qwen3.6-APEX
   ["ornstein-36-35b"]="GestaltLabs/Qwen3.6-35B-A3B-NSC-ACE-SABER-GGUF Qwen3.6-35B-A3B-NSC-ACE-SABER-Q4_K_M.gguf"
-  # Qwen-AgentWorld-35B-A3B — native language world model (7 agent domains)
-  # Architecture: qwen35moe (same as Qwen3.6) — ik_llama compatible
-  # Q4_K_M: standard K-quant, no XL (ik_llama compatible)
-  ["agentworld-35b"]="groxaxo/Qwen-AgentWorld-35B-A3B-GGUF Qwen-AgentWorld-35B-A3B-Q4_K_M.gguf"
+  # [REMOVED] agentworld-35b — removed from fleet Jun 2026 (unused)
+  # ["agentworld-35b"]="groxaxo/Qwen-AgentWorld-35B-A3B-GGUF Qwen-AgentWorld-35B-A3B-Q4_K_M.gguf"
+  # Agents-A1-35B — 35B MoE agentic model, Qwen3.5 base, long-horizon search + tool calling
+  ["agents-a1-35b"]="mudler/Agents-A1-APEX-GGUF Agents-A1-APEX-I-Compact.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -276,7 +273,7 @@ show_sizes() {
   echo "  qwen3.5-9b           ~3.75 GB  (MoQ-3.6) - Fits in VRAM + mmproj"
   echo "  gemma4-e4b           ~4.63 GB  (Q4_K_M) - Fits in VRAM + mmproj"
   echo "  gemma4-e2b       ~3.2 GB   (Q4_0 QAT) - Text-only, higher quality than PTQ"
-  gemma4-12b          ~6.67 GB  (Q4_0 QAT + mmproj) - Dense 12B, upstream --fit on, unified multimodal
+  echo "  [REMOVED] gemma4-12b — incompetent at code, 6.7GB freed, Jun 2026"
 #   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
   echo "  [REMOVED] nemotron-3-nano-4b — poor quality"
   echo "  lfm2.5-vl-450m        0.22 GB  (Q4_0) - Fits in VRAM, vision/OCR + mmproj"
@@ -289,7 +286,8 @@ show_sizes() {
   echo "  [REMOVED] granite-4.0-h-1b — removed from fleet May 2026"
   # glm-4.7-flash removed
   echo "  qwen3.6-35b-a3b    ~17.30 GB  (APEX I-Compact) - Heavy offload, MoE coding + tools"
-  echo "  ornith-1.0-35b     ~21.20 GB  (Q4_K_M) - Post-trained Qwen 3.5 35B MoE, agentic coding RL"
+  echo "  ornith-1.0-35b     ~16.50 GB  (APEX I-Compact) - Post-trained Qwen 3.5 35B MoE, agentic coding RL"
+  echo "  agents-a1-35b      ~16.50 GB  (APEX I-Compact) - 35B MoE, long-horizon search + tool calling"
   echo "  qwopus-35b        ~16.50 GB  (APEX I-Compact) - Heavy offload, MoE coding+reasoning SFT"
   # [REMOVED] gemma4-26b-a4b — removed from fleet Jun 2026
   echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"
@@ -346,7 +344,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, lfm2-24b, webworld-8b, qwen3.6-35b-a3b, ornith-1.0-35b, qwopus-35b, gpt-oss-20b, qwopus-coder-9b, mellum2-12b-thinking, ornstein-36-35b, nemotron-omni-30b, locate-anything, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, qwen3.6-35b-a3b, ornith-1.0-35b, agents-a1-35b, qwopus-35b, gpt-oss-20b, ornstein-36-35b, all"
     exit 1
     ;;
 esac
