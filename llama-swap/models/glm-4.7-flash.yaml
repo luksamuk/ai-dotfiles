@@ -3,10 +3,11 @@
 # MoE ~30B params, ~2B ativo por token. 64 routed + 1 shared expert, 4 active.
 # Glm4MoeLite architecture (deepseek2 family) with Multi-head Latent Attention (MLA).
 # MLA compresses KV cache internally — no hadamard transform needed.
-# ik_llama requires 5120 MiB compute buffer for MLA — doesn't fit RTX 3050 6GB VRAM.
-# Upstream llama.cpp works (smaller compute buffer). --fit on, --flash-attn on.
+# ik_llama needs 5120+ MiB MLA compute buffer — doesn't fit RTX 3050 6GB above 8K ctx.
+# Upstream llama.cpp works with full 131K ctx (MLA KV is tiny). --fit on, --flash-attn on.
 # APEX I-Compact ~14.6GB — smallest 35B-class model in fleet.
-# --ctx-size 32768: MLA enables efficient KV but compute buffer limits ctx on 6GB
+# --ctx-size 131072: MLA enables full context with minimal KV cache overhead
+# Smoke: 24 t/s @ 131K, 29 t/s @ 65K, 50 t/s @ 4K (upstream)
 # Dual mode: base (chat, no think) and :think (reasoning)
 # License: Apache-2.0 (base model by zai-org)
 # -------------------------------------------
@@ -18,7 +19,7 @@
     --model ${models_dir}/glm-4.7-flash/GLM-4.7-Flash-APEX-I-Compact.gguf
     --fit on
     --fit-target 128
-    --ctx-size 32768
+    --ctx-size 131072
     --temp ${code_temp}
     --top-p ${code_top_p}
     --top-k ${code_top_k}
@@ -50,11 +51,11 @@
     out: ['text']
     tools: true
     reranker: false
-    context: 32768
+    context: 131072
   metadata:
     size: "~14.6 GB (APEX I-Compact)"
-    context: "1K-32K (MLA compute buffer limits ctx on 6GB VRAM)"
-    vram_usage: "~5GB VRAM + ~10GB pinned RAM (upstream llama.cpp, 29-50 tok/s depending on ctx)"
+    context: "1K-131K (MLA enables full context, 24 t/s at 131K)"
+    vram_usage: "~5GB VRAM + ~10GB pinned RAM (upstream llama.cpp, 24-50 tok/s depending on ctx)"
     source: "mudler/GLM-4.7-Flash-APEX-GGUF"
     kv_cache: "q8_0"
     features:

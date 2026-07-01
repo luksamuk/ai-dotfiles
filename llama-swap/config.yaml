@@ -805,7 +805,7 @@ models:
 
       --fit-target 128
 
-      --ctx-size 32768
+      --ctx-size 131072
 
       --temp ${code_temp}
 
@@ -852,11 +852,11 @@ models:
       - text
       tools: true
       reranker: false
-      context: 32768
+      context: 131072
     metadata:
       size: ~14.6 GB (APEX I-Compact)
-      context: 1K-32K (MLA compute buffer limits ctx on 6GB VRAM)
-      vram_usage: ~5GB VRAM + ~10GB pinned RAM (upstream llama.cpp, 29-50 tok/s depending on ctx)
+      context: 1K-131K (MLA enables full context, 24 t/s at 131K)
+      vram_usage: ~5GB VRAM + ~10GB pinned RAM (upstream llama.cpp, 24-50 tok/s depending on ctx)
       source: mudler/GLM-4.7-Flash-APEX-GGUF
       kv_cache: q8_0
       features:
