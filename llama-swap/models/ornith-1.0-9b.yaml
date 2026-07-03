@@ -22,8 +22,8 @@
     --parallel 2
     --parallel-tool-calls
     --ctx-size ${small_model_max_ctx}
-    --temp ${default_temp}
-    --top-p ${default_top_p}
+    --temp 1.0
+    --top-p 1.0
     --top-k ${default_top_k}
     --min-p ${default_min_p}
     --repeat-penalty ${default_repeat_penalty}
@@ -40,13 +40,13 @@
       "${MODEL_ID}":
         chat_template_kwargs:
           enable_thinking: false
-        temperature: 0.7
-        top_p: 0.9
+        temperature: 1.0
+        top_p: 1.0
       "${MODEL_ID}:think":
         chat_template_kwargs:
           enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
+        temperature: 1.0
+        top_p: 1.0
   ttl: 60
   health_check_timeout: 300
   capabilities:
