@@ -1,0 +1,84 @@
+# -------------------------------------------
+# NEX-N2-MINI - MoE AGENTIC CODING+VISION (text-only on 6GB RTX 3050)
+# MoE 35B params, ~3B ativo por token. 256 routed + 1 shared expert, 8 active.
+# Built on Qwen3.5-35B-A3B-Base by Nex-AGI. Same qwen35moe architecture as Qwen3.6/Ornith/Agents-A1.
+# Agentic Thinking framework: Adaptive Thinking + Coherent Thinking.
+# Strong at coding (SWE-bench 74.4, Terminal-Bench 60.7), agentic tasks, deep research.
+# Has built-in vision encoder (mmproj 903MB) — BUT vision crashes on 6GB RTX 3050 (same as Qwen3.6/Agents-A1).
+# APEX I-Compact ~16.5GB — imatrix v1.3 calibrated (chat, code, reasoning, tool-calling, agentic traces).
+# ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
+# --fit-margin 768: same as Qwen 3.6 APEX (identical size)
+# --ctx-size 131072: same safe ceiling as Qwen 3.6
+# Dual mode: base (chat, no think) and :think (reasoning)
+# Recommended sampling (official): temp 0.7, top_p 0.95, top_k 40
+# License: Apache-2.0 (base model by Nex-AGI)
+# -------------------------------------------
+"nex-n2-mini":
+  name: "Nex N2 Mini"
+  description: "Nex-N2-mini is a 35B Mixture-of-Experts agentic model with Agentic Thinking, post-trained on Qwen3.5-35B-A3B-Base for first-tier coding and long-horizon agentic tasks. Features adaptive thinking depth and coherent reasoning across diverse agentic workflows."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/nex-n2-mini/Nex-N2-mini-APEX-I-Compact.gguf
+    # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only = stable.
+    --fit
+    --fit-margin 768
+    --ctx-size 131072
+    --temp 0.7
+    --top-p 0.95
+    --top-k 40
+    --min-p 0.0
+    --repeat-penalty 1.0
+    --presence-penalty 1.1
+    --reasoning on
+    --jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.7
+        top_p: 0.95
+  ttl: 300
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~16.5 GB (APEX I-Compact)"
+    context: "1K-131K (safe max)"
+    vram_usage: "~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s)"
+    source: "mudler/Nex-N2-mini-APEX-GGUF"
+    kv_cache: "q4_0 + attn_rot + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 35000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: I-Compact
+    note: "35B MoE agentic model. Qwen3.5 35B-A3B-Base. Agentic Thinking framework (Adaptive + Coherent). SWE-bench 74.4, Terminal-Bench 60.7. APEX I-Compact: imatrix v1.3 calibrated. Same arch/size as Qwen3.6/Ornith/Agents-A1 APEX — expects 33-34 t/s. Vision blocked on 6GB RTX 3050 (mmproj 903MB exists but CLIP OOMs at inference)."

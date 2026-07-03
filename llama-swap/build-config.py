@@ -71,6 +71,7 @@ ORIGINAL_ORDER = [
     "webworld-8b",           # ✅
     "qwen3.6-35b-a3b",       # ✅
     "ornith-1.0-35b",        # ✅ Post-trained Qwen 3.5 35B MoE (agentic coding RL)
+    "nex-n2-mini",           # ✅ Nex-AGI agentic model (Agentic Thinking, Qwen3.5-35B-A3B base)
     "agentworld-35b",         # ✅ World model (7 domains)
     "qwopus-coder-9b",       # ✅
     # "littlelamb-0.3b-tc",   # REMOVED Jun 2026 — tool-calling broken, too small

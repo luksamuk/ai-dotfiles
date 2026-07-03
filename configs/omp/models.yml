@@ -193,6 +193,26 @@ providers:
         thinking:
           mode: effort
           efforts: [minimal, low, medium, high, xhigh]
+      - id: nex-n2-mini
+        name: "Nex N2 Mini"
+        description: "Nex N2 Mini — agentic coding model optimized for multi-step reasoning and tool use."
+        reasoning: true
+        input: [text]
+        contextWindow: 131072
+        maxTokens: 16000
+        thinking:
+          mode: effort
+          efforts: [minimal, low, medium, high, xhigh]
+      - id: nex-n2-mini:think
+        name: "Nex N2 Mini Thinking 🧠"
+        description: "Nex N2 Mini — agentic coding model optimized for multi-step reasoning and tool use."
+        reasoning: true
+        input: [text]
+        contextWindow: 131072
+        maxTokens: 16000
+        thinking:
+          mode: effort
+          efforts: [minimal, low, medium, high, xhigh]
       - id: glm-4.7-flash
         name: "GLM 4.7 Flash"
         description: "GLM 4.7 Flash — fast agentic coding model with dual-mode thinking support."
@@ -252,6 +272,36 @@ providers:
         description: "Multimodal LLMs designed for vision-language understanding, with strong OCR capability, multi-image understanding, and bilingual performance."
         reasoning: true
         input: [text, image]
+        contextWindow: 262144
+        maxTokens: 32768
+        thinking:
+          mode: effort
+          efforts: [minimal, low, medium, high, xhigh]
+      - id: minicpm-v-4.6:think
+        name: "MiniCPM-V 4.6 Thinking 🧠"
+        description: "Multimodal LLMs designed for vision-language understanding, with strong OCR capability, multi-image understanding, and bilingual performance."
+        reasoning: true
+        input: [text, image]
+        contextWindow: 262144
+        maxTokens: 32768
+        thinking:
+          mode: effort
+          efforts: [minimal, low, medium, high, xhigh]
+      - id: ornith-1.0-9b
+        name: "Ornith 1.0 9B"
+        description: "Ornith-1.0 9B — self-scaffolding RL for agentic coding. Dense 9B, ideal for well-defined subtasks."
+        reasoning: true
+        input: [text]
+        contextWindow: 262144
+        maxTokens: 32768
+        thinking:
+          mode: effort
+          efforts: [minimal, low, medium, high, xhigh]
+      - id: ornith-1.0-9b:think
+        name: "Ornith 1.0 9B Thinking 🧠"
+        description: "Ornith-1.0 9B — self-scaffolding RL for agentic coding. Dense 9B, ideal for well-defined subtasks."
+        reasoning: true
+        input: [text]
         contextWindow: 262144
         maxTokens: 32768
         thinking:
