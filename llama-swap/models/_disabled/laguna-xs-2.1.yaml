@@ -1,0 +1,84 @@
+# -------------------------------------------
+# LAGUNA XS 2.1 - POOLSIDE 33B/3B MoE AGENTIC CODING MODEL
+# MoE 33B params, 3B active per token. 256 routed + 1 shared expert.
+# Mixed attention: 40 layers (10 global + 30 sliding-window, 3:1 ratio), SWA=512.
+# Improved over XS.2: +5.4% SWE-bench Multilingual, stronger terminal-style tasks.
+# Native interleaved reasoning (enable/disable per request).
+# ik_llama.cpp ONLY backend — upstream PR #25165 not merged, BeeLama has no laguna arch.
+# Q3_K_M (16.1GB) from AtomicChat with imatrix — better than requant from Q4_K_M.
+# Chat template: custom jinja (GGUF embeds {% include %} which llama.cpp doesn't support).
+# Stop: ["</assistant>"] required — template uses text close tags, not special tokens.
+# Known: over-generates tool calls 2-3x. repeat-penalty 1.12 mitigates. First 2-3 calls correct.
+# Thinking: ik_llama PR #1943 (END_DELIMITED) extracts Brie/Brie reasoning_content correctly.
+# --parallel 1: reasoning + --parallel 2 splits context, causes 500 on long agent sessions.
+# License: OpenMDW-1.1
+# -------------------------------------------
+"laguna-xs-2.1":
+  name: "Laguna XS 2.1"
+  description: "Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention, native interleaved reasoning, and 262K context. Improved over XS.2 with +5.4% SWE-bench Multilingual. Designed for agentic coding and terminal-style tasks."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/laguna-xs-2.1/Laguna-XS-2.1-Q3_K_M.gguf
+    --fit
+    --fit-margin 256
+    -ngl 99
+    --ctx-size 32768
+    --batch-size 8
+    --temp 0.3
+    --top-p 0.85
+    --top-k 40
+    --min-p 0.02
+    --repeat-penalty 1.12
+    --parallel-tool-calls
+    --jinja
+    --parallel 1
+    --chat-template-file ${models_dir}/laguna-chat-template.jinja
+    --cache-type-k q8_0
+    --cache-type-v q8_0
+    --flash-attn auto
+    --defer-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParams:
+      stop: ["</assistant>"]
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.3
+        top_p: 0.85
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.7
+        top_p: 0.9
+  ttl: 300
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 32768
+  metadata:
+    size: "~16.1 GB (Q3_K_M — requantized from official Q4_K_M)"
+    context: "32K (configured, 262K native)"
+    vram_usage: "~5.5GB VRAM (model offload + attention on GPU, experts on CPU)"
+    source: "poolside/Laguna-XS-2.1-GGUF (official Q4_K_M) → local Q3_K_M requant"
+    kv_cache: "q8_0"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: laguna
+    parameters: 33000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: Q3_K_M
+    note: "33B/3B MoE. SWA+global attention (30 SWA + 10 global, 40 layers). 256+1 experts. ik_llama only (PR #1943 END_DELIMITED extracts reasoning). imatrix Q3_K_M from AtomicChat. Over-generates tool calls 2-3x, repeat-penalty 1.12 mitigates."
