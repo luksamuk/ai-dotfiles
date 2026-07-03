@@ -19,8 +19,8 @@
     --fit
     --fit-margin 768
     --ctx-size 131072
-    --temp ${code_temp}
-    --top-p ${code_top_p}
+    --temp 1.0
+    --top-p 1.0
     --top-k ${code_top_k}
     --min-p ${code_min_p}
     --repeat-penalty ${code_repeat_penalty}
@@ -41,13 +41,13 @@
       "${MODEL_ID}":
         chat_template_kwargs:
           enable_thinking: false
-        temperature: 0.6
-        top_p: 0.85
+        temperature: 1.0
+        top_p: 1.0
       "${MODEL_ID}:think":
         chat_template_kwargs:
           enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
+        temperature: 1.0
+        top_p: 1.0
   ttl: 300
   health_check_timeout: 300
   capabilities:
