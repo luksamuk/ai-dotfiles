@@ -19,7 +19,7 @@
 # Context: 65536 max on RTX 3050 6GB (131072 OOM with Q4_K_M — 1.3GB larger than I-Compact).
 #
 # SMOKE TEST RESULTS (2026-06-19, ik b4633, RTX 3050 6GB):
-#   - Model loads with --fit --fit-margin 128, ctx 65536, parallel 1
+#   - Model loads with --fit --fit-margin 256, ctx 65536, parallel 1
 #   - Code generation: correct, concise, with reasoning
 #   - Performance: 20-25 t/s generation, 70+ t/s prompt processing
 #   - VRAM: ~5.6GB used (compute buffer 516MB + KV cache + non-MoE tensors)
@@ -41,7 +41,8 @@
     --jinja
     --reasoning on
     --fit
-    --fit-margin 128
+    --fit-margin 256
+    --parallel-tool-calls
     --ctx-size 65536
     --temp 1.0
     --top-p 0.95
