@@ -1,0 +1,62 @@
+# -------------------------------------------
+# LFM2.5-VL-1.6B — Liquid AI flagship VLM with grounding
+# 1.6B params (1.2B backbone + SigLIP2-400M vision), lfm2 arch
+# Grounding: native bbox output in 0-1 normalized coords
+# Format: [{"label": str, "bbox": [x1,y1,x2,y2]}] — 0-1 floats (NOT 0-1000)
+# NOT the Extract variant — this is the general VLM
+# Better visual reasoning than 450M, higher latency
+# Backend: upstream llama.cpp (lfm2 supported since b4950+)
+# -------------------------------------------
+"lfm2.5-vl-1.6b-grounding":
+  name: "LFM2.5-VL 1.6B Grounding"
+  description: "Liquid AI flagship VLM with native grounding and visual reasoning. 1.6B params, 0-1 normalized coordinates."
+  tags: ["vision"]
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/lfm2.5-vl-1.6b-g/LFM2.5-VL-1.6B-Q8_0.gguf
+    --mmproj ${models_dir}/lfm2.5-vl-1.6b-g/mmproj-LFM2.5-VL-1.6b-F16.gguf
+    --media-path ${media_path}
+    --jinja
+    --fit on
+    --fit-target ${vram_margin}
+    --fit-ctx 8192
+    --ctx-size 32768
+    --parallel 1
+    --temp 0.3
+    --top-p 0.9
+    --top-k 40
+    --min-p 0.0
+    --repeat-penalty 1.1
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --flash-attn on
+    --metrics
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 32768
+  metadata:
+    size: "1.25 GB (Q8_0) + 854 MB mmproj"
+    context: "8K-32K (dynamic)"
+    vram_usage: "~2.5 GB (model + mmproj + cache)"
+    source: "LiquidAI/LFM2.5-VL-1.6B-GGUF (Q8_0 + mmproj F16)"
+    note: "Flagship VLM with grounding. Format: [{label, bbox:[x1,y1,x2,y2]}] 0-1 floats. NOT the Extract variant."
+    kv_cache: "q8_0"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: true
+    architecture: lfm2
+    parameters: 1600000000
+    context_length: 128000
+    embedding_length: 2048
+    quantization: Q8_0
