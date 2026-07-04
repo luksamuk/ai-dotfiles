@@ -1,40 +1,50 @@
-# Edge vision-language model — 0.22 GB + 0.18 GB mmproj, fits entirely in VRAM
+# -------------------------------------------
+# LFM2.5-VL-450M — Liquid AI general VLM with grounding
+# 450M params (350M backbone + SigLIP2-86M vision), lfm2 arch
+# Grounding: RefCOCO-M 81.28, native bbox output in 0-1 normalized coords
+# Format: [{"label": str, "bbox": [x1,y1,x2,y2]}] — 0-1 floats (NOT 0-1000)
+# NOT the Extract variant — this is the general VLM with grounding training
+# Backend: upstream llama.cpp (lfm2 supported since b4950+)
+# -------------------------------------------
 "lfm2.5-vl-450m":
   name: "LFM2.5-VL 450M"
-  description: "Edge vision-language model for image understanding, object detection, and captioning using LFM backbones and custom visual encoders."
+  description: "Liquid AI general VLM with native bounding box grounding (RefCOCO-M 81.28). 450M params, 0-1 normalized coordinates."
+  tags: ["vision"]
   cmd: |
     ${llama_server} --port ${PORT}
     --model ${models_dir}/LFM2.5-VL-450M-Q8_0.gguf
-    --jinja
     --mmproj ${models_dir}/mmproj-LFM2.5-VL-450m-F16.gguf
     --media-path ${media_path}
+    --jinja
     --fit on
     --fit-target ${vram_margin}
-    --fit-ctx ${small_model_min_ctx}
-    --ctx-size ${small_model_max_ctx}
-    --temp 0.1
+    --fit-ctx 4096
+    --ctx-size 8192
+    --parallel 4
+    --cont-batching
+    --temp 0.3
     --top-p 0.9
     --top-k 40
-    --min-p 0.15
-    --repeat-penalty 1.05
-    --reasoning off
+    --min-p 0.0
+    --repeat-penalty 1.1
     --cache-type-k f16
     --cache-type-v f16
     --flash-attn on
     --metrics
-  health_check_timeout: 300
   ttl: 60
+  health_check_timeout: 300
   capabilities:
     in: ['text', 'image']
     out: ['text']
     tools: false
     reranker: false
-    context: 131072
+    context: 8192
   metadata:
-    size: "0.36 GB (Q8_0) + 0.18 GB mmproj"
-    context: "32K-128K (dynamic)"
-    vram_usage: "~0.5GB"
-    source: "LiquidAI/LFM2.5-VL-450M-GGUF"
+    size: "379 MB (Q8_0) + 189 MB mmproj"
+    context: "8K (grounding-optimized)"
+    vram_usage: "~0.8 GB (model + mmproj + cache)"
+    source: "LiquidAI/LFM2.5-VL-450M-GGUF (Q8_0 + mmproj F16)"
+    note: "General VLM with grounding. Format: [{label, bbox:[x1,y1,x2,y2]}] 0-1 floats. NOT the Extract variant."
     kv_cache: "f16"
     features:
       completion: true
@@ -44,9 +54,9 @@
       embedding: false
       insert: false
       audio: false
-      image: false
+      image: true
     architecture: lfm2
-    parameters: 354480000
+    parameters: 450000000
     context_length: 128000
     embedding_length: 1024
     quantization: Q8_0

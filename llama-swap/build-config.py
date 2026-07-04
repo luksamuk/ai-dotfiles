@@ -78,8 +78,7 @@ ORIGINAL_ORDER = [
     "minicpm-v-4.6",         # ✅
     "qwen3-vl-4b",           # ✅ VLM with native grounding
     "smolvlm2-500m-video",  # ✅ ultra-light video VLM
-    "lfm2.5-vl-450m-grounding",  # ✅ LFM general VLM with grounding (RefCOCO-M 81.28)
-    "lfm2.5-vl-1.6b-grounding",  # ✅ LFM flagship VLM with grounding
+    "lfm2.5-vl-1.6b",       # ✅ LFM flagship VLM with grounding
     "nanbeige4.1-3b",         # ⚠️ verbose reasoning, always thinks, multi-turn tool calls BROKEN (#22684)
     # "mellum2-12b-thinking",   # DISABLED: tool calling broken (no chat_template in GGUF, --tool-call-parser hermes is vLLM-only). Awaiting community GGUF.
     # "ornstein-36-35b",        # DISABLED: Q4_K_M too large (21.7GB) — needs APEX I-Compact conversion (~16.1GB)
