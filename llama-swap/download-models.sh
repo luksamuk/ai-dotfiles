@@ -24,6 +24,8 @@
 #   [REMOVED] granite-4.0-h-1b-vllm — removed from fleet May 2026
 #   [REMOVED] glm-4.7-flash — superseded by Qwen3.6 35B MoE
 #   minicpm-v-4.6        - MiniCPM-V 4.6 Q5_K_M (~0.54 GB) + mmproj F16 (~1.03 GB) - VLM, video+text, 256K ctx
+#   qwen3-vl-4b          - Qwen3-VL-4B-Instruct Q4_K_M (~2.5 GB) + mmproj Q8_0 (~454 MB) - VLM, native grounding, 256K ctx
+#   smolvlm2-500m-video  - SmolVLM2-500M-Video Q8_0 (~437 MB) + mmproj Q8_0 (~109 MB) - ultra-light video VLM
 #   [REMOVED] minicpm5-1b — disabled Jul 2026, LFM2.5-230M better for tool calling at smaller size
 #   smolllm3-3b           - SmolLM3-3B UD-Q5_K_XL (~2.06 GB) - dense, tool-calling, 128K ctx
 #   qwopus-coder-9b       - Qwopus3.5-9B-Coder Q4_K_M (~5.63 GB) + mmproj - agentic coding + tools
@@ -114,6 +116,10 @@ declare -A MODELS=(
   # Uses qwen35 arch — supported in both ik_llama.cpp and upstream
   # Q5_K_M: good q/size ratio for a 1.3B model that fits entirely in VRAM
   ["minicpm-v-4.6"]="openbmb/MiniCPM-V-4.6-gguf MiniCPM-V-4_6-Q5_K_M.gguf"
+  # Qwen3-VL-4B-Instruct — dense 4B VLM with native 2D/3D grounding, qwen3vl arch
+  ["qwen3-vl-4b"]="Qwen/Qwen3-VL-4B-Instruct-GGUF Qwen3VL-4B-Instruct-Q4_K_M.gguf mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf"
+  # SmolVLM2-500M-Video — ultra-light video VLM, llama arch, 500M params
+  ["smolvlm2-500m-video"]="ggml-org/SmolVLM2-500M-Video-Instruct-GGUF SmolVLM2-500M-Video-Instruct-Q8_0.gguf mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf"
   # [REMOVED] minicpm5-1b — disabled Jul 2026, LFM2.5-230M better for tool calling at smaller size
   # SmolLM3-3B — HuggingFace dense model, dual tool-calling (XML+Python), 128K ctx
   # Uses smollm3 arch — supported in both ik_llama.cpp and upstream
@@ -190,6 +196,10 @@ declare -A MMPROJ=(
   # [REMOVED] ministral-3-3b mmproj — removed from fleet May 2026
   # MiniCPM-V 4.6 — mmproj includes SigLIP2-400M vision encoder (1.03 GB F16)
   ["minicpm-v-4.6"]="openbmb/MiniCPM-V-4.6-gguf mmproj-model-f16.gguf mmproj-MiniCPM-V-4.6-F16.gguf"
+  # Qwen3-VL-4B mmproj — Q8_0 vision encoder (454 MB)
+  ["qwen3-vl-4b"]="Qwen/Qwen3-VL-4B-Instruct-GGUF mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf"
+  # SmolVLM2-500M-Video mmproj — Q8_0 vision encoder (109 MB)
+  ["smolvlm2-500m-video"]="ggml-org/SmolVLM2-500M-Video-Instruct-GGUF mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf"
   # Qwopus3.5-9B-Coder — vision model, mmproj renamed for clarity
   ["qwopus-coder-9b"]="Jackrong/Qwopus3.5-9B-Coder-GGUF mmproj.gguf mmproj-Qwopus3.5-9B-coder-F16.gguf"
   # GLM-OCR mmproj -- Q8_0 vision projection model
@@ -298,6 +308,8 @@ show_sizes() {
   # [REMOVED] gemma4-26b-a4b — removed from fleet Jun 2026
   echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"
   echo "  minicpm-v-4.6      ~0.54 GB  (Q5_K_M) + 1.03 GB mmproj - VLM video+image+text, 256K ctx"
+  echo "  qwen3-vl-4b        ~2.50 GB  (Q4_K_M) + 454 MB mmproj - VLM native grounding, 256K ctx"
+  echo "  smolvlm2-500m-video ~437 MB  (Q8_0) + 109 MB mmproj - ultra-light video VLM, 500M"
   # [REMOVED] minicpm5-1b — disabled Jul 2026
   echo "  smolllm3-3b         ~2.06 GB  (UD-Q5_K_XL) - Dense, dual tool-calling (XML+Python), 128K ctx"
   echo "  [REMOVED] littlelamb-0.3b-tc — tool-calling broken, too small to be useful"
@@ -351,7 +363,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, qwen3.6-35b-a3b, ornith-1.0-35b, agents-a1-35b, qwopus-35b, gpt-oss-20b, ornstein-36-35b, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, qwen3.6-35b-a3b, ornith-1.0-35b, agents-a1-35b, qwopus-35b, gpt-oss-20b, ornstein-36-35b, qwen3-vl-4b, smolvlm2-500m-video, all"
     exit 1
     ;;
 esac

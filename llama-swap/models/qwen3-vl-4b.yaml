@@ -1,0 +1,66 @@
+# -------------------------------------------
+# QWEN3-VL-4B-INSTRUCT — Qwen multimodal VLM
+# Dense 4B, qwen3vl arch, 256K native context
+# Grounding: native 2D/3D grounding, bbox_2d [x1,y1,x2,y2] in 0-1000 scale
+# Visual Agent: GUI element recognition, tool invocation
+# OCR: 32 languages, robust in low light/blur/tilt
+# DeepStack: multi-level ViT feature fusion for fine details
+# Interleaved-MRoPE: full-freq time/width/height positional embeddings
+# Backend: upstream llama.cpp (qwen3vl supported since b4950+)
+# Sampling: temp 0.7, top_p 0.8, top_k 20, repeat_penalty 1.0, presence_penalty 1.5
+# repeat_penalty 1.0 MANDATORY (same as GLM-4.7-Flash — avoid output loops)
+# -------------------------------------------
+"qwen3-vl-4b":
+  name: "Qwen3-VL 4B"
+  description: "Qwen3-VL dense 4B vision-language model with native 2D/3D grounding, OCR in 32 languages, visual agent GUI, and video understanding."
+  tags: ["vision"]
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/qwen3-vl-4b/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+    --mmproj ${models_dir}/qwen3-vl-4b/mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf
+    --media-path ${media_path}
+    --jinja
+    --fit on
+    --fit-target ${vram_margin}
+    --fit-ctx 8192
+    --ctx-size 32768
+    --parallel 1
+    --temp 0.7
+    --top-p 0.8
+    --top-k 20
+    --min-p 0.0
+    --repeat-penalty 1.0
+    --presence-penalty 1.5
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --flash-attn on
+    --metrics
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 32768
+  metadata:
+    size: "2.5 GB (Q4_K_M) + 454 MB mmproj"
+    context: "8K-256K (dynamic)"
+    vram_usage: "~4 GB (model + mmproj + cache)"
+    source: "Qwen/Qwen3-VL-4B-Instruct-GGUF (Q4_K_M + mmproj Q8_0)"
+    note: "Native grounding: bbox_2d [x1,y1,x2,y2] in 0-1000 scale. repeat_penalty 1.0 mandatory."
+    kv_cache: "q8_0"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: true
+    architecture: qwen3vl
+    parameters: 4000000000
+    context_length: 256000
+    embedding_length: 2560
+    quantization: Q4_K_M

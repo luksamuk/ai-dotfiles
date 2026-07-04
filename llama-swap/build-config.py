@@ -76,6 +76,8 @@ ORIGINAL_ORDER = [
     "qwopus-coder-9b",       # ✅
     # "littlelamb-0.3b-tc",   # REMOVED Jun 2026 — tool-calling broken, too small
     "minicpm-v-4.6",         # ✅
+    "qwen3-vl-4b",           # ✅ VLM with native grounding
+    "smolvlm2-500m-video",  # ✅ ultra-light video VLM
     "nanbeige4.1-3b",         # ⚠️ verbose reasoning, always thinks, multi-turn tool calls BROKEN (#22684)
     # "mellum2-12b-thinking",   # DISABLED: tool calling broken (no chat_template in GGUF, --tool-call-parser hermes is vLLM-only). Awaiting community GGUF.
     # "ornstein-36-35b",        # DISABLED: Q4_K_M too large (21.7GB) — needs APEX I-Compact conversion (~16.1GB)
