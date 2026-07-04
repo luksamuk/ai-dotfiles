@@ -220,15 +220,6 @@ thinking = true
 # Medium models
 # =======================================
 
-[models.ministral]
-model_id = "ministral-3:14b"
-#num_ctx = 32768
-num_ctx = 23437
-temperature = 0.2
-top_k = 40
-top_p = 0.9
-repeat_penalty = 1.1
-
 # [models.nouscoder]
 # model_id = "nouscoder:14b"
 # num_ctx = 32768
@@ -300,11 +291,6 @@ thinking = true
 # Cloud models
 # ======================================
 
-[models."glm-5:cloud"]
-model_id = "glm-5:cloud"
-num_ctx = 202752
-thinking = true
-
 [models."glm-5.1:cloud"]
 model_id = "glm-5.1:cloud"
 num_ctx = 202752
@@ -335,18 +321,10 @@ model_id = "minimax-m2.7:cloud"
 num_ctx = 204800
 thinking = true
 
-[models."qwen3-coder-next:cloud"]
-model_id = "qwen3-coder-next:cloud"
-num_ctx = 262144
-
 [models.nemotron-3-super]
 model_id = "nemotron-3-super:cloud"
 num_ctx = 262144
 thinking = true
-
-[models.devstral-small-2-cloud]
-model_id = "devstral-small-2:24b-cloud"
-num_ctx = 262144
 
 [models."gemma4:31b-cloud"]
 model_id = "gemma4:31b-cloud"
@@ -483,7 +461,7 @@ repeat_penalty = 1.1
 # # - Emergency: 5K remaining (3K used = 62%)
 
 [models."test-compact-normal"]
-model_id = "glm-5:cloud"
+model_id = "glm-5.1:cloud"
 num_ctx = 32768              # 32K context - allows ~20 messages before compaction
 temperature = 0.7
 # # Triggers for 32K context:
@@ -523,19 +501,6 @@ repeat_penalty = 1.0
 # Previous generation with strong reasoning capabilities
 # Size: 2.4GB | Capabilities: completion, tools, thinking
 # Testing: temp 0.5 for better tool recovery after errors
-
-[models."ministral-3"]
-model_id = "ministral-3:3b"
-num_ctx = 65536
-temperature = 0.3
-top_p = 0.9
-top_k = 40
-repeat_penalty = 1.0
-# Ministral-3-3B - Mistral AI's edge-optimized model (France) - Jan 2025
-# Features: Tool calling + Vision + 256K context
-# Multilingual: EN, FR, ES, DE, IT, PT, NL, ZH, JA, KO, AR
-# Size: 3.0GB | Capabilities: completion, vision, tools
-# Testing: temp 0.3 for more deterministic tool selection
 
 # =======================================
 # FC-enhanced models (Hermes-style templates)
