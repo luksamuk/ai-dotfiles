@@ -796,85 +796,6 @@ models:
       context_length: 262144
       embedding_length: 1024
       quantization: Q5_K_M
-  minicpm5-1b:
-    name: MiniCPM5 1B
-    description: Dense 1B Transformer built for on-device deployment, designed for local assistants, coding agents, tool-use workflows, and hybrid reasoning.
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/minicpm5-1b/MiniCPM5-1B-Q8_0.gguf
-
-      --jinja
-
-      --fit on
-
-      --fit-target ${vram_margin}
-
-      --fit-ctx ${small_model_min_ctx}
-
-      --ctx-size ${small_model_max_ctx}
-
-      --parallel 1
-
-      --temp 0.7
-
-      --top-p 0.95
-
-      --min-p 0.0
-
-      --repeat-penalty 1.05
-
-      --cache-type-k ${small_cache_k}
-
-      --cache-type-v ${small_cache_v}
-
-      --flash-attn on
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.95
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.9
-          top_p: 0.95
-    ttl: 60
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~1.15 GB (Q8_0)
-      context: 32K-128K (dynamic)
-      vram_usage: ~1.6GB (model + cache)
-      source: openbmb/MiniCPM5-1B-GGUF (Q8_0)
-      note: Tool calling fixed (llama.cpp b9833+). Parser auto-detects via --jinja. NEVER use custom chat template.
-      kv_cache: q8_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: llama
-      parameters: 1080632832
-      context_length: 131072
-      embedding_length: 1536
-      quantization: Q8_0
   agents-a1-35b:
     name: Agents-A1 35B
     description: Agents-A1 is a 35B Mixture-of-Experts agentic model built to scale heterogeneous agentic abilities across long-horizon search, engineering, scientific research, instruction following, and tool calling.
@@ -1955,7 +1876,6 @@ matrix:
     g2q: gemma4-e2b
     lfm230: lfm2.5-230m
     lfm8: lfm2.5-8b-a1b
-    mcp5: minicpm5-1b
     vl: lfm2.5-vl-450m
     vlx: lfm2.5-vl-1.6b-extract
     vle: lfm2.5-vl-450m-extract
@@ -1974,9 +1894,9 @@ matrix:
     ttsext: qwen3-tts
     nomic: nomic-embed-text-v2-moe
   sets:
-    small_vision: (q4 | q4a | g2 | g2q | lfm230 | lfm8 | mcp5) & vl & nomic
-    small_embed: (q4 | q4a | g2 | g2q | lfm230 | lfm8 | mcp5) & nomic
-    small_only: q4 | q4a | g2 | g2q | lfm230 | lfm8 | mcp5
+    small_vision: (q4 | q4a | g2 | g2q | lfm230 | lfm8) & vl & nomic
+    small_embed: (q4 | q4a | g2 | g2q | lfm230 | lfm8) & nomic
+    small_only: q4 | q4a | g2 | g2q | lfm230 | lfm8
     vision_only: vl | vlx | vle | ocr | cpv
     vision_embed: (vl | vlx | vle | ocr | cpv) & nomic
     medium: (q9 | g4) & nomic
@@ -2003,7 +1923,6 @@ matrix:
     q4: 2
     q4a: 2
     lfm8: 2
-    mcp5: 2
     asr: 2
     nomic: 1
     g2: 1

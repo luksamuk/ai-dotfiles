@@ -28,7 +28,6 @@ matrix:
     g2q: gemma4-e2b
     lfm230: lfm2.5-230m
     lfm8: lfm2.5-8b-a1b
-    mcp5: minicpm5-1b
     # Vision
     vl: lfm2.5-vl-450m
     vlx: lfm2.5-vl-1.6b-extract
@@ -56,13 +55,13 @@ matrix:
   sets:
     # LLM pequeno + Vision + Embedding
     # q4/q4a (DFlash) com ctx 32K + nomic ~700MiB headroom
-    small_vision: "(q4 | q4a | g2 | g2q | lfm230 | lfm8 | mcp5) & vl & nomic"
+    small_vision: "(q4 | q4a | g2 | g2q | lfm230 | lfm8) & vl & nomic"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | g2 | g2q | lfm230 | lfm8 | mcp5) & nomic"
+    small_embed: "(q4 | q4a | g2 | g2q | lfm230 | lfm8) & nomic"
 
     # LLM pequeno sozinho (sem vision, sem embedding)
-    small_only: "q4 | q4a | g2 | g2q | lfm230 | lfm8 | mcp5"
+    small_only: "q4 | q4a | g2 | g2q | lfm230 | lfm8"
 
     # Vision models (sozinhos ou com nomic)
     vision_only: "vl | vlx | vle | ocr | cpv"
@@ -104,7 +103,6 @@ matrix:
     q4: 2
     q4a: 2
     lfm8: 2
-    mcp5: 2
     asr: 2
     nomic: 1
     g2: 1

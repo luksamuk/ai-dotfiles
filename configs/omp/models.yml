@@ -254,26 +254,6 @@ providers:
         thinking:
           mode: effort
           efforts: [minimal, low, medium, high, xhigh]
-      - id: minicpm5-1b
-        name: "MiniCPM5 1B"
-        description: "Dense 1B Transformer for on-device deployment — tool use, coding agents, hybrid reasoning."
-        reasoning: true
-        input: [text]
-        contextWindow: 131072
-        maxTokens: 8192
-        thinking:
-          mode: effort
-          efforts: [minimal, low, medium, high, xhigh]
-      - id: minicpm5-1b:think
-        name: "MiniCPM5 1B Thinking 🧠"
-        description: "Dense 1B Transformer for on-device deployment — tool use, coding agents, hybrid reasoning."
-        reasoning: true
-        input: [text]
-        contextWindow: 131072
-        maxTokens: 8192
-        thinking:
-          mode: effort
-          efforts: [minimal, low, medium, high, xhigh]
       - id: lfm2.5-vl-1.6b-extract
         name: "LFM2.5-VL 1.6B Extract"
         description: "Vision-language model specialized in structured extraction. Pass an image and a list of fields, get back a JSON object."
