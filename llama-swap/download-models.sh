@@ -24,7 +24,7 @@
 #   [REMOVED] granite-4.0-h-1b-vllm — removed from fleet May 2026
 #   [REMOVED] glm-4.7-flash — superseded by Qwen3.6 35B MoE
 #   minicpm-v-4.6        - MiniCPM-V 4.6 Q5_K_M (~0.54 GB) + mmproj F16 (~1.03 GB) - VLM, video+text, 256K ctx
-#   minicpm5-1b          - MiniCPM5-1B Q4_K_M (~688 MB) - dense 1B, tool calling, dual think/no-think, 131K ctx
+#   minicpm5-1b          - MiniCPM5-1B Q8_0 (~1.15 GB) - dense 1B, tool calling, dual think/no-think, 131K ctx
 #   smolllm3-3b           - SmolLM3-3B UD-Q5_K_XL (~2.06 GB) - dense, tool-calling, 128K ctx
 #   qwopus-coder-9b       - Qwopus3.5-9B-Coder Q4_K_M (~5.63 GB) + mmproj - agentic coding + tools
 #   qwen3.5-4b-abliterated - Qwen3.5-4B abliterated i1-Q4_K_M (~2.71 GB) - no refusal, adversarial testing
@@ -116,7 +116,7 @@ declare -A MODELS=(
   ["minicpm-v-4.6"]="openbmb/MiniCPM-V-4.6-gguf MiniCPM-V-4_6-Q5_K_M.gguf"
   # MiniCPM5-1B — OpenBMB dense 1B LLM, tool calling (XML format, llama.cpp b9833+ parser), dual think/no-think
   # Uses standard llama arch — supported in upstream and ik_llama.cpp
-  ["minicpm5-1b"]="openbmb/MiniCPM5-1B-GGUF MiniCPM5-1B-Q4_K_M.gguf"
+  ["minicpm5-1b"]="openbmb/MiniCPM5-1B-GGUF MiniCPM5-1B-Q8_0.gguf"
   # SmolLM3-3B — HuggingFace dense model, dual tool-calling (XML+Python), 128K ctx
   # Uses smollm3 arch — supported in both ik_llama.cpp and upstream
   ["smolllm3-3b"]="unsloth/SmolLM3-3B-GGUF SmolLM3-3B-UD-Q5_K_XL.gguf"
@@ -300,7 +300,7 @@ show_sizes() {
   # [REMOVED] gemma4-26b-a4b — removed from fleet Jun 2026
   echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"
   echo "  minicpm-v-4.6      ~0.54 GB  (Q5_K_M) + 1.03 GB mmproj - VLM video+image+text, 256K ctx"
-  echo "  minicpm5-1b        ~688 MB   (Q4_K_M) - dense 1B, tool calling, dual think/no-think, 131K ctx"
+  echo "  minicpm5-1b        ~1.15 GB   (Q8_0) - dense 1B, tool calling, dual think/no-think, 131K ctx"
   echo "  smolllm3-3b         ~2.06 GB  (UD-Q5_K_XL) - Dense, dual tool-calling (XML+Python), 128K ctx"
   echo "  [REMOVED] littlelamb-0.3b-tc — tool-calling broken, too small to be useful"
   echo "  webworld-8b         ~5.90 GB  (i1-Q5_K_M) - Web world model, predicts next page state"

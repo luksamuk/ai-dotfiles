@@ -12,7 +12,7 @@
   description: "Dense 1B Transformer built for on-device deployment, designed for local assistants, coding agents, tool-use workflows, and hybrid reasoning."
   cmd: |
     ${llama_server} --port ${PORT}
-    --model ${models_dir}/minicpm5-1b/MiniCPM5-1B-Q4_K_M.gguf
+    --model ${models_dir}/minicpm5-1b/MiniCPM5-1B-Q8_0.gguf
     --jinja
     --fit on
     --fit-target ${vram_margin}
@@ -48,10 +48,10 @@
     reranker: false
     context: 131072
   metadata:
-    size: "~688 MB (Q4_K_M)"
+    size: "~1.15 GB (Q8_0)"
     context: "32K-128K (dynamic)"
-    vram_usage: "~1.2GB (model + cache)"
-    source: "openbmb/MiniCPM5-1B-GGUF (Q4_K_M)"
+    vram_usage: "~1.6GB (model + cache)"
+    source: "openbmb/MiniCPM5-1B-GGUF (Q8_0)"
     note: "Tool calling fixed (llama.cpp b9833+). Parser auto-detects via --jinja. NEVER use custom chat template."
     kv_cache: "q8_0"
     features:
@@ -67,4 +67,4 @@
     parameters: 1080632832
     context_length: 131072
     embedding_length: 1536
-    quantization: Q4_K_M
+    quantization: Q8_0
