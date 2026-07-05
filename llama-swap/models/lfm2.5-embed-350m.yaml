@@ -1,0 +1,57 @@
+# -------------------------------------------
+# LFM2.5-EMBED-350M - UPSTREAM BACKEND (embedding model, CPU-only)
+# 354M params, 1024-dim CLS vector, dense bi-encoder
+# Architecture: lfm2-bidir — first bidirectional LFM, built on LFM2.5-350M-Base
+# Embedding model — use via /v1/embeddings endpoint for RAG, semantic search, similarity
+# NOT a chat model — --embeddings flag required, --pooling cls for proper embeddings
+# Asymmetric prompts: "query: " for queries, "document: " for passages (auto-applied via prompt_name)
+# 512 max context — short but sufficient for most embedding tasks
+# 11 language support: en, es, de, fr, it, pt, ar, sv, no, ja, ko
+# Best-in-class dense embedder at 350M scale (NanoBEIR avg 0.577 NDCG@10)
+# --cont-batching: safe for embedding (no generation, just encoding)
+# KV cache: f16 — embedding models benefit from precision, not compression
+# CPU-ONLY (-ngl 0): frees VRAM for LLMs. ~7ms p50 on M4 Max, negligible on CPU
+# -------------------------------------------
+"lfm2.5-embed-350m":
+  name: "LFM2.5 Embed 350M"
+  description: "Liquid AI dense bi-encoder for fast multilingual retrieval. Single 1024-dim vector per document. Best-in-class dense embedder at 350M scale across 11 languages."
+  env:
+    - "CUDA_VISIBLE_DEVICES="
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/LFM2.5-Embedding-350M-Q8_0.gguf
+    --embeddings
+    --pooling cls
+    --ctx-size 512
+    --cont-batching
+    --cache-type-k f16
+    --cache-type-v f16
+    -ngl 0
+    --metrics
+  ttl: 300
+  capabilities:
+    in: ['text']
+    out: []
+    tools: false
+    reranker: false
+    context: 512
+  metadata:
+    architecture: lfm2-bidir
+    parameters: 354000000
+    context_length: 512
+    embedding_length: 1024
+    quantization: Q8_0
+    size: "~379 MB (Q8_0)"
+    vram_usage: "~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)"
+    source: "LiquidAI/LFM2.5-Embedding-350M-GGUF (Q8_0)"
+    kv_cache: "f16"
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      embedding: true
+      insert: false
+      audio: false
+      image: false
+    note: "Embedding-only model. Use /v1/embeddings endpoint. Asymmetric prompts: 'query: ' for queries, 'document: ' for passages. 11 languages. Dense bi-encoder — one 1024-dim vector per document."

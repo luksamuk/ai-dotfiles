@@ -15,7 +15,8 @@ hooks:
 # O solver determina automaticamente qual combinação de modelos
 # pode rodar simultaneamente e quais descarregar quando necessário.
 #
-# Nomic Embed (~0.5GB) está em TODOS os sets — sempre coexiste com qualquer LLM.
+# Nomic Embed + LFM2.5 Embed/ColBERT (~0.5GB total, CPU-only) estão em sets de
+# embedding/reranking — sempre coexistem com qualquer LLM (não usam VRAM).
 # evict_cost 1 = primeiro a sair se VRAM realmente apertar.
 # ============================================
 
@@ -54,6 +55,9 @@ matrix:
     ttsext: qwen3-tts
     # Embedding
     nomic: nomic-embed-text-v2-moe
+    lfmemb: lfm2.5-embed-350m
+    # Reranker (late-interaction, CPU-only)
+    lfmcol: lfm2.5-colbert-350m
 
   sets:
     # LLM pequeno + Vision + Embedding
@@ -85,7 +89,13 @@ matrix:
     tts_external: "ttsext"
 
     # Embedding sozinho (RAG indexing, semantic search)
-    embed_only: "nomic"
+    embed_only: "nomic | lfmemb"
+
+    # Reranker sozinho (late-interaction reranking, CPU-only)
+    rerank_only: "lfmcol"
+
+    # Reranker + Embedding (two-stage retrieval: dense → rerank)
+    rerank_embed: "lfmcol & (nomic | lfmemb)"
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
@@ -111,6 +121,8 @@ matrix:
     lfm8: 2
     asr: 2
     nomic: 1
+    lfmemb: 1
+    lfmcol: 1
     g2: 1
     g2q: 1
     lfm230: 1

@@ -1,0 +1,60 @@
+# -------------------------------------------
+# FABLE-TRACES - IK_LLAMA BACKEND (joke model, conversational)
+# Fine-tune of Qwen3-4B-Instruct-2507 by AliesTaha.
+# Tuned for short, conversational replies. 146 likes on HF.
+# It's a joke model - don't take it too seriously.
+# Qwen3 architecture (NOT Qwen3.5), instruct mode only (no thinking).
+# Backend: ik_llama.cpp (better offload, hadamard cache)
+# -------------------------------------------
+"fable-traces":
+  name: "Fable Traces"
+  description: "A compact instruction-tuned model built on Qwen3-4B-Instruct-2507. Tuned for short, conversational replies. It's a joke model - keep expectations low."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/fable-traces-Q4_K_M.gguf
+    --jinja
+    --parallel 2
+    --parallel-tool-calls
+    --ctx-size ${small_model_max_ctx}
+    --temp ${default_temp}
+    --top-p ${default_top_p}
+    --top-k ${default_top_k}
+    --min-p ${default_min_p}
+    --repeat-penalty ${default_repeat_penalty}
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~2.4 GB (Q4_K_M)"
+    context: "64K-128K (dynamic)"
+    vram_usage: "~3.5GB VRAM (text-only, ik with hadamard cache)"
+    source: "AliesTaha/fable-traces (fine-tune of Qwen3-4B-Instruct-2507)"
+    kv_cache: "q8_0 + q4_0 hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen3
+    parameters: 4000000000
+    context_length: 131072
+    embedding_length: 2560
+    quantization: Q4_K_M
+    note: "Joke model. Fine-tune of Qwen3-4B-Instruct-2507 for short conversational replies. 146 likes on HuggingFace. Converted from safetensors (BF16) to GGUF Q4_K_M."

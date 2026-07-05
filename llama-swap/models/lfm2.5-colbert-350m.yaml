@@ -1,0 +1,60 @@
+# -------------------------------------------
+# LFM2.5-COLBERT-350M - UPSTREAM BACKEND (reranker/late-interaction model, CPU-only)
+# 353M params, 128-dim per-token vectors, late interaction via MaxSim
+# Architecture: lfm2-bidir — first bidirectional LFM, built on LFM2.5-350M-Base
+# Reranker model — use via /v1/embeddings (mean-pooled, OAI-compatible) or raw /embedding (per-token, MaxSim)
+# NOT a chat model — --embeddings flag required, --pooling mean for OAI compat
+# For true MaxSim reranking: use raw /embedding endpoint (per-token vectors), compute MaxSim client-side
+# Asymmetric prompts: query_prefix / document_prefix (from config_sentence_transformers.json)
+# 512 max context — short but sufficient for most retrieval/reranking tasks
+# 11 language support: en, es, de, fr, it, pt, ar, sv, no, ja, ko
+# Best-in-class late retriever at 350M scale (NanoBEIR avg 0.605 NDCG@10)
+# Late interaction: one vector per token, matched via MaxSim (max dot product per query token)
+# Higher accuracy than dense embedder at cost of larger index (per-token vs per-document)
+# --cont-batching: safe for embedding (no generation, just encoding)
+# KV cache: f16 — reranking models benefit from precision, not compression
+# CPU-ONLY (-ngl 0): frees VRAM for LLMs. ~8ms p50 query embed, ~34ms full pipeline on M4 Max
+# -------------------------------------------
+"lfm2.5-colbert-350m":
+  name: "LFM2.5 ColBERT 350M"
+  description: "Liquid AI late-interaction reranker with best-in-class multilingual performance. Per-token 128-dim vectors matched via MaxSim. Higher accuracy than dense embedders across 11 languages."
+  env:
+    - "CUDA_VISIBLE_DEVICES="
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/LFM2.5-ColBERT-350M-Q8_0.gguf
+    --embeddings
+    --pooling mean
+    --ctx-size 512
+    --cont-batching
+    --cache-type-k f16
+    --cache-type-v f16
+    -ngl 0
+    --metrics
+  ttl: 300
+  capabilities:
+    in: ['text']
+    out: []
+    tools: false
+    reranker: true
+    context: 512
+  metadata:
+    architecture: lfm2-bidir
+    parameters: 353000000
+    context_length: 512
+    embedding_length: 128
+    quantization: Q8_0
+    size: "~378 MB (Q8_0)"
+    vram_usage: "~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)"
+    source: "LiquidAI/LFM2.5-ColBERT-350M-GGUF (Q8_0)"
+    kv_cache: "f16"
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      embedding: true
+      insert: false
+      audio: false
+      image: false
+    note: "Late-interaction model. OAI-compatible /v1/embeddings uses mean-pooled 128-dim vectors. For true MaxSim reranking, use raw /embedding endpoint for per-token vectors and compute MaxSim client-side. Asymmetric prompts from config_sentence_transformers.json. 11 languages. Higher accuracy than dense (0.605 vs 0.577 NDCG@10) but larger index (per-token vectors)."
