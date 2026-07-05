@@ -1,215 +1,100 @@
-# Ask-AI Configuration File
-# Location: ~/.config/ask-ai/config.toml
-# 
-# This is a complete example configuration showing all available options.
-# Lines starting with '#' are comments and are ignored.
-# Remove the '#' to enable an option, or modify values as needed.
-# 
-# After editing, the configuration takes effect immediately on the next run.
-
-# =============================================================================
-# MODEL CONFIGURATION
-# =============================================================================
-# Configure which AI models to use for different tasks.
-
 [model]
+default = "ornith-1.0-35b"
 
-# The default model preset to use for general queries.
-# See all available models with: ask-ai --list-models
-# Recommended: "qwen3.5:4b" (built-in, multimodal) or "ministral" (from models.toml)
-# Default: "qwen3.5:4b"
-default = "qwen3.5:9b"
-
-# Global default for thinking mode.
-# This is used as a fallback for all subcommands that don't have their own setting.
-# Subcommand-specific settings (model.query.thinking, model.chat.thinking, etc.) override this.
-# Model capability takes precedence: if the model doesn't support thinking, this is ignored.
-# If not specified, subcommand defaults are used (true for query, false for others).
-# thinking = false
-
-# Ollama server connection settings.
-# Change these if your Ollama server is not running on the default localhost.
-# The host can be an IP address (e.g., "192.168.1.100") or a URL (e.g., "http://192.168.1.100").
-# Default: "127.0.0.1"
-ollama_host = "127.0.0.1"
-# Default: 11434
-ollama_port = 11434
-
-# -----------------------------------------------------------------------------
-# PER-SUBCOMMAND MODEL OVERRIDES (Optional)
-# -----------------------------------------------------------------------------
-# You can use different models for different subcommands.
-# This allows you to use lightweight models for simple tasks and 
-# powerful models for complex ones, optimizing for speed and cost.
-#
-# Priority for thinking mode:
-# 1. Model capability (can't enable if model doesn't support it)
-# 2. Subcommand-specific setting (e.g., model.query.thinking)
-# 3. Global setting (model.thinking)
-# 4. Model default (from models.toml or built-in config)
-# 5. Subcommand hardcoded default (true for query, false for others)
-
-# --- QUERY SUBCOMMAND ---
 [model.query]
-# The model to use for 'ask query' or 'ask q'.
-# If not specified, falls back to the global [model] default.
-model = "gemma4:e4b"
-
-# Enable thinking mode for queries. Some models show their reasoning process.
-# If not specified, defaults to: true for query
-# thinking = true
-
-# Enable tool calling for queries (weather, file operations, etc.).
-# If not specified, defaults to: true for query
+model = "gemma4-e2b"
 tools = true
 
-# --- CHAT SUBCOMMAND ---
 [model.chat]
-# The model to use for 'ask chat'.
-# If not specified, falls back to the global [model] default.
-model = "glm-5.1:cloud"
-
-# Enable thinking mode for chat. Some models show their reasoning process.
-# If not specified, defaults to: false for chat
-# thinking = false
-
-# Enable tool calling for chat (weather, file operations, etc.).
-# If not specified, defaults to: true for chat
+model = "ornith-1.0-35b"
 tools = true
 
-# --- SUMMARIZE SUBCOMMAND ---
 [model.summarize]
-# The model to use for 'ask summarize'.
-# Recommended: a lightweight model like qwen3 for speed and thinking.
-# If not specified, falls back to the global [model] default.
-model = "gemma4:e4b"
-
-# Summarization typically doesn't need thinking mode.
-# If not specified, defaults to: false for summarize
+model = "ornith-1.0-35b"
 thinking = false
-
-# Summarization doesn't use external tools.
-# If not specified, defaults to: false for summarize
 tools = false
 
-# --- TRANSLATE SUBCOMMAND ---
 [model.translate]
-# The model to use for 'ask translate'.
-# Built-in: "translategemma" (optimized for translation)
-# If not specified, uses "translategemma" by default.
-model = "translategemma"
-
-# Translation typically doesn't need thinking mode.
-# If not specified, defaults to: false for translate
+model = "hy-mt2-1.8b"
 thinking = false
-
-# Translation doesn't use tools.
-# If not specified, defaults to: false for translate
 tools = false
 
 # --- CODE MODE ---
 [model.code]
-# The model to use when the code flag (-c) is active.
-# Default: "qwen2.5-coder:7b" (optimized for coding with function calling)
-# If not specified, falls back to the code default (qwen2.5-coder:7b).
-model = "glm-5.1:cloud"
-
-# Code generation typically doesn't need thinking mode.
-# If not specified, defaults to: false for code
-thinking = false
-
-# Enable tool calling in code mode. This allows the model to inspect 
-# your project files (read_file, list_directory, search_files) before 
-# generating code, leading to more accurate suggestions.
-# If not specified, defaults to: true for code
+model = "minimax-m3"
+thinking = true
 tools = true
 
 # --- VISION MODE ---
 [model.vision]
-# The model to use for vision tasks (image analysis).
-# If not specified, falls back to the global [model] default.
-#model = "kimi-k2.5:cloud"
-#model = "kimi-k2.6:cloud"
-#model = "gemma4:31b-cloud"
-model = "qwen3.5:cloud"
-#model = "gemma4:31b-cloud"
-
-# Vision doesn't use external tools.
-# If not specified, defaults to: false for vision
+model = "minicpm-v-4.6"
 tools = false
 
-# =============================================================================
-# TOOLS CONFIGURATION
-# =============================================================================
-# Control which AI tools are available and how they behave.
+[model.ocr]
+model = "glm-ocr"
+tools = false
 
 [tools]
-
-# A list of tools to disable (blacklist).
-# Blacklisted tools won't be available to the AI, saving context window space.
-#
-# Available tools include:
-#   - get_current_datetime, get_project_context (System information)
-#   - get_weather, get_current_weather, get_weather_forecast (Weather)
-#   - read_file, list_directory, search_files (File operations)
-#   - fetch_pokemon, fetch_pokemon_stats, etc. (Pokémon data)
-#   - serper_search, serper_search_news (Serper API web search - requires SERPER_API_KEY)
-#   - web_search, web_search_news, web_instant_answer (DuckDuckGo - may fail due to CAPTCHA)
-#
-# Note: DuckDuckGo tools may be blocked by CAPTCHA. Use Serper tools for reliable web search.
-# Default: [] (all tools enabled)
 blacklist = []
 
-# =============================================================================
-# OUTPUT CONFIGURATION
-# =============================================================================
-# Control how responses are displayed.
-
 [output]
-
-# Use plain text output by default, disabling markdown rendering.
-# If true, responses will be plain text instead of formatted markdown.
-# Default: false
 plain_default = false
-
-# Verbosity level for log output.
-# Controls how much diagnostic information is shown alongside the LLM response.
-#
-# Options:
-#   "quiet"   — Errors only. No spinner, no tool calls. Ideal for scripting/pipes.
-#   "normal"  — Tool calls (compact), warnings, errors. Good default for interactive use.
-#   "verbose" — Detailed tool calls with full parameters and results. For debugging.
-#   "trace"   — Everything including embedding internals, token budgets. Maximum info.
-#
-# Priority: CLI flags (-v/-q) > RUST_LOG env var > this setting > default
-# Default: "normal" (info level)
-# verbosity = "normal"
-
-# =============================================================================
-# DISPLAY CONFIGURATION
-# =============================================================================
-# Customize the terminal appearance.
+verbosity = "normal"
 
 [display]
+skin = "dark"
+show_tool_calls = true
 
-# The color theme for markdown rendering.
-# Options: "dark", "light", or "mono" (for terminals without color)
-# Default: "dark"
-skin = "mono"
-
-# =============================================================================
-# LED CONTROL CONFIGURATION (Optional)
-# =============================================================================
-# Control NeoPixel LED strips via Raspberry Pi Pico W HTTP server.
-# LED tools are disabled by default and require configuration to activate.
-# 
-# Build with LED tools: cargo build --release --features led-tools
-
+# This one should be deprecated!
 [led]
-# IP address of your Raspberry Pi Pico W LED server.
-# Required to enable LED tools. If not set, LED tools are disabled.
 ip = "192.168.3.21"
-
-# HTTP port for the LED server.
-# Default: 80
 port = 80
+
+[facts]
+auto_extract = true
+auto_extract_notify = true
+max_facts = 3
+semantic_threshold = 0.85
+
+[feedback]
+access_reinforcement = true
+access_reinforcement_boost = 0.001
+content_decay = true
+content_prune_threshold = 0.05
+decay_half_life_bad = 7
+decay_half_life_correction = 14
+decay_half_life_good = 30
+enabled = true
+implicit_capture = true
+llm_feedback_weight = 0.3
+
+[retrieval]
+keyword_weight = 0.7
+semantic_weight = 0.3
+
+[thinking_trace]
+enabled = false
+
+# =============================================================================
+# INDEXING CONFIGURATION (W2 #121 — REQUIRED)
+# =============================================================================
+
+[indexing]
+# Embedding model alias (key in models.toml [models.*]). Required.
+# The alias must be declared with `embeddings = true` and
+# `dimensions = 768` in models.toml [models."nomic"]. The provider
+# is inferred from the alias — no provider override here.
+#model = "nomic"
+model = "lfm2.5-embed-350m"
+
+# Probe /v1/embeddings at startup to verify the model is served.
+# When true (default), sprach makes 1 POST /v1/embeddings call.
+# The probe does NOT pass `dimensions` in the request body
+# (adaptive — some providers reject it); the response's vector
+# dim count is compared against the alias's declared `dimensions`.
+# Mismatch is a fatal error.
+probe = true
+
+# RRF weights (moved from the old [retrieval] section).
+keyword_weight = 0.7
+semantic_weight = 0.3

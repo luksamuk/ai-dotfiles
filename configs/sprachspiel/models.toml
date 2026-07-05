@@ -1,148 +1,73 @@
-# =======================================
-# Favorite models
-# =======================================
+[provider."ollama"]
+kind = "openai"
+base_url = "http://127.0.0.1:11434/v1"
 
-# General use:
-#  - qwen3.5:9b (Qwen 3.5, Alibaba)
-#  - ministral-3:14b (Mistral Mini 3, Mistral)
-#  - gpt-oss:20b (GPT-OSS, OpenAI)
-#  - nemotron-3-nano:4b (Nemotron 3 Nano, NVIDIA)
-#
-# Coding, tool calling:
-#  - gpt-oss:20b (GPT-OSS, OpenAI)
-#  - qwen3-coder:30b (Qwen3-Coder, Alibaba)
-#  - qwen3.5:27b (Qwen 3.5, Alibaba)
+[provider."llama-swap"]
+kind = "openai"
+base_url = "http://localhost:12434/v1"
 
-# Summarization
-#  - qwen3.5:4b (Qwen 3.5, Alibaba)
-#  - llama3.1:8b (Llama 3.1, Meta -- built-in config)
-#  - lfm2:24b (LFM 2, Liquid AI)
+# --- Small chat models ---
 
-# Vision
-#  - qwen3.5:0.8b (Qwen 3.5, Alibaba)
-#  - moondream:1.8b (Moondream)
+[models."qwen3.5-4b"]
+provider = "llama-swap"
+model_id = "qwen3.5-4b:think"
+num_ctx = 32768
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
+thinking = true
+tools = true
 
-# =======================================
-# Tiny models
-# =======================================
+[models."qwen3.5-9b"]
+provider = "llama-swap"
+model_id = "qwen3.5-9b:think"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.95
+top_k = 40
+min_p = 0.01
+repeat_penalty = 1.05
+thinking = true
+tools = true
 
-[models."llama3.2"]
-model_id = "llama3.2:3b"
+[models."gemma4-e2b"]
+provider = "llama-swap"
+model_id = "gemma4-e2b:think"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.95
+thinking = true
+tools = true
+
+[models."gemma4-e4b"]
+provider = "llama-swap"
+model_id = "gemma4-e4b:think"
 num_ctx = 131072
 temperature = 0.7
 top_p = 0.95
 top_k = 40
 repeat_penalty = 1.1
-# BFCL estimate: ~50% | Size: 2GB | TESTED: Works! Tool calling OK (~17s)
-# Updated: context increased to 128K (Llama 3.2 supports it)
+thinking = true
+tools = true
 
-[models."cogito"]
-model_id = "cogito:14b"
+[models."gemma4-12b"]
+provider = "llama-swap"
+model_id = "gemma4-12b:think"
 num_ctx = 131072
 temperature = 0.7
-top_p = 0.95
+top_p = 0.9
+top_k = 40
 min_p = 0.01
 repeat_penalty = 1.05
 thinking = true
-# Cogito v1 - Hybrid reasoning model by Deep Cogito
-# Updated: context 128K for chain-of-thought, sensible defaults
+tools = true
+vision = true
 
-# [models."jan-code"]
-# model_id = "jan-code:4b"
-# num_ctx = 65536
-# temperature = 0.7
-# top_p = 0.8
-# top_k = 20
-# thinking = true
-
-# ======================================
-# Small models
-# ======================================
-
-# DeepSeek-R1 7B - NO TOOL CALLING (thinking mode only)
-# [models."deepseek-r1"]
-# model_id = "deepseek-r1:7b"
-# num_ctx = 131072
-# temperature = 0.6
-# thinking = true
-# # Size: 4.7GB | Context: 128K | Tools: NO (only thinking mode)
-# # The "tools" tag on Ollama page is for reasoning, NOT function calling
-
-# Qwen2.5-Coder 3B - Specialized coding model (NO tools - too small)
-[models."qwen2.5-coder:3b"]
-model_id = "qwen2.5-coder:3b"
-num_ctx = 32768
-temperature = 0.15
-top_p = 0.85
-top_k = 40
-min_p = 0.02
-repeat_penalty = 1.05
-thinking = false
-# Size: 1.9GB | Tools: No (3B too small for reliable tool calling)
-
-# Qwen2.5-Coder 7B - Specialized coding model WITH tool calling
-[models."qwen2.5-coder:7b"]
-model_id = "qwen2.5-coder:7b"
-num_ctx = 131072
-temperature = 0.15
-top_p = 0.85
-top_k = 40
-min_p = 0.02
-repeat_penalty = 1.05
-thinking = false
-# Size: 4.7GB | Tools: Yes! (tested - works via Ollama API)
-# Updated: context increased to 128K for large codebases
-
-# [models."qwen2.5"]
-# model_id = "qwen2.5:7b"
-# num_ctx = 65536
-# temperature = 0.6
-# top_p = 0.95
-# top_k = 40
-# repeat_penalty = 1.1
-# # BFCL estimate: ~75% | Size: 4.7GB | TESTED: Works! Tool calling OK (~27s)
-
-# [models.qwen3]
-# model_id = "qwen3:8b"
-# num_ctx = 65536
-# temperature = 0.6
-# top_p = 0.96
-# top_k = 20
-# min_p = 0
-# repeat_penalty = 1.1
-# thinking = true
-
-# [models."hermes3"]
-# model_id = "hermes3:8b"
-# num_ctx = 32768
-# temperature = 0.8
-# repeat_penalty = 1.1
-# # BFCL estimate: ~70% | Size: ~5GB | Good tool calling
-
-#[models."qwen3.5:0.8b"]
-#model_id = "qwen3.5:0.8b"
-#num_ctx = 32768
-#temperature = 0.7
-#top_p = 0.95
-#top_k = 40
-#min_p = 0.01
-#repeat_penalty = 1.05
-#thinking = true
-# Updated: smaller context for tiny model, sensible defaults
-
-# [models."qwen3.5-abliterated:0.8b"]
-# model_id = "qwen3.5-abliterated:0.8b"
-# num_ctx = 32768
-# temperature = 0.7
-# top_p = 0.95
-# top_k = 40
-# min_p = 0.01
-# repeat_penalty = 1.05
-# thinking = true
-# # Updated: smaller context for tiny model, sensible defaults
-
-[models."qwen3.5:2b"]
-model_id = "qwen3.5:2b"
+[models."qwen3.5-4b-abliterated"]
+provider = "llama-swap"
+model_id = "qwen3.5-4b-abliterated:think"
 num_ctx = 131072
 temperature = 0.7
 top_p = 0.95
@@ -150,408 +75,314 @@ top_k = 40
 min_p = 0.01
 repeat_penalty = 1.05
 thinking = true
-# Updated: balanced context, sensible defaults
+tools = true
 
-# [models."qwen3.5-abliterated:2b"]
-# model_id = "qwen3.5-abliterated:2b"
-# num_ctx = 65536
-# temperature = 0.7
-# top_p = 0.95
-# top_k = 40
-# min_p = 0.01
-# repeat_penalty = 1.05
-# thinking = true
-# # Updated: balanced context, sensible defaults
-
-[models."qwen3.5:4b"]
-model_id = "qwen3.5:4b"
+[models."lfm2.5-8b-a1b"]
+provider = "llama-swap"
+model_id = "lfm2.5-8b-a1b:think"
 num_ctx = 131072
 temperature = 0.7
-top_p = 0.95
+top_p = 0.9
 top_k = 40
 min_p = 0.01
 repeat_penalty = 1.05
 thinking = true
-# Updated: balanced context for 4B on 6GB GPU, sensible defaults
+tools = true
 
-[models.nemotron]
-model_id = "nemotron-3-nano:4b"
+[models."ornith-1.0-35b"]
+provider = "llama-swap"
+model_id = "ornith-1.0-35b:think"
 num_ctx = 131072
 temperature = 0.6
-top_p = 0.95
-repeat_penalty = 1.05
+top_p = 0.9
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
 thinking = true
-# Updated: added repeat_penalty, context matches modelfile
+tools = true
 
-# [models."qwen3.5-abliterated:4b"]
-# model_id = "qwen3.5-abliterated:4b"
-# num_ctx = 65536
-# temperature = 0.7
-# top_p = 0.95
-# top_k = 40
-# min_p = 0.01
-# repeat_penalty = 1.05
-# thinking = true
-# # Updated: balanced context for 4B on 6GB GPU, sensible defaults
-
-[models."qwen3.5:9b"]
-model_id = "qwen3.5:9b"
+[models."agents-a1-35b"]
+provider = "llama-swap"
+model_id = "agents-a1-35b:think"
 num_ctx = 131072
-temperature = 0.7
-top_p = 0.95
-top_k = 40
-min_p = 0.01
-repeat_penalty = 1.05
+temperature = 0.6
+top_p = 0.9
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
 thinking = true
-# Updated: moderate context for CPU inference, sensible defaults
+tools = true
 
-# [models."qwen3.5-abliterated:9b"]
-# model_id = "qwen3.5-abliterated:9b"
-# num_ctx = 65536
-# temperature = 0.7
-# top_p = 0.95
-# top_k = 40
-# min_p = 0.01
-# repeat_penalty = 1.05
-# thinking = true
-# # Updated: moderate context for CPU inference, sensible defaults
-
-# =======================================
-# Medium models
-# =======================================
-
-# [models.nouscoder]
-# model_id = "nouscoder:14b"
-# num_ctx = 32768
-# temperature = 1.0
-# repeat_penalty = 1.1
-# thinking = true
-
-# [models.hermes4]
-# model_id = "hermes4:14b"
-# num_ctx = 32768
-# temperature = 0.1
-# repeat_penalty = 1.1
-# thinking = true
-
-# =======================================
-# Intermediate models
-# =======================================
-
-[models."gpt-oss"]
-model_id = "gpt-oss:20b"
-num_ctx = 65535
-temperature = 0.7
-top_p = 0.95
-min_p = 0.02
-repeat_penalty = 1.05
+[models."glm-4.7-flash"]
+provider = "llama-swap"
+model_id = "glm-4.7-flash"
+num_ctx = 131072
+temperature = 0.6
+top_p = 0.9
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
 thinking = true
-# Updated: sensible defaults, removed invalid top_k=0
+tools = true
 
-[models."lfm2"]
-model_id = "lfm2:24b"
+[models."glm-4.7-flash:think"]
+provider = "llama-swap"
+model_id = "glm-4.7-flash:think"
+num_ctx = 131072
+temperature = 0.6
+top_p = 0.9
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
+thinking = true
+tools = true
+
+[models."north-mini-code"]
+provider = "llama-swap"
+model_id = "north-mini-code:think"
 num_ctx = 65536
-temperature = 0.6
+temperature = 1.0
 top_p = 0.95
-min_p = 0.01
-repeat_penalty = 1.05
-# Updated: sensible defaults added
-
-# =======================================
-# Bigger models
-# =======================================
-
-# [models.qwen3-coder]
-# model_id = "qwen3-coder:30b"
-# num_ctx = 32768
-# temperature = 0.3
-# top_k = 20
-# top_p = 0.80
-# repeat_penalty = 1.05
-
-# [models.nemotron]
-# model_id = "nemotron-3-nano:30b"
-# num_ctx = 32768
-# temperature = 0.6
-# top_p = 0.95
-# thinking = true
-
-[models."qwen3.5:27b"]
-model_id = "qwen3.5:27b"
-num_ctx = 32768
-temperature = 0.7
-top_p = 0.95
-top_k = 40
-min_p = 0.01
-repeat_penalty = 1.05
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
 thinking = true
-# Updated: smaller context for CPU-only 17GB model, sensible defaults
+tools = true
 
-# ======================================
-# Cloud models
-# ======================================
+# --- Heavy models (RAM offload) ---
 
-[models."glm-5.1:cloud"]
+[models."qwen3.6-35b-a3b"]
+provider = "llama-swap"
+model_id = "qwen3.6-35b-a3b:think"
+num_ctx = 131072
+temperature = 0.6
+top_p = 0.9
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
+thinking = true
+tools = true
+
+[models."mellum2-12b-a2.5b"]
+provider = "llama-swap"
+model_id = "mellum2-12b-a2.5b:think"
+num_ctx = 131072
+temperature = 0.6
+top_p = 0.9
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
+thinking = true
+tools = true
+
+# --- Translation ---
+
+#[models."translategemma-4b"]
+#provider = "llama-swap"
+#model_id = "translategemma-4b"
+#num_ctx = 32768
+#temperature = 0.2
+#top_k = 40
+#top_p = 0.9
+#repeat_penalty = 1.1
+#thinking = false
+#tools = false
+
+[models."hy-mt2-1.8b"]
+provider = "llama-swap"
+model_id = "hy-mt2-1.8b"
+num_ctx = 131072
+temperature = 0.2
+top_k = 40
+top_p = 0.9
+repeat_penalty = 1.1
+thinking = false
+tools = false
+
+# --- Vision / OCR ---
+
+[models."lfm2.5-vl-450m"]
+provider = "llama-swap"
+model_id = "lfm2.5-vl-450m"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.9
+thinking = false
+tools = false
+vision = true
+
+[models."lfm2.5-vl-1.6b-extract"]
+provider = "llama-swap"
+model_id = "lfm2.5-vl-1.6b-extract"
+num_ctx = 131072
+temperature = 0.2
+top_p = 0.9
+thinking = false
+tools = false
+vision = true
+
+[models."minicpm-v-4.6"]
+provider = "llama-swap"
+model_id = "minicpm-v-4.6"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.9
+thinking = false
+tools = false
+vision = true
+
+[models."glm-ocr"]
+provider = "llama-swap"
+model_id = "glm-ocr"
+num_ctx = 131072
+temperature = 0.1
+top_p = 0.9
+top_k = 40
+repeat_penalty = 1.0
+thinking = false
+tools = false
+vision = true
+
+# --- Audio ---
+
+#[models."qwen3-asr"]
+#provider = "llama-swap"
+#model_id = "qwen3-asr-0.6b"
+#num_ctx = 32768
+#temperature = 0.0
+#top_p = 1.0
+#thinking = false
+#tools = false
+#stt = true
+
+#[models."qwen3-tts"]
+#provider = "llama-swap"
+#model_id = "qwen3-tts"
+#num_ctx = 4096
+#temperature = 0.9
+#thinking = false
+#tools = false
+#tts = true
+
+# --- Embedding ---
+
+[models."nomic"]
+provider = "llama-swap"
+model_id = "nomic-embed-text-v2-moe"
+embeddings = true
+dimensions = 768
+
+[models."lfm2.5-embed-350m"]
+provider = "llama-swap"
+model_id = "lfm2.5-embed-350m"
+embeddings = true
+dimensions = 1024
+
+# --- Cloud models ---
+
+[models."glm-5"]
+provider = "ollama"
+model_id = "glm-5:cloud"
+num_ctx = 202752
+thinking = true
+
+[models."glm-5.1"]
+provider = "ollama"
 model_id = "glm-5.1:cloud"
 num_ctx = 202752
 thinking = true
 
-[models."kimi-k2.5:cloud"]
+[models."glm-5.2"]
+provider = "ollama"
+model_id = "glm-5.2:cloud"
+num_ctx = 1000000
+thinking = true
+
+[models."kimi-k2.5"]
+provider = "ollama"
 model_id = "kimi-k2.5:cloud"
 num_ctx = 202144
 thinking = true
+vision = true
 
-[models."kimi-k2.6:cloud"]
+[models."kimi-k2.6"]
+provider = "ollama"
 model_id = "kimi-k2.6:cloud"
 num_ctx = 262144
 thinking = true
 
-[models."minimax-m2.5:cloud"]
+[models."kimi-k2.7-code"]
+provider = "ollama"
+model_id = "kimi-k2.7-code:cloud"
+num_ctx = 262144
+thinking = true
+vision = true
+
+[models."minimax-m2.5"]
+provider = "ollama"
 model_id = "minimax-m2.5:cloud"
 num_ctx = 202752
 thinking = true
+vision = true
 
-[models."qwen3.5:cloud"]
-model_id = "qwen3.5:cloud"
-num_ctx = 262144
-thinking = true
-
-[models."minimax-m2.7:cloud"]
+[models."minimax-m2.7"]
+provider = "ollama"
 model_id = "minimax-m2.7:cloud"
 num_ctx = 204800
 thinking = true
+vision = true
 
-[models.nemotron-3-super]
+[models."minimax-m3"]
+provider = "ollama"
+model_id = "minimax-m3:cloud"
+num_ctx = 524288
+thinking = true
+
+[models."qwen3.5-cloud"]
+provider = "ollama"
+model_id = "qwen3.5:cloud"
+num_ctx = 262144
+thinking = true
+vision = true
+
+[models."qwen3-coder-next"]
+provider = "ollama"
+model_id = "qwen3-coder-next:cloud"
+num_ctx = 262144
+
+[models."nemotron-3-super"]
+provider = "ollama"
 model_id = "nemotron-3-super:cloud"
 num_ctx = 262144
 thinking = true
 
-[models."gemma4:31b-cloud"]
+[models."gemma4-31b-cloud"]
+provider = "ollama"
 model_id = "gemma4:31b-cloud"
 num_ctx = 262144
 thinking = true
 
-[models."nemotron-3-nano:30b-cloud"]
+[models."nemotron-3-nano-30b-cloud"]
+provider = "ollama"
 model_id = "nemotron-3-nano:30b-cloud"
 num_ctx = 1048576
 thinking = true
 
-[models."deepseek-v4-flash:cloud"]
+[models."deepseek-v4-flash"]
+provider = "ollama"
 model_id = "deepseek-v4-flash:cloud"
 num_ctx = 1048576
 thinking = true
 
-[models."deepseek-v4-pro:cloud"]
+[models."nemotron-3-ultra"]
+provider = "ollama"
+model_id = "nemotron-3-ultra:cloud"
+num_ctx = 262144
+thinking = true
+
+[models."deepseek-v4-pro"]
+provider = "ollama"
 model_id = "deepseek-v4-pro:cloud"
 num_ctx = 1048576
 thinking = true
-
-# ======================================
-# Miscellaneous models
-# ======================================
-
-[models.translategemma]
-model_id = "translategemma:4b"
-num_ctx = 32768
-temperature = 0.2
-top_k = 40
-top_p = 0.9
-repeat_penalty = 1.1
-# Updated: context increased to 32K for longer translations
-
-# ========================================
-# Vision models
-# ========================================
-
-[models."medgemma1.5"]
-model_id = "medgemma1.5:4b"
-num_ctx = 32768
-temperature = 0.2
-top_p = 0.9
-top_k = 32
-min_p = 0.05
-repeat_penalty = 1.1
-# MedGemma 1.5 4B IT — Medical Vision & OCR (Google Health AI, Jan 2026)
-# Gemma 3 backbone + MedSigLIP | 4.3B params | 128K max context
-# Capabilities: completion, vision | No tool calling
-# Optimized for: radiology, CT/MRI, histopathology, medical document OCR
-# Near-greedy params for deterministic clinical analysis
-# Each image = 256 tokens @ 896x896 | 32K fits ~8 images + conversation
-# arXiv:2507.05201
-
-# [models.moondream]
-# model_id = "moondream:1.8b"
-# num_ctx = 8192
-# temperature = 1.2
-
-# [models.llava]
-# model_id = "llava:13b"
-# num_ctx = 8192
-# temperature = 1.2
-
-# [models."llama3.2-vision"]
-# model_id = "llama3.2-vision:11b"
-# num_ctx = 8192
-# temperature = 0.9
-
-# ========================================
-# Roleplay (Really bad at tool calling)
-# ========================================
-
-[models.pepe]
-model_id = "assistant-pepe:8b"
-num_ctx = 65536
-temperature = 1.0
-repeat_penalty = 1.1
-
-# ========================================
-# Other models recommended by llm-checker
-# ========================================
-
-# [models.mistral-small]
-# model_id = "mistral-small:24b"
-# num_ctx = 32768
-# temperature = 0.2
-# top_k = 40
-# top_p = 0.9
-# repeat_penalty = 1.1
-
-
-# [models."qwen2.5-coder:32b"]
-# model_id = "qwen2.5-coder:32b"
-# num_ctx = 32768
-
-
-# [models.devstral-small-2]
-# model_id = "devstral-small-2:24b"
-# num_ctx = 32768
-# temperature = 0.15
-# top_k = 40
-# top_p = 0.9
-# repeat_penalty = 1.1
-
-
-# [models.deepseek-coder-v2]
-# model_id = "deepseek-coder-v2:16b"
-# num_ctx = 32768
-# temperature = 0.15
-# top_k = 40
-# top_p = 0.85
-# repeat_penalty = 1.05
-
-# =======================================
-# Test models for context overflow
-# =======================================
-
-# [models."test-compact"]
-# model_id = "llama3.2:3b"
-# num_ctx = 16384              # 16K context - good for testing buffer triggers
-# temperature = 0.7
-# # Triggers for 16K context:
-# # - Auto-compact: 1K remaining (15K used = 94%)
-# # - Inter-tool: 10K remaining (6K used = 63%)
-# # - Emergency: 13K remaining (3K used = 81%)
-
-# [models."test-compact-small"]
-# model_id = "llama3.2:3b"
-# num_ctx = 8192               # 8K context - aggressive testing
-# temperature = 0.7
-# # Triggers for 8K context:
-# # - Inter-tool: 2K remaining (6K used = 75%)
-# # - Emergency: 5K remaining (3K used = 62%)
-
-[models."test-compact-normal"]
-model_id = "glm-5.1:cloud"
-num_ctx = 32768              # 32K context - allows ~20 messages before compaction
-temperature = 0.7
-# # Triggers for 32K context:
-# # - Pre-tool warning: 12K remaining (20K used = 62%)
-# # - Auto-compact: 17K remaining (15K used = 53%)
-# # - Inter-tool: 26K remaining (6K used = 81%)
-# # - Emergency: 29K remaining (3K used = 91%)
-# # Good for testing: allows ~20 messages before compaction
-
-# =======================================
-# Experimental models - Other companies
-# =======================================
-
-[models."nanbeige4.1"]
-model_id = "nanbeige4.1:3b"
-num_ctx = 65536
-temperature = 0.7
-top_p = 0.95
-top_k = 40
-min_p = 0.01
-repeat_penalty = 1.05
-# Nanbeige4.1-3B - Small model with strong reasoning and agentic capabilities
-# From Nanbeige LLM Lab (China) - Feb 2026
-# Features: Tool calling + Thinking (500+ tool invocations)
-# Benchmarks: LiveCodeBench-V6 76.9%, AIME 2026 I 87.40%
-# Size: 2.4GB | Capabilities: completion, tools, thinking
-
-[models."nanbeige4-thinking"]
-model_id = "nanbeige4-thinking:3b"
-num_ctx = 65536
-temperature = 0.5
-top_p = 0.95
-top_k = 40
-min_p = 0.01
-repeat_penalty = 1.0
-# Nanbeige4-3B-Thinking - Reasoning model from Nanbeige LLM Lab
-# Previous generation with strong reasoning capabilities
-# Size: 2.4GB | Capabilities: completion, tools, thinking
-# Testing: temp 0.5 for better tool recovery after errors
-
-# =======================================
-# FC-enhanced models (Hermes-style templates)
-# Added 2026-04-02
-# =======================================
-
-
-[models."qwopus3.5:4b"]
-model_id = "qwopus3.5:4b"
-num_ctx = 65536
-temperature = 0.7
-top_p = 0.95
-top_k = 40
-min_p = 0.01
-repeat_penalty = 1.05
-# Qwopus3.5-4B-v3 - Qwen 3.5 + Claude Opus distillation
-# Reasoning + Tool-Calling RL training
-# Size: 3.4GB | Context: 64K | Vision: Yes (mmproj)
-
-# =======================================
-# Gemma 4 (April 2026)
-# =======================================
-
-[models."gemma4:e2b"]
-model_id = "gemma4:e2b"
-num_ctx = 131072
-temperature = 0.7
-top_p = 0.95
-top_k = 40
-repeat_penalty = 1.1
-# Gemma 4 Effective 2B - Native FC support, ~7.2GB
-# Test pending: tool calling benchmark
-
-[models."gemma4:e4b"]
-model_id = "gemma4:e4b"
-num_ctx = 131072
-temperature = 0.7
-top_p = 0.95
-top_k = 40
-repeat_penalty = 1.1
-# Gemma 4 Effective 4B - Native FC support, ~10GB
-# Test pending: tool calling benchmark
-
-[models."gemma4-abliterated:e4b"]
-model_id = "gemma4-abliterated:e4b"
-num_ctx = 32768
-temperature = 0.7
-top_p = 0.95
-top_k = 40
-min_p = 0.01
-repeat_penalty = 1.1
-# Gemma 4 Abliterated E4B
-
 
