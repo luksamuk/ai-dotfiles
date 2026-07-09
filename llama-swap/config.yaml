@@ -32,6 +32,7 @@ globalTTL: 0
 macros:
   "models_dir": "${env.HOME}/.llama-models"
   "media_path": "${env.HOME}/testfiles/vision"
+  "templates_dir": "${env.HOME}/git/ai-dotfiles/llama-swap/templates"
 
   # Caminho para o llama-server compilado com CUDA (--fit disponível)
   # Build local em ~/git/llama.cpp/build/bin/llama-server
@@ -148,6 +149,7 @@ models:
       --spec-draft-n-max 8
       --spec-branch-budget 0
       --jinja
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
       --parallel 1
       -ngl all
       --ctx-size 32768
@@ -226,6 +228,7 @@ models:
       --fit
       --fit-margin 512
       --jinja
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
       --parallel 2
       --parallel-tool-calls
       --ctx-size ${small_model_max_ctx}
@@ -535,6 +538,7 @@ models:
       --repeat-penalty ${code_repeat_penalty}
       --reasoning on
       --jinja
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
       --parallel 1
       --parallel-tool-calls
       --cache-type-k ${large_cache_k}
@@ -669,92 +673,6 @@ models:
       embedding_length: 2048
       quantization: I-Compact
       note: "Post-trained Qwen 3.5 35B MoE. Self-scaffolding RL for agentic coding. 256 experts, 8+1 active, ~3B active/token. APEX I-Compact: 22% smaller than Q4_K_M, imatrix v1.3 calibrated. Expected 33-34 t/s matching Qwen 3.6 APEX."
-# -------------------------------------------
-# NEX-N2-MINI - MoE AGENTIC CODING+VISION (text-only on 6GB RTX 3050)
-# MoE 35B params, ~3B ativo por token. 256 routed + 1 shared expert, 8 active.
-# Built on Qwen3.5-35B-A3B-Base by Nex-AGI. Same qwen35moe architecture as Qwen3.6/Ornith/Agents-A1.
-# Agentic Thinking framework: Adaptive Thinking + Coherent Thinking.
-# Strong at coding (SWE-bench 74.4, Terminal-Bench 60.7), agentic tasks, deep research.
-# Has built-in vision encoder (mmproj 903MB) — BUT vision crashes on 6GB RTX 3050 (same as Qwen3.6/Agents-A1).
-# APEX I-Compact ~16.5GB — imatrix v1.3 calibrated (chat, code, reasoning, tool-calling, agentic traces).
-# ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
-# --fit-margin 768: same as Qwen 3.6 APEX (identical size)
-# --ctx-size 131072: same safe ceiling as Qwen 3.6
-# Dual mode: base (chat, no think) and :think (reasoning)
-# Recommended sampling (official): temp 0.7, top_p 0.95, top_k 40
-# License: Apache-2.0 (base model by Nex-AGI)
-# -------------------------------------------
-  "nex-n2-mini":
-    name: "Nex N2 Mini"
-    description: "Nex-N2-mini is a 35B Mixture-of-Experts agentic model with Agentic Thinking, post-trained on Qwen3.5-35B-A3B-Base for first-tier coding and long-horizon agentic tasks. Features adaptive thinking depth and coherent reasoning across diverse agentic workflows."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/nex-n2-mini/Nex-N2-mini-APEX-I-Compact.gguf
-      # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only = stable.
-      --fit
-      --fit-margin 768
-      --ctx-size 131072
-      --temp 0.7
-      --top-p 0.95
-      --top-k 40
-      --min-p 0.0
-      --repeat-penalty 1.0
-      --presence-penalty 1.1
-      --reasoning on
-      --jinja
-      --parallel 1
-      --parallel-tool-calls
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --defer-experts
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.95
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.95
-    ttl: 300
-    health_check_timeout: 300
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: "~16.5 GB (APEX I-Compact)"
-      context: "1K-131K (safe max)"
-      vram_usage: "~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s)"
-      source: "mudler/Nex-N2-mini-APEX-GGUF"
-      kv_cache: "q4_0 + attn_rot + hadamard"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 35000000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: I-Compact
-      note: "35B MoE agentic model. Qwen3.5 35B-A3B-Base. Agentic Thinking framework (Adaptive + Coherent). SWE-bench 74.4, Terminal-Bench 60.7. APEX I-Compact: imatrix v1.3 calibrated. Same arch/size as Qwen3.6/Ornith/Agents-A1 APEX — expects 33-34 t/s. Vision blocked on 6GB RTX 3050 (mmproj 903MB exists but CLIP OOMs at inference)."
 # -------------------------------------------
 # MINICPM-V 4.6 — VLM (Vision-Language Model)
 # OpenBMB/Tsinghua, Qwen3.5-0.8B backbone + SigLIP2-400M vision encoder
@@ -1037,89 +955,6 @@ models:
       context_length: 128000
       embedding_length: 2048
       quantization: Q8_0
-# -------------------------------------------
-# AGENTS-A1-35B - MoE AGENTIC (text-only, no vision)
-# MoE 35B params, ~3B ativo por token. 256 routed + 1 shared expert, 8 active.
-# Built on Qwen3.5 35B-A3B MoE base. Same qwen35moe architecture as Qwen3.6/Ornith.
-# Focused on: long-horizon search, engineering, scientific research, tool calling.
-# APEX I-Compact ~16.5GB — imatrix v1.3 calibrated (chat, code, reasoning, tool-calling, agentic traces).
-# ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
-# --fit-margin 768: same as Qwen 3.6 APEX (identical size)
-# --ctx-size 131072: same safe ceiling as Qwen 3.6
-# Dual mode: base (chat, no think) and :think (reasoning)
-# License: Apache-2.0 (base model by InternScience)
-# -------------------------------------------
-  "agents-a1-35b":
-    name: "Agents-A1 35B"
-    description: "Agents-A1 is a 35B Mixture-of-Experts agentic model built to scale heterogeneous agentic abilities across long-horizon search, engineering, scientific research, instruction following, and tool calling."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/agents-a1-35b/Agents-A1-APEX-I-Compact.gguf
-      # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only = stable.
-      --fit
-      --fit-margin 768
-      --ctx-size 131072
-      --temp 0.85
-      --top-p 0.95
-      --top-k 20
-      --min-p 0.0
-      --repeat-penalty 1.0
-      --presence-penalty 1.1
-      --reasoning on
-      --jinja
-      --parallel 1
-      --parallel-tool-calls
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --defer-experts
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.85
-          top_p: 0.95
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.85
-          top_p: 0.95
-    ttl: 300
-    health_check_timeout: 300
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: "~16.5 GB (APEX I-Compact)"
-      context: "1K-131K (safe max)"
-      vram_usage: "~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s)"
-      source: "mudler/Agents-A1-APEX-GGUF"
-      kv_cache: "q4_0 + attn_rot + hadamard"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 35000000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: I-Compact
-      note: "35B MoE agentic model. Qwen3.5 35B-A3B base. Focused on long-horizon search, engineering, scientific research, tool calling. APEX I-Compact: imatrix v1.3 calibrated. Same arch/size as Qwen3.6/Ornith APEX — expects 33-34 t/s. Vision blocked on 6GB RTX 3050."
 # -------------------------------------------
 # GLM-4.7-FLASH - MoE CONVERSATIONAL (text-only, MLA)
 # MoE ~30B params, ~2B ativo por token. 64 routed + 1 shared expert, 4 active.
@@ -1419,7 +1254,7 @@ models:
       --no-cont-batching
       --reasoning-format deepseek-legacy
       --reasoning on
-      --chat-template-file /home/alchemist/git/ai-dotfiles/llama-swap/templates/lfm2.5-chat-template.jinja
+      --chat-template-file ${templates_dir}/lfm2.5-chat-template.jinja
       --temp 0.2
       --top-p 0.8
       --top-k 40
@@ -1714,6 +1549,124 @@ models:
       embedding_length: 2048
       quantization: Q4_K_M
       note: "Ultra-light Extract VLM — 450M params, returns JSON. lfm2 arch requires upstream llama.cpp (not ik)."
+# LFM2.5-VL-450M-Extract hand-tracking — Q4_K_M quant
+  "lfm2.5-vl-450m-hand-tracking:q4_k_m":
+    name: "LFM2.5-VL 450M Hand Tracking Q4_K_M"
+    description: "Hand detection VLM fine-tuned from LFM2.5-VL-450M-Extract on HaGRID+COCO. Q4_K_M quant (229MB)."
+    tags:
+      - "vision"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/LFM2.5-VL-450M-hand-tracking-Q4_K_M.gguf
+      --mmproj ${models_dir}/mmproj-LFM2.5-VL-450M-hand-tracking-F16.gguf
+      --media-path ${media_path}
+      --jinja
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx 4096
+      --ctx-size 8192
+      --parallel 4
+      --cont-batching
+      --temp 0.1
+      --top-p 0.1
+      --top-k 50
+      --min-p 0.0
+      --repeat-penalty 1.05
+      --cache-type-k f16
+      --cache-type-v f16
+      --flash-attn on
+      --metrics
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - 'text'
+        - 'image'
+      out:
+        - 'text'
+      tools: false
+      reranker: false
+      context: 8192
+    metadata:
+      size: "229 MB + 190 MB mmproj"
+      context: "8K (grounding-optimized)"
+      vram_usage: "~0.6 GB"
+      source: "Fine-tuned from LiquidAI/LFM2.5-VL-450M-Extract on HaRID+COCO"
+      note: "Hand detection. Format: [{label:hand, bbox:[x1,y1,x2,y2]}] 0-1 floats, [] if none."
+      kv_cache: "f16"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: true
+      architecture: lfm2
+      parameters: 450000000
+      context_length: 128000
+      embedding_length: 1024
+      quantization: Q4_K_M
+# LFM2.5-VL-450M-Extract hand-tracking — Q8_0 quant
+  "lfm2.5-vl-450m-hand-tracking:q8_0":
+    name: "LFM2.5-VL 450M Hand Tracking Q8_0"
+    description: "Hand detection VLM fine-tuned from LFM2.5-VL-450M-Extract on HaGRID+COCO. Q8_0 quant (379MB)."
+    tags:
+      - "vision"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/LFM2.5-VL-450M-hand-tracking-Q8_0.gguf
+      --mmproj ${models_dir}/mmproj-LFM2.5-VL-450M-hand-tracking-F16.gguf
+      --media-path ${media_path}
+      --jinja
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx 4096
+      --ctx-size 8192
+      --parallel 4
+      --cont-batching
+      --temp 0.1
+      --top-p 0.1
+      --top-k 50
+      --min-p 0.0
+      --repeat-penalty 1.05
+      --cache-type-k f16
+      --cache-type-v f16
+      --flash-attn on
+      --metrics
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - 'text'
+        - 'image'
+      out:
+        - 'text'
+      tools: false
+      reranker: false
+      context: 8192
+    metadata:
+      size: "379 MB + 190 MB mmproj"
+      context: "8K (grounding-optimized)"
+      vram_usage: "~0.8 GB"
+      source: "Fine-tuned from LiquidAI/LFM2.5-VL-450M-Extract on HaRID+COCO"
+      note: "Hand detection. Format: [{label:hand, bbox:[x1,y1,x2,y2]}] 0-1 floats, [] if none."
+      kv_cache: "f16"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: true
+      architecture: lfm2
+      parameters: 450000000
+      context_length: 128000
+      embedding_length: 1024
+      quantization: Q8_0
 # -------------------------------------------
 # NOMIC-EMBED-TEXT-V2-MOE - UPSTREAM BACKEND (embedding model, CPU-only)
 # 475M params (305M active, MoE top-2/8 experts), 768-dim embeddings with Matryoshka → 256
@@ -1772,106 +1725,6 @@ models:
         audio: false
         image: false
       note: "Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with 'search_query: ' or 'search_document: '. 100+ languages. Matryoshka → 256 dims."
-# -------------------------------------------
-# NORTH MINI CODE — Cohere 30B-A3B MoE AGENTIC CODING (Q4_K_M, ik_llama backend)
-# CohereLabs/North-Mini-Code-1.0 — MoE 30B params, 3B active per token (top-8/128 experts).
-# Architecture: cohere2moe — merged upstream in PR #24260 (2026-06-13), parser #24615, vocab #24601.
-# ik_llama has cohere2moe arch + graph builder, but arch name mismatch: GGUF uses "cohere2moe"
-#   (no underscore), ik_llama used "cohere2_moe" (with underscore).
-#   Patched in ik_llama src/llama-arch.cpp L68: "cohere2_moe" -> "cohere2moe"
-#   Patched in ik_llama src/llama-vocab.cpp L2113: added "cohere2moe" to tiny_aya block
-#   (aligned with upstream PR #24601). Reapply both patches after ik_llama git pull.
-# Apache 2.0 license. Context: 256K native, max output: 64K.
-# Text-only model — NO mmproj, NO vision.
-# Sampling: temp=1.0, top_p=0.95 per model card recommendation.
-# Sliding window attention (SWA) 3:1 ratio with RoPE — same pattern as cohere2.
-# Quantization: Q4_K_M (Arki05) — 18.6 GB, 91.3% Top-1, 93.29% HumanEval.
-#   NVFP4 (michaelw9999) deprecated: ik_llama SIGFPE on NVFP4, upstream only, 4.2 tok/s.
-#   Q4_K_M works on ik_llama: 20-25 tok/s with MoE offload + hadamard cache.
-# Backend: ik_llama.cpp (NOT upstream — ik gives 5-6x speedup with MoE offload).
-# GGUF: Arki05/North-Mini-Code-1.0-GGUF (Q4_K_M = 18.6 GB) — correct chat template, imatrix calibrated.
-# Context: 65536 max on RTX 3050 6GB (131072 OOM with Q4_K_M — 1.3GB larger than I-Compact).
-
-# SMOKE TEST RESULTS (2026-06-19, ik b4633, RTX 3050 6GB):
-#   - Model loads with --fit --fit-margin 256, ctx 65536, parallel 1
-#   - Code generation: correct, concise, with reasoning
-#   - Performance: 20-25 t/s generation, 70+ t/s prompt processing
-#   - VRAM: ~5.6GB used (compute buffer 516MB + KV cache + non-MoE tensors)
-#   - Experts offloaded to CPU via --defer-experts
-
-# Flags (ik_llama specific):
-#   - --fit (no "on" argument — ik uses bare flag)
-#   - --fit-margin (ik uses margin in MiB, not --fit-target)
-#   - --k-cache-hadamard / --v-cache-hadamard (ik only, improves q4_0 cache quality)
-#   - --defer-experts (ik only, defers MoE expert mmap on Linux)
-#   - --parallel 1 (parallel 2 + ctx 65K OOM; Qwen 3.6 uses parallel 2 but with I-Compact)
-# -------------------------------------------
-  "north-mini-code":
-    name: "North Mini Code"
-    description: "Cohere's first open-source agentic coding model. 30B MoE with only 3B active params, optimized for code generation, agentic software engineering, and terminal tasks."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/north-mini-code-q4km/North-Mini-Code-1.0-Q4_K_M.gguf
-      --jinja
-      --reasoning on
-      --fit
-      --fit-margin 256
-      --parallel-tool-calls
-      --ctx-size 65536
-      --temp 1.0
-      --top-p 0.95
-      --repeat-penalty 1.0
-      --parallel 1
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --defer-experts
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 1.0
-          top_p: 0.95
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-    ttl: 300
-    health_check_timeout: 300
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 65536
-    metadata:
-      size: "~18.6 GB (Q4_K_M)"
-      context: "16K-65K (dynamic with --fit)"
-      vram_usage: "~5.6GB VRAM + ~14GB RAM (ik pinned memory, MoE offload)"
-      source: "Arki05/North-Mini-Code-1.0-GGUF"
-      kv_cache: "q4_0 + hadamard"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: cohere2moe
-      parameters: 30484340938
-      context_length: 262144
-      embedding_length: 2048
-      quantization: Q4_K_M
 # -------------------------------------------
 # ORNITH-1.0-9B - ik BACKEND (Hadamard KV cache)
 # Dense 9B params, Q4_K_M ~5.63GB.
@@ -2090,6 +1943,7 @@ models:
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/Qwen3.5-4B-abliterated.i1-Q4_K_M.gguf
       --jinja
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
       --parallel 2
       --parallel-tool-calls
       --fit
@@ -2197,10 +2051,10 @@ matrix:
     # Pesados (offload)
     qw36: qwen3.6-35b-a3b
     orn35: ornith-1.0-35b
-    a1: agents-a1-35b
+    # DISABLED 2026-07-05: GGUF moved to ~/.llama-models/_disabled/
+    # a1: agents-a1-35b
     glm: glm-4.7-flash
-    nex: nex-n2-mini
-    nmc: north-mini-code
+    # nmc: north-mini-code
     # Tradução
     hmt: hy-mt2-1.8b
     # Audio
@@ -2232,7 +2086,8 @@ matrix:
 
     # Modelos pesados (offload) + Embedding
     # nomic (~0.5GB) cabe ao lado mesmo dos pesados — usa RAM pro offload
-    heavy: "(qw36 | orn35 | nmc | a1 | glm | nex) & nomic"
+    # DISABLED 2026-07-05: nmc and a1 removed (GGUF moved to ~/.llama-models/_disabled/)
+    heavy: "(qw36 | orn35 | glm) & nomic"
 
     # Tradução (leve, cabe com nomic)
     translate_embed: "hmt & nomic"
@@ -2254,10 +2109,10 @@ matrix:
   evict_costs:
     qw36: 10
     orn35: 9
-    a1: 9
+    # DISABLED 2026-07-05: GGUF moved to ~/.llama-models/_disabled/
+    # a1: 9
     glm: 9
-    nex: 9
-    nmc: 9
+    # nmc: 9
     q9: 4
     g4: 4
     ttsext: 4

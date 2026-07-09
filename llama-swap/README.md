@@ -67,3 +67,44 @@ See [docs/USAGE.md](docs/USAGE.md) for full usage details and [docs/SETUP.md](do
 | `testchat/` | Interactive chat test script |
 | `llama-swap.service.template` | systemd user service template |
 | `MTP-NOTES.md` | Multi-Token Prediction benchmarks and notes |
+| `templates/` | Custom Jinja chat templates (see below) |
+
+## Custom Chat Templates
+
+Some models use custom Jinja chat templates loaded via `--chat-template-file`
+instead of the template embedded in their GGUF metadata.
+
+| Template | Models | Description |
+|----------|--------|-------------|
+| `qwen-fixed-chat-template.jinja` | qwen3.5-4b, qwen3.5-4b-abliterated, qwen3.5-9b, qwen3.6-35b-a3b | Fixed Jinja chat template for Qwen 3.5 & 3.6 — fixes agentic loop stalling, KV cache invalidation, minijinja compatibility, and tool calling errors |
+| `lfm2.5-chat-template.jinja` | lfm2.5-8b-a1b | LFM2.5 chat template for empty-template GGUFs |
+| `laguna-chat-template.jinja` | (disabled) | Laguna XS chat template |
+
+### Qwen Fixed Chat Template
+
+The `qwen-fixed-chat-template.jinja` file is sourced from
+[froggeric/Qwen-Fixed-Chat-Templates](https://huggingface.co/froggeric/Qwen-Fixed-Chat-Templates)
+(v21.3, Apache-2.0 license).
+
+**Attribution:**
+- Original models: Alibaba Cloud (Qwen team)
+- Template fixes: [froggeric](https://huggingface.co/froggeric)
+- C++ AST optimizations: barubary / spiritbuun
+
+**Key fixes over the stock Qwen template:**
+- Cured "Empty Think" poisoning that causes agentic loop stalls
+- Two-tier error escalation for consecutive tool call failures
+- Enforced chronological history for improved KV cache hit rate
+- Flattened Jinja AST for better llama.cpp throughput
+- 100% minijinja-safe (compatible with BeeLlama.cpp)
+- Dynamic payload truncation for long tool responses
+- Anthropic `message.thinking` payload support
+- Auto-injected closing tags before tool boundaries
+
+**Applied to:** Qwen 3.5 and 3.6 models only (4B, 4B-abliterated, 9B, 35B-A3B).
+Ornith models are excluded — they have a modified template from post-training.
+
+**Original templates backup:** `templates/_backup-qwen-original/` contains the
+stock `tokenizer.chat_template` extracted from each GGUF before the override
+was applied. To revert, remove the `--chat-template-file` line from the model
+fragment and rebuild the config.

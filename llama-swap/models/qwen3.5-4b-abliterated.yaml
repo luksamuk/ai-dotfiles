@@ -14,6 +14,7 @@
     ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/Qwen3.5-4B-abliterated.i1-Q4_K_M.gguf
     --jinja
+    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
     --parallel 2
     --parallel-tool-calls
     --fit
