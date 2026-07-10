@@ -1,32 +1,37 @@
 # -------------------------------------------
-# QWEN3.6-35B-A3B - MoE CODING (text-only, no vision) (APEX I-Compact)
+# QWEN3.6-35B-A3B - MoE CODING + VISION (APEX I-Compact + mmproj)
 # MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
-# 33 experts, top-8 routing. APEX I-Compact ~17.3GB
+# 33 experts, top-8 routing. APEX I-Compact ~17.3GB + mmproj 858MB F16.
 #   Mixed-precision MoE quant com imatrix diversa (chat, code, reasoning, tool-calling)
 #   Perplexity comparable to Q8_0 (6.669 vs 6.533), beats UD-Q3_K_XL on real benchmarks
-# NO MMPROJ: mmproj (858 MiB F16) loads fine with --fit-margin 1536 (41/41 layers, ~28 t/s text).
-#   BUT vision inference crashes — CLIP compute graph exceeds VRAM at runtime (ggml_abort on alloc).
-#   Text-only with --fit-margin 768 is stable and faster. Vision blocked on 6GB RTX 3050.
+#
+# VISION ENABLED 2026-07-10 (ik_llama build 4704):
+#   Previously vision crashed (CUDA graph OOM on 6GB RTX 3050).
+#   Fixed with --no-graph-reuse: prevents cudaGraphLaunch OOM from mmproj compute buffer.
+#   Trade-off: ctx 131072 → 32768 (mmproj uses ~560MB VRAM, less for KV cache).
+#   Speed: 27.6 tok/s with vision (vs 33-34 text-only — 17% slower).
+#   VRAM: 5587 MiB (tight but stable).
+#   Image processing: 209ms, encoding: 52ms, decode: 157ms.
+#
 # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
 # Architecture: qwen35moe (Qwen3MoeForCausalLM)
 # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-# --fit-margin 768: reserves ~0.75 GiB for desktop (Hyprland+browser+Kitty ~1.1GB idle)
-#   Keeps model at ~80-83% VRAM. 41/41 layers on GPU, ~13.8 GiB pinned RAM. Stable 33-34 t/s.
-# --k-cache-hadamard / --v-cache-hadamard: Hadamard transform before K/V cache quantization → much closer to f16 quality
+# --fit-margin 1536: larger margin needed for mmproj VRAM headroom
+# --no-graph-reuse: CRITICAL — prevents CUDA graph OOM when mmproj is loaded
+# --k-cache-hadamard / --v-cache-hadamard: Hadamard transform before K/V cache quantization
 # --defer-experts: defers expert mmap on Linux → faster model loading
 # --flash-attn auto: disables FA on short prompts (saves overhead on MoE offloaded models)
 # -------------------------------------------
 "qwen3.6-35b-a3b":
   name: "Qwen 3.6 35B"
-  description: "Qwen3.6 delivers substantial upgrades in agentic coding and thinking preservation. Built on direct community feedback for a more intuitive, responsive, and productive coding experience."
+  description: "Qwen3.6 delivers substantial upgrades in agentic coding and thinking preservation. Built on direct community feedback for a more intuitive, responsive, and productive coding experience. Vision enabled via mmproj."
   cmd: |
     ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/Qwen3.6-35B-A3B-APEX-I-Compact.gguf
-    # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only = stable 33-34 t/s.
-    # No --fit-ctx: ik_llama.cpp doesn't support this flag; --ctx-size serves as ceiling
+    --mmproj ${models_dir}/mmproj-Qwen3.6-35B-A3B-F16.gguf
     --fit
-    --fit-margin 768
-    --ctx-size 131072
+    --fit-margin 1536
+    --ctx-size 32768
     --temp ${code_temp}
     --top-p ${code_top_p}
     --top-k ${code_top_k}
@@ -37,6 +42,7 @@
     --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
     --parallel 1
     --parallel-tool-calls
+    --no-graph-reuse
     --cache-type-k ${large_cache_k}
     --cache-type-v ${large_cache_v}
     --k-cache-hadamard
@@ -60,29 +66,29 @@
   ttl: 300
   health_check_timeout: 300
   capabilities:
-    in: ['text']
+    in: ['text', 'image']
     out: ['text']
     tools: true
     reranker: false
-    context: 131072
+    context: 32768
   metadata:
-    size: "~17.3 GB (APEX I-Compact)"
-    context: "1K-131K (safe max; 200K works but zero VRAM headroom)"
-    vram_usage: "~5.4GB VRAM + 13.8GB pinned RAM (ik pinned memory, stable 33-34 t/s up to 131K)"
-    source: "mudler/Qwen3.5-35B-A3B-APEX-GGUF"
+    size: "~17.3 GB (APEX I-Compact) + 858 MB mmproj"
+    context: "32K (reduced from 131K for vision VRAM headroom)"
+    vram_usage: "~5.6 GB VRAM (5587 MiB measured) + ~14GB pinned RAM"
+    source: "mudler/Qwen3.5-35B-A3B-APEX-GGUF (+ mmproj-F16)"
     kv_cache: "q4_0 + attn_rot + hadamard"
     features:
       completion: true
       tools: true
       thinking: true
-      vision: false
+      vision: true
       embedding: false
       insert: false
       audio: false
-      image: false
+      image: true
     architecture: qwen35moe
     parameters: 34660000000
     context_length: 262144
     embedding_length: 2048
-    quantization: I-Compact
-    note: "Vision blocked — mmproj loads fine (858 MiB F16, ~28 t/s text) but CLIP compute graph OOMs on 6GB RTX 3050 at inference time. Reverted to text-only (33-34 t/s, stable)."
+    quantization: APEX I-Compact
+    note: "Vision enabled via --no-graph-reuse + --fit-margin 1536. ctx 32K (from 131K) for VRAM headroom. 27.6 tok/s with vision (17% slower than text-only 33-34). Both base and :think modes support vision."
