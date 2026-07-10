@@ -1,0 +1,83 @@
+# docker-compose.yml for OpenScience
+#
+# Usage:
+#   docker compose build          # build the image
+#   docker compose up -d          # start (headless, no browser)
+#   docker compose logs -f        # follow logs
+#   docker compose down           # stop (data survives in named volume)
+#
+# OpenScience server ALWAYS binds to 127.0.0.1 (hardcoded in source).
+# network_mode: host exposes it directly on localhost:4096.
+# This is the same pattern used by OpenDesign.
+#
+# API keys: pass via env vars or put them in .env (gitignored).
+# Supported: ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY,
+# GLM_API_KEY, DEEPSEEK_API_KEY, KIMI_API_KEY, etc.
+# See: https://github.com/synthetic-sciences/openscience#quickstart
+
+services:
+  openscience:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: openscience:latest
+    container_name: openscience
+    restart: unless-stopped
+
+    # Server binds 127.0.0.1 — use host networking to expose on localhost.
+    # This bypasses Docker's bridge network and the 127.0.0.1-in-container
+    # isolation problem.
+    network_mode: host
+
+    # Non-root user (UID 1001) set in Dockerfile.
+    # No need for user: in compose — the image handles it.
+
+    environment:
+      # Pin the port (server always binds 127.0.0.1)
+      OPENSCIENCE_PORT: "4096"
+      OPENSCIENCE_NO_OPEN: "1"
+
+      # --- API Keys (BYOK) ---
+      # Uncomment or set in .env file. Keys go straight to the provider,
+      # never to Synthetic Sciences.
+      # ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      # OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      # GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      # DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY:-}"
+      # GLM_API_KEY: "${GLM_API_KEY:-}"
+
+      # --- CORS (if accessing from a different origin) ---
+      # OPENSCIENCE_CORS_DOMAINS: "syntheticsciences.ai"
+
+    volumes:
+      # All OpenScience state (sessions, config, cache, projects) in one
+      # named volume. Survives docker compose down. Portable.
+      # Maps to /data inside container → XDG dirs redirected via env.
+      - openscience-data:/data
+
+      # Optional: mount a project directory for the agent to work in
+      # - /home/alchemist/git/some-research-project:/home/openscience/project
+
+    # Healthcheck is in the Dockerfile, but override for host network
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:4096/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+    # Resource limits (optional, adjust as needed)
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+        reservations:
+          memory: 256m
+
+volumes:
+  openscience-data:
+    # Named volume — persists across docker compose down/up.
+    # To inspect: docker volume inspect openscience_openscience-data
+    # To backup: docker run --rm -v openscience_openscience-data:/data -v $(pwd):/backup alpine tar czf /backup/openscience-data.tar.gz /data
+    # To nuke: docker volume rm openscience_openscience-data
+    name: openscience-data
