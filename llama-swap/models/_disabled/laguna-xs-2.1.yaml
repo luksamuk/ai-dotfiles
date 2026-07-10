@@ -12,6 +12,29 @@
 # Thinking: ik_llama PR #1943 (END_DELIMITED) extracts Brie/Brie reasoning_content correctly.
 # --parallel 1: reasoning + --parallel 2 splits context, causes 500 on long agent sessions.
 # License: OpenMDW-1.1
+#
+# REACTIVATION ATTEMPT (2026-07-10) — FAILED:
+#   Originally disabled 2026-07-03 (commit 61359fb) due to CUDA graph OOM on ik_llama
+#   build 4681. Attempted reactivation with ik_llama build 4704 (c32c3819).
+#   The CUDA graph OOM is resolved, but a new blocker was found:
+#   KERNEL OOM KILLER — the Q3_K_M GGUF (16GB on disk) expands to ~29GB RSS in RAM
+#   because Laguna has 256+1 experts (vs 128+1 on Qwen3.6), and ik_llama populates
+#   all expert tensors into RAM during model load. --defer-experts only works with
+#   mmap and does not prevent full population of expert pages. --no-mmap also fails
+#   (same 29GB RSS). The GPU is never reached because the process is killed before
+#   offloading completes. Tested with: --fit, -ngl 0, -ngl 10, -ngl 99, --no-mmap,
+#   --no-graph-reuse, ctx 4K/16K/32K — all killed by kernel OOM with ~29GB anon-rss.
+#
+#   Root cause: 257 experts × N tensors each = too many individual tensor allocations,
+#   all populated to RAM before GPU offload can begin. Other MoE models (Qwen3.6 128+1,
+#   Ornith 128+1) don't have this issue because fewer experts = less RAM expansion.
+#
+#   Available quants: Q3_K_M (16.1GB, AtomicChat), Q4_K_M (20.3GB, Poolside/AtomicChat).
+#   No Q2_K or APEX quant exists. Q4_K_M is even larger and would be worse.
+#   Poolside also offers NVFP4 and INT4 but these are safetensors (vLLM only, not GGUF).
+#
+#   BLOCKED until: ik_llama fixes lazy mmap for laguna experts, OR a smaller quant
+#   (Q2_K) becomes available, OR more RAM is added to the machine.
 # -------------------------------------------
 "laguna-xs-2.1":
   name: "Laguna XS 2.1"
@@ -20,8 +43,7 @@
     ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/laguna-xs-2.1/Laguna-XS-2.1-Q3_K_M.gguf
     --fit
-    --fit-margin 256
-    -ngl 99
+    --fit-margin 512
     --ctx-size 32768
     --batch-size 8
     --temp 0.3
@@ -32,9 +54,10 @@
     --parallel-tool-calls
     --jinja
     --parallel 1
-    --chat-template-file ${models_dir}/laguna-chat-template.jinja
-    --cache-type-k q8_0
-    --cache-type-v q8_0
+    --no-graph-reuse
+    --chat-template-file ${templates_dir}/laguna-chat-template.jinja
+    --cache-type-k q4_0
+    --cache-type-v q4_0
     --flash-attn auto
     --defer-experts
     --metrics
@@ -62,11 +85,11 @@
     reranker: false
     context: 32768
   metadata:
-    size: "~16.1 GB (Q3_K_M — requantized from official Q4_K_M)"
+    size: "~16.1 GB (Q3_K_M with imatrix)"
     context: "32K (configured, 262K native)"
     vram_usage: "~5.5GB VRAM (model offload + attention on GPU, experts on CPU)"
-    source: "poolside/Laguna-XS-2.1-GGUF (official Q4_K_M) → local Q3_K_M requant"
-    kv_cache: "q8_0"
+    source: "AtomicChat/Laguna-XS-2.1-GGUF (Q3_K_M with imatrix)"
+    kv_cache: "q4_0 (SWA keeps cache small)"
     features:
       completion: true
       tools: true
@@ -81,4 +104,4 @@
     context_length: 262144
     embedding_length: 2048
     quantization: Q3_K_M
-    note: "33B/3B MoE. SWA+global attention (30 SWA + 10 global, 40 layers). 256+1 experts. ik_llama only (PR #1943 END_DELIMITED extracts reasoning). imatrix Q3_K_M from AtomicChat. Over-generates tool calls 2-3x, repeat-penalty 1.12 mitigates."
+    note: "33B/3B MoE. SWA+global attention (30 SWA + 10 global, 40 layers). 256+1 experts. ik_llama only (PR #1939 split mode graph, PR #1943 END_DELIMITED reasoning). imatrix Q3_K_M from AtomicChat. --no-graph-reuse prevents CUDA graph OOM. Over-generates tool calls 2-3x, repeat-penalty 1.12 mitigates."
