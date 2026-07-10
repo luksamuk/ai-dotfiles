@@ -78,7 +78,7 @@ matrix:
 
     # Modelos pesados (offload) + Embedding
     # nomic (~0.5GB) cabe ao lado mesmo dos pesados — usa RAM pro offload
-    heavy: "(qw36 | orn35  | a1 | aw | glm  & nomic"
+    heavy: "(qw36 | orn35 | a1 | aw | glm) & nomic"
 
     # Tradução (leve, cabe com nomic)
     translate_embed: "hmt & nomic"
