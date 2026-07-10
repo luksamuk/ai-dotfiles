@@ -86,4 +86,36 @@ MODELS: dict[str, dict] = {
     #     "default_seconds": 5.0,
     #     "default_steps": 25,
     # },
+    # Wan2.2 I2V (sd-cli / stable-diffusion.cpp)
+    # AllInOne GGUF merges low-noise + high-noise into one file.
+    # Fine-tune "Rapid" uses 3 accelerators (lightx2v + WAN2.2 Lightning + rCM) → 4 steps, 1 CFG.
+    # NSFW fine-tune removes safety filters from base Wan2.2 I2V.
+    # Extras: VAE (wan_2.1_vae), UMT5-XXL text encoder (Q8_0), clip_vision_h (for I2V conditioning).
+    "wan22-i2v": {
+        "dir": "wan22-i2v",
+        "backend_type": "sd_cpp_video",
+        "bits": "4-bit (Q4_K_S)",
+        "gguf_file": "wan2.2-i2v-rapid-aio-v10-nsfw-Q4_K_S.gguf",
+        "description": "Wan2.2 I2V A14B Rapid AllInOne — image-to-video, 4-step accelerator, no content filters",
+        "default_size": (832, 480),
+        "default_video_frames": 33,
+        "default_fps": 24,
+        "default_steps": 4,
+        "default_cfg": 1.0,
+        "default_flow_shift": 3.0,
+        "enhance_model": "qwen3.6-35b-a3b",
+        "enhance_type": "vision",
+        "hf_files": [
+            {"repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+             "files": ["wan2.2-i2v-rapid-aio-v10-nsfw-Q4_K_S.gguf"]},
+            {"repo": "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
+             "files": ["wan_2.1_vae.safetensors"], "subdir": "vae",
+             "hf_path": "split_files/vae/wan_2.1_vae.safetensors"},
+            {"repo": "city96/umt5-xxl-encoder-gguf",
+             "files": ["umt5-xxl-encoder-Q8_0.gguf"], "subdir": "text_encoder"},
+            {"repo": "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
+             "files": ["clip_vision_h.safetensors"], "subdir": "clip_vision",
+             "hf_path": "split_files/clip_vision/clip_vision_h.safetensors"},
+        ],
+    },
 }

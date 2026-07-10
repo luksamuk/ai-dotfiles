@@ -14,6 +14,7 @@ _PROMPT_FILES: dict[str, str] = {
     "edit_enhance": "edit_enhance.yaml",
     "edit_vision": "edit_vision.yaml",
     "vision_analysis": "vision_analysis.yaml",
+    "video_enhance": "video_enhance.yaml",
 }
 
 # ── Cache ───────────────────────────────────────────────────────────────────
@@ -67,3 +68,7 @@ def get_edit_vision_prompt() -> str:
 
 def get_vision_analysis_prompt() -> str:
     return _load_prompt("vision_analysis")
+
+
+def get_video_enhance_prompt() -> str:
+    return _load_prompt("video_enhance")

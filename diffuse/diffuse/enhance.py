@@ -13,6 +13,7 @@ from diffuse.prompts import (
     get_vision_analysis_prompt,
     get_edit_enhance_prompt,
     get_edit_vision_prompt,
+    get_video_enhance_prompt,
 )
 
 log = logging.getLogger("diffuse")
@@ -526,6 +527,100 @@ def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str) -> t
 
     if not enhanced:
         log.warning("Empty one-shot vision+edit response — using raw prompt")
+        return user_prompt, enhanced
+
+    return enhanced, enhanced
+
+
+# ── Video (I2V) enhancement with vision ───────────────────────────────────
+def enhance_video_prompt(image_path: str, user_prompt: str, model: str) -> tuple:
+    """Use a vision-capable LLM to expand a motion prompt for Wan2.2 I2V.
+
+    Sends the input image plus the user's motion description to a vision model,
+    which returns a detailed video generation prompt that describes the character
+    as seen in the image, the motion, environment response, camera, lighting, and physics.
+
+    Returns (enhanced_prompt, raw_response).
+    On failure, enhanced_prompt is the original user_prompt.
+    """
+    import base64
+    import urllib.request
+    import urllib.error
+    from pathlib import Path as _Path
+
+    log.info("Video-enhancing prompt via %s (with image)", model)
+
+    # Read and base64-encode the image
+    img_data = _Path(image_path).read_bytes()
+    b64 = base64.b64encode(img_data).decode("ascii")
+
+    ext = _Path(image_path).suffix.lower()
+    mime_map = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+                ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp"}
+    mime = mime_map.get(ext, "image/jpeg")
+
+    system = get_video_enhance_prompt()
+    user_text = (
+        "I want to generate a video from this image. My motion description: " + user_prompt
+        + "\n\nLook at the image carefully. Describe the character and scene as they appear, "
+        "then write a detailed video generation prompt that combines what you see with the motion I described. "
+        "The video must START from this image and animate it."
+    )
+
+    def _build_payload():
+        return json.dumps({
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": [
+                    {"type": "image_url", "image_url": {"url": "data:" + mime + ";base64," + b64}},
+                    {"type": "text", "text": user_text},
+                ]},
+            ],
+            "temperature": 0.5,
+            "max_tokens": 16384,
+        }).encode("utf-8")
+
+    t0 = time.perf_counter()
+    max_retries = 12
+    enhanced = ""
+
+    for attempt in range(max_retries):
+        try:
+            req = urllib.request.Request(
+                f"{LLAMA_SWAP_URL}/v1/chat/completions",
+                data=_build_payload(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=None) as resp:
+                data = json.loads(resp.read())
+                msg = data["choices"][0]["message"]
+                enhanced = msg.get("content", "").strip()
+                reasoning = msg.get("reasoning_content", "")
+                if not enhanced and reasoning:
+                    log.warning(
+                        "Video-enhancement returned empty content with %d chars of reasoning",
+                        len(reasoning),
+                    )
+                    return user_prompt, reasoning
+                break
+        except urllib.error.HTTPError as e:
+            if e.code == 400 and attempt < max_retries - 1:
+                log.info("Model loading (attempt %d/%d), retrying in 10s...", attempt + 1, max_retries)
+                time.sleep(10)
+                continue
+            log.error("Video-enhancement failed: %s — using raw prompt", e)
+            return user_prompt, str(e)
+        except (urllib.error.URLError, OSError, KeyError, json.JSONDecodeError) as e:
+            log.error("Video-enhancement failed: %s — using raw prompt", e)
+            return user_prompt, str(e)
+
+    elapsed = time.perf_counter() - t0
+    log.info("Video-enhancement completed in %.1fs", elapsed)
+
+    if not enhanced:
+        log.warning("Empty video-enhancement response — using raw prompt")
         return user_prompt, enhanced
 
     return enhanced, enhanced

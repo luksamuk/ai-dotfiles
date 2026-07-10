@@ -82,9 +82,17 @@ def _auto_download_model(model_name: str, model_info: dict, model_root: Path) ->
                 dest_dir = model_root
             dest_dir.mkdir(parents=True, exist_ok=True)
 
+            # Some HF repos store files under subpaths (e.g. split_files/vae/).
+            # If hf_path is specified, download that specific path and rename.
+            hf_path = entry.get("hf_path")
+            if hf_path:
+                download_path = hf_path
+            else:
+                download_path = filename
+
             # Download the file
             print(f"  ⬇️  {repo} → {filename}")
-            cmd = [hf_cli, "download", repo, filename, "--local-dir", str(dest_dir)]
+            cmd = [hf_cli, "download", repo, download_path, "--local-dir", str(dest_dir)]
             result = subprocess.run(cmd)
             if result.returncode != 0:
                 print(f"\n  ✗ Download failed: {repo}/{filename}")
@@ -95,9 +103,20 @@ def _auto_download_model(model_name: str, model_info: dict, model_root: Path) ->
                     print(f"    3. Re-run: diffuse -m {model_name}")
                 sys.exit(1)
 
-            # Rename if needed
-            local_name = rename_map.get(filename)
-            if local_name and local_name != filename:
+            # Rename/move if needed
+            # When hf_path is used, the file lands at dest_dir/<hf_path> (preserving
+            # the HF subdir structure). We need to move it to dest_dir/<filename>.
+            rename_map = entry.get("rename", {})
+            local_name = rename_map.get(filename, filename)
+
+            if hf_path and hf_path != filename:
+                # File downloaded to dest_dir/hf_path (HF subdir preserved)
+                downloaded_path = dest_dir / hf_path
+                target_path = dest_dir / local_name
+                if downloaded_path.exists() and downloaded_path != target_path:
+                    downloaded_path.rename(target_path)
+                    print(f"     Moved: {hf_path} → {local_name}")
+            elif local_name != filename:
                 downloaded_path = dest_dir / filename
                 target_path = dest_dir / local_name
                 if downloaded_path.exists():
@@ -125,6 +144,9 @@ def load_pipeline(model_name: str, editing: bool = False) -> tuple:
     elif backend_type == "sd_cpp":
         from diffuse.backends.sd_cpp import load_pipeline_sd_cpp
         return load_pipeline_sd_cpp(model_name)
+    elif backend_type == "sd_cpp_video":
+        from diffuse.backends.sd_cpp import load_pipeline_sd_cpp_video
+        return load_pipeline_sd_cpp_video(model_name)
     elif backend_type == "hidream":
         from diffuse.backends.hidream import load_pipeline_hidream
         return load_pipeline_hidream(model_name, editing=editing)
