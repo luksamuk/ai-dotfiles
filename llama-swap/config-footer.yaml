@@ -48,6 +48,7 @@ matrix:
     aw: agentworld-35b
     glm: glm-4.7-flash
     nmc: north-mini-code
+    nex: nex-n2-mini
     # Tradução
     hmt: hy-mt2-1.8b
     # Audio
@@ -79,7 +80,7 @@ matrix:
 
     # Modelos pesados (offload) + Embedding
     # nomic (~0.5GB) cabe ao lado mesmo dos pesados — usa RAM pro offload
-    heavy: "(qw36 | orn35  nmc | a1 | aw | glm) & nomic"
+    heavy: "(qw36 | orn35 | nmc | a1 | aw | glm | nex) & nomic"
 
     # Tradução (leve, cabe com nomic)
     translate_embed: "hmt & nomic"
@@ -105,6 +106,7 @@ matrix:
     aw: 9
     glm: 9
     nmc: 9
+    nex: 9
     q9: 4
     g4: 4
     ttsext: 4
