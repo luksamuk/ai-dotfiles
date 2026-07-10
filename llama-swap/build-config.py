@@ -74,7 +74,6 @@ ORIGINAL_ORDER = [
     "agentworld-35b",         # ✅ World model (7 domains)
     "agents-a1-35b",          # ✅ 35B MoE long-horizon search + tool calling (reactivated Jul 2026)
     "north-mini-code",        # ✅ Cohere 30B-A3B MoE agentic coding (reactivated Jul 2026)
-    "nex-n2-mini",            # ✅ Nex-AGI 35B MoE agentic thinking (reactivated Jul 2026, second chance)
     "qwopus-coder-9b",       # ✅
     # "littlelamb-0.3b-tc",   # REMOVED Jun 2026 — tool-calling broken, too small
     "minicpm-v-4.6",         # ✅
