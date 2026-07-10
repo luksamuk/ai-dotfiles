@@ -1,0 +1,78 @@
+# -------------------------------------------
+# ORNITH-1.0-35B-MXFP4 - MoE AGENTIC CODING (text-only) — MXFP4 Hybrid variant
+# Same model as ornith-1.0-35b, different quantization:
+#   - MXFP4 (4.25 bpw) on routed experts (the bulk of the model)
+#   - Imatrix calibrated with agentic datasets (Fable-5 traces, Claude Opus reasoning,
+#     CodeFeedback, QUEST-RL) — better tool-calling/code calibration than APEX v1.3 generic
+#   - 18.5 GB (vs 16.5 GB APEX I-Compact) — 2 GB larger
+#   - ik_llama supports MXFP4 since GGML_TYPE_MXFP4 = 39
+# Purpose: A/B comparison vs APEX I-Compact with think always enabled
+# Chat template: same as APEX (--jinja, embedded GGUF template, no external file)
+# -------------------------------------------
+"ornith-1.0-35b-mxfp4":
+  name: "Ornith 1.0 35B MXFP4"
+  description: "Ornith-1.0 35B with MXFP4 expert quantization + agentic imatrix. A/B comparison variant vs APEX I-Compact. Thinking always enabled."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/ornith-1.0-35b-mxfp4/Ornith-1.0-35B-MXFP4_MOE-Only-Imatrix.gguf
+    --fit
+    --fit-margin 768
+    --ctx-size 131072
+    --temp 1.0
+    --top-p 1.0
+    --top-k ${code_top_k}
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --reasoning on
+    --jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 1.0
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 1.0
+  ttl: 300
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~18.5 GB (MXFP4 MOE-Only with imatrix)"
+    context: "1K-131K (safe max)"
+    vram_usage: "~5.4GB VRAM + ~14GB pinned RAM (2GB larger than APEX, more RAM offload)"
+    source: "jashepp/Ornith-1.0-35B-A3B-MXFP4_MOE_Hybrid-Imatrix-GGUF"
+    kv_cache: "q4_0 + attn_rot + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 35000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: MXFP4
+    note: "MXFP4 Hybrid variant for A/B comparison vs APEX I-Compact. MXFP4 on routed experts, imatrix calibrated with agentic datasets. 18.5GB vs 16.5GB APEX. Think always enabled (both base and :think modes). Same flags as APEX variant."
