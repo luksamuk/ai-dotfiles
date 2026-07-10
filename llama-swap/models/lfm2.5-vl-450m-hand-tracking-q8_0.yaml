@@ -1,0 +1,55 @@
+# LFM2.5-VL-450M-Extract hand-tracking — Q8_0 quant
+"lfm2.5-vl-450m-hand-tracking:q8_0":
+  name: "LFM2.5-VL 450M Hand Tracking Q8_0"
+  description: "Hand detection VLM fine-tuned from LFM2.5-VL-450M-Extract on HaGRID+COCO. Q8_0 quant (379MB)."
+  tags: ["vision"]
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/LFM2.5-VL-450M-hand-tracking-Q8_0.gguf
+    --mmproj ${models_dir}/mmproj-LFM2.5-VL-450M-hand-tracking-F16.gguf
+    --media-path ${media_path}
+    --jinja
+    --fit on
+    --fit-target ${vram_margin}
+    --fit-ctx 4096
+    --ctx-size 8192
+    --parallel 4
+    --cont-batching
+    --temp 0.1
+    --top-p 0.1
+    --top-k 50
+    --min-p 0.0
+    --repeat-penalty 1.05
+    --cache-type-k f16
+    --cache-type-v f16
+    --flash-attn on
+    --metrics
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 8192
+  metadata:
+    size: "379 MB + 190 MB mmproj"
+    context: "8K (grounding-optimized)"
+    vram_usage: "~0.8 GB"
+    source: "Fine-tuned from LiquidAI/LFM2.5-VL-450M-Extract on HaRID+COCO"
+    note: "Hand detection. Format: [{label:hand, bbox:[x1,y1,x2,y2]}] 0-1 floats, [] if none."
+    kv_cache: "f16"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: true
+    architecture: lfm2
+    parameters: 450000000
+    context_length: 128000
+    embedding_length: 1024
+    quantization: Q8_0

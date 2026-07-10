@@ -14,13 +14,14 @@
 # Backend: ik_llama.cpp (supports qwen35moe since PR #1288)
 #   Same architecture as Qwen3.6 — all ik optimizations apply
 #
-# Quant: Q4_K_M (20 GB) — standard K-quant from groxaxo
-#   No XL (ik_llama compatible), imatrix available separately
+# Quant: APEX I-Compact (16.5 GB) — imatrix calibrated, from mudler
+#   Same APEX pipeline as Qwen3.6/Ornith/Agents-A1 — 22% smaller than Q4_K_M
+#   Previous: groxaxo Q4_K_M (20 GB), switched to mudler APEX Jul 2026
 #
 # Performance expectations (RTX 3050 6GB, ik_llama.cpp):
-#   ~15-20 tok/s text generation (MoE offload with ik optimizations)
-#   Cold start: 30-60s (loading 20 GB + mmap)
-#   VRAM: ~5GB model offload, rest in CPU RAM via --fit
+#   ~33-34 tok/s text generation (APEX I-Compact, same as Qwen3.6/Ornith)
+#   Cold start: 30-60s (loading 16.5 GB + mmap)
+#   VRAM: ~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory)
 #   Thinking mode adds latency but improves simulation fidelity
 #
 # ik_llama flags:
@@ -34,10 +35,10 @@
   description: "Qwen's native language world model. 35B params, 3B active. Simulates 7 agent environments (MCP, Search, Terminal, SWE, Android, Web, OS) via long chain-of-thought reasoning. Trained from CPT onward for environment modeling."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/agentworld-35b/Qwen-AgentWorld-35B-A3B-Q4_K_M.gguf
+    --model ${models_dir}/agentworld-35b/Qwen-AgentWorld-35B-A3B-APEX-I-Compact.gguf
     --fit
     --fit-margin 768
-    --ctx-size 32768
+    --ctx-size 131072
     --temp ${think_temp}
     --top-p ${think_top_p}
     --top-k ${think_top_k}
@@ -73,13 +74,13 @@
     out: ['text']
     tools: false
     reranker: false
-    context: 32768
+    context: 131072
   metadata:
-    size: "~20 GB (Q4_K_M)"
-    context: "4K-32K (fit dynamic, 256K native)"
-    vram_usage: "~5GB VRAM + ~15GB RAM (CPU offload, ik --fit)"
-    source: "groxaxo/Qwen-AgentWorld-35B-A3B-GGUF"
-    kv_cache: "q4_0 + hadamard"
+    size: "~16.5 GB (APEX I-Compact)"
+    context: "1K-131K (safe max)"
+    vram_usage: "~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s)"
+    source: "mudler/Qwen-AgentWorld-35B-A3B-APEX-GGUF"
+    kv_cache: "q4_0 + attn_rot + hadamard"
     domains: "MCP, Search, Terminal, SWE, Android, Web, OS"
     features:
       completion: true
@@ -94,5 +95,5 @@
     parameters: 35000000000
     context_length: 262144
     embedding_length: 2048
-    quantization: Q4_K_M
-    note: "World model — simulates 7 agent environments. Use with worldsim CLI. Thinking mode recommended for simulation fidelity. 32K ctx for VRAM safety (256K native but needs 128K+ for multi-turn trajectories)."
+    quantization: APEX I-Compact
+    note: "World model — simulates 7 agent environments. Use with worldsim CLI. Thinking mode recommended for simulation fidelity. 131K ctx safe max with APEX I-Compact (same as Qwen3.6/Ornith)."

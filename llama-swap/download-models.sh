@@ -42,8 +42,10 @@
 #   mellum2-12b-thinking  - Mellum2-12B-A2.5B-Thinking Q4_K_M (~7.6 GB) - JetBrains MoE, reasoning + tools, manual conversion
 #   ornstein-36-35b       - Ornstein 3.6 35B SABER Q4_K_M (~21.7 GB) - Qwen3.6 MoE NSC-ACE-SABER fine-tune, test only
 #   nemotron-omni-30b     - [REMOVED] NVIDIA Nemotron 3 Nano Omni 30B — audio didn't work in GGUF, replaced by AgentWorld
-#   [REMOVED] agentworld-35b — removed from fleet Jun 2026 (unused)
+#   [REMOVED] agentworld-35b — removed from fleet Jun 2026 (unused), reactivated Jul 2026 with APEX
+#   agentworld-35b      - Qwen AgentWorld 35B-A3B APEX I-Compact (~16.5 GB) - native language world model, 7 agent environments
 #   agents-a1-35b        - Agents-A1 35B-A3B APEX I-Compact (~16.5 GB) - 35B MoE, long-horizon search, engineering, research, tool calling
+#   north-mini-code      - North Mini Code 30B-A3B Q4_K_M (~18.6 GB) - Cohere MoE agentic coding, ik_llama only
 #   ds-r1-distill-14b    - [REMOVED] Dense 14B, poor perf on RTX 3050
 #   ds-r1-distill-32b    - [REMOVED] Dense 32B, very slow on limited VRAM
 #   qwopus-35b           - Qwopus3.6-35B-A3B-v1 APEX I-Compact (~16.5 GB) - MoE coding+reasoning SFT
@@ -90,6 +92,11 @@ declare -A MODELS=(
   # LFM2.5-VL-450M-Extract — ultra-light structured extraction (450M params)
   # Same Extract family as 1.6B but smaller — edge deployment, faster inference
   ["lfm2.5-vl-450m-extract"]="LiquidAI/LFM2.5-VL-450M-Extract-GGUF LFM2.5-VL-450M-Extract-Q4_K_M.gguf"
+  # LFM2.5-VL-450M-Hand-Tracking — fine-tuned hand detection VLM (luksamuk)
+  # Trained from LFM2.5-VL-450M-Extract on HaGRID+COCO, 100% acc, 0 FP, 0 FN
+  # Q8_0 (379MB) + Q4_K_M (229MB) + mmproj F16 (190MB)
+  ["lfm2.5-vl-450m-hand-tracking-q8_0"]="luksamuk/LFM2.5-VL-450M-Hand-Tracking-GGUF LFM2.5-VL-450M-hand-tracking-Q8_0.gguf"
+  ["lfm2.5-vl-450m-hand-tracking-q4_k_m"]="luksamuk/LFM2.5-VL-450M-Hand-Tracking-GGUF LFM2.5-VL-450M-hand-tracking-Q4_K_M.gguf"
   # [REMOVED] lfm2.5-1.2b — superseded by LFM2.5-8B-A1B, disabled May 2026
   # Only Instruct variant was in fleet; Thinking variant never downloaded
   # [REMOVED] lfm2.5-1.2b-think — superseded by LFM2.5-8B-A1B, disabled May 2026
@@ -111,6 +118,10 @@ declare -A MODELS=(
   # [REMOVED] gemma4-26b-a4b APEX I-Compact — superseded by QAT Q4_0 (faster, smaller, same quality)
   # [REMOVED] gemma4-26b-a4b QAT Q4_0 — removed from fleet Jun 2026 (replaced by Qwen 3.6 + North Mini Code)
   ["gpt-oss-20b"]="unsloth/gpt-oss-20b-GGUF gpt-oss-20b-Q4_K_M.gguf"
+  # North-Mini-Code — Cohere 30B-A3B MoE agentic coding model, Q4_K_M (18.6 GB)
+  # Architecture: cohere2moe — requires ik_llama patches (see model YAML for details)
+  # Re-activated Jul 2026
+  ["north-mini-code"]="Arki05/North-Mini-Code-1.0-GGUF North-Mini-Code-1.0-Q4_K_M.gguf"
   # [REMOVED] ministral-3-3b — removed from fleet May 2026
   # MiniCPM-V 4.6 — VLM with SigLIP2-400M, Qwen3.5-0.8B backbone, 256K ctx, video+image+text
   # Uses qwen35 arch — supported in both ik_llama.cpp and upstream
@@ -172,8 +183,8 @@ declare -A MODELS=(
   # Architecture: qwen35moe (same as Qwen3.6-35B-A3B-APEX), no APEX quant, standard Q4_K_M
   # TEST ONLY: evaluating as potential replacement for Qwen3.6-APEX
   ["ornstein-36-35b"]="GestaltLabs/Qwen3.6-35B-A3B-NSC-ACE-SABER-GGUF Qwen3.6-35B-A3B-NSC-ACE-SABER-Q4_K_M.gguf"
-  # [REMOVED] agentworld-35b — removed from fleet Jun 2026 (unused)
-  # ["agentworld-35b"]="groxaxo/Qwen-AgentWorld-35B-A3B-GGUF Qwen-AgentWorld-35B-A3B-Q4_K_M.gguf"
+  # AgentWorld-35B — reactivated Jul 2026, switched to mudler APEX I-Compact (16.5GB vs 20GB Q4_K_M)
+  ["agentworld-35b"]="mudler/Qwen-AgentWorld-35B-A3B-APEX-GGUF Qwen-AgentWorld-35B-A3B-APEX-I-Compact.gguf"
   # Agents-A1-35B — 35B MoE agentic model, Qwen3.5 base, long-horizon search + tool calling
   ["agents-a1-35b"]="mudler/Agents-A1-APEX-GGUF Agents-A1-APEX-I-Compact.gguf"
   # GLM-4.7-Flash — 30B MoE with MLA (Multi-head Latent Attention), 4 active experts
@@ -187,6 +198,9 @@ declare -A MMPROJ=(
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF mmproj-LFM2.5-VL-450m-F16.gguf"
   ["lfm2.5-vl-1.6b-extract"]="LiquidAI/LFM2.5-VL-1.6B-Extract-GGUF mmproj-LFM2.5-VL-1.6B-Extract-F16.gguf"
   ["lfm2.5-vl-450m-extract"]="LiquidAI/LFM2.5-VL-450M-Extract-GGUF mmproj-LFM2.5-VL-450M-Extract-F16.gguf"
+  # LFM2.5-VL-450M-Hand-Tracking — shared mmproj (same vision encoder as Extract)
+  ["lfm2.5-vl-450m-hand-tracking-q8_0"]="luksamuk/LFM2.5-VL-450M-Hand-Tracking-GGUF mmproj-LFM2.5-VL-450M-hand-tracking-F16.gguf"
+  ["lfm2.5-vl-450m-hand-tracking-q4_k_m"]="luksamuk/LFM2.5-VL-450M-Hand-Tracking-GGUF mmproj-LFM2.5-VL-450M-hand-tracking-F16.gguf"
   ["qwen3.6-35b-a3b"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF mmproj-F16.gguf mmproj-Qwen3.6-35B-A3B-F16.gguf"
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-4B-F16.gguf"
   ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-9B-F16.gguf"
@@ -324,6 +338,8 @@ show_sizes() {
   echo "  nomic-embed-text-v2-moe  ~0.33 GB  (Q4_K_M) - Embedding, RAG/search/similarity"
   echo "  mellum2-12b-thinking  ~7.60 GB  (Q4_K_M) - JetBrains MoE 12B/2.5B, reasoning + tools (manual conversion)"
   echo "  ornstein-36-35b       ~21.70 GB (Q4_K_M) - Qwen3.6-35B NSC-ACE-SABER fine-tune, +2.87pp BFCL (test only)"
+  echo "  agentworld-35b      ~16.50 GB  (APEX I-Compact) - Qwen native language world model, 7 agent environments"
+  echo "  north-mini-code     ~18.60 GB  (Q4_K_M) - Cohere 30B-A3B MoE agentic coding, ik_llama only"
   echo "  nemotron-omni-30b    ~22.30 GB (UD-Q4_K_XL) + 1.5 GB mmproj - NVIDIA omnimodal MoE (text+image+audio), upstream only"
   echo ""
   echo "vLLM-only models (safetensors, auto-downloaded on first serve):"
@@ -363,7 +379,7 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-8b-a1b, qwen3.6-35b-a3b, ornith-1.0-35b, agents-a1-35b, qwopus-35b, gpt-oss-20b, ornstein-36-35b, qwen3-vl-4b, smolvlm2-500m-video, all"
+    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-450m-hand-tracking-q8_0, lfm2.5-vl-450m-hand-tracking-q4_k_m, lfm2.5-8b-a1b, qwen3.6-35b-a3b, ornith-1.0-35b, agents-a1-35b, north-mini-code, agentworld-35b, qwopus-35b, gpt-oss-20b, ornstein-36-35b, qwen3-vl-4b, smolvlm2-500m-video, all"
     exit 1
     ;;
 esac
