@@ -73,7 +73,6 @@ ORIGINAL_ORDER = [
     "ornith-1.0-35b",        # ✅ Post-trained Qwen 3.5 35B MoE (agentic coding RL)
     "agentworld-35b",         # ✅ World model (7 domains)
     "agents-a1-35b",          # ✅ 35B MoE long-horizon search + tool calling (reactivated Jul 2026)
-    "north-mini-code",        # ✅ Cohere 30B-A3B MoE agentic coding (reactivated Jul 2026)
     "qwopus-coder-9b",       # ✅
     # "littlelamb-0.3b-tc",   # REMOVED Jun 2026 — tool-calling broken, too small
     "minicpm-v-4.6",         # ✅

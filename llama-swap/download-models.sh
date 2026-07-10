@@ -45,7 +45,6 @@
 #   [REMOVED] agentworld-35b — removed from fleet Jun 2026 (unused), reactivated Jul 2026 with APEX
 #   agentworld-35b      - Qwen AgentWorld 35B-A3B APEX I-Compact (~16.5 GB) - native language world model, 7 agent environments
 #   agents-a1-35b        - Agents-A1 35B-A3B APEX I-Compact (~16.5 GB) - 35B MoE, long-horizon search, engineering, research, tool calling
-#   north-mini-code      - North Mini Code 30B-A3B Q4_K_M (~18.6 GB) - Cohere MoE agentic coding, ik_llama only
 #   laguna-xs-2.1        - Laguna XS 2.1 33B/3B Q3_K_M (~16.1 GB) - Poolside MoE agentic coding, ik_llama only
 #   ds-r1-distill-14b    - [REMOVED] Dense 14B, poor perf on RTX 3050
 #   ds-r1-distill-32b    - [REMOVED] Dense 32B, very slow on limited VRAM
@@ -122,7 +121,6 @@ declare -A MODELS=(
   # North-Mini-Code — Cohere 30B-A3B MoE agentic coding model, Q4_K_M (18.6 GB)
   # Architecture: cohere2moe — requires ik_llama patches (see model YAML for details)
   # Re-activated Jul 2026
-  ["north-mini-code"]="Arki05/North-Mini-Code-1.0-GGUF North-Mini-Code-1.0-Q4_K_M.gguf"
   # [DISABLED 2026-07-10] Laguna XS 2.1 — kernel OOM killer, 257 experts expand to 29GB RAM
   # ["laguna-xs-2.1"]="AtomicChat/Laguna-XS-2.1-GGUF Laguna-XS-2.1-Q3_K_M.gguf"
   # [REMOVED] ministral-3-3b — removed from fleet May 2026
@@ -344,7 +342,6 @@ show_sizes() {
   echo "  mellum2-12b-thinking  ~7.60 GB  (Q4_K_M) - JetBrains MoE 12B/2.5B, reasoning + tools (manual conversion)"
   echo "  ornstein-36-35b       ~21.70 GB (Q4_K_M) - Qwen3.6-35B NSC-ACE-SABER fine-tune, +2.87pp BFCL (test only)"
   echo "  agentworld-35b      ~16.50 GB  (APEX I-Compact) - Qwen native language world model, 7 agent environments"
-  echo "  north-mini-code     ~18.60 GB  (Q4_K_M) - Cohere 30B-A3B MoE agentic coding, ik_llama only"
   echo "  laguna-xs-2.1       ~16.10 GB  (Q3_K_M) - Poolside 33B/3B MoE agentic coding, ik_llama only"
   echo "  nemotron-omni-30b    ~22.30 GB (UD-Q4_K_XL) + 1.5 GB mmproj - NVIDIA omnimodal MoE (text+image+audio), upstream only"
   echo ""
@@ -385,7 +382,6 @@ case "${1:-qwen3.5-4b}" in
     ;;
   *)
     echo "Unknown model: $1"
-    echo "Available: qwen3.5-0.8b, qwen3.5-4b, qwen3.5-9b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-450m-hand-tracking-q8_0, lfm2.5-vl-450m-hand-tracking-q4_k_m, lfm2.5-8b-a1b, qwen3.6-35b-a3b, ornith-1.0-35b, agents-a1-35b, north-mini-code, agentworld-35b, laguna-xs-2.1, qwopus-35b, gpt-oss-20b, ornstein-36-35b, qwen3-vl-4b, smolvlm2-500m-video, all"
     exit 1
     ;;
 esac

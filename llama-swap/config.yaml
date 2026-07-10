@@ -847,91 +847,6 @@ models:
       embedding_length: 2048
       quantization: I-Compact
       note: '35B MoE agentic model. Qwen3.5 35B-A3B base. Focused on long-horizon search, engineering, scientific research, tool calling. APEX I-Compact: imatrix v1.3 calibrated. Same arch/size as Qwen3.6/Ornith APEX — expects 33-34 t/s. Vision blocked on 6GB RTX 3050.'
-  north-mini-code:
-    name: North Mini Code
-    description: Cohere's first open-source agentic coding model. 30B MoE with only 3B active params, optimized for code generation, agentic software engineering, and terminal tasks.
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/north-mini-code-q4km/North-Mini-Code-1.0-Q4_K_M.gguf
-
-      --jinja
-
-      --reasoning on
-
-      --fit
-
-      --fit-margin 256
-
-      --parallel-tool-calls
-
-      --ctx-size 65536
-
-      --temp 1.0
-
-      --top-p 0.95
-
-      --repeat-penalty 1.0
-
-      --parallel 1
-
-      --cache-type-k ${large_cache_k}
-
-      --cache-type-v ${large_cache_v}
-
-      --k-cache-hadamard
-
-      --v-cache-hadamard
-
-      --flash-attn auto
-
-      --defer-experts
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 1.0
-          top_p: 0.95
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-    ttl: 300
-    health_check_timeout: 300
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 65536
-    metadata:
-      size: ~18.6 GB (Q4_K_M)
-      context: 16K-65K (dynamic with --fit)
-      vram_usage: ~5.6GB VRAM + ~14GB RAM (ik pinned memory, MoE offload)
-      source: Arki05/North-Mini-Code-1.0-GGUF
-      kv_cache: q4_0 + hadamard
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: cohere2moe
-      parameters: 30484340938
-      context_length: 262144
-      embedding_length: 2048
-      quantization: Q4_K_M
   minicpm-v-4.6:
     name: MiniCPM-V 4.6
     description: A series of multimodal LLMs designed for vision-language understanding, with strong OCR capability, multi-image understanding, and efficient visual token processing.
@@ -2396,7 +2311,6 @@ matrix:
     a1: agents-a1-35b
     aw: agentworld-35b
     glm: glm-4.7-flash
-    nmc: north-mini-code
     hmt: hy-mt2-1.8b
     asr: qwen3-asr-0.6b
     ttsext: qwen3-tts
@@ -2410,7 +2324,7 @@ matrix:
     vision_only: vl | vlx | vle | vl16 | ocr | cpv | qwvl | smv
     vision_embed: (vl | vlx | vle | vl16 | ocr | cpv | qwvl | smv) & nomic
     medium: (q9 | g4) & nomic
-    heavy: (qw36 | orn35 | nmc | a1 | aw | glm  & nomic
+    heavy: (qw36 | orn35  | a1 | aw | glm  & nomic
     translate_embed: hmt & nomic
     translate_only: hmt
     tts_external: ttsext
@@ -2423,7 +2337,6 @@ matrix:
     a1: 9
     aw: 9
     glm: 9
-    nmc: 9
     q9: 4
     g4: 4
     ttsext: 4
