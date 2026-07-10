@@ -40,6 +40,7 @@ MODELS: dict[str, dict] = {
         "enhance_type": "vision",
     },
     # Ideogram 4 (sd-cli / stable-diffusion.cpp)
+    # Models auto-download from HuggingFace on first use (no pre-download needed).
     "ideogram4-q4": {
         "backend_id": "ideogram4-q4-sd-cpp",
         "dir": "ideogram-4-Q4_0",
@@ -49,6 +50,17 @@ MODELS: dict[str, dict] = {
         "enhance_model": "qwen3.5-4b",
         "enhance_type": "ideogram",
         "default_size": (480, 480),
+        # Auto-download: files fetched from HuggingFace on first use via require_model_dir()
+        # VAE source: black-forest-labs/FLUX.2-dev is a gated repo — user must run
+        #   hf auth login && hf download black-forest-labs/FLUX.2-dev
+        # once to accept the license. After that, auto-download works.
+        "hf_files": [
+            {"repo": "leejet/ideogram-4-GGUF", "files": ["ideogram4-Q4_0.gguf", "ideogram4_uncond-Q4_0.gguf"]},
+            {"repo": "unsloth/Qwen3-VL-8B-Instruct-GGUF", "files": ["Qwen3-VL-8B-Instruct-Q4_K_M.gguf"],
+             "rename": {"Qwen3-VL-8B-Instruct-Q4_K_M.gguf": "Qwen3VL-8B-Instruct-Q4_K_M.gguf"}},
+            {"repo": "black-forest-labs/FLUX.2-dev", "files": ["ae.safetensors"], "subdir": "vae",
+             "rename": {"ae.safetensors": "flux2-vae.safetensors"}},
+        ],
     },
     # HiDream-O1-Image-Dev SDNQ (transformers + accelerate CPU offload)
     "hidream-sdnq": {

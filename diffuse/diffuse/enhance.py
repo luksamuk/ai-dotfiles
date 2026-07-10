@@ -93,7 +93,7 @@ def _extract_json(text: str) -> str | None:
     return None
 
 
-# ── Ideogram JSON enhancement ───────────────────────────────────────────────
+# ── Ideogram JSON enhancement ──────────────────────────────────────────────
 def enhance_prompt(prompt: str, model: str) -> tuple:
     """Use an LLM via llama-swap to expand a simple prompt into Ideogram 4 JSON.
 

@@ -93,11 +93,10 @@ def parse_args() -> argparse.Namespace:
         epilog=(
             "Examples:\n"
             "  diffuse -m ternary-gemlite -p 'a cat on the moon'\n"
-            "  diffuse -m ideogram4-q4 --enhance -p 'a rainy day at a coffee shop'\n"
-            "  diffuse -m ideogram4-q4 --enhance-with laguna-xs2 --evict-llm -p 'cyberpunk city'\n"
+            "  diffuse -m ternary-gemlite --enhance -p 'a rainy day at a coffee shop'\n"
+            "  diffuse -m ternary-gemlite --enhance-with laguna-xs2 --evict-llm -p 'cyberpunk city'\n"
             "  diffuse -m hidream-sdnq -p 'a cat on a windowsill at golden hour'\n"
             "  diffuse -m hidream-sdnq -p 'add a red hat' --edit photo.png\n"
-            "  diffuse -m ideogram4-q4 -p '{\"high_level_description\": \"...\"}' --size 480x480\n"
             "  diffuse --list                        # show model details\n"
             "\n"
             "Model capabilities:\n"
@@ -122,10 +121,10 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("-p", "--prompt", help="Text prompt. If omitted, prompted interactively.")
     p.add_argument("--seed", type=int, default=None, help="Random seed (random if not set).")
-    p.add_argument("--steps", type=int, default=None, help="Denoising steps (default: 4 for bonsai, 20 for ideogram4).")
+    p.add_argument("--steps", type=int, default=None, help="Denoising steps (default: 4 for bonsai, 20 for ideogram4, 28 for hidream).")
     p.add_argument(
         "--size", type=parse_size, default=None,
-        help="Image size as WxH (default: 512x512 for bonsai, 480x480 for ideogram4).",
+        help="Image size as WxH (default: 512x512 for bonsai, 480x480 for ideogram4, 1024x1024 for hidream).",
     )
     p.add_argument("--output", type=Path, default=None, help="Output PNG path (auto-generated in cwd if not set).")
     p.add_argument("--open", action="store_true", help="Open the generated image with feh after saving.")
@@ -140,7 +139,8 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--enhance", action="store_true",
-        help="Expand prompt via LLM. For ideogram4: structured JSON. "
+        help="Expand prompt via LLM. "
+             "For ideogram4: structured JSON with layout/colors/text. "
              "For hidream/bonsai: natural English description with character details. "
              "Uses model's 'enhance_model' or qwen3.5-4b by default.",
     )
@@ -220,14 +220,14 @@ def main() -> None:
     # ── Defaults per backend ──
     # Steps: bonsai=4, ideogram4=20, hidream=28
     if args.steps is None:
-        if backend_type == "sd_cpp":
-            args.steps = 20
-        elif backend_type == "hidream":
+        if backend_type == "hidream":
             args.steps = 28
+        elif backend_type == "sd_cpp":
+            args.steps = 20
         else:
             args.steps = 4
 
-    # Size: model-specific defaults (480x480 for ideogram4 on 6GB VRAM, 512x512 for bonsai)
+    # Size: model-specific defaults (512x512 for bonsai, model-specific for others)
     if args.size is None:
         default_size = model_info.get("default_size", (512, 512))
         width, height = default_size
@@ -244,7 +244,7 @@ def main() -> None:
         hidream_model_path = Path(os.path.expanduser(f"~/.llama-models/{model_info['dir']}"))
         if not hidream_model_path.exists():
             print(f"\n  ✗ Model not found: {hidream_model_path}")
-            print(f"    Download with: huggingface-cli download WaveCut/HiDream-O1-Image-Dev-SDNQ-uint4-svd-r32-last8-odown-bf16 --local-dir {hidream_model_path}")
+            print(f"    Download with: hf download WaveCut/HiDream-O1-Image-Dev-SDNQ-uint4-svd-r32-last8-odown-bf16 --local-dir {hidream_model_path}")
             sys.exit(1)
     else:
         require_model_dir(model_name)
@@ -383,6 +383,7 @@ def main() -> None:
 
         # ── Normal enhancement (no edit, or ideogram type, or vision edit failed) ──
         if not ref_image_paths or enhance_type != "vision" or (ref_image_paths and enhance_type == "vision" and not enhanced_prompt):
+            enhanced_result = prompt  # default: no change
             if enhance_type == "vision":
                 print(f"  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
                 enhanced_result, raw_response = enhance_vision_prompt(prompt, enhance_model)
@@ -442,10 +443,7 @@ def main() -> None:
         print(f"  ⚡ {len(prior)} prior run(s) at {width}×{height} — warmed kernels available")
         print(f"     Historical wall: mean {mean_s:.1f}s, best {best_s:.1f}s")
     else:
-        if backend_type == "sd_cpp":
-            print(f"  ⏳ First run at {width}×{height}")
-            print(f"     Expected: ~80-100s (model load + offload + 20 denoising steps)")
-        elif backend_type == "hidream":
+        if backend_type == "hidream":
             print(f"  ⏳ First run at {width}×{height}")
             print(f"     Expected: ~3-4min (model load + CPU offload + 28 denoising steps)")
         else:
@@ -456,7 +454,7 @@ def main() -> None:
 
     # ── Phase 1.5: Evict LLMs after prompt enhancement ──
     # If we used an LLM for enhancement, evict it before loading the diffusion model
-    if args.enhance and backend_type in ("sd_cpp", "hidream"):
+    if args.enhance and backend_type == "hidream":
         running = llama_swap_running_models()
         if running:
             print(f"  🔄 Evicting LLM models after enhancement: {', '.join(running)}")

@@ -62,9 +62,9 @@ def require_models() -> None:
         for m in missing:
             msg += f"  {m}: download to {missing_dirs[m]}\n"
         msg += "\nDownload commands:\n"
-        msg += f"  huggingface-cli download lllyasviel/FramePackI2V_HY --local-dir {FRAMEPACK_DIR}\n"
-        msg += f"  huggingface-cli download hunyuanvideo-community/HunyuanVideo --include 'text_encoder/*' 'text_encoder_2/*' 'tokenizer/*' 'tokenizer_2/*' 'vae/*' --local-dir {HUNYUAN_DIR}\n"
-        msg += f"  huggingface-cli download lllyasviel/flux_redux_bfl --include 'image_encoder/*' 'feature_extractor/*' --local-dir {FLUX_REDUX_DIR}\n"
+        msg += f"  hf download lllyasviel/FramePackI2V_HY --local-dir {FRAMEPACK_DIR}\n"
+        msg += f"  hf download hunyuanvideo-community/HunyuanVideo --include 'text_encoder/*' 'text_encoder_2/*' 'tokenizer/*' 'tokenizer_2/*' 'vae/*' --local-dir {HUNYUAN_DIR}\n"
+        msg += f"  hf download lllyasviel/flux_redux_bfl --include 'image_encoder/*' 'feature_extractor/*' --local-dir {FLUX_REDUX_DIR}\n"
         raise FileNotFoundError(msg)
 
 
