@@ -16,7 +16,8 @@
 # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
 # Architecture: qwen35moe (Qwen3MoeForCausalLM)
 # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-# --fit-margin 1536: larger margin needed for mmproj VRAM headroom
+# --fit-margin 2048: larger margin so context-shift has room to operate when KV is near full
+# --defrag-thold 0.1: enable KV cache defragmentation (prevents "KV cache is full" errors under high ctx usage)
 # --no-graph-reuse: CRITICAL — prevents CUDA graph OOM when mmproj is loaded
 # --k-cache-hadamard / --v-cache-hadamard: Hadamard transform before K/V cache quantization
 # --defer-experts: defers expert mmap on Linux → faster model loading
@@ -49,6 +50,7 @@
     --v-cache-hadamard
     --flash-attn auto
     --defer-experts
+    --defrag-thold 0.1
     --metrics
   filters:
     stripParams: "temperature, top_p"
