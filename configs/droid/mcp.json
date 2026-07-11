@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "searxng": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-searxng"
+      ],
+      "env": {
+        "SEARXNG_URL": "http://192.168.3.8:8888"
+      },
+      "disabled": false
+    },
+    "linear": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp",
+      "disabled": false
+    }
+  }
+}

@@ -68,12 +68,16 @@ Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) par
 
 - **Ferramenta**: [[https://droid.factory.ai][Factory.ai Droid]] — agente de código com modelos customizados.
 - **Diretório**: =configs/droid/=
-- **Arquivos**: =settings.json= — modelos locais (llama.cpp), modelos nuvem (Ollama Cloud), modelos Pi.
-- **Destino**: =~/.factory/settings.json=
+- **Arquivos**: =settings.json= (modelos locais e nuvem), =mcp.json= (MCP servers — SearXNG, Linear).
+- **Destino**: =~/.factory/= (=settings.json= e =mcp.json=)
+- **Importante**: O Droid usa =~/.factory/= como diretório de configuração, **não** =~/.config/droid/=. Nunca instalar em =~/.config/droid=.
 - **Sync**:
   #+BEGIN_SRC bash
   cp ~/git/ai-dotfiles/configs/droid/settings.json ~/.factory/settings.json
+  cp ~/git/ai-dotfiles/configs/droid/mcp.json ~/.factory/mcp.json
   #+END_SRC
+
+- **Nota**: O arquivo =auth.v2.file= (tokens OAuth do MCP) está no =.gitignore= e **não** é versionado. Autenticação do Linear é via OAuth flow interativo dentro do Droid (= /mcp = → Authenticate).
 
 ** hermes-workspace — Docker
 
@@ -257,7 +261,7 @@ A pasta =scripts/= contém apenas o script =ask-ai.py=, que está **obsoleto** e
 |-------------------------+------------------------------------+-------------------------------------|
 | =codex/=                | =~/.codex/=                        | =config.toml=                       |
 | =crush/=                | =~/.local/share/crush/=            | =crush.json=                        |
-| =droid/=                | =~/.factory/=                      | =settings.json=                     |
+| =droid/=                | =~/.factory/=                      | =settings.json=, =mcp.json=         |
 | =goose/=                | =~/.config/goose/=                 | =config.yaml=                       |
 | =opencode/=             | =~/.config/opencode/=              | =opencode.json=, =tui.json=         |
 | =pi/=                   | =~/.pi/agent/=                     | =settings.json=, =mcp.json=, =models.json= |
@@ -279,6 +283,7 @@ cp "$DOTFILES/configs/crush/crush.json" ~/.local/share/crush/crush.json
 
 # Droid
 cp "$DOTFILES/configs/droid/settings.json" ~/.factory/settings.json
+cp "$DOTFILES/configs/droid/mcp.json" ~/.factory/mcp.json
 
 # Goose
 cp "$DOTFILES/configs/goose/config.yaml" ~/.config/goose/config.yaml
@@ -301,3 +306,33 @@ echo "✓ Sincronização concluída!"
 * Licença
 
 Este trabalho está licenciado sob a licença WTFPL (Do What The Fuck You Want To Public License).
+
+* Linear MCP — Issue Tracking em Todos os Harnesses
+
+O [[https://linear.app/docs/mcp][Linear MCP server]] está configurado em todos os harnesses que suportam MCP, exceto no Pi (que usa plugin nativo) e no Hermes (que tem Kanban embutido).
+
+** Método de Autenticação
+
+O Linear MCP server (=https://mcp.linear.app/mcp=) usa *OAuth 2.1* com Dynamic Client Registration. Nenhuma chave de API é versionada nos arquivos de config — a autenticação é feita via browser na primeira execução de cada harness.
+
+** Harnesses Configurados
+
+| Harness     | Arquivo                          | Método                         |
+|-------------+----------------------------------+--------------------------------|
+| Droid       | =configs/droid/mcp.json=          | HTTP nativo (type: "http")     |
+| Codex       | =configs/codex/config.toml=       | =mcp_servers.linear= (rmcp)     |
+| Crush       | =configs/crush/crush.json=        | stdio via =mcp-remote=          |
+| OpenCode    | =configs/opencode/config.json=    | stdio via =mcp-remote=          |
+| Goose       | =configs/goose/config.yaml=        | stdio via =mcp-remote=          |
+| Nanocoder   | =configs/nanocoder/.mcp.json=      | stdio via =mcp-remote=          |
+| OMP         | =configs/omp/mcp.json=             | stdio via =mcp-remote=          |
+| Cline       | =configs/cline/cline_mcp_settings.json= | stdio via =mcp-remote=   |
+| Zed         | =configs/zed/settings.json=        | =context_servers= via =mcp-remote= |
+| Pi          | *(plugin nativo — não MCP)*       | Plugin linear@factory            |
+
+** Notas
+
+- *Droid*: Usa HTTP nativo (=type: "http"=) — o Droid tem suporte nativo a MCP remoto com OAuth. Autenticar via =/mcp= → "Add from Registry" → Linear.
+- *Codex*: Requer =experimental_use_rmcp_client = true= em =[features]=.
+- *Demais harnesses*: Usam =npx -y mcp-remote https://mcp.linear.app/mcp= como bridge stdio→HTTP.
+- *Limpar auth*: =rm -rf ~/.mcp-auth= se houver erro de internal server.

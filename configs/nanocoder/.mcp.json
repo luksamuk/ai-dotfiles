@@ -10,6 +10,14 @@
       "description": "SearXNG meta-search engine — aggregates Google, Bing, DuckDuckGo, Wikipedia, etc.",
       "timeout": 30000,
       "alwaysAllow": ["search"]
+    },
+    "linear": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.linear.app/mcp"],
+      "description": "Linear — issue tracking and project management",
+      "timeout": 30000,
+      "alwaysAllow": []
     }
   }
 }

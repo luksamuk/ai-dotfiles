@@ -175,6 +175,17 @@ trust_level = "trusted"
 [tui.model_availability_nux]
 "gpt-5.5" = 1
 
+# ============================================================
+# MCP Servers
+# ============================================================
+# Linear — issue tracking and project management
+# Uses mcp-remote as a bridge to Linear's remote MCP server (OAuth)
+[features]
+experimental_use_rmcp_client = true
+
+[mcp_servers.linear]
+url = "https://mcp.linear.app/mcp"
+
 
 [profiles."qwen3.5-4b-abliterated"]
 model = "qwen3.5-4b-abliterated"

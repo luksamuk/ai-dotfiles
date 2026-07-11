@@ -115,4 +115,13 @@ extensions:
     - mcp-searxng
     env:
       SEARXNG_URL: http://192.168.3.8:8888
+  linear:
+    enabled: true
+    type: stdio
+    name: linear
+    cmd: npx
+    args:
+    - -y
+    - mcp-remote
+    - https://mcp.linear.app/mcp
 GOOSE_TELEMETRY_ENABLED: false
