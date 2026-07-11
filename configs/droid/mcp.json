@@ -13,8 +13,13 @@
       "disabled": false
     },
     "linear": {
-      "type": "http",
-      "url": "https://mcp.linear.app/mcp",
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.linear.app/mcp"
+      ],
       "disabled": false
     }
   }

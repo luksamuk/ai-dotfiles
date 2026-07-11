@@ -319,7 +319,7 @@ O Linear MCP server (=https://mcp.linear.app/mcp=) usa *OAuth 2.1* com Dynamic C
 
 | Harness     | Arquivo                          | Método                         |
 |-------------+----------------------------------+--------------------------------|
-| Droid       | =configs/droid/mcp.json=          | HTTP nativo (type: "http")     |
+| Droid       | =configs/droid/mcp.json=          | stdio via =mcp-remote=          |
 | Codex       | =configs/codex/config.toml=       | =mcp_servers.linear= (rmcp)     |
 | Crush       | =configs/crush/crush.json=        | stdio via =mcp-remote=          |
 | OpenCode    | =configs/opencode/config.json=    | stdio via =mcp-remote=          |
@@ -332,7 +332,7 @@ O Linear MCP server (=https://mcp.linear.app/mcp=) usa *OAuth 2.1* com Dynamic C
 
 ** Notas
 
-- *Droid*: Usa HTTP nativo (=type: "http"=) — o Droid tem suporte nativo a MCP remoto com OAuth. Autenticar via =/mcp= → "Add from Registry" → Linear.
+- *Droid*: Usa =npx -y mcp-remote https://mcp.linear.app/mcp= via stdio (mesmo método dos demais harnesses não listados nativamente pelo Linear). Autenticar via =/mcp= → "Add from Registry" → Linear, ou o OAuth flow abre automaticamente na primeira execução.
 - *Codex*: Requer =experimental_use_rmcp_client = true= em =[features]=.
 - *Demais harnesses*: Usam =npx -y mcp-remote https://mcp.linear.app/mcp= como bridge stdio→HTTP.
 - *Limpar auth*: =rm -rf ~/.mcp-auth= se houver erro de internal server.
