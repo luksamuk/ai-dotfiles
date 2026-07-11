@@ -1,14 +1,17 @@
 {
-  "defaultModel": "qwen3.6-35b-a3b:think",
+  "defaultModel": "ornith-1.0-35b:think",
   "defaultProvider": "llama-swap",
-  "lastChangelogVersion": "0.72.1",
+  "lastChangelogVersion": "0.80.6",
   "packages": [
-    "npm:pi-mcp-adapter"
+    "npm:pi-mcp-adapter",
+    "npm:pi-acp",
+    "npm:@alasano/pi-linear"
   ],
   "defaultThinkingLevel": "medium",
   "compaction": {
     "enabled": true,
     "reserveTokens": 16384,
     "keepRecentTokens": 20000
-  }
+  },
+  "theme": "dark"
 }

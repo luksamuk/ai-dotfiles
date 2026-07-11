@@ -2,19 +2,25 @@
   "mcpServers": {
     "duckduckgo": {
       "command": "uvx",
-      "args": ["duckduckgo-mcp-server"],
+      "args": [
+        "duckduckgo-mcp-server"
+      ],
       "lifecycle": "lazy",
       "idleTimeout": 10,
-      "directTools": true
+      "directTools": false
     },
     "searxng": {
       "command": "npx",
-      "args": ["-y", "mcp-searxng"],
+      "args": [
+        "-y",
+        "mcp-searxng"
+      ],
       "env": {
         "SEARXNG_URL": "http://192.168.3.8:8888"
       },
       "lifecycle": "lazy",
-      "idleTimeout": 10
+      "idleTimeout": 10,
+      "directTools": true
     }
   }
 }

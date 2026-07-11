@@ -6,7 +6,7 @@
 # APEX I-Compact ~16.5GB — imatrix v1.3 calibrated (chat, code, reasoning, tool-calling, agentic traces).
 # ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
 # --fit-margin 2048: larger margin so context-shift has room to operate when KV is near full
-# --defrag-thold 0.1: enable KV cache defragmentation (prevents "KV cache is full" errors under high ctx usage)
+
 # --ctx-size 131072: same safe ceiling as Qwen 3.6
 # Dual mode: base (chat, no think) and :think (reasoning)
 # License: Apache-2.0 (base model by InternScience)
@@ -37,7 +37,6 @@
     --v-cache-hadamard
     --flash-attn auto
     --defer-experts
-    --defrag-thold 0.1
     --metrics
   filters:
     stripParams: "temperature, top_p"
@@ -52,8 +51,8 @@
           enable_thinking: true
         temperature: 0.85
         top_p: 0.95
-  ttl: 300
-  health_check_timeout: 300
+  ttl: 900
+  health_check_timeout: 900
   capabilities:
     in: ['text']
     out: ['text']

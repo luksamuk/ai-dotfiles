@@ -6,7 +6,7 @@
 # APEX I-Compact ~16.5GB — 22% smaller than Q4_K_M (21.2GB), imatrix v1.3 calibrated.
 # ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
 # --fit-margin 2048: larger margin so context-shift has room to operate when KV is near full
-# --defrag-thold 0.1: enable KV cache defragmentation (prevents "KV cache is full" errors under high ctx usage)
+
 # --ctx-size 131072: same safe ceiling as Qwen 3.6
 # Dual mode: base (chat, no think) and :think (reasoning)
 # Identity: base Qwen 3.5 — should identify as Qwen, not Google (unlike 9B Gemma 4 base)
@@ -35,7 +35,6 @@
     --v-cache-hadamard
     --flash-attn auto
     --defer-experts
-    --defrag-thold 0.1
     --metrics
   filters:
     stripParams: "temperature, top_p"
@@ -50,8 +49,8 @@
           enable_thinking: true
         temperature: 1.0
         top_p: 1.0
-  ttl: 300
-  health_check_timeout: 300
+  ttl: 900
+  health_check_timeout: 900
   capabilities:
     in: ['text']
     out: ['text']
