@@ -1,10 +1,14 @@
 [provider."ollama"]
 kind = "openai"
 base_url = "http://127.0.0.1:11434/v1"
+read_timeout_secs = 900
+stream_idle_timeout_secs = 900
 
 [provider."llama-swap"]
 kind = "openai"
 base_url = "http://localhost:12434/v1"
+read_timeout_secs = 900
+stream_idle_timeout_secs = 900
 
 # --- Small chat models ---
 
