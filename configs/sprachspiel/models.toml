@@ -10,17 +10,10 @@ base_url = "http://localhost:12434/v1"
 read_timeout_secs = 900
 stream_idle_timeout_secs = 900
 
-# --- Small chat models ---
-
 [models."qwen3.5-4b"]
 provider = "llama-swap"
 model_id = "qwen3.5-4b:think"
-num_ctx = 32768
-temperature = 0.7
-top_p = 0.95
-top_k = 40
-min_p = 0.01
-repeat_penalty = 1.05
+num_ctx = 131072
 thinking = true
 tools = true
 
@@ -28,11 +21,6 @@ tools = true
 provider = "llama-swap"
 model_id = "qwen3.5-9b:think"
 num_ctx = 131072
-temperature = 0.7
-top_p = 0.95
-top_k = 40
-min_p = 0.01
-repeat_penalty = 1.05
 thinking = true
 tools = true
 
@@ -40,8 +28,6 @@ tools = true
 provider = "llama-swap"
 model_id = "gemma4-e2b:think"
 num_ctx = 131072
-temperature = 0.7
-top_p = 0.95
 thinking = true
 tools = true
 
@@ -49,25 +35,8 @@ tools = true
 provider = "llama-swap"
 model_id = "gemma4-e4b:think"
 num_ctx = 131072
-temperature = 0.7
-top_p = 0.95
-top_k = 40
-repeat_penalty = 1.1
 thinking = true
 tools = true
-
-[models."gemma4-12b"]
-provider = "llama-swap"
-model_id = "gemma4-12b:think"
-num_ctx = 131072
-temperature = 0.7
-top_p = 0.9
-top_k = 40
-min_p = 0.01
-repeat_penalty = 1.05
-thinking = true
-tools = true
-vision = true
 
 [models."qwen3.5-4b-abliterated"]
 provider = "llama-swap"
@@ -141,20 +110,6 @@ repeat_penalty = 1.0
 thinking = true
 tools = true
 
-[models."north-mini-code"]
-provider = "llama-swap"
-model_id = "north-mini-code:think"
-num_ctx = 65536
-temperature = 1.0
-top_p = 0.95
-top_k = 20
-min_p = 0.0
-repeat_penalty = 1.0
-thinking = true
-tools = true
-
-# --- Heavy models (RAM offload) ---
-
 [models."qwen3.6-35b-a3b"]
 provider = "llama-swap"
 model_id = "qwen3.6-35b-a3b:think"
@@ -168,31 +123,6 @@ thinking = true
 tools = true
 vision = true
 
-[models."mellum2-12b-a2.5b"]
-provider = "llama-swap"
-model_id = "mellum2-12b-a2.5b:think"
-num_ctx = 131072
-temperature = 0.6
-top_p = 0.9
-top_k = 20
-min_p = 0.0
-repeat_penalty = 1.0
-thinking = true
-tools = true
-
-# --- Translation ---
-
-#[models."translategemma-4b"]
-#provider = "llama-swap"
-#model_id = "translategemma-4b"
-#num_ctx = 32768
-#temperature = 0.2
-#top_k = 40
-#top_p = 0.9
-#repeat_penalty = 1.1
-#thinking = false
-#tools = false
-
 [models."hy-mt2-1.8b"]
 provider = "llama-swap"
 model_id = "hy-mt2-1.8b"
@@ -203,8 +133,6 @@ top_p = 0.9
 repeat_penalty = 1.1
 thinking = false
 tools = false
-
-# --- Vision / OCR ---
 
 [models."lfm2.5-vl-450m"]
 provider = "llama-swap"
@@ -248,29 +176,6 @@ thinking = false
 tools = false
 vision = true
 
-# --- Audio ---
-
-#[models."qwen3-asr"]
-#provider = "llama-swap"
-#model_id = "qwen3-asr-0.6b"
-#num_ctx = 32768
-#temperature = 0.0
-#top_p = 1.0
-#thinking = false
-#tools = false
-#stt = true
-
-#[models."qwen3-tts"]
-#provider = "llama-swap"
-#model_id = "qwen3-tts"
-#num_ctx = 4096
-#temperature = 0.9
-#thinking = false
-#tools = false
-#tts = true
-
-# --- Embedding ---
-
 [models."nomic"]
 provider = "llama-swap"
 model_id = "nomic-embed-text-v2-moe"
@@ -282,8 +187,6 @@ provider = "llama-swap"
 model_id = "lfm2.5-embed-350m"
 embeddings = true
 dimensions = 1024
-
-# --- Cloud models ---
 
 [models."glm-5"]
 provider = "ollama"
@@ -390,4 +293,3 @@ provider = "ollama"
 model_id = "deepseek-v4-pro:cloud"
 num_ctx = 1048576
 thinking = true
-

@@ -1,21 +1,5 @@
-# External tools configuration for ask-ai
-#
-# This file controls which external CLI tools the LLM can execute via run_command.
-# Only tools explicitly enabled here can be executed.
-#
-# If this file doesn't exist, all default tools are enabled.
-# If this file exists, ONLY tools defined here are available.
-#
-# SECURITY: Tools are executed without shell interpretation (no pipes, redirects).
-# This prevents command injection attacks but limits flexibility.
-
 [external]
-# Default timeout for all commands (seconds)
-default_timeout = 30
-
-# =============================================================================
-# CORE TOOLS
-# =============================================================================
+default_timeout = 120
 
 [external.tools.csplit]
 enabled = true
@@ -24,12 +8,12 @@ binary = "csplit"
 
 [external.tools.sed]
 enabled = true
-timeout = 5
+timeout = 10
 binary = "sed"
 
 [external.tools.awk]
 enabled = true
-timeout = 5
+timeout = 10
 binary = "awk"
 
 [external.tools.split]
@@ -39,7 +23,7 @@ binary = "split"
 
 [external.tools.ripgrep]
 enabled = true
-timeout = 30
+timeout = 60
 binary = "rg"
 
 [external.tools.jq]
@@ -57,105 +41,242 @@ enabled = true
 timeout = 10
 binary = "bat"
 
-# =============================================================================
-# PDF TOOLS (from poppler-utils)
-# =============================================================================
-
 [external.tools.pdftotext]
-# Extract text from PDF files to stdout
-# USAGE: pdftotext [-f <first>] [-l <last>] <file.pdf> -
-# EXAMPLE: pdftotext -f 1 -l 10 document.pdf -  (extract pages 1-10)
 enabled = true
-timeout = 30
+timeout = 60
 binary = "pdftotext"
 
 [external.tools.pdfinfo]
-# Show PDF metadata (pages, size, encryption, etc.)
-# USAGE: pdfinfo <file.pdf>
 enabled = true
-timeout = 5
+timeout = 10
 binary = "pdfinfo"
 
 [external.tools.pdftoppm]
-# Convert PDF pages to images (PNG, JPEG)
-# USAGE: pdftoppm -png <file.pdf> <output_prefix>
-# NOTE: Output goes to files, not stdout
 enabled = true
-timeout = 60
+timeout = 120
 binary = "pdftoppm"
 
 [external.tools.ebook-convert]
 enabled = true
-timeout = 60
+timeout = 120
 binary = "ebook-convert"
 
-# =============================================================================
-# OCR TOOLS
-# =============================================================================
-
 [external.tools.tesseract]
-# Extract text from images using OCR (Optical Character Recognition)
-# USAGE: tesseract <image.png> stdout
-# SUPPORTS: PNG, JPEG, TIFF, BMP, GIF
-# NOTE: Accuracy depends on image quality and language packs installed
 enabled = true
 timeout = 120
 binary = "tesseract"
 
-# =============================================================================
-# IMAGE TOOLS
-# =============================================================================
-
 [external.tools.exiftool]
-# Read/write metadata from images, videos, and many other file types
-# USAGE: exiftool <file.jpg>
-# SUPPORTS: JPEG, PNG, TIFF, MP4, PDF, and 100+ other formats
 enabled = true
-timeout = 10
+timeout = 15
 binary = "exiftool"
 
 [external.tools.imagemagick]
-# Image conversion and manipulation (resize, crop, format convert)
-# USAGE: magick convert input.png -resize 50% output.jpg
-# WARNING: Powerful tool - consider disabling if security is a concern
-# NOTE: Binary is "magick" not "imagemagick" (v7 naming)
 enabled = true
-timeout = 60
+timeout = 120
 binary = "magick"
-
-# =============================================================================
-# OTHER TOOLS
-# =============================================================================
 
 [external.tools.pandoc]
 enabled = true
-timeout = 60
+timeout = 120
 binary = "pandoc"
-
-# [external.tools.ls]
-# enabled = true
-# timeout = 5
-# binary = "ls"
-
-# [external.tools.grep]
-# enabled = true
-# timeout = 5
-# binary = "grep"
-
-# [external.tools.tail]
-# enabled = true
-# timeout = 5
-# binary = "tail"
-
-# [external.tools.head]
-# enabled = true
-# timeout = 5
-# binary = "head"
 
 [external.tools.wkhtmltopdf]
 enabled = true
-timeout = 30
+timeout = 60
 binary = "wkhtmltopdf"
 
+[external.tools.ls]
+enabled = true
+timeout = 10
+binary = "ls"
 
+[external.tools.grep]
+enabled = true
+timeout = 10
+binary = "grep"
 
+[external.tools.tail]
+enabled = true
+timeout = 10
+binary = "tail"
+
+[external.tools.head]
+enabled = true
+timeout = 10
+binary = "head"
+
+[external.tools.cat]
+enabled = true
+timeout = 10
+binary = "cat"
+
+[external.tools.find]
+enabled = true
+timeout = 30
+binary = "find"
+
+[external.tools.tree]
+enabled = true
+timeout = 10
+binary = "tree"
+
+[external.tools.file]
+enabled = true
+timeout = 10
+binary = "file"
+
+[external.tools.stat]
+enabled = true
+timeout = 10
+binary = "stat"
+
+[external.tools.wc]
+enabled = true
+timeout = 10
+binary = "wc"
+
+[external.tools.sort]
+enabled = true
+timeout = 10
+binary = "sort"
+
+[external.tools.uniq]
+enabled = true
+timeout = 10
+binary = "uniq"
+
+[external.tools.cut]
+enabled = true
+timeout = 10
+binary = "cut"
+
+[external.tools.tr]
+enabled = true
+timeout = 10
+binary = "tr"
+
+[external.tools.paste]
+enabled = true
+timeout = 10
+binary = "paste"
+
+[external.tools.column]
+enabled = true
+timeout = 10
+binary = "column"
+
+[external.tools.xxd]
+enabled = true
+timeout = 10
+binary = "xxd"
+
+[external.tools.strings]
+enabled = true
+timeout = 10
+binary = "strings"
+
+[external.tools.diff]
+enabled = true
+timeout = 30
+binary = "diff"
+
+[external.tools.gzip]
+enabled = true
+timeout = 30
+binary = "gzip"
+
+[external.tools.gunzip]
+enabled = true
+timeout = 30
+binary = "gunzip"
+
+[external.tools.tar]
+enabled = true
+timeout = 60
+binary = "tar"
+
+[external.tools.unzip]
+enabled = true
+timeout = 60
+binary = "unzip"
+
+[external.tools.git]
+enabled = true
+timeout = 60
+binary = "git"
+
+[external.tools.python3]
+enabled = true
+timeout = 120
+binary = "python3"
+
+[external.tools.node]
+enabled = true
+timeout = 120
+binary = "node"
+
+[external.tools.curl]
+enabled = true
+timeout = 60
+binary = "curl"
+
+[external.tools.wget]
+enabled = true
+timeout = 60
+binary = "wget"
+
+[external.tools.ssh]
+enabled = true
+timeout = 60
+binary = "ssh"
+
+[external.tools.scp]
+enabled = true
+timeout = 120
+binary = "scp"
+
+[external.tools.rsync]
+enabled = true
+timeout = 120
+binary = "rsync"
+
+[external.tools.ffprobe]
+enabled = true
+timeout = 30
+binary = "ffprobe"
+
+[external.tools.ffmpeg]
+enabled = true
+timeout = 300
+binary = "ffmpeg"
+
+[external.tools.du]
+enabled = true
+timeout = 30
+binary = "du"
+
+[external.tools.df]
+enabled = true
+timeout = 10
+binary = "df"
+
+[external.tools.date]
+enabled = true
+timeout = 5
+binary = "date"
+
+[external.tools.uuidgen]
+enabled = true
+timeout = 5
+binary = "uuidgen"
+
+[external.tools.bc]
+enabled = true
+timeout = 10
+binary = "bc"
+
+[external.tools.qrencode]
+enabled = true
+timeout = 10
+binary = "qrencode"
