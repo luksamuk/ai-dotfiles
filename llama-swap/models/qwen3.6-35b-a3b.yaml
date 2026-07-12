@@ -16,7 +16,7 @@
 # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
 # Architecture: qwen35moe (Qwen3MoeForCausalLM)
 # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-# --fit-margin 2048: larger margin so context-shift has room to operate when KV is near full
+# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx (vision mmproj uses ~560MB)
 
 # --no-graph-reuse: CRITICAL — prevents CUDA graph OOM when mmproj is loaded
 # --k-cache-hadamard / --v-cache-hadamard: Hadamard transform before K/V cache quantization
@@ -31,7 +31,7 @@
     --model ${models_dir}/Qwen3.6-35B-A3B-APEX-I-Compact.gguf
     --mmproj ${models_dir}/mmproj-Qwen3.6-35B-A3B-F16.gguf
     --fit
-    --fit-margin 2048
+    --fit-margin 1024
     --ctx-size 32768
     --temp ${code_temp}
     --top-p ${code_top_p}

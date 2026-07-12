@@ -520,7 +520,7 @@ models:
 # KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
 # Architecture: qwen35moe (Qwen3MoeForCausalLM)
 # Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-# --fit-margin 2048: larger margin so context-shift has room to operate when KV is near full
+# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx (vision mmproj uses ~560MB)
 # --no-graph-reuse: CRITICAL — prevents CUDA graph OOM when mmproj is loaded
 # --k-cache-hadamard / --v-cache-hadamard: Hadamard transform before K/V cache quantization
 # --defer-experts: defers expert mmap on Linux → faster model loading
@@ -534,7 +534,7 @@ models:
       --model ${models_dir}/Qwen3.6-35B-A3B-APEX-I-Compact.gguf
       --mmproj ${models_dir}/mmproj-Qwen3.6-35B-A3B-F16.gguf
       --fit
-      --fit-margin 2048
+      --fit-margin 1024
       --ctx-size 32768
       --temp ${code_temp}
       --top-p ${code_top_p}
@@ -606,7 +606,7 @@ models:
 # Same qwen35moe architecture as Qwen3.6-35B-A3B.
 # APEX I-Compact ~16.5GB — 22% smaller than Q4_K_M (21.2GB), imatrix v1.3 calibrated.
 # ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
-# --fit-margin 2048: larger margin so context-shift has room to operate when KV is near full
+# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx
 # --ctx-size 131072: same safe ceiling as Qwen 3.6
 # Dual mode: base (chat, no think) and :think (reasoning)
 # Identity: base Qwen 3.5 — should identify as Qwen, not Google (unlike 9B Gemma 4 base)
@@ -618,7 +618,7 @@ models:
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/ornith-1.0-35b/Ornith-1.0-35B-APEX-I-Compact.gguf
       --fit
-      --fit-margin 2048
+      --fit-margin 1024
       --ctx-size 131072
       --temp 1.0
       --top-p 1.0
@@ -788,7 +788,7 @@ models:
 # Focused on: long-horizon search, engineering, scientific research, tool calling.
 # APEX I-Compact ~16.5GB — imatrix v1.3 calibrated (chat, code, reasoning, tool-calling, agentic traces).
 # ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
-# --fit-margin 2048: larger margin so context-shift has room to operate when KV is near full
+# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx
 # --ctx-size 131072: same safe ceiling as Qwen 3.6
 # Dual mode: base (chat, no think) and :think (reasoning)
 # License: Apache-2.0 (base model by InternScience)
@@ -801,7 +801,7 @@ models:
       --model ${models_dir}/agents-a1-35b/Agents-A1-APEX-I-Compact.gguf
       # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only = stable.
       --fit
-      --fit-margin 2048
+      --fit-margin 1024
       --ctx-size 131072
       --temp 0.85
       --top-p 0.95

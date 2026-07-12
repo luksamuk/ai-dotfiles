@@ -5,7 +5,7 @@
 # Focused on: long-horizon search, engineering, scientific research, tool calling.
 # APEX I-Compact ~16.5GB — imatrix v1.3 calibrated (chat, code, reasoning, tool-calling, agentic traces).
 # ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
-# --fit-margin 2048: larger margin so context-shift has room to operate when KV is near full
+# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx
 
 # --ctx-size 131072: same safe ceiling as Qwen 3.6
 # Dual mode: base (chat, no think) and :think (reasoning)
@@ -19,7 +19,7 @@
     --model ${models_dir}/agents-a1-35b/Agents-A1-APEX-I-Compact.gguf
     # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only = stable.
     --fit
-    --fit-margin 2048
+    --fit-margin 1024
     --ctx-size 131072
     --temp 0.85
     --top-p 0.95
