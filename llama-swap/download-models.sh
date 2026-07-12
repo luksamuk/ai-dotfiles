@@ -75,7 +75,9 @@ export HF_HUB_CACHE="${HOME}/.cache/huggingface"
 # requires ~1.3GB Gated Delta Net compute buffer per context, making MTP unusable on 6GB VRAM
 declare -A MODELS=(
   ["qwen3.5-0.8b"]="unsloth/Qwen3.5-0.8B-GGUF Qwen3.5-0.8B-UD-Q3_K_XL.gguf"
-  ["qwen3.5-4b"]="kaitchup/Qwen3.5-4B-GGUF-MoQ MoQ-3.75.gguf"
+  # Migrated from MoQ/DFlash to Unsloth Q4_K_M on upstream llama.cpp (Jul 2026)
+  # DFlash was slower on 6GB GPU (draft on CPU: 38ms/tok vs 22ms/tok without)
+  ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-Q4_K_M.gguf"
   # [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
   ["lfm2.5-8b-a1b"]="mudler/LFM2.5-8B-A1B-APEX-GGUF LFM2.5-8B-A1B-APEX-I-Compact.gguf"
   ["qwen3.5-9b"]="w-ahmad/Qwen3.5-9B-GGUF-MoQ Qwen3.5-9B-MoQ-3.6.gguf"
@@ -303,7 +305,7 @@ show_sizes() {
   echo ""
   echo "Model Sizes (quantization noted):"
   echo "  qwen3.5-0.8b          ~0.47 GB  (UD-Q3_K_XL) + ~0.20 GB mmproj - Tiny, vision+text"
-  echo "  qwen3.5-4b            ~1.92 GB  (MoQ-3.75) - Fits in VRAM"
+  echo "  qwen3.5-4b            ~2.74 GB  (Q4_K_M) - Upstream llama.cpp, 131K ctx"
   echo "  qwen3.5-9b           ~3.75 GB  (MoQ-3.6) - Fits in VRAM + mmproj"
   echo "  gemma4-e4b           ~4.63 GB  (Q4_K_M) - Fits in VRAM + mmproj"
   echo "  gemma4-e2b       ~3.2 GB   (Q4_0 QAT) - Text-only, higher quality than PTQ"
