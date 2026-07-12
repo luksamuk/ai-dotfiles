@@ -136,6 +136,25 @@ Edit `config-footer.yaml`:
 - **sets**: add to appropriate swap groups (`small_vision`, `small_only`, `medium`, `heavy`, `vision_only`)
 - **evict_costs**: add cost (1=ultra-light, 2=small, 3=medium, 4=heavy)
 
+#### ⚠️ CRITICAL: Embedding/Reranker Coexistence Rule
+
+**All embedding and reranker models (e.g., `nomic`, `lfmemb`, `lfmcol`) MUST be included in EVERY swap set that defines an LLM group.** These models are CPU-only (~0.5GB total) and do not consume VRAM, so they can always coexist with any LLM — including heavy offload models.
+
+If an embedding/reranker model is NOT in the same set as an LLM, the solver treats them as mutually exclusive. This causes **ping-pong eviction**: the embedding evicts the LLM (high cost), then the LLM evicts the embedding (low cost), repeat forever.
+
+**Rule**: When adding a new LLM set or modifying an existing one, always AND-in the embedding/reranker vars:
+
+```yaml
+# CORRECT — embedding coexists with heavy LLMs
+heavy: "(qw36 | orn35 | a1 | aw | glm) & (nomic | lfmemb)"
+
+# WRONG — embedding excluded, causes ping-pong eviction
+heavy: "(qw36 | orn35 | a1 | aw | glm) & nomic"
+# lfmemb is missing — lfm2.5-embed-350m will evict Ornith and vice versa
+```
+
+The same applies to `small_only`, `medium`, `vision_only`, and any other set that groups LLMs. Embedding/reranker vars (`nomic`, `lfmemb`, `lfmcol`) should appear in the `&` clause of every LLM set.
+
 ### 7. Download Script (5 LOCATIONS)
 
 Edit `download-models.sh`. Must update ALL 5 locations:
@@ -250,3 +269,9 @@ git commit -m "llama-swap: add <model-name>"
 - Each fragment must be valid YAML with exactly 1 model key
 - Use 0-indent (canonical YAML) — the build system uses ruamel.yaml merge
 - Run `python3 build-config.py --check` to validate
+
+### Matrix — Embedding/Reranker Coexistence
+- **Embedding and reranker models are CPU-only (~0.5GB) and must coexist with any LLM.**
+- If an embedding var is missing from an LLM set, the solver ping-pongs: embedding evicts LLM (cost 9+), LLM evicts embedding (cost 1), repeat.
+- Always AND-in `nomic | lfmemb | lfmcol` in every LLM set's coexistence clause.
+- See "Step 6: Matrix" above for the full rule and examples.

@@ -121,6 +121,28 @@ Each model fragment is a YAML file containing a single model definition with its
 
 Note: The 2-space indent is required — model keys and properties are at the same indent level as they appear in the final `config.yaml` under the `models:` key.
 
+## Matrix Design Principles
+
+### Embedding/Reranker Coexistence (CRITICAL)
+
+Embedding and reranker models (`nomic`, `lfmemb`, `lfmcol`) are CPU-only (~0.5GB total, zero VRAM). They **must** coexist with any LLM in the swap matrix.
+
+**Why**: The solver uses set membership to determine coexistence. If an embedding var is missing from an LLM's set, the solver sees them as mutually exclusive. This causes **ping-pong eviction** — the embedding evicts the LLM (high cost), then the LLM evicts the embedding (low cost), repeating forever.
+
+**Rule**: Every LLM set (`small_only`, `small_vision`, `medium`, `heavy`, `vision_only`, etc.) must AND-in the embedding/reranker vars:
+
+```yaml
+# CORRECT
+heavy: "(qw36 | orn35 | a1 | aw | glm) & (nomic | lfmemb)"
+
+# WRONG — lfmemb missing = ping-pong eviction
+heavy: "(qw36 | orn35 | a1 | aw | glm) & nomic"
+```
+
+When adding a new embedding/reranker model, add it to the `&` clause of **every** LLM set. When adding a new LLM set, include all existing embedding/reranker vars in the `&` clause.
+
+See `references/new-model-workflow.md` §6 for the full workflow rule.
+
 ## Key Files
 
 | File | Purpose |

@@ -1,0 +1,72 @@
+# -------------------------------------------
+# MINICPM5-1B AGENTIC TOOLUSE — Nemotron SFT+DPO fine-tune
+# LlamaForCausalLM (standard arch), GQA 16Q/2KV, 24 layers
+# 1.08B params, 131K context, think/no-think dual mode
+# Tool calling: XML format <function name="X"><param name="Y">val</param></function>
+# Fine-tuned with Nemotron traces + DPO for agentic tool use
+# llama.cpp bug #23781: FIXED in build b9833+ (dedicated MiniCPM5 parser)
+# Parser auto-detects via --jinja, no --tool-call-parser flag needed
+# Chat template built into GGUF — ⚠️ NEVER use custom chat template
+# -------------------------------------------
+"minicpm5-1b-agentic":
+  name: "MiniCPM5 1B Agentic"
+  description: "MiniCPM5-1B fine-tuned with Nemotron SFT+DPO traces for agentic tool use. Dense 1B Transformer for on-device assistants and tool-calling workflows."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/MiniCPM5-1B-Agentic-Tooluse-Nemotron-DPO.Q4_K_M.gguf
+    --jinja
+    --fit on
+    --fit-target ${vram_margin}
+    --fit-ctx ${small_model_min_ctx}
+    --ctx-size ${small_model_max_ctx}
+    --parallel 1
+    --temp 0.7
+    --top-p 0.9
+    --top-k ${default_top_k}
+    --min-p 0.0
+    --repeat-penalty 1.05
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.9
+        top_p: 0.9
+  ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~688 MB (Q4_K_M)"
+    context: "32K-128K (dynamic)"
+    vram_usage: "~1.2GB (model + cache)"
+    source: "ewinregirgojr/MiniCPM5-1B-Agentic-Tooluse-GGUF (Q4_K_M Nemotron DPO)"
+    note: "Nemotron SFT+DPO fine-tune for agentic tool use. Parser auto-detects via --jinja. NEVER use custom chat template."
+    kv_cache: "q8_0"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: llama
+    parameters: 1080632832
+    context_length: 131072
+    embedding_length: 1536
+    quantization: Q4_K_M

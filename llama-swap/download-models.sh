@@ -27,6 +27,7 @@
 #   qwen3-vl-4b          - Qwen3-VL-4B-Instruct Q4_K_M (~2.5 GB) + mmproj Q8_0 (~454 MB) - VLM, native grounding, 256K ctx
 #   smolvlm2-500m-video  - SmolVLM2-500M-Video Q8_0 (~437 MB) + mmproj Q8_0 (~109 MB) - ultra-light video VLM
 #   [REMOVED] minicpm5-1b — disabled Jul 2026, LFM2.5-230M better for tool calling at smaller size
+#   minicpm5-1b-agentic   - MiniCPM5-1B Nemotron SFT+DPO agentic tool use Q4_K_M (~688 MB) - fine-tuned tool calling
 #   smolllm3-3b           - SmolLM3-3B UD-Q5_K_XL (~2.06 GB) - dense, tool-calling, 128K ctx
 #   qwopus-coder-9b       - Qwopus3.5-9B-Coder Q4_K_M (~5.63 GB) + mmproj - agentic coding + tools
 #   qwen3.5-4b-abliterated - Qwen3.5-4B abliterated i1-Q4_K_M (~2.71 GB) - no refusal, adversarial testing
@@ -133,6 +134,7 @@ declare -A MODELS=(
   # SmolVLM2-500M-Video — ultra-light video VLM, llama arch, 500M params
   ["smolvlm2-500m-video"]="ggml-org/SmolVLM2-500M-Video-Instruct-GGUF SmolVLM2-500M-Video-Instruct-Q8_0.gguf mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf"
   # [REMOVED] minicpm5-1b — disabled Jul 2026, LFM2.5-230M better for tool calling at smaller size
+  ["minicpm5-1b-agentic"]="ewinregirgojr/MiniCPM5-1B-Agentic-Tooluse-GGUF MiniCPM5-1B-Agentic-Tooluse-Nemotron-DPO.Q4_K_M.gguf"
   # SmolLM3-3B — HuggingFace dense model, dual tool-calling (XML+Python), 128K ctx
   # Uses smollm3 arch — supported in both ik_llama.cpp and upstream
   ["smolllm3-3b"]="unsloth/SmolLM3-3B-GGUF SmolLM3-3B-UD-Q5_K_XL.gguf"
@@ -328,6 +330,7 @@ show_sizes() {
   echo "  qwen3-vl-4b        ~2.50 GB  (Q4_K_M) + 454 MB mmproj - VLM native grounding, 256K ctx"
   echo "  smolvlm2-500m-video ~437 MB  (Q8_0) + 109 MB mmproj - ultra-light video VLM, 500M"
   # [REMOVED] minicpm5-1b — disabled Jul 2026
+  echo "  minicpm5-1b-agentic ~0.69 GB  (Q4_K_M) - Nemotron SFT+DPO agentic tool use fine-tune"
   echo "  smolllm3-3b         ~2.06 GB  (UD-Q5_K_XL) - Dense, dual tool-calling (XML+Python), 128K ctx"
   echo "  [REMOVED] littlelamb-0.3b-tc — tool-calling broken, too small to be useful"
   echo "  webworld-8b         ~5.90 GB  (i1-Q5_K_M) - Web world model, predicts next page state"

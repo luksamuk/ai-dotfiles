@@ -15,9 +15,16 @@ hooks:
 # O solver determina automaticamente qual combinação de modelos
 # pode rodar simultaneamente e quais descarregar quando necessário.
 #
-# Nomic Embed + LFM2.5 Embed/ColBERT (~0.5GB total, CPU-only) estão em sets de
-# embedding/reranking — sempre coexistem com qualquer LLM (não usam VRAM).
-# evict_cost 1 = primeiro a sair se VRAM realmente apertar.
+# ⚠️ REGRA CRÍTICA DE COEXISTÊNCIA:
+# Embedding e reranker (nomic, lfmemb, lfmcol) são CPU-only (~0.5GB total)
+# e NÃO consomem VRAM. Devem coexistir com QUALQUER LLM — leve ou pesado.
+# Todos os sets que agrupam LLMs DEVEM incluir as vars de embedding/reranker
+# no & (AND). Se uma var de embedding falta de um set, o solver trata
+# o embedding e o LLM como mutuamente exclusivos, causando ping-pong
+# de eviction (embedding evicta LLM cost 9+, LLM evicta embedding cost 1).
+#
+# Exemplo: heavy: "(qw36 | orn35) & (nomic | lfmemb | lfmcol)"
+# Veja references/new-model-workflow.md §6 para detalhes completos.
 # ============================================
 
 matrix:
@@ -28,6 +35,7 @@ matrix:
     g2: gemma4-e2b
     g2q: gemma4-e2b
     lfm230: lfm2.5-230m
+    m5a: minicpm5-1b-agentic
     lfm8: lfm2.5-8b-a1b
     # Vision
     vl: lfm2.5-vl-450m
@@ -61,34 +69,34 @@ matrix:
   sets:
     # LLM pequeno + Vision + Embedding
     # q4/q4a (DFlash) com ctx 32K + nomic ~700MiB headroom
-    small_vision: "(q4 | q4a | g2 | g2q | lfm230 | lfm8) & vl & nomic"
+    small_vision: "(q4 | q4a | g2 | g2q | lfm230 | lfm8) & vl & (nomic | lfmemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | g2 | g2q | lfm230 | lfm8) & nomic"
+    small_embed: "(q4 | q4a | g2 | g2q | lfm230 | lfm8) & (nomic | lfmemb | lfmcol)"
 
-    # LLM pequeno sozinho (sem vision, sem embedding)
-    small_only: "q4 | q4a | g2 | g2q | lfm230 | lfm8"
+    # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
+    small_only: "q4 | q4a | g2 | g2q | lfm230 | lfm8 | m5a"
 
-    # Vision models (sozinhos ou com nomic)
+    # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "vl | vlx | vle | vl16 | ocr | cpv | qwvl | smv"
-    vision_embed: "(vl | vlx | vle | vl16 | ocr | cpv | qwvl | smv) & nomic"
+    vision_embed: "(vl | vlx | vle | vl16 | ocr | cpv | qwvl | smv) & (nomic | lfmemb | lfmcol)"
 
-    # Modelos médios + Embedding
-    medium: "(q9 | g4) & nomic"
+    # Modelos médios + Embedding/Reranker
+    medium: "(q9 | g4) & (nomic | lfmemb | lfmcol)"
 
-    # Modelos pesados (offload) + Embedding
-    # nomic (~0.5GB) cabe ao lado mesmo dos pesados — usa RAM pro offload
-    heavy: "(qw36 | orn35 | a1 | aw | glm) & nomic"
+    # Modelos pesados (offload) + Embedding/Reranker
+    # nomic + lfmemb + lfmcol (~0.5GB total, CPU-only) cabem ao lado mesmo dos pesados
+    heavy: "(qw36 | orn35 | a1 | aw | glm) & (nomic | lfmemb | lfmcol)"
 
-    # Tradução (leve, cabe com nomic)
-    translate_embed: "hmt & nomic"
+    # Tradução (leve, cabe com embedding/reranker)
+    translate_embed: "hmt & (nomic | lfmemb | lfmcol)"
     translate_only: "hmt"
 
     # External TTS (separate process, same GPU)
     tts_external: "ttsext"
 
-    # Embedding sozinho (RAG indexing, semantic search)
-    embed_only: "nomic | lfmemb"
+    # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
+    embed_only: "nomic | lfmemb | lfmcol"
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
@@ -124,4 +132,5 @@ matrix:
     g2: 1
     g2q: 1
     lfm230: 1
+    m5a: 1
     hmt: 1
