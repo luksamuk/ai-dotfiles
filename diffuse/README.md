@@ -1,19 +1,44 @@
-# diffuse — Local Diffusion Image Generation CLI
+# diffuse — Local Diffusion Image & Video Generation CLI
 
-Diffusion image generation CLI for NVIDIA GPUs. Currently ships with [Bonsai Image 4B](https://prismml.com/news/bonsai-image-4b) (1-bit / ternary), designed to support additional diffusion backends in the future.
+Diffusion generation CLI for NVIDIA GPUs. Supports image generation (HiDream, Ideogram 4) and video generation (Wan2.2 I2V, LingBot T2V) with shared components and automatic VRAM management.
 
 > **Hardware Target:** NVIDIA RTX 3050 Laptop (6GB VRAM)
 
-## Nomenclature
+## Fleet
 
-| Term | What it is | Example |
-|------|-----------|---------|
-| **LLM** | Large Language Model — generates text | Qwen3, Gemma, Llama |
-| **Diffusion Model** (DiT) | Diffusion Transformer — generates images by iteratively denoising | FLUX, Stable Diffusion, Bonsai Image |
-| **Text Encoder** | Reads your prompt and produces vector embeddings. Pipeline-specific, NOT replaceable across models | Qwen3-4B (4-bit HQQ, bundled with Bonsai) |
-| **Diffusion Transformer** | The core image-generation engine — runs N denoising steps | Bonsai 1-bit (0.93 GB) or Ternary (1.21 GB) |
-| **VAE** | Variational Autoencoder — encodes/decodes between pixel space and latent space | Flux2 32-channel (bundled with Bonsai) |
-| **Pipeline** | The full assembly: Text Encoder → Diffusion Transformer → VAE | Bonsai Image 4B pipeline |
+| Model | Type | Backend | Components | Size |
+|-------|------|---------|-----------|------|
+| **hidream-sdnq** | T2I + editing | transformers + accelerate | Qwen3-VL 8B SDNQ (unified) | 7.3 GB |
+| **ideogram4-q4** | T2I (text rendering) | sd-cli (GGUF) | DiT + Qwen3-VL 8B GGUF + FLUX2 VAE | 14.9 GB |
+| **wan22-i2v** | I2V (image-to-video) | sd-cli (GGUF) | Wan2.2 A14B DiT + UMT5-XXL + CLIP Vision + Wan VAE | 16.4 GB |
+| **lingbot-t2v** | T2V (text-to-video) | diffusers (custom pipeline) | LingBot 1.3B DiT + Qwen3-VL 4B + Wan VAE | 11.9 GB |
+
+**Shared component:** Wan VAE (AutoencoderKLWan, 256 MB) — used by both wan22-i2v and lingbot-t2v.
+
+## Quick Start
+
+```bash
+# List all models, dependencies, and sizes
+diffuse list
+
+# Download a model
+diffuse download hidream
+diffuse download lingbot
+
+# Generate an image
+diffuse generate -m hidream-sdnq -p "a cat on the moon"
+diffuse generate -m ideogram4-q4 -p "text: HELLO WORLD" --enhance
+
+# Generate a video
+diffuse generate -m wan22-i2v --input-image photo.png -p "camera pan right"
+diffuse generate -m lingbot-t2v -p "a cat playing with yarn"
+
+# Enhance prompt via LLM before generation
+diffuse generate -m hidream-sdnq -p "cyberpunk city" --enhance
+
+# Free VRAM by evicting LLM models from llama-swap
+diffuse evict
+```
 
 ## Architecture
 
@@ -21,137 +46,111 @@ Diffusion image generation CLI for NVIDIA GPUs. Currently ships with [Bonsai Ima
 Prompt (text)
     │
     ▼
-┌──────────────────────────┐
-│  Text Encoder (Qwen3-4B)  │  2.84 GB (HQQ 4-bit) — OFFLOADED after encode
-│  → produces text embeddings│
-└──────────┬───────────────┘
+┌──────────────────────┐
+│  Text Encoder        │  Encodes prompt → embeddings (offloaded after use)
+└──────────┬───────────┘
            │
            ▼
-┌──────────────────────────┐
-│  Diffusion Transformer   │  1.08 GB (gemlite INT1) or 1.35 GB (gemlite 2-bit)
-│  4 steps of denoising     │  Guided by text embeddings, iteratively refines noise → image latent
-└──────────┬───────────────┘
+┌──────────────────────┐
+│  Diffusion Transformer│  N denoising steps guided by text embeddings
+└──────────┬───────────┘
            │
            ▼
-┌──────────────────────────┐
-│  VAE (Flux2 32ch)        │  0.17 GB (FP16) — decodes latent → pixel image
-└──────────┬───────────────┘
+┌──────────────────────┐
+│  VAE                  │  Decodes latent → pixel image/video frames
+└──────────┬───────────┘
            │
            ▼
-      Image (PNG)
+      Image (PNG) / Video (MP4)
 ```
 
-**Memory lifecycle:**
-1. Text encoder loads (~2.84 GB), encodes prompt, then **unloads from VRAM**
-2. Diffusion transformer runs 4 denoising steps (~1-1.35 GB + activations)
+**Memory lifecycle on 6GB VRAM:**
+1. Text encoder loads, encodes prompt, unloads from VRAM
+2. Diffusion transformer runs denoising steps
 3. VAE decodes the result
-4. **Peak HBM:** ~6.4 GiB at 1024×1024 (fits in 6 GB VRAM)
+4. LLM models (llama-swap) are evicted before loading to free VRAM
 
-## Available Models
+## Shared Components
 
-| Model | Weights | Transformer Size | Quality | Speed on RTX 3050 |
-|-------|---------|-----------------|---------|-------------------|
-| `binary-gemlite` | 1-bit {−1, +1} | 0.93 GB | 88% of FP16 | 512² ~4s, 1024² ~25s |
-| `ternary-gemlite` | 1.58-bit {−1, 0, +1} | 1.21 GB | 95% of FP16 | 512² ~6s, 1024² ~30s |
+Models can share components to avoid duplicate downloads:
 
-**Recommended for RTX 3050:** `ternary-gemlite` — better quality, fits comfortably at 512×512 default resolution.
-
-## Quick Start
-
-```bash
-# Download model weights (first time only)
-diffuse download ternary
-
-# Generate an image
-diffuse generate -p "A bonsai tree under moonlight"
-
-# Interactive mode (prompts for input)
-diffuse generate
-
-# Custom size and seed
-diffuse generate -p "Cyberpunk cityscape" --size 1024x1024 --seed 42
 ```
+models/shared/
+└── vae/
+    └── wan/                    # AutoencoderKLWan (Wan 2.1 VAE)
+        ├── config.json
+        └── diffusion_pytorch_model.safetensors
+```
+
+Models that use a shared component link to it via symlink instead of downloading a copy:
+```
+models/wan22-i2v/vae/wan_2.1_vae.safetensors → ../../shared/vae/wan/diffusion_pytorch_model.safetensors
+~/.llama-models/lingbot-t2v/vae → ../../git/ai-dotfiles/diffuse/models/shared/vae/wan
+```
+
+Run `diffuse list` to see which components are shared and how much disk space is saved.
 
 ## File Structure
 
 ```
 diffuse/
-├── README.md              # This file
-├── generate.py             # CLI: load → prompt → generate → stats → unload
-├── pyproject.toml          # Dependencies
-├── download-model.sh       # Download model weights from HuggingFace
-├── run.sh                  # Runner script (entry point for diffuse symlink)
-├── models/                 # Model weights (downloaded, not in git)
-└── outputs/                # Generated images
+├── README.md
+├── run.sh                  # Entry point (symlinked as `diffuse`)
+├── download-model.sh       # Model download script
+├── pyproject.toml
+├── models/                 # Model weights (not in git)
+│   ├── shared/             # Shared components (deduplicated)
+│   │   └── vae/wan/        # AutoencoderKLWan
+│   ├── wan22-i2v/          # Wan2.2 I2V
+│   └── ideogram-4-Q4_0/    # Ideogram 4 (when downloaded)
+├── diffuse/                # Python package
+│   ├── cli.py              # CLI — argument parsing, orchestration
+│   ├── models.py           # Model registry + shared component registry
+│   ├── paths.py            # Path constants
+│   ├── backends/           # Backend modules (one per pipeline type)
+│   │   ├── __init__.py     # Backend dispatch + auto-download + shared component logic
+│   │   ├── hidream.py      # HiDream (transformers + accelerate)
+│   │   ├── sd_cpp.py       # Ideogram 4 + Wan2.2 (stable-diffusion.cpp)
+│   │   ├── lingbot.py      # LingBot (diffusers custom pipeline)
+│   │   ├── gemlite.py     # Bonsai (legacy, code preserved)
+│   │   └── framepack.py    # FramePack (disabled, code preserved)
+│   ├── enhance.py          # LLM-based prompt enhancement
+│   ├── llm.py              # llama-swap integration
+│   └── output.py          # Output path resolution + debrief
+├── vendor/                 # Vendored dependencies (pinned SHAs)
+└── outputs/                 # Generated images/videos
 ```
 
-## CLI Usage
+## Model Details
 
-```
-usage: diffuse generate [-h] [-m MODEL] [-p PROMPT] [--seed SEED] [--steps STEPS]
-                        [--size SIZE] [--output OUTPUT]
+### HiDream-O1 SDNQ (`hidream-sdnq`)
+- **Backend:** transformers + accelerate (CPU offload)
+- **Components:** Qwen3-VL 8B SDNQ (unified DiT + text encoder, 7.3 GB)
+- **Capabilities:** T2I, instruction-based image editing (`--edit`)
+- **Default size:** 1024×1024 (snaps to 2048² or 2560×1440)
+- **Speed:** ~3min T2I, ~8min editing on 6GB VRAM
 
-Local diffusion image generation CLI
+### Ideogram 4 Q4 (`ideogram4-q4`)
+- **Backend:** sd-cli (stable-diffusion.cpp, GGUF)
+- **Components:** DiT Q4_0 (5.0 GB) + uncond DiT (5.0 GB) + Qwen3-VL 8B GGUF (4.7 GB) + FLUX2 VAE (0.2 GB)
+- **Capabilities:** T2I, best-in-class text rendering
+- **Note:** VAE source (FLUX.2-dev) is a gated repo — run `hf auth login` and accept license first
+- **Default size:** 480×480
 
-options:
-  -h, --help            show this help message and exit
-  -m, --model          Model variant (default: binary-gemlite)
-  -p, --prompt         Text prompt (interactive if omitted)
-  --seed               Random seed (random if not set)
-  --steps              Denoising steps (default: 4)
-  --size               Image size WxH (default: 512x512)
-  --output             Output PNG path (auto-generated if not set)
-```
+### Wan2.2 I2V (`wan22-i2v`)
+- **Backend:** sd-cli (stable-diffusion.cpp, GGUF)
+- **Components:** Wan2.2 A14B Rapid AIO Q4_K_S (9.3 GB) + UMT5-XXL Q8_0 (5.7 GB) + CLIP Vision (1.2 GB) + shared Wan VAE
+- **Capabilities:** Image-to-video, 4-step accelerator
+- **Default:** 832×480, 33 frames @ 24fps (~1.3s)
 
-After generation, the CLI prints a debrief:
-
-```
-═══ diffuse — Generation Report ═══
-  Model:       binary-gemlite (1-bit)
-  Prompt:      "A bonsai tree under moonlight"
-  Seed:        9909
-  Resolution:  512 × 512
-  Steps:       4
-
-  Timings:
-    Setup:       25.3 s   (imports + model load + kernel JIT)
-    Diffusion:    4.2 s   (4 denoising steps + VAE decode)
-    ─────────────────────
-    Wall:        29.5 s
-
-  Memory:
-    Peak HBM:   4,120 MiB
-
-  Output: outputs/binary-gemlite/image_20260527_143020_seed9909.png
-══════════════════════════════════════
-```
-
-## Why Not ComfyUI / vLLM / llama.cpp?
-
-| Tool | Works? | Reason |
-|------|--------|--------|
-| **ComfyUI** | ⚠️ No native low-bit support | ComfyUI can't read gemlite/MLX packed weights. Would need GGUF conversion or custom node |
-| **vLLM** | ❌ | LLM serving engine — not designed for diffusion models |
-| **llama.cpp** | ❌ | Same — text token prediction, not image denoising |
-| **diffuse** | ✅ | Direct pipeline, minimal overhead, model-agnostic design, load-and-unload |
-
-## Text Encoder — Can I Swap It?
-
-No. The text encoder is **integral** to each pipeline:
-- Its embeddings must match the dimensionalities the diffusion transformer expects
-- It's quantized specifically for its pipeline
-- It unloads after prompt encoding anyway — doesn't compete for VRAM during denoising
-
-Think of it as the "power supply" of the pipeline — it has to match the voltage and connector exactly.
-
-## Adding New Models
-
-To add a new diffusion model backend:
-1. Add model metadata to `MODELS` dict in `generate.py`
-2. Add download config to `download-model.sh`
-3. If the model uses a different pipeline class, add a new loader function
+### LingBot T2V (`lingbot-t2v`)
+- **Backend:** diffusers (custom pipeline, `LingBotVideoPipeline`)
+- **Components:** LingBot 1.3B DiT bf16 (2.79 GB) + Qwen3-VL 4B bf16 text encoder (8.88 GB, CPU) + shared Wan VAE
+- **Capabilities:** Text-to-video, text+image-to-video
+- **Requires:** `lingbot-video` repo cloned at `~/git/lingbot-video` (pipeline code)
+- **Default:** 832×480, 33 frames @ 24fps, 4 steps
 
 ## License
 
-Bonsai Image 4B models: **Apache 2.0** (PrismML)
+Models: respective licenses (Apache 2.0 for LingBot, HiDream; see HuggingFace pages)
 This CLI tool: MIT

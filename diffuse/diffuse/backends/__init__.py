@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from diffuse.paths import MODELS_DIR
-from diffuse.models import MODELS
+from diffuse.models import MODELS, SHARED_COMPONENTS
 
 log = logging.getLogger("diffuse")
 
@@ -25,11 +25,55 @@ def _find_subdir(root: Path, *hints: str) -> Path:
     return matches[0]
 
 
+def _ensure_shared_component(shared_id: str) -> Path:
+    """Ensure a shared component exists at its canonical path under models/shared/.
+
+    Returns the canonical path. If the component doesn't exist but has a
+    download source in any model's hf_files, triggers download from there.
+    """
+    comp = SHARED_COMPONENTS[shared_id]
+    shared_path = MODELS_DIR / comp["path"]
+    if shared_path.exists() and any(shared_path.iterdir()):
+        return shared_path
+
+    # Find a model that provides this shared component
+    for model_name, model_info in MODELS.items():
+        for entry in model_info.get("hf_files", []):
+            if entry.get("shared_id") == shared_id:
+                _auto_download_model(model_name, model_info, MODELS_DIR / model_info["dir"])
+                return shared_path
+
+    raise FileNotFoundError(f"Shared component '{shared_id}' not found and no download source available")
+
+
+def _link_shared_component(shared_id: str, model_root: Path, subdir: str) -> None:
+    """Create a symlink from model_root/subdir to the shared component's canonical path.
+
+    This lets models reference shared components (like VAE) without duplicating files.
+    """
+    comp = SHARED_COMPONENTS[shared_id]
+    shared_path = MODELS_DIR / comp["path"]
+    link_path = model_root / subdir
+
+    if link_path.is_symlink():
+        return  # already linked
+    if link_path.exists() and link_path.is_dir():
+        # Already a real dir — check if it's the same content
+        return
+
+    link_path.parent.mkdir(parents=True, exist_ok=True)
+    # Use relative symlink for portability
+    rel = Path("../../../") / comp["path"]
+    link_path.symlink_to(rel)
+    log.info("Linked shared component %s -> %s", link_path, shared_path)
+
+
 def require_model_dir(model_name: str) -> Path:
     """Ensure model weights are present and return path.
 
     If the model directory doesn't exist and the model has 'hf_files' metadata,
     automatically download the weights from HuggingFace using the hf CLI.
+    Also ensures shared components are present and linked.
     """
     model_info = MODELS[model_name]
     model_root = MODELS_DIR / model_info["dir"]
@@ -37,10 +81,18 @@ def require_model_dir(model_name: str) -> Path:
         hf_files = model_info.get("hf_files")
         if hf_files:
             _auto_download_model(model_name, model_info, model_root)
-            return model_root
-        print(f"\n  ✗ Model not found: {model_root}")
-        print(f"    Run: diffuse download {model_name.split('-')[0]}")
-        sys.exit(1)
+        else:
+            print(f"\n  ✗ Model not found: {model_root}")
+            print(f"    Run: diffuse download {model_name.split('-')[0]}")
+            sys.exit(1)
+
+    # Ensure shared components are linked
+    for shared_id in model_info.get("shared", []):
+        _ensure_shared_component(shared_id)
+        # For VAE, link as model_root/vae/
+        if shared_id == "wan-vae":
+            _link_shared_component(shared_id, model_root, "vae")
+
     return model_root
 
 
@@ -49,8 +101,8 @@ def _auto_download_model(model_name: str, model_info: dict, model_root: Path) ->
 
     Reads the 'hf_files' metadata from the model entry and fetches each file
     to the correct local path. Handles subdirs and renames.
+    Skips entries that are shared components (they get linked separately).
     """
-    # Check hf CLI is available (huggingface-cli is deprecated, use hf)
     hf_cli = shutil.which("hf")
     if not hf_cli:
         print("\n  ✗ hf CLI is not installed.")
@@ -59,38 +111,32 @@ def _auto_download_model(model_name: str, model_info: dict, model_root: Path) ->
         sys.exit(1)
 
     hf_files = model_info["hf_files"]
-    total_files = sum(len(entry["files"]) for entry in hf_files)
+    # Filter out shared component downloads (handled by _ensure_shared_component)
+    own_files = [e for e in hf_files if not e.get("shared_id")]
+    total_files = sum(len(entry["files"]) for entry in own_files)
 
-    print(f"\n  📦 Downloading model weights from HuggingFace ({total_files} files, ~16 GB)...")
+    print(f"\n  📦 Downloading model weights from HuggingFace ({total_files} files)...")
     print(f"     Model: {model_name}")
     print(f"     Target: {model_root}")
     print()
 
     model_root.mkdir(parents=True, exist_ok=True)
 
-    for entry in hf_files:
+    for entry in own_files:
         repo = entry["repo"]
         files = entry["files"]
-        rename_map = entry.get("rename", {})
         subdir = entry.get("subdir")
 
         for filename in files:
-            # Determine destination directory
             if subdir:
                 dest_dir = model_root / subdir
             else:
                 dest_dir = model_root
             dest_dir.mkdir(parents=True, exist_ok=True)
 
-            # Some HF repos store files under subpaths (e.g. split_files/vae/).
-            # If hf_path is specified, download that specific path and rename.
             hf_path = entry.get("hf_path")
-            if hf_path:
-                download_path = hf_path
-            else:
-                download_path = filename
+            download_path = hf_path or filename
 
-            # Download the file
             print(f"  ⬇️  {repo} → {filename}")
             cmd = [hf_cli, "download", repo, download_path, "--local-dir", str(dest_dir)]
             result = subprocess.run(cmd)
@@ -103,14 +149,10 @@ def _auto_download_model(model_name: str, model_info: dict, model_root: Path) ->
                     print(f"    3. Re-run: diffuse -m {model_name}")
                 sys.exit(1)
 
-            # Rename/move if needed
-            # When hf_path is used, the file lands at dest_dir/<hf_path> (preserving
-            # the HF subdir structure). We need to move it to dest_dir/<filename>.
             rename_map = entry.get("rename", {})
             local_name = rename_map.get(filename, filename)
 
             if hf_path and hf_path != filename:
-                # File downloaded to dest_dir/hf_path (HF subdir preserved)
                 downloaded_path = dest_dir / hf_path
                 target_path = dest_dir / local_name
                 if downloaded_path.exists() and downloaded_path != target_path:
@@ -124,6 +166,30 @@ def _auto_download_model(model_name: str, model_info: dict, model_root: Path) ->
                     print(f"     Renamed: {filename} → {local_name}")
 
             print(f"     ✓ Done")
+
+    # Download shared components if needed
+    for entry in hf_files:
+        shared_id = entry.get("shared_id")
+        if shared_id:
+            comp = SHARED_COMPONENTS[shared_id]
+            shared_path = MODELS_DIR / comp["path"]
+            if not shared_path.exists() or not any(shared_path.iterdir()):
+                shared_path.mkdir(parents=True, exist_ok=True)
+                s_repo = entry["repo"]
+                print(f"\n  📦 Downloading shared component: {shared_id}")
+                for fname in entry["files"]:
+                    hf_path = entry.get("hf_path", fname)
+                    print(f"  ⬇️  {s_repo} → {fname}")
+                    cmd = [hf_cli, "download", s_repo, hf_path, "--local-dir", str(shared_path)]
+                    subprocess.run(cmd)
+                    rename_map = entry.get("rename", {})
+                    local_name = rename_map.get(fname, fname)
+                    if local_name != fname:
+                        old = shared_path / fname
+                        new = shared_path / local_name
+                        if old.exists():
+                            old.rename(new)
+                    print(f"     ✓ Done")
 
     print(f"\n  ✅ All model weights downloaded to {model_root}")
     print()
@@ -150,6 +216,9 @@ def load_pipeline(model_name: str, editing: bool = False) -> tuple:
     elif backend_type == "hidream":
         from diffuse.backends.hidream import load_pipeline_hidream
         return load_pipeline_hidream(model_name, editing=editing)
+    elif backend_type == "lingbot":
+        from diffuse.backends.lingbot import load_pipeline_lingbot
+        return load_pipeline_lingbot(model_name)
     elif backend_type == "framepack":
         from diffuse.backends.framepack import load_pipeline as load_pipeline_framepack
         return load_pipeline_framepack(editing=editing)

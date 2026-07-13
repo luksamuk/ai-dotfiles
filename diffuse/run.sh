@@ -1,25 +1,22 @@
 #!/bin/bash
-# diffuse — Local diffusion image generation CLI
+# diffuse — Local diffusion image/video generation CLI
 #
 # Usage: diffuse [command] [options]
 #
 # Commands:
-#   generate    Generate an image (main command)
+#   generate    Generate an image or video (main command)
 #   setup       Install dependencies (uv sync + clone vendor deps)
 #   download    Download model weights
+#   list        List installed models with dependencies and sizes
 #   evict       Evict all LLM models from llama-swap (free VRAM)
 #   status      Check prerequisites and model availability
 #   clean       Remove generated images and caches
 #   help        Show help
-#
-# Environment:
-#   DIFFUSE_MODEL   Model variant (default: ternary-gemlite)
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 VENV_DIR="${SCRIPT_DIR}/.venv"
 VENV_PY="${VENV_DIR}/bin/python"
-VARIANT="${DIFFUSE_MODEL:-ternary-gemlite}"
 
 # Vendor SHAs — pin to specific commits for supply chain integrity
 IMAGE_STUDIO_SHA="4e26a021abea2e9926900ba49edcef1f05d51241"
@@ -44,18 +41,7 @@ check_venv() {
     return 0
 }
 
-check_models() {
-    local model_dir="${SCRIPT_DIR}/models/bonsai-image-4B-${VARIANT}"
-    if [[ ! -d "$model_dir" ]] || [[ -z "$(ls -A "$model_dir" 2>/dev/null)" ]]; then
-        log_warn "Model not found: $model_dir"
-        log_info "Download first: diffuse download ${VARIANT%%-*}"
-        return 1
-    fi
-    return 0
-}
-
 verify_sha() {
-    # Verify a git repo is at the expected commit for supply chain integrity
     local repo_dir="$1"
     local expected_sha="$2"
     local actual_sha
@@ -75,7 +61,6 @@ verify_sha() {
 cmd_setup() {
     log_info "Setting up diffuse..."
 
-    # Check for uv
     if ! command -v uv &>/dev/null; then
         log_error "uv not found. Install: https://docs.astral.sh/uv/"
         exit 1
@@ -83,7 +68,6 @@ cmd_setup() {
 
     local vendor_dir="${SCRIPT_DIR}/vendor"
 
-    # ── Clone image-studio (contains backend_gpu) — pinned SHA ──
     local studio_dir="${vendor_dir}/image-studio"
     if [[ -d "$studio_dir/.git" ]]; then
         log_info "vendor/image-studio already cloned — verifying SHA..."
@@ -99,7 +83,6 @@ cmd_setup() {
         git -C "$studio_dir" checkout "$IMAGE_STUDIO_SHA"
     fi
 
-    # ── Clone mflux-prism — pinned SHA (macOS dep, skipped on Linux but pyproject.toml references it) ──
     local mflux_dir="${vendor_dir}/mflux-prism"
     if [[ -d "$mflux_dir/.git" ]]; then
         log_info "vendor/mflux-prism already cloned — verifying SHA..."
@@ -115,7 +98,6 @@ cmd_setup() {
         git -C "$mflux_dir" checkout "$MFLUX_PRISM_SHA"
     fi
 
-    # ── Patch image-studio pyproject.toml: point mflux to local vendor ──
     local studio_pp="$studio_dir/pyproject.toml"
     if [[ -f "$studio_pp" ]] && grep -q '^mflux = { git = ' "$studio_pp" 2>/dev/null; then
         log_info "Patching image-studio mflux source to local vendor..."
@@ -123,7 +105,6 @@ cmd_setup() {
         rm -f "$studio_pp.bak"
     fi
 
-    # ── Sync dependencies (DISABLE_CUDA=1 to skip hqq_aten build — not needed for gemlite) ──
     log_info "Installing Python dependencies (DISABLE_CUDA=1 for hqq safety)..."
     cd "$SCRIPT_DIR"
     DISABLE_CUDA=1 uv sync
@@ -132,7 +113,6 @@ cmd_setup() {
 
 cmd_generate() {
     check_venv || exit 1
-    check_models || exit 1
 
     DIFFUSE_ORIG_CWD="$(pwd)"
     cd "$SCRIPT_DIR"
@@ -143,18 +123,22 @@ cmd_download() {
     "${SCRIPT_DIR}/download-model.sh" "$@"
 }
 
+cmd_list() {
+    check_venv || exit 1
+    cd "$SCRIPT_DIR"
+    uv run --no-sync -m diffuse --list
+}
+
 cmd_status() {
     echo "=== diffuse Status ==="
     echo ""
 
-    # Check venv
     if [[ -f "$VENV_PY" ]]; then
         echo -e "venv: ${GREEN}✓${NC} $VENV_DIR"
     else
         echo -e "venv: ${RED}✗${NC} not found (run: diffuse setup)"
     fi
 
-    # Check vendor
     local vendor_dir="${SCRIPT_DIR}/vendor"
     local studio_dir="${vendor_dir}/image-studio"
     local gpu_dir="${studio_dir}/backend_gpu"
@@ -162,7 +146,6 @@ cmd_status() {
         local sha
         sha="$(git -C "$studio_dir" rev-parse --short HEAD 2>/dev/null)" || sha="?"
         echo -e "backend_gpu: ${GREEN}✓${NC} $gpu_dir (SHA: $sha)"
-        # Verify against pinned SHA
         local full_sha
         full_sha="$(git -C "$studio_dir" rev-parse HEAD 2>/dev/null)" || true
         if [[ "$full_sha" != "$IMAGE_STUDIO_SHA" ]]; then
@@ -174,23 +157,12 @@ cmd_status() {
         echo -e "backend_gpu: ${RED}✗${NC} not found (run: diffuse setup)"
     fi
 
-    # Check models
     echo ""
     echo "=== Models ==="
-    local found=0
-    for model_dir in "${SCRIPT_DIR}/models"/bonsai-image-4B-*/; do
-        if [[ -d "$model_dir" ]]; then
-            local name=$(basename "$model_dir")
-            local size=$(du -sh "$model_dir" 2>/dev/null | cut -f1)
-            echo -e "  ${GREEN}✓${NC} $name ($size)"
-            found=1
-        fi
-    done
-    if [[ $found -eq 0 ]]; then
-        echo -e "  ${YELLOW}!${NC} no models downloaded (run: diffuse download ternary)"
-    fi
+    # Use diffuse list for model status
+    cd "$SCRIPT_DIR"
+    uv run --no-sync -m diffuse --list 2>/dev/null || echo -e "  ${YELLOW}!${NC} run: diffuse list"
 
-    # Check GPU
     echo ""
     echo "=== GPU ==="
     if command -v nvidia-smi &>/dev/null; then
@@ -232,32 +204,29 @@ cmd_evict() {
 
 cmd_help() {
     cat << EOF
-diffuse — Local diffusion image generation CLI
+diffuse — Local diffusion image/video generation CLI
 
 Usage: diffuse [command] [options]
 
 Commands:
-  generate    Generate an image (passes args to generate.py)
+  generate    Generate an image or video (passes args to generate.py)
   setup       Install dependencies (uv sync + vendor deps, pinned SHAs)
   download    Download model weights (passes args to download-model.sh)
+  list        List installed models with dependencies, sizes, and shared components
   evict       Evict all LLM models from llama-swap (free VRAM for diffusion)
   status      Check prerequisites and model availability
   clean       Remove generated images and caches
   help        Show this help message
 
-Environment:
-  DIFFUSE_MODEL   Model variant (default: ternary-gemlite)
-
 Examples:
-  diffuse generate -p "A bonsai tree under moonlight"
-  diffuse generate -p "Cyberpunk city" --size 1024x1024 --seed 42
-  diffuse generate -p "Forest path" --open       # Open result in feh after saving
-  diffuse generate -p "Dragon" --evict-llm         # Evict LLMs first to free VRAM
-  diffuse generate                       # Interactive prompt mode
-  diffuse evict                         # Free VRAM by unloading all LLMs
-  diffuse setup                           # First-time setup
-  diffuse download ternary                # Download 1.58-bit model weights
-  diffuse status                          # Check everything
+  diffuse list                              # Show all models, deps, sizes
+  diffuse generate -m hidream-sdnq -p 'a cat on the moon'
+  diffuse generate -m ideogram4-q4 -p 'text: HELLO' --enhance
+  diffuse generate -m wan22-i2v --input-image photo.png -p 'camera pan right'
+  diffuse generate -m lingbot-t2v -p 'a cat playing with yarn'
+  diffuse evict                             # Free VRAM by unloading all LLMs
+  diffuse download hidream                  # Download HiDream weights
+  diffuse download lingbot                   # Download LingBot weights
 EOF
 }
 
@@ -273,6 +242,9 @@ case "${1:-help}" in
     download)
         shift
         cmd_download "$@"
+        ;;
+    list)
+        cmd_list
         ;;
     evict)
         cmd_evict

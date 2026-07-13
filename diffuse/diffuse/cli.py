@@ -18,6 +18,7 @@ from diffuse.backends.gemlite import generate_image_gemlite
 from diffuse.backends.sd_cpp import generate_image_sd_cpp
 from diffuse.backends.hidream import generate_image_hidream
 from diffuse.backends.framepack import generate_video_framepack
+from diffuse.backends.lingbot import generate_video_lingbot
 from diffuse.llm import evict_llm, llama_swap_running_models
 from diffuse.enhance import (
     enhance_prompt,
@@ -86,6 +87,88 @@ def print_models() -> None:
             print(f"    enhance: {enhance}{et}")
         print(f"    {desc}")
         print()
+
+
+def print_list() -> None:
+    """Print models grouped by category with dependencies, sizes, and shared components."""
+    from diffuse.models import MODELS, SHARED_COMPONENTS
+    from diffuse.paths import MODELS_DIR
+
+    # Group by category
+    categories = {"image": [], "video": []}
+    for name, info in MODELS.items():
+        cat = info.get("category", "image")
+        categories.setdefault(cat, []).append((name, info))
+
+    def _fmt_size_gb(gb: float) -> str:
+        if gb >= 1.0:
+            return f"{gb:.1f} GB"
+        return f"{int(gb * 1024)} MB"
+
+    def _check_installed(info: dict) -> bool:
+        model_dir = info.get("dir", "")
+        backend = info.get("backend_type", "")
+        if backend == "hidream":
+            p = Path.home() / ".llama-models" / model_dir
+        elif backend == "lingbot":
+            p = Path.home() / ".llama-models" / model_dir
+        else:
+            p = MODELS_DIR / model_dir
+        return p.exists() and any(p.iterdir()) if p.exists() else False
+
+    # Track which shared components are used by which models
+    shared_usage: dict[str, list[str]] = {}
+    total_installed = 0.0
+    total_pending = 0.0
+
+    print()
+    for cat_label, cat_key in [("IMAGE GENERATION", "image"), ("VIDEO GENERATION", "video")]:
+        models = categories.get(cat_key, [])
+        if not models:
+            continue
+        print(f"  {cat_label}")
+        for name, info in sorted(models):
+            installed = _check_installed(info)
+            status = "" if installed else " [not installed]"
+            print(f"    {name:20s} {info.get('description', ''):60s}{status}")
+
+            total_gb = 0.0
+            for comp in info.get("components", []):
+                comp_name = comp["name"]
+                comp_gb = comp["size_gb"]
+                total_gb += comp_gb
+                shared_tag = " [shared]" if "[shared]" in comp_name else ""
+                print(f"      ├── {comp_name:55s} {_fmt_size_gb(comp_gb)}")
+
+            if installed:
+                total_installed += total_gb
+            else:
+                total_pending += total_gb
+            print(f"      └── {'Total':55s} {_fmt_size_gb(total_gb)}")
+            print()
+
+            # Track shared usage
+            for sid in info.get("shared", []):
+                shared_usage.setdefault(sid, []).append(name)
+
+    # Shared components summary
+    if shared_usage:
+        print("  SHARED COMPONENTS")
+        shared_savings = 0.0
+        for sid, used_by in sorted(shared_usage.items()):
+            comp = SHARED_COMPONENTS.get(sid, {})
+            desc = comp.get("description", sid)
+            size = comp.get("size_gb", 0)
+            models_str = ", ".join(used_by)
+            if len(used_by) > 1:
+                shared_savings += size * (len(used_by) - 1)
+            print(f"    {desc:40s} {_fmt_size_gb(size)}  ← {models_str}")
+        if shared_savings > 0:
+            print(f"    {'Savings':40s} {_fmt_size_gb(shared_savings)}")
+        print()
+
+    print(f"  TOTAL DISK: {_fmt_size_gb(total_installed + total_pending)} ({_fmt_size_gb(total_installed)} installed + {_fmt_size_gb(total_pending)} pending)")
+    print()
 
 
 def parse_args() -> argparse.Namespace:
@@ -226,7 +309,7 @@ def main() -> None:
     args = parse_args()
 
     if args.list:
-        print_models()
+        print_list()
         sys.exit(0)
 
     setup_environment()
@@ -300,6 +383,11 @@ def main() -> None:
     # ── Wan2.2 I2V video early path ───────────────────────────────────────────
     if backend_type == "sd_cpp_video":
         _run_sd_cpp_video(args, model_name, model_info, prompt, original_prompt, seed, width, height)
+        return
+
+    # ── LingBot T2V video early path ───────────────────────────────────────────
+    if backend_type == "lingbot":
+        _run_lingbot_video(args, model_name, model_info, prompt, original_prompt, seed, width, height)
         return
 
     # ── LLM eviction (free VRAM for diffusion) ──
@@ -674,6 +762,135 @@ def _run_framepack(
     print("  Timings:")
     print(f"    Setup:      {load_time:7.2f} s   (model load + DynamicSwap)")
     print(f"    Generation: {diffusion_time:7.2f} s   (video denoising + VAE decode)")
+    print(f"    ─────────────────────")
+    print(f"    Wall:       {wall_time:7.2f} s")
+    print()
+    print(f"  Output: {output_path}")
+    print("══════════════════════════════════════")
+
+    # Open video in player
+    if args.open and output_path:
+        import shutil
+        import subprocess
+        viewer = shutil.which("mpv") or shutil.which("vlc") or shutil.which("ffplay")
+        if viewer:
+            subprocess.Popen([viewer, str(output_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+
+
+def _run_lingbot_video(
+    args: argparse.Namespace,
+    model_name: str,
+    model_info: dict,
+    prompt: str,
+    original_prompt: str,
+    seed: int,
+    width: int,
+    height: int,
+) -> None:
+    """Handle LingBot T2V video generation via diffusers — separate path from image generation."""
+    from diffuse.backends.lingbot import load_pipeline_lingbot, generate_video_lingbot
+
+    # Video parameters with model defaults
+    video_frames = args.video_frames or model_info.get("default_video_frames", 33)
+    fps = args.fps or model_info.get("default_fps", 24)
+    steps = args.steps or model_info.get("default_steps", 4)
+    cfg_scale = args.cfg if args.cfg is not None else model_info.get("default_cfg", 1.0)
+    shift = 3.0  # FlowUniPC default shift
+
+    duration_s = video_frames / fps
+
+    print(f"  🎬 LingBot T2V: {width}×{height}, {video_frames} frames @ {fps} fps ({duration_s:.1f}s)")
+    print(f"     Steps: {steps}, CFG: {cfg_scale}, Shift: {shift}")
+    print(f"     Seed: {seed}")
+
+    # Check model dir (LingBot models live in ~/.llama-models/)
+    lingbot_model_path = Path(os.path.expanduser(f"~/.llama-models/{model_info['dir']}"))
+    if not lingbot_model_path.exists():
+        print(f"\n  ✗ Model not found: {lingbot_model_path}")
+        print(f"    Run: diffuse download lingbot")
+        sys.exit(1)
+
+    # ── Prompt enhancement ──────────────────────────────────────────────────
+    if args.enhance or args.enhance_with:
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
+        enhance_type = model_info.get("enhance_type", "vision")
+
+        if enhance_type == "vision":
+            print(f"\n  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
+            enhanced_result, raw_response = enhance_vision_prompt(prompt, enhance_model)
+        else:
+            enhanced_result, raw_response = enhance_prompt(prompt, enhance_model)
+
+        if enhanced_result and enhanced_result != prompt:
+            print(f"     Expanded to ({len(enhanced_result)} chars)")
+            print(f"     ─── Enhanced prompt ───")
+            import textwrap as _tw
+            for line in _tw.wrap(enhanced_result, width=78):
+                print(f"     {line}")
+            print(f"     ────────────────────────")
+            prompt = enhanced_result
+        else:
+            print(f"     ⚠️  Enhancement failed — using raw prompt")
+
+    # Evict LLMs before loading
+    running = llama_swap_running_models()
+    if running:
+        print(f"  🔄 Evicting LLM models: {', '.join(running)}")
+        evict_llm()
+        print(f"     VRAM freed for video generation")
+
+    print(f"  [1/3] Loading LingBot pipeline ({model_info['bits']})...")
+    pipeline, load_time = load_pipeline_lingbot(model_name)
+    print(f"        Pipeline ready in {load_time:.1f}s")
+
+    # Output path
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+    out_dir = orig_cwd
+    out_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_model = model_name.replace(":", "_").replace("/", "_")
+    default_output = str(out_dir / f"diffuse_{safe_model}_{ts}_seed{seed}.mp4")
+    output_path = Path(args.output and str(args.output.with_suffix(".mp4")) or default_output)
+
+    # Default negative prompt (LingBot uses JSON-structured negative)
+    negative_prompt = args.negative_prompt or ""
+
+    print(f"  [2/3] Generating video...")
+    wall_t0 = time.perf_counter()
+
+    output_path, diffusion_time, peak_hbm = generate_video_lingbot(
+        pipeline,
+        prompt=prompt,
+        negative_prompt=negative_prompt,
+        seed=seed,
+        width=width,
+        height=height,
+        video_frames=video_frames,
+        fps=fps,
+        steps=steps,
+        cfg_scale=cfg_scale,
+        shift=shift,
+        output_path=output_path,
+    )
+    wall_time = time.perf_counter() - wall_t0
+
+    print(f"  [3/3] Done — unloading pipeline...")
+    unload_pipeline()
+
+    print()
+    print("═══ diffuse — LingBot T2V Video Report ═══")
+    print(f"  Model:       {model_name}")
+    print(f"  Prompt:      \"{original_prompt}\"")
+    print(f"  Frames:      {video_frames} @ {fps} fps ({duration_s:.1f}s)")
+    print(f"  Seed:        {seed}")
+    print(f"  Resolution:  {width}×{height}")
+    print(f"  Steps:       {steps}")
+    print(f"  CFG:         {cfg_scale}")
+    print(f"  Shift:       {shift}")
+    print()
+    print("  Timings:")
+    print(f"    Setup:      {load_time:7.2f} s   (model load + CPU offload)")
+    print(f"    Generation: {diffusion_time:7.2f} s   (diffusion + VAE decode)")
     print(f"    ─────────────────────")
     print(f"    Wall:       {wall_time:7.2f} s")
     print()
