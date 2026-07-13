@@ -18,7 +18,6 @@ from diffuse.backends.gemlite import generate_image_gemlite
 from diffuse.backends.sd_cpp import generate_image_sd_cpp
 from diffuse.backends.hidream import generate_image_hidream
 from diffuse.backends.framepack import generate_video_framepack
-from diffuse.backends.lingbot import generate_video_lingbot
 from diffuse.llm import evict_llm, llama_swap_running_models
 from diffuse.enhance import (
     enhance_prompt,
@@ -341,12 +340,12 @@ def main() -> None:
     original_prompt = prompt
 
     # Pre-flight
-    if backend_type == "hidream":
-        # HiDream models live in ~/.llama-models/, not diffuse/models/
-        hidream_model_path = Path(os.path.expanduser(f"~/.llama-models/{model_info['dir']}"))
-        if not hidream_model_path.exists():
-            print(f"\n  ✗ Model not found: {hidream_model_path}")
-            print(f"    Download with: hf download WaveCut/HiDream-O1-Image-Dev-SDNQ-uint4-svd-r32-last8-odown-bf16 --local-dir {hidream_model_path}")
+    if backend_type in ("hidream", "lingbot"):
+        # HiDream and LingBot models live in ~/.llama-models/, not diffuse/models/
+        model_path = Path(os.path.expanduser(f"~/.llama-models/{model_info['dir']}"))
+        if not model_path.exists():
+            print(f"\n  ✗ Model not found: {model_path}")
+            print(f"    Run: diffuse download {model_info['dir'].split('-')[0]}")
             sys.exit(1)
     else:
         require_model_dir(model_name)

@@ -124,11 +124,10 @@ MODELS: dict[str, dict] = {
         "default_video_frames": 33,
         "default_fps": 24,
         "default_steps": 4,
-        "default_cfg": 1.0,
+        "default_cfg": 3.0,
         "enhance_model": "qwen3.6-35b-a3b",
         "enhance_type": "vision",
-        "shared": ["wan-vae"],
-        "lingbot_repo": "~/git/lingbot-video",
+        "shared": [],
         "hf_files": [
             {"repo": "robbyant/lingbot-video-dense-1.3b",
              "files": ["model_index.json",
@@ -151,7 +150,7 @@ MODELS: dict[str, dict] = {
         "components": [
             {"name": "LingBot 1.3B DiT bf16 (transformer)", "path": "lingbot-t2v/transformer/diffusion_pytorch_model.safetensors", "size_gb": 2.79},
             {"name": "Qwen3-VL 4B bf16 (text encoder, 2 shards)", "path": "lingbot-t2v/text_encoder", "size_gb": 8.88},
-            {"name": "wan_2.1_vae [shared]", "path": "shared/vae/wan", "size_gb": 0.25},
+            {"name": "Wan VAE bf16 (AutoencoderKLWan)", "path": "lingbot-t2v/vae", "size_gb": 0.49},
         ],
     },
 }
