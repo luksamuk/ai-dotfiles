@@ -26,6 +26,7 @@ from diffuse.enhance import (
     analyze_image,
     analyze_and_enhance_edit,
     enhance_video_prompt,
+    enhance_video_prompt_two_shot,
     _check_model_vision,
 )
 from diffuse.output import (
@@ -743,11 +744,46 @@ def _run_sd_cpp_video(
     # ── Prompt enhancement (vision-based for I2V) ──────────────────────────
     if args.enhance or args.enhance_with:
         enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
-        print(f"\n  ✨ Video-enhancing prompt via {enhance_model} (vision + I2V mode)...")
-        print(f"  📷 Analyzing input image & writing motion prompt...")
-        enhanced_result, raw_response = enhance_video_prompt(
-            str(input_image_path), prompt, enhance_model
-        )
+        enhance_has_vision = _check_model_vision(enhance_model)
+
+        if enhance_has_vision:
+            # One-shot: enhance model has vision → single call with image
+            print(f"\n  ✨ Video-enhancing prompt via {enhance_model} (vision + I2V mode)...")
+            print(f"  📷 Analyzing input image & writing motion prompt...")
+            enhanced_result, raw_response = enhance_video_prompt(
+                str(input_image_path), prompt, enhance_model
+            )
+        else:
+            # Two-shot: separate vision model analyzes image, then enhance model refines
+            if args.vision_with:
+                vision_model = args.vision_with
+            else:
+                vision_model = DEFAULT_VISION_MODEL
+            print(f"\n  👁️  Using {vision_model} for image analysis (default)")
+            print(f"  📷 Analyzing input image via {vision_model}...")
+            image_description = analyze_image(str(input_image_path), vision_model, prompt)
+            if not image_description:
+                print(f"     ⚠️  Image analysis failed — falling back to raw prompt")
+                enhanced_result = prompt
+                raw_response = ""
+            else:
+                print(f"     ─── Image description ({len(image_description)} chars) ───")
+                import textwrap as _tw
+                for line in _tw.wrap(image_description, width=78):
+                    print(f"     {line}")
+                print(f"     ────────────────────────────────────────")
+
+                # Evict vision model before loading enhance model
+                running = llama_swap_running_models()
+                if running:
+                    print(f"  🔄 Evicting {vision_model} after image analysis...")
+                    evict_llm()
+                    print(f"     VRAM freed for prompt enhancement")
+
+                print(f"  ✨ Video-enhancing prompt via {enhance_model} (two-shot, text-only)...")
+                enhanced_result, raw_response = enhance_video_prompt_two_shot(
+                    image_description, prompt, enhance_model
+                )
         if enhanced_result and enhanced_result != prompt:
             print(f"     Expanded to video prompt ({len(enhanced_result)} chars)")
             print(f"     ─── Enhanced video prompt ───")

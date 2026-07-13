@@ -25,7 +25,7 @@ MODELS: dict[str, dict] = {
         "bits": "1-bit",
         "transformer_kwarg": "binary_transformer_path",
         "description": "1-bit {−1, +1} — 0.93 GB transformer, 88% of FP16 quality",
-        "enhance_model": "qwen3.5-4b",
+        "enhance_model": "qwen3.6-35b-a3b",
         "enhance_type": "vision",
     },
     "ternary-gemlite": {
@@ -36,7 +36,7 @@ MODELS: dict[str, dict] = {
         "bits": "1.58-bit",
         "transformer_kwarg": "ternary_transformer_path",
         "description": "1.58-bit {−1, 0, +1} — 1.21 GB transformer, 95% of FP16 quality",
-        "enhance_model": "qwen3.5-4b",
+        "enhance_model": "qwen3.6-35b-a3b",
         "enhance_type": "vision",
     },
     # Ideogram 4 (sd-cli / stable-diffusion.cpp)
@@ -47,7 +47,7 @@ MODELS: dict[str, dict] = {
         "backend_type": "sd_cpp",
         "bits": "4-bit",
         "description": "Ideogram 4 Q4_0 — 9.3B DiT, structured JSON prompts, best-in-class text rendering",
-        "enhance_model": "qwen3.5-4b",
+        "enhance_model": "qwen3.6-35b-a3b",
         "enhance_type": "ideogram",
         "default_size": (480, 480),
         # Auto-download: files fetched from HuggingFace on first use via require_model_dir()
@@ -70,7 +70,7 @@ MODELS: dict[str, dict] = {
         "description": "HiDream-O1-Image-Dev SDNQ — 8B unified (T2I + editing + IP), ~3min/2048² on 6GB VRAM",
         "default_size": (1024, 1024),
         "hidream_repo": "~/git/HiDream-O1-Image",
-        "enhance_model": "qwen3.5-4b",
+        "enhance_model": "qwen3.6-35b-a3b",
         "enhance_type": "vision",
     },
     # FramePack I2V — disabled: models removed (~41GB, 12min/1s video on RTX 3050)

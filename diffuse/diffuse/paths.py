@@ -13,7 +13,7 @@ GEMLITE_PERSIST_PATH = OUTPUTS_DIR / ".gemlite_cache" / "autotune.json"
 SD_CLI_PATH = SCRIPT_DIR / "bin" / "sd-cli"
 PROMPTS_DIR = SCRIPT_DIR / "prompts"
 
-DEFAULT_VISION_MODEL = "minicpm-v-4.6"
+DEFAULT_VISION_MODEL = "qwen3-vl-4b"
 
 # ── LLM swap URL ──────────────────────────────────────────────────────────
 LLAMA_SWAP_URL = os.environ.get("LLAMA_SWAP_URL", "http://localhost:12434")

@@ -624,3 +624,86 @@ def enhance_video_prompt(image_path: str, user_prompt: str, model: str) -> tuple
         return user_prompt, enhanced
 
     return enhanced, enhanced
+
+
+# ── Video (I2V) two-shot enhancement ──────────────────────────────────────
+def enhance_video_prompt_two_shot(image_description: str, user_prompt: str, model: str) -> tuple:
+    """Two-shot video enhancement: refine a motion prompt using a text description
+    of the input image (from a separate vision model call).
+
+    Used when the enhance model lacks vision (e.g. qwen3.6-35b-a3b text-only).
+    The image_description comes from analyze_image() with a fleet VLM.
+
+    Returns (enhanced_prompt, raw_response).
+    On failure, enhanced_prompt is the original user_prompt.
+    """
+    import urllib.request
+    import urllib.error
+
+    system = get_video_enhance_prompt()
+    user_msg = (
+        "REFERENCE IMAGE DESCRIPTION:\n" + image_description
+        + "\n\nUSER'S MOTION DESCRIPTION:\n" + user_prompt
+        + "\n\nBased on the image description above, write a detailed video generation prompt "
+        "that describes the character and scene, then adds the motion, environment response, "
+        "camera, lighting, and physics. The video must START from this image and animate it."
+    )
+
+    log.info("Video-enhancing prompt via %s (two-shot, text-only)", model)
+    t0 = time.perf_counter()
+
+    max_tokens_val = 16384
+
+    payload = json.dumps({
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_msg},
+        ],
+        "temperature": 0.5,
+        "max_tokens": max_tokens_val,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        f"{LLAMA_SWAP_URL}/v1/chat/completions",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    max_retries = 12
+    enhanced = ""
+
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=None) as resp:
+                data = json.loads(resp.read())
+                msg = data["choices"][0]["message"]
+                enhanced = msg.get("content", "").strip()
+                reasoning = msg.get("reasoning_content", "")
+                if not enhanced and reasoning:
+                    log.warning(
+                        "Two-shot video-enhancement returned empty content with %d chars of reasoning",
+                        len(reasoning),
+                    )
+                    return user_prompt, reasoning
+                break
+        except urllib.error.HTTPError as e:
+            if e.code == 400 and attempt < max_retries - 1:
+                log.info("Model loading (attempt %d/%d), retrying in 10s...", attempt + 1, max_retries)
+                time.sleep(10)
+                continue
+            log.error("Two-shot video-enhancement failed: %s — using raw prompt", e)
+            return user_prompt, str(e)
+        except (urllib.error.URLError, OSError, KeyError, json.JSONDecodeError) as e:
+            log.error("Two-shot video-enhancement failed: %s — using raw prompt", e)
+            return user_prompt, str(e)
+
+    elapsed = time.perf_counter() - t0
+    log.info("Two-shot video-enhancement completed in %.1fs", elapsed)
+
+    if not enhanced:
+        log.warning("Empty two-shot video-enhancement response — using raw prompt")
+        return user_prompt, enhanced
+
+    return enhanced, enhanced

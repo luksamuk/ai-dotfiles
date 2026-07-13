@@ -44,10 +44,12 @@ macros:
 models:
   qwen3.5-4b:
     name: Qwen3.5 4B
-    description: Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning.
+    description: Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning. Vision enabled via mmproj F16.
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/unsloth-qwen35-4b/Qwen3.5-4B-Q4_K_M.gguf
+
+      --mmproj ${models_dir}/mmproj-Qwen3.5-4B-F16.gguf
 
       --jinja
 
@@ -55,7 +57,7 @@ models:
 
       --parallel 1
 
-      -ngl 99
+      -ngl 60
 
       --ctx-size 131072
 
@@ -98,32 +100,33 @@ models:
     capabilities:
       in:
       - text
+      - image
       out:
       - text
       tools: true
       reranker: false
       context: 131072
     metadata:
-      size: ~2.74 GB (Q4_K_M)
-      context: 131K (fits in 6GB VRAM with q4_0 cache)
-      vram_usage: ~4.5GB VRAM (model 2.74GB + q4_0 cache 131K + compute)
+      size: ~2.74 GB (Q4_K_M) + 642 MB mmproj F16
+      context: 131K (fits in 6GB VRAM with q4_0 cache + mmproj)
+      vram_usage: ~5.1GB VRAM (model 2.74GB + mmproj 642MB + q4_0 cache 131K + compute)
       source: unsloth/Qwen3.5-4B-GGUF Q4_K_M
       kv_cache: q4_0
       features:
         completion: true
         tools: true
         thinking: true
-        vision: false
+        vision: true
         embedding: false
         insert: false
         audio: false
-        image: false
+        image: true
       architecture: qwen35
       parameters: 4210000000
       context_length: 131072
       embedding_length: 2560
       quantization: Unsloth Q4_K_M
-      note: 'Upstream llama.cpp (post-DFlash merge #22105). DFlash abandoned on 6GB GPU — draft model on CPU was 1.7x slower than no spec. 131K context, ~22ms/tok.'
+      note: 'Upstream llama.cpp (post-DFlash merge #22105). DFlash abandoned on 6GB GPU — draft model on CPU was 1.7x slower than no spec. Vision enabled Jul 2026 via mmproj F16 + --no-graph-reuse. Replaces Qwen3.6-35B vision in fleet. mmproj quantization NOT supported (issue #18881).'
   qwen3.5-9b:
     name: Qwen3.5 9B
     description: Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning.
@@ -468,18 +471,16 @@ models:
       quantization: Q8_0
   qwen3.6-35b-a3b:
     name: Qwen 3.6 35B
-    description: Qwen3.6 delivers substantial upgrades in agentic coding and thinking preservation. Built on direct community feedback for a more intuitive, responsive, and productive coding experience. Vision enabled via mmproj.
+    description: Qwen3.6 delivers substantial upgrades in agentic coding and thinking preservation. Built on direct community feedback for a more intuitive, responsive, and productive coding experience. Text-only (vision disabled for ctx 131K).
     cmd: '${ik_llama_server} --port ${PORT}
 
       --model ${models_dir}/Qwen3.6-35B-A3B-APEX-I-Compact.gguf
-
-      --mmproj ${models_dir}/mmproj-Qwen3.6-35B-A3B-F16.gguf
 
       --fit
 
       --fit-margin 1024
 
-      --ctx-size 32768
+      --ctx-size 131072
 
       --temp ${code_temp}
 
@@ -500,8 +501,6 @@ models:
       --parallel 1
 
       --parallel-tool-calls
-
-      --no-graph-reuse
 
       --cache-type-k ${large_cache_k}
 
@@ -536,33 +535,32 @@ models:
     capabilities:
       in:
       - text
-      - image
       out:
       - text
       tools: true
       reranker: false
-      context: 32768
+      context: 131072
     metadata:
-      size: ~17.3 GB (APEX I-Compact) + 858 MB mmproj
-      context: 32K (reduced from 131K for vision VRAM headroom)
+      size: ~17.3 GB (APEX I-Compact)
+      context: 131K (vision disabled — mmproj removed, ctx restored)
       vram_usage: ~5.6 GB VRAM (5587 MiB measured) + ~14GB pinned RAM
-      source: mudler/Qwen3.5-35B-A3B-APEX-GGUF (+ mmproj-F16)
+      source: mudler/Qwen3.5-35B-A3B-APEX-GGUF
       kv_cache: q4_0 + attn_rot + hadamard
       features:
         completion: true
         tools: true
         thinking: true
-        vision: true
+        vision: false
         embedding: false
         insert: false
         audio: false
-        image: true
+        image: false
       architecture: qwen35moe
       parameters: 34660000000
       context_length: 262144
       embedding_length: 2048
       quantization: APEX I-Compact
-      note: Vision enabled via --no-graph-reuse + --fit-margin 1536. ctx 32K (from 131K) for VRAM headroom. 27.6 tok/s with vision (17% slower than text-only 33-34). Both base and :think modes support vision.
+      note: Vision disabled (mmproj removed to restore ctx 131K on 6GB RTX 3050). Text-only mode. 33-34 tok/s. Both base and :think modes support tools.
   ornith-1.0-35b:
     name: Ornith 1.0 35B
     description: Ornith-1.0 is a family of open-source LLMs specialized for agentic coding, trained with a novel self-scaffolding reinforcement learning approach that jointly optimizes the scaffold and the solution.
