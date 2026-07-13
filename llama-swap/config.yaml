@@ -44,12 +44,10 @@ macros:
 models:
   qwen3.5-4b:
     name: Qwen3.5 4B
-    description: Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning. Vision enabled via mmproj F16.
+    description: Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning.
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/unsloth-qwen35-4b/Qwen3.5-4B-Q4_K_M.gguf
-
-      --mmproj ${models_dir}/mmproj-Qwen3.5-4B-F16.gguf
 
       --jinja
 
@@ -57,7 +55,7 @@ models:
 
       --parallel 1
 
-      -ngl 60
+      -ngl 99
 
       --ctx-size 131072
 
@@ -100,33 +98,32 @@ models:
     capabilities:
       in:
       - text
-      - image
       out:
       - text
       tools: true
       reranker: false
       context: 131072
     metadata:
-      size: ~2.74 GB (Q4_K_M) + 642 MB mmproj F16
-      context: 131K (fits in 6GB VRAM with q4_0 cache + mmproj)
-      vram_usage: ~5.1GB VRAM (model 2.74GB + mmproj 642MB + q4_0 cache 131K + compute)
+      size: ~2.74 GB (Q4_K_M)
+      context: 131K (fits in 6GB VRAM with q4_0 cache)
+      vram_usage: ~4.5GB VRAM (model 2.74GB + q4_0 cache 131K + compute)
       source: unsloth/Qwen3.5-4B-GGUF Q4_K_M
       kv_cache: q4_0
       features:
         completion: true
         tools: true
         thinking: true
-        vision: true
+        vision: false
         embedding: false
         insert: false
         audio: false
-        image: true
+        image: false
       architecture: qwen35
       parameters: 4210000000
       context_length: 131072
       embedding_length: 2560
       quantization: Unsloth Q4_K_M
-      note: 'Upstream llama.cpp (post-DFlash merge #22105). DFlash abandoned on 6GB GPU — draft model on CPU was 1.7x slower than no spec. Vision enabled Jul 2026 via mmproj F16 + --no-graph-reuse. Replaces Qwen3.6-35B vision in fleet. mmproj quantization NOT supported (issue #18881).'
+      note: 'Upstream llama.cpp (post-DFlash merge #22105). DFlash abandoned on 6GB GPU — draft model on CPU was 1.7x slower than no spec. 131K context, ~22ms/tok.'
   qwen3.5-9b:
     name: Qwen3.5 9B
     description: Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning.
