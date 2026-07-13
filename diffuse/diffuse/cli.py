@@ -337,6 +337,11 @@ def main() -> None:
         _run_framepack(args, model_name, model_info, prompt, original_prompt, seed, width, height)
         return
 
+    # ── Bonsai subprocess early path ─────────────────────────────────────────
+    if backend_type == "bonsai":
+        _run_bonsai_image(args, model_name, model_info, prompt, original_prompt, seed, width, height)
+        return
+
     # ── LLM eviction (free VRAM for diffusion) ──
     if args.evict_llm:
         running = llama_swap_running_models()
@@ -722,3 +727,89 @@ def _run_framepack(
         viewer = shutil.which("mpv") or shutil.which("vlc") or shutil.which("ffplay")
         if viewer:
             subprocess.Popen([viewer, str(output_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+
+
+def _run_bonsai_image(
+    args: argparse.Namespace,
+    model_name: str,
+    model_info: dict,
+    prompt: str,
+    original_prompt: str,
+    seed: int,
+    width: int,
+    height: int,
+) -> None:
+    """Handle Bonsai image generation via subprocess (separate venv)."""
+    from diffuse.backends.bonsai import load_pipeline_bonsai, generate_image_bonsai
+
+    steps = args.steps
+    guidance = 1.0
+
+    print(f"  🎨 Bonsai T2I: {width}×{height}, {steps} steps, seed={seed}")
+
+    # Check model dir
+    model_dir = Path(__file__).resolve().parent.parent / "models" / model_info["dir"]
+    if not model_dir.exists():
+        print(f"\n  ✗ Model not found: {model_dir}")
+        print(f"    Run: diffuse download bonsai")
+        sys.exit(1)
+
+    # ── Prompt enhancement ──
+    enhanced = None
+    if args.enhance or args.enhance_with:
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
+        enhance_type = model_info.get("enhance_type", "vision")
+
+        if enhance_type == "vision":
+            print(f"\n  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
+            enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model)
+        else:
+            enhanced, raw_response = enhance_prompt(prompt, enhance_model)
+
+        if enhanced and enhanced != prompt:
+            print(f"     Expanded to ({len(enhanced)} chars)")
+            prompt = enhanced
+
+    # Evict LLMs before loading
+    running = llama_swap_running_models()
+    if running:
+        print(f"  🔄 Evicting LLM models: {', '.join(running)}")
+        evict_llm()
+        print(f"     VRAM freed for image generation")
+
+    print(f"  [1/3] Loading Bonsai pipeline ({model_info['bits']})...")
+    config, load_time = load_pipeline_bonsai(model_name)
+    print(f"        Pipeline ready in {load_time:.1f}s")
+
+    # Output path
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+
+    print(f"  [2/3] Generating...")
+    wall_t0 = time.perf_counter()
+    output_path, diffusion_time, peak_hbm = generate_image_bonsai(
+        config,
+        prompt=prompt,
+        seed=seed,
+        width=width,
+        height=height,
+        steps=steps,
+        guidance=guidance,
+        output_path=output_path,
+    )
+    wall_time = time.perf_counter() - wall_t0
+
+    print(f"  [3/3] Done — unloading...")
+
+    save_metadata(
+        model_name, prompt, seed, width, height, steps,
+        0.0, diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+    )
+    print_debrief(
+        model_name, model_info, prompt, seed,
+        width, height, steps, 0.0,
+        diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+        original_prompt=original_prompt,
+    )

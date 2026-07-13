@@ -126,7 +126,10 @@ def load_pipeline(model_name: str, editing: bool = False) -> tuple:
     model_info = MODELS[model_name]
     backend_type = model_info.get("backend_type", "gemlite")
 
-    if backend_type == "gemlite":
+    if backend_type == "bonsai":
+        from diffuse.backends.bonsai import load_pipeline_bonsai
+        return load_pipeline_bonsai(model_name)
+    elif backend_type == "gemlite":
         from diffuse.backends.gemlite import load_pipeline_gemlite
         return load_pipeline_gemlite(model_name)
     elif backend_type == "sd_cpp":
