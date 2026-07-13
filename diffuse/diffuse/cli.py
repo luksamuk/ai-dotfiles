@@ -25,8 +25,6 @@ from diffuse.enhance import (
     enhance_edit_prompt,
     analyze_image,
     analyze_and_enhance_edit,
-    enhance_video_prompt,
-    enhance_video_prompt_two_shot,
     _check_model_vision,
 )
 from diffuse.output import (
@@ -90,7 +88,7 @@ def print_models() -> None:
 
 def print_list() -> None:
     """Print models grouped by category with dependencies, sizes, and shared components."""
-    from diffuse.models import MODELS, SHARED_COMPONENTS
+    from diffuse.models import MODELS
     from diffuse.paths import MODELS_DIR
 
     # Group by category
@@ -109,14 +107,11 @@ def print_list() -> None:
         backend = info.get("backend_type", "")
         if backend == "hidream":
             p = Path.home() / ".llama-models" / model_dir
-        elif backend == "lingbot":
-            p = Path.home() / ".llama-models" / model_dir
         else:
             p = MODELS_DIR / model_dir
         return p.exists() and any(p.iterdir()) if p.exists() else False
 
-    # Track which shared components are used by which models
-    shared_usage: dict[str, list[str]] = {}
+    # Track total disk usage
     total_installed = 0.0
     total_pending = 0.0
 
@@ -145,26 +140,6 @@ def print_list() -> None:
                 total_pending += total_gb
             print(f"      └── {'Total':55s} {_fmt_size_gb(total_gb)}")
             print()
-
-            # Track shared usage
-            for sid in info.get("shared", []):
-                shared_usage.setdefault(sid, []).append(name)
-
-    # Shared components summary
-    if shared_usage:
-        print("  SHARED COMPONENTS")
-        shared_savings = 0.0
-        for sid, used_by in sorted(shared_usage.items()):
-            comp = SHARED_COMPONENTS.get(sid, {})
-            desc = comp.get("description", sid)
-            size = comp.get("size_gb", 0)
-            models_str = ", ".join(used_by)
-            if len(used_by) > 1:
-                shared_savings += size * (len(used_by) - 1)
-            print(f"    {desc:40s} {_fmt_size_gb(size)}  ← {models_str}")
-        if shared_savings > 0:
-            print(f"    {'Savings':40s} {_fmt_size_gb(shared_savings)}")
-        print()
 
     print(f"  TOTAL DISK: {_fmt_size_gb(total_installed + total_pending)} ({_fmt_size_gb(total_installed)} installed + {_fmt_size_gb(total_pending)} pending)")
     print()
@@ -256,7 +231,7 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--cfg", type=float, default=None,
-        help="CFG scale (default: 1.0 for FramePack/Wan2.2 Rapid, 7.0 for other image gen).",
+        help="CFG scale (default: 1.0 for FramePack, 7.0 for other image gen).",
     )
     p.add_argument(
         "--gs", type=float, default=4.5,
@@ -265,23 +240,6 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--no-teacache", action="store_true",
         help="Disable TeaCache for FramePack I2V (slower but potentially better quality).",
-    )
-    # ── Wan2.2 I2V video args ──
-    p.add_argument(
-        "--video-frames", type=int, default=None,
-        help="Number of video frames for Wan2.2 I2V (default: 33, ~1.3s @ 24fps).",
-    )
-    p.add_argument(
-        "--fps", type=int, default=None,
-        help="Frames per second for Wan2.2 I2V output video (default: 24).",
-    )
-    p.add_argument(
-        "--negative-prompt", type=str, default="",
-        help="Negative prompt for Wan2.2 I2V.",
-    )
-    p.add_argument(
-        "--flow-shift", type=float, default=None,
-        help="Flow shift for Wan2.2 (default: 3.0).",
     )
     return p.parse_args()
 
@@ -340,8 +298,8 @@ def main() -> None:
     original_prompt = prompt
 
     # Pre-flight
-    if backend_type in ("hidream", "lingbot"):
-        # HiDream and LingBot models live in ~/.llama-models/, not diffuse/models/
+    if backend_type == "hidream":
+        # HiDream models live in ~/.llama-models/, not diffuse/models/
         model_path = Path(os.path.expanduser(f"~/.llama-models/{model_info['dir']}"))
         if not model_path.exists():
             print(f"\n  ✗ Model not found: {model_path}")
@@ -377,16 +335,6 @@ def main() -> None:
     # ── FramePack I2V early path ──────────────────────────────────────────────
     if backend_type == "framepack":
         _run_framepack(args, model_name, model_info, prompt, original_prompt, seed, width, height)
-        return
-
-    # ── Wan2.2 I2V video early path ───────────────────────────────────────────
-    if backend_type == "sd_cpp_video":
-        _run_sd_cpp_video(args, model_name, model_info, prompt, original_prompt, seed, width, height)
-        return
-
-    # ── LingBot T2V video early path ───────────────────────────────────────────
-    if backend_type == "lingbot":
-        _run_lingbot_video(args, model_name, model_info, prompt, original_prompt, seed, width, height)
         return
 
     # ── LLM eviction (free VRAM for diffusion) ──
@@ -761,316 +709,6 @@ def _run_framepack(
     print("  Timings:")
     print(f"    Setup:      {load_time:7.2f} s   (model load + DynamicSwap)")
     print(f"    Generation: {diffusion_time:7.2f} s   (video denoising + VAE decode)")
-    print(f"    ─────────────────────")
-    print(f"    Wall:       {wall_time:7.2f} s")
-    print()
-    print(f"  Output: {output_path}")
-    print("══════════════════════════════════════")
-
-    # Open video in player
-    if args.open and output_path:
-        import shutil
-        import subprocess
-        viewer = shutil.which("mpv") or shutil.which("vlc") or shutil.which("ffplay")
-        if viewer:
-            subprocess.Popen([viewer, str(output_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-
-
-def _run_lingbot_video(
-    args: argparse.Namespace,
-    model_name: str,
-    model_info: dict,
-    prompt: str,
-    original_prompt: str,
-    seed: int,
-    width: int,
-    height: int,
-) -> None:
-    """Handle LingBot T2V video generation via diffusers — separate path from image generation."""
-    from diffuse.backends.lingbot import load_pipeline_lingbot, generate_video_lingbot
-
-    # Video parameters with model defaults
-    video_frames = args.video_frames or model_info.get("default_video_frames", 33)
-    fps = args.fps or model_info.get("default_fps", 24)
-    steps = args.steps or model_info.get("default_steps", 4)
-    cfg_scale = args.cfg if args.cfg is not None else model_info.get("default_cfg", 1.0)
-    shift = 3.0  # FlowUniPC default shift
-
-    duration_s = video_frames / fps
-
-    print(f"  🎬 LingBot T2V: {width}×{height}, {video_frames} frames @ {fps} fps ({duration_s:.1f}s)")
-    print(f"     Steps: {steps}, CFG: {cfg_scale}, Shift: {shift}")
-    print(f"     Seed: {seed}")
-
-    # Check model dir (LingBot models live in ~/.llama-models/)
-    lingbot_model_path = Path(os.path.expanduser(f"~/.llama-models/{model_info['dir']}"))
-    if not lingbot_model_path.exists():
-        print(f"\n  ✗ Model not found: {lingbot_model_path}")
-        print(f"    Run: diffuse download lingbot")
-        sys.exit(1)
-
-    # ── Prompt enhancement ──────────────────────────────────────────────────
-    if args.enhance or args.enhance_with:
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
-        enhance_type = model_info.get("enhance_type", "vision")
-
-        if enhance_type == "vision":
-            print(f"\n  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
-            enhanced_result, raw_response = enhance_vision_prompt(prompt, enhance_model)
-        else:
-            enhanced_result, raw_response = enhance_prompt(prompt, enhance_model)
-
-        if enhanced_result and enhanced_result != prompt:
-            print(f"     Expanded to ({len(enhanced_result)} chars)")
-            print(f"     ─── Enhanced prompt ───")
-            import textwrap as _tw
-            for line in _tw.wrap(enhanced_result, width=78):
-                print(f"     {line}")
-            print(f"     ────────────────────────")
-            prompt = enhanced_result
-        else:
-            print(f"     ⚠️  Enhancement failed — using raw prompt")
-
-    # Evict LLMs before loading
-    running = llama_swap_running_models()
-    if running:
-        print(f"  🔄 Evicting LLM models: {', '.join(running)}")
-        evict_llm()
-        print(f"     VRAM freed for video generation")
-
-    print(f"  [1/3] Loading LingBot pipeline ({model_info['bits']})...")
-    pipeline, load_time = load_pipeline_lingbot(model_name)
-    print(f"        Pipeline ready in {load_time:.1f}s")
-
-    # Output path
-    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
-    out_dir = orig_cwd
-    out_dir.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_model = model_name.replace(":", "_").replace("/", "_")
-    default_output = str(out_dir / f"diffuse_{safe_model}_{ts}_seed{seed}.mp4")
-    output_path = Path(args.output and str(args.output.with_suffix(".mp4")) or default_output)
-
-    # Default negative prompt (LingBot uses JSON-structured negative)
-    negative_prompt = args.negative_prompt or ""
-
-    print(f"  [2/3] Generating video...")
-    wall_t0 = time.perf_counter()
-
-    output_path, diffusion_time, peak_hbm = generate_video_lingbot(
-        pipeline,
-        prompt=prompt,
-        negative_prompt=negative_prompt,
-        seed=seed,
-        width=width,
-        height=height,
-        video_frames=video_frames,
-        fps=fps,
-        steps=steps,
-        cfg_scale=cfg_scale,
-        shift=shift,
-        output_path=output_path,
-    )
-    wall_time = time.perf_counter() - wall_t0
-
-    print(f"  [3/3] Done — unloading pipeline...")
-    unload_pipeline()
-
-    print()
-    print("═══ diffuse — LingBot T2V Video Report ═══")
-    print(f"  Model:       {model_name}")
-    print(f"  Prompt:      \"{original_prompt}\"")
-    print(f"  Frames:      {video_frames} @ {fps} fps ({duration_s:.1f}s)")
-    print(f"  Seed:        {seed}")
-    print(f"  Resolution:  {width}×{height}")
-    print(f"  Steps:       {steps}")
-    print(f"  CFG:         {cfg_scale}")
-    print(f"  Shift:       {shift}")
-    print()
-    print("  Timings:")
-    print(f"    Setup:      {load_time:7.2f} s   (model load + CPU offload)")
-    print(f"    Generation: {diffusion_time:7.2f} s   (diffusion + VAE decode)")
-    print(f"    ─────────────────────")
-    print(f"    Wall:       {wall_time:7.2f} s")
-    print()
-    print(f"  Output: {output_path}")
-    print("══════════════════════════════════════")
-
-    # Open video in player
-    if args.open and output_path:
-        import shutil
-        import subprocess
-        viewer = shutil.which("mpv") or shutil.which("vlc") or shutil.which("ffplay")
-        if viewer:
-            subprocess.Popen([viewer, str(output_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-
-
-def _run_sd_cpp_video(
-    args: argparse.Namespace,
-    model_name: str,
-    model_info: dict,
-    prompt: str,
-    original_prompt: str,
-    seed: int,
-    width: int,
-    height: int,
-) -> None:
-    """Handle Wan2.2 I2V video generation via sd-cli — separate path from image generation."""
-    from diffuse.backends.sd_cpp import load_pipeline_sd_cpp_video, generate_video_sd_cpp
-
-    # Validate input image
-    input_image_path = args.input_image
-    if input_image_path is None:
-        print("  ✗ Wan2.2 I2V requires --input-image")
-        print("     Usage: diffuse -m wan22-i2v --input-image photo.png -p 'description of motion'")
-        sys.exit(1)
-    if not input_image_path.exists():
-        orig_cwd = os.environ.get("DIFFUSE_ORIG_CWD", "")
-        if orig_cwd:
-            resolved = Path(orig_cwd) / input_image_path
-            if resolved.exists():
-                input_image_path = resolved
-            else:
-                print(f"  ✗ Input image not found: {input_image_path} (also tried {resolved})")
-                sys.exit(1)
-        else:
-            print(f"  ✗ Input image not found: {input_image_path}")
-            sys.exit(1)
-
-    # Video parameters with model defaults
-    video_frames = args.video_frames or model_info.get("default_video_frames", 33)
-    fps = args.fps or model_info.get("default_fps", 24)
-    steps = args.steps or model_info.get("default_steps", 4)
-    cfg_scale = args.cfg if args.cfg is not None else model_info.get("default_cfg", 1.0)
-    flow_shift = args.flow_shift if args.flow_shift is not None else model_info.get("default_flow_shift", 3.0)
-    negative_prompt = args.negative_prompt or (
-        "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画面，静止，"
-        "整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，"
-        "画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，"
-        "手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走"
-    )
-
-    duration_s = video_frames / fps
-
-    print(f"  🎬 Wan2.2 I2V: {width}×{height}, {video_frames} frames @ {fps} fps ({duration_s:.1f}s)")
-    print(f"     Steps: {steps}, CFG: {cfg_scale}, Flow shift: {flow_shift}")
-    print(f"     Input: {Path(input_image_path).name}")
-    print(f"     Seed: {seed}")
-
-    # ── Prompt enhancement (vision-based for I2V) ──────────────────────────
-    if args.enhance or args.enhance_with:
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
-        enhance_has_vision = _check_model_vision(enhance_model)
-
-        if enhance_has_vision:
-            # One-shot: enhance model has vision → single call with image
-            print(f"\n  ✨ Video-enhancing prompt via {enhance_model} (vision + I2V mode)...")
-            print(f"  📷 Analyzing input image & writing motion prompt...")
-            enhanced_result, raw_response = enhance_video_prompt(
-                str(input_image_path), prompt, enhance_model
-            )
-        else:
-            # Two-shot: separate vision model analyzes image, then enhance model refines
-            if args.vision_with:
-                vision_model = args.vision_with
-            else:
-                vision_model = DEFAULT_VISION_MODEL
-            print(f"\n  👁️  Using {vision_model} for image analysis (default)")
-            print(f"  📷 Analyzing input image via {vision_model}...")
-            image_description = analyze_image(str(input_image_path), vision_model, prompt)
-            if not image_description:
-                print(f"     ⚠️  Image analysis failed — falling back to raw prompt")
-                enhanced_result = prompt
-                raw_response = ""
-            else:
-                print(f"     ─── Image description ({len(image_description)} chars) ───")
-                import textwrap as _tw
-                for line in _tw.wrap(image_description, width=78):
-                    print(f"     {line}")
-                print(f"     ────────────────────────────────────────")
-
-                # Evict vision model before loading enhance model
-                running = llama_swap_running_models()
-                if running:
-                    print(f"  🔄 Evicting {vision_model} after image analysis...")
-                    evict_llm()
-                    print(f"     VRAM freed for prompt enhancement")
-
-                print(f"  ✨ Video-enhancing prompt via {enhance_model} (two-shot, text-only)...")
-                enhanced_result, raw_response = enhance_video_prompt_two_shot(
-                    image_description, prompt, enhance_model
-                )
-        if enhanced_result and enhanced_result != prompt:
-            print(f"     Expanded to video prompt ({len(enhanced_result)} chars)")
-            print(f"     ─── Enhanced video prompt ───")
-            import textwrap as _tw
-            for line in _tw.wrap(enhanced_result, width=78):
-                print(f"     {line}")
-            print(f"     ──────────────────────────────")
-            prompt = enhanced_result
-        else:
-            print(f"     ⚠️  Video-enhancement failed — using raw prompt")
-            if raw_response and raw_response != prompt:
-                display = raw_response[:500] + ("..." if len(raw_response) > 500 else "")
-                print(f"     {display}")
-
-    # Evict LLMs before loading (Wan2.2 needs all available VRAM)
-    running = llama_swap_running_models()
-    if running:
-        print(f"  🔄 Evicting LLM models: {', '.join(running)}")
-        evict_llm()
-        print(f"     VRAM freed for video generation")
-
-    print(f"  [1/3] Loading sd-cli config ({model_info['bits']})...")
-    config, load_time = load_pipeline_sd_cpp_video(model_name)
-    print(f"        Config ready (sd-cli handles model loading at runtime)")
-
-    # Output path
-    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
-    out_dir = orig_cwd
-    out_dir.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_model = model_name.replace(":", "_").replace("/", "_")
-    default_output = str(out_dir / f"diffuse_{safe_model}_{ts}_seed{seed}.mp4")
-    output_path = Path(args.output and str(args.output.with_suffix(".mp4")) or default_output)
-
-    print(f"  [2/3] Generating video...")
-    wall_t0 = time.perf_counter()
-
-    output_path, diffusion_time, peak_hbm = generate_video_sd_cpp(
-        config,
-        prompt=prompt,
-        negative_prompt=negative_prompt,
-        seed=seed,
-        width=width,
-        height=height,
-        video_frames=video_frames,
-        fps=fps,
-        steps=steps,
-        cfg_scale=cfg_scale,
-        flow_shift=flow_shift,
-        input_image=str(input_image_path),
-        output_path=output_path,
-        max_vram=5.1,
-    )
-    wall_time = time.perf_counter() - wall_t0
-
-    print(f"  [3/3] Done — unloading (sd-cli exits automatically)")
-
-    print()
-    print("═══ diffuse — Wan2.2 I2V Video Report ═══")
-    print(f"  Model:       {model_name}")
-    print(f"  Prompt:      \"{original_prompt}\"")
-    print(f"  Input:       {Path(input_image_path).name}")
-    print(f"  Frames:      {video_frames} @ {fps} fps ({duration_s:.1f}s)")
-    print(f"  Seed:        {seed}")
-    print(f"  Resolution:  {width}×{height}")
-    print(f"  Steps:       {steps}")
-    print(f"  CFG:         {cfg_scale}")
-    print(f"  Flow shift:  {flow_shift}")
-    print()
-    print("  Timings:")
-    print(f"    Generation: {diffusion_time:7.2f} s   (sd-cli wall time)")
     print(f"    ─────────────────────")
     print(f"    Wall:       {wall_time:7.2f} s")
     print()

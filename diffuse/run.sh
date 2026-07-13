@@ -222,11 +222,8 @@ Examples:
   diffuse list                              # Show all models, deps, sizes
   diffuse generate -m hidream-sdnq -p 'a cat on the moon'
   diffuse generate -m ideogram4-q4 -p 'text: HELLO' --enhance
-  diffuse generate -m wan22-i2v --input-image photo.png -p 'camera pan right'
-  diffuse generate -m lingbot-t2v -p 'a cat playing with yarn'
   diffuse evict                             # Free VRAM by unloading all LLMs
   diffuse download hidream                  # Download HiDream weights
-  diffuse download lingbot                   # Download LingBot weights
 EOF
 }
 
