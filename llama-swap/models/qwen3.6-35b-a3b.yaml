@@ -32,7 +32,7 @@
     --mmproj ${models_dir}/mmproj-Qwen3.6-35B-A3B-F16.gguf
     --fit
     --fit-margin 1024
-    --ctx-size 32768
+    --ctx-size 131072
     --temp ${code_temp}
     --top-p ${code_top_p}
     --top-k ${code_top_k}
@@ -71,10 +71,10 @@
     out: ['text']
     tools: true
     reranker: false
-    context: 32768
+    context: 131072
   metadata:
     size: "~17.3 GB (APEX I-Compact) + 858 MB mmproj"
-    context: "32K (reduced from 131K for vision VRAM headroom)"
+    context: "131K (restored from 32K — testing VRAM headroom with vision)"
     vram_usage: "~5.6 GB VRAM (5587 MiB measured) + ~14GB pinned RAM"
     source: "mudler/Qwen3.5-35B-A3B-APEX-GGUF (+ mmproj-F16)"
     kv_cache: "q4_0 + attn_rot + hadamard"
@@ -92,4 +92,4 @@
     context_length: 262144
     embedding_length: 2048
     quantization: APEX I-Compact
-    note: "Vision enabled via --no-graph-reuse + --fit-margin 1536. ctx 32K (from 131K) for VRAM headroom. 27.6 tok/s with vision (17% slower than text-only 33-34). Both base and :think modes support vision."
+    note: "Vision enabled via --no-graph-reuse + --fit-margin 1024. ctx 131K restored (testing if VRAM holds with mmproj ~560MB). 27.6 tok/s with vision (17% slower than text-only 33-34). Both base and :think modes support vision."
