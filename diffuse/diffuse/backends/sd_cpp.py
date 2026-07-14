@@ -25,11 +25,29 @@ def _resolve_sd_cli() -> str:
     return sd_cli
 
 
+def _resolve_sd_cli_zimage() -> str:
+    """Find sd-cli-zimage binary (compiled from z-image-omini-base branch)."""
+    base = Path(SD_CLI_PATH).parent
+    zimage_cli = base / "sd-cli-zimage"
+    if zimage_cli.exists():
+        return str(zimage_cli)
+    raise FileNotFoundError(
+        f"sd-cli-zimage not found at {zimage_cli}\n"
+        f"  Build it: cd ~/git/stable-diffusion.cpp && git checkout z-image-omini-base && "
+        f"cd build && make -j$(nproc) sd-cli && cp bin/sd-cli ~/git/ai-dotfiles/diffuse/bin/sd-cli-zimage"
+    )
+
+
 def load_pipeline_sd_cpp(model_name: str) -> tuple:
     """Prepare sd-cli configuration. Returns (config_dict, 0.0)."""
     model_info = MODELS[model_name]
     model_root = require_model_dir(model_name)
     sd_cli = _resolve_sd_cli()
+
+    # Z-Image-Turbo uses different model files than Ideogram 4
+    backend_type = model_info.get("backend_type", "sd_cpp")
+    if backend_type == "zimage_sd_cpp":
+        return load_pipeline_sd_cpp_zimage(model_name, model_root, sd_cli)
 
     config = {
         "sd_cli": sd_cli,
@@ -43,6 +61,56 @@ def load_pipeline_sd_cpp(model_name: str) -> tuple:
     for key, path in config.items():
         if key == "sd_cli" and not Path(path).exists():
             raise FileNotFoundError(f"{key} not found: {path}")
+
+    return config, 0.0
+
+
+def load_pipeline_sd_cpp_zimage(model_name: str, model_root: Path, sd_cli: str) -> tuple:
+    """Prepare sd-cli config for Z-Image-Turbo. Returns (config_dict, 0.0)."""
+    model_info = MODELS[model_name]
+
+    # Use the dedicated z-image sd-cli binary (compiled from z-image-omini-base branch)
+    sd_cli = _resolve_sd_cli_zimage()
+
+    # Find the best GGUF for our VRAM
+    import torch
+    vram_gb = torch.cuda.mem_get_info()[1] / 1e9 if torch.cuda.is_available() else 999
+    if vram_gb <= 6:
+        preferred = ["Q3_K_S", "Q3_K_M", "Q4_K_S", "Q4_K_M"]
+    else:
+        preferred = ["Q4_K_M", "Q4_K_S", "Q3_K_M", "Q3_K_S"]
+
+    gguf_files = list(model_root.glob("z_image_turbo-*.gguf"))
+    dit_gguf = None
+    for pref in preferred:
+        matches = [f for f in gguf_files if pref.lower() in f.name.lower()]
+        if matches:
+            dit_gguf = str(matches[0])
+            break
+    if not dit_gguf and gguf_files:
+        dit_gguf = str(gguf_files[0])
+    if not dit_gguf:
+        raise FileNotFoundError(f"No Z-Image GGUF found in {model_root}")
+
+    # Find Qwen3-4B text encoder GGUF
+    llm_files = list(model_root.glob("Qwen3-4B-*.gguf"))
+    llm_gguf = str(llm_files[0]) if llm_files else None
+    if not llm_gguf:
+        raise FileNotFoundError(f"No Qwen3-4B GGUF found in {model_root}")
+
+    # VAE: use the Z-Image pipeline VAE (same as Flux)
+    vae_path = str(model_root / "pipeline" / "vae" / "diffusion_pytorch_model.safetensors")
+    if not Path(vae_path).exists():
+        # Fallback to Ideogram 4's Flux VAE
+        vae_path = str(model_root.parent / "ideogram-4-Q4_0" / "vae" / "flux2-vae.safetensors")
+
+    config = {
+        "sd_cli": sd_cli,
+        "diffusion_model": dit_gguf,
+        "llm": llm_gguf,
+        "vae": vae_path,
+        "is_zimage": True,
+    }
 
     return config, 0.0
 
@@ -79,28 +147,32 @@ def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, heig
     """Generate image using sd-cli. Returns (output_path, wall_time_seconds, 0.0)."""
     log.info("Generating via sd-cli: seed=%d size=%dx%d cpu_fallback=%s", seed, width, height, cpu_fallback)
 
-    cmd = [
-        config["sd_cli"],
-        "--diffusion-model", config["diffusion_model"],
-        "--uncond-diffusion-model", config["uncond_diffusion_model"],
-        "--llm", config["llm"],
-        "--vae", config["vae"],
-        "-p", prompt,
-        "--diffusion-fa",
-        "--offload-to-cpu",
-        "--clip-on-cpu",
-        "--vae-on-cpu",
-        "--max-vram", "5.1",
-        "--stream-layers",
-        "-H", str(height),
-        "-W", str(width),
-        "--seed", str(seed),
-        "-o", str(output_path),
-    ]
+    is_zimage = config.get("is_zimage", False)
 
-    # CPU fallback: remove VRAM limits and force everything on CPU
-    if cpu_fallback:
-        log.warning("Retrying with CPU-only backend — this will be very slow (~30+ minutes)")
+    # Z-Image-Turbo: no uncond model, CFG=0, 9 steps, flux_flow prediction
+    if is_zimage:
+        cmd = [
+            config["sd_cli"],
+            "--diffusion-model", config["diffusion_model"],
+            "--llm", config["llm"],
+            "--vae", config["vae"],
+            "-p", prompt,
+            "--diffusion-fa",
+            "--offload-to-cpu",
+            "--clip-on-cpu",
+            "--vae-on-cpu",
+            "--vae-tiling",
+            "-H", str(height),
+            "-W", str(width),
+            "--seed", str(seed),
+            "-o", str(output_path),
+        ]
+        # Add steps and cfg from config if provided
+        if "steps" in config:
+            cmd += ["--steps", str(config["steps"])]
+        if "cfg" in config:
+            cmd += ["--cfg-scale", str(config["cfg"])]
+    else:
         cmd = [
             config["sd_cli"],
             "--diffusion-model", config["diffusion_model"],
@@ -108,12 +180,52 @@ def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, heig
             "--llm", config["llm"],
             "--vae", config["vae"],
             "-p", prompt,
-            "--backend", "cpu",
+            "--diffusion-fa",
+            "--offload-to-cpu",
+            "--clip-on-cpu",
+            "--vae-on-cpu",
+            "--max-vram", "5.1",
+            "--stream-layers",
             "-H", str(height),
             "-W", str(width),
             "--seed", str(seed),
             "-o", str(output_path),
         ]
+
+    # CPU fallback: remove VRAM limits and force everything on CPU
+    if cpu_fallback:
+        log.warning("Retrying with CPU-only backend — this will be very slow (~30+ minutes)")
+        if is_zimage:
+            cmd = [
+                config["sd_cli"],
+                "--diffusion-model", config["diffusion_model"],
+                "--llm", config["llm"],
+                "--vae", config["vae"],
+                "-p", prompt,
+                "--backend", "cpu",
+                "-H", str(height),
+                "-W", str(width),
+                "--seed", str(seed),
+                "-o", str(output_path),
+            ]
+            if "steps" in config:
+                cmd += ["--steps", str(config["steps"])]
+            if "cfg" in config:
+                cmd += ["--cfg-scale", str(config["cfg"])]
+        else:
+            cmd = [
+                config["sd_cli"],
+                "--diffusion-model", config["diffusion_model"],
+                "--uncond-diffusion-model", config["uncond_diffusion_model"],
+                "--llm", config["llm"],
+                "--vae", config["vae"],
+                "-p", prompt,
+                "--backend", "cpu",
+                "-H", str(height),
+                "-W", str(width),
+                "--seed", str(seed),
+                "-o", str(output_path),
+            ]
 
     t0 = time.perf_counter()
     result = subprocess.run(cmd, capture_output=True, text=True)  # no timeout — let sd-cli finish naturally

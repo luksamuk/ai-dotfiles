@@ -33,6 +33,23 @@ MODELS: dict[str, dict] = {
             {"name": "FLUX.2 VAE (AutoencoderKLFlux2)", "path": "bonsai-image-4B-ternary-gemlite/vae", "size_gb": 0.17},
         ],
     },
+    # Z-Image-Turbo (diffusers ZImagePipeline + GGUF, subprocess in bonsai-venv)
+    "z-image-turbo-q4": {
+        "backend_id": "z-image-turbo-q4-sd-cpp",
+        "dir": "z-image-turbo-q4",
+        "backend_type": "zimage_sd_cpp",
+        "category": "image",
+        "bits": "Q3_K_S GGUF (auto-selected for 6GB VRAM)",
+        "description": "Z-Image-Turbo — 6B S3-DiT, 8 NFE, sub-second on H800, uncensored, bilingual text",
+        "default_size": (1024, 1024),
+        "enhance_model": "qwen3.6-35b-a3b",
+        "enhance_type": "vision",
+        "components": [
+            {"name": "z_image_turbo GGUF (DiT)", "path": "z-image-turbo-q4/z_image_turbo-Q3_K_S.gguf", "size_gb": 3.8},
+            {"name": "Qwen3-4B Q4_K_M GGUF (text encoder)", "path": "z-image-turbo-q4/Qwen3-4B-Q4_K_M.gguf", "size_gb": 2.4},
+            {"name": "Flux VAE", "path": "z-image-turbo-q4/pipeline/vae/diffusion_pytorch_model.safetensors", "size_gb": 0.16},
+        ],
+    },
     # HiDream-O1-Image-Dev SDNQ (transformers + accelerate CPU offload)
     "hidream-sdnq": {
         "dir": "HiDream-O1-Image-Dev-SDNQ-last8",

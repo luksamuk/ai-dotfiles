@@ -1,0 +1,58 @@
+# -------------------------------------------
+# LFM2.5-VL-450M-EXTRACT — Structured Vision Extraction (Edge)
+# Liquid AI — smallest Extract VLM, returns JSON not free-form text
+# Architecture: lfm2 — upstream llama.cpp ONLY (ik does not support lfm2)
+# Use cases: edge deployment, document scanning, fast structured extraction
+# -------------------------------------------
+"lfm2.5-vl-450m-extract":
+  name: "LFM2.5-VL 450M Extract"
+  description: "Ultra-light vision-language model for structured extraction. Returns JSON from image + field list. Edge-ready."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/LFM2.5-VL-450M-Extract-Q4_K_M.gguf
+    --jinja
+    --mmproj ${models_dir}/mmproj-LFM2.5-VL-450M-Extract-F16.gguf
+    --media-path ${media_path}
+    --fit on
+    --fit-target ${vram_margin}
+    --fit-ctx ${small_model_min_ctx}
+    --ctx-size ${small_model_max_ctx}
+    --temp 0.1
+    --top-p 0.9
+    --top-k 40
+    --min-p 0.15
+    --repeat-penalty 1.3
+    --reasoning off
+    --cache-type-k f16
+    --cache-type-v f16
+    --flash-attn on
+    --metrics
+  health_check_timeout: 300
+  ttl: 60
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 131072
+  metadata:
+    size: "0.22 GB (Q4_K_M) + 0.18 GB mmproj"
+    context: "32K (dynamic)"
+    vram_usage: "~1.0GB"
+    source: "LiquidAI/LFM2.5-VL-450M-Extract-GGUF"
+    kv_cache: "f16"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: lfm2
+    parameters: 450000000
+    context_length: 128000
+    embedding_length: 2048
+    quantization: Q4_K_M
+    note: "Ultra-light Extract VLM — 450M params, returns JSON. lfm2 arch requires upstream llama.cpp (not ik)."

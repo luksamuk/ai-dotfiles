@@ -277,12 +277,14 @@ def main() -> None:
     backend_type = model_info.get("backend_type", "gemlite")
 
     # ── Defaults per backend ──
-    # Steps: bonsai=4, ideogram4=20, hidream=28
+    # Steps: bonsai=4, ideogram4=20, hidream=28, z-image=9 (8 NFE)
     if args.steps is None:
         if backend_type == "hidream":
             args.steps = 28
         elif backend_type == "sd_cpp":
             args.steps = 20
+        elif backend_type == "zimage_sd_cpp":
+            args.steps = 9
         else:
             args.steps = 4
 
@@ -340,6 +342,11 @@ def main() -> None:
     # ── Bonsai subprocess early path ─────────────────────────────────────────
     if backend_type == "bonsai":
         _run_bonsai_image(args, model_name, model_info, prompt, original_prompt, seed, width, height)
+        return
+
+    # ── Z-Image subprocess early path (uses sd-cli, same as Ideogram 4) ─────
+    if backend_type == "zimage_sd_cpp":
+        _run_zimage_sd_cpp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height)
         return
 
     # ── LLM eviction (free VRAM for diffusion) ──
@@ -797,6 +804,89 @@ def _run_bonsai_image(
         guidance=guidance,
         output_path=output_path,
     )
+    wall_time = time.perf_counter() - wall_t0
+
+    print(f"  [3/3] Done — unloading...")
+
+    save_metadata(
+        model_name, prompt, seed, width, height, steps,
+        0.0, diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+    )
+    print_debrief(
+        model_name, model_info, prompt, seed,
+        width, height, steps, 0.0,
+        diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+        original_prompt=original_prompt,
+    )
+
+
+def _run_zimage_sd_cpp_image(
+    args,
+    model_name: str,
+    model_info: dict,
+    prompt: str,
+    original_prompt: str,
+    seed: int,
+    width: int,
+    height: int,
+) -> None:
+    """Handle Z-Image-Turbo image generation via sd-cli (same path as Ideogram 4)."""
+    from diffuse.backends.sd_cpp import load_pipeline_sd_cpp, generate_image_sd_cpp
+
+    steps = args.steps if args.steps != 28 else 9  # Default 8 NFE for Turbo
+    guidance = 1.0  # Turbo distilled: sd-cli warns "use cfg-scale=1 for distilled models"
+
+    print(f"  🎨 Z-Image-Turbo T2I: {width}×{height}, {steps} steps (8 NFE), seed={seed}")
+
+    # ── Prompt enhancement ──
+    enhanced = None
+    if args.enhance or args.enhance_with:
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
+        enhance_type = model_info.get("enhance_type", "vision")
+
+        if enhance_type == "vision":
+            print(f"\n  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
+            enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model)
+        else:
+            enhanced, raw_response = enhance_prompt(prompt, enhance_model)
+
+        if enhanced and enhanced != prompt:
+            print(f"     Expanded to ({len(enhanced)} chars)")
+            prompt = enhanced
+
+    # Evict LLMs before loading
+    running = llama_swap_running_models()
+    if running:
+        print(f"  🔄 Evicting LLM models: {', '.join(running)}")
+        evict_llm()
+        print(f"     VRAM freed for image generation")
+
+    print(f"  [1/3] Loading Z-Image-Turbo pipeline ({model_info['bits']})...")
+    config, load_time = load_pipeline_sd_cpp(model_name)
+    config["steps"] = steps
+    config["cfg"] = guidance
+    print(f"        sd-cli config ready")
+
+    # Output path
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+
+    print(f"  [2/3] Generating...")
+    wall_t0 = time.perf_counter()
+    try:
+        output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
+            config, prompt, seed, width, height, output_path,
+        )
+    except RuntimeError as e:
+        if "CUDA" in str(e) and args.cpu_fallback:
+            print(f"  ⚠️  CUDA failed — retrying on CPU (this will be very slow)...")
+            output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
+                config, prompt, seed, width, height, output_path, cpu_fallback=True,
+            )
+        else:
+            raise
     wall_time = time.perf_counter() - wall_t0
 
     print(f"  [3/3] Done — unloading...")

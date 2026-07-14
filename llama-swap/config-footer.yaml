@@ -39,13 +39,10 @@ matrix:
     lfm8: lfm2.5-8b-a1b
     # Vision
     vl: lfm2.5-vl-450m
-    vlx: lfm2.5-vl-1.6b-extract
-    vle: lfm2.5-vl-450m-extract
     vl16: lfm2.5-vl-1.6b
     ocr: glm-ocr
     cpv: minicpm-v-4.6
     qwvl: qwen3-vl-4b
-    smv: smolvlm2-500m-video
     # Modelos médios
     q9: qwen3.5-9b
     g4: gemma4-e4b
@@ -78,8 +75,8 @@ matrix:
     small_only: "q4 | q4a | g2 | g2q | lfm230 | lfm8 | m5a"
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "vl | vlx | vle | vl16 | ocr | cpv | qwvl | smv"
-    vision_embed: "(vl | vlx | vle | vl16 | ocr | cpv | qwvl | smv) & (nomic | lfmemb | lfmcol)"
+    vision_only: "vl | vl16 | ocr | cpv | qwvl"
+    vision_embed: "(vl | vl16 | ocr | cpv | qwvl) & (nomic | lfmemb | lfmcol)"
 
     # Modelos médios + Embedding/Reranker
     medium: "(q9 | g4) & (nomic | lfmemb | lfmcol)"
@@ -115,13 +112,10 @@ matrix:
     g4: 4
     ttsext: 4
     vl: 3
-    vlx: 3
-    vle: 1
     ocr: 3
     cpv: 3
     qwvl: 3
     vl16: 2
-    smv: 1
     q4: 2
     q4a: 2
     lfm8: 2
