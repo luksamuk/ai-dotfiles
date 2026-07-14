@@ -42,6 +42,11 @@ macros:
   # Build local em ~/git/ik_llama.cpp/build/bin/llama-server
   "ik_llama_server": "${env.HOME}/git/ik_llama.cpp/build/bin/llama-server"
 
+  # Caminho para bonsai-llama.cpp — fork da PrismML com kernels Q2_0_g128 ternary (CUDA)
+  # Build local em ~/git/bonsai-llama.cpp/build/bin/llama-server
+  # Necessário para Bonsai 27B (weights ternary {−1,0,+1} em 2-bit slots com group-wise scaling)
+  "bonsai_llama_server": "${env.HOME}/git/bonsai-llama.cpp/build/bin/llama-server"
+
   # Caminho para BeeLlama.cpp — fork com DFlash speculative decoding + TurboQuant KV cache
   # Build local em ~/git/beellama.cpp/build/bin/llama-server
   # NOTA: Bee não tem --fit/--fit-margin. Usar --n-gpu-layers 99 para modelos que cabem na VRAM.
@@ -1070,6 +1075,183 @@ models:
       embedding_length: 2048
       quantization: Q8_0
 # -------------------------------------------
+# BONSAI 27B 1-BIT — PrismML binary {−1,+1} LLM (Q1_0, bonsai-llama backend)
+# prism-ml/Bonsai-27B-gguf — Qwen3.6-27B base, 27.3B binary weights at 1.125 bpw.
+# Architecture: same hybrid attention as ternary variant.
+# Weight format: GGUF Q1_0 — {−1,+1} in 1-bit slots with FP16 group-wise scaling.
+#   Custom kernels required: PrismML-Eng/llama.cpp fork (CUDA, Metal, CPU).
+# 3.53 GB on disk, ~3.9 GB deployed. Fits entirely in RTX 3050 6GB VRAM.
+# 89.5% of FP16 intelligence retained (76.11 avg on 15 benchmarks).
+# Math: 90.17. Coding: 82.75. Agentic: 69.31.
+# Apache 2.0 license.
+
+# Backend: bonsai-llama.cpp (PrismML fork) — NOT upstream, NOT ik_llama.
+# Sampling: temp 0.7, top_p 0.95, top_k 20 per model card.
+# -------------------------------------------
+  "bonsai-27b-1bit":
+    name: "Bonsai 27B 1-bit"
+    description: "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit weights, full thinking/reasoning at 3.9 GB. 89.5% of FP16 intelligence. Fits entirely in 6GB VRAM."
+    cmd: |
+      ${bonsai_llama_server} --port ${PORT}
+      --model ${models_dir}/bonsai-27b-1bit/Bonsai-27B-Q1_0.gguf
+      --jinja
+      --reasoning on
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx 8192
+      --ctx-size 32768
+      --temp 0.7
+      --top-p 0.95
+      --top-k 20
+      --repeat-penalty 1.0
+      --parallel 1
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p, top_k"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.95
+          top_k: 20
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.7
+          top_p: 0.95
+          top_k: 20
+    ttl: 300
+    health_check_timeout: 120
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 32768
+    metadata:
+      size: "~3.9 GB (Q1_0 binary 1.125 bpw)"
+      context: "8K-262K (dynamic with --fit, 4-bit KV cache)"
+      vram_usage: "~5.4 GB (model + cache, fits entirely in GPU)"
+      source: "prism-ml/Bonsai-27B-gguf (Q1_0)"
+      kv_cache: "q4_0"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen3
+      parameters: 27300000000
+      context_length: 262144
+      embedding_length: 3584
+      quantization: Q1_0 (binary 1.125 bpw)
+# -------------------------------------------
+# BONSAI 27B TERNARY — PrismML ternary {−1,0,+1} LLM (Q2_0_g128, bonsai-llama backend)
+# prism-ml/Ternary-Bonsai-27B-gguf — Qwen3.6-27B base, 27.3B ternary weights at 1.71 bpw.
+# Architecture: hybrid attention (~75% linear / ~25% full attention), SwiGLU MLP, RoPE, RMSNorm.
+#   64 blocks, full-attention cache on only 16 of 64 layers — enables 262K context on-device.
+# Weight format: GGUF Q2_0_g128 — {−1,0,+1} in 2-bit slots with FP16 group-wise scaling (128-group).
+#   Custom kernels required: PrismML-Eng/llama.cpp fork (CUDA, Metal, CPU).
+#   Upstream llama.cpp does NOT support Q2_0_g128.
+# Vision: HQQ 4-bit mmproj (Q8_0 container), loaded only on image input.
+# DSpark speculative decoding: draft-dspark type, Q4_1 drafter layer (1.95 GB).
+#   1.34x speedup on CUDA (H100: 98 → 132 tok/s). Optional.
+# Apache 2.0 license.
+
+# Quantization: Q2_0_g128 (ternary) — 6.7 GB on disk, ~7.2 GB deployed.
+#   1.71 bits/weight. 94.6% of FP16 intelligence retained (80.49 avg on 15 benchmarks).
+#   Math: 93.40 (vs 95.33 FP16). Coding: 85.96 (vs 88.74). Agentic: 74.01 (vs 80.00).
+
+# VRAM strategy for RTX 3050 6GB (~5.1GB usable):
+#   Model weights (7.2 GB) exceed VRAM — partial GPU offload with --fit on.
+#   --fit adjusts -ngl and ctx to fit. KV cache q4_0 (4-bit) to minimize context overhead.
+#   Hybrid attention backbone means KV cache only grows on 16 of 64 layers — very efficient.
+#   DSpark drafter is OFF by default (adds 1.95 GB) — enable only if VRAM allows.
+
+# Backend: bonsai-llama.cpp (PrismML fork) — NOT upstream, NOT ik_llama.
+#   Build: ~/git/bonsai-llama.cpp/build/bin/llama-server
+#   Shared libs in build/bin/ (libllama.so, libggml-cuda.so, etc.) — RPATH set in binary.
+
+# Sampling: temp 0.7, top_p 0.95, top_k 20 per model card (thinking mode).
+
+# SMOKE TEST: (pending)
+# -------------------------------------------
+  "bonsai-27b-ternary":
+    name: "Bonsai 27B Ternary"
+    description: "PrismML's ternary 27B reasoning model — Qwen3.6-27B with 1.71-bit weights, full thinking/reasoning/agentic capabilities at 7.2 GB. 95% of FP16 intelligence retained. Hybrid attention enables 262K context."
+    cmd: |
+      ${bonsai_llama_server} --port ${PORT}
+      --model ${models_dir}/bonsai-27b-ternary/Ternary-Bonsai-27B-Q2_0.gguf
+      --jinja
+      --reasoning on
+      --fit on
+      --fit-target ${vram_margin}
+      --fit-ctx 8192
+      --ctx-size 32768
+      --temp 0.7
+      --top-p 0.95
+      --top-k 20
+      --repeat-penalty 1.0
+      --parallel 1
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p, top_k"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.95
+          top_k: 20
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.7
+          top_p: 0.95
+          top_k: 20
+    ttl: 300
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 32768
+    metadata:
+      size: "~7.2 GB (Q2_0_g128 ternary) + 0.63 GB mmproj"
+      context: "8K-262K (dynamic with --fit, 4-bit KV cache)"
+      vram_usage: "~7.2 GB weights (partial GPU offload) + ~0.5-1 GB KV cache"
+      source: "prism-ml/Ternary-Bonsai-27B-gguf (Q2_0 + mmproj Q8_0)"
+      kv_cache: "q4_0"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen3
+      parameters: 27300000000
+      context_length: 262144
+      embedding_length: 3584
+      quantization: Q2_0_g128 (ternary 1.71 bpw)
+# -------------------------------------------
 # GLM-4.7-FLASH - MoE CONVERSATIONAL (text-only, MLA)
 # MoE ~30B params, ~2B ativo por token. 64 routed + 1 shared expert, 4 active.
 # Glm4MoeLite architecture (deepseek2 family) with Multi-head Latent Attention (MLA).
@@ -1790,113 +1972,6 @@ models:
         audio: false
         image: false
       note: "Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with 'search_query: ' or 'search_document: '. 100+ languages. Matryoshka → 256 dims."
-# -------------------------------------------
-# NORTH MINI CODE — Cohere 30B-A3B MoE AGENTIC CODING (Q3_K_M, ik_llama backend)
-# CohereLabs/North-Mini-Code-1.0 — MoE 30B params, 3B active per token (top-8/128 experts).
-# Architecture: cohere2moe — merged upstream in PR #24260 (2026-06-13), parser #24615, vocab #24601.
-# ik_llama has cohere2moe arch + graph builder, but arch name mismatch: GGUF uses "cohere2moe"
-#   (no underscore), ik_llama used "cohere2_moe" (with underscore).
-#   Patched in ik_llama src/llama-arch.cpp L68: "cohere2_moe" -> "cohere2moe"
-#   Patched in ik_llama src/llama-vocab.cpp L2113: added "cohere2moe" to tiny_aya block
-#   (aligned with upstream PR #24601). Reapply both patches after ik_llama git pull.
-# Apache 2.0 license. Context: 256K native, max output: 64K.
-# Text-only model — NO mmproj, NO vision.
-# Sampling: temp=1.0, top_p=0.95 per model card recommendation.
-# Sliding window attention (SWA) 3:1 ratio with RoPE — same pattern as cohere2.
-
-# Quantization: UD-Q3_K_M (unsloth) — 14.2 GB, 3.727 BPW, imatrix calibrated.
-#   Q4_K_M (Arki05) — 18.6 GB, 91.3% Top-1, 93.29% HumanEval. Max ctx 65K on 6GB.
-#   UD-Q3_K_M (unsloth) — 14.2 GB. Max ctx 80K on 6GB with --no-graph-reuse.
-#   131K OOM on 6GB (needs 5400 MiB, only 4506 available).
-#   98K OOM by 12 MiB (4518 vs 4506). 80K works with --no-graph-reuse.
-#   NVFP4 (michaelw9999) deprecated: ik_llama SIGFPE on NVFP4, upstream only, 4.2 tok/s.
-# Backend: ik_llama.cpp (NOT upstream — ik gives 5-6x speedup with MoE offload).
-# GGUF: unsloth/North-Mini-Code-1.0-GGUF (UD-Q3_K_M = 14.2 GB)
-#   Also: Arki05/North-Mini-Code-1.0-GGUF (Q4_K_M = 18.6 GB, higher quality)
-
-# SMOKE TEST RESULTS (2026-07-14, ik b4704, RTX 3050 6GB):
-#   - Q3_K_M loads with --fit --fit-margin 128, ctx 81920, parallel 1, --no-graph-reuse
-#   - --no-graph-reuse is CRITICAL: disables CUDA graph capture that OOMs at 80K+
-#   - Code generation: correct, concise, with reasoning
-#   - VRAM: 5678 MiB used (118 MiB free), compute buffer 516MB
-#   - Experts offloaded to CPU via --defer-experts
-
-# Flags (ik_llama specific):
-#   - --fit (no "on" argument — ik uses bare flag)
-#   - --fit-margin (ik uses margin in MiB, not --fit-target)
-#   - --k-cache-hadamard / --v-cache-hadamard (ik only, improves q4_0 cache quality)
-#   - --no-graph-reuse (disables CUDA graph capture, saves ~400 MiB VRAM, REQUIRED for 80K)
-#   - --defer-experts (ik only, defers MoE expert mmap on Linux)
-#   - --parallel 1 (parallel 2 + ctx 80K OOM)
-# -------------------------------------------
-# -------------------------------------------
-  "north-mini-code":
-    name: "North Mini Code"
-    description: "Cohere's first open-source agentic coding model. 30B MoE with only 3B active params, optimized for code generation, agentic software engineering, and terminal tasks."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/north-mini-code-q3km/North-Mini-Code-1.0-UD-Q3_K_M.gguf
-      --jinja
-      --reasoning on
-      --fit
-      --fit-margin 128
-      --parallel-tool-calls
-      --ctx-size 81920
-      --temp 1.0
-      --top-p 0.95
-      --repeat-penalty 1.0
-      --parallel 1
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --no-graph-reuse
-      --defer-experts
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 1.0
-          top_p: 0.95
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-    ttl: 300
-    health_check_timeout: 300
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 81920
-    metadata:
-      size: "~14.2 GB (UD-Q3_K_M)"
-      context: "16K-80K (dynamic with --fit)"
-      vram_usage: "~5.7GB VRAM + ~12GB RAM (ik pinned memory, MoE offload)"
-      source: "unsloth/North-Mini-Code-1.0-GGUF (UD-Q3_K_M)"
-      kv_cache: "q4_0 + hadamard"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: cohere2moe
-      parameters: 30484340939
-      context_length: 262144
-      embedding_length: 2048
-      quantization: UD-Q3_K_M
 # Qwen3-ASR 0.6B — Lightweight ASR (Automatic Speech Recognition) model
 # Architecture: qwen3vl (text) + clip/qwen3a (mmproj audio encoder)
 # ASR-only model — converts speech to text, no audio generation
@@ -2151,7 +2226,8 @@ matrix:
     a1: agents-a1-35b
     aw: agentworld-35b
     glm: glm-4.7-flash
-    nmc: north-mini-code
+    bonsai: bonsai-27b-ternary
+    bonsai1: bonsai-27b-1bit
     # Tradução
     hmt: hy-mt2-1.8b
     # Audio
@@ -2183,7 +2259,7 @@ matrix:
 
     # Modelos pesados (offload) + Embedding/Reranker
     # nomic + lfmemb + lfmcol (~0.5GB total, CPU-only) cabem ao lado mesmo dos pesados
-    heavy: "(qw36 | orn35 | a1 | aw | glm | nmc) & (nomic | lfmemb | lfmcol)"
+    heavy: "(qw36 | orn35 | a1 | aw | glm | bonsai | bonsai1) & (nomic | lfmemb | lfmcol)"
 
     # Tradução (leve, cabe com embedding/reranker)
     translate_embed: "hmt & (nomic | lfmemb | lfmcol)"
@@ -2208,7 +2284,8 @@ matrix:
     a1: 9
     aw: 9
     glm: 9
-    nmc: 9
+    bonsai: 9
+    bonsai1: 9
     q9: 4
     g4: 4
     ttsext: 4

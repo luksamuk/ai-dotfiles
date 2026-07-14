@@ -1,0 +1,78 @@
+# -------------------------------------------
+# BONSAI 27B 1-BIT — PrismML binary {−1,+1} LLM (Q1_0, bonsai-llama backend)
+# prism-ml/Bonsai-27B-gguf — Qwen3.6-27B base, 27.3B binary weights at 1.125 bpw.
+# Architecture: same hybrid attention as ternary variant.
+# Weight format: GGUF Q1_0 — {−1,+1} in 1-bit slots with FP16 group-wise scaling.
+#   Custom kernels required: PrismML-Eng/llama.cpp fork (CUDA, Metal, CPU).
+# 3.53 GB on disk, ~3.9 GB deployed. Fits entirely in RTX 3050 6GB VRAM.
+# 89.5% of FP16 intelligence retained (76.11 avg on 15 benchmarks).
+# Math: 90.17. Coding: 82.75. Agentic: 69.31.
+# Apache 2.0 license.
+#
+# Backend: bonsai-llama.cpp (PrismML fork) — NOT upstream, NOT ik_llama.
+# Sampling: temp 0.7, top_p 0.95, top_k 20 per model card.
+# -------------------------------------------
+"bonsai-27b-1bit":
+  name: "Bonsai 27B 1-bit"
+  description: "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit weights, full thinking/reasoning at 3.9 GB. 89.5% of FP16 intelligence. Fits entirely in 6GB VRAM."
+  cmd: |
+    ${bonsai_llama_server} --port ${PORT}
+    --model ${models_dir}/bonsai-27b-1bit/Bonsai-27B-Q1_0.gguf
+    --jinja
+    --reasoning on
+    --fit on
+    --fit-target ${vram_margin}
+    --fit-ctx 8192
+    --ctx-size 32768
+    --temp 0.7
+    --top-p 0.95
+    --top-k 20
+    --repeat-penalty 1.0
+    --parallel 1
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p, top_k"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.95
+        top_k: 20
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.7
+        top_p: 0.95
+        top_k: 20
+  ttl: 300
+  health_check_timeout: 120
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 32768
+  metadata:
+    size: "~3.9 GB (Q1_0 binary 1.125 bpw)"
+    context: "8K-262K (dynamic with --fit, 4-bit KV cache)"
+    vram_usage: "~5.4 GB (model + cache, fits entirely in GPU)"
+    source: "prism-ml/Bonsai-27B-gguf (Q1_0)"
+    kv_cache: "q4_0"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen3
+    parameters: 27300000000
+    context_length: 262144
+    embedding_length: 3584
+    quantization: Q1_0 (binary 1.125 bpw)
