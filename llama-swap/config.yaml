@@ -1791,7 +1791,7 @@ models:
         image: false
       note: "Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with 'search_query: ' or 'search_document: '. 100+ languages. Matryoshka → 256 dims."
 # -------------------------------------------
-# NORTH MINI CODE — Cohere 30B-A3B MoE AGENTIC CODING (Q4_K_M, ik_llama backend)
+# NORTH MINI CODE — Cohere 30B-A3B MoE AGENTIC CODING (Q3_K_M, ik_llama backend)
 # CohereLabs/North-Mini-Code-1.0 — MoE 30B params, 3B active per token (top-8/128 experts).
 # Architecture: cohere2moe — merged upstream in PR #24260 (2026-06-13), parser #24615, vocab #24601.
 # ik_llama has cohere2moe arch + graph builder, but arch name mismatch: GGUF uses "cohere2moe"
@@ -1803,39 +1803,45 @@ models:
 # Text-only model — NO mmproj, NO vision.
 # Sampling: temp=1.0, top_p=0.95 per model card recommendation.
 # Sliding window attention (SWA) 3:1 ratio with RoPE — same pattern as cohere2.
-# Quantization: Q4_K_M (Arki05) — 18.6 GB, 91.3% Top-1, 93.29% HumanEval.
-#   NVFP4 (michaelw9999) deprecated: ik_llama SIGFPE on NVFP4, upstream only, 4.2 tok/s.
-#   Q4_K_M works on ik_llama: 20-25 tok/s with MoE offload + hadamard cache.
-# Backend: ik_llama.cpp (NOT upstream — ik gives 5-6x speedup with MoE offload).
-# GGUF: Arki05/North-Mini-Code-1.0-GGUF (Q4_K_M = 18.6 GB) — correct chat template, imatrix calibrated.
-# Context: 65536 max on RTX 3050 6GB (131072 OOM with Q4_K_M — 1.3GB larger than I-Compact).
 
-# SMOKE TEST RESULTS (2026-06-19, ik b4633, RTX 3050 6GB):
-#   - Model loads with --fit --fit-margin 256, ctx 65536, parallel 1
+# Quantization: UD-Q3_K_M (unsloth) — 14.2 GB, 3.727 BPW, imatrix calibrated.
+#   Q4_K_M (Arki05) — 18.6 GB, 91.3% Top-1, 93.29% HumanEval. Max ctx 65K on 6GB.
+#   UD-Q3_K_M (unsloth) — 14.2 GB. Max ctx 80K on 6GB with --no-graph-reuse.
+#   131K OOM on 6GB (needs 5400 MiB, only 4506 available).
+#   98K OOM by 12 MiB (4518 vs 4506). 80K works with --no-graph-reuse.
+#   NVFP4 (michaelw9999) deprecated: ik_llama SIGFPE on NVFP4, upstream only, 4.2 tok/s.
+# Backend: ik_llama.cpp (NOT upstream — ik gives 5-6x speedup with MoE offload).
+# GGUF: unsloth/North-Mini-Code-1.0-GGUF (UD-Q3_K_M = 14.2 GB)
+#   Also: Arki05/North-Mini-Code-1.0-GGUF (Q4_K_M = 18.6 GB, higher quality)
+
+# SMOKE TEST RESULTS (2026-07-14, ik b4704, RTX 3050 6GB):
+#   - Q3_K_M loads with --fit --fit-margin 128, ctx 81920, parallel 1, --no-graph-reuse
+#   - --no-graph-reuse is CRITICAL: disables CUDA graph capture that OOMs at 80K+
 #   - Code generation: correct, concise, with reasoning
-#   - Performance: 20-25 t/s generation, 70+ t/s prompt processing
-#   - VRAM: ~5.6GB used (compute buffer 516MB + KV cache + non-MoE tensors)
+#   - VRAM: 5678 MiB used (118 MiB free), compute buffer 516MB
 #   - Experts offloaded to CPU via --defer-experts
 
 # Flags (ik_llama specific):
 #   - --fit (no "on" argument — ik uses bare flag)
 #   - --fit-margin (ik uses margin in MiB, not --fit-target)
 #   - --k-cache-hadamard / --v-cache-hadamard (ik only, improves q4_0 cache quality)
+#   - --no-graph-reuse (disables CUDA graph capture, saves ~400 MiB VRAM, REQUIRED for 80K)
 #   - --defer-experts (ik only, defers MoE expert mmap on Linux)
-#   - --parallel 1 (parallel 2 + ctx 65K OOM; Qwen 3.6 uses parallel 2 but with I-Compact)
+#   - --parallel 1 (parallel 2 + ctx 80K OOM)
+# -------------------------------------------
 # -------------------------------------------
   "north-mini-code":
     name: "North Mini Code"
     description: "Cohere's first open-source agentic coding model. 30B MoE with only 3B active params, optimized for code generation, agentic software engineering, and terminal tasks."
     cmd: |
       ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/north-mini-code-q4km/North-Mini-Code-1.0-Q4_K_M.gguf
+      --model ${models_dir}/north-mini-code-q3km/North-Mini-Code-1.0-UD-Q3_K_M.gguf
       --jinja
       --reasoning on
       --fit
-      --fit-margin 256
+      --fit-margin 128
       --parallel-tool-calls
-      --ctx-size 65536
+      --ctx-size 81920
       --temp 1.0
       --top-p 0.95
       --repeat-penalty 1.0
@@ -1845,6 +1851,7 @@ models:
       --k-cache-hadamard
       --v-cache-hadamard
       --flash-attn auto
+      --no-graph-reuse
       --defer-experts
       --metrics
     filters:
@@ -1869,12 +1876,12 @@ models:
         - 'text'
       tools: true
       reranker: false
-      context: 65536
+      context: 81920
     metadata:
-      size: "~18.6 GB (Q4_K_M)"
-      context: "16K-65K (dynamic with --fit)"
-      vram_usage: "~5.6GB VRAM + ~14GB RAM (ik pinned memory, MoE offload)"
-      source: "Arki05/North-Mini-Code-1.0-GGUF"
+      size: "~14.2 GB (UD-Q3_K_M)"
+      context: "16K-80K (dynamic with --fit)"
+      vram_usage: "~5.7GB VRAM + ~12GB RAM (ik pinned memory, MoE offload)"
+      source: "unsloth/North-Mini-Code-1.0-GGUF (UD-Q3_K_M)"
       kv_cache: "q4_0 + hadamard"
       features:
         completion: true
@@ -1886,10 +1893,10 @@ models:
         audio: false
         image: false
       architecture: cohere2moe
-      parameters: 30484340938
+      parameters: 30484340939
       context_length: 262144
       embedding_length: 2048
-      quantization: Q4_K_M
+      quantization: UD-Q3_K_M
 # Qwen3-ASR 0.6B — Lightweight ASR (Automatic Speech Recognition) model
 # Architecture: qwen3vl (text) + clip/qwen3a (mmproj audio encoder)
 # ASR-only model — converts speech to text, no audio generation
