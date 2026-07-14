@@ -52,6 +52,7 @@ matrix:
     a1: agents-a1-35b
     aw: agentworld-35b
     glm: glm-4.7-flash
+    nmc: north-mini-code
     # Tradução
     hmt: hy-mt2-1.8b
     # Audio
@@ -83,7 +84,7 @@ matrix:
 
     # Modelos pesados (offload) + Embedding/Reranker
     # nomic + lfmemb + lfmcol (~0.5GB total, CPU-only) cabem ao lado mesmo dos pesados
-    heavy: "(qw36 | orn35 | a1 | aw | glm) & (nomic | lfmemb | lfmcol)"
+    heavy: "(qw36 | orn35 | a1 | aw | glm | nmc) & (nomic | lfmemb | lfmcol)"
 
     # Tradução (leve, cabe com embedding/reranker)
     translate_embed: "hmt & (nomic | lfmemb | lfmcol)"
@@ -108,6 +109,7 @@ matrix:
     a1: 9
     aw: 9
     glm: 9
+    nmc: 9
     q9: 4
     g4: 4
     ttsext: 4
