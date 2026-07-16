@@ -53,7 +53,8 @@
     --v-cache-hadamard
     --flash-attn auto
     --defer-experts
-    --metrics
+    --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
+      --metrics
   filters:
     stripParams: "temperature, top_p"
     setParamsByID:

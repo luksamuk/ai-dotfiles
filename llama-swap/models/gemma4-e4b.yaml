@@ -14,7 +14,7 @@
     --fit
     --fit-margin 512
     --jinja
-    --parallel 2
+    --parallel 1
     --parallel-tool-calls
     --ctx-size ${small_model_max_ctx}
     --temp 0.7
@@ -28,7 +28,8 @@
     --k-cache-hadamard
     --v-cache-hadamard
     --flash-attn auto
-    --metrics
+    --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
+      --metrics
   filters:
     stripParams: "temperature, top_p"
     setParamsByID:

@@ -19,7 +19,7 @@
     --fit-target 768
     --fit-ctx ${small_model_min_ctx}
     --ctx-size ${small_model_max_ctx}
-    --parallel 4
+    --parallel 1
     --temp 0.7
     --top-p 0.6
     --top-k 20
@@ -27,7 +27,11 @@
     --cache-type-k ${small_cache_k}
     --cache-type-v ${small_cache_v}
     --flash-attn on
-    --metrics
+    --spec-type ngram-mod
+      --spec-ngram-mod-n-match 24
+      --spec-ngram-mod-n-min 48
+      --spec-ngram-mod-n-max 64
+      --metrics
   health_check_timeout: 300
   ttl: 60
   capabilities:
