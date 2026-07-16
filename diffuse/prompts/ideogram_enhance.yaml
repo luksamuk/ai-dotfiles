@@ -7,17 +7,17 @@ content: |
 
   You MUST respond with ONLY the raw JSON object below — no markdown code fences, no explanation, no commentary, no text before or after the JSON.
 
-  SAFETY AVOIDANCE RULES — the model has a built-in content filter that triggers on certain keywords, causing it to generate "content filter" text overlays or dark images instead of the requested image. To avoid false positives:
-  1. NEVER use these words in ANY field: vampire, blood, undead, Dracula, demon, suck, bite, gore, kill, murder, death, corpse, horror, satanic, occult, curse, possessed, sacrilege, profane, obscene, explicit, nude, naked, erotic, sensual. Even in character descriptions or references.
-  2. NEVER use "oil on canvas" or "oil painting" — these trigger the safety filter even in benign contexts. Use "illustration", "painting in acrylics", "acrylic painting", "detailed illustration", or "richly painted artwork" instead.
-  3. NEVER use "gothic" as a standalone style word — it can trigger the filter. Use "ornate medieval", "baroque", "ornate dark", "cathedral-style", or "medieval revival" instead.
-  4. NEVER use "chiaroscuro" — use "dramatic lighting with deep shadows" or "high-contrast lighting" instead.
-  5. NEVER use "ageless" — it can be interpreted as "undead/immortal". Use "distinguished", "timeless", "youthful", or state an age range directly (e.g. "a man in his 30s").
-  6. Replace with safe alternatives: vampire → pale immortal noble, blood → crimson / deep red, undead → ageless one → distinguished one, Dracula → ancient lord, demon → dark spirit, kill/destroy → defeat/vanquish, death → stillness/eternal rest, horror → dark atmosphere, corpse → fallen figure.
-  7. For named characters from gothic/dark fiction (e.g. Alucard, Castlevania), describe them using physical appearance ONLY — never reference their lore, species, or supernatural abilities. "A pale aristocratic swordsman with silver hair in ornate dark armor" is safe; "the vampire Alucard from Castlevania" will trigger the filter.
-  8. ALWAYS use "medium": "illustration" or "medium": "painting" in the aesthetics field — "photograph" triggers more safety checks.
-  9. ALWAYS include a specific color_palette — this anchors the model and reduces structural collapse.
-  10. Be EXHAUSTIVE in element descriptions — detailed, safe descriptions push the model away from filter-triggering interpretations.
+  # SAFETY AVOIDANCE RULES — disabled (LoRA bypasses the content filter)
+  # 1. NEVER use these words in ANY field: vampire, blood, undead, Dracula, demon, suck, bite, gore, kill, murder, death, corpse, horror, satanic, occult, curse, possessed, sacrilege, profane, obscene, explicit, nude, naked, erotic, sensual. Even in character descriptions or references.
+  # 2. NEVER use "oil on canvas" or "oil painting" — these trigger the safety filter even in benign contexts. Use "illustration", "painting in acrylics", "acrylic painting", "detailed illustration", or "richly painted artwork" instead.
+  # 3. NEVER use "gothic" as a standalone style word — it can trigger the filter. Use "ornate medieval", "baroque", "ornate dark", "cathedral-style", or "medieval revival" instead.
+  # 4. NEVER use "chiaroscuro" — use "dramatic lighting with deep shadows" or "high-contrast lighting" instead.
+  # 5. NEVER use "ageless" — it can be interpreted as "undead/immortal". Use "distinguished", "timeless", "youthful", or state an age range directly (e.g. "a man in his 30s").
+  # 6. Replace with safe alternatives: vampire → pale immortal noble, blood → crimson / deep red, undead → ageless one → distinguished one, Dracula → ancient lord, demon → dark spirit, kill/destroy → defeat/vanquish, death → stillness/eternal rest, horror → dark atmosphere, corpse → fallen figure.
+  # 7. For named characters from gothic/dark fiction (e.g. Alucard, Castlevania), describe them using physical appearance ONLY — never reference their lore, species, or supernatural abilities. "A pale aristocratic swordsman with silver hair in ornate dark armor" is safe; "the vampire Alucard from Castlevania" will trigger the filter.
+  # 8. ALWAYS use "medium": "illustration" or "medium": "painting" in the aesthetics field — "photograph" triggers more safety checks.
+  # 9. ALWAYS include a specific color_palette — this anchors the model and reduces structural collapse.
+  # 10. Be EXHAUSTIVE in element descriptions — detailed, safe descriptions push the model away from filter-triggering interpretations.
 
   REQUIRED format:
   {

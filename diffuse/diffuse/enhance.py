@@ -95,7 +95,7 @@ def _extract_json(text: str) -> str | None:
 
 
 # ── Ideogram JSON enhancement ──────────────────────────────────────────────
-def enhance_prompt(prompt: str, model: str) -> tuple:
+def enhance_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     """Use an LLM via llama-swap to expand a simple prompt into Ideogram 4 JSON.
 
     Returns (enhanced_prompt, raw_response).
@@ -104,7 +104,7 @@ def enhance_prompt(prompt: str, model: str) -> tuple:
     import urllib.request
     import urllib.error
 
-    system = get_ideogram_enhance_prompt()
+    system = get_ideogram_enhance_prompt(nsfw=nsfw)
 
     log.info("Enhancing prompt via %s", model)
     t0 = time.perf_counter()
@@ -190,7 +190,7 @@ def enhance_prompt(prompt: str, model: str) -> tuple:
 
 
 # ── Vision (natural-language) enhancement ──────────────────────────────────
-def enhance_vision_prompt(prompt: str, model: str) -> tuple:
+def enhance_vision_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     """Use an LLM via llama-swap to expand a prompt for vision models (HiDream, Bonsai).
 
     Unlike enhance_prompt (which returns Ideogram JSON), this returns a natural-language
@@ -203,7 +203,7 @@ def enhance_vision_prompt(prompt: str, model: str) -> tuple:
     import urllib.request
     import urllib.error
 
-    system = get_vision_enhance_prompt()
+    system = get_vision_enhance_prompt(nsfw=nsfw)
 
     log.info("Vision-enhancing prompt via %s", model)
     t0 = time.perf_counter()
@@ -288,7 +288,7 @@ def _check_model_vision(model: str) -> bool:
 
 
 # ── Image analysis ─────────────────────────────────────────────────────────
-def analyze_image(image_path: str, model: str, user_prompt: str) -> str:
+def analyze_image(image_path: str, model: str, user_prompt: str, nsfw: bool = False) -> str:
     """Use a vision model to analyze a reference image for editing.
 
     Sends the image plus the user's edit instruction to a vision model,
@@ -316,7 +316,7 @@ def analyze_image(image_path: str, model: str, user_prompt: str) -> str:
 
     # Build the user message with image + edit instruction context
     user_content = "I want to edit this image. My edit instruction: " + user_prompt + "\n\nDescribe this image in detail, focusing on elements relevant to the edit."
-    system = get_vision_analysis_prompt()
+    system = get_vision_analysis_prompt(nsfw=nsfw)
 
     def _build_payload():
         return json.dumps({
@@ -369,7 +369,7 @@ def analyze_image(image_path: str, model: str, user_prompt: str) -> str:
 
 
 # ── Edit enhancement (text-only) ──────────────────────────────────────────
-def enhance_edit_prompt(image_description: str, user_prompt: str, model: str) -> tuple:
+def enhance_edit_prompt(image_description: str, user_prompt: str, model: str, nsfw: bool = False) -> tuple:
     """Combine a visual description with the user's edit instruction into a
     refined edit prompt for HiDream.
 
@@ -379,7 +379,7 @@ def enhance_edit_prompt(image_description: str, user_prompt: str, model: str) ->
     import urllib.request
     import urllib.error
 
-    system = get_edit_enhance_prompt()
+    system = get_edit_enhance_prompt(nsfw=nsfw)
     user_msg = "REFERENCE IMAGE DESCRIPTION:\n" + image_description + "\n\nUSER'S EDIT INSTRUCTION:\n" + user_prompt + "\n\nWrite the refined edit prompt:"
 
     log.info("Enhancing edit prompt via %s", model)
@@ -440,7 +440,7 @@ def enhance_edit_prompt(image_description: str, user_prompt: str, model: str) ->
 
 
 # ── One-shot vision + edit ──────────────────────────────────────────────────
-def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str) -> tuple:
+def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str, nsfw: bool = False) -> tuple:
     """One-shot vision + edit enhancement: send image + instruction to a
     vision-capable model and get a refined edit prompt back.
 
@@ -467,7 +467,7 @@ def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str) -> t
                 ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp"}
     mime = mime_map.get(ext, "image/jpeg")
 
-    system = get_edit_vision_prompt()
+    system = get_edit_vision_prompt(nsfw=nsfw)
     user_text = (
         "I want to edit this image. My edit instruction: " + user_prompt
         + "\n\nLook at the image carefully, describe the relevant elements you see, "
@@ -533,7 +533,7 @@ def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str) -> t
 
 
 # ── Video (I2V) enhancement with vision ───────────────────────────────────
-def enhance_video_prompt(image_path: str, user_prompt: str, model: str) -> tuple:
+def enhance_video_prompt(image_path: str, user_prompt: str, model: str, nsfw: bool = False) -> tuple:
     """Use a vision-capable LLM to expand a motion prompt for Wan2.2 I2V.
 
     Sends the input image plus the user's motion description to a vision model,
@@ -559,7 +559,7 @@ def enhance_video_prompt(image_path: str, user_prompt: str, model: str) -> tuple
                 ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp"}
     mime = mime_map.get(ext, "image/jpeg")
 
-    system = get_video_enhance_prompt()
+    system = get_video_enhance_prompt(nsfw=nsfw)
     user_text = (
         "I want to generate a video from this image. My motion description: " + user_prompt
         + "\n\nLook at the image carefully. Describe the character and scene as they appear, "
@@ -627,7 +627,7 @@ def enhance_video_prompt(image_path: str, user_prompt: str, model: str) -> tuple
 
 
 # ── Video (I2V) two-shot enhancement ──────────────────────────────────────
-def enhance_video_prompt_two_shot(image_description: str, user_prompt: str, model: str) -> tuple:
+def enhance_video_prompt_two_shot(image_description: str, user_prompt: str, model: str, nsfw: bool = False) -> tuple:
     """Two-shot video enhancement: refine a motion prompt using a text description
     of the input image (from a separate vision model call).
 
@@ -640,7 +640,7 @@ def enhance_video_prompt_two_shot(image_description: str, user_prompt: str, mode
     import urllib.request
     import urllib.error
 
-    system = get_video_enhance_prompt()
+    system = get_video_enhance_prompt(nsfw=nsfw)
     user_msg = (
         "REFERENCE IMAGE DESCRIPTION:\n" + image_description
         + "\n\nUSER'S MOTION DESCRIPTION:\n" + user_prompt

@@ -241,6 +241,10 @@ def parse_args() -> argparse.Namespace:
         "--no-teacache", action="store_true",
         help="Disable TeaCache for FramePack I2V (slower but potentially better quality).",
     )
+    p.add_argument(
+        "--nsfw", action="store_true",
+        help="Bypass content filter: remove uncond model, apply LoRA, disable safety word rules in enhance prompts.",
+    )
     return p.parse_args()
 
 
@@ -386,7 +390,7 @@ def main() -> None:
                 print(f"  👁️✨ {enhance_model} has vision — one-shot image analysis + edit enhancement")
                 print(f"  📷 Analyzing & enhancing edit prompt via {enhance_model}...")
                 enhanced_result, raw_response = analyze_and_enhance_edit(
-                    ref_image_paths[0], prompt, enhance_model
+                    ref_image_paths[0], prompt, enhance_model, nsfw=args.nsfw
                 )
                 if enhanced_result != prompt:
                     enhanced_prompt = enhanced_result
@@ -415,7 +419,7 @@ def main() -> None:
 
                 # Step 1: Analyze the image with the vision model
                 print(f"  📷 Analyzing reference image via {vision_model}...")
-                image_description = analyze_image(ref_image_paths[0], vision_model, prompt)
+                image_description = analyze_image(ref_image_paths[0], vision_model, prompt, nsfw=args.nsfw)
                 if not image_description:
                     print(f"     ⚠️  Image analysis failed — falling back to prompt-only enhancement")
                 else:
@@ -434,7 +438,7 @@ def main() -> None:
 
                     # Step 2: Refine the edit prompt using the image description
                     print(f"  ✨ Enhancing edit prompt via {enhance_model} (vision + edit mode)...")
-                    enhanced_result, raw_response = enhance_edit_prompt(image_description, prompt, enhance_model)
+                    enhanced_result, raw_response = enhance_edit_prompt(image_description, prompt, enhance_model, nsfw=args.nsfw)
                     if enhanced_result != prompt:
                         enhanced_prompt = enhanced_result
                         print(f"     Expanded to edit instruction ({len(enhanced_result)} chars)")
@@ -457,7 +461,7 @@ def main() -> None:
             enhanced_result = prompt  # default: no change
             if enhance_type == "vision":
                 print(f"  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
-                enhanced_result, raw_response = enhance_vision_prompt(prompt, enhance_model)
+                enhanced_result, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
                 if enhanced_result != prompt:
                     enhanced_prompt = enhanced_result
                     print(f"     Expanded to English description ({len(enhanced_result)} chars)")
@@ -475,7 +479,7 @@ def main() -> None:
                         print(f"     ────────────────────")
             else:
                 print(f"  ✨ Enhancing prompt via {enhance_model} (Ideogram JSON)...")
-                enhanced_result, raw_response = enhance_prompt(prompt, enhance_model)
+                enhanced_result, raw_response = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
                 if enhanced_result != prompt:
                     enhanced_prompt = enhanced_result
                     print(f"     Expanded to JSON ({len(enhanced_result)} chars)")
@@ -525,7 +529,7 @@ def main() -> None:
 
     # ── Phase 1.5: Evict LLMs after prompt enhancement ──
     # If we used an LLM for enhancement, evict it before loading the diffusion model
-    if args.enhance and backend_type == "hidream":
+    if args.enhance:
         running = llama_swap_running_models()
         if running:
             print(f"  🔄 Evicting LLM models after enhancement: {', '.join(running)}")
@@ -582,6 +586,7 @@ def main() -> None:
         try:
             output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
                 pipeline, prompt, seed, width, height, output_path,
+                nsfw=args.nsfw,
             )
         except RuntimeError as e:
             if "CUDA" in str(e) and args.cpu_fallback:
@@ -589,6 +594,7 @@ def main() -> None:
                 output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
                     pipeline, prompt, seed, width, height, output_path,
                     cpu_fallback=True,
+                    nsfw=args.nsfw,
                 )
             else:
                 raise
@@ -769,9 +775,9 @@ def _run_bonsai_image(
 
         if enhance_type == "vision":
             print(f"\n  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
-            enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model)
+            enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
         else:
-            enhanced, raw_response = enhance_prompt(prompt, enhance_model)
+            enhanced, raw_response = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
 
         if enhanced and enhanced != prompt:
             print(f"     Expanded to ({len(enhanced)} chars)")
@@ -848,9 +854,9 @@ def _run_zimage_sd_cpp_image(
 
         if enhance_type == "vision":
             print(f"\n  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
-            enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model)
+            enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
         else:
-            enhanced, raw_response = enhance_prompt(prompt, enhance_model)
+            enhanced, raw_response = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
 
         if enhanced and enhanced != prompt:
             print(f"     Expanded to ({len(enhanced)} chars)")
@@ -878,12 +884,14 @@ def _run_zimage_sd_cpp_image(
     try:
         output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
             config, prompt, seed, width, height, output_path,
+            nsfw=args.nsfw,
         )
     except RuntimeError as e:
         if "CUDA" in str(e) and args.cpu_fallback:
             print(f"  ⚠️  CUDA failed — retrying on CPU (this will be very slow)...")
             output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
                 config, prompt, seed, width, height, output_path, cpu_fallback=True,
+                nsfw=args.nsfw,
             )
         else:
             raise

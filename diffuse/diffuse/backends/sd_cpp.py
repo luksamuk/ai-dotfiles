@@ -49,12 +49,14 @@ def load_pipeline_sd_cpp(model_name: str) -> tuple:
     if backend_type == "zimage_sd_cpp":
         return load_pipeline_sd_cpp_zimage(model_name, model_root, sd_cli)
 
+    lora_dir = model_root / "lora"
     config = {
         "sd_cli": sd_cli,
         "diffusion_model": str(model_root / "ideogram4-Q4_0.gguf"),
         "uncond_diffusion_model": str(model_root / "ideogram4_uncond-Q4_0.gguf"),
         "llm": str(model_root / "Qwen3VL-8B-Instruct-Q4_K_M.gguf"),
         "vae": str(model_root / "vae" / "flux2-vae.safetensors"),
+        "lora_dir": str(lora_dir) if lora_dir.exists() else None,
     }
 
     # Verify all files exist
@@ -143,9 +145,9 @@ def load_pipeline_sd_cpp_video(model_name: str) -> tuple:
     return config, 0.0
 
 
-def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, height: int, output_path: Path, cpu_fallback: bool = False) -> tuple:
+def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, height: int, output_path: Path, cpu_fallback: bool = False, nsfw: bool = False) -> tuple:
     """Generate image using sd-cli. Returns (output_path, wall_time_seconds, 0.0)."""
-    log.info("Generating via sd-cli: seed=%d size=%dx%d cpu_fallback=%s", seed, width, height, cpu_fallback)
+    log.info("Generating via sd-cli: seed=%d size=%dx%d cpu_fallback=%s nsfw=%s", seed, width, height, cpu_fallback, nsfw)
 
     is_zimage = config.get("is_zimage", False)
 
@@ -176,7 +178,10 @@ def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, heig
         cmd = [
             config["sd_cli"],
             "--diffusion-model", config["diffusion_model"],
-            "--uncond-diffusion-model", config["uncond_diffusion_model"],
+        ]
+        if not nsfw and "uncond_diffusion_model" in config:
+            cmd += ["--uncond-diffusion-model", config["uncond_diffusion_model"]]
+        cmd += [
             "--llm", config["llm"],
             "--vae", config["vae"],
             "-p", prompt,
@@ -191,6 +196,16 @@ def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, heig
             "--seed", str(seed),
             "-o", str(output_path),
         ]
+        if nsfw:
+            lora_dir = config.get("lora_dir")
+            if lora_dir:
+                import os as _os
+                loras = [f for f in _os.listdir(lora_dir) if f.endswith((".safetensors", ".gguf", ".pt"))]
+                if loras:
+                    cmd += ["--lora-model-dir", lora_dir]
+                    if "<lora:" not in prompt:
+                        prompt_lora = " ".join(f"<lora:{f.rsplit('.', 1)[0]}:0.6>" for f in loras)
+                        cmd[cmd.index("-p") + 1] = prompt + " " + prompt_lora
 
     # CPU fallback: remove VRAM limits and force everything on CPU
     if cpu_fallback:
@@ -216,7 +231,10 @@ def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, heig
             cmd = [
                 config["sd_cli"],
                 "--diffusion-model", config["diffusion_model"],
-                "--uncond-diffusion-model", config["uncond_diffusion_model"],
+            ]
+            if not nsfw and "uncond_diffusion_model" in config:
+                cmd += ["--uncond-diffusion-model", config["uncond_diffusion_model"]]
+            cmd += [
                 "--llm", config["llm"],
                 "--vae", config["vae"],
                 "-p", prompt,
@@ -226,6 +244,16 @@ def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, heig
                 "--seed", str(seed),
                 "-o", str(output_path),
             ]
+            if nsfw:
+                lora_dir = config.get("lora_dir")
+                if lora_dir:
+                    import os as _os
+                    loras = [f for f in _os.listdir(lora_dir) if f.endswith((".safetensors", ".gguf", ".pt"))]
+                    if loras:
+                        cmd += ["--lora-model-dir", lora_dir]
+                        if "<lora:" not in prompt:
+                            prompt_lora = " ".join(f"<lora:{f.rsplit('.', 1)[0]}:0.6>" for f in loras)
+                            cmd[cmd.index("-p") + 1] = prompt + " " + prompt_lora
 
     t0 = time.perf_counter()
     result = subprocess.run(cmd, capture_output=True, text=True)  # no timeout — let sd-cli finish naturally

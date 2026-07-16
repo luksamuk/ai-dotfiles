@@ -76,6 +76,16 @@ download_ideogram4() {
     $HF_DOWNLOAD_CMD --local-dir "$dir/vae" \
         black-forest-labs/FLUX.2-dev ae.safetensors
     mv "$dir/vae/ae.safetensors" "$dir/vae/flux2-vae.safetensors"
+    # LoRA
+    mkdir -p "$dir/lora"
+    if [[ -f "$dir/lora/Realism_Engine_Ideogram_V5.safetensors" ]]; then
+        log_info "LoRA already exists, skipping"
+    else
+        log_info "Downloading Realism Engine V5 LoRA..."
+        $HF_DOWNLOAD_CMD --local-dir "$dir/lora" \
+            RazzzHF/Realism_Engine_Ideogram_4 \
+            Realism_Engine_Ideogram_V5.safetensors
+    fi
     local size=$(du -sh "$dir" 2>/dev/null | cut -f1)
     log_info "Ideogram 4 downloaded (${size}) → ${dir}"
 }
