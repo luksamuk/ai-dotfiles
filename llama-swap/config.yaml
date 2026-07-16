@@ -637,8 +637,8 @@ models:
 #   — 27B at ~20 tok/s baseline, up to 31 tok/s with ngram-mod on repeated patterns
 # Flash attention: on (Q1_0 + FA compatible)
 # KV cache: q4_0 (maximizes context within 6GB VRAM)
-# ctx: 32K — max full-GPU offload on RTX 3050 6GB with desktop apps running
-#   (32K = 19.7 tok/s, 48K = 20 tok/s with fewer desktop apps, 64K = OOM)
+# ctx: 40K — full GPU offload on RTX 3050 6GB (~500 MiB margin, cold start)
+#   (32K = 27 tok/s, 40K = ~22 tok/s, 48K = 20 tok/s tight, 64K = OOM)
 # Dual mode: base (chat, no think) and :think (reasoning)
 # Sampling: temp 0.7, top_p 0.95, top_k 20 per model card.
 # -------------------------------------------
@@ -651,7 +651,7 @@ models:
       --jinja
       --reasoning on
       -ngl 99
-      --ctx-size 32768
+      --ctx-size 40960
       --temp 0.7
       --top-p 0.95
       --top-k 20
@@ -692,10 +692,10 @@ models:
         - 'text'
       tools: true
       reranker: false
-      context: 32768
+      context: 40960
     metadata:
       size: "~3.9 GB (Q1_0 binary 1.125 bpw)"
-      context: "32K (full GPU offload, RTX 3050 6GB)"
+      context: "40K (full GPU offload, RTX 3050 6GB)"
       vram_usage: "~4.8 GB (model + KV cache q4_0, fits entirely in GPU)"
       source: "prism-ml/Bonsai-27B-gguf (Q1_0)"
       kv_cache: "q4_0 + attn_rot"
