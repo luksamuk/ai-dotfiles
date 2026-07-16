@@ -76,7 +76,7 @@ MODELS: dict[str, dict] = {
         "description": "Ideogram 4 Q4_0 — 9.3B DiT, structured JSON prompts, best-in-class text rendering",
         "enhance_model": "qwen3.6-35b-a3b",
         "enhance_type": "ideogram",
-        "default_size": (480, 480),
+        "default_size": (1024, 1024),
         "hf_files": [
             {"repo": "leejet/ideogram-4-GGUF", "files": ["ideogram4-Q4_0.gguf", "ideogram4_uncond-Q4_0.gguf"]},
             {"repo": "unsloth/Qwen3-VL-8B-Instruct-GGUF", "files": ["Qwen3-VL-8B-Instruct-Q4_K_M.gguf"],

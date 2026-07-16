@@ -166,7 +166,7 @@ def parse_args() -> argparse.Namespace:
             "\n"
             "Resolution guide (RTX 3050 6GB):\n"
             "  Bonsai:     512×512 max (OOM above this)\n"
-            "  Ideogram 4: 480×480 safe, up to 1920×1088 (~15 min)\n"
+            "  Ideogram 4: 1024×1024 native, up to 1920×1088 (~15 min)\n"
             "  HiDream:    snaps to 2048×2048 or 2560×1440 minimum\n"
             "              T2I: ~3 min | editing (--edit): ~8 min\n"
         ),
