@@ -46,10 +46,8 @@ matrix:
     orn35: ornith-1.0-35b
     aw: agentworld-35b
     glm: glm-4.7-flash
-    # Bonsai DESATIVADO — YAMLs movidos para _disabled/, GGUFs deletados
-    # Aguardando próxima iteração com foco em agentic coding
-    # bonsai: bonsai-27b-ternary
-    # bonsai1: bonsai-27b-1bit
+    # Bonsai 1-bit reativado Jul 2026 — Q1_0 CUDA no upstream, ngram-mod spec decode
+    bonsai1: bonsai-27b-1bit
     # Tradução
     hmt: hy-mt2-1.8b
     # Audio
@@ -79,7 +77,7 @@ matrix:
     medium: "(q9 | g4) & (nomic | lfmemb | lfmcol)"
 
     # Modelos pesados (offload) + Embedding/Reranker
-    heavy: "(orn35 | aw | glm) & (nomic | lfmemb | lfmcol)"
+    heavy: "(orn35 | aw | glm | bonsai1) & (nomic | lfmemb | lfmcol)"
 
     # Tradução (leve, cabe com embedding/reranker)
     translate_embed: "hmt & (nomic | lfmemb | lfmcol)"
@@ -102,6 +100,7 @@ matrix:
     orn35: 9
     aw: 9
     glm: 9
+    bonsai1: 7
     q9: 4
     g4: 4
     ttsext: 4

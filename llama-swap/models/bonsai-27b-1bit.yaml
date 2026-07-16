@@ -1,0 +1,92 @@
+# -------------------------------------------
+# BONSAI 27B 1-BIT — PrismML binary {−1,+1} LLM (Q1_0, upstream llama.cpp)
+# prism-ml/Bonsai-27B-gguf — Qwen3.6-27B base, 27.3B binary weights at 1.125 bpw.
+# Architecture: same hybrid attention as ternary variant.
+# Weight format: GGUF Q1_0 — {−1,+1} in 1-bit slots with FP16 group-wise scaling.
+#   Q1_0 CUDA kernels merged upstream (b9867+) — no fork needed anymore!
+# 3.53 GB on disk, ~3.9 GB deployed. Fits entirely in RTX 3050 6GB VRAM.
+# 89.5% of FP16 intelligence retained (76.11 avg on 15 benchmarks).
+# Math: 90.17. Coding: 82.75. Agentic: 69.31.
+# Apache 2.0 license.
+#
+# Backend: upstream llama.cpp (Q1_0 CUDA support merged b9867+)
+# Speculative decoding: ngram-mod (n_max=64, n_min=48, ngram_size_n=24)
+#   — no drafter model needed, uses ngram lookup from KV cache
+#   — 27B at ~20 tok/s baseline, up to 31 tok/s with ngram-mod on repeated patterns
+# Flash attention: on (Q1_0 + FA compatible)
+# KV cache: q4_0 (maximizes context within 6GB VRAM)
+# ctx: 48K — sweet spot for full GPU offload on RTX 3050 6GB
+#   (32K = 19.7 tok/s, 48K = 20 tok/s, 56K = 20 tok/s, 64K = OOM)
+# Dual mode: base (chat, no think) and :think (reasoning)
+# Sampling: temp 0.7, top_p 0.95, top_k 20 per model card.
+# -------------------------------------------
+"bonsai-27b-1bit":
+  name: "Bonsai 27B 1-bit"
+  description: "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit weights, full thinking/reasoning at 3.9 GB. 89.5% of FP16 intelligence. Fits entirely in 6GB VRAM. Now on upstream llama.cpp with ngram-mod speculative decoding."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/bonsai-27b-1bit/Bonsai-27B-Q1_0.gguf
+    --jinja
+    --reasoning on
+    -ngl 99
+    --ctx-size 49152
+    --temp 0.7
+    --top-p 0.95
+    --top-k 20
+    --min-p 0
+    --repeat-penalty 1.0
+    --parallel 1
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --flash-attn on
+    --spec-type ngram-mod
+    --spec-ngram-mod-n-max 64
+    --spec-ngram-mod-n-min 48
+    --spec-ngram-mod-n-match 24
+    --metrics
+  filters:
+    stripParams: "temperature, top_p, top_k, min_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.95
+        top_k: 20
+        min_p: 0
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.7
+        top_p: 0.95
+        top_k: 20
+        min_p: 0
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 49152
+  metadata:
+    size: "~3.9 GB (Q1_0 binary 1.125 bpw)"
+    context: "48K (full GPU offload, RTX 3050 6GB)"
+    vram_usage: "~4.8 GB (model + KV cache q4_0, fits entirely in GPU)"
+    source: "prism-ml/Bonsai-27B-gguf (Q1_0)"
+    kv_cache: "q4_0 + attn_rot"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen3
+    parameters: 27300000000
+    context_length: 262144
+    embedding_length: 3584
+    quantization: Q1_0 (binary 1.125 bpw)
+    note: "Reativado Jul 2026 — Q1_0 CUDA kernels merged upstream (b9867+), sem fork. ngram-mod speculative decoding para ~20-31 tok/s em RTX 3050 6GB. 48K ctx é o sweet spot de full-GPU offload."
