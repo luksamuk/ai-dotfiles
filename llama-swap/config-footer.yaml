@@ -31,9 +31,6 @@ matrix:
   vars:
     # Modelos pequenos
     q4: qwen3.5-4b
-    q4a: qwen3.5-4b-abliterated
-    g2: gemma4-e2b
-    g2q: gemma4-e2b
     lfm230: lfm2.5-230m
     m5a: minicpm5-1b-agentic
     lfm8: lfm2.5-8b-a1b
@@ -41,15 +38,12 @@ matrix:
     vl: lfm2.5-vl-450m
     vl16: lfm2.5-vl-1.6b
     ocr: glm-ocr
-    cpv: minicpm-v-4.6
     qwvl: qwen3-vl-4b
     # Modelos médios
     q9: qwen3.5-9b
     g4: gemma4-e4b
     # Pesados (offload)
-    qw36: qwen3.6-35b-a3b
     orn35: ornith-1.0-35b
-    a1: agents-a1-35b
     aw: agentworld-35b
     glm: glm-4.7-flash
     # Bonsai DESATIVADO — YAMLs movidos para _disabled/, GGUFs deletados
@@ -69,25 +63,23 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    # q4/q4a (DFlash) com ctx 32K + nomic ~700MiB headroom
-    small_vision: "(q4 | q4a | g2 | g2q | lfm230 | lfm8) & vl & (nomic | lfmemb | lfmcol)"
+    small_vision: "(q4 | lfm230 | lfm8) & vl & (nomic | lfmemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | g2 | g2q | lfm230 | lfm8) & (nomic | lfmemb | lfmcol)"
+    small_embed: "(q4 | lfm230 | lfm8) & (nomic | lfmemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | q4a | g2 | g2q | lfm230 | lfm8 | m5a"
+    small_only: "q4 | lfm230 | lfm8 | m5a"
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "vl | vl16 | ocr | cpv | qwvl"
-    vision_embed: "(vl | vl16 | ocr | cpv | qwvl) & (nomic | lfmemb | lfmcol)"
+    vision_only: "vl | vl16 | ocr | qwvl"
+    vision_embed: "(vl | vl16 | ocr | qwvl) & (nomic | lfmemb | lfmcol)"
 
     # Modelos médios + Embedding/Reranker
     medium: "(q9 | g4) & (nomic | lfmemb | lfmcol)"
 
     # Modelos pesados (offload) + Embedding/Reranker
-    # nomic + lfmemb + lfmcol (~0.5GB total, CPU-only) cabem ao lado mesmo dos pesados
-    heavy: "(qw36 | orn35 | a1 | aw | glm) & (nomic | lfmemb | lfmcol)"
+    heavy: "(orn35 | aw | glm) & (nomic | lfmemb | lfmcol)"
 
     # Tradução (leve, cabe com embedding/reranker)
     translate_embed: "hmt & (nomic | lfmemb | lfmcol)"
@@ -107,9 +99,7 @@ matrix:
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
-    qw36: 10
     orn35: 9
-    a1: 9
     aw: 9
     glm: 9
     q9: 4
@@ -117,18 +107,14 @@ matrix:
     ttsext: 4
     vl: 3
     ocr: 3
-    cpv: 3
     qwvl: 3
     vl16: 2
     q4: 2
-    q4a: 2
     lfm8: 2
     asr: 2
     nomic: 1
     lfmemb: 1
     lfmcol: 1
-    g2: 1
-    g2q: 1
     lfm230: 1
     m5a: 1
     hmt: 1
