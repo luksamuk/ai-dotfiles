@@ -8,7 +8,7 @@
 
 * ⚠️ Bug: Canonical Model Registry
 
-O Goose tem um bug que impede uso com o llama-swap: ele renomeia modelos internamente antes de enviar requests. Por exemplo, =qwen3.6-35b-a3b:think= vira =qwen3.6-35b-moe=. Como o llama-swap não conhece esse nome renomeado, resulta em erro 404.
+O Goose tem um bug que impede uso com o llama-swap: ele renomeia modelos MoE internamente antes de enviar requests. Por exemplo, modelos com sufixo =:think= de arquitetura MoE têm o nome alterado para uma forma não reconhecida pelo llama-swap. Como o llama-swap não conhece esse nome renomeado, resulta em erro 404.
 
 O flag =skip_canonical_filtering: true= só afeta a /listagem/ de modelos, /não/ o rename no request. Não tem como desabilitar esse comportamento.
 

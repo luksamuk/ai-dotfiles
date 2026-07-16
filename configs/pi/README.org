@@ -69,25 +69,20 @@ Modelos com raciocínio têm variante =:think= que ativa modo de thinking.
 
 | Model ID                      | Nome                          | Contexto | Input          | :think |
 |--------------------------------+-------------------------------+----------+----------------+--------|
-| =gemma4-e2b=                   | Gemma 4 E2B                  |    131K  | text           | sim    |
 | =gemma4-e4b=                   | Gemma 4 E4B                  |    131K  | text           | sim    |
 | =lfm2.5-8b-a1b=                | LFM 2.5 8B MoE               |    131K  | text           | sim    |
-| =mellum2-12b-a2.5b=            | Mellum 2 12B MoE             |    131K  | text           | sim    |
 | =qwen3.5-4b=                   | Qwen3.5 4B                   |    131K  | text           | sim    |
-| =qwen3.5-4b-abliterated=       | Qwen3.5 4B Abliterated       |    262K  | text           | sim    |
 | =qwen3.5-9b=                   | Qwen3.5 9B                   |    262K  | text           | sim    |
-| =qwen3.6-35b-a3b=              | Qwen 3.6 35B MoE             |    131K  | text           | sim    |
 | =ornith-1.0-35b=               | Ornith 1.0 35B               |    131K  | text           | sim    |
-| =agents-a1-35b=                | Agents-A1 35B                |    131K  | text           | sim    |
+| =agentworld-35b=               | AgentWorld 35B               |    131K  | text           | sim    |
 
 *** Modelos Multimodal (Visão/Audio)
 
 | Model ID                      | Nome                          | Contexto | Input          | :think |
 |--------------------------------+-------------------------------+----------+----------------+--------|
 | =glm-ocr=                      | GLM-OCR                      |    131K  | text+image     | não    |
-| =lfm2.5-vl-1.6b-extract=       | LFM2.5-VL 1.6B Extract       |    128K  | text+image     | não    |
 | =lfm2.5-vl-450m=               | LFM2.5-VL 450M               |    128K  | text+image     | não    |
-| =minicpm-v-4.6=                | MiniCPM-V 4.6                 |    262K  | text+image     | sim    |
+| =qwen3-vl-4b=                  | Qwen3-VL 4B                  |     32K  | text+image     | sim    |
 
 *** Modelos de Propósito Específico (sem tool-calling)
 
@@ -168,7 +163,7 @@ Configuração recomendada em =settings.json= para modelos locais:
 
 - =reserveTokens: 16384= — reserva espaço suficiente para respostas longas (+ raciocínio em modelos =:think=)
 - =keepRecentTokens: 20000= — mantém as mensagens mais recentes intactas durante compação
-- Modelo padrão atual: =qwen3.6-35b-a3b:think= (provider =llama-swap=)
+- Modelo padrão atual: =ornith-1.0-35b:think= (provider =llama-swap=)
 
 ** Uso
 
@@ -177,10 +172,10 @@ Configuração recomendada em =settings.json= para modelos locais:
 pi --model glm-5.1:cloud
 
 # Usar modelo local (provider padrão já é llama-swap)
-pi --model qwen3.6-35b-a3b
+pi --model ornith-1.0-35b
 
 # Usar modelo local com raciocínio
-pi --model "qwen3.6-35b-a3b:think"
+pi --model "ornith-1.0-35b:think"
 
 # Usar modelo local multimodal (visão + áudio)
 pi --model glm-ocr

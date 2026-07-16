@@ -5,20 +5,20 @@ setupVersion: 1
 defaultThinkingLevel: medium
 modelRoles:
   # Roles baseadas em benchmarks Agentic v2 + Marathon Jul 2026
-  # plan (orquestrador): Agents-A1 — top em planning (24/25), arquitectura, delega execução
-  # task (executor): Ornith-1.0-9B — coding agent rápido pra tarefas locais
-  # advisor (debug/diagnóstico): Qwen 3.6 — top em debug (24/25), o arquiteto (vision 👁)
+  # plan (orquestrador): Ornith-1.0-35B — agentic coding, self-scaffolding RL
+  # task (executor): Qwen 3.5 9B — dense 9B, rápido pra subtarefas locais
+  # advisor (debug/diagnóstico): Qwen 3.5 9B — dense, arquitetura diferente do MoE, segundo par de olhos
   # designer: GLM Flash — modelo leve pra geração de texto/design
   default: llama-swap/ornith-1.0-35b:think
   smol: llama-swap/qwen3.5-4b:think
   slow: llama-swap/qwen3.5-9b:think
-  vision: llama-swap/minicpm-v-4.6:think
-  plan: llama-swap/agents-a1-35b:think
+  vision: llama-swap/qwen3-vl-4b:think
+  plan: llama-swap/ornith-1.0-35b:think
   designer: llama-swap/glm-4.7-flash:think
   commit: llama-swap/qwen3.5-4b
-  tiny: llama-swap/gemma4-e2b
-  task: llama-swap/ornith-1.0-9b:think
-  advisor: llama-swap/qwen3.6-35b-a3b:think
+  tiny: llama-swap/qwen3.5-4b:think
+  task: llama-swap/qwen3.5-9b:think
+  advisor: llama-swap/qwen3.5-9b:think
 compaction:
   strategy: context-full
 task:

@@ -85,8 +85,6 @@ Local models on RTX 3050 (6 GB VRAM) via llama-swap + llama.cpp server.
 
 | Model ID                        | Context  | Notes                          |
 |---------------------------------+----------+--------------------------------|
-| =gemma4-e2b=                    |  131,072 | Gemma 4 E2B, tools              |
-| =gemma4-e2b:think=              |  131,072 | Gemma 4 E2B thinking           |
 | =gemma4-e4b=                    |  131,072 | Gemma 4 E4B, tools              |
 | =gemma4-e4b:think=              |  131,072 | Gemma 4 E4B thinking           |
 | =lfm2.5-8b-a1b=                 |  131,072 | LFM 2.5 8B MoE, tools          |
@@ -95,21 +93,12 @@ Local models on RTX 3050 (6 GB VRAM) via llama-swap + llama.cpp server.
 | =mellum2-12b-a2.5b:think=       |  131,072 | Mellum 2 12B thinking          |
 | =qwen3.5-4b=                   |  131,072 | Qwen 3.5 4B, tools              |
 | =qwen3.5-4b:think=             |  131,072 | Qwen 3.5 4B thinking           |
-| =qwen3.5-4b-abliterated=        |  262,144 | Qwen 3.5 4B Abliterated, tools |
-| =qwen3.5-4b-abliterated:think= |  262,144 | Qwen 3.5 4B Abliterated thinking|
 | =qwen3.5-9b=                   |  262,144 | Qwen 3.5 9B, tools              |
 | =qwen3.5-9b:think=             |  262,144 | Qwen 3.5 9B thinking           |
-| =qwen3.6-35b-a3b=              |  131,072 | Qwen 3.6 35B MoE, tools, vision 👁 |
-| =qwen3.6-35b-a3b:think=        |  131,072 | Qwen 3.6 35B MoE thinking, vision 👁 |
 | =ornith-1.0-35b=               |  131,072 | Ornith 1.0 35B, tools            |
 | =ornith-1.0-35b:think=         |  131,072 | Ornith 1.0 35B thinking          |
-| =agents-a1-35b=                |  131,072 | Agents-A1 35B, tools             |
-| =agents-a1-35b:think=          |  131,072 | Agents-A1 35B thinking            |
-
 | =glm-4.7-flash=               |  131,072 | GLM 4.7 Flash, tools              |
 | =glm-4.7-flash:think=          |  131,072 | GLM 4.7 Flash thinking           |
-| =north-mini-code=              |   65,536 | North Mini Code, tools           |
-| =north-mini-code:think=        |   65,536 | North Mini Code thinking          |
 
 ** Excluded from config
 
@@ -122,7 +111,6 @@ excluded from the nanocoder config:
 | =translategemma:4b=    | Translation model, not coding               |
 | =glm-ocr:bf16=         | OCR model, not coding                      |
 | =qwen3-tts=            | TTS model, not coding                      |
-| =minicpm-v-4.6=        | Vision model, not coding-optimized         |
 | =lfm2.5-vl-1.6b-extract= | Vision extraction, not coding             |
 | =lfm2.5-vl-450m=      | Vision-only, not coding                    |
 | =hy-mt2-1.8b=         | Translation model                           |

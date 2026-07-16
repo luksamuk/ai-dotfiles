@@ -24,29 +24,10 @@ num_ctx = 131072
 thinking = true
 tools = true
 
-[models."gemma4-e2b"]
-provider = "llama-swap"
-model_id = "gemma4-e2b:think"
-num_ctx = 131072
-thinking = true
-tools = true
-
 [models."gemma4-e4b"]
 provider = "llama-swap"
 model_id = "gemma4-e4b:think"
 num_ctx = 131072
-thinking = true
-tools = true
-
-[models."qwen3.5-4b-abliterated"]
-provider = "llama-swap"
-model_id = "qwen3.5-4b-abliterated:think"
-num_ctx = 131072
-temperature = 0.7
-top_p = 0.95
-top_k = 40
-min_p = 0.01
-repeat_penalty = 1.05
 thinking = true
 tools = true
 
@@ -65,18 +46,6 @@ tools = true
 [models."ornith-1.0-35b"]
 provider = "llama-swap"
 model_id = "ornith-1.0-35b:think"
-num_ctx = 131072
-temperature = 0.6
-top_p = 0.9
-top_k = 20
-min_p = 0.0
-repeat_penalty = 1.0
-thinking = true
-tools = true
-
-[models."agents-a1-35b"]
-provider = "llama-swap"
-model_id = "agents-a1-35b:think"
 num_ctx = 131072
 temperature = 0.6
 top_p = 0.9
@@ -110,19 +79,6 @@ repeat_penalty = 1.0
 thinking = true
 tools = true
 
-[models."qwen3.6-35b-a3b"]
-provider = "llama-swap"
-model_id = "qwen3.6-35b-a3b:think"
-num_ctx = 131072
-temperature = 0.6
-top_p = 0.9
-top_k = 20
-min_p = 0.0
-repeat_penalty = 1.0
-thinking = true
-tools = true
-vision = true
-
 [models."hy-mt2-1.8b"]
 provider = "llama-swap"
 model_id = "hy-mt2-1.8b"
@@ -154,10 +110,10 @@ thinking = false
 tools = false
 vision = true
 
-[models."minicpm-v-4.6"]
+[models."qwen3-vl-4b"]
 provider = "llama-swap"
-model_id = "minicpm-v-4.6"
-num_ctx = 131072
+model_id = "qwen3-vl-4b"
+num_ctx = 32768
 temperature = 0.7
 top_p = 0.9
 thinking = false
