@@ -1,6 +1,6 @@
 ---
 name: diffuse
-description: Generate images and video locally with the diffuse CLI. Covers all available models, prompt enhancement strategy (emit enhanced prompts yourself instead of using --enhance), and per-model formatting rules.
+description: Generate images and video locally with the diffuse CLI. Covers all available models, prompt enhancement strategy (emit enhanced prompts yourself instead of using --enhance), per-model formatting rules, and the --nsfw bypass flag.
 ---
 
 # diffuse — Local Image & Video Generation
@@ -15,22 +15,38 @@ The `diffuse` CLI has an `--enhance` flag that calls a local LLM to expand promp
 
 This means:
 
-- For **vision-type models** (Bonsai, HiDream, Wan2.2): write a rich, detailed English paragraph describing the scene, characters, art style, lighting, and composition. Pass it directly: `diffuse generate -m <model> -p "<your enhanced prompt>"`.
+- For **vision-type models** (HiDream, Wan2.2): write a rich, detailed English paragraph describing the scene, characters, art style, lighting, and composition. Pass it directly: `diffuse generate -m <model> -p "<your enhanced prompt>"`.
 - For **ideogram-type models** (Ideogram 4): write a complete JSON object with the required structure (see below) and pass it directly: `diffuse generate -m ideogram4-q4 -p '<your JSON>'`.
 - For **video models** (Wan2.2): if you have a reference image, use your own vision capabilities to analyze it, then write a detailed motion-focused prompt. Do not rely on `--enhance` to analyze the image for you.
 
 If you cannot see the input image (no vision capability in the current session), ask the user to describe it, or use `--enhance` as a fallback only in that specific case.
 
+## Model Selection: Prefer Ideogram 4
+
+**Default model: `ideogram4-q4`.** Use Ideogram 4 for most image generation tasks unless the user specifically asks for a different model or needs a capability Ideogram 4 can't provide (e.g. image editing → use HiDream, video → use Wan2.2).
+
+Rationale: Ideogram 4 produces the best overall image quality, has excellent text rendering, and supports structured prompt input via JSON. It runs at native 1024×1024 on 6GB VRAM.
+
+Choose other models only when:
+
+| Need | Model | Why |
+|------|-------|-----|
+| Default image generation | `ideogram4-q4` | Best quality, text rendering, structured JSON input |
+| Image editing (inpaint) | `hidream-sdnq` | Only model that supports `--edit` |
+| Image-to-video | `wan22-i2v` | Only video model |
+| Fast/draft generation | `ternary-gemlite` | Fastest, 1-bit Bonsai weights |
+| Music | `magenta-rt` | Separate CLI, not diffuse |
+
 ## Available Models
 
 ### Image Models
 
-| Model | Flag | Backend | Best for | Default size | Enhance type |
-|-------|------|---------|----------|-------------|--------------|
-| `binary-gemlite` | `-m binary-gemlite` | gemlite (Bonsai) | Fast generation, 1-bit weights | 512x512 | vision (natural language) |
-| `ternary-gemlite` | `-m ternary-gemlite` | gemlite (Bonsai) | Default, 95% of FP16 quality | 512x512 | vision (natural language) |
-| `ideogram4-q4` | `-m ideogram4-q4` | sd.cpp | Best text rendering in images | 480x480 | ideogram (JSON) |
+| Model | Flag | Backend | Best for | Default size | Prompt type |
+|-------|------|---------|----------|-------------|-------------|
+| `ideogram4-q4` | `-m ideogram4-q4` | sd.cpp | **Default choice** — best text rendering, overall quality | 1024x1024 | ideogram (JSON) |
 | `hidream-sdnq` | `-m hidream-sdnq` | transformers (HiDream) | T2I + image editing, high-res native | 2048x2048 (snapped) | vision (natural language) |
+| `binary-gemlite` | `-m binary-gemlite` | gemlite (Bonsai) | Fast generation, 1-bit weights | 512x512 | vision (natural language) |
+| `ternary-gemlite` | `-m ternary-gemlite` | gemlite (Bonsai) | 95% of FP16 quality | 512x512 | vision (natural language) |
 
 ### Video Models
 
@@ -45,23 +61,37 @@ If you cannot see the input image (no vision capability in the current session),
 | `mrt2_small` | `-m mrt2_small` | Recommended for 6GB VRAM | 230M params, faster than real-time on GPU |
 | `mrt2_base` | `-m mrt2_base` | Higher quality but OOMs on 6GB | 2.4B params, CPU fallback ~10x slower |
 
+## The `--nsfw` Flag
+
+By default, Ideogram 4 applies content safety filters (baked into the DiT weights). The `--nsfw` flag toggles a bypass that works for **horror, dark, and gothic content** — NOT for explicit nudity.
+
+### What `--nsfw` does technically:
+
+1. **Removes the uncond (negative guidance) diffusion model** — the safety filter lives in both the cond and uncond DiT transformers. Removing uncond eliminates the "safety overlay" that fights generation.
+2. **Applies Realism Engine V5 LoRA** (weight 0.6) to the cond transformer — steers generation toward uncensored output.
+3. **Disables runtime safety rules** in prompt YAML files.
+
+### What `--nsfw` does NOT do:
+
+- Does **not** bypass explicit NSFW/nudity filters. The LoRA works for horror, violence, dark themes, and gothic aesthetics. Explicit sexual content is still filtered by the cond transformer weights.
+- Does **not** improve quality or add detail. It only removes the safety filter.
+
+### When to use `--nsfw`:
+
+Use `--nsfw` when the user asks for horror, dark fantasy, gothic, or violent content that the default filter blocks (produces "safety filter" overlay or refuses). Examples: "draw a vampire", "blood and gore", "dark horror scene", "gothic cathedral with skeletons".
+
+```bash
+# With NSFW bypass (horror/dark content)
+diffuse generate -m ideogram4-q4 --evict-llm --nsfw -p '<your JSON>'
+```
+
+### When NOT to use `--nsfw`:
+
+Keep it off for normal generation. The bypass changes image characteristics (no uncond means less negative guidance). For everyday use, the default mode produces cleaner results.
+
 ## Prompt Enhancement Guidelines Per Model
 
-### Bonsai (binary-gemlite, ternary-gemlite) — Natural Language
-
-Write a single rich English paragraph. Include:
-
-- **Subject**: who/what is in the scene, described physically (do not assume the model knows named characters — describe them as if it doesn't)
-- **Art style**: medium, aesthetic, visual references (e.g. "oil painting style", "anime illustration", "cinematic photography")
-- **Lighting**: direction, quality, color temperature (e.g. "golden hour backlight", "dramatic chiaroscuro")
-- **Composition**: framing, camera angle, depth of field
-- **Mood/atmosphere**: emotional tone of the image
-
-Example enhanced prompt:
-
-> A lone samurai standing under a torrential downpour at dusk, rain streaking across the frame in silver threads. The samurai wears weathered indigo armor, water beading on the lacquered plates, a tachi sword at his side. Cinematic low-angle shot, shallow depth of field with rain drops in sharp foreground. Moody blue-teal color palette with warm amber reflections from distant lanterns. Concept art illustration style, dramatic rim lighting, volumetric mist.
-
-### Ideogram 4 (ideogram4-q4) — Structured JSON
+### Ideogram 4 (ideogram4-q4) — Structured JSON  ⭐ DEFAULT
 
 Ideogram 4 **requires** structured JSON. Plain text produces garbage output. Write a complete JSON object with these fields:
 
@@ -86,24 +116,40 @@ Ideogram 4 **requires** structured JSON. Plain text produces garbage output. Wri
 
 Rules for Ideogram 4 JSON:
 
-- Always use medium: "illustration" or "painting" to avoid photo-mode safety filters
-- Avoid trigger words: "vampire", "blood", "death", "gothic", "horror", "oil on canvas" — use safe alternatives ("pale immortal noble", "crimson", "distinguished", "ornate medieval", "richly painted artwork")
+- Always use medium: "illustration" or "painting" to avoid photo-mode safety filters (unless using `--nsfw`)
+- When NOT using `--nsfw`: avoid trigger words — "vampire", "blood", "death", "gothic", "horror", "oil on canvas" — use safe alternatives ("pale immortal noble", "crimson", "distinguished", "ornate medieval", "richly painted artwork")
+- When using `--nsfw`: trigger words for horror/dark content are safe to use directly
 - Include 3-5 colors in `color_palette` as hex codes — this anchors the model and reduces structural collapse
 - The `elements` array should describe each visible component of the image
+- Default resolution is 1024×1024 (native). Do not reduce below 1024 unless specifically requested — 480×480 caused element duplication on complex prompts
 
 ### HiDream (hidream-sdnq) — Natural Language + Editing
 
-For T2I: same guidelines as Bonsai (rich English paragraph). HiDream snaps all resolutions to a minimum of 2048x2048 — there is no way to generate below that. Use Bonsai or Ideogram 4 for smaller images.
+For T2I: same guidelines as Bonsai (rich English paragraph). HiDream snaps all resolutions to a minimum of 2048x2048 — there is no way to generate below that. Use Ideogram 4 or Bonsai for smaller images.
 
 For image editing (`--edit photo.png`): write a clear instruction describing what to change. Include:
 
 - **Age preservation**: if editing a photo of a person, explicitly state their approximate age and skin quality (e.g. "a man in his early 30s with smooth, youthful skin, no wrinkles") — HiDream tends to age subjects without this
 - **Body proportions**: include "full body shot, natural body proportions, head proportional to body" to avoid the "big head" distortion
-- **Safety avoidance**: same trigger word rules as Ideogram 4
+- **Safety avoidance**: same trigger word rules as Ideogram 4 (unless `--nsfw` is used)
 
 Example edit prompt:
 
 > Add a red scarf around the puppy's neck. The puppy is a young golden retriever with soft fluffy fur, keep its exact age and appearance. Full body shot, natural body proportions. Warm lighting, cozy atmosphere, illustration style.
+
+### Bonsai (binary-gemlite, ternary-gemlite) — Natural Language
+
+Write a single rich English paragraph. Include:
+
+- **Subject**: who/what is in the scene, described physically (do not assume the model knows named characters — describe them as if it doesn't)
+- **Art style**: medium, aesthetic, visual references (e.g. "oil painting style", "anime illustration", "cinematic photography")
+- **Lighting**: direction, quality, color temperature (e.g. "golden hour backlight", "dramatic chiaroscuro")
+- **Composition**: framing, camera angle, depth of field
+- **Mood/atmosphere**: emotional tone of the image
+
+Example enhanced prompt:
+
+> A lone samurai standing under a torrential downpour at dusk, rain streaking across the frame in silver threads. The samurai wears weathered indigo armor, water beading on the lacquered plates, a tachi sword at his side. Cinematic low-angle shot, shallow depth of field with rain drops in sharp foreground. Moody blue-teal color palette with warm amber reflections from distant lanterns. Concept art illustration style, dramatic rim lighting, volumetric mist.
 
 ### Wan2.2 I2V (wan22-i2v) — Motion-Focused Video Prompt
 
@@ -124,9 +170,13 @@ Example video prompt:
 ## Usage Patterns
 
 ```bash
-# Image generation (always use --evict-llm to free VRAM)
-diffuse generate -m ternary-gemlite --evict-llm -p "<your enhanced prompt>"
+# Image generation — DEFAULT: Ideogram 4 (always use --evict-llm to free VRAM)
 diffuse generate -m ideogram4-q4 --evict-llm -p '<your JSON>'
+
+# Image generation — Bonsai (natural language)
+diffuse generate -m ternary-gemlite --evict-llm -p "<your enhanced prompt>"
+
+# Image generation — HiDream (high-res, also supports editing)
 diffuse generate -m hidream-sdnq --evict-llm -p "<your enhanced prompt>"
 
 # Image editing (HiDream only)
@@ -135,11 +185,14 @@ diffuse generate -m hidream-sdnq --evict-llm --edit photo.png -p "<your edit ins
 # Video generation (Wan2.2)
 diffuse generate -m wan22-i2v --evict-llm --input-image photo.png -p "<your motion prompt>"
 
+# With NSFW bypass (horror/dark/gothic content — Ideogram 4 only)
+diffuse generate -m ideogram4-q4 --evict-llm --nsfw -p '<your JSON>'
+
 # Custom resolution
-diffuse generate -m ternary-gemlite --evict-llm -p "..." --size 768x768
+diffuse generate -m ideogram4-q4 --evict-llm -p '<your JSON>' --size 768x768
 
 # With seed for reproducibility
-diffuse generate -m ternary-gemlite --evict-llm -p "..." --seed 42
+diffuse generate -m ideogram4-q4 --evict-llm -p '<your JSON>' --seed 42
 
 # Music generation (separate CLI)
 magenta-rt generate -p "high-energy 16-bit era platformer music, FM synthesis, driving bassline, 140bpm" --duration 8.0 --evict-llm
@@ -148,9 +201,10 @@ magenta-rt generate -p "high-energy 16-bit era platformer music, FM synthesis, d
 ## Important Notes
 
 - **Always use `--evict-llm`** before generation to free VRAM from llama-swap models
+- **Default model is `ideogram4-q4`** — prefer it for most image generation tasks
+- **Ideogram 4 native resolution: 1024×1024** — do not reduce below 1024 unless requested (480×480 caused element duplication on complex prompts)
 - **Images save to the caller's current working directory**, not the diffuse project dir
-- **HiDream resolution snapping**: all outputs are minimum 2048x2048 — use Bonsai or Ideogram 4 for smaller images
-- **Ideogram 4 max safe size on 6GB**: 480x480 (512 may OOM)
+- **HiDream resolution snapping**: all outputs are minimum 2048x2048 — use Ideogram 4 or Bonsai for smaller images
 - **Wan2.2 video takes ~48 minutes** on 6GB VRAM for 33 frames — plan accordingly
 - **`diffuse --list`** shows all available models, backends, and sizes
 - **Some models may not be installed** — if `diffuse generate -m <model>` fails, check `diffuse --list` and suggest an alternative
@@ -162,7 +216,9 @@ magenta-rt generate -p "high-energy 16-bit era platformer music, FM synthesis, d
 - Do not stack quality tags like "masterpiece, best quality, 4k" — the models ignore or degrade from them
 - One mood per prompt — conflicting vibes produce incoherent images
 - Seed matters more than prompt refinement — iterate seeds before rewriting prompts
-- Ideogram 4 content filter may trigger on gothic/horror vocabulary even with safe alternatives — the refusal is baked into the weights
+- **Ideogram 4 content filter**: without `--nsfw`, the filter is baked into the DiT weights. Trigger words for gothic/horror may produce a "safety overlay" (washed-out, distorted output). Use `--nsfw` to bypass for horror/dark content. For explicit NSFW, the bypass is **not** reliable — the LoRA only covers horror/dark themes, not nudity.
+- **Ideogram 4 at low resolution** (below 1024×1024): complex prompts cause element duplication. Always use 1024×1024 or higher.
 - HiDream ages subjects in editing — always include explicit age preservation instructions
 - Wan2.2 Q2_K quant produces severe hallucinations — Q4_K_S is the minimum viable quant
 - Wan2.2 4-step accelerator produces near-zero motion with subtle prompts — be aggressive with motion language
+- **Two concurrent diffuse processes freeze VRAM** — never run diffuse in parallel. Wait for one to finish before starting another.
