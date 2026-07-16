@@ -24,6 +24,25 @@ num_ctx = 131072
 thinking = true
 tools = true
 
+[models."bonsai-27b-1bit"]
+provider = "llama-swap"
+model_id = "bonsai-27b-1bit:think"
+num_ctx = 40960
+temperature = 0.7
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
+thinking = true
+tools = true
+
+[models."gemma4-e2b"]
+provider = "llama-swap"
+model_id = "gemma4-e2b:think"
+num_ctx = 131072
+thinking = true
+tools = true
+
 [models."gemma4-e4b"]
 provider = "llama-swap"
 model_id = "gemma4-e4b:think"
@@ -138,9 +157,9 @@ model_id = "nomic-embed-text-v2-moe"
 embeddings = true
 dimensions = 768
 
-[models."lfm2.5-embed-350m"]
+[models."lfm2.5-embedding-350m"]
 provider = "llama-swap"
-model_id = "lfm2.5-embed-350m"
+model_id = "lfm2.5-embedding-350m"
 embeddings = true
 dimensions = 1024
 

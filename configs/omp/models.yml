@@ -9,6 +9,74 @@ providers:
       thinkingFormat: qwen-chat-template
       qwenPreserveThinking: true
     models:
+    - id: bonsai-27b-1bit
+      name: Bonsai 27B 1-bit
+      description: PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit
+        weights, full thinking/reasoning at 3.9 GB. 89.5% of FP16 intelligence.
+      reasoning: true
+      input:
+      - text
+      contextWindow: 40960
+      maxTokens: 32768
+      thinking:
+        mode: effort
+        efforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
+    - id: bonsai-27b-1bit:think
+      name: Bonsai 27B 1-bit Thinking 🧠
+      description: PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit
+        weights, full thinking/reasoning at 3.9 GB. 89.5% of FP16 intelligence.
+      reasoning: true
+      input:
+      - text
+      contextWindow: 40960
+      maxTokens: 32768
+      thinking:
+        mode: effort
+        efforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
+    - id: gemma4-e2b
+      name: Gemma 4 E2B
+      description: Gemma 4 E2B QAT — Unsloth Dynamic 2.0 (UD-Q4_K_XL). Higher accuracy
+        and smaller than Google Q4_0.
+      reasoning: true
+      input:
+      - text
+      contextWindow: 131072
+      maxTokens: 32768
+      thinking:
+        mode: effort
+        efforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
+    - id: gemma4-e2b:think
+      name: Gemma 4 E2B Thinking 🧠
+      description: Gemma 4 E2B QAT — Unsloth Dynamic 2.0 (UD-Q4_K_XL). Higher accuracy
+        and smaller than Google Q4_0.
+      reasoning: true
+      input:
+      - text
+      contextWindow: 131072
+      maxTokens: 32768
+      thinking:
+        mode: effort
+        efforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
     - id: gemma4-e4b
       name: Gemma 4 E4B
       description: Gemma 4 E4B — efficient model designed for reasoning, agentic tasks,
