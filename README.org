@@ -288,8 +288,15 @@ cp "$DOTFILES/configs/droid/mcp.json" ~/.factory/mcp.json
 # Goose
 cp "$DOTFILES/configs/goose/config.yaml" ~/.config/goose/config.yaml
 
+# Nanocoder
+cp "$DOTFILES/configs/nanocoder/agents.config.json" ~/.config/nanocoder/agents.config.json
+
+# OMP
+cp "$DOTFILES/configs/omp/config.yml" ~/.omp/agent/config.yml
+cp "$DOTFILES/configs/omp/models.yml" ~/.omp/agent/models.yml
+
 # OpenCode (máquina pessoal)
-cp "$DOTFILES/configs/opencode/opencode.json" ~/.config/opencode/opencode.json
+cp "$DOTFILES/configs/opencode/config.json" ~/.config/opencode/opencode.json
 cp "$DOTFILES/configs/opencode/tui.json" ~/.config/opencode/tui.json
 
 # Pi (máquina pessoal)
@@ -297,8 +304,16 @@ cp "$DOTFILES/configs/pi/settings.json" ~/.pi/agent/settings.json
 cp "$DOTFILES/configs/pi/mcp.json" ~/.pi/agent/mcp.json
 cp "$DOTFILES/configs/pi/models.json" ~/.pi/agent/models.json
 
+# Sprachspiel
+cp "$DOTFILES/configs/sprachspiel/config.toml" ~/.config/sprachspiel/config.toml
+cp "$DOTFILES/configs/sprachspiel/models.toml" ~/.config/sprachspiel/models.toml
+cp "$DOTFILES/configs/sprachspiel/tools.toml" ~/.config/sprachspiel/tools.toml
+
 # VSCode
 cp "$DOTFILES/configs/vscode/chatLanguageModels.json" ~/.config/Code/User/chatLanguageModels.json
+
+# Zed
+cp "$DOTFILES/configs/zed/settings.json" ~/.config/zed/settings.json
 
 echo "✓ Sincronização concluída!"
 #+END_SRC
