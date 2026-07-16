@@ -40,10 +40,11 @@
     --fit on
     --fit-target ${vram_margin}
     --fit-ctx 8192
-    --ctx-size 32768
+    --ctx-size 65536
     --temp 0.7
     --top-p 0.95
     --top-k 20
+    --min-p 0
     --repeat-penalty 1.0
     --parallel 1
     --cache-type-k ${large_cache_k}
@@ -51,7 +52,7 @@
     --flash-attn on
     --metrics
   filters:
-    stripParams: "temperature, top_p, top_k"
+    stripParams: "temperature, top_p, top_k, min_p"
     setParamsByID:
       "${MODEL_ID}":
         chat_template_kwargs:
@@ -59,12 +60,14 @@
         temperature: 0.7
         top_p: 0.95
         top_k: 20
+        min_p: 0
       "${MODEL_ID}:think":
         chat_template_kwargs:
           enable_thinking: true
         temperature: 0.7
         top_p: 0.95
         top_k: 20
+        min_p: 0
   ttl: 300
   health_check_timeout: 300
   capabilities:
@@ -72,7 +75,7 @@
     out: ['text']
     tools: true
     reranker: false
-    context: 32768
+    context: 65536
   metadata:
     size: "~7.2 GB (Q2_0_g128 ternary) + 0.63 GB mmproj"
     context: "8K-262K (dynamic with --fit, 4-bit KV cache)"

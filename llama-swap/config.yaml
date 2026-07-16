@@ -1075,183 +1075,6 @@ models:
       embedding_length: 2048
       quantization: Q8_0
 # -------------------------------------------
-# BONSAI 27B 1-BIT — PrismML binary {−1,+1} LLM (Q1_0, bonsai-llama backend)
-# prism-ml/Bonsai-27B-gguf — Qwen3.6-27B base, 27.3B binary weights at 1.125 bpw.
-# Architecture: same hybrid attention as ternary variant.
-# Weight format: GGUF Q1_0 — {−1,+1} in 1-bit slots with FP16 group-wise scaling.
-#   Custom kernels required: PrismML-Eng/llama.cpp fork (CUDA, Metal, CPU).
-# 3.53 GB on disk, ~3.9 GB deployed. Fits entirely in RTX 3050 6GB VRAM.
-# 89.5% of FP16 intelligence retained (76.11 avg on 15 benchmarks).
-# Math: 90.17. Coding: 82.75. Agentic: 69.31.
-# Apache 2.0 license.
-
-# Backend: bonsai-llama.cpp (PrismML fork) — NOT upstream, NOT ik_llama.
-# Sampling: temp 0.7, top_p 0.95, top_k 20 per model card.
-# -------------------------------------------
-  "bonsai-27b-1bit":
-    name: "Bonsai 27B 1-bit"
-    description: "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit weights, full thinking/reasoning at 3.9 GB. 89.5% of FP16 intelligence. Fits entirely in 6GB VRAM."
-    cmd: |
-      ${bonsai_llama_server} --port ${PORT}
-      --model ${models_dir}/bonsai-27b-1bit/Bonsai-27B-Q1_0.gguf
-      --jinja
-      --reasoning on
-      --fit on
-      --fit-target ${vram_margin}
-      --fit-ctx 8192
-      --ctx-size 32768
-      --temp 0.7
-      --top-p 0.95
-      --top-k 20
-      --repeat-penalty 1.0
-      --parallel 1
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p, top_k"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.95
-          top_k: 20
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.95
-          top_k: 20
-    ttl: 300
-    health_check_timeout: 120
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 32768
-    metadata:
-      size: "~3.9 GB (Q1_0 binary 1.125 bpw)"
-      context: "8K-262K (dynamic with --fit, 4-bit KV cache)"
-      vram_usage: "~5.4 GB (model + cache, fits entirely in GPU)"
-      source: "prism-ml/Bonsai-27B-gguf (Q1_0)"
-      kv_cache: "q4_0"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen3
-      parameters: 27300000000
-      context_length: 262144
-      embedding_length: 3584
-      quantization: Q1_0 (binary 1.125 bpw)
-# -------------------------------------------
-# BONSAI 27B TERNARY — PrismML ternary {−1,0,+1} LLM (Q2_0_g128, bonsai-llama backend)
-# prism-ml/Ternary-Bonsai-27B-gguf — Qwen3.6-27B base, 27.3B ternary weights at 1.71 bpw.
-# Architecture: hybrid attention (~75% linear / ~25% full attention), SwiGLU MLP, RoPE, RMSNorm.
-#   64 blocks, full-attention cache on only 16 of 64 layers — enables 262K context on-device.
-# Weight format: GGUF Q2_0_g128 — {−1,0,+1} in 2-bit slots with FP16 group-wise scaling (128-group).
-#   Custom kernels required: PrismML-Eng/llama.cpp fork (CUDA, Metal, CPU).
-#   Upstream llama.cpp does NOT support Q2_0_g128.
-# Vision: HQQ 4-bit mmproj (Q8_0 container), loaded only on image input.
-# DSpark speculative decoding: draft-dspark type, Q4_1 drafter layer (1.95 GB).
-#   1.34x speedup on CUDA (H100: 98 → 132 tok/s). Optional.
-# Apache 2.0 license.
-
-# Quantization: Q2_0_g128 (ternary) — 6.7 GB on disk, ~7.2 GB deployed.
-#   1.71 bits/weight. 94.6% of FP16 intelligence retained (80.49 avg on 15 benchmarks).
-#   Math: 93.40 (vs 95.33 FP16). Coding: 85.96 (vs 88.74). Agentic: 74.01 (vs 80.00).
-
-# VRAM strategy for RTX 3050 6GB (~5.1GB usable):
-#   Model weights (7.2 GB) exceed VRAM — partial GPU offload with --fit on.
-#   --fit adjusts -ngl and ctx to fit. KV cache q4_0 (4-bit) to minimize context overhead.
-#   Hybrid attention backbone means KV cache only grows on 16 of 64 layers — very efficient.
-#   DSpark drafter is OFF by default (adds 1.95 GB) — enable only if VRAM allows.
-
-# Backend: bonsai-llama.cpp (PrismML fork) — NOT upstream, NOT ik_llama.
-#   Build: ~/git/bonsai-llama.cpp/build/bin/llama-server
-#   Shared libs in build/bin/ (libllama.so, libggml-cuda.so, etc.) — RPATH set in binary.
-
-# Sampling: temp 0.7, top_p 0.95, top_k 20 per model card (thinking mode).
-
-# SMOKE TEST: (pending)
-# -------------------------------------------
-  "bonsai-27b-ternary":
-    name: "Bonsai 27B Ternary"
-    description: "PrismML's ternary 27B reasoning model — Qwen3.6-27B with 1.71-bit weights, full thinking/reasoning/agentic capabilities at 7.2 GB. 95% of FP16 intelligence retained. Hybrid attention enables 262K context."
-    cmd: |
-      ${bonsai_llama_server} --port ${PORT}
-      --model ${models_dir}/bonsai-27b-ternary/Ternary-Bonsai-27B-Q2_0.gguf
-      --jinja
-      --reasoning on
-      --fit on
-      --fit-target ${vram_margin}
-      --fit-ctx 8192
-      --ctx-size 32768
-      --temp 0.7
-      --top-p 0.95
-      --top-k 20
-      --repeat-penalty 1.0
-      --parallel 1
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p, top_k"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.95
-          top_k: 20
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.95
-          top_k: 20
-    ttl: 300
-    health_check_timeout: 300
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 32768
-    metadata:
-      size: "~7.2 GB (Q2_0_g128 ternary) + 0.63 GB mmproj"
-      context: "8K-262K (dynamic with --fit, 4-bit KV cache)"
-      vram_usage: "~7.2 GB weights (partial GPU offload) + ~0.5-1 GB KV cache"
-      source: "prism-ml/Ternary-Bonsai-27B-gguf (Q2_0 + mmproj Q8_0)"
-      kv_cache: "q4_0"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen3
-      parameters: 27300000000
-      context_length: 262144
-      embedding_length: 3584
-      quantization: Q2_0_g128 (ternary 1.71 bpw)
-# -------------------------------------------
 # GLM-4.7-FLASH - MoE CONVERSATIONAL (text-only, MLA)
 # MoE ~30B params, ~2B ativo por token. 64 routed + 1 shared expert, 4 active.
 # Glm4MoeLite architecture (deepseek2 family) with Multi-head Latent Attention (MLA).
@@ -2226,8 +2049,10 @@ matrix:
     a1: agents-a1-35b
     aw: agentworld-35b
     glm: glm-4.7-flash
-    bonsai: bonsai-27b-ternary
-    bonsai1: bonsai-27b-1bit
+    # Bonsai DESATIVADO — YAMLs movidos para _disabled/, GGUFs deletados
+    # Aguardando próxima iteração com foco em agentic coding
+    # bonsai: bonsai-27b-ternary
+    # bonsai1: bonsai-27b-1bit
     # Tradução
     hmt: hy-mt2-1.8b
     # Audio
@@ -2259,7 +2084,7 @@ matrix:
 
     # Modelos pesados (offload) + Embedding/Reranker
     # nomic + lfmemb + lfmcol (~0.5GB total, CPU-only) cabem ao lado mesmo dos pesados
-    heavy: "(qw36 | orn35 | a1 | aw | glm | bonsai | bonsai1) & (nomic | lfmemb | lfmcol)"
+    heavy: "(qw36 | orn35 | a1 | aw | glm) & (nomic | lfmemb | lfmcol)"
 
     # Tradução (leve, cabe com embedding/reranker)
     translate_embed: "hmt & (nomic | lfmemb | lfmcol)"
@@ -2284,8 +2109,6 @@ matrix:
     a1: 9
     aw: 9
     glm: 9
-    bonsai: 9
-    bonsai1: 9
     q9: 4
     g4: 4
     ttsext: 4
