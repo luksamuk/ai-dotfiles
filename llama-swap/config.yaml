@@ -464,6 +464,7 @@ models:
       --repeat-penalty ${code_repeat_penalty}
       --reasoning on
       --jinja
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
       --parallel 1
       --parallel-tool-calls
       --cache-type-k ${large_cache_k}
@@ -517,7 +518,7 @@ models:
       context_length: 262144
       embedding_length: 2048
       quantization: I-Compact
-      note: "Post-trained Qwen 3.5 35B MoE. Self-scaffolding RL for agentic coding. 256 experts, 8+1 active, ~3B active/token. APEX I-Compact: 22% smaller than Q4_K_M, imatrix v1.3 calibrated. Expected 33-34 t/s matching Qwen 3.6 APEX."
+      note: "Post-trained Qwen 3.5 35B MoE. Self-scaffolding RL for agentic coding. 256 experts, 8+1 active, ~3B active/token. APEX I-Compact: 22% smaller than Q4_K_M, imatrix v1.3 calibrated. Expected 33-34 t/s matching Qwen 3.6 APEX. Uses qwen-fixed-chat-template.jinja — embedded GGUF template lacks tool-call format instructions, causing <|mask_start|>/<tool_code> leakage."
 # -------------------------------------------
 # QWEN-AGENTWORLD-35B-A3B — Native Language World Model
 
