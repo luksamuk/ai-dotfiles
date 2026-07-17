@@ -50,6 +50,8 @@ matrix:
     bonsai1: bonsai-27b-1bit
     # Tradução
     hmt: hy-mt2-1.8b
+    # Português jurídico (Qwen3.5-9B LoRA, instruct)
+    athenas: athenas-symbiote-9b
     # Audio
     asr: qwen3-asr-0.6b
     ttsext: qwen3-tts
@@ -82,6 +84,10 @@ matrix:
     # Tradução (leve, cabe com embedding/reranker)
     translate_embed: "hmt & (nomic | lfmemb | lfmcol)"
     translate_only: "hmt"
+
+    # Português jurídico (9B denso, cabe com embedding)
+    athenas_embed: "athenas & (nomic | lfmemb | lfmcol)"
+    athenas_only: "athenas"
 
     # External TTS (separate process, same GPU)
     tts_external: "ttsext"
@@ -117,3 +123,4 @@ matrix:
     lfm230: 1
     m5a: 1
     hmt: 1
+    athenas: 4

@@ -45,20 +45,24 @@ macros:
 models:
   qwen3.5-4b:
     name: Qwen3.5 4B
-    description: Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning.
+    description: Qwen 3.5 4B with UD-Q4_K_XL quantization and ik_llama.cpp. Uses hadamard KV cache for maximum context efficiency and ngram speculative decoding.
     cmd: '${ik_llama_server} --port ${PORT}
 
-      --model ${models_dir}/Qwen3.5-4B.i1-Q4_K_M.gguf
-
-      --jinja
-
-      --parallel-tool-calls
+      --model ${models_dir}/qwen3.5-4b-mtp/Qwen3.5-4B-UD-Q4_K_XL.gguf
 
       --fit
 
       --fit-margin 512
 
-      --ctx-size 131072
+      --jinja
+
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+
+      --parallel 1
+
+      --parallel-tool-calls
+
+      --ctx-size ${small_model_max_ctx}
 
       --temp ${default_temp}
 
@@ -111,10 +115,10 @@ models:
       reranker: false
       context: 131072
     metadata:
-      size: ~2.52 GB (i1-Q4_K_M)
-      context: 64K-128K (dynamic via --fit)
-      vram_usage: ~4GB VRAM (model 2.52GB + q8_0/q4_0 hadamard cache + compute)
-      source: unsloth/Qwen3.5-4B-GGUF i1-Q4_K_M
+      size: ~2.8 GB (UD-Q4_K_XL)
+      context: 64K-128K (dynamic)
+      vram_usage: ~4.5GB VRAM (model 2.8GB + q8_0/q4_0 hadamard cache + compute)
+      source: unsloth/Qwen3.5-4B-GGUF (UD-Q4_K_XL)
       kv_cache: q8_0 (K) + q4_0 (V) + hadamard
       features:
         completion: true
@@ -127,10 +131,10 @@ models:
         image: false
       architecture: qwen35
       parameters: 4210000000
-      context_length: 131072
+      context_length: 262144
       embedding_length: 2560
-      quantization: i1-Q4_K_M
-      note: ik_llama.cpp with hadamard KV cache + --fit for dynamic context. Ngram spec decode via ik syntax. 131K max context, --fit adjusts to available VRAM.
+      quantization: UD-Q4_K_XL
+      note: ik_llama.cpp with hadamard KV cache + --fit for dynamic context. Ngram spec decode via ik syntax. Uses qwen-fixed-chat-template.jinja for tool-call instructions. Formerly qwen3.5-4b-mtp, consolidated Jul 2026.
   qwen3.5-9b:
     name: Qwen3.5 9B
     description: Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning.
@@ -530,6 +534,47 @@ models:
       context_length: 128000
       embedding_length: 2048
       quantization: Q8_0
+  athenas-symbiote-9b:
+    name: Athenas Symbiote 9B
+    description: Brazilian Portuguese legal LLM — Qwen3.5-9B LoRA fine-tune optimized for OAB/ENEM exams. Instruct model with ChatML, 32K context.
+    cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/Athenas-Symbiote-9B-Q4_K_M.gguf\n--fit\n--fit-margin 512\n--jinja\n--chat-template-file ${templates_dir}/athenas-chatml.jinja\n--parallel 1\n--ctx-size 32768\n--temp 0.3\n--top-p 0.9\n--top-k 40\n--min-p 0.05\n--repeat-penalty 1.1\n--cache-type-k q8_0\n--cache-type-v q4_0\n--k-cache-hadamard\n--v-cache-hadamard\n--flash-attn auto\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n  --metrics\n"
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          temperature: 0.3
+          top_p: 0.9
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: false
+      reranker: false
+      context: 32768
+    metadata:
+      size: ~5.63 GB (Q4_K_M)
+      context: 32K (native)
+      vram_usage: ~6.2GB VRAM (model + cache, ik with hadamard)
+      source: Kodjaoglanian/Athenas-Symbiote-9B-GGUF (Q4_K_M)
+      kv_cache: q8_0 + q4_0 hadamard
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 8950000000
+      context_length: 32768
+      embedding_length: 4096
+      quantization: Q4_K_M
+      note: Qwen3.5-9B LoRA fine-tune for Brazilian Portuguese legal/academic domain. OAB 63.23%, ENEM 80.90%. Author recommends temp=0.3, ChatML format. NOT a reasoning/tool-calling model — simple instruct. GGUF has no chat_template, uses athenas-chatml.jinja. GGUF contains mmproj but vision disabled. LoRA pre-merged.
   glm-4.7-flash:
     name: GLM 4.7 Flash
     description: GLM-4.7-Flash is a 30B Mixture-of-Experts model with Multi-head Latent Attention (MLA), 64 experts with 4 active per token. Built for fast, efficient conversational AI and tool calling.
@@ -1077,6 +1122,7 @@ matrix:
     glm: glm-4.7-flash
     bonsai1: bonsai-27b-1bit
     hmt: hy-mt2-1.8b
+    athenas: athenas-symbiote-9b
     asr: qwen3-asr-0.6b
     ttsext: qwen3-tts
     nomic: nomic-embed-text-v2-moe
@@ -1092,6 +1138,8 @@ matrix:
     heavy: (orn35 | aw | glm | bonsai1) & (nomic | lfmemb | lfmcol)
     translate_embed: hmt & (nomic | lfmemb | lfmcol)
     translate_only: hmt
+    athenas_embed: athenas & (nomic | lfmemb | lfmcol)
+    athenas_only: athenas
     tts_external: ttsext
     embed_only: nomic | lfmemb | lfmcol
     rerank_only: lfmcol
@@ -1117,3 +1165,4 @@ matrix:
     lfm230: 1
     m5a: 1
     hmt: 1
+    athenas: 4

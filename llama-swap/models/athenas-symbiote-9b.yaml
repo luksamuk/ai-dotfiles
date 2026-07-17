@@ -1,0 +1,73 @@
+# -------------------------------------------
+# ATHENAS-SYMBIOTE-9B — Brazilian Portuguese Legal/Educational LLM
+# Qwen3.5-9B LoRA fine-tune (PEFT) for PT-BR legal & academic domains
+# Benchmarks: OAB 63.23% (3-shot), ENEM 80.90% (3-shot)
+# Instruct model, 32K context, Apache 2.0
+# Arch: qwen35 (Qwen3.5ForConditionalGeneration) — ik_llama compatible
+# head_dim=256, 256%64==0 → attn_rot compatible
+# NOTE: GGUF has NO chat_template — uses ChatML (author recommendation)
+# NOTE: GGUF also contains mmproj (vision), but vision DISABLED — text-only use
+# NOTE: LoRA already merged into GGUF by Kodjaoglanian
+# NOTE: NOT a reasoning model — no --reasoning, no :think toggle
+# NOTE: NOT a tool-calling model — LoRA fine-tune for legal/academic text only
+# Author recommends: temperature=0.3, ChatML format, do_sample=True
+# -------------------------------------------
+"athenas-symbiote-9b":
+  name: "Athenas Symbiote 9B"
+  description: "Brazilian Portuguese legal LLM — Qwen3.5-9B LoRA fine-tune optimized for OAB/ENEM exams. Instruct model with ChatML, 32K context."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/Athenas-Symbiote-9B-Q4_K_M.gguf
+    --fit
+    --fit-margin 512
+    --jinja
+    --chat-template-file ${templates_dir}/athenas-chatml.jinja
+    --parallel 1
+    --ctx-size 32768
+    --temp 0.3
+    --top-p 0.9
+    --top-k 40
+    --min-p 0.05
+    --repeat-penalty 1.1
+    --cache-type-k q8_0
+    --cache-type-v q4_0
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
+      --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 0.3
+        top_p: 0.9
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 32768
+  metadata:
+    size: "~5.63 GB (Q4_K_M)"
+    context: "32K (native)"
+    vram_usage: "~6.2GB VRAM (model + cache, ik with hadamard)"
+    source: "Kodjaoglanian/Athenas-Symbiote-9B-GGUF (Q4_K_M)"
+    kv_cache: "q8_0 + q4_0 hadamard"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 8950000000
+    context_length: 32768
+    embedding_length: 4096
+    quantization: Q4_K_M
+    note: "Qwen3.5-9B LoRA fine-tune for Brazilian Portuguese legal/academic domain. OAB 63.23%, ENEM 80.90%. Author recommends temp=0.3, ChatML format. NOT a reasoning/tool-calling model — simple instruct. GGUF has no chat_template, uses athenas-chatml.jinja. GGUF contains mmproj but vision disabled. LoRA pre-merged."

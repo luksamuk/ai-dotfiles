@@ -1,0 +1,18 @@
+{# ChatML template for Athenas-Symbiote-9B
+   Based on author recommendation: ChatML format, no thinking, no tools
+   Qwen3.5-9B base LoRA fine-tune — simple instruct format only #}
+{%- for message in messages %}
+{%- if message.role == 'system' %}
+<|im_start|>system
+{{ message.content }}<|im_end|>
+{%- elif message.role == 'user' %}
+<|im_start|>user
+{{ message.content }}<|im_end|>
+{%- elif message.role == 'assistant' %}
+<|im_start|>assistant
+{{ message.content }}<|im_end|>
+{%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+<|im_start|>assistant
+{%- endif %}

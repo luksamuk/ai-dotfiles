@@ -77,7 +77,10 @@ declare -A MODELS=(
   ["qwen3.5-0.8b"]="unsloth/Qwen3.5-0.8B-GGUF Qwen3.5-0.8B-UD-Q3_K_XL.gguf"
   # Migrated from MoQ/DFlash to Unsloth Q4_K_M on upstream llama.cpp (Jul 2026)
   # DFlash was slower on 6GB GPU (draft on CPU: 38ms/tok vs 22ms/tok without)
-  ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-Q4_K_M.gguf"
+  # Consolidated: formerly qwen3.5-4b-mtp, now canonical qwen3.5-4b (Jul 2026)
+  # Uses ik_llama + hadamard KV + UD-Q4_K_XL (2.8 GB)
+  ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-UD-Q4_K_XL.gguf"
+  # ["qwen3.5-4b-mtp"] — consolidated into qwen3.5-4b, Jul 2026
   # [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
   ["lfm2.5-8b-a1b"]="mudler/LFM2.5-8B-A1B-APEX-GGUF LFM2.5-8B-A1B-APEX-I-Compact.gguf"
   ["qwen3.5-9b"]="w-ahmad/Qwen3.5-9B-GGUF-MoQ Qwen3.5-9B-MoQ-3.6.gguf"
@@ -197,6 +200,10 @@ declare -A MODELS=(
   # GLM-4.7-Flash — 30B MoE with MLA (Multi-head Latent Attention), 4 active experts
   # deepseek2 arch, smallest 35B-class in fleet (14.6GB), Apache-2.0
   ["glm-4.7-flash"]="mudler/GLM-4.7-Flash-APEX-GGUF GLM-4.7-Flash-APEX-I-Compact.gguf"
+  # Athenas-Symbiote-9B — Qwen3.5-9B LoRA fine-tune for Brazilian Portuguese (legal/OAB/ENEM)
+  # Instruct model, 32K context, qwen35 arch — ik_llama compatible
+  # Q4_K_M ~5.63 GB — fits in VRAM with --fit
+  ["athenas-symbiote-9b"]="Kodjaoglanian/Athenas-Symbiote-9B-GGUF Athenas-Symbiote-9B-Q4_K_M.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -305,7 +312,7 @@ show_sizes() {
   echo ""
   echo "Model Sizes (quantization noted):"
   echo "  qwen3.5-0.8b          ~0.47 GB  (UD-Q3_K_XL) + ~0.20 GB mmproj - Tiny, vision+text"
-  echo "  qwen3.5-4b            ~2.74 GB  (Q4_K_M) - Upstream llama.cpp, 131K ctx"
+  echo "  qwen3.5-4b            ~2.80 GB  (UD-Q4_K_XL) - ik_llama + hadamard KV, 131K ctx"
   echo "  qwen3.5-9b           ~3.75 GB  (MoQ-3.6) - Fits in VRAM + mmproj"
   echo "  gemma4-e4b           ~4.63 GB  (Q4_K_M) - Fits in VRAM + mmproj"
   echo "  gemma4-e2b       ~3.2 GB   (Q4_0 QAT) - Text-only, higher quality than PTQ"
@@ -325,6 +332,7 @@ show_sizes() {
   echo "  ornith-1.0-35b     ~16.50 GB  (APEX I-Compact) - Post-trained Qwen 3.5 35B MoE, agentic coding RL"
   echo "  agents-a1-35b      ~16.50 GB  (APEX I-Compact) - 35B MoE, long-horizon search + tool calling"
   echo "  glm-4.7-flash      ~14.60 GB  (APEX I-Compact) - 30B MoE MLA, smallest 35B-class, fast"
+  echo "  athenas-symbiote-9b ~5.63 GB  (Q4_K_M) - Qwen3.5-9B LoRA PT-BR legal (OAB/ENEM), 32K ctx"
   echo "  qwopus-35b        ~16.50 GB  (APEX I-Compact) - Heavy offload, MoE coding+reasoning SFT"
   # [REMOVED] gemma4-26b-a4b — removed from fleet Jun 2026
   echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"
