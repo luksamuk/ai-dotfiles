@@ -1,10 +1,9 @@
 # -------------------------------------------
-# QWEN3.5-4B - Upstream llama.cpp BACKEND
-# Dense 4B params, Unsloth Q4_K_M ~2.74GB.
-# Migrated from BeeLlama/DFlash to upstream after DFlash merge (#22105).
-# DFlash was slower on 6GB GPU (draft model forced to CPU: 38ms/tok vs 22ms/tok without).
-# No speculative decoding — pure upstream llama.cpp with 131K context.
-# Tool calling: works natively via Jinja + --parallel-tool-calls.
+# QWEN3.5-4B - ik_llama.cpp BACKEND
+# Dense 4B params, i1-Q4_K_M ~2.52GB.
+# ik_llama.cpp with hadamard KV cache + --fit for dynamic context.
+# Ngram speculative decoding via ik syntax.
+# Tool calling: --parallel-tool-calls.
 # Thinking: reasoning_content field, separate from content.
 # Dual mode: base (chat, no think) and :think (reasoning)
 # -------------------------------------------
@@ -12,12 +11,12 @@
   name: "Qwen3.5 4B"
   description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
   cmd: |
-    ${llama_server} --port ${PORT}
-    --model ${models_dir}/unsloth-qwen35-4b/Qwen3.5-4B-Q4_K_M.gguf
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/Qwen3.5-4B.i1-Q4_K_M.gguf
     --jinja
-    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-    --parallel 1
-    -ngl 99
+    --parallel-tool-calls
+    --fit
+    --fit-margin 512
     --ctx-size 131072
     --temp ${default_temp}
     --top-p ${default_top_p}
@@ -25,14 +24,13 @@
     --min-p ${default_min_p}
     --repeat-penalty ${default_repeat_penalty}
     --reasoning on
-    --cache-type-k q4_0
+    --cache-type-k q8_0
     --cache-type-v q4_0
-    --flash-attn on
-    --spec-type ngram-mod
-      --spec-ngram-mod-n-match 24
-      --spec-ngram-mod-n-min 48
-      --spec-ngram-mod-n-max 64
-      --metrics
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
+    --metrics
   filters:
     stripParams: "temperature, top_p"
     setParamsByID:
@@ -55,11 +53,11 @@
     reranker: false
     context: 131072
   metadata:
-    size: "~2.74 GB (Q4_K_M)"
-    context: "131K (fits in 6GB VRAM with q4_0 cache)"
-    vram_usage: "~4.5GB VRAM (model 2.74GB + q4_0 cache 131K + compute)"
-    source: "unsloth/Qwen3.5-4B-GGUF Q4_K_M"
-    kv_cache: "q4_0"
+    size: "~2.52 GB (i1-Q4_K_M)"
+    context: "64K-128K (dynamic via --fit)"
+    vram_usage: "~4GB VRAM (model 2.52GB + q8_0/q4_0 hadamard cache + compute)"
+    source: "unsloth/Qwen3.5-4B-GGUF i1-Q4_K_M"
+    kv_cache: "q8_0 (K) + q4_0 (V) + hadamard"
     features:
       completion: true
       tools: true
@@ -73,5 +71,5 @@
     parameters: 4210000000
     context_length: 131072
     embedding_length: 2560
-    quantization: Unsloth Q4_K_M
-    note: "Upstream llama.cpp (post-DFlash merge #22105). DFlash abandoned on 6GB GPU — draft model on CPU was 1.7x slower than no spec. 131K context, ~22ms/tok."
+    quantization: i1-Q4_K_M
+    note: "ik_llama.cpp with hadamard KV cache + --fit for dynamic context. Ngram spec decode via ik syntax. 131K max context, --fit adjusts to available VRAM."
