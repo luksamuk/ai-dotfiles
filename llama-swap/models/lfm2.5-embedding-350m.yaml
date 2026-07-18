@@ -12,7 +12,7 @@
 # KV cache: f16 — embedding models benefit from precision, not compression
 # CPU-ONLY (-ngl 0): frees VRAM for LLMs. ~7ms p50 on M4 Max, negligible on CPU
 # -------------------------------------------
-"lfm2.5-embed-350m":
+"lfm2.5-embedding-350m":
   name: "LFM2.5 Embed 350M"
   description: "Liquid AI dense bi-encoder for fast multilingual retrieval. Single 1024-dim vector per document. Best-in-class dense embedder at 350M scale across 11 languages."
   env:

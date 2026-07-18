@@ -861,7 +861,7 @@ models:
         audio: false
         image: false
       note: Late-interaction model. OAI-compatible /v1/embeddings uses mean-pooled 128-dim vectors. For true MaxSim reranking, use raw /embedding endpoint for per-token vectors and compute MaxSim client-side. Asymmetric prompts from config_sentence_transformers.json. 11 languages. Higher accuracy than dense (0.605 vs 0.577 NDCG@10) but larger index (per-token vectors).
-  lfm2.5-embed-350m:
+  lfm2.5-embedding-350m:
     name: LFM2.5 Embed 350M
     description: Liquid AI dense bi-encoder for fast multilingual retrieval. Single 1024-dim vector per document. Best-in-class dense embedder at 350M scale across 11 languages.
     env:
@@ -1126,7 +1126,7 @@ matrix:
     asr: qwen3-asr-0.6b
     ttsext: qwen3-tts
     nomic: nomic-embed-text-v2-moe
-    lfmemb: lfm2.5-embed-350m
+    lfmemb: lfm2.5-embedding-350m
     lfmcol: lfm2.5-colbert-350m
   sets:
     small_vision: (q4 | lfm230 | lfm8) & vl & (nomic | lfmemb | lfmcol)

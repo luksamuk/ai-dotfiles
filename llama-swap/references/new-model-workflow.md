@@ -150,7 +150,7 @@ heavy: "(qw36 | orn35 | a1 | aw | glm) & (nomic | lfmemb)"
 
 # WRONG — embedding excluded, causes ping-pong eviction
 heavy: "(qw36 | orn35 | a1 | aw | glm) & nomic"
-# lfmemb is missing — lfm2.5-embed-350m will evict Ornith and vice versa
+# lfmemb is missing — lfm2.5-embedding-350m will evict Ornith and vice versa
 ```
 
 The same applies to `small_only`, `medium`, `vision_only`, and any other set that groups LLMs. Embedding/reranker vars (`nomic`, `lfmemb`, `lfmcol`) should appear in the `&` clause of every LLM set.
