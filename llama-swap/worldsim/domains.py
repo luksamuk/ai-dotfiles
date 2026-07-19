@@ -250,7 +250,7 @@ DOMAINS = {
         "thinking_tag": "think",  # AgentWorld uses <think>...</think>
         "response_marker": "**Environment Observation:**",
         "model_hint": "agentworld",  # Needs AgentWorld
-        "max_tokens": 8192,
+        "max_tokens": 32768,  # AgentWorld needs room to think (~8K reasoning + prediction)
     },
     "mcp": {
         "label": "🔧 MCP — Tool calling simulation",
@@ -263,7 +263,7 @@ DOMAINS = {
         "thinking_tag": "think",
         "response_marker": "**Environment Observation:**",
         "model_hint": "agentworld",
-        "max_tokens": 8192,
+        "max_tokens": 32768,
     },
     "search": {
         "label": "🔍 Search — Web search & retrieval simulation",
@@ -276,7 +276,7 @@ DOMAINS = {
         "thinking_tag": "think",
         "response_marker": "**Environment Observation:**",
         "model_hint": "agentworld",
-        "max_tokens": 8192,
+        "max_tokens": 32768,
     },
     "swe": {
         "label": "📦 SWE — Software engineering environment",
@@ -289,7 +289,7 @@ DOMAINS = {
         "thinking_tag": "think",
         "response_marker": "**Environment Observation:**",
         "model_hint": "agentworld",
-        "max_tokens": 8192,
+        "max_tokens": 32768,
     },
     "android": {
         "label": "📱 Android — Mobile UI simulation",
@@ -302,7 +302,7 @@ DOMAINS = {
         "thinking_tag": "think",
         "response_marker": "**Environment Observation:**",
         "model_hint": "agentworld",
-        "max_tokens": 8192,
+        "max_tokens": 32768,
     },
     "os": {
         "label": "🖥️ OS — Desktop computer-use simulation",
@@ -315,7 +315,7 @@ DOMAINS = {
         "thinking_tag": "think",
         "response_marker": "**Environment Observation:**",
         "model_hint": "agentworld",
-        "max_tokens": 8192,
+        "max_tokens": 32768,
     },
 }
 

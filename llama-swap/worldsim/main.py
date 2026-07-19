@@ -64,85 +64,33 @@ if _raw_host and not os.environ.get("WORLDSIM_URL"):
 # ─── API ─────────────────────────────────────────────────────────────────────
 
 def chat_completion(model: str, messages: list, max_tokens: int = 2048,
-                    temperature: float = 0.0, timeout: int = 300,
+                    temperature: float = 0.0, timeout: int = 600,
                     on_chunk: Union[Callable[[str], None], None] = None) -> tuple:
     """Call llama-swap chat completion. Returns (content, elapsed_seconds, tokens).
 
-    If on_chunk is provided, uses streaming and calls on_chunk(text) for each
-    chunk as it arrives. Also captures reasoning_content for thinking models.
+    Non-streaming only. Reasoning content is captured by the server (--reasoning on)
+    but NEVER used as content — it stays separate in reasoning_content.
+    The on_chunk parameter is accepted for API compatibility but ignored.
     """
     t0 = time.time()
-    if on_chunk is None:
-        payload = {
-            "model": model,
-            "messages": messages,
-            "max_tokens": max_tokens,
-            "temperature": temperature,
-        }
-        try:
-            resp = requests.post(f"{BASE_URL}/chat/completions", json=payload,
-                                 timeout=timeout, stream=False)
-            elapsed = time.time() - t0
-            resp.raise_for_status()
-            data = resp.json()
-            msg = data["choices"][0]["message"]
-            content = msg.get("content") or ""
-            reasoning = msg.get("reasoning_content") or ""
-            if not content.strip() and reasoning.strip():
-                content = reasoning
-            tokens = data.get("usage", {}).get("total_tokens", 0)
-            return content, elapsed, tokens
-        except requests.exceptions.Timeout:
-            return "[TIMEOUT]", time.time() - t0, 0
-        except Exception as e:
-            return f"[ERROR: {e}]", time.time() - t0, 0
-
     payload = {
         "model": model,
         "messages": messages,
         "max_tokens": max_tokens,
         "temperature": temperature,
-        "stream": True,
-        "stream_options": {"include_usage": True},
     }
     try:
         resp = requests.post(f"{BASE_URL}/chat/completions", json=payload,
-                             timeout=timeout, stream=True)
-        resp.raise_for_status()
-        content_chunks = []
-        reasoning_chunks = []
-        total_tokens = 0
-        for line in resp.iter_lines(decode_unicode=True):
-            if not line or not line.startswith("data: "):
-                continue
-            data_str = line[6:]
-            if data_str.strip() == "[DONE]":
-                break
-            try:
-                chunk = json.loads(data_str)
-                choices = chunk.get("choices", [])
-                if choices:
-                    delta = choices[0].get("delta", {})
-                    text = delta.get("content")
-                    if text:
-                        content_chunks.append(text)
-                        on_chunk(text)
-                    reasoning_text = delta.get("reasoning_content")
-                    if reasoning_text:
-                        reasoning_chunks.append(reasoning_text)
-                        on_chunk(reasoning_text)
-                usage = chunk.get("usage")
-                if usage:
-                    total_tokens = usage.get("total_tokens", 0)
-            except json.JSONDecodeError:
-                continue
-        content = "".join(content_chunks)
-        if not content.strip() and reasoning_chunks:
-            content = "".join(reasoning_chunks)
+                             timeout=timeout, stream=False)
         elapsed = time.time() - t0
-        if total_tokens == 0:
-            total_tokens = len(content) // 4
-        return content, elapsed, total_tokens
+        resp.raise_for_status()
+        data = resp.json()
+        msg = data["choices"][0]["message"]
+        content = msg.get("content") or ""
+        # Reasoning is captured but NEVER used as content — it stays separate.
+        # If content is empty, return empty (caller handles it).
+        tokens = data.get("usage", {}).get("total_tokens", 0)
+        return content, elapsed, tokens
     except requests.exceptions.Timeout:
         return "[TIMEOUT]", time.time() - t0, 0
     except Exception as e:
@@ -327,10 +275,9 @@ def print_agent_result(action: str, elapsed: float, tokens: int, manual: bool):
 
 def stream_world_model(world_model: str, state: str, action: str,
                        step: int, domain_name: str) -> tuple:
-    """Run world model with streaming display.
+    """Run world model and display result.
 
-    Uses console.print(text, end="") for real-time token display.
-    No Live() — just incremental printing.
+    Non-streaming — reasoning is suppressed, only content (prediction) is shown.
     Returns (observation, thinking, elapsed, tokens).
     """
     domain = DOMAINS[domain_name]
@@ -347,22 +294,9 @@ def stream_world_model(world_model: str, state: str, action: str,
 
     console.print(f"\n  [bold cyan]World Model generating...[/bold cyan]")
 
-    # Simple streaming: just print tokens as they arrive
-    # The parsing of thinking vs observation happens after completion
-    raw_content = []
-
-    def on_chunk(text: str):
-        raw_content.append(text)
-        # Print each chunk immediately — terminal handles scroll
-        console.print(text, end="", style="dim cyan")
-
     content, elapsed, tokens = chat_completion(
         world_model, messages, max_tokens=max_tokens, temperature=0.6,
-        on_chunk=on_chunk,
     )
-
-    # Final newline after streaming
-    console.print()
 
     thinking, observation = strip_thinking_and_extract(content, response_tag, thinking_tag)
     return observation, thinking, elapsed, tokens
@@ -435,7 +369,7 @@ def run_agent(agent_model: str, state: str, task: str,
     ]
 
     content, elapsed, tokens = chat_completion(
-        agent_model, messages, max_tokens=256, temperature=0.1,
+        agent_model, messages, max_tokens=32768, temperature=0.1,
     )
     action = extract_action(content, domain_name)
     return action, elapsed, tokens
@@ -521,8 +455,6 @@ def main():
                         help="Max simulation steps (default: 10)")
     parser.add_argument("--no-truncate", action="store_true",
                         help="Don't truncate states sent to agent")
-    parser.add_argument("--no-stream", action="store_true",
-                        help="Disable streaming display for world model")
     args = parser.parse_args()
 
     # --- Domain selection ---
@@ -554,6 +486,12 @@ def main():
             world_candidates = [m for m in all_models if "world" in m.lower()]
         if not world_candidates:
             world_candidates = all_models
+        # Prefer :think variant for world models — world models need thinking
+        # to simulate environments properly (AgentWorld puts reasoning in thinking,
+        # prediction in content). Without :think, reasoning leaks into content.
+        think_first = [m for m in world_candidates if m.endswith(":think")]
+        non_think = [m for m in world_candidates if not m.endswith(":think")]
+        world_candidates = think_first + non_think
         world_model = select_model("Select World Model:", world_candidates)
 
     # --- Agent selection ---
@@ -650,17 +588,11 @@ def main():
         print_agent_result(action, agent_time, agent_tokens, args.manual)
 
         # --- World model predicts next state ---
-        if not args.no_stream:
-            new_state, thinking, wm_time, wm_tokens = stream_world_model(
-                world_model, current_state, action, step + 1, domain_name,
-            )
-            print_state_panel(new_state, step + 1, wm_time, wm_tokens, thinking)
-        else:
-            console.print(f"\n  [dim]World model predicting...[/dim]")
-            new_state, thinking, wm_time, wm_tokens = run_world_model_simple(
-                world_model, current_state, action, domain_name,
-            )
-            print_state_panel(new_state, step + 1, wm_time, wm_tokens, thinking)
+        console.print(f"\n  [dim]World model predicting...[/dim]")
+        new_state, thinking, wm_time, wm_tokens = run_world_model_simple(
+            world_model, current_state, action, domain_name,
+        )
+        print_state_panel(new_state, step + 1, wm_time, wm_tokens, thinking)
 
         trajectory.append((action, new_state, agent_time, wm_time))
         current_state = new_state
