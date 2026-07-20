@@ -1,0 +1,84 @@
+# -------------------------------------------
+# AGENTS-A1-4B - InternScience AGENTIC MODEL
+# Dense 4B, qwen35 arch (same as Qwen3.5-4B base)
+# Fine-tuned for long-horizon search, engineering, scientific research, tool calling
+# Three-stage training: full-domain SFT -> domain teacher models -> multi-teacher on-policy distillation
+# Text-only: mmproj disabled (672MB mmproj limits ctx to 8K on 6GB RTX 3050 — not worth it for agentic use)
+# ik_llama backend: --fit, hadamard KV, --no-graph-reuse, same as qwen3.5-4b
+# Inference params per InternScience model card: temp=0.85, top_p=0.95, top_k=20, min_p=0, presence_penalty=1.1, repeat_penalty=1.0
+# Dual mode: base (chat, no think) and :think (reasoning)
+# License: Apache-2.0 (InternScience)
+# -------------------------------------------
+"agents-a1-4b":
+  name: "Agents-A1 4B"
+  description: "Agents-A1 4B dense agentic model by InternScience. Fine-tuned Qwen3.5-4B for long-horizon search, engineering, scientific research, and tool calling. Text-only (mmproj disabled for full context)."
+  tags: ["agentic"]
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/agents-a1-4b/Agents-A1-4B-Q4_K_M.gguf
+    --fit
+    --fit-margin 512
+    --jinja
+    --parallel 1
+    --parallel-tool-calls
+    --ctx-size ${small_model_max_ctx}
+    --temp 0.85
+    --top-p 0.95
+    --top-k 20
+    --min-p 0.0
+    --repeat-penalty 1.0
+    --presence-penalty 1.1
+    --reasoning on
+    --cache-type-k q8_0
+    --cache-type-v q4_0
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --no-graph-reuse
+    --metrics
+  filters:
+    stripParams: "temperature, top_p, presence_penalty, repetition_penalty"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.85
+        top_p: 0.95
+        presence_penalty: 1.1
+        repetition_penalty: 1.0
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.85
+        top_p: 0.95
+        presence_penalty: 1.1
+        repetition_penalty: 1.0
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~2.7 GB (Q4_K_M)"
+    context: "64K-128K (dynamic)"
+    vram_usage: "~4.5 GB VRAM (model 2.7GB + q8_0/q4_0 hadamard cache + compute)"
+    source: "InternScience/Agents-A1-4B-Q4_K_M-GGUF"
+    kv_cache: "q8_0 (K) + q4_0 (V) + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 4000000000
+    context_length: 262144
+    embedding_length: 2560
+    quantization: Q4_K_M
+    note: "Dense 4B agentic model. Qwen3.5-4B base, fine-tuned by InternScience. Three-stage training: SFT -> domain teachers -> multi-teacher distillation. Text-only (mmproj disabled — 672MB mmproj limited ctx to 8K on 6GB, not worth it for agentic use). Same config as qwen3.5-4b: ik_llama, hadamard KV, --no-graph-reuse, 128K ctx. Inference params per InternScience model card: temp=0.85, top_p=0.95, top_k=20, min_p=0, presence_penalty=1.1, repeat_penalty=1.0."
