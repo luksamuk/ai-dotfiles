@@ -42,10 +42,10 @@ macros:
   # Build local em ~/git/ik_llama.cpp/build/bin/llama-server
   "ik_llama_server": "${env.HOME}/git/ik_llama.cpp/build/bin/llama-server"
 
-  # Caminho para bonsai-llama.cpp — fork da PrismML com kernels Q2_0_g128 ternary (CUDA)
-  # Build local em ~/git/bonsai-llama.cpp/build/bin/llama-server
-  # Necessário para Bonsai 27B (weights ternary {−1,0,+1} em 2-bit slots com group-wise scaling)
-  "bonsai_llama_server": "${env.HOME}/git/bonsai-llama.cpp/build/bin/llama-server"
+  # Caminho para nanbeige-llama.cpp — fork da Nanbeige com suporte a arquitetura nanbeige (Looped Transformer)
+  # Build local em ~/git/nanbeige-llama.cpp/build/bin/llama-server
+  # Necessário para Nanbeige4.2-3B (arquitetura custom: Looped Transformer, LoopSplit, mHC)
+  "nanbeige_llama_server": "${env.HOME}/git/nanbeige-llama.cpp/build/bin/llama-server"
 
   # Caminho para BeeLlama.cpp — fork com DFlash speculative decoding + TurboQuant KV cache
   # Build local em ~/git/beellama.cpp/build/bin/llama-server
@@ -160,12 +160,16 @@ models:
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
       --reasoning on
-      --cache-type-k q8_0
+      --cache-type-k q4_0
       --cache-type-v q4_0
       --k-cache-hadamard
       --v-cache-hadamard
       --flash-attn auto
-      --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
+      --no-graph-reuse
+      --ctx-checkpoints 0
+      --ctx-checkpoints-interval 0
+      --batch-size 512
+      --ubatch-size 128
       --metrics
     filters:
       stripParams: "temperature, top_p"
@@ -195,7 +199,7 @@ models:
       context: "64K-128K (dynamic)"
       vram_usage: "~4.5GB VRAM (model 2.8GB + q8_0/q4_0 hadamard cache + compute)"
       source: "unsloth/Qwen3.5-4B-GGUF (UD-Q4_K_XL)"
-      kv_cache: "q8_0 (K) + q4_0 (V) + hadamard"
+      kv_cache: "q4_0/q4_0 + hadamard"
       features:
         completion: true
         tools: true
@@ -242,13 +246,17 @@ models:
       --min-p ${default_min_p}
       --repeat-penalty ${default_repeat_penalty}
       --reasoning on
-      --cache-type-k q8_0
+      --cache-type-k q4_0
       --cache-type-v q4_0
       --k-cache-hadamard
       --v-cache-hadamard
       --flash-attn auto
-      --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
-        --metrics
+      --no-graph-reuse
+      --ctx-checkpoints 0
+      --ctx-checkpoints-interval 0
+      --batch-size 512
+      --ubatch-size 128
+      --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
@@ -277,7 +285,7 @@ models:
       context: "64K-128K (dynamic)"
       vram_usage: "~4.8GB VRAM (text-only, ik with hadamard cache)"
       source: "w-ahmad/Qwen3.5-9B-GGUF-MoQ (MoQ-3.6)"
-      kv_cache: "q8_0 + q4_0 hadamard"
+      kv_cache: "q4_0/q4_0 + hadamard"
       features:
         completion: true
         tools: true
@@ -292,7 +300,7 @@ models:
       context_length: 262144
       embedding_length: 4096
       quantization: MoQ-3.6
-      note: "MoQ-3.6 replaces UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25 vs 20/25 Snake), 32% smaller (3.75 vs 5.55 GB). MTP OOM on 6GB VRAM."
+      note: "MoQ-3.6 replaces UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25 vs 20/25 Snake), 32% smaller (3.75 vs 5.55 GB). MTP OOM on 6GB VRAM. OOM fix: q4_0 K cache (was q8_0), ctx-checkpoints=0, batch-size=512, ubatch=128 — prevents CUDA OOM at ~92K tokens on RTX 3050 6GB. --spec-type ngram-mod removed (spec decode buffers compete for VRAM with context checkpoints, aggravating OOM)."
 # -------------------------------------------
 # GEMMA-4-E4B - ik BACKEND (Hadamard KV cache)
 # Upstream config with q4_0 cache. Bee/TurboQuant was slower (36 vs 40 tok/s).
@@ -476,6 +484,7 @@ models:
       --v-cache-hadamard
       --flash-attn auto
       --defer-experts
+      --prefetch-experts
       --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
         --metrics
     filters:
@@ -577,6 +586,7 @@ models:
       --v-cache-hadamard
       --flash-attn auto
       --defer-experts
+      --prefetch-experts
       --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
         --metrics
     filters:
@@ -794,6 +804,97 @@ models:
       embedding_length: 2560
       quantization: Q4_K_M
 # -------------------------------------------
+# AGENTS-A1-4B - InternScience AGENTIC MODEL
+# Dense 4B, qwen35 arch (same as Qwen3.5-4B base)
+# Fine-tuned for long-horizon search, engineering, scientific research, tool calling
+# Three-stage training: full-domain SFT -> domain teacher models -> multi-teacher on-policy distillation
+# Text-only: mmproj disabled (672MB mmproj limits ctx to 8K on 6GB RTX 3050 — not worth it for agentic use)
+# ik_llama backend: --fit, hadamard KV, --no-graph-reuse, same as qwen3.5-4b
+# Inference params per InternScience model card: temp=0.85, top_p=0.95, top_k=20, min_p=0, presence_penalty=1.1, repeat_penalty=1.0
+# Dual mode: base (chat, no think) and :think (reasoning)
+# License: Apache-2.0 (InternScience)
+# -------------------------------------------
+  "agents-a1-4b":
+    name: "Agents-A1 4B"
+    description: "Agents-A1 4B dense agentic model by InternScience. Fine-tuned Qwen3.5-4B for long-horizon search, engineering, scientific research, and tool calling. Text-only (mmproj disabled for full context)."
+    tags:
+      - "agentic"
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/agents-a1-4b/Agents-A1-4B-Q4_K_M.gguf
+      --fit
+      --fit-margin 512
+      --jinja
+      --parallel 1
+      --parallel-tool-calls
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.85
+      --top-p 0.95
+      --top-k 20
+      --min-p 0.0
+      --repeat-penalty 1.0
+      --presence-penalty 1.1
+      --reasoning on
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --no-graph-reuse
+      --ctx-checkpoints 0
+      --ctx-checkpoints-interval 0
+      --batch-size 512
+      --ubatch-size 128
+      --metrics
+    filters:
+      stripParams: "temperature, top_p, presence_penalty, repetition_penalty"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.85
+          top_p: 0.95
+          presence_penalty: 1.1
+          repetition_penalty: 1.0
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.85
+          top_p: 0.95
+          presence_penalty: 1.1
+          repetition_penalty: 1.0
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: "~2.7 GB (Q4_K_M)"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~4.5 GB VRAM (model 2.7GB + q8_0/q4_0 hadamard cache + compute)"
+      source: "InternScience/Agents-A1-4B-Q4_K_M-GGUF"
+      kv_cache: "q4_0/q4_0 + hadamard"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 4000000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: Q4_K_M
+      note: "Dense 4B agentic model. Qwen3.5-4B base, fine-tuned by InternScience. Three-stage training: SFT -> domain teachers -> multi-teacher distillation. Text-only (mmproj disabled — 672MB mmproj limited ctx to 8K on 6GB, not worth it for agentic use). Same config as qwen3.5-4b: ik_llama, hadamard KV, --no-graph-reuse, 128K ctx. Inference params per InternScience model card: temp=0.85, top_p=0.95, top_k=20, min_p=0, presence_penalty=1.1, repeat_penalty=1.0. OOM fix: q4_0 K cache (was q8_0), ctx-checkpoints=0, batch-size=512, ubatch=128 — prevents CUDA OOM at ~90K tokens on RTX 3050 6GB."
+# -------------------------------------------
 # LFM2.5-VL-1.6B — Liquid AI flagship VLM with grounding
 # 1.6B params (1.2B backbone + SigLIP2-400M vision), lfm2 arch
 # Grounding: native bbox output in 0-1 normalized coords
@@ -938,6 +1039,95 @@ models:
       embedding_length: 4096
       quantization: Q4_K_M
       note: "Qwen3.5-9B LoRA fine-tune for Brazilian Portuguese legal/academic domain. OAB 63.23%, ENEM 80.90%. Author recommends temp=0.3, ChatML format. NOT a reasoning/tool-calling model — simple instruct. GGUF has no chat_template, uses athenas-chatml.jinja. GGUF contains mmproj but vision disabled. LoRA pre-merged."
+# -------------------------------------------
+# NANBEIGE4.2-3B — nanbeige-llama.cpp fork BACKEND
+# Looped Transformer: 22 layers reused 2x (num_loops=2) = 44 effective layers
+# LoopSplit + mHC with depth attention + concatenated n-gram embeddings
+# 4B total params (3B non-embedding), Q4_K_M ~2.4 GB
+# Architecture: nanbeige (custom — requires Nanbeige fork of llama.cpp)
+# Vocab: 166,144. Context: 262K. head_dim=128.
+
+# Tool calling: XML format (tool_call_format="xml" in chat template)
+#   --jinja parses correctly, tested single + multi-turn (bug #22684 from 4.1 FIXED)
+# Thinking: enable_thinking toggle in chat template (dual mode: base + :think)
+#   preserve_thinking recommended for multi-turn tool use
+
+# Backend: nanbeige-llama.cpp fork (branch nanbeige42, commit 26cfdc440)
+#   No --fit, no hadamard, no --parallel-tool-calls (fork limitations)
+#   Uses -ngl 99 for full GPU offload
+#   --reasoning on for thinking extraction
+
+# Inference params per model card:
+#   Reasoning/chat: temp=0.6, top_p=0.95, top_k=20
+#   Agentic/tool-use: temp=1.0
+# -------------------------------------------
+  "nanbeige4.2-3b":
+    name: "Nanbeige 4.2 3B"
+    description: "Compact agentic model with Looped Transformer architecture. 3B non-embedding params delivering solid performance on general-agent and code-agent tasks, outperforming larger models like Qwen3.5-9B and Gemma4-12B on agentic benchmarks."
+    cmd: |
+      ${nanbeige_llama_server} --port ${PORT}
+      --model ${models_dir}/nanbeige4.2-3b/nanbeige4.2-3b-Q4_K_M.gguf
+      --jinja
+      -ngl 99
+      --ctx-size 32768
+      --parallel 1
+      --temp 0.6
+      --top-p 0.95
+      --top-k 20
+      --min-p 0.0
+      --repeat-penalty 1.05
+      --reasoning on
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p, top_k"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.95
+          top_k: 20
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+            preserve_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 20
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 32768
+    metadata:
+      size: "~2.4 GB (Q4_K_M)"
+      context: "32K (262K max, but Looped Transformer doubles KV cache — 44 effective layers, 32K is sweet spot on 6GB)"
+      vram_usage: "~3.5 GB (model 2.4GB + q4_0 KV cache 32K + compute)"
+      source: "owao/Nanbeige4.2-3B-GGUF (Q4_K_M)"
+      kv_cache: "q4_0/q4_0"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: nanbeige
+      parameters: 4000000000
+      context_length: 262144
+      embedding_length: 3072
+      quantization: Q4_K_M
+      note: "Looped Transformer (22 layers x2 loops = 44 effective). Requires nanbeige-llama.cpp fork (branch nanbeige42). Multi-turn tool calling FIXED vs 4.1 (#22684). Thinking toggle via enable_thinking in chat template."
 # -------------------------------------------
 # GLM-4.7-FLASH - MoE CONVERSATIONAL (text-only, MLA)
 # MoE ~30B params, ~2B ativo por token. 64 routed + 1 shared expert, 4 active.
@@ -1790,11 +1980,13 @@ matrix:
     lfm230: lfm2.5-230m
     m5a: minicpm5-1b-agentic
     lfm8: lfm2.5-8b-a1b
+    nb42: nanbeige4.2-3b
     # Vision
     vl: lfm2.5-vl-450m
     vl16: lfm2.5-vl-1.6b
     ocr: glm-ocr
     qwvl: qwen3-vl-4b
+    aa4: agents-a1-4b
     # Modelos médios
     q9: qwen3.5-9b
     g4: gemma4-e4b
@@ -1819,13 +2011,13 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | lfm230 | lfm8) & vl & (nomic | lfmemb | lfmcol)"
+    small_vision: "(q4 | aa4 | lfm230 | lfm8) & vl & (nomic | lfmemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | lfm230 | lfm8) & (nomic | lfmemb | lfmcol)"
+    small_embed: "(q4 | aa4 | lfm230 | lfm8) & (nomic | lfmemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | lfm230 | lfm8 | m5a"
+    small_only: "q4 | aa4 | lfm230 | lfm8 | m5a | nb42"
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "vl | vl16 | ocr | qwvl"
@@ -1869,9 +2061,11 @@ matrix:
     vl: 3
     ocr: 3
     qwvl: 3
+    aa4: 2
     vl16: 2
     q4: 2
     lfm8: 2
+    nb42: 2
     asr: 2
     nomic: 1
     lfmemb: 1
