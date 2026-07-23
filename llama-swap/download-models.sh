@@ -7,7 +7,7 @@
 #   qwen3.5-4b           - Qwen3.5-4B MoQ-3.75 (~1.92 GB) - fits in VRAM
 #   [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
 #   qwen3.5-9b           - Qwen3.5-9B MoQ-3.6 (~3.75 GB) - fits in VRAM + mmproj
-#   gemma4-e4b           - Gemma-4 E4B Q4_K_M (~4.63 GB) - fits in VRAM + mmproj
+#   [REMOVED] gemma4-e4b — disabled Jul 2026, redundant with E2B (no code use case, E2B is lighter)
 #   gemma4-e2b       - Gemma-4 E2B Q4_0 QAT (~3.2 GB) - higher quality than PTQ, text-only
 #   [REMOVED] gemma4-12b — incompetent at code, 6.7GB freed, Jun 2026
 #   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
@@ -85,9 +85,8 @@ declare -A MODELS=(
   # [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
   ["lfm2.5-8b-a1b"]="mudler/LFM2.5-8B-A1B-APEX-GGUF LFM2.5-8B-A1B-APEX-I-Compact.gguf"
   ["qwen3.5-9b"]="w-ahmad/Qwen3.5-9B-GGUF-MoQ Qwen3.5-9B-MoQ-3.6.gguf"
-  ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
-  # [REMOVED] gemma4-e2b — superseded by gemma4-e2b (QAT won benchmark, Jun 2026)
-#   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
+  # [REMOVED] gemma4-e4b — disabled Jul 2026, redundant with E2B (no code use case)
+  # ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
   ["gemma4-e2b"]="google/gemma-4-E2B-it-qat-q4_0-gguf gemma-4-E2B_q4_0-it.gguf"
   # [REMOVED] gemma4-12b — incompetent at code, 6.7GB freed, Jun 2026
 #   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026

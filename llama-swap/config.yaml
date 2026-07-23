@@ -302,37 +302,34 @@ models:
       quantization: MoQ-3.6
       note: "MoQ-3.6 replaces UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25 vs 20/25 Snake), 32% smaller (3.75 vs 5.55 GB). MTP OOM on 6GB VRAM. OOM fix: q4_0 K cache (was q8_0), ctx-checkpoints=0, batch-size=512, ubatch=128 — prevents CUDA OOM at ~92K tokens on RTX 3050 6GB. --spec-type ngram-mod removed (spec decode buffers compete for VRAM with context checkpoints, aggravating OOM)."
 # -------------------------------------------
-# GEMMA-4-E4B - ik BACKEND (Hadamard KV cache)
-# Upstream config with q4_0 cache. Bee/TurboQuant was slower (36 vs 40 tok/s).
-# Switched from upstream to ik for -khad/-vhad quality improvement.
-# Upgraded from UD-Q3_K_XL (3.5 bpw) → Q4_K_M (4.5 bpw): +0.36GB for ~3% PPL improvement
+# GEMMA-4-E2B - Unsloth UD-Q4_K_XL (Dynamic 2.0 QAT)
+# Unsloth Dynamic 2.0 quantization of Google QAT weights.
+# Better accuracy than naive Q4_0: Top-1 98.16% vs 89.29%, 22% smaller.
+# Uses UD-Q4_K_XL format — upstream llama.cpp only (NOT ik_llama).
+# Text-only — no mmproj (vision handled by dedicated VLMs in fleet).
 # -------------------------------------------
-  "gemma4-e4b":
-    name: "Gemma 4 E4B"
-    description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
+  "gemma4-e2b":
+    name: "Gemma 4 E2B"
+    description: "Gemma 4 E2B QAT — Unsloth Dynamic 2.0 (UD-Q4_K_XL). Higher accuracy and smaller than Google Q4_0."
     cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
-      # No --no-mmproj: ik doesn't support this flag (upstream-only)
-      --fit
-      --fit-margin 512
-      --jinja
-      --parallel 1
-      --parallel-tool-calls
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf
+      --no-mmproj
+      --fit on
+      --fit-target 1024
+      --fit-ctx ${small_model_min_ctx}
       --ctx-size ${small_model_max_ctx}
+      --parallel 4
       --temp 0.7
       --top-p 0.9
       --top-k 40
       --min-p 0.01
       --repeat-penalty 1.0
       --reasoning on
-      --cache-type-k q8_0
-      --cache-type-v q4_0
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
-        --metrics
+      --cache-type-k ${gemma_cache_k}
+      --cache-type-v ${gemma_cache_v}
+      --flash-attn on
+      --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
@@ -357,11 +354,11 @@ models:
       reranker: false
       context: 131072
     metadata:
-      size: "~4.63 GB (Q4_K_M)"
-      context: "64K-128K (dynamic)"
-      vram_usage: "~5.3GB VRAM (fits with mmproj)"
-      source: "unsloth/gemma-4-E4B-it-GGUF (Q4_K_M)"
-      kv_cache: "q8_0 + q4_0 hadamard"
+      size: "~2.5 GB (UD-Q4_K_XL)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~2.5GB"
+      source: "unsloth/gemma-4-E2B-it-qat-GGUF"
+      kv_cache: "q4_0 + attn_rot"
       features:
         completion: true
         tools: true
@@ -372,11 +369,11 @@ models:
         audio: false
         image: false
       architecture: gemma4
-      parameters: 7520000000
+      parameters: 4650000000
       context_length: 131072
-      embedding_length: 2560
-      quantization: Q4_K_M
-      note: "Upgraded from UD-Q3_K_XL → Q4_K_M. Text-only (no mmproj). Tightest VRAM model — adding mmproj reduces ctx."
+      embedding_length: 1536
+      quantization: UD-Q4_K_XL
+      note: "Unsloth Dynamic 2.0 QAT. Better accuracy than Google Q4_0 (Top-1 98.16% vs 89.29%), 22% smaller. Upstream only — NOT compatible with ik_llama."
 # -------------------------------------------
 # LFM2.5-VL-450M — Liquid AI general VLM with grounding
 # 450M params (350M backbone + SigLIP2-86M vision), lfm2 arch
@@ -1989,7 +1986,7 @@ matrix:
     aa4: agents-a1-4b
     # Modelos médios
     q9: qwen3.5-9b
-    g4: gemma4-e4b
+    g4: gemma4-e2b
     # Pesados (offload)
     orn35: ornith-1.0-35b
     aw: agentworld-35b
@@ -2056,7 +2053,7 @@ matrix:
     glm: 9
     bonsai1: 7
     q9: 4
-    g4: 4
+    g4: 3
     ttsext: 4
     vl: 3
     ocr: 3
