@@ -29,12 +29,16 @@
     --repeat-penalty 1.0
     --presence-penalty 1.1
     --reasoning on
-    --cache-type-k q8_0
+    --cache-type-k q4_0
     --cache-type-v q4_0
     --k-cache-hadamard
     --v-cache-hadamard
     --flash-attn auto
     --no-graph-reuse
+    --ctx-checkpoints 0
+    --ctx-checkpoints-interval 0
+    --batch-size 512
+    --ubatch-size 128
     --metrics
   filters:
     stripParams: "temperature, top_p, presence_penalty, repetition_penalty"
@@ -66,7 +70,7 @@
     context: "64K-128K (dynamic)"
     vram_usage: "~4.5 GB VRAM (model 2.7GB + q8_0/q4_0 hadamard cache + compute)"
     source: "InternScience/Agents-A1-4B-Q4_K_M-GGUF"
-    kv_cache: "q8_0 (K) + q4_0 (V) + hadamard"
+    kv_cache: "q4_0/q4_0 + hadamard"
     features:
       completion: true
       tools: true
@@ -81,4 +85,4 @@
     context_length: 262144
     embedding_length: 2560
     quantization: Q4_K_M
-    note: "Dense 4B agentic model. Qwen3.5-4B base, fine-tuned by InternScience. Three-stage training: SFT -> domain teachers -> multi-teacher distillation. Text-only (mmproj disabled — 672MB mmproj limited ctx to 8K on 6GB, not worth it for agentic use). Same config as qwen3.5-4b: ik_llama, hadamard KV, --no-graph-reuse, 128K ctx. Inference params per InternScience model card: temp=0.85, top_p=0.95, top_k=20, min_p=0, presence_penalty=1.1, repeat_penalty=1.0."
+    note: "Dense 4B agentic model. Qwen3.5-4B base, fine-tuned by InternScience. Three-stage training: SFT -> domain teachers -> multi-teacher distillation. Text-only (mmproj disabled — 672MB mmproj limited ctx to 8K on 6GB, not worth it for agentic use). Same config as qwen3.5-4b: ik_llama, hadamard KV, --no-graph-reuse, 128K ctx. Inference params per InternScience model card: temp=0.85, top_p=0.95, top_k=20, min_p=0, presence_penalty=1.1, repeat_penalty=1.0. OOM fix: q4_0 K cache (was q8_0), ctx-checkpoints=0, batch-size=512, ubatch=128 — prevents CUDA OOM at ~90K tokens on RTX 3050 6GB."

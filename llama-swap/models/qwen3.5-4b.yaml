@@ -29,12 +29,16 @@
     --min-p ${default_min_p}
     --repeat-penalty ${default_repeat_penalty}
     --reasoning on
-    --cache-type-k q8_0
+    --cache-type-k q4_0
     --cache-type-v q4_0
     --k-cache-hadamard
     --v-cache-hadamard
     --flash-attn auto
-    --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
+    --no-graph-reuse
+    --ctx-checkpoints 0
+    --ctx-checkpoints-interval 0
+    --batch-size 512
+    --ubatch-size 128
     --metrics
   filters:
     stripParams: "temperature, top_p"
@@ -62,7 +66,7 @@
     context: "64K-128K (dynamic)"
     vram_usage: "~4.5GB VRAM (model 2.8GB + q8_0/q4_0 hadamard cache + compute)"
     source: "unsloth/Qwen3.5-4B-GGUF (UD-Q4_K_XL)"
-    kv_cache: "q8_0 (K) + q4_0 (V) + hadamard"
+    kv_cache: "q4_0/q4_0 + hadamard"
     features:
       completion: true
       tools: true
