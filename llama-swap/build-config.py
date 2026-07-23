@@ -78,10 +78,11 @@ ORIGINAL_ORDER = [
     # "littlelamb-0.3b-tc",   # REMOVED Jun 2026 — tool-calling broken, too small
     "minicpm-v-4.6",         # ✅
     "qwen3-vl-4b",           # ✅ VLM with native grounding
+    "agents-a1-4b",          # ✅ InternScience agentic VLM 4B (Qwen3.5 base, tool calling + vision)
     "smolvlm2-500m-video",  # ✅ ultra-light video VLM
     "lfm2.5-vl-1.6b",       # ✅ LFM flagship VLM with grounding
     "athenas-symbiote-9b",  # ✅ Qwen3.5-9B LoRA PT-BR legal (OAB/ENEM)
-    "nanbeige4.1-3b",         # ⚠️ verbose reasoning, always thinks, multi-turn tool calls BROKEN (#22684)
+    "nanbeige4.2-3b",        # ✅ Nanbeige 4.2 3B — Looped Transformer, nanbeige-llama.cpp fork
     # "mellum2-12b-thinking",   # DISABLED: tool calling broken (no chat_template in GGUF, --tool-call-parser hermes is vLLM-only). Awaiting community GGUF.
     # "ornstein-36-35b",        # DISABLED: Q4_K_M too large (21.7GB) — needs APEX I-Compact conversion (~16.1GB)
 ]

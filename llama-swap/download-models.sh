@@ -52,6 +52,7 @@
 #   qwopus-35b           - Qwopus3.6-35B-A3B-v1 APEX I-Compact (~16.5 GB) - MoE coding+reasoning SFT
 #   [REMOVED] qwen3.5-9b-ace — superseded by Qwopus for agentic tasks
 #   [REMOVED] nanbeige4.1-3b — multi-turn tool calling broken (#22684), GGUF deleted
+#   nanbeige4.2-3b        - Nanbeige 4.2 3B Q4_K_M (~2.4 GB) - Looped Transformer, thinking + XML tools
 #   ornstein-36-35b       - Ornstein 3.6 35B SABER Q4_K_M (~21.7 GB) - Qwen3.6 MoE NSC-ACE-SABER fine-tune, test only
 #   locate-anything       - LocateAnything-3B Q8_0 (~6.3 GB) - NVIDIA visual grounding, NOT llama-server (subprocess CLI)
 #   all                  - Download all models
@@ -180,6 +181,11 @@ declare -A MODELS=(
   # Tool calling uses XML func_call tags — NOT OpenAI-compatible JSON
   # head_dim=128 → attn_rot ✅, vocab 166K (larger than Qwen3.5's 151K)
   # [REMOVED] nanbeige4.1-3b — multi-turn tool calling broken (#22684), GGUF deleted
+  # Nanbeige4.2-3B — Looped Transformer (22 layers x2 = 44 effective), 3B non-embedding
+  # Architecture: nanbeige (custom — requires nanbeige-llama.cpp fork, branch nanbeige42)
+  # Multi-turn tool calling FIXED vs 4.1. Thinking toggle via enable_thinking.
+  # Q4_K_M ~2.4 GB — fits entirely in 6GB VRAM
+  ["nanbeige4.2-3b"]="owao/Nanbeige4.2-3B-GGUF nanbeige4.2-3b-Q4_K_M.gguf"
   # Mellum2-12B-A2.5B-Thinking — JetBrains MoE 12B/2.5B, reasoning + tool calling
   # Architecture: Qwen3-MoE derivative (MellumForCausalLM alias registered in ik)
   # MANUAL CONVERSION (2026-06-01): no community GGUF available yet
@@ -258,6 +264,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, qwen3.6-35b-a3b, ornith-1.0-35b, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, qwen3.5-4b-abliterated, glm-ocr, nomic-embed-text-v2-moe, mellum2-12b-thinking, ornstein-36-35b, all"
     return 1
   fi
   
@@ -352,6 +359,7 @@ show_sizes() {
   echo "  qwen3.5-4b-abliterated   ~2.71 GB  (i1-Q4_K_M) - Abliterated Qwen3.5-4B, no refusal"
   echo "  glm-ocr             ~0.95 GB  (Q8_0) + 0.48 GB mmproj - OCR/document specialist"
   echo "  nomic-embed-text-v2-moe  ~0.33 GB  (Q4_K_M) - Embedding, RAG/search/similarity"
+  echo "  nanbeige4.2-3b       ~2.40 GB  (Q4_K_M) - Looped Transformer 3B, thinking + XML tools (nanbeige fork)"
   echo "  mellum2-12b-thinking  ~7.60 GB  (Q4_K_M) - JetBrains MoE 12B/2.5B, reasoning + tools (manual conversion)"
   echo "  ornstein-36-35b       ~21.70 GB (Q4_K_M) - Qwen3.6-35B NSC-ACE-SABER fine-tune, +2.87pp BFCL (test only)"
   echo "  agentworld-35b      ~16.50 GB  (APEX I-Compact) - Qwen native language world model, 7 agent environments"

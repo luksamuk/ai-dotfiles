@@ -42,10 +42,10 @@ macros:
   # Build local em ~/git/ik_llama.cpp/build/bin/llama-server
   "ik_llama_server": "${env.HOME}/git/ik_llama.cpp/build/bin/llama-server"
 
-  # Caminho para bonsai-llama.cpp — fork da PrismML com kernels Q2_0_g128 ternary (CUDA)
-  # Build local em ~/git/bonsai-llama.cpp/build/bin/llama-server
-  # Necessário para Bonsai 27B (weights ternary {−1,0,+1} em 2-bit slots com group-wise scaling)
-  "bonsai_llama_server": "${env.HOME}/git/bonsai-llama.cpp/build/bin/llama-server"
+  # Caminho para nanbeige-llama.cpp — fork da Nanbeige com suporte a arquitetura nanbeige (Looped Transformer)
+  # Build local em ~/git/nanbeige-llama.cpp/build/bin/llama-server
+  # Necessário para Nanbeige4.2-3B (arquitetura custom: Looped Transformer, LoopSplit, mHC)
+  "nanbeige_llama_server": "${env.HOME}/git/nanbeige-llama.cpp/build/bin/llama-server"
   
   # Caminho para BeeLlama.cpp — fork com DFlash speculative decoding + TurboQuant KV cache
   # Build local em ~/git/beellama.cpp/build/bin/llama-server

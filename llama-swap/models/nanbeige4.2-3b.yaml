@@ -1,0 +1,87 @@
+# -------------------------------------------
+# NANBEIGE4.2-3B — nanbeige-llama.cpp fork BACKEND
+# Looped Transformer: 22 layers reused 2x (num_loops=2) = 44 effective layers
+# LoopSplit + mHC with depth attention + concatenated n-gram embeddings
+# 4B total params (3B non-embedding), Q4_K_M ~2.4 GB
+# Architecture: nanbeige (custom — requires Nanbeige fork of llama.cpp)
+# Vocab: 166,144. Context: 262K. head_dim=128.
+#
+# Tool calling: XML format (tool_call_format="xml" in chat template)
+#   --jinja parses correctly, tested single + multi-turn (bug #22684 from 4.1 FIXED)
+# Thinking: enable_thinking toggle in chat template (dual mode: base + :think)
+#   preserve_thinking recommended for multi-turn tool use
+#
+# Backend: nanbeige-llama.cpp fork (branch nanbeige42, commit 26cfdc440)
+#   No --fit, no hadamard, no --parallel-tool-calls (fork limitations)
+#   Uses -ngl 99 for full GPU offload
+#   --reasoning on for thinking extraction
+#
+# Inference params per model card:
+#   Reasoning/chat: temp=0.6, top_p=0.95, top_k=20
+#   Agentic/tool-use: temp=1.0
+# -------------------------------------------
+"nanbeige4.2-3b":
+  name: "Nanbeige 4.2 3B"
+  description: "Compact agentic model with Looped Transformer architecture. 3B non-embedding params delivering solid performance on general-agent and code-agent tasks, outperforming larger models like Qwen3.5-9B and Gemma4-12B on agentic benchmarks."
+  cmd: |
+    ${nanbeige_llama_server} --port ${PORT}
+    --model ${models_dir}/nanbeige4.2-3b/nanbeige4.2-3b-Q4_K_M.gguf
+    --jinja
+    -ngl 99
+    --ctx-size 32768
+    --parallel 1
+    --temp 0.6
+    --top-p 0.95
+    --top-k 20
+    --min-p 0.0
+    --repeat-penalty 1.05
+    --reasoning on
+    --cache-type-k q4_0
+    --cache-type-v q4_0
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p, top_k"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.95
+        top_k: 20
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+          preserve_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 20
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 32768
+  metadata:
+    size: "~2.4 GB (Q4_K_M)"
+    context: "32K (262K max, but Looped Transformer doubles KV cache — 44 effective layers, 32K is sweet spot on 6GB)"
+    vram_usage: "~3.5 GB (model 2.4GB + q4_0 KV cache 32K + compute)"
+    source: "owao/Nanbeige4.2-3B-GGUF (Q4_K_M)"
+    kv_cache: "q4_0/q4_0"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: nanbeige
+    parameters: 4000000000
+    context_length: 262144
+    embedding_length: 3072
+    quantization: Q4_K_M
+    note: "Looped Transformer (22 layers x2 loops = 44 effective). Requires nanbeige-llama.cpp fork (branch nanbeige42). Multi-turn tool calling FIXED vs 4.1 (#22684). Thinking toggle via enable_thinking in chat template."
