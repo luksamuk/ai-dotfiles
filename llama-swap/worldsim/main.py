@@ -63,22 +63,28 @@ if _raw_host and not os.environ.get("WORLDSIM_URL"):
 
 # ─── API ─────────────────────────────────────────────────────────────────────
 
-def chat_completion(model: str, messages: list, max_tokens: int = 2048,
-                    temperature: float = 0.0, timeout: int = 600,
+def chat_completion(model: str, messages: list, max_tokens: Optional[int] = None,
+                    temperature: float = 0.0, timeout: int = 1800,
                     on_chunk: Union[Callable[[str], None], None] = None) -> tuple:
     """Call llama-swap chat completion. Returns (content, elapsed_seconds, tokens).
 
     Non-streaming only. Reasoning content is captured by the server (--reasoning on)
     but NEVER used as content — it stays separate in reasoning_content.
     The on_chunk parameter is accepted for API compatibility but ignored.
+
+    Permissive defaults: timeout=1800s (30 min). max_tokens=None omits the field
+    entirely so the server uses its own default (ik_llama/llama.cpp = unlimited,
+    generation runs until EOS or context exhaustion). Pass a positive int only
+    when you genuinely need a hard cap.
     """
     t0 = time.time()
     payload = {
         "model": model,
         "messages": messages,
-        "max_tokens": max_tokens,
         "temperature": temperature,
     }
+    if max_tokens is not None and max_tokens > 0:
+        payload["max_tokens"] = max_tokens
     try:
         resp = requests.post(f"{BASE_URL}/chat/completions", json=payload,
                              timeout=timeout, stream=False)
@@ -165,7 +171,12 @@ def extract_action(text: str, domain_name: str) -> str:
             return match.group(0)
 
     elif fmt == "terminal":
-        match = re.search(r"\[.*?\]", text, re.DOTALL)
+        # The action is a JSON array of keystroke objects, e.g.
+        #   [{"keystrokes": "ls\n", "duration": 0.1}]
+        # A non-greedy \[.*?\] stops at the first ']' inside a nested object,
+        # truncating multi-element arrays. Match the full balanced array:
+        # the outermost [ ... ] with no '[' in between (objects use { } only).
+        match = re.search(r"\[(?:[^\[\]]*)\]", text, re.DOTALL)
         if match:
             return match.group(0)
 
@@ -205,29 +216,110 @@ def truncate_state(state: str, max_lines: int = 50) -> str:
     return "\n".join(lines[:max_lines]) + f"\n... ({len(lines) - max_lines} more lines)"
 
 
-def build_world_user_message(state: str, action: str, domain_name: str) -> str:
-    """Build the user message for the world model, formatted per domain."""
+def build_world_user_message(state: str, action: str, domain_name: str,
+                             env_config: Optional[str] = None) -> str:
+    """Build the user message for the world model, formatted per domain.
+
+    env_config (optional) is injected as a persistent environment preamble so the
+    world model knows what it is simulating (distro, package manager, kernel, etc.)
+    even after the initial state scrolls off. Independent of the visible state.
+    """
     domain = DOMAINS[domain_name]
     fmt = domain["action_format"]
 
+    # Persistent environment preamble — survives across all turns
+    preamble = ""
+    if env_config and env_config.strip():
+        preamble = f"**Environment Configuration:**\n{env_config.strip()}\n\n"
+
     if fmt == "web":
-        return f"Initial Page State:\n{state}\n\nFirst Action: '{action}'\n\nNext Page State:"
+        return f"{preamble}Initial Page State:\n{state}\n\nFirst Action: '{action}'\n\nNext Page State:"
     elif fmt == "terminal":
-        return f"### Turn 1\n**Current Terminal State:**\n{state}\n\n**Action:**\n```json\n{action}\n```\n\n**Next Terminal State:**"
+        return f"{preamble}### Turn 1\n**Current Terminal State:**\n{state}\n\n**Action:**\n```json\n{action}\n```\n\n**Next Terminal State:**"
     elif fmt in ("mcp", "swe"):
-        return f"### Turn 1\n**Action:**\n```json\n{action}\n```\n\n**Environment Observation:**"
+        return f"{preamble}### Turn 1\n**Action:**\n```json\n{action}\n```\n\n**Environment Observation:**"
     elif fmt == "android":
-        return f"### Turn 1\n**Current Screen State:**\n{state}\n\n**Action:**\n{action}\n\n**Next Screen State:**"
+        return f"{preamble}### Turn 1\n**Current Screen State:**\n{state}\n\n**Action:**\n{action}\n\n**Next Screen State:**"
     elif fmt == "os":
-        return f"### Turn 1\n**Current Desktop State:**\n{state}\n\n**Action:**\n```python\n{action}\n```\n\n**Next Desktop State:**"
+        return f"{preamble}### Turn 1\n**Current Desktop State:**\n{state}\n\n**Action:**\n```python\n{action}\n```\n\n**Next Desktop State:**"
     else:
-        return f"Current State:\n{state}\n\nAction: {action}\n\nNext State:"
+        return f"{preamble}Current State:\n{state}\n\nAction: {action}\n\nNext State:"
+
+
+# ─── Environment auto-detection ──────────────────────────────────────────────
+
+def detect_env_config() -> Optional[str]:
+    """Auto-detect host environment for the world model simulation.
+
+    Collects OS/distro, kernel, shell, and package manager from the host system.
+    Used as fallback when --env-config is not provided, so the world model knows
+    what it is simulating (e.g. Arch vs Debian changes apt→pacman predictions).
+    Returns None if detection yields nothing usable.
+    """
+    import subprocess
+    import shutil
+
+    parts = []
+
+    # Distro from /etc/os-release (PRETTY_NAME)
+    try:
+        with open("/etc/os-release", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("PRETTY_NAME="):
+                    distro = line.split("=", 1)[1].strip().strip('"')
+                    if distro:
+                        parts.append(distro)
+                    break
+    except (OSError, FileNotFoundError):
+        pass
+
+    # Kernel
+    try:
+        uname = subprocess.run(["uname", "-r"], capture_output=True,
+                               text=True, timeout=5)
+        if uname.returncode == 0 and uname.stdout.strip():
+            parts.append(f"kernel {uname.stdout.strip()}")
+    except Exception:
+        pass
+
+    # Shell (from $SHELL or /etc/passwd)
+    shell = os.environ.get("SHELL", "")
+    if not shell:
+        try:
+            with open("/etc/passwd", encoding="utf-8") as f:
+                for line in f:
+                    fields = line.strip().split(":")
+                    if len(fields) >= 7 and fields[2] == str(os.getuid()):
+                        shell = fields[6]
+                        break
+        except (OSError, FileNotFoundError):
+            pass
+    if shell:
+        parts.append(f"shell {shell}")
+
+    # Package manager (first one found on PATH)
+    for pm in ("pacman", "apt", "apt-get", "dnf", "yum", "zypper", "apk", "nix"):
+        if shutil.which(pm):
+            parts.append(f"package manager {pm}")
+            break
+
+    # Architecture
+    try:
+        arch = subprocess.run(["uname", "-m"], capture_output=True,
+                              text=True, timeout=5)
+        if arch.returncode == 0 and arch.stdout.strip():
+            parts.append(arch.stdout.strip())
+    except Exception:
+        pass
+
+    return ", ".join(parts) if parts else None
 
 
 # ─── Display helpers ──────────────────────────────────────────────────────────
 
 def print_header(domain_name: str, world_model: str, agent_model: str,
-                 task: str, steps: int, manual: bool):
+                 task: str, steps: int, manual: bool,
+                 env_config: Optional[str] = None):
     """Print simulation header."""
     domain = DOMAINS[domain_name]
     console.print()
@@ -242,6 +334,10 @@ def print_header(domain_name: str, world_model: str, agent_model: str,
     console.print(f"  Domain: [bold]{domain_name}[/bold] - {domain['label']}")
     console.print(f"  World Model: [cyan]{world_model}[/cyan]")
     console.print(f"  Mode: {'Manual' if manual else f'Agent ({agent_model})'}")
+    if env_config:
+        console.print(f"  Env Config: [dim]{env_config}[/dim]")
+    else:
+        console.print(f"  Env Config: [dim](none — world model infers environment)[/dim]")
     console.print(f"  Task: [italic]{task if task else 'N/A (manual)'}[/italic]")
     console.print(f"  Max steps: {steps}")
     console.print(Rule())
@@ -249,9 +345,8 @@ def print_header(domain_name: str, world_model: str, agent_model: str,
 
 def print_initial_state(state: str):
     """Print the initial state panel."""
-    display = state[:2000] + ("..." if len(state) > 2000 else "")
     console.print(Panel(
-        Text(display, style="cyan"),
+        Text(state, style="cyan"),
         title="[bold]Initial State[/bold]",
         border_style="blue",
         box=box.ROUNDED,
@@ -268,13 +363,14 @@ def print_step_separator(step: int):
 def print_agent_result(action: str, elapsed: float, tokens: int, manual: bool):
     """Print the agent's chosen action."""
     icon = "Manual" if manual else "Agent"
-    console.print(f"\n  [{icon}] [bold yellow]Action:[/bold yellow] {action[:120]}")
+    console.print(f"\n  [{icon}] [bold yellow]Action:[/bold yellow] {action}")
     if not manual:
         console.print(f"     [dim]({elapsed:.1f}s, {tokens} tok)[/dim]")
 
 
 def stream_world_model(world_model: str, state: str, action: str,
-                       step: int, domain_name: str) -> tuple:
+                       step: int, domain_name: str,
+                       env_config: Optional[str] = None) -> tuple:
     """Run world model and display result.
 
     Non-streaming — reasoning is suppressed, only content (prediction) is shown.
@@ -284,9 +380,8 @@ def stream_world_model(world_model: str, state: str, action: str,
     world_system = domain["world_system"]
     response_tag = domain["response_tag"]
     thinking_tag = domain["thinking_tag"]
-    max_tokens = domain["max_tokens"]
 
-    user_msg = build_world_user_message(state, action, domain_name)
+    user_msg = build_world_user_message(state, action, domain_name, env_config=env_config)
     messages = [
         {"role": "system", "content": world_system},
         {"role": "user", "content": user_msg},
@@ -295,7 +390,7 @@ def stream_world_model(world_model: str, state: str, action: str,
     console.print(f"\n  [bold cyan]World Model generating...[/bold cyan]")
 
     content, elapsed, tokens = chat_completion(
-        world_model, messages, max_tokens=max_tokens, temperature=0.6,
+        world_model, messages, max_tokens=None, temperature=0.6,
     )
 
     thinking, observation = strip_thinking_and_extract(content, response_tag, thinking_tag)
@@ -307,12 +402,10 @@ def print_state_panel(state: str, step: int, elapsed: float, tokens: int,
     """Print the final state panel after streaming completes."""
     parts = []
     if thinking:
-        think_short = thinking[:300] + ("..." if len(thinking) > 300 else "")
         parts.append(Text("Thinking: ", style="dim bold"))
-        parts.append(Text(think_short, style="dim italic"))
+        parts.append(Text(thinking, style="dim italic"))
         parts.append(Text("\n\n", style=""))
-    display = state[:2000] + ("..." if len(state) > 2000 else "")
-    parts.append(Text(display, style="cyan"))
+    parts.append(Text(state, style="cyan"))
 
     console.print(Panel(
         Text.assemble(*parts),
@@ -343,7 +436,9 @@ def print_summary(trajectory: list):
 # ─── Model/agent runners ─────────────────────────────────────────────────────
 
 def run_agent(agent_model: str, state: str, task: str,
-              action_history: list, step: int, domain_name: str) -> tuple:
+              action_history: list, step: int, domain_name: str,
+              no_truncate: bool = False,
+              env_config: Optional[str] = None) -> tuple:
     """Run agent to decide next action. Returns (action_str, elapsed_seconds, tokens)."""
     domain = DOMAINS[domain_name]
     agent_system = domain["agent_system"]
@@ -354,10 +449,23 @@ def run_agent(agent_model: str, state: str, task: str,
         for i, a in enumerate(action_history):
             history_text += f"  {i + 1}. {a}\n"
 
-    state_truncated = truncate_state(state, max_lines=40)
+    # --no-truncate disables state truncation sent to the agent. Default still
+    # truncates very long terminal states so the agent context stays manageable,
+    # but the flag is honoured (previously ignored here — bug).
+    if no_truncate:
+        state_truncated = state
+    else:
+        state_truncated = truncate_state(state, max_lines=40)
+
+    # Persistent environment preamble so the agent knows its operating environment
+    # (distro, package manager, etc.) even after the initial state scrolls off.
+    env_text = ""
+    if env_config and env_config.strip():
+        env_text = f"\nEnvironment: {env_config.strip()}\n"
 
     user_msg = (
-        f"Task: {task}\n\n"
+        f"Task: {task}\n"
+        f"{env_text}\n"
         f"Current State:\n{state_truncated}"
         f"{history_text}\n\n"
         f"What action should be taken next? (output ONE action, or DONE if task is complete)"
@@ -368,30 +476,35 @@ def run_agent(agent_model: str, state: str, task: str,
         {"role": "user", "content": user_msg},
     ]
 
+    # max_tokens omitted = unlimited. With :think variants the reasoning budget
+    # must not eat into the content tokens the agent needs to emit the action.
     content, elapsed, tokens = chat_completion(
-        agent_model, messages, max_tokens=32768, temperature=0.1,
+        agent_model, messages, max_tokens=None, temperature=0.1,
     )
     action = extract_action(content, domain_name)
     return action, elapsed, tokens
 
 
 def run_world_model_simple(world_model: str, state: str, action: str,
-                           domain_name: str) -> tuple:
+                           domain_name: str,
+                           env_config: Optional[str] = None) -> tuple:
     """Run world model without streaming. Returns (observation, thinking, elapsed, tokens)."""
     domain = DOMAINS[domain_name]
     world_system = domain["world_system"]
     response_tag = domain["response_tag"]
     thinking_tag = domain["thinking_tag"]
-    max_tokens = domain["max_tokens"]
 
-    user_msg = build_world_user_message(state, action, domain_name)
+    user_msg = build_world_user_message(state, action, domain_name, env_config=env_config)
     messages = [
         {"role": "system", "content": world_system},
         {"role": "user", "content": user_msg},
     ]
 
+    # max_tokens omitted = unlimited. The world model (AgentWorld with :think)
+    # needs full headroom for both reasoning and the predicted observation;
+    # capping it caused the prediction to cut off mid-state.
     content, elapsed, tokens = chat_completion(
-        world_model, messages, max_tokens=max_tokens, temperature=0.6,
+        world_model, messages, max_tokens=None, temperature=0.6,
     )
     thinking, observation = strip_thinking_and_extract(content, response_tag, thinking_tag)
     return observation, thinking, elapsed, tokens
@@ -455,6 +568,11 @@ def main():
                         help="Max simulation steps (default: 10)")
     parser.add_argument("--no-truncate", action="store_true",
                         help="Don't truncate states sent to agent")
+    parser.add_argument("--env-config", type=str, default=None,
+                        help="Persistent environment description injected into every "
+                             "agent and world-model call (e.g. 'Arch Linux, pacman, "
+                             "kernel 7.0.10-arch1-1'). Survives across turns even when "
+                             "the initial state scrolls off.")
     args = parser.parse_args()
 
     # --- Domain selection ---
@@ -546,8 +664,17 @@ def main():
     if not task and not args.manual:
         task = default_task
 
+    # --- Resolve environment config: explicit flag or auto-detect from host ---
+    if args.env_config is not None:
+        env_config = args.env_config.strip() or None
+    else:
+        env_config = detect_env_config()
+    if env_config:
+        console.print(f"[dim]Environment config: {env_config}[/dim]")
+
     # --- Print header ---
-    print_header(domain_name, world_model, agent_model, task, args.steps, args.manual)
+    print_header(domain_name, world_model, agent_model, task, args.steps, args.manual,
+                 env_config=env_config)
     print_initial_state(initial_state)
 
     # --- Simulation Loop ---
@@ -578,6 +705,8 @@ def main():
             console.print(f"\n  [dim]Agent deciding...[/dim]")
             action, agent_time, agent_tokens = run_agent(
                 agent_model, current_state, task, action_history, step, domain_name,
+                no_truncate=args.no_truncate,
+                env_config=env_config,
             )
 
         if action.upper().startswith("DONE") or action.lower().startswith("done"):
@@ -591,6 +720,7 @@ def main():
         console.print(f"\n  [dim]World model predicting...[/dim]")
         new_state, thinking, wm_time, wm_tokens = run_world_model_simple(
             world_model, current_state, action, domain_name,
+            env_config=env_config,
         )
         print_state_panel(new_state, step + 1, wm_time, wm_tokens, thinking)
 

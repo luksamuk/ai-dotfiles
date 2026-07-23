@@ -458,35 +458,41 @@ def fetch_available_models():
             info["think_variant_id"] = f"{info['id']}:think" if has_think else None
             models.append(info)
         
-        # Easter egg: Assistant Pepe Turbo — Pepe personality on Qwen 3.6 steroids
-        # Só aparece se o Qwen 3.6 estiver na lista (condição de existência)
-        qwen36_model = None
+        # Easter egg: Assistant Pepe Turbo — Pepe personality on 35B steroids
+        # Backend priority: Qwen 3.6 35B → fallback Ornith 1.0 35B
+        # (Qwen 3.6 not installed → uses Ornith, same 35B MoE architecture)
+        turbo_backend = None
         for m in models:
             if "qwen3.6" in m["id"].lower() and "35b" in m["id"].lower():
-                qwen36_model = m
+                turbo_backend = m
                 break
+        if turbo_backend is None:
+            for m in models:
+                if "ornith" in m["id"].lower() and "35b" in m["id"].lower():
+                    turbo_backend = m
+                    break
         
-        if qwen36_model is not None:
+        if turbo_backend is not None:
             pepe_turbo = {
                 "id": "pepe-turbo",
                 "name": "Assistant Pepe Turbo",
                 "description": "🐸 Pepe found the frog stimulant. What hides beneath the surface?",
-                "features": dict(qwen36_model.get("features", {})),
-                "supports_thinking": qwen36_model.get("supports_thinking", False),
-                "supports_vision": qwen36_model.get("supports_vision", False),
-                "supports_tools": qwen36_model.get("supports_tools", False),
-                "has_think_variant": qwen36_model.get("has_think_variant", False),
-                "think_variant_id": "pepe-turbo:think" if qwen36_model.get("has_think_variant") else None,
-                "context": qwen36_model.get("context", ""),
-                "vram": qwen36_model.get("vram", ""),
-                "size": qwen36_model.get("size", ""),
-                "warning": qwen36_model.get("warning", ""),
-                "source": qwen36_model.get("source", ""),
-                "kv_cache": qwen36_model.get("kv_cache", ""),
-                "health_check_timeout": qwen36_model.get("health_check_timeout", 0),
+                "features": dict(turbo_backend.get("features", {})),
+                "supports_thinking": turbo_backend.get("supports_thinking", False),
+                "supports_vision": turbo_backend.get("supports_vision", False),
+                "supports_tools": turbo_backend.get("supports_tools", False),
+                "has_think_variant": turbo_backend.get("has_think_variant", False),
+                "think_variant_id": "pepe-turbo:think" if turbo_backend.get("has_think_variant") else None,
+                "context": turbo_backend.get("context", ""),
+                "vram": turbo_backend.get("vram", ""),
+                "size": turbo_backend.get("size", ""),
+                "warning": turbo_backend.get("warning", ""),
+                "source": turbo_backend.get("source", ""),
+                "kv_cache": turbo_backend.get("kv_cache", ""),
+                "health_check_timeout": turbo_backend.get("health_check_timeout", 0),
                 # Campos internos para mapear pro backend real
-                "_backend_model_id": qwen36_model["id"],
-                "_backend_think_id": qwen36_model.get("think_variant_id"),
+                "_backend_model_id": turbo_backend["id"],
+                "_backend_think_id": turbo_backend.get("think_variant_id"),
                 "_is_pepe_turbo": True,
             }
             # Inserir logo depois do modelo do Pepe original (ordem alfabética por name)
@@ -501,7 +507,7 @@ def fetch_available_models():
                 models.append(pepe_turbo)
             
             # Registrar variante :think virtual se o backend suportar
-            if qwen36_model.get("has_think_variant"):
+            if turbo_backend.get("has_think_variant"):
                 pepe_turbo_think = dict(pepe_turbo)
                 pepe_turbo_think["id"] = "pepe-turbo:think"
                 pepe_turbo_think["name"] = "Assistant Pepe Turbo"
