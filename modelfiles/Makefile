@@ -188,9 +188,7 @@ llama3.1:
 # cloud targets
 cloud-models:
 	ollama pull "glm-5:cloud"
-	ollama pull "minimax-m2.5:cloud"
 	ollama pull "qwen3-coder-next:cloud"
-	ollama pull "kimi-k2.5:cloud"
 
 nemotron-cascade-2-30b:
 	$(call BUILD,nemotron-cascade-2:30b,nemotron-cascade-2-30b.modelfile)
