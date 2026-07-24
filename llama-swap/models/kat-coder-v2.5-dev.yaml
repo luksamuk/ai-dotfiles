@@ -1,0 +1,88 @@
+# -------------------------------------------
+# KAT-CODER-V2.5-DEV - MoE AGENTIC CODING (text-only)
+# MoE 35B params, ~3B ativo por token. Post-trained Qwen 3.6 35B MoE.
+# Kwaipilot SFT (127K examples) + RL (TITO, TIS, hierarchical rewards).
+# SOTA agentic coding: SWE-bench Verified 69.4 (vs Ornite 55.8, +13.6pp).
+# Same qwen35moe architecture as Ornith-1.0-35B and Qwen3.6-35B-A3B.
+# APEX Compact ~16.5GB — same footprint as Ornith APEX I-Compact.
+# ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
+# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx
+#
+# --ctx-size 131072: same safe ceiling as Ornith and Qwen 3.6
+# Dual mode: base (chat, no think) and :think (reasoning)
+# Manufacturer params: temp 1.0, top_p 0.95, top_k 20, presence_penalty 1.5 (thinking)
+# Non-thinking: temp 0.7, top_p 0.8, top_k 20, presence_penalty 1.5
+# Vision/multimodal NOT included in open-weight release (text-only).
+# -------------------------------------------
+"kat-coder-v2.5-dev":
+  name: "KAT-Coder V2.5 Dev"
+  description: "KAT-Coder-V2.5-Dev is a coding-focused agentic model trained by Kwaipilot to act autonomously inside real, executable repositories. Built on Qwen3.6-35B-A3B with SFT+RL. SOTA agentic coding among similar-scale models."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/kat-coder-v2.5-dev/KAT-Coder-V2.5-Dev-APEX-Compact.gguf
+    --fit
+    --fit-margin 1024
+    --ctx-size 131072
+    --temp 1.0
+    --top-p 0.95
+    --top-k 20
+    --min-p ${code_min_p}
+    --repeat-penalty 1.5
+    --reasoning on
+    --jinja
+    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --prefetch-experts
+    --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
+      --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.8
+        presence_penalty: 1.5
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+        presence_penalty: 1.5
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~16.5 GB (APEX Compact)"
+    context: "1K-131K (safe max)"
+    vram_usage: "~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s)"
+    source: "mudler/KAT-Coder-V2.5-Dev-APEX-GGUF"
+    kv_cache: "q4_0 + attn_rot + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 35000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: APEX Compact
+    note: "Post-trained Qwen 3.6 35B MoE by Kwaipilot. SFT (127K examples) + RL with TITO consistency, TIS, hierarchical rewards. SWE-bench Verified 69.4 (SOTA for class). RL penalizes excessive parallel tool calls (Qwen3.6 tendency). Vision not included in open-weight release. Uses qwen-fixed-chat-template.jinja — same as Ornith/Qwen3.6."

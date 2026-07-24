@@ -71,6 +71,7 @@ ORIGINAL_ORDER = [
     "webworld-8b",           # ✅
     "qwen3.6-35b-a3b",       # ✅
     "ornith-1.0-35b",        # ✅ Post-trained Qwen 3.5 35B MoE (agentic coding RL)
+    "kat-coder-v2.5-dev",    # ✅ Post-trained Qwen 3.6 35B MoE (SOTA agentic coding, SWE-bench 69.4)
     "agentworld-35b",         # ✅ World model (7 domains)
     "agents-a1-35b",          # ✅ 35B MoE long-horizon search + tool calling (reactivated Jul 2026)
     "bonsai-27b-1bit",        # ✅ 27B 1-bit (Q1_0) — upstream llama.cpp, ngram-mod spec decode (reactivated Jul 2026)

@@ -249,6 +249,42 @@ providers:
         - medium
         - high
         - xhigh
+    - id: kat-coder-v2.5-dev
+      name: KAT-Coder V2.5 Dev
+      description: KAT-Coder V2.5 Dev — 35B MoE (3B active) coding model on qwen35moe
+        architecture, same class as Ornith 1.0 35B. Trained for agentic coding with
+        tool-calling and thinking support.
+      reasoning: true
+      input:
+      - text
+      contextWindow: 131072
+      maxTokens: 32768
+      thinking:
+        mode: effort
+        efforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
+    - id: kat-coder-v2.5-dev:think
+      name: KAT-Coder V2.5 Dev Thinking 🧠
+      description: KAT-Coder V2.5 Dev — 35B MoE (3B active) coding model on qwen35moe
+        architecture, same class as Ornith 1.0 35B. Trained for agentic coding with
+        tool-calling and thinking support.
+      reasoning: true
+      input:
+      - text
+      contextWindow: 131072
+      maxTokens: 32768
+      thinking:
+        mode: effort
+        efforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
     - id: glm-4.7-flash
       name: GLM 4.7 Flash
       description: GLM 4.7 Flash — fast agentic coding model with dual-mode thinking

@@ -119,6 +119,9 @@ declare -A MODELS=(
   # Same qwen35moe arch as Qwen 3.6 — ik_llama compatible, K-quants standard
   # APEX I-Compact ~16.5GB — 22% smaller than Q4_K_M, imatrix v1.3 calibrated
   ["ornith-1.0-35b"]="mudler/Ornith-1.0-35B-APEX-GGUF Ornith-1.0-35B-APEX-I-Compact.gguf"
+  # KAT-Coder-V2.5-Dev — post-trained Qwen 3.6 35B MoE, SFT+RL agentic coding (SWE-bench 69.4)
+  # Same qwen35moe arch — ik_llama compatible, same APEX Compact footprint as Ornith
+  ["kat-coder-v2.5-dev"]="mudler/KAT-Coder-V2.5-Dev-APEX-GGUF KAT-Coder-V2.5-Dev-APEX-Compact.gguf"
   # [REMOVED] granite-4.0-h-1b — removed from fleet May 2026
   ["qwopus-35b"]="mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf"
   # [REMOVED] gemma4-26b-a4b APEX I-Compact — superseded by QAT Q4_0 (faster, smaller, same quality)
@@ -263,7 +266,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, qwen3.6-35b-a3b, ornith-1.0-35b, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, qwen3.5-4b-abliterated, glm-ocr, nomic-embed-text-v2-moe, mellum2-12b-thinking, ornstein-36-35b, all"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, qwen3.5-4b-abliterated, glm-ocr, nomic-embed-text-v2-moe, mellum2-12b-thinking, ornstein-36-35b, all"
     return 1
   fi
   
@@ -336,6 +339,7 @@ show_sizes() {
   # glm-4.7-flash removed
   echo "  qwen3.6-35b-a3b    ~17.30 GB  (APEX I-Compact) - Heavy offload, MoE coding + tools"
   echo "  ornith-1.0-35b     ~16.50 GB  (APEX I-Compact) - Post-trained Qwen 3.5 35B MoE, agentic coding RL"
+  echo "  kat-coder-v2.5-dev ~16.50 GB  (APEX Compact) - Post-trained Qwen 3.6 35B MoE, SOTA agentic coding (SWE-bench 69.4)"
   echo "  agents-a1-35b      ~16.50 GB  (APEX I-Compact) - 35B MoE, long-horizon search + tool calling"
   echo "  glm-4.7-flash      ~14.60 GB  (APEX I-Compact) - 30B MoE MLA, smallest 35B-class, fast"
   echo "  athenas-symbiote-9b ~5.63 GB  (Q4_K_M) - Qwen3.5-9B LoRA PT-BR legal (OAB/ENEM), 32K ctx"

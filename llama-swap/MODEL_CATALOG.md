@@ -287,6 +287,25 @@
 
 ---
 
+### 15. kat-coder-v2.5-dev — KAT-Coder V2.5 Dev MoE
+
+| Parameter | Value |
+|-----------|-------|
+| **Source** | KAT-Coder V2.5 Dev (35B MoE, 3B active, qwen35moe arch) |
+| **Quant** | APEX I-Compact (~17.3 GB) — mixed-precision, MoE offload to RAM |
+| **Backend** | `ik_llama_server` (ik v4542) — better MoE performance via pinned memory |
+| **KV cache** | `${large_cache_k}`/`${large_cache_v}` = `q4_0`/`q4_0` + hadamard |
+| **Flash attention** | `--flash-attn auto` |
+| **Context** | Dynamic, `--fit --fit-margin 768 --defer-experts` |
+| **Thinking** | ✅ Yes — dual mode (`:think` variant) |
+| **Tool calling** | ✅ Yes (`--parallel-tool-calls`) |
+| **Vision** | ❌ No (`--no-mmproj` — mmproj blocks partial expert offload) |
+| **Sampling** | `temp=${code_temp} / top-p=${code_top_p}` (coding-optimized: 0.6/0.85) |
+| **TTL** | 300s |
+| **Known issues** | Same class as Ornith 1.0 35B and Qwen3.6 35B A3B — very large model; relies heavily on `--defer-experts` for load time |
+
+---
+
 ## Disabled Models
 
 Configs preserved in `models/_disabled/` (GGUF deleted, can be re-downloaded):

@@ -74,6 +74,18 @@ repeat_penalty = 1.0
 thinking = true
 tools = true
 
+[models."kat-coder-v2.5-dev"]
+provider = "llama-swap"
+model_id = "kat-coder-v2.5-dev:think"
+num_ctx = 131072
+temperature = 0.6
+top_p = 0.9
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
+thinking = true
+tools = true
+
 [models."glm-4.7-flash"]
 provider = "llama-swap"
 model_id = "glm-4.7-flash"
