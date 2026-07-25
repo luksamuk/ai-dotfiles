@@ -121,7 +121,7 @@ declare -A MODELS=(
   ["ornith-1.0-35b"]="mudler/Ornith-1.0-35B-APEX-GGUF Ornith-1.0-35B-APEX-I-Compact.gguf"
   # KAT-Coder-V2.5-Dev — post-trained Qwen 3.6 35B MoE, SFT+RL agentic coding (SWE-bench 69.4)
   # Same qwen35moe arch — ik_llama compatible, same APEX Compact footprint as Ornith
-  ["kat-coder-v2.5-dev"]="mudler/KAT-Coder-V2.5-Dev-APEX-GGUF KAT-Coder-V2.5-Dev-APEX-Compact.gguf"
+  ["kat-coder-v2.5-dev"]="mudler/KAT-Coder-V2.5-Dev-APEX-GGUF KAT-Coder-V2.5-Dev-APEX-I-Compact.gguf"
   # [REMOVED] granite-4.0-h-1b — removed from fleet May 2026
   ["qwopus-35b"]="mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf"
   # [REMOVED] gemma4-26b-a4b APEX I-Compact — superseded by QAT Q4_0 (faster, smaller, same quality)

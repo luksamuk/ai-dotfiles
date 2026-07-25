@@ -549,7 +549,7 @@ models:
     description: "KAT-Coder-V2.5-Dev is a coding-focused agentic model trained by Kwaipilot to act autonomously inside real, executable repositories. Built on Qwen3.6-35B-A3B with SFT+RL. SOTA agentic coding among similar-scale models."
     cmd: |
       ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/kat-coder-v2.5-dev/KAT-Coder-V2.5-Dev-APEX-Compact.gguf
+      --model ${models_dir}/kat-coder-v2.5-dev/KAT-Coder-V2.5-Dev-APEX-I-Compact.gguf
       --fit
       --fit-margin 1024
       --ctx-size 131072
@@ -598,7 +598,7 @@ models:
       reranker: false
       context: 131072
     metadata:
-      size: "~16.5 GB (APEX Compact)"
+      size: "~16.5 GB (APEX I-Compact)"
       context: "1K-131K (safe max)"
       vram_usage: "~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s)"
       source: "mudler/KAT-Coder-V2.5-Dev-APEX-GGUF"
@@ -616,7 +616,7 @@ models:
       parameters: 35000000000
       context_length: 262144
       embedding_length: 2048
-      quantization: APEX Compact
+      quantization: APEX I-Compact
       note: "Post-trained Qwen 3.6 35B MoE by Kwaipilot. SFT (127K examples) + RL with TITO consistency, TIS, hierarchical rewards. SWE-bench Verified 69.4 (SOTA for class). RL penalizes excessive parallel tool calls (Qwen3.6 tendency). Vision not included in open-weight release. Uses qwen-fixed-chat-template.jinja — same as Ornith/Qwen3.6."
 # -------------------------------------------
 # QWEN-AGENTWORLD-35B-A3B — Native Language World Model
