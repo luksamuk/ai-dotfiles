@@ -36,6 +36,13 @@ repeat_penalty = 1.0
 thinking = true
 tools = true
 
+[models."athenas-symbiote-9b"]
+provider = "llama-swap"
+model_id = "athenas-symbiote-9b"
+num_ctx = 32678
+think = false
+tools = false
+
 [models."gemma4-e2b"]
 provider = "llama-swap"
 model_id = "gemma4-e2b:think"
@@ -62,17 +69,6 @@ repeat_penalty = 1.05
 thinking = true
 tools = true
 
-[models."ornith-1.0-35b"]
-provider = "llama-swap"
-model_id = "ornith-1.0-35b:think"
-num_ctx = 131072
-temperature = 0.6
-top_p = 0.9
-top_k = 20
-min_p = 0.0
-repeat_penalty = 1.0
-thinking = true
-tools = true
 
 [models."kat-coder-v2.5-dev"]
 provider = "llama-swap"

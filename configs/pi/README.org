@@ -73,7 +73,7 @@ Modelos com raciocínio têm variante =:think= que ativa modo de thinking.
 | =nanbeige4.2-3b=               | Nanbeige 4.2 3B              |     32K  | text           | sim    |
 | =qwen3.5-4b=                   | Qwen3.5 4B                   |    131K  | text           | sim    |
 | =qwen3.5-9b=                   | Qwen3.5 9B                   |    262K  | text           | sim    |
-| =ornith-1.0-35b=               | Ornith 1.0 35B               |    131K  | text           | sim    |
+| =kat-coder-v2.5-dev=               | KAT-Coder V2.5 Dev               |    131K  | text           | sim    |
 | =kat-coder-v2.5-dev=           | KAT-Coder V2.5 Dev           |    131K  | text           | sim    |
 | =agentworld-35b=               | AgentWorld 35B               |    131K  | text           | sim    |
 
@@ -164,7 +164,7 @@ Configuração recomendada em =settings.json= para modelos locais:
 
 - =reserveTokens: 16384= — reserva espaço suficiente para respostas longas (+ raciocínio em modelos =:think=)
 - =keepRecentTokens: 20000= — mantém as mensagens mais recentes intactas durante compação
-- Modelo padrão atual: =ornith-1.0-35b:think= (provider =llama-swap=)
+- Modelo padrão atual: =kat-coder-v2.5-dev:think= (provider =llama-swap=)
 
 ** Uso
 
@@ -173,10 +173,10 @@ Configuração recomendada em =settings.json= para modelos locais:
 pi --model glm-5.1:cloud
 
 # Usar modelo local (provider padrão já é llama-swap)
-pi --model ornith-1.0-35b
+pi --model kat-coder-v2.5-dev
 
 # Usar modelo local com raciocínio
-pi --model "ornith-1.0-35b:think"
+pi --model "kat-coder-v2.5-dev:think"
 
 # Usar modelo local multimodal (visão + áudio)
 pi --model glm-ocr

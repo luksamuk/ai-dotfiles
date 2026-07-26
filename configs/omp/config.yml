@@ -5,15 +5,15 @@ setupVersion: 1
 defaultThinkingLevel: medium
 modelRoles:
   # Roles baseadas em benchmarks Agentic v2 + Marathon Jul 2026
-  # plan (orquestrador): Ornith-1.0-35B — agentic coding, self-scaffolding RL
+  # plan (orquestrador): KAT-Coder-V2.5-Dev — agentic coding, self-scaffolding RL
   # task (executor): Qwen 3.5 9B — dense 9B, rápido pra subtarefas locais
   # advisor (debug/diagnóstico): Qwen 3.5 9B — dense, arquitetura diferente do MoE, segundo par de olhos
   # designer: GLM Flash — modelo leve pra geração de texto/design
-  default: llama-swap/ornith-1.0-35b:think
+  default: llama-swap/kat-coder-v2.5-dev:think
   smol: llama-swap/qwen3.5-4b:think
   slow: llama-swap/qwen3.5-9b:think
   vision: llama-swap/qwen3-vl-4b:think
-  plan: llama-swap/ornith-1.0-35b:think
+  plan: llama-swap/kat-coder-v2.5-dev:think
   designer: llama-swap/glm-4.7-flash:think
   commit: llama-swap/qwen3.5-4b
   tiny: llama-swap/qwen3.5-4b:think

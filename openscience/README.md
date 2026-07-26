@@ -114,7 +114,7 @@ docker exec openscience openscience local add --url http://localhost:12434/v1
 docker exec openscience openscience local add \
   --url http://localhost:12434/v1 \
   --model agents-a1-35b --model agents-a1-35b:think \
-  --model ornith-1.0-35b --model ornith-1.0-35b:think \
+  --model kat-coder-v2.5-dev --model kat-coder-v2.5-dev:think \
   --model qwen3.6-35b-a3b --model qwen3.6-35b-a3b:think
 
 # List configured providers
