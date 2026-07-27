@@ -1132,68 +1132,6 @@ models:
       quantization: Q4_K_M
       note: "Looped Transformer (22 layers x2 loops = 44 effective). Requires nanbeige-llama.cpp fork (branch nanbeige42). Multi-turn tool calling FIXED vs 4.1 (#22684). Thinking toggle via enable_thinking in chat template."
 # -------------------------------------------
-# ANTARES-1B — Cisco Foundation AI
-# Agentic vulnerability localization model.
-# Trained with SFT + GRPO on IBM Granite 4.0 1B base.
-# Terminal agent: explores repos via grep/find/cat, reasons about output,
-# and identifies files containing reported vulnerabilities.
-# Arch: granite (dense, upstream llama.cpp)
-# Q8_0 ~1.9GB — fits entirely in VRAM with room to spare
-# No thinking/reasoning toggle, no tool-calling (prompt-based agentic)
-# Context: 128K native
-# -------------------------------------------
-  "antares-1b":
-    name: "Antares 1B"
-    description: "Antares-1B is a 1B parameter language model specialized for vulnerability localization in real-world codebases. Built on IBM Granite 4.0 1B, trained to autonomously navigate source code repositories through a terminal interface."
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/antares-1b/antares-1b-Q8_0.gguf
-      --jinja
-      --fit on
-      --fit-target 512
-      --fit-ctx ${small_model_min_ctx}
-      --ctx-size ${small_model_max_ctx}
-      --parallel 1
-      --temp 0.6
-      --top-p 0.95
-      --top-k 20
-      --repeat-penalty 1.1
-      --cache-type-k ${small_cache_k}
-      --cache-type-v ${small_cache_v}
-      --flash-attn on
-      --metrics
-    health_check_timeout: 300
-    ttl: 60
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: false
-      reranker: false
-      context: 131072
-    metadata:
-      size: "~1.9 GB (Q8_0)"
-      context: "64K-128K (dynamic)"
-      vram_usage: "~2.5GB (model + cache)"
-      source: "DevQuasar/fdtn-ai.antares-1b-GGUF (Q8_0)"
-      kv_cache: "q8_0 + attn_rot"
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: granite
-      parameters: 1000000000
-      context_length: 128000
-      embedding_length: 2048
-      quantization: Q8_0
-      note: "Agentic vulnerability localization model. Trained with SFT + GRPO to navigate repos via terminal (grep, find, cat) and identify vulnerable files. Antares CLI available in HF repo — connects to any OpenAI-compatible endpoint. Use with Pi for terminal-based code scanning."
-# -------------------------------------------
 # GLM-4.7-FLASH - MoE CONVERSATIONAL (text-only, MLA)
 # MoE ~30B params, ~2B ativo por token. 64 routed + 1 shared expert, 4 active.
 # Glm4MoeLite architecture (deepseek2 family) with Multi-head Latent Attention (MLA).
@@ -2061,8 +1999,6 @@ matrix:
     glm: glm-4.7-flash
     # Bonsai 1-bit reativado Jul 2026 — Q1_0 CUDA no upstream, ngram-mod spec decode
     bonsai1: bonsai-27b-1bit
-    # Vuln scanning
-    ant: antares-1b
     # Tradução
     hmt: hy-mt2-1.8b
     # Português jurídico (Qwen3.5-9B LoRA, instruct)
@@ -2095,10 +2031,6 @@ matrix:
 
     # Modelos pesados (offload) + Embedding/Reranker
     heavy: "(kat | aw | glm | bonsai1) & (nomic | lfmemb | lfmcol)"
-
-    # Vuln scanning (leve, cabe com embedding/reranker)
-    vuln_embed: "ant & (nomic | lfmemb | lfmcol)"
-    vuln_only: "ant"
 
     # Tradução (leve, cabe com embedding/reranker)
     translate_embed: "hmt & (nomic | lfmemb | lfmcol)"
@@ -2144,5 +2076,4 @@ matrix:
     lfm230: 1
     m5a: 1
     hmt: 1
-    ant: 1
     athenas: 4
