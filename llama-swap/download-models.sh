@@ -162,6 +162,7 @@ declare -A MODELS=(
   # Uses hunyuan_v1_dense arch — upstream llama.cpp ONLY (no ik support)
   # Potential TranslateGemma alternative for Sprachspiel translate mode
   ["hy-mt2-1.8b"]="tencent/Hy-MT2-1.8B-GGUF Hy-MT2-1.8B-Q4_K_M.gguf"
+  ["antares-1b"]="DevQuasar/fdtn-ai.antares-1b-GGUF Q8_0/fdtn-ai.antares-1b.f16.gguf.Q8_0.gguf"
   # [REMOVED] translategemma-4b — removed from fleet Jun 2026 (unused)
   # ["translategemma-4b"]="mradermacher/translategemma-4b-it-GGUF translategemma-4b-it.Q4_K_M.gguf"
   # Qwen3.5-4B-abliterated -- refusal-removed variant for adversarial testing
@@ -266,7 +267,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, qwen3.5-4b-abliterated, glm-ocr, nomic-embed-text-v2-moe, mellum2-12b-thinking, ornstein-36-35b, all"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, antares-1b, qwen3.5-4b-abliterated, glm-ocr, nomic-embed-text-v2-moe, mellum2-12b-thinking, ornstein-36-35b, all"
     return 1
   fi
   

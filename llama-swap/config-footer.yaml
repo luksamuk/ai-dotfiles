@@ -45,12 +45,13 @@ matrix:
     q9: qwen3.5-9b
     g4: gemma4-e2b
     # Pesados (offload)
-    orn35: ornith-1.0-35b
     kat: kat-coder-v2.5-dev
     aw: agentworld-35b
     glm: glm-4.7-flash
     # Bonsai 1-bit reativado Jul 2026 — Q1_0 CUDA no upstream, ngram-mod spec decode
     bonsai1: bonsai-27b-1bit
+    # Vuln scanning
+    ant: antares-1b
     # Tradução
     hmt: hy-mt2-1.8b
     # Português jurídico (Qwen3.5-9B LoRA, instruct)
@@ -82,7 +83,11 @@ matrix:
     medium: "(q9 | g4) & (nomic | lfmemb | lfmcol)"
 
     # Modelos pesados (offload) + Embedding/Reranker
-    heavy: "(orn35 | kat | aw | glm | bonsai1) & (nomic | lfmemb | lfmcol)"
+    heavy: "(kat | aw | glm | bonsai1) & (nomic | lfmemb | lfmcol)"
+
+    # Vuln scanning (leve, cabe com embedding/reranker)
+    vuln_embed: "ant & (nomic | lfmemb | lfmcol)"
+    vuln_only: "ant"
 
     # Tradução (leve, cabe com embedding/reranker)
     translate_embed: "hmt & (nomic | lfmemb | lfmcol)"
@@ -106,7 +111,6 @@ matrix:
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
-    orn35: 9
     kat: 9
     aw: 9
     glm: 9
@@ -129,4 +133,5 @@ matrix:
     lfm230: 1
     m5a: 1
     hmt: 1
+    ant: 1
     athenas: 4
