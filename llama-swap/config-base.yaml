@@ -47,12 +47,6 @@ macros:
   # Necessário para Nanbeige4.2-3B (arquitetura custom: Looped Transformer, LoopSplit, mHC)
   "nanbeige_llama_server": "${env.HOME}/git/nanbeige-llama.cpp/build/bin/llama-server"
   
-  # Caminho para llama-cpp-fv5 — upstream llama.cpp + FV5/FV5B transplant (Neutrino-8B)
-  # Build local em ~/git/llama-cpp-fv5/build/bin/llama-server
-  # Upstream llama.cpp com tipos FV5/FV5B transplantados do fork da Fermion Research
-  # Herda todas as otimizações do upstream: --fit, --flash-attn, MMQ/MMVQ, --parallel-tool-calls
-  "fv5_llama_server": "${env.HOME}/git/llama-cpp-fv5/build/bin/llama-server"
-  
   # Caminho para BeeLlama.cpp — fork com DFlash speculative decoding + TurboQuant KV cache
   # Build local em ~/git/beellama.cpp/build/bin/llama-server
   # NOTA: Bee não tem --fit/--fit-margin. Usar --n-gpu-layers 99 para modelos que cabem na VRAM.

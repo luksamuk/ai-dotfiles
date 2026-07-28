@@ -47,12 +47,6 @@ macros:
   # Necessário para Nanbeige4.2-3B (arquitetura custom: Looped Transformer, LoopSplit, mHC)
   "nanbeige_llama_server": "${env.HOME}/git/nanbeige-llama.cpp/build/bin/llama-server"
 
-  # Caminho para llama-cpp-fv5 — upstream llama.cpp + FV5/FV5B transplant (Neutrino-8B)
-  # Build local em ~/git/llama-cpp-fv5/build/bin/llama-server
-  # Upstream llama.cpp com tipos FV5/FV5B transplantados do fork da Fermion Research
-  # Herda todas as otimizações do upstream: --fit, --flash-attn, MMQ/MMVQ, --parallel-tool-calls
-  "fv5_llama_server": "${env.HOME}/git/llama-cpp-fv5/build/bin/llama-server"
-
   # Caminho para BeeLlama.cpp — fork com DFlash speculative decoding + TurboQuant KV cache
   # Build local em ~/git/beellama.cpp/build/bin/llama-server
   # NOTA: Bee não tem --fit/--fit-margin. Usar --n-gpu-layers 99 para modelos que cabem na VRAM.
@@ -1770,100 +1764,6 @@ models:
       embedding_length: 1536
       quantization: Q4_K_M
 # -------------------------------------------
-# NEUTRINO-8B — fermion-llama.cpp fork BACKEND
-# TRTC v4: 5-valued ternary quantization (sub-2-bit per weight)
-# Base: Qwen3-8B (Apache-2.0), ternary QAT + staged post-training by Fermion Research
-# 8B params: 6.95B ternary projection + 1.24B int8 embedding + 0.3M fp32 norm
-# GGUF: 4.09 GB (neutrino-8b-fv5.gguf) — FV5 (linears) + FV5B (embeddings)
-# Architecture: qwen3 (stock, upstream-supported) — 36 layers, hidden 4096
-# GQA 4:1: 32 query heads, 8 KV heads, head_dim 128
-# Context: 40,960 tokens (max_pos). KV cache: 144 KiB/token fp16, 72 KiB/token q4_0
-
-# Tool calling: trained capability. BFCL v3: 65.31. Emits parseable JSON greedy.
-#   Recommended: temp=0 (greedy), repetition_penalty=1.0 (off) for tool calling
-# Thinking: enable_thinking toggle in chat template (Qwen3 style)
-
-# Backend: upstream llama.cpp + FV5/FV5B transplant (branch fermion-fv5-transplant)
-#   FV5/FV5B types transplanted from fermionresearch/llama.cpp fork into upstream
-#   Inherits all upstream optimizations: --fit, --flash-attn, MMQ/MMVQ, --parallel-tool-calls
-#   Uses --fit for dynamic GPU offload (replaces manual -ngl 99)
-#   --jinja for chat template
-
-# Inference params per model card:
-#   Tool calling: temp=0 (greedy), repetition_penalty=1.0 (off)
-#   Conversation: temp=0.01, top_p=1.0, repetition_penalty=1.05, max_tokens=512
-#   Long-form: temp=0.7, top_p=0.95, repetition_penalty=1.05, max_tokens=1024
-
-# VRAM budget (RTX 3050 6GB):
-#   Model: ~4.1 GB (full offload)
-#   Remaining: ~1.9 GB for KV cache
-#   q4_0 KV: 72 KiB/token → ~26K tokens fit
-#   ctx-size 32768 with q4_0 KV cache is safe
-# -------------------------------------------
-  "neutrino-8b":
-    name: "Neutrino 8B"
-    description: "Fermion Research Neutrino-1: 8B ternary model (TRTC v4, sub-2-bit). 2.56GB download, 72.1 MMLU, 65.31 BFCL v3. Based on Qwen3-8B with ternary QAT. Runs on 4.68 GiB VRAM."
-    cmd: |
-      ${fv5_llama_server} --port ${PORT}
-      --model ${models_dir}/neutrino-8b/gguf/neutrino-8b-fv5.gguf
-      --jinja
-      -ngl 99
-      --parallel 1
-      --ctx-size 32768
-      --temp 0.01
-      --top-p 1.0
-      --top-k 20
-      --min-p 0.0
-      --repeat-penalty 1.05
-      --reasoning on
-      --flash-attn auto
-      --cache-type-k q4_0
-      --cache-type-v q4_0
-      --metrics
-    filters:
-      stripParams: "temperature, top_p, repeat_penalty"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.01
-          top_p: 1.0
-          repeat_penalty: 1.05
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-          repeat_penalty: 1.05
-    ttl: 60
-    health_check_timeout: 300
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 32768
-    metadata:
-      source: "fermionresearch/Neutrino-8B (GGUF FV5)"
-      kv_cache: "q4_0/q4_0"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen3
-      parameters: 8190735360
-      context_length: 40960
-      embedding_length: 4096
-      quantization: "TRTC v4 (FV5 ternary, sub-2-bit)"
-      note: "5-valued ternary weights (-1,-0.5,0,+0.5,+1). Requires fermion-llama.cpp fork (branch fermion-fv5). Tool calling: greedy temp=0, rep_penalty=1.0. 62.63% of weights are zero."
-# -------------------------------------------
 # NOMIC-EMBED-TEXT-V2-MOE - UPSTREAM BACKEND (embedding model, CPU-only)
 # 475M params (305M active, MoE top-2/8 experts), 768-dim embeddings with Matryoshka → 256
 # Architecture: nomic-bert — supported in upstream llama.cpp
@@ -2084,7 +1984,6 @@ matrix:
     m5a: minicpm5-1b-agentic
     lfm8: lfm2.5-8b-a1b
     nb42: nanbeige4.2-3b
-    neu8: neutrino-8b
     # Vision
     vl: lfm2.5-vl-450m
     vl16: lfm2.5-vl-1.6b
