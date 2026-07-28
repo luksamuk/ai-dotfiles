@@ -35,6 +35,7 @@ matrix:
     m5a: minicpm5-1b-agentic
     lfm8: lfm2.5-8b-a1b
     nb42: nanbeige4.2-3b
+    neu8: neutrino-8b
     # Vision
     vl: lfm2.5-vl-450m
     vl16: lfm2.5-vl-1.6b
@@ -71,7 +72,7 @@ matrix:
     small_embed: "(q4 | aa4 | lfm230 | lfm8) & (nomic | lfmemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | aa4 | lfm230 | lfm8 | m5a | nb42"
+    small_only: "q4 | aa4 | lfm230 | lfm8 | m5a | nb42 | neu8"
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "vl | vl16 | ocr | qwvl"
@@ -120,6 +121,7 @@ matrix:
     q4: 2
     lfm8: 2
     nb42: 2
+    neu8: 2
     asr: 2
     nomic: 1
     lfmemb: 1

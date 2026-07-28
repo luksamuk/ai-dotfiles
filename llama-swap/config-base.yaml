@@ -47,6 +47,11 @@ macros:
   # Necessário para Nanbeige4.2-3B (arquitetura custom: Looped Transformer, LoopSplit, mHC)
   "nanbeige_llama_server": "${env.HOME}/git/nanbeige-llama.cpp/build/bin/llama-server"
   
+  # Caminho para fermion-llama.cpp — fork da Fermion Research com suporte a TRTC v4 (FV5/FV5B ternary types)
+  # Build local em ~/git/fermion-llama.cpp/build/bin/llama-server
+  # Necessário para Neutrino-8B (5-valued ternary quantization, sub-2-bit per weight)
+  "fermion_llama_server": "${env.HOME}/git/fermion-llama.cpp/build/bin/llama-server"
+  
   # Caminho para BeeLlama.cpp — fork com DFlash speculative decoding + TurboQuant KV cache
   # Build local em ~/git/beellama.cpp/build/bin/llama-server
   # NOTA: Bee não tem --fit/--fit-margin. Usar --n-gpu-layers 99 para modelos que cabem na VRAM.
