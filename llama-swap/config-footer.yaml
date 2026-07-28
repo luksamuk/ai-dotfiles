@@ -39,6 +39,7 @@ matrix:
     vl: lfm2.5-vl-450m
     vl16: lfm2.5-vl-1.6b
     ocr: glm-ocr
+    uocr: unlimited-ocr
     qwvl: qwen3-vl-4b
     aa4: agents-a1-4b
     # Modelos médios
@@ -71,11 +72,11 @@ matrix:
     small_embed: "(q4 | aa4 | lfm230 | lfm8) & (nomic | lfmemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | aa4 | lfm230 | lfm8 | m5a | nb42 | neu8"
+    small_only: "q4 | aa4 | lfm230 | lfm8 | m5a | nb42"
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "vl | vl16 | ocr | qwvl"
-    vision_embed: "(vl | vl16 | ocr | qwvl) & (nomic | lfmemb | lfmcol)"
+    vision_only: "vl | vl16 | ocr | uocr | qwvl"
+    vision_embed: "(vl | vl16 | ocr | uocr | qwvl) & (nomic | lfmemb | lfmcol)"
 
     # Modelos médios + Embedding/Reranker
     medium: "(q9 | g4) & (nomic | lfmemb | lfmcol)"
@@ -114,13 +115,13 @@ matrix:
     ttsext: 4
     vl: 3
     ocr: 3
+    uocr: 3
     qwvl: 3
     aa4: 2
     vl16: 2
     q4: 2
     lfm8: 2
     nb42: 2
-    neu8: 2
     asr: 2
     nomic: 1
     lfmemb: 1

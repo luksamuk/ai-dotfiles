@@ -1947,6 +1947,68 @@ models:
         - "Voice profiles loaded from ~/.config/voiceclone-tui/voices.json"
         - "Supports voice cloning with reference audio samples"
         - "Portuguese (pt-BR) voices with accent control"
+# -------------------------------------------
+# UNLIMITED-OCR - UPSTREAM BACKEND (mmproj required)
+# Baidu Unlimited-OCR: DeepSeek-OCR architecture (SAM+CLIP vision tower + DeepSeek-V2 MoE text decoder)
+# 3B params, specialized in one-shot long-horizon document parsing
+# mmproj required: SAM+CLIP vision projector (F16, 774 MiB)
+# Supports: document->markdown, plain OCR, bounding boxes, figure/chart parsing
+# Prompt vocabulary: "document parsing.", "Free OCR.", "Describe this image in detail."
+# Add <|grounding|> prefix for bounding box output
+# Architecture: deepseek-ocr / unlimited-ocr — supported in upstream llama.cpp (#24969, #24717)
+# Temperature 0 for OCR, --temp 0 for deterministic output
+# KV cache: f16 (vision models need precision)
+# -------------------------------------------
+  "unlimited-ocr":
+    name: "Unlimited OCR"
+    description: "Baidu Unlimited-OCR: 3B vision-language OCR model for long-horizon document parsing. DeepSeek-OCR architecture with SAM+CLIP vision tower. Outputs structured markdown with optional bounding boxes."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/unlimited-ocr/Unlimited-OCR-Q4_K_M.gguf
+      --mmproj ${models_dir}/unlimited-ocr/mmproj-Unlimited-OCR-F16.gguf
+      --jinja
+      --media-path ${media_path}
+      -ngl 99
+      --ctx-size 32768
+      --parallel 1
+      --temp 0
+      --top-p 1.0
+      --repeat-penalty 1.0
+      --reasoning off
+      --cache-type-k f16
+      --cache-type-v f16
+      --flash-attn on
+      --metrics
+    ttl: 60
+    capabilities:
+      in:
+        - 'text'
+        - 'image'
+      out:
+        - 'text'
+      tools: false
+      reranker: false
+      context: 32768
+    metadata:
+      architecture: deepseek-ocr
+      parameters: 3000000000
+      context_length: 32768
+      embedding_length: 2048
+      quantization: Q4_K_M
+      size: "~1.9 GB (Q4_K_M) + ~774 MB mmproj (F16)"
+      vram_usage: "~3.5GB (model + mmproj + f16 cache)"
+      source: "sahilchachra/Unlimited-OCR-GGUF (Q4_K_M + mmproj F16)"
+      kv_cache: "f16"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: true
+      note: "Specialized OCR/document parsing model. Prompts: 'document parsing.', 'Free OCR.', '<|grounding|>Convert the document to markdown.' for bounding boxes. NOT a general chat model."
 # Hooks: ações na inicialização do llama-swap
 # preload: carrega modelos síncronamente antes de aceitar requests
 # Ideal para vLLM (startup lento = 30-90s sem warm-up)
@@ -1988,6 +2050,7 @@ matrix:
     vl: lfm2.5-vl-450m
     vl16: lfm2.5-vl-1.6b
     ocr: glm-ocr
+    uocr: unlimited-ocr
     qwvl: qwen3-vl-4b
     aa4: agents-a1-4b
     # Modelos médios
@@ -2020,11 +2083,11 @@ matrix:
     small_embed: "(q4 | aa4 | lfm230 | lfm8) & (nomic | lfmemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | aa4 | lfm230 | lfm8 | m5a | nb42 | neu8"
+    small_only: "q4 | aa4 | lfm230 | lfm8 | m5a | nb42"
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "vl | vl16 | ocr | qwvl"
-    vision_embed: "(vl | vl16 | ocr | qwvl) & (nomic | lfmemb | lfmcol)"
+    vision_only: "vl | vl16 | ocr | uocr | qwvl"
+    vision_embed: "(vl | vl16 | ocr | uocr | qwvl) & (nomic | lfmemb | lfmcol)"
 
     # Modelos médios + Embedding/Reranker
     medium: "(q9 | g4) & (nomic | lfmemb | lfmcol)"
@@ -2063,13 +2126,13 @@ matrix:
     ttsext: 4
     vl: 3
     ocr: 3
+    uocr: 3
     qwvl: 3
     aa4: 2
     vl16: 2
     q4: 2
     lfm8: 2
     nb42: 2
-    neu8: 2
     asr: 2
     nomic: 1
     lfmemb: 1
