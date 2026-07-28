@@ -47,10 +47,11 @@ macros:
   # Necessário para Nanbeige4.2-3B (arquitetura custom: Looped Transformer, LoopSplit, mHC)
   "nanbeige_llama_server": "${env.HOME}/git/nanbeige-llama.cpp/build/bin/llama-server"
 
-  # Caminho para fermion-llama.cpp — fork da Fermion Research com suporte a TRTC v4 (FV5/FV5B ternary types)
-  # Build local em ~/git/fermion-llama.cpp/build/bin/llama-server
-  # Necessário para Neutrino-8B (5-valued ternary quantization, sub-2-bit per weight)
-  "fermion_llama_server": "${env.HOME}/git/fermion-llama.cpp/build/bin/llama-server"
+  # Caminho para llama-cpp-fv5 — upstream llama.cpp + FV5/FV5B transplant (Neutrino-8B)
+  # Build local em ~/git/llama-cpp-fv5/build/bin/llama-server
+  # Upstream llama.cpp com tipos FV5/FV5B transplantados do fork da Fermion Research
+  # Herda todas as otimizações do upstream: --fit, --flash-attn, MMQ/MMVQ, --parallel-tool-calls
+  "fv5_llama_server": "${env.HOME}/git/llama-cpp-fv5/build/bin/llama-server"
 
   # Caminho para BeeLlama.cpp — fork com DFlash speculative decoding + TurboQuant KV cache
   # Build local em ~/git/beellama.cpp/build/bin/llama-server
@@ -1782,11 +1783,10 @@ models:
 #   Recommended: temp=0 (greedy), repetition_penalty=1.0 (off) for tool calling
 # Thinking: enable_thinking toggle in chat template (Qwen3 style)
 
-# Backend: fermion-llama.cpp fork (branch fermion-fv5, commit 7296ab1)
-#   FV5/FV5B types: CPU + CUDA (no Metal/Vulkan yet)
-#   No MMQ/MMVQ — raw f32 activations (deliberate correctness policy)
-#   No --flash-attn mentioned in fork docs
-#   Uses -ngl 99 for full GPU offload
+# Backend: upstream llama.cpp + FV5/FV5B transplant (branch fermion-fv5-transplant)
+#   FV5/FV5B types transplanted from fermionresearch/llama.cpp fork into upstream
+#   Inherits all upstream optimizations: --fit, --flash-attn, MMQ/MMVQ, --parallel-tool-calls
+#   Uses --fit for dynamic GPU offload (replaces manual -ngl 99)
 #   --jinja for chat template
 
 # Inference params per model card:
@@ -1804,33 +1804,37 @@ models:
     name: "Neutrino 8B"
     description: "Fermion Research Neutrino-1: 8B ternary model (TRTC v4, sub-2-bit). 2.56GB download, 72.1 MMLU, 65.31 BFCL v3. Based on Qwen3-8B with ternary QAT. Runs on 4.68 GiB VRAM."
     cmd: |
-      ${fermion_llama_server} --port ${PORT}
+      ${fv5_llama_server} --port ${PORT}
       --model ${models_dir}/neutrino-8b/gguf/neutrino-8b-fv5.gguf
       --jinja
-      -ngl 99
-      --ctx-size 32768
+      --fit on
       --parallel 1
+      --ctx-size 32768
       --temp 0.01
       --top-p 1.0
       --top-k 20
       --min-p 0.0
       --repeat-penalty 1.05
       --reasoning on
+      --flash-attn auto
       --cache-type-k q4_0
       --cache-type-v q4_0
+      --metrics
     filters:
-      stripParams: "temperature, top_p"
+      stripParams: "temperature, top_p, repeat_penalty"
       setParamsByID:
         "${MODEL_ID}":
           chat_template_kwargs:
             enable_thinking: false
           temperature: 0.01
           top_p: 1.0
+          repeat_penalty: 1.05
         "${MODEL_ID}:think":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
           top_p: 0.9
+          repeat_penalty: 1.05
     ttl: 60
     health_check_timeout: 300
     capabilities:
