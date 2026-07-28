@@ -42,11 +42,6 @@ macros:
   # Build local em ~/git/ik_llama.cpp/build/bin/llama-server
   "ik_llama_server": "${env.HOME}/git/ik_llama.cpp/build/bin/llama-server"
 
-  # Caminho para nanbeige-llama.cpp — fork da Nanbeige com suporte a arquitetura nanbeige (Looped Transformer)
-  # Build local em ~/git/nanbeige-llama.cpp/build/bin/llama-server
-  # Necessário para Nanbeige4.2-3B (arquitetura custom: Looped Transformer, LoopSplit, mHC)
-  "nanbeige_llama_server": "${env.HOME}/git/nanbeige-llama.cpp/build/bin/llama-server"
-
   # Caminho para BeeLlama.cpp — fork com DFlash speculative decoding + TurboQuant KV cache
   # Build local em ~/git/beellama.cpp/build/bin/llama-server
   # NOTA: Bee não tem --fit/--fit-margin. Usar --n-gpu-layers 99 para modelos que cabem na VRAM.
@@ -1043,11 +1038,11 @@ models:
       quantization: Q4_K_M
       note: "Qwen3.5-9B LoRA fine-tune for Brazilian Portuguese legal/academic domain. OAB 63.23%, ENEM 80.90%. Author recommends temp=0.3, ChatML format. NOT a reasoning/tool-calling model — simple instruct. GGUF has no chat_template, uses athenas-chatml.jinja. GGUF contains mmproj but vision disabled. LoRA pre-merged."
 # -------------------------------------------
-# NANBEIGE4.2-3B — nanbeige-llama.cpp fork BACKEND
+# NANBEIGE4.2-3B — UPSTREAM BACKEND (PR #25994 merged)
 # Looped Transformer: 22 layers reused 2x (num_loops=2) = 44 effective layers
 # LoopSplit + mHC with depth attention + concatenated n-gram embeddings
 # 4B total params (3B non-embedding), Q4_K_M ~2.4 GB
-# Architecture: nanbeige (custom — requires Nanbeige fork of llama.cpp)
+# Architecture: nanbeige — now in upstream llama.cpp (commit b77d64675)
 # Vocab: 166,144. Context: 262K. head_dim=128.
 
 # Tool calling: XML format (tool_call_format="xml" in chat template)
@@ -1055,10 +1050,15 @@ models:
 # Thinking: enable_thinking toggle in chat template (dual mode: base + :think)
 #   preserve_thinking recommended for multi-turn tool use
 
-# Backend: nanbeige-llama.cpp fork (branch nanbeige42, commit 26cfdc440)
-#   No --fit, no hadamard, no --parallel-tool-calls (fork limitations)
-#   Uses -ngl 99 for full GPU offload
+# Backend: upstream llama.cpp (PR #25994 merged 2026-07-27)
+#   Inherits: --fit on, --flash-attn auto, --parallel-tool-calls, MMQ/MMVQ
 #   --reasoning on for thinking extraction
+
+# KV cache budget (RTX 3050 6GB):
+#   Model: ~2.4 GB (Q4_K_M)
+#   44 effective layers, 8 KV heads, head_dim 128
+#   q4_0 KV: 44 KiB/token -> ~70K tokens fit in ~3GB remaining VRAM
+#   ctx-size 65536 with q4_0 is safe (leaves ~1GB headroom)
 
 # Inference params per model card:
 #   Reasoning/chat: temp=0.6, top_p=0.95, top_k=20
@@ -1068,12 +1068,12 @@ models:
     name: "Nanbeige 4.2 3B"
     description: "Compact agentic model with Looped Transformer architecture. 3B non-embedding params delivering solid performance on general-agent and code-agent tasks, outperforming larger models like Qwen3.5-9B and Gemma4-12B on agentic benchmarks."
     cmd: |
-      ${nanbeige_llama_server} --port ${PORT}
+      ${llama_server} --port ${PORT}
       --model ${models_dir}/nanbeige4.2-3b/nanbeige4.2-3b-Q4_K_M.gguf
       --jinja
-      -ngl 99
-      --ctx-size 32768
+      --fit on
       --parallel 1
+      --ctx-size 65536
       --temp 0.6
       --top-p 0.95
       --top-k 20
@@ -1082,7 +1082,7 @@ models:
       --reasoning on
       --cache-type-k q4_0
       --cache-type-v q4_0
-      --flash-attn on
+      --flash-attn auto
       --metrics
     filters:
       stripParams: "temperature, top_p, top_k"
@@ -1109,11 +1109,11 @@ models:
         - 'text'
       tools: true
       reranker: false
-      context: 32768
+      context: 65536
     metadata:
       size: "~2.4 GB (Q4_K_M)"
-      context: "32K (262K max, but Looped Transformer doubles KV cache — 44 effective layers, 32K is sweet spot on 6GB)"
-      vram_usage: "~3.5 GB (model 2.4GB + q4_0 KV cache 32K + compute)"
+      context: "65K (262K max, but 44 effective layers double KV cache — 65K sweet spot on 6GB with q4_0)"
+      vram_usage: "~2.4 GB model + ~2.9 GB q4_0 KV @ 65K + compute"
       source: "owao/Nanbeige4.2-3B-GGUF (Q4_K_M)"
       kv_cache: "q4_0/q4_0"
       features:
@@ -1130,7 +1130,7 @@ models:
       context_length: 262144
       embedding_length: 3072
       quantization: Q4_K_M
-      note: "Looped Transformer (22 layers x2 loops = 44 effective). Requires nanbeige-llama.cpp fork (branch nanbeige42). Multi-turn tool calling FIXED vs 4.1 (#22684). Thinking toggle via enable_thinking in chat template."
+      note: "Looped Transformer (22 layers x2 loops = 44 effective). Upstream llama.cpp (PR #25994). Multi-turn tool calling FIXED vs 4.1 (#22684). Thinking toggle via enable_thinking."
 # -------------------------------------------
 # GLM-4.7-FLASH - MoE CONVERSATIONAL (text-only, MLA)
 # MoE ~30B params, ~2B ativo por token. 64 routed + 1 shared expert, 4 active.
@@ -1948,61 +1948,6 @@ models:
         - "Supports voice cloning with reference audio samples"
         - "Portuguese (pt-BR) voices with accent control"
 # -------------------------------------------
-# RIVA-TRANSLATE-4B-INSTRUCT-V2 - UPSTREAM BACKEND
-# NVIDIA Riva Neural Machine Translation model
-# Architecture: MistralForCausalLM (mistral) — upstream suporta nativamente
-# 4B params, 34 layers, hidden 3072, GQA 4:1 (32 q, 8 kv), head_dim 128
-# Context: 8192 tokens (max_position_embeddings)
-# Vocab: 131072
-# 37 languages bidirectional (en <-> 36 non-English), includes pt-BR
-# System prompt = language pair tag (e.g. "en-pt-br", "pt-br-en")
-# License: NVIDIA Open Model License + Apache 2.0
-# Q4_K_M ~2.6 GB (shivnathtathe/nvidia_Riva-Translate-4B-Instruct-v2-GGUF)
-# -------------------------------------------
-  "riva-translate-4b":
-    name: "Riva Translate 4B v2"
-    description: "NVIDIA Riva NMT model: 4B Mistral, 37 languages bidirectional. Surpasses all in-house NMT models. System prompt = language pair tag (en-pt-br, pt-br-en, etc)."
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/riva-translate-4b/Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf
-      --jinja
-      -ngl 99
-      --ctx-size 8192
-      --parallel 1
-      --temp 0
-      --top-p 1.0
-      --repeat-penalty 1.0
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      --metrics
-    ttl: 60
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: false
-      reranker: false
-      context: 8192
-    metadata:
-      source: "shivnathtathe/nvidia_Riva-Translate-4B-Instruct-v2-GGUF (Q4_K_M)"
-      kv_cache: "q8_0/q8_0"
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: mistral
-      parameters: 4000000000
-      context_length: 8192
-      embedding_length: 3072
-      quantization: Q4_K_M
-      note: "NVIDIA Riva NMT. 37 languages bidirectional. System prompt = language pair tag. Trained Nov 2025 - May 2026."
-# -------------------------------------------
 # TRANSLATEGEMMA 4B — Google translation model
 # Gemma 3-based, 55 languages, translation-focused
 # Arch: gemma3 — supported in upstream llama.cpp
@@ -2184,7 +2129,6 @@ matrix:
     # Tradução
     hmt: hy-mt2-1.8b
     tg: translategemma-4b
-    riva: riva-translate-4b
     # Português jurídico (Qwen3.5-9B LoRA, instruct)
     athenas: athenas-symbiote-9b
     # Audio
@@ -2218,7 +2162,7 @@ matrix:
 
     # Tradução (leve, cabe com embedding/reranker)
     translate_embed: "hmt & (nomic | lfmemb | lfmcol)"
-    translate_only: "hmt | tg | riva"
+    translate_only: "hmt | tg"
 
     # Português jurídico (9B denso, cabe com embedding)
     athenas_embed: "athenas & (nomic | lfmemb | lfmcol)"
@@ -2262,5 +2206,4 @@ matrix:
     m5a: 1
     hmt: 1
     tg: 2
-    riva: 2
     athenas: 4

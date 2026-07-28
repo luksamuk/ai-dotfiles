@@ -41,11 +41,6 @@ macros:
   # Caminho para ik_llama.cpp — fork otimizado para MoE (pinned memory, faster expert offload)
   # Build local em ~/git/ik_llama.cpp/build/bin/llama-server
   "ik_llama_server": "${env.HOME}/git/ik_llama.cpp/build/bin/llama-server"
-
-  # Caminho para nanbeige-llama.cpp — fork da Nanbeige com suporte a arquitetura nanbeige (Looped Transformer)
-  # Build local em ~/git/nanbeige-llama.cpp/build/bin/llama-server
-  # Necessário para Nanbeige4.2-3B (arquitetura custom: Looped Transformer, LoopSplit, mHC)
-  "nanbeige_llama_server": "${env.HOME}/git/nanbeige-llama.cpp/build/bin/llama-server"
   
   # Caminho para BeeLlama.cpp — fork com DFlash speculative decoding + TurboQuant KV cache
   # Build local em ~/git/beellama.cpp/build/bin/llama-server
