@@ -36,7 +36,7 @@
     ${fv5_llama_server} --port ${PORT}
     --model ${models_dir}/neutrino-8b/gguf/neutrino-8b-fv5.gguf
     --jinja
-    --fit on
+    -ngl 99
     --parallel 1
     --ctx-size 32768
     --temp 0.01
