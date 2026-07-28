@@ -15,12 +15,11 @@
   description: "Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices."
   cmd: |
     ${llama_server} --port ${PORT}
-    --model ${models_dir}/translategemma-4b-it.Q4_K_M.gguf
+    --model ${models_dir}/translategemma-4b/translategemma-4b-it.Q4_K_M.gguf
     --no-jinja
     --chat-template gemma
     --fit on
-    --fit-target 768
-    --fit-ctx ${small_model_min_ctx}
+    --parallel 1
     --ctx-size ${small_model_max_ctx}
     --temp 0.2
     --top-p 0.9

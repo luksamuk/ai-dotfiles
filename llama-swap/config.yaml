@@ -1948,6 +1948,126 @@ models:
         - "Supports voice cloning with reference audio samples"
         - "Portuguese (pt-BR) voices with accent control"
 # -------------------------------------------
+# RIVA-TRANSLATE-4B-INSTRUCT-V2 - UPSTREAM BACKEND
+# NVIDIA Riva Neural Machine Translation model
+# Architecture: MistralForCausalLM (mistral) — upstream suporta nativamente
+# 4B params, 34 layers, hidden 3072, GQA 4:1 (32 q, 8 kv), head_dim 128
+# Context: 8192 tokens (max_position_embeddings)
+# Vocab: 131072
+# 37 languages bidirectional (en <-> 36 non-English), includes pt-BR
+# System prompt = language pair tag (e.g. "en-pt-br", "pt-br-en")
+# License: NVIDIA Open Model License + Apache 2.0
+# Q4_K_M ~2.6 GB (shivnathtathe/nvidia_Riva-Translate-4B-Instruct-v2-GGUF)
+# -------------------------------------------
+  "riva-translate-4b":
+    name: "Riva Translate 4B v2"
+    description: "NVIDIA Riva NMT model: 4B Mistral, 37 languages bidirectional. Surpasses all in-house NMT models. System prompt = language pair tag (en-pt-br, pt-br-en, etc)."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/riva-translate-4b/Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf
+      --jinja
+      -ngl 99
+      --ctx-size 8192
+      --parallel 1
+      --temp 0
+      --top-p 1.0
+      --repeat-penalty 1.0
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --metrics
+    ttl: 60
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: false
+      reranker: false
+      context: 8192
+    metadata:
+      source: "shivnathtathe/nvidia_Riva-Translate-4B-Instruct-v2-GGUF (Q4_K_M)"
+      kv_cache: "q8_0/q8_0"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: mistral
+      parameters: 4000000000
+      context_length: 8192
+      embedding_length: 3072
+      quantization: Q4_K_M
+      note: "NVIDIA Riva NMT. 37 languages bidirectional. System prompt = language pair tag. Trained Nov 2025 - May 2026."
+# -------------------------------------------
+# TRANSLATEGEMMA 4B — Google translation model
+# Gemma 3-based, 55 languages, translation-focused
+# Arch: gemma3 — supported in upstream llama.cpp
+# Q4_K_M ~2.7GB (mradermacher/TranslateGemma-4B-GGUF)
+# NOTE: Native Jinja template uses custom content types
+#   (source_lang_code, target_lang_code) which crash
+#   llama.cpp chat template parser. Use --no-jinja
+#   with gemma template instead. Sprachspiel sends
+#   plain text prompts, so this works fine.
+# Recommended params from Ollama: temp=0.2, top_k=40, repeat_penalty=1.1
+# -------------------------------------------
+  "translategemma-4b":
+    name: "TranslateGemma 4B"
+    description: "Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/translategemma-4b/translategemma-4b-it.Q4_K_M.gguf
+      --no-jinja
+      --chat-template gemma
+      --fit on
+      --parallel 1
+      --ctx-size ${small_model_max_ctx}
+      --temp 0.2
+      --top-p 0.9
+      --top-k 40
+      --repeat-penalty 1.1
+      --cache-type-k ${small_cache_k}
+      --cache-type-v ${small_cache_v}
+      --flash-attn on
+      --metrics
+    health_check_timeout: 300
+    ttl: 60
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: false
+      reranker: false
+      context: 131072
+    metadata:
+      size: "~2.4 GB (Q4_K_M)"
+      context: "32K-128K (dynamic)"
+      vram_usage: "~3.5GB (model + cache)"
+      source: "mradermacher/translategemma-4b-it-GGUF (Q4_K_M, from google/translategemma-4b-it)"
+      kv_cache: "q8_0 + attn_rot"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma3
+      parameters: 3880000000
+      context_length: 131072
+      embedding_length: 2560
+      quantization: Q4_K_M
+      caveats:
+        - "Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma"
+        - "Needs explicit translation prompt (Sprachspiel format works)"
+      note: "Translation model. Sprachspiel translate mode default. 55 languages."
+# -------------------------------------------
 # UNLIMITED-OCR - UPSTREAM BACKEND (mmproj required)
 # Baidu Unlimited-OCR: DeepSeek-OCR architecture (SAM+CLIP vision tower + DeepSeek-V2 MoE text decoder)
 # 3B params, specialized in one-shot long-horizon document parsing
@@ -2063,6 +2183,8 @@ matrix:
     bonsai1: bonsai-27b-1bit
     # Tradução
     hmt: hy-mt2-1.8b
+    tg: translategemma-4b
+    riva: riva-translate-4b
     # Português jurídico (Qwen3.5-9B LoRA, instruct)
     athenas: athenas-symbiote-9b
     # Audio
@@ -2096,7 +2218,7 @@ matrix:
 
     # Tradução (leve, cabe com embedding/reranker)
     translate_embed: "hmt & (nomic | lfmemb | lfmcol)"
-    translate_only: "hmt"
+    translate_only: "hmt | tg | riva"
 
     # Português jurídico (9B denso, cabe com embedding)
     athenas_embed: "athenas & (nomic | lfmemb | lfmcol)"
@@ -2139,4 +2261,6 @@ matrix:
     lfm230: 1
     m5a: 1
     hmt: 1
+    tg: 2
+    riva: 2
     athenas: 4

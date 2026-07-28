@@ -1,0 +1,53 @@
+# -------------------------------------------
+# RIVA-TRANSLATE-4B-INSTRUCT-V2 - UPSTREAM BACKEND
+# NVIDIA Riva Neural Machine Translation model
+# Architecture: MistralForCausalLM (mistral) — upstream suporta nativamente
+# 4B params, 34 layers, hidden 3072, GQA 4:1 (32 q, 8 kv), head_dim 128
+# Context: 8192 tokens (max_position_embeddings)
+# Vocab: 131072
+# 37 languages bidirectional (en <-> 36 non-English), includes pt-BR
+# System prompt = language pair tag (e.g. "en-pt-br", "pt-br-en")
+# License: NVIDIA Open Model License + Apache 2.0
+# Q4_K_M ~2.6 GB (shivnathtathe/nvidia_Riva-Translate-4B-Instruct-v2-GGUF)
+# -------------------------------------------
+"riva-translate-4b":
+  name: "Riva Translate 4B v2"
+  description: "NVIDIA Riva NMT model: 4B Mistral, 37 languages bidirectional. Surpasses all in-house NMT models. System prompt = language pair tag (en-pt-br, pt-br-en, etc)."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/riva-translate-4b/Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf
+    --jinja
+    -ngl 99
+    --ctx-size 8192
+    --parallel 1
+    --temp 0
+    --top-p 1.0
+    --repeat-penalty 1.0
+    --cache-type-k q8_0
+    --cache-type-v q8_0
+    --metrics
+  ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 8192
+  metadata:
+    source: "shivnathtathe/nvidia_Riva-Translate-4B-Instruct-v2-GGUF (Q4_K_M)"
+    kv_cache: "q8_0/q8_0"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: mistral
+    parameters: 4000000000
+    context_length: 8192
+    embedding_length: 3072
+    quantization: Q4_K_M
+    note: "NVIDIA Riva NMT. 37 languages bidirectional. System prompt = language pair tag. Trained Nov 2025 - May 2026."
