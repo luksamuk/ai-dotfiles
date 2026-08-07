@@ -82,6 +82,18 @@ repeat_penalty = 1.0
 thinking = true
 tools = true
 
+[models."north-mini-code"]
+provider = "llama-swap"
+model_id = "north-mini-code:think"
+num_ctx = 65536
+temperature = 0.6
+top_p = 0.9
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
+thinking = true
+tools = true
+
 [models."glm-4.7-flash"]
 provider = "llama-swap"
 model_id = "glm-4.7-flash"

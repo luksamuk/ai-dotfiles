@@ -13,6 +13,7 @@
 #   copilot-local gemma4-e4b          # Use Gemma 4 E4B (think mode)
 #   copilot-local qwen3.5-9b          # Use Qwen 3.5 9B (think mode)
 #   copilot-local nmc                 # Use North Mini Code
+#   copilot-local nmc-base            # Use North Mini Code (base, no thinking)
 #   copilot-local -p "task"           # Print mode (non-interactive)
 #   copilot-local --bare -p "task" --max-turns 5
 #
@@ -47,6 +48,8 @@ declare -A MODELS=(
   [glm-4.7-flash-base]="glm-4.7-flash"
   [gemma4-e4b]="gemma4-e4b:think"
   [qwen3.5-9b]="qwen3.5-9b:think"
+  [nmc]="north-mini-code:think"
+  [nmc-base]="north-mini-code"
 )
 
 # Check if first arg is a model shortcut

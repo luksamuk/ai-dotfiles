@@ -285,6 +285,42 @@ providers:
         - medium
         - high
         - xhigh
+    - id: north-mini-code
+      name: North Mini Code
+      description: Cohere's first open-source agentic coding model. 30B MoE with only
+        3B active params, optimized for code generation, agentic software engineering,
+        and terminal tasks.
+      reasoning: true
+      input:
+      - text
+      contextWindow: 65536
+      maxTokens: 32768
+      thinking:
+        mode: effort
+        efforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
+    - id: north-mini-code:think
+      name: North Mini Code Thinking 🧠
+      description: Cohere's first open-source agentic coding model. 30B MoE with only
+        3B active params, optimized for code generation, agentic software engineering,
+        and terminal tasks.
+      reasoning: true
+      input:
+      - text
+      contextWindow: 65536
+      maxTokens: 32768
+      thinking:
+        mode: effort
+        efforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
     - id: glm-4.7-flash
       name: GLM 4.7 Flash
       description: GLM 4.7 Flash — fast agentic coding model with dual-mode thinking
