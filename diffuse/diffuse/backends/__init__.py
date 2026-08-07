@@ -144,6 +144,9 @@ def load_pipeline(model_name: str, editing: bool = False) -> tuple:
     elif backend_type == "framepack":
         from diffuse.backends.framepack import load_pipeline as load_pipeline_framepack
         return load_pipeline_framepack(editing=editing)
+    elif backend_type == "sd_cpp_video":
+        from diffuse.backends.sd_cpp import load_pipeline_sd_cpp_video
+        return load_pipeline_sd_cpp_video(model_name)
     else:
         raise ValueError(f"Unknown backend type: {backend_type}")
 

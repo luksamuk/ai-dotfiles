@@ -67,6 +67,39 @@ MODELS: dict[str, dict] = {
     },
     # Ideogram 4 (sd-cli / stable-diffusion.cpp)
     # Models auto-download from HuggingFace on first use (no pre-download needed).
+    # Wan2.2 TI2V 5B (sd-cli / stable-diffusion.cpp — video generation)
+    # Unified T2V + I2V model, dense 5B, high-compression VAE (4x16x16).
+    # GGUF from QuantStack, VAE from Comfy-Org repackaged.
+    "wan22-ti2v": {
+        "backend_type": "sd_cpp_video",
+        "category": "video",
+        "dir": "wan22-ti2v",
+        "bits": "Q4_K_M GGUF",
+        "description": "Wan2.2 TI2V 5B — unified T2V + I2V, 720p, high-compression VAE, fastest 720p@24fps",
+        "gguf_file": "Wan2.2-TI2V-5B-Q4_K_M.gguf",
+        "default_size": (832, 480),
+        "default_video_frames": 33,
+        "default_fps": 24,
+        "default_steps": 4,
+        "default_cfg": 1.0,
+        "default_flow_shift": 3.0,
+        "enhance_model": "qwen3.6-35b-a3b",
+        "enhance_type": "vision",
+        "hf_files": [
+            {"repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+             "files": ["Wan2.2-TI2V-5B-Q4_K_M.gguf"]},
+            {"repo": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+             "files": ["wan2.2_vae.safetensors"], "subdir": "vae",
+             "hf_path": "split_files/vae/wan2.2_vae.safetensors"},
+            {"repo": "city96/umt5-xxl-encoder-gguf",
+             "files": ["umt5-xxl-encoder-Q8_0.gguf"], "subdir": "text_encoder"},
+        ],
+        "components": [
+            {"name": "Wan2.2-TI2V-5B-Q4_K_M.gguf (DiT)", "path": "wan22-ti2v/Wan2.2-TI2V-5B-Q4_K_M.gguf", "size_gb": 3.4},
+            {"name": "wan2.2_vae.safetensors (VAE)", "path": "wan22-ti2v/vae/wan2.2_vae.safetensors", "size_gb": 1.4},
+            {"name": "umt5-xxl-encoder-Q8_0.gguf (T5)", "path": "wan22-ti2v/text_encoder/umt5-xxl-encoder-Q8_0.gguf", "size_gb": 3.5},
+        ],
+    },
     "ideogram4-q4": {
         "backend_id": "ideogram4-q4-sd-cpp",
         "dir": "ideogram-4-Q4_0",

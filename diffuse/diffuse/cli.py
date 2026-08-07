@@ -15,7 +15,7 @@ from diffuse.paths import setup_environment, DEFAULT_VISION_MODEL
 from diffuse.models import MODELS
 from diffuse.backends import load_pipeline, unload_pipeline, require_model_dir
 from diffuse.backends.gemlite import generate_image_gemlite
-from diffuse.backends.sd_cpp import generate_image_sd_cpp
+from diffuse.backends.sd_cpp import generate_image_sd_cpp, generate_video_sd_cpp
 from diffuse.backends.hidream import generate_image_hidream
 from diffuse.backends.framepack import generate_video_framepack
 from diffuse.llm import evict_llm, llama_swap_running_models
@@ -223,11 +223,41 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--input-image", metavar="IMAGE", type=Path, default=None,
-        help="Input image for FramePack I2V (image-to-video). Required for framepack-i2v model.",
+        help="Input image for I2V (image-to-video). Required for I2V mode, "
+             "not needed for T2V (text-to-video). Used by wan22-ti2v and framepack-i2v.",
     )
     p.add_argument(
         "--seconds", type=float, default=None,
         help="Video length in seconds for FramePack I2V (default: 5.0, max: 120).",
+    )
+    p.add_argument(
+        "--video-frames", type=int, default=None,
+        help="Number of video frames for Wan2.2 (default: 33, ~1.4s @ 24fps).",
+    )
+    p.add_argument(
+        "--fps", type=int, default=None,
+        help="Output video FPS for Wan2.2 (default: 24).",
+    )
+    p.add_argument(
+        "--negative-prompt", type=str, default=None,
+        help="Negative prompt for Wan2.2 video generation.",
+    )
+    p.add_argument(
+        "--flow-shift", type=float, default=None,
+        help="Flow shift for WAN flow models (default: 3.0).",
+    )
+    p.add_argument(
+        "--chain", type=int, default=None,
+        help="Chain N video segments using last-frame chaining. "
+             "Each segment uses the last frame of the previous as I2V input. "
+             "A VLM describes the frame and an LLM evolves the prompt between segments. "
+             "Use with --enhance and --enhance-with to control prompt evolution model.",
+    )
+    p.add_argument(
+        "--chain-vlm", type=str, default=None,
+        help="VLM model (llama-swap) for frame description in chain mode "
+             "(default: qwen3-vl-4b). The VLM sees the last frame and describes "
+             "the current visual state for prompt continuity.",
     )
     p.add_argument(
         "--cfg", type=float, default=None,
@@ -341,6 +371,11 @@ def main() -> None:
     # ── FramePack I2V early path ──────────────────────────────────────────────
     if backend_type == "framepack":
         _run_framepack(args, model_name, model_info, prompt, original_prompt, seed, width, height)
+        return
+
+    # ── Wan2.2 video (sd-cli) early path ─────────────────────────────────────
+    if backend_type == "sd_cpp_video":
+        _run_sd_cpp_video(args, model_name, model_info, prompt, original_prompt, seed, width, height)
         return
 
     # ── Bonsai subprocess early path ─────────────────────────────────────────
@@ -740,6 +775,361 @@ def _run_framepack(
         viewer = shutil.which("mpv") or shutil.which("vlc") or shutil.which("ffplay")
         if viewer:
             subprocess.Popen([viewer, str(output_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+
+
+def _run_sd_cpp_video(
+    args: argparse.Namespace,
+    model_name: str,
+    model_info: dict,
+    prompt: str,
+    original_prompt: str,
+    seed: int,
+    width: int,
+    height: int,
+) -> None:
+    """Handle Wan2.2 video generation via sd-cli (T2V, I2V, and chain mode)."""
+    from diffuse.enhance import analyze_image, enhance_vision_prompt
+
+    # Video params from args or model defaults
+    video_frames = args.video_frames or model_info.get("default_video_frames", 33)
+    fps = args.fps or model_info.get("default_fps", 24)
+    steps = args.steps or model_info.get("default_steps", 4)
+    cfg = args.cfg if args.cfg is not None else model_info.get("default_cfg", 1.0)
+    flow_shift = args.flow_shift or model_info.get("default_flow_shift", 3.0)
+    negative_prompt = args.negative_prompt or "low quality, blurry, static, distorted"
+    # 5B DiT fits on GPU (3.2GB), but VAE decode for video is memory-heavy.
+    # Keep VAE on CPU (video 3D conv is the OOM culprit), but give DiT full VRAM.
+    max_vram = model_info.get("default_max_vram", 5.1)
+    vae_on_cpu = True  # video VAE 3D conv OOMs on 6GB if on GPU
+
+    # Determine mode
+    is_i2v = args.input_image is not None
+    chain_segments = args.chain if args.chain else 0
+    mode = "chain" if chain_segments > 0 else ("i2v" if is_i2v else "t2v")
+
+    # Output directory
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+    out_dir = orig_cwd
+    out_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_model = model_name.replace(":", "_").replace("/", "_")
+
+    # Validate input image for I2V
+    input_image_path = None
+    if is_i2v:
+        input_image_path = args.input_image
+        if not input_image_path.exists():
+            orig_cwd_env = os.environ.get("DIFFUSE_ORIG_CWD", "")
+            if orig_cwd_env:
+                resolved = Path(orig_cwd_env) / input_image_path
+                if resolved.exists():
+                    input_image_path = resolved
+                else:
+                    print(f"  ✗ Input image not found: {input_image_path}")
+                    sys.exit(1)
+            else:
+                print(f"  ✗ Input image not found: {input_image_path}")
+                sys.exit(1)
+
+    # Evict LLMs before loading
+    running = llama_swap_running_models()
+    if running:
+        print(f"  🔄 Evicting LLM models: {', '.join(running)}")
+        evict_llm()
+        print(f"     VRAM freed for video generation")
+
+    print(f"  🎬 Wan2.2 {mode.upper()}: {width}×{height}, {video_frames} frames @ {fps}fps, {steps} steps, seed={seed}")
+    if is_i2v:
+        print(f"     Input: {Path(input_image_path).name}")
+
+    # ── Prompt enhancement (pre-generation, for all modes) ──
+    if args.enhance or args.enhance_with:
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
+        print(f"\n  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
+        enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
+        if enhanced and enhanced != prompt:
+            print(f"     Expanded to ({len(enhanced)} chars)")
+            if args.show_enhanced:
+                print(f"     ─────────────────────────────────")
+                print(f"     {enhanced}")
+                print(f"     ─────────────────────────────────")
+            prompt = enhanced
+        # Evict LLM after enhancement
+        evict_llm()
+
+    print(f"  [1/3] Loading Wan2.2 pipeline ({model_info['bits']})...")
+    pipeline, load_time = load_pipeline(model_name)
+    print(f"        Pipeline ready in {load_time:.1f}s")
+
+    # ── Simple T2V or I2V (no chain) ──
+    if chain_segments == 0:
+        output_file = str(out_dir / f"diffuse_{safe_model}_{ts}_seed{seed}.mp4")
+        output_path = Path(output_file)
+
+        print(f"  [2/3] Generating video ({'I2V' if is_i2v else 'T2V'})...")
+        wall_t0 = time.perf_counter()
+        output_path, diffusion_time, _ = generate_video_sd_cpp(
+            pipeline,
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            seed=seed,
+            width=width,
+            height=height,
+            video_frames=video_frames,
+            fps=fps,
+            steps=steps,
+            cfg_scale=cfg,
+            flow_shift=flow_shift,
+            input_image=str(input_image_path) if is_i2v else None,
+            output_path=output_path,
+            max_vram=max_vram,
+            vae_on_cpu=vae_on_cpu,
+        )
+        wall_time = time.perf_counter() - wall_t0
+
+        print(f"  [3/3] Unloading...")
+        unload_pipeline()
+
+        print()
+        print("═══ diffuse — Wan2.2 Video Report ═══")
+        print(f"  Model:       {model_name}")
+        print(f"  Mode:        {mode.upper()}")
+        print(f"  Prompt:      \"{original_prompt}\"")
+        if is_i2v:
+            print(f"  Input:       {Path(input_image_path).name}")
+        print(f"  Frames:      {video_frames} @ {fps}fps ({video_frames/fps:.1f}s)")
+        print(f"  Seed:        {seed}")
+        print(f"  Resolution:  {width}×{height}")
+        print(f"  Steps:       {steps}")
+        print()
+        print("  Timings:")
+        print(f"    Setup:      {load_time:7.2f} s")
+        print(f"    Generation: {diffusion_time:7.2f} s")
+        print(f"    ─────────────────────")
+        print(f"    Wall:       {wall_time:7.2f} s")
+        print()
+        print(f"  Output: {output_path}")
+        print("══════════════════════════════════════")
+
+        if args.open and output_path:
+            import shutil as _sh
+            viewer = _sh.which("mpv") or _sh.which("vlc") or _sh.which("ffplay")
+            if viewer:
+                subprocess.Popen([viewer, str(output_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        return
+
+    # ── Chain mode: last-frame chaining with prompt evolution ──
+    print(f"\n  🔗 Chain mode: {chain_segments} segments")
+    chain_vlm = args.chain_vlm or "qwen3-vl-4b"
+    segment_files = []
+    current_prompt = prompt
+    current_image = str(input_image_path) if is_i2v else None
+    current_seed = seed
+
+    for seg in range(chain_segments):
+        seg_num = seg + 1
+        print(f"\n  ── Segment {seg_num}/{chain_segments} ──")
+        print(f"     Prompt: \"{current_prompt[:120]}{'...' if len(current_prompt) > 120 else ''}\"")
+        if current_image:
+            print(f"     Input:  {Path(current_image).name}")
+
+        seg_output = str(out_dir / f"diffuse_{safe_model}_{ts}_chain{seg_num}_seed{current_seed}.mp4")
+        seg_path = Path(seg_output)
+
+        # Generate segment
+        output_path, diffusion_time, _ = generate_video_sd_cpp(
+            pipeline,
+            prompt=current_prompt,
+            negative_prompt=negative_prompt,
+            seed=current_seed,
+            width=width,
+            height=height,
+            video_frames=video_frames,
+            fps=fps,
+            steps=steps,
+            cfg_scale=cfg,
+            flow_shift=flow_shift,
+            input_image=current_image,
+            output_path=seg_path,
+            max_vram=max_vram,
+            vae_on_cpu=vae_on_cpu,
+        )
+        segment_files.append(str(output_path))
+        print(f"     Generated: {Path(output_path).name} ({diffusion_time:.1f}s)")
+
+        if seg < chain_segments - 1:
+            # Extract last frame for next segment
+            last_frame_path = out_dir / f"diffuse_{safe_model}_{ts}_chain{seg_num}_lastframe.png"
+            ffmpeg_cmd = [
+                "ffmpeg", "-y",
+                "-i", str(output_path),
+                "-vf", f"select='eq(n,{video_frames - 1})'",
+                "-vframes", "1",
+                "-q:v", "2",
+                str(last_frame_path),
+            ]
+            ff_result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
+            if ff_result.returncode != 0 or not last_frame_path.exists():
+                # Fallback: use last frame via ffmpeg without select filter
+                ffmpeg_cmd2 = [
+                    "ffmpeg", "-y",
+                    "-sseof", "-0.1",
+                    "-i", str(output_path),
+                    "-update", "1",
+                    "-frames:v", "1",
+                    "-q:v", "2",
+                    str(last_frame_path),
+                ]
+                ff_result2 = subprocess.run(ffmpeg_cmd2, capture_output=True, text=True)
+                if ff_result2.returncode != 0 or not last_frame_path.exists():
+                    print(f"     ⚠ Failed to extract last frame — using final frame directly")
+                    # Last resort: use ffprobe to find frame count then extract
+                    continue
+
+            print(f"     Last frame: {last_frame_path.name}")
+
+            # VLM describes the frame
+            vlm_description = ""
+            try:
+                print(f"     VLM analyzing frame via {chain_vlm}...")
+                vlm_description = analyze_image(
+                    str(last_frame_path), chain_vlm,
+                    f"Describe this video frame for continuity. What is visible? "
+                    f"Character position, pose, expression, environment, lighting, camera angle. "
+                    f"The video so far was generated from this prompt: \"{current_prompt}\". "
+                    f"Describe what the viewer sees NOW.",
+                )
+                if vlm_description:
+                    print(f"     VLM: {vlm_description[:200]}{'...' if len(vlm_description) > 200 else ''}")
+            except Exception as e:
+                print(f"     ⚠ VLM analysis failed: {e} — continuing without visual context")
+
+            # Evict VLM before LLM enhance
+            evict_llm()
+
+            # LLM evolves the prompt
+            evolve_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
+            print(f"     Evolving prompt via {evolve_model}...")
+            if vlm_description:
+                evolution_instruction = (
+                    f"You are continuing a video sequence. The previous segment was generated "
+                    f"from this prompt: \"{current_prompt}\".\n\n"
+                    f"The last frame shows: {vlm_description}\n\n"
+                    f"Write a NEW prompt for the next video segment that continues the action naturally. "
+                    f"Maintain visual continuity (same character, same environment). "
+                    f"Advance the narrative slightly. "
+                    f"Describe motion, camera, and atmosphere in natural English. "
+                    f"Output ONLY the prompt, no explanations."
+                )
+            else:
+                evolution_instruction = (
+                    f"You are continuing a video sequence. The previous segment was generated "
+                    f"from this prompt: \"{current_prompt}\".\n\n"
+                    f"Write a NEW prompt for the next video segment that continues the action naturally. "
+                    f"Maintain visual continuity. Advance the narrative slightly. "
+                    f"Describe motion, camera, and atmosphere in natural English. "
+                    f"Output ONLY the prompt, no explanations."
+                )
+
+            evolved_prompt = _evolve_chain_prompt(evolve_model, evolution_instruction)
+            if evolved_prompt:
+                current_prompt = evolved_prompt
+                print(f"     Evolved: {current_prompt[:120]}{'...' if len(current_prompt) > 120 else ''}")
+            else:
+                print(f"     ⚠ Prompt evolution failed — reusing previous prompt")
+
+            evict_llm()
+
+            current_image = str(last_frame_path)
+            current_seed = seed + seg + 1  # different seed per segment
+
+    # Concatenate segments with ffmpeg
+    print(f"\n  [3/3] Concatenating {len(segment_files)} segments...")
+    concat_file = out_dir / f"diffuse_{safe_model}_{ts}_concat_list.txt"
+    with open(concat_file, "w") as f:
+        for seg_path in segment_files:
+            f.write(f"file '{seg_path}'\n")
+
+    final_output = str(out_dir / f"diffuse_{safe_model}_{ts}_chain_seed{seed}.mp4")
+    concat_cmd = [
+        "ffmpeg", "-y",
+        "-f", "concat", "-safe", "0",
+        "-i", str(concat_file),
+        "-c", "copy",
+        final_output,
+    ]
+    concat_result = subprocess.run(concat_cmd, capture_output=True, text=True)
+    concat_file.unlink()
+
+    if concat_result.returncode != 0:
+        print(f"  ⚠ Concat failed — individual segments are still available")
+        print(f"     Segments: {segment_files}")
+    else:
+        print(f"  ✅ Concatenated → {final_output}")
+        # Optionally clean up individual segments
+        for seg_path in segment_files:
+            Path(seg_path).unlink()
+
+    unload_pipeline()
+
+    print()
+    print("═══ diffuse — Wan2.2 Chain Video Report ═══")
+    print(f"  Model:       {model_name}")
+    print(f"  Mode:        CHAIN ({chain_segments} segments)")
+    print(f"  Initial:     \"{original_prompt}\"")
+    if is_i2v:
+        print(f"  Input:       {Path(input_image_path).name}")
+    print(f"  Segments:    {chain_segments} × {video_frames} frames @ {fps}fps")
+    print(f"  Total:       {chain_segments * video_frames / fps:.1f}s")
+    print(f"  Seed:        {seed} (+1 per segment)")
+    print(f"  VLM:         {args.chain_vlm or 'qwen3-vl-4b'}")
+    print()
+    if concat_result.returncode == 0:
+        print(f"  Output: {final_output}")
+    print("══════════════════════════════════════")
+
+    if args.open and concat_result.returncode == 0:
+        import shutil as _sh
+        viewer = _sh.which("mpv") or _sh.which("vlc") or _sh.which("ffplay")
+        if viewer:
+            subprocess.Popen([viewer, final_output], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+
+
+def _evolve_chain_prompt(model: str, instruction: str) -> str:
+    """Use an LLM via llama-swap to evolve a prompt for the next chain segment."""
+    import urllib.request
+    import urllib.error
+
+    LLAMA_SWAP_URL = "http://127.0.0.1:12434"
+    payload = json.dumps({
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "You are a video prompt writer. Output ONLY the prompt text."},
+            {"role": "user", "content": instruction},
+        ],
+        "temperature": 0.7,
+        "max_tokens": 512,
+    }).encode("utf-8")
+
+    max_retries = 12
+    for attempt in range(max_retries):
+        try:
+            req = urllib.request.Request(
+                f"{LLAMA_SWAP_URL}/v1/chat/completions",
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=None) as resp:
+                data = json.loads(resp.read())
+                return data["choices"][0]["message"]["content"].strip()
+        except urllib.error.HTTPError as e:
+            if e.code == 400 and attempt < max_retries - 1:
+                time.sleep(10)
+                continue
+            return ""
+        except Exception:
+            return ""
 
 
 def _run_bonsai_image(

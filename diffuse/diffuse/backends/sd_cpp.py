@@ -118,26 +118,34 @@ def load_pipeline_sd_cpp_zimage(model_name: str, model_root: Path, sd_cli: str) 
 
 
 def load_pipeline_sd_cpp_video(model_name: str) -> tuple:
-    """Prepare sd-cli config for Wan2.2 I2V video generation. Returns (config_dict, 0.0)."""
+    """Prepare sd-cli config for Wan2.2 video generation. Returns (config_dict, 0.0).
+
+    Supports both the 5B TI2V (dense, unified T2V+I2V) and the 14B A14B (MoE).
+    The 5B uses wan2.2_vae (high-compression 4x16x16); the 14B uses wan_2.1_vae.
+    clip_vision is only needed for I2V — it's optional (loaded if present).
+    """
     model_info = MODELS[model_name]
     model_root = require_model_dir(model_name)
     sd_cli = _resolve_sd_cli()
 
-    # The AllInOne GGUF contains both low-noise and high-noise in one file
-    gguf_name = model_info.get("gguf_file", "wan2.2-i2v-rapid-aio-v10-nsfw-Q2_K.gguf")
+    gguf_name = model_info.get("gguf_file", "Wan2.2-TI2V-5B-Q4_K_M.gguf")
+
+    # VAE: 5B TI2V uses wan2.2_vae; 14B uses wan_2.1_vae
+    vae_name = model_info.get("vae_file", "wan2.2_vae.safetensors")
 
     config = {
         "sd_cli": sd_cli,
         "diffusion_model": str(model_root / gguf_name),
-        "vae": str(model_root / "vae" / "wan_2.1_vae.safetensors"),
+        "vae": str(model_root / "vae" / vae_name),
         "t5xxl": str(model_root / "text_encoder" / "umt5-xxl-encoder-Q8_0.gguf"),
-        # clip_vision must be GGUF format — safetensors has a 5D tensor that
-        # sd-cli's internal GGUF converter can't handle (patch_embedding.weight).
-        # Converted manually: clip_vision_h.safetensors → clip_vision_h.gguf
-        "clip_vision": str(model_root / "clip_vision" / "clip_vision_h.gguf"),
     }
 
-    # Verify all files exist
+    # clip_vision is only needed for I2V — load if present, but don't fail if missing
+    clip_vision_gguf = model_root / "clip_vision" / "clip_vision_h.gguf"
+    if clip_vision_gguf.exists():
+        config["clip_vision"] = str(clip_vision_gguf)
+
+    # Verify required files exist
     for key, path in config.items():
         if not Path(path).exists():
             raise FileNotFoundError(f"{key} not found: {path}")
@@ -287,21 +295,24 @@ def generate_video_sd_cpp(
     steps: int,
     cfg_scale: float,
     flow_shift: float,
-    input_image: str,
+    input_image: str | None,
     output_path: Path,
     max_vram: float = 5.1,
+    vae_on_cpu: bool = False,
 ) -> tuple:
-    """Generate video using sd-cli (Wan2.2 I2V).
+    """Generate video using sd-cli (Wan2.2 T2V or I2V).
 
-    The AllInOne GGUF merges low-noise + high-noise into one file, so we
-    only need --diffusion-model (no --high-noise-diffusion-model).
+    For T2V: input_image=None, clip_vision not needed.
+    For I2V: input_image required, clip_vision used if present in config.
 
     sd-cli outputs a PNG sequence; we assemble into MP4 with ffmpeg.
     Returns (mp4_path, wall_time_seconds, 0.0).
     """
+    is_i2v = input_image is not None
+    mode_label = "I2V" if is_i2v else "T2V"
     log.info(
-        "Generating Wan2.2 I2V: seed=%d %dx%d frames=%d fps=%d steps=%d cfg=%.1f",
-        seed, width, height, video_frames, fps, steps, cfg_scale,
+        "Generating Wan2.2 %s: seed=%d %dx%d frames=%d fps=%d steps=%d cfg=%.1f",
+        mode_label, seed, width, height, video_frames, fps, steps, cfg_scale,
     )
 
     # Output: sequence of PNGs in a temp dir, then ffmpeg → mp4
@@ -315,8 +326,6 @@ def generate_video_sd_cpp(
         "--diffusion-model", config["diffusion_model"],
         "--vae", config["vae"],
         "--t5xxl", config["t5xxl"],
-        "--clip_vision", config["clip_vision"],
-        "-i", input_image,
         "-p", prompt,
         "-n", negative_prompt,
         "--cfg-scale", str(cfg_scale),
@@ -331,12 +340,21 @@ def generate_video_sd_cpp(
         "--diffusion-fa",
         "--offload-to-cpu",
         "--clip-on-cpu",
-        "--vae-on-cpu",
         "--stream-layers",
         "--max-vram", str(max_vram),
         "--vae-tiling",
         "-o", frame_pattern,
     ]
+
+    # VAE on CPU only for large models (14B) — 5B fits VAE on GPU
+    if vae_on_cpu:
+        cmd.insert(cmd.index("--stream-layers"), "--vae-on-cpu")
+
+    # I2V: add clip_vision and input image
+    if is_i2v:
+        if "clip_vision" in config:
+            cmd += ["--clip_vision", config["clip_vision"]]
+        cmd += ["-i", str(input_image)]
 
     t0 = time.perf_counter()
     result = subprocess.run(cmd, capture_output=True, text=True)
