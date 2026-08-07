@@ -1,0 +1,77 @@
+# llama-swap configuration for Termux on Samsung S25 FE (Exynos 2500)
+# CPU-only, 8GB RAM (~2.7GB free), aarch64
+# SINGLE MODEL AT A TIME -- zero parallelism, never two models loaded
+#
+# Repositório: ~/git/ai-dotfiles/llama-android/
+# Modelos: ~/models/ (no celular)
+# Requer: llama-swap compiled for aarch64 Termux
+# Requer: llama.cpp compiled for aarch64 Termux (~/llama.cpp/build/bin/llama-server)
+#
+# DIFERENÇAS vs llama-swap do Navi:
+#   - Sem CUDA/GPU, CPU-only
+#   - Sem --fit (não tem VRAM pra gerenciar)
+#   - Sem flash-attn (CPU não suporta)
+#   - Sem KV cache quantizado (CPU não beneficia, economiza compute)
+#   - Contexto pequeno: 4K-8K (RAM limitada)
+#   - 1 modelo por vez, matrix com 1 set, 1 var
+#   - Threads: 4 (cores A725, os A520 são lentos pra matmul)
+
+healthCheckTimeout: 120
+logLevel: info
+logTimeFormat: "rfc3339"
+logToStdout: "proxy"
+captureBuffer: 15
+startPort: 8182
+sendLoadingState: false
+includeAliasesInList: true
+globalTTL: 900
+
+macros:
+  "models_dir": "${env.HOME}/models"
+  "templates_dir": "${env.HOME}/llama-android/templates"
+  "llama_server": "${env.HOME}/llama.cpp/build/bin/llama-server"
+
+  # Threads: 4 cores A725 do Exynos 2500 (os A520 quase não ajudam)
+  "cpu_threads": "4"
+
+  # Contexto: 4096 padrão (RAM apertada, 8GB total ~2.7GB livre)
+  "default_ctx": "4096"
+
+  # Parâmetros de inferência (mesmos do Navi, baseados no Unsloth)
+  "default_temp": "0.7"
+  "default_top_p": "0.9"
+  "default_top_k": "20"
+  "default_min_p": "0.01"
+  "default_repeat_penalty": "1.05"
+
+  # Thinking/reasoning
+  "think_temp": "0.6"
+  "think_top_p": "0.9"
+  "think_top_k": "20"
+  "think_min_p": "0.0"
+  "think_repeat_penalty": "1.0"
+
+# ============================================
+# SWAP MATRIX -- 1 modelo por vez
+# ============================================
+# No celular só cabe 1 modelo carregado na RAM.
+# A matrix tem 1 var por set, garantindo que nunca
+# dois modelos tentem coexistir.
+# ============================================
+
+matrix:
+  vars:
+    lfm26: lfm2.5-2.6b
+    qw2: qwen3.5-2b
+    qw4: qwen3.5-4b
+
+  sets:
+    # Só 1 modelo por vez -- cada set é 1 var isolada
+    single_lfm26: "lfm26"
+    single_qw2: "qw2"
+    single_qw4: "qw4"
+
+  evict_costs:
+    lfm26: 1
+    qw2: 1
+    qw4: 1

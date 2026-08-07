@@ -1,0 +1,58 @@
+# -------------------------------------------
+# Qwen3.5-4B - Alibaba multimodal agentic model
+# 4B params, 32 layers (Gated DeltaNet + Gated Attention), text+image
+# Function-calling nativo, RL training, 201 languages
+# Hybrid architecture: 8x (3x DeltaNet + 1x Attention) + FFN
+# Context: 262K nativo (limitado pela RAM no celular: 8K)
+# UD-Q2_K_XL = 1.94 GB -- Unsloth Dynamic Q2, melhor que Q2 convencional
+# Params: temp 0.6 (thinking), top_p 0.9, top_k 20 (Unsloth recommended)
+# Thinking ALWAYS ON
+# NOTE: Q2 é agressivo mas 4B tem mais capacidade que 2B mesmo em Q2
+# -------------------------------------------
+models:
+  "qwen3.5-4b":
+    name: "Qwen3.5 4B"
+    description: "Alibaba agentic multimodal model. 4B with Gated DeltaNet + function-calling. Larger but more capable than 2B."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.5-4B-UD-Q2_K_XL.gguf
+      --ctx-size 8192
+      --parallel 1
+      --threads ${cpu_threads}
+      --temp 0.6
+      --top-p 0.9
+      --top-k 20
+      --min-p 0.0
+      --repeat-penalty 1.0
+      --jinja
+      --no-webui
+    filters:
+      stripParams: "temperature, top_p, top_k"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+          top_k: 20
+    health_check_timeout: 120
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 8192
+    metadata:
+      size: "~1.94 GB (UD-Q2_K_XL)"
+      context: "8K (RAM limited, Q2 model)"
+      source: "unsloth/Qwen3.5-4B-GGUF (UD-Q2_K_XL)"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+      architecture: qwen3.5
+      parameters: 4210000000
+      quantization: UD-Q2_K_XL

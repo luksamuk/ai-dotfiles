@@ -1,0 +1,58 @@
+# -------------------------------------------
+# Qwen3.5-2B - Alibaba multimodal agentic model
+# 2B params, 24 layers (Gated DeltaNet + Gated Attention), text+image
+# Function-calling nativo, RL training, 201 languages
+# Hybrid architecture: 6x (3x DeltaNet + 1x Attention) + FFN
+# Context: 262K nativo (limitado pela RAM no celular: 32K)
+# Q4_K_M = 1.28 GB -- best agentic model for this phone
+# Unsloth GGUF: chat template embutido
+# Params: temp 0.6 (thinking), top_p 0.9, top_k 20 (Unsloth recommended)
+# Thinking ALWAYS ON -- benchmarks muito melhores com thinking
+# -------------------------------------------
+models:
+  "qwen3.5-2b":
+    name: "Qwen3.5 2B"
+    description: "Alibaba agentic multimodal model. 2B with Gated DeltaNet + function-calling. Best agentic model for edge."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/Qwen3.5-2B-Q4_K_M.gguf
+      --ctx-size 32768
+      --parallel 1
+      --threads ${cpu_threads}
+      --temp 0.6
+      --top-p 0.9
+      --top-k 20
+      --min-p 0.0
+      --repeat-penalty 1.0
+      --jinja
+      --no-webui
+    filters:
+      stripParams: "temperature, top_p, top_k"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+          top_k: 20
+    health_check_timeout: 120
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 32768
+    metadata:
+      size: "~1.28 GB (Q4_K_M)"
+      context: "32K (RAM limited)"
+      source: "unsloth/Qwen3.5-2B-GGUF (Q4_K_M)"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+      architecture: qwen3.5
+      parameters: 2000000000
+      quantization: Q4_K_M

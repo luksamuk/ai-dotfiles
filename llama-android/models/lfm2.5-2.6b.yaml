@@ -1,0 +1,57 @@
+# -------------------------------------------
+# LFM2.5-2.6B - Liquid AI agentic on-device model
+# 2.69B params, 30 layers (22 conv + 8 GQA), text-only
+# Reasoning model: always thinks (tag 205) -- cannot be disabled
+# ChatML-like format, GGUF has NO chat_template -- uses lfm2.5-chat-template.jinja
+# Model card params: temp=0.1, top_k=50, repeat_penalty=1.1
+# Agentic RL post-training, strong tool calling
+# Q4_K_M = 1.68 GB -- fits with ~1GB left for KV cache
+# Only 8/30 layers are attention (GQA), KV cache is tiny -- 8K context OK
+# -------------------------------------------
+models:
+  "lfm2.5-2.6b":
+    name: "LFM 2.5 2.6B"
+    description: "Liquid AI on-device agentic model. 2.6B dense hybrid. Reasoning always on. Best tool use for its size."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/LFM2.5-2.6B-Q4_K_M.gguf
+      --ctx-size 32768
+      --parallel 1
+      --threads ${cpu_threads}
+      --reasoning on
+      --chat-template-file ${templates_dir}/lfm2.5-chat-template.jinja
+      --temp 0.1
+      --top-p 0.9
+      --top-k 50
+      --min-p 0.0
+      --repeat-penalty 1.1
+      --jinja
+      --no-webui
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 0.1
+          top_p: 0.9
+    health_check_timeout: 120
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 32768
+    metadata:
+      size: "~1.68 GB (Q4_K_M)"
+      context: "8K (KV cache tiny: 8/30 layers attention)"
+      source: "bartowski/LiquidAI_LFM2.5-2.6B-GGUF (Q4_K_M)"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+      architecture: lfm2
+      parameters: 2690000000
+      quantization: Q4_K_M
