@@ -1,0 +1,80 @@
+# -------------------------------------------
+# LFM2.5-2.6B - Liquid AI agentic on-device model (dense hybrid, text-only)
+# 2.69B params, 30 layers (22 double-gated short conv + 8 GQA)
+# Pre-trained on ~34T tokens, 128K context, 128K vocab
+# 16 languages including Portuguese
+# Reasoning model: always thinks before answering (tag 205)
+# ChatML-like format, same as LFM2.5-8B-A1B
+# GGUF has NO chat_template - requires --chat-template-file
+# Backend: upstream llama.cpp (lfm2 arch supported, dense model)
+# Model card params: temp=0.1, top_k=50, repeat_penalty=1.1
+# Agentic RL post-training: trained inside Hermes Agent, OpenClaw, Pi
+# Strong tool calling (ToolSandbox 77.83, ahead of Qwen3.5-9B at 76.44)
+# Q8_0 = 2.87 GB - fits entirely in VRAM with room for context
+# Only 8/30 layers are attention (GQA), KV cache is tiny - keep f16 (q8_0 is pure dequant overhead)
+# -------------------------------------------
+lfm2.5-2.6b:
+  name: "LFM 2.5 2.6B"
+  description: "Liquid AI on-device agentic model. 2.6B dense hybrid with 128K context. Trained with agentic RL inside Hermes Agent. Best-in-class tool use for its size."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-Q6_K.gguf
+    --fit on
+    --fit-target ${vram_margin}
+    --fit-ctx 131072
+    --ctx-size 131072
+    --parallel 1
+    --reasoning on
+    --chat-template-file ${templates_dir}/lfm2.5-chat-template.jinja
+    --temp 0.1
+    --top-p 0.9
+    --top-k 50
+    --min-p 0.0
+    --repeat-penalty 1.1
+    --cache-type-k q4_0
+    --cache-type-v q4_0
+    --flash-attn on
+    --jinja
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 0.1
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.1
+        top_p: 0.9
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in:
+      - 'text'
+    out:
+      - 'text'
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~2.22 GB (Q6_K)"
+    context: "64K-128K (dynamic)"
+    vram_usage: "~4.6GB VRAM (model 2.22GB + q4_0 KV 131K + compute)"
+    source: "LiquidAI/LFM2.5-2.6B-GGUF (Q6_K)"
+    kv_cache: "q4_0 (8/30 layers attention, 131K full VRAM in 6GB)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: lfm2
+    parameters: 2690000000
+    context_length: 131072
+    embedding_length: 2048
+    quantization: Q6_K
+    note: "Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja."

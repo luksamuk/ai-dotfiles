@@ -1,0 +1,85 @@
+# -------------------------------------------
+# MAPLE-PREVIEW — DeepGrove 20B-A1B ternary reasoning LLM
+# deepgrove/maple-preview — 20.2B total / 1.49B active MoE, 256 experts (8 active)
+# Weight format: TQ2_0 (ternary 2-bit, native-trained not post-quant)
+#   No fork needed — mainline supports TQ1_0/TQ2_0 since b9563+
+#   BUT: architecture 'maple' requires fork: github.com/deepgrove-ai/llama.cpp
+#   Fork adds LLM_ARCH_MAPLE + src/models/maple.cpp
+#   Build: ~/git/llama.cpp-maple/build/bin/llama-server
+# 5.5 GB on disk. Fits in RTX 3050 6GB VRAM with ~500MiB for KV cache.
+# Architecture: 24 layers, 256 experts (8 active), 3:1 SWA-512:GA attention.
+# 131K context (will be reduced by --fit if VRAM is tight).
+# LM head: Q4_K (2x faster decode vs F16 head, minimal quality loss).
+# Reasoning model — strong at math/coding. Tool calling works (ChatML template with native tool support, verified via testchat), but minimal agentic post-training per model card — may be less reliable in complex multi-turn agentic scenarios.
+# MIT license.
+#
+# Sampling: temp 1.0, top_p 0.95 per model card.
+# -------------------------------------------
+"maple-preview":
+  name: "Maple Preview 20B-A1B"
+  description: "DeepGrove's 20B-A1B ternary reasoning model — 1.49B active MoE with 256 experts, native 2-bit weights. SOTA reasoning for weight class. 5.5 GB, 131K context. Runs at 250+ t/s on CPU."
+  cmd: |
+    ${env.HOME}/git/llama.cpp-maple/build/bin/llama-server --port ${PORT}
+    --model ${models_dir}/maple-preview/maple-preview-TQ2_0-head-Q4_K.gguf
+    --jinja
+    --reasoning on
+    -ngl 99
+    --fit on
+    --fit-target ${vram_margin}
+    --fit-ctx 131072
+    --ctx-size 131072
+    --temp 1.0
+    --top-p 0.95
+    --top-k 20
+    --min-p 0
+    --repeat-penalty 1.0
+    --parallel 1
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p, top_k, min_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 20
+        min_p: 0
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 20
+        min_p: 0
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~5.5 GB (TQ2_0 ternary 2-bit + Q4_K head)"
+    context: "131K (with --fit auto-reduction on 6GB VRAM)"
+    vram_usage: "~5.5 GB model + KV cache (fits in 6GB with reduced context)"
+    source: "deepgrove/maple-preview-GGUF (TQ2_0-head-Q4_K)"
+    kv_cache: "q4_0 + attn_rot"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: maple
+    parameters: 20200000000
+    context_length: 131072
+    embedding_length: 2560
+    quantization: TQ2_0 (ternary 2-bit, native-trained)

@@ -1,0 +1,96 @@
+# -------------------------------------------
+# AMD INSTELLA-MOE-16B-A3B-THINK
+#
+# Architecture: instella-moe (DeepSeek-V3 family with Gated MLA)
+#   - 16B total params, 2.8B active per token (6/64 routed + 2 shared experts)
+#   - 27 layers, hidden 2048, Gated Multi-head Latent Attention
+#   - FarSkip-Collective connectivity (training/inference efficiency)
+#   - 32K native context, trained to 64K with YaRN
+#   - Pipeline: pretrain -> midtrain -> long-ctx -> SFT -> DPO -> RL
+#   - RL focused on instruction following (IFEval 83.70)
+#
+# "Think" = RL-refined checkpoint, NOT structured thinking mode.
+#   No thinking tags in chat template. CoT is inline in content.
+#   --reasoning on has no effect (no tags to extract).
+#
+# NOT agentic — template has tool_call syntax but model does not
+#   emit tool_calls reliably. No tool-use training in the pipeline.
+#   Best used as a chat/instruction-following model.
+#
+# Backend: llama-instella fork (csabakecskemeti/llama.cpp instella-moe branch)
+#   NOT in upstream llama.cpp or ik_llama.cpp — temporary fork
+#   Binary: ~/git/llama-instella/build/bin/llama-server
+#   Same CLI params as upstream llama.cpp (no ik_llama-specific flags)
+#
+# Quant: Q3_K_M (8.2 GB) from DevQuasar GGUF
+#   Minimal KV cache due to MLA compression
+#
+# Samplers (from model card official example):
+#   temperature: 0.6, top_p: 0.95, do_sample: true
+#   No top_k, min_p, or repeat_penalty specified by AMD
+#
+# Performance (RTX 3050 6GB):
+#   18/27 layers on GPU (~4.7GB VRAM), 9 on CPU — partial offload
+#   ~33-38 t/s generation, ~87-96 t/s prompt
+#   Cold start: ~2s (mmap)
+#
+# License: Research RAIL (academic/research use only, no commercial)
+# Paper: arxiv 2511.10628
+# -------------------------------------------
+"instella-moe-16b":
+  name: "AMD Instella-MoE 16B"
+  description: "AMD's fully open MoE — 16B total, 2.8B active. Gated MLA + FarSkip-Collective. Trained from scratch on MI300X. RL-refined instruction following (IFEval 83.70). SOTA among fully open models at this scale. English only."
+  cmd: |
+    /home/alchemist/git/llama-instella/build/bin/llama-server --port ${PORT}
+    --model ${models_dir}/Instella-MoE-16B-A3B-Think-Q3_K_M.gguf
+    --fit on
+    --fit-ctx 8192
+    --ctx-size 32768
+    --parallel 1
+    --temp 0.6
+    --top-p 0.95
+    --repeat-penalty 1.0
+    --jinja
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --flash-attn auto
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 32768
+  metadata:
+    size: "~8.2 GB (Q3_K_M)"
+    context: "32K (native, trained 64K with YaRN)"
+    vram_usage: "~4.7GB VRAM + ~3.5GB RAM (18/27 layers on GPU)"
+    source: "DevQuasar/amd.Instella-MoE-16B-A3B-Think-GGUF"
+    kv_cache: "q8_0 (MLA compressed — negligible)"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: instella-moe
+    parameters: 16000000000
+    active_parameters: 2800000000
+    context_length: 32768
+    embedding_length: 2048
+    quantization: Q3_K_M
+    license: "Research RAIL"
+    paper: "arxiv 2511.10628"
+    backend: "llama-instella fork (temporary, not in upstream/ik_llama)"
+    note: "AMD's first fully open MoE. Gated MLA + FarSkip-Collective. SOTA among fully open at 2.8B active. RL-refined IF (IFEval 83.70). Not agentic — chat/instruction-following model. English only. Research RAIL license — non-commercial."

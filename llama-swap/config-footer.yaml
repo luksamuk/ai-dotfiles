@@ -32,9 +32,15 @@ matrix:
     # Modelos pequenos
     q4: qwen3.5-4b
     lfm230: lfm2.5-230m
-    m5a: minicpm5-1b-agentic
+    # m5a: minicpm5-1b-agentic  # disabled
     lfm8: lfm2.5-8b-a1b
+    lfm26: lfm2.5-2.6b
     nb42: nanbeige4.2-3b
+    # Portal 2 personality cores (conversational, Q8_0)
+    spc: space-core
+    fct: fact-core
+    adv: adventure-core
+    # inst: instella-moe-16b  # disabled
     # Vision
     vl: lfm2.5-vl-450m
     vl16: lfm2.5-vl-1.6b
@@ -51,13 +57,14 @@ matrix:
     glm: glm-4.7-flash
     # Bonsai 1-bit reativado Jul 2026 — Q1_0 CUDA no upstream, ngram-mod spec decode
     bonsai1: bonsai-27b-1bit
+    btl4: btl-4-compact
     # Tradução
     hmt: hy-mt2-1.8b
     tg: translategemma-4b
     # Português jurídico (Qwen3.5-9B LoRA, instruct)
-    athenas: athenas-symbiote-9b
+    # athenas: athenas-symbiote-9b  # disabled
     # Audio
-    asr: qwen3-asr-0.6b
+    # asr: qwen3-asr-0.6b  # disabled
     ttsext: qwen3-tts
     # Embedding
     nomic: nomic-embed-text-v2-moe
@@ -67,13 +74,13 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | aa4 | lfm230 | lfm8) & vl & (nomic | lfmemb | lfmcol)"
+    small_vision: "(q4 | aa4 | lfm230 | lfm8 | lfm26) & vl & (nomic | lfmemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | aa4 | lfm230 | lfm8) & (nomic | lfmemb | lfmcol)"
+    small_embed: "(q4 | aa4 | lfm230 | lfm8 | lfm26 | spc | fct | adv) & (nomic | lfmemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | aa4 | lfm230 | lfm8 | m5a | nb42"
+    small_only: "q4 | aa4 | lfm230 | lfm8 | lfm26 | nb42 | spc | fct | adv"
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "vl | vl16 | ocr | uocr | qwvl"
@@ -83,21 +90,17 @@ matrix:
     medium: "(q9 | g4) & (nomic | lfmemb | lfmcol)"
 
     # Modelos pesados (offload) + Embedding/Reranker
-    heavy: "(kat | aw | glm | bonsai1) & (nomic | lfmemb | lfmcol)"
+    heavy: "(kat | aw | glm | bonsai1 | btl4) & (nomic | lfmemb | lfmcol)"
 
     # Tradução (leve, cabe com embedding/reranker)
     translate_embed: "hmt & (nomic | lfmemb | lfmcol)"
     translate_only: "hmt | tg"
 
-    # Português jurídico (9B denso, cabe com embedding)
-    athenas_embed: "athenas & (nomic | lfmemb | lfmcol)"
-    athenas_only: "athenas"
-
     # External TTS (separate process, same GPU)
     tts_external: "ttsext"
 
     # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
-    embed_only: "nomic | lfmemb | lfmcol"
+    embed_only: "nomic & lfmemb & lfmcol"
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
@@ -111,6 +114,7 @@ matrix:
     aw: 9
     glm: 9
     bonsai1: 7
+    btl4: 9
     q9: 4
     g4: 3
     ttsext: 4
@@ -122,13 +126,14 @@ matrix:
     vl16: 2
     q4: 2
     lfm8: 2
+    lfm26: 2
     nb42: 2
-    asr: 2
     nomic: 1
     lfmemb: 1
     lfmcol: 1
     lfm230: 1
-    m5a: 1
     hmt: 1
     tg: 2
-    athenas: 4
+    spc: 1
+    fct: 2
+    adv: 2

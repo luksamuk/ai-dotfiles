@@ -23,13 +23,10 @@
 |--------|-------|--------|-----------|--------|
 | **llama.cpp** (upstream) | v674 `35c9b1f39` | `~/git/llama.cpp/build/bin/llama-server` | `--fit`/`--fit-target`, VLM/mmproj via libmtmd, MTP speculative decoding, best dense model support | Dense models, VLMs, LFM2.5 |
 | **ik_llama.cpp** | v4542 `b4e1d916` | `~/git/ik_llama.cpp/build/bin/llama-server` | `--k-cache-hadamard`/`--v-cache-hadamard` (hadamard KV), `--defer-experts` (faster MoE load), `--flash-attn auto`, pinned memory for MoE expert offload | MoE models, dense models with hadamard KV |
-| **BeeLlama.cpp** | v9459/v0.2.0 `07ac3cec6` | `~/git/beellama.cpp/build/bin/llama-server` | `turbo3_tcq`/`turbo4_tcq` KV cache (~5× compression), DFlash speculative decoding | TurboQuant KV cache models (no `--fit`, must use `--n-gpu-layers 99`) |
 
 ### Engine Selection Notes
 
 - **ik_llama.cpp** is preferred for MoE models due to pinned memory and `--defer-experts` reducing load time.
-- **BeeLlama.cpp** lacks `--fit`/`--fit-margin`; models must fit entirely in VRAM (`--n-gpu-layers 99`).
-- **BeeLlama.cpp** `turbo3_tcq` crashes with MoE (256 experts) — bug reported in v0.1.2, may be fixed in v0.2.0.
 - **ik_llama.cpp** segfaults with LittleLamb 0.3B (qwen3 arch) — use upstream only.
 - **ik_llama.cpp** MTP does NOT work on 6 GB VRAM for dense models (SSM buffer or overhead causes OOM).
 
@@ -178,17 +175,16 @@
 |-----------|-------|
 | **Source** | Qwen3.5 4B (dense) |
 | **Quant** | i1-Q4_K_M (~2.52 GB) |
-| **Backend** | `bee_server` (BeeLlama v9459/v0.2.0) — TurboQuant KV cache |
-| **KV cache** | `turbo3_tcq` K+V (~5× compression) |
-| **Flash attention** | `--flash-attn on` |
-| **Context** | 131072 (fixed ctx, `--n-gpu-layers 99`) |
+| **Backend** | `ik_llama_server` (ik v4542) — hadamard KV cache |
+| **KV cache** | `q8_0` K + `q4_0` V + hadamard (`-khad`/`-vhad`) |
+| **Flash attention** | `--flash-attn auto` |
+| **Context** | Dynamic, `--fit --fit-margin 512` |
 | **Thinking** | ✅ Yes — dual mode |
 | **Tool calling** | ✅ Yes |
 | **Vision** | ❌ No (`--no-mmproj`) |
 | **Sampling** | `temp=${default_temp} / top-p=${default_top_p} / top-k=${default_top_k} / min-p=${default_min_p}` |
 | **TTL** | 60s |
-| **Benchmarks** | BeeLlama turbo4 on Qwen3.5-4B: **+29–35% speedup** at 8–16K context, **~2×** at 32K+ |
-| **Known issues** | BeeLlama lacks `--fit`; `turbo3_tcq` crashes with MoE models |
+| **Known issues** | — |
 
 ---
 
@@ -198,7 +194,7 @@
 |-----------|-------|
 | **Source** | Qwen3.5 9B (dense) |
 | **Quant** | UD-Q4_K_XL (~5.55 GB) |
-| **Backend** | `ik_llama_server` (ik v4542) — BeeLlama segfaults with this model |
+| **Backend** | `ik_llama_server` (ik v4542) |
 | **KV cache** | `q8_0` K + `q4_0` V + hadamard (`-khad`/`-vhad`) |
 | **Flash attention** | `--flash-attn auto` |
 | **Context** | Dynamic, `--fit --fit-margin 512` |
@@ -207,7 +203,7 @@
 | **Vision** | ❌ No — mmproj exists but blocks offload |
 | **Sampling** | `temp=${default_temp} / top-p=${default_top_p} / top-k=${default_top_k} / min-p=${default_min_p}` |
 | **TTL** | 60s |
-| **Known issues** | BeeLlama segfaults with this model; mmproj blocks partial offload so `--no-mmproj` required |
+| **Known issues** | mmproj blocks partial offload so `--no-mmproj` required |
 
 ---
 
@@ -312,7 +308,6 @@ Configs preserved in `models/_disabled/` (GGUF deleted, can be re-downloaded):
 
 | Config | Description | Reason Disabled |
 |--------|-------------|-----------------|
-| `gemma4-e4b-bee.yaml` | Gemma 4 E4B on BeeLlama backend | Superseded by ik_llama backend |
 | `granite-3.3-8b-vllm.yaml` | Granite 3.3 8B on vLLM | vLLM OOM on 6 GB VRAM |
 | `granite-4.0-h-1b*.yaml` | Granite 4.0 1B variants | — |
 | `hunyuan-7b.yaml` | Hunyuan 7B | — |
@@ -321,16 +316,14 @@ Configs preserved in `models/_disabled/` (GGUF deleted, can be re-downloaded):
 | `lfm2.5-sgl.yaml` | LFM2.5 on SGLang | SGLang OOM on 6 GB VRAM |
 | `ministral-3-3b.yaml` | Ministral 3B | — |
 | `qwen3.5-0.8b*.yaml` | Qwen3.5 0.8B variants | — |
-| `qwen3.5-9b-bee.yaml` | Qwen3.5 9B on BeeLlama | BeeLlama segfaults with this model |
 | `qwen3-8b.yaml` | Qwen3 8B | — |
 | `qwopus-35b.yaml` | Qwopus 35B | — |
-| `qwopus-coder-9b-bee.yaml` | Qwopus Coder 9B on BeeLlama | Alternative backend config |
 | `qwopus-coder-9b-ik.yaml` | Qwopus Coder 9B on ik (alt config) | Alternative config, merged |
 | `smolllm3-3b.yaml` | SmolLM3 3B | — |
 
 ### Notable Disabled Backend Configs
 
-- **`qwen3.5-4b-upstream.yaml`**: Original upstream llama.cpp config with `q8_0` cache + `--fit` → replaced by BeeLlama turbo3_tcq backend
+- **`qwen3.5-4b-upstream.yaml`**: Original upstream llama.cpp config with `q8_0` cache + `--fit` → replaced by ik_llama hadamard backend
 - **`qwen3.5-9b-upstream.yaml`**: Original upstream llama.cpp config with `q4_0` cache + `--fit` → replaced by ik_llama hadamard backend
 
 ---
@@ -352,11 +345,9 @@ Configs in `models/_removed/` (dead code):
 | **Gemma 4 mmproj CUDA crash** | gemma4-e2b, gemma4-e4b | llama.cpp issue [#21402](https://github.com/ggml-org/llama.cpp/issues/21402) — all Gemma 4 models are text-only |
 | **ik_llama segfault with LittleLamb 0.3B** | ~~littlelamb-0.3b-tc~~ | REMOVED Jun 2026 — tool-calling broken, too small |
 | **ik_llama MTP OOM on 6 GB for dense** | Dense models with MTP | SSM buffer or overhead causes OOM — MTP disabled for dense models |
-| **BeeLlama turbo3_tcq MoE crash** | MoE models with 256 experts | Bug in Bee v0.1.2, may be fixed in v0.2.0 — avoid turbo3_tcq with MoE |
 | **MiniCPM5-1B tool calling broken** | (not in active roster) | llama.cpp autoparser `TAG_WITH_TAGGED` boundary bug |
 | **SGLang/vLLM OOM** | Any SGLang or vLLM backend | Both backends OOM on 6 GB VRAM — not viable |
 | **Gemma4 iSWA attn_rot** (FIXED) | gemma4-e2b, gemma4-e4b | Fixed in commit `4eb19514d` (build b8815+) — `q4_0` cache now works correctly |
-| **BeeLlama lacks --fit** | qwen3.5-4b | Must use `--n-gpu-layers 99` instead; cannot use dynamic VRAM fitting |
 
 ---
 
@@ -368,7 +359,6 @@ Key macros from `config-base.yaml`:
 |-------|-------|---------|
 | `llama_server` | `~/git/llama.cpp/build/bin/llama-server` | Upstream llama.cpp v674 |
 | `ik_llama_server` | `~/git/ik_llama.cpp/build/bin/llama-server` | ik_llama.cpp v4542 |
-| `bee_server` | `~/git/beellama.cpp/build/bin/llama-server` | BeeLlama v9459/v0.2.0 |
 | `models_dir` | `~/.llama-models` | GGUF storage |
 | `media_path` | `~/testfiles/vision` | Vision test media |
 | `small_cache_k` / `v` | `q8_0` / `q8_0` | Small model KV cache (~47% vs f16) |
@@ -399,9 +389,6 @@ Key macros from `config-base.yaml`:
 | MTP dense (6 GB) | Qwen3.5 E2B | OOM | MTP not viable for dense on 6 GB |
 | MTP dense (6 GB) | Gemma4 E2B | 3.6× slower | Worse than no MTP |
 | MTP dense (6 GB) | Gemma4 E4B | OOM | MTP not viable |
-| BeeLlama turbo4 | Qwen3.5-4B @ 8–16K | +29–35% speedup | vs standard q8_0 cache |
-| BeeLlama turbo4 | Qwen3.5-4B @ 32K+ | ~2× speedup | vs standard q8_0 cache |
-| BeeLlama turbo3_tcq | MoE (256 experts) | CRASH | Bug in v0.1.2, may be fixed v0.2.0 |
 | Hadamard KV | Dense models | ~0% tok/s impact | High quality benefit at q4_0 |
 
 ---
@@ -410,4 +397,4 @@ Key macros from `config-base.yaml`:
 
 | Date | Change |
 |------|--------|
-| 2026-05-25 | Initial catalog created — 15 active models, 3 inference engines, benchmark data |
+| 2026-05-25 | Initial catalog created — 15 active models, 2 inference engines, benchmark data |

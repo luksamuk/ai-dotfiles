@@ -8,12 +8,11 @@ Before anything, determine which backend(s) can run the model:
 
 | Backend | Strengths | Weaknesses |
 |---------|-----------|------------|
-| **ik_llama.cpp** | `--fit`, `--cpu-moe`, `--defer-experts`, `--parallel-tool-calls`, `--jinja`, row-interleaved quants, hadamard KV | No auto attn_rot, no TurboQuant, mmproj limited |
+| **ik_llama.cpp** | `--fit`, `--cpu-moe`, `--defer-experts`, `--parallel-tool-calls`, `--jinja`, row-interleaved quants, hadamard KV | No auto attn_rot, mmproj limited |
 | **llama.cpp (upstream)** | Auto attn_rot, `--jinja`, `ngram-cache`, `--reasoning on`, full mmproj support | No `--fit`, no `--cpu-moe`, no hadamard, no `--parallel-tool-calls` |
-| **BeeLlama.cpp** | TurboQuant KV, DFlash speculative, `ngram-mod`, `--reasoning-loop-guard` | No `--fit` (uses `--n-gpu-layers 99`), no `--cpu-moe`, no `--parallel-tool-calls`, mmproj may crash on CUDA |
 | **vLLM** | `--tool-call-parser hermes`, `--trust-remote-code`, custom model support | No `--fit`, no `--cpu-moe`, Python venv required, no real-time streaming |
 
-**Priority rule**: ik_llama.cpp for MoE models (CPU-MoE offload). Upstream or Bee for dense models. vLLM only for models that need `--trust-remote-code`.
+**Priority rule**: ik_llama.cpp for MoE models (CPU-MoE offload). Upstream for dense models. vLLM only for models that need `--trust-remote-code`.
 
 ### 1. Architecture Check (GATE)
 
@@ -69,13 +68,12 @@ model-name:
   name: "Model Display Name"
   description: "Short description from Ollama/HF model card — what the model is for, not backend/quant details"
   cmd: |
-    ${llama_server|ik_llama_server|bee_server} --port ${PORT}
+    ${llama_server|ik_llama_server} --port ${PORT}
     --model ${models_dir}/Model-File.Q4_K_M.gguf
     [--mmproj ${models_dir}/mmproj-Model-F16.gguf]
     [--embeddings --pooling mean]   # embedding models only
     [--fit on --fit-target ${vram_margin} --fit-ctx ${small_model_min_ctx}]
     [--no-mmproj]                  # vision models with broken mmproj on CUDA
-    [--n-gpu-layers 99]            # BeeLlama only (no --fit)
     [--moe on --moe-experts-cpu on] # ik only, MoE models
     [--parallel-tool-calls]        # ik only, models with tool calling
     --ctx-size ${small_model_max_ctx}
@@ -83,7 +81,7 @@ model-name:
     --min-p ${default_min_p} --repeat-penalty ${default_repeat_penalty}
     [--reasoning on --reasoning-loop-guard force-close]  # thinking models
     [--reasoning off]               # vision/embedding models
-    --cache-type-k q8_0 --cache-type-v q4_0  # or turbo3_tcq for Bee
+    --cache-type-k q8_0 --cache-type-v q4_0
     --flash-attn on --metrics
   filters:
     stripParams: "temperature, top_p"
@@ -109,7 +107,7 @@ model-name:
     context: "64K-128K (dynamic)"
     vram_usage: "~3.5GB"
     source: "mradermacher/Repo-Name-GGUF"
-    kv_cache: "q8_0/q4_0 or turbo3_tcq etc."
+    kv_cache: "q8_0/q4_0 etc."
     features:
       completion: true|false      # true for chat models, false for embedding
       tools: true|false
@@ -256,8 +254,7 @@ git commit -m "llama-swap: add <model-name>"
 - Without it, reasoning tokens consume the entire output budget → empty `content`
 
 ### VRAM and Quantization
-- Every model MUST fit in 6GB VRAM. Use `--fit` on ik/upstream or `--n-gpu-layers 99` on Bee
-- TurboQuant (Bee only): `turbo3_tcq` for KV cache ~5x compression
+- Every model MUST fit in 6GB VRAM. Use `--fit` on ik/upstream
 - IK MoE: `--moe on --moe-experts-cpu on --defer-experts`
 - mmproj on CUDA: Gemma 4 mmproj crashes with SIGABRT (issue #21402). Use `--no-mmproj`.
 

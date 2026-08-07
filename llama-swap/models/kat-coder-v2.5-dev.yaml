@@ -6,7 +6,7 @@
 # Same qwen35moe architecture as Ornith-1.0-35B and Qwen3.6-35B-A3B.
 # APEX Compact ~16.5GB — same footprint as Ornith APEX I-Compact.
 # ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
-# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx
+# --fit-margin 512: standard fleet headroom for context-shift + KV cache near full ctx
 #
 # --ctx-size 131072: same safe ceiling as Ornith and Qwen 3.6
 # Dual mode: base (chat, no think) and :think (reasoning)
@@ -21,7 +21,7 @@
     ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/kat-coder-v2.5-dev/KAT-Coder-V2.5-Dev-APEX-I-Compact.gguf
     --fit
-    --fit-margin 1024
+    --fit-margin 512
     --ctx-size 131072
     --temp 1.0
     --top-p 0.95

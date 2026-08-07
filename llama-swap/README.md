@@ -89,14 +89,13 @@ The `qwen-fixed-chat-template.jinja` file is sourced from
 **Attribution:**
 - Original models: Alibaba Cloud (Qwen team)
 - Template fixes: [froggeric](https://huggingface.co/froggeric)
-- C++ AST optimizations: barubary / spiritbuun
 
 **Key fixes over the stock Qwen template:**
 - Cured "Empty Think" poisoning that causes agentic loop stalls
 - Two-tier error escalation for consecutive tool call failures
 - Enforced chronological history for improved KV cache hit rate
 - Flattened Jinja AST for better llama.cpp throughput
-- 100% minijinja-safe (compatible with BeeLlama.cpp)
+- 100% minijinja-safe
 - Dynamic payload truncation for long tool responses
 - Anthropic `message.thinking` payload support
 - Auto-injected closing tags before tool boundaries

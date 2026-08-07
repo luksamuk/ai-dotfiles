@@ -42,12 +42,6 @@ macros:
   # Build local em ~/git/ik_llama.cpp/build/bin/llama-server
   "ik_llama_server": "${env.HOME}/git/ik_llama.cpp/build/bin/llama-server"
   
-  # Caminho para BeeLlama.cpp — fork com DFlash speculative decoding + TurboQuant KV cache
-  # Build local em ~/git/beellama.cpp/build/bin/llama-server
-  # NOTA: Bee não tem --fit/--fit-margin. Usar --n-gpu-layers 99 para modelos que cabem na VRAM.
-  # Requer LD_LIBRARY_PATH apontando para ~/git/beellama.cpp/build/bin/ (libs .so do Bee) — MAS o RPATH já está setado no binário
-  "bee_server": "${env.HOME}/git/beellama.cpp/build/bin/llama-server"
-  
   # Caminho para o vLLM (installed in ~/.vllm venv)
   "vllm_bin": "${env.HOME}/.vllm/bin/vllm"
   

@@ -1,0 +1,81 @@
+# -------------------------------------------
+# BTL-4 COMPACT - MoE AGENTIC CODING (text-only)
+# MoE 35B params, ~2.1B ativo por token. 256 experts, 8 routed.
+# Fine-tuned from Ornith-1.0-35B (Qwen 3.5 35B MoE) on execution-gated reasoning corpus.
+# IQ2_XXS ~9.96GB — 2.30 bpw, 94.1% behavioural retention vs bf16.
+# ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
+# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx
+#
+# --ctx-size 131072: same safe ceiling as Ornith 1.0
+# Dual mode: base (chat, no think) and :think (reasoning)
+# -------------------------------------------
+"btl-4-compact":
+  name: "BTL-4 Compact"
+  description: "BTL-4 is a 35B agentic reasoning model from Bad Theory Labs, fine-tuned from Ornith-1.0-35B on an execution-gated reasoning corpus. Compact is the IQ2_XXS edition at 2.30 bpw, retaining 94.1% of the full-precision model's measured behaviour."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/btl-4-compact/BTL-4-IQ2_XXS.gguf
+    --fit
+    --fit-margin 1024
+    --ctx-size 131072
+    --temp 1.0
+    --top-p 1.0
+    --top-k ${code_top_k}
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --reasoning on
+    --jinja
+    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --prefetch-experts
+    --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
+      --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 1.0
+        top_p: 1.0
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 1.0
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~9.96 GB (IQ2_XXS)"
+    context: "1K-131K (safe max)"
+    vram_usage: "~3.3GB VRAM + ~7GB pinned RAM (ik pinned memory, estimated)"
+    source: "badtheorylabs/BTL-4-Compact"
+    kv_cache: "q4_0 + attn_rot + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 35000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: IQ2_XXS
+    note: "Fine-tuned Ornith-1.0-35B (Qwen 3.5 35B MoE). Execution-gated reasoning corpus. 256 experts, 8 routed, ~2.1B active/token. IQ2_XXS 2.30 bpw, 94.1% behavioural retention. Per-group clip search quantization (no training, no calibration data). Uses qwen-fixed-chat-template.jinja — same as Ornith."

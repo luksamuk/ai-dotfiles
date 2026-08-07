@@ -1,0 +1,57 @@
+# -------------------------------------------
+# SPACE CORE — Portal 2 corrupted personality core
+# LFM2.5-350M base + LoRA fine-tune (adherence 0.695)
+# Obsessed with space. Short, fragmented, repetitive speech.
+# Bilingual PT/EN. Conversational only.
+# -------------------------------------------
+"space-core":
+  name: "Space Core"
+  description: "Portal 2 Space Core personality construct. Obsessed with going to space. Bilingual PT/EN."
+  tags: ["chat"]
+  cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/space-core/space-core-Q8_0.gguf
+      --jinja
+      --fit on
+      --fit-target ${vram_margin}
+      --ctx-size 16384
+      --parallel 1
+      --cont-batching
+      --temp 1.0
+      --top-p 0.9
+      --top-k 40
+      --repeat-penalty 1.1
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --flash-attn on
+      --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 1.0
+        top_p: 0.9
+  health_check_timeout: 300
+  ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 16384
+  metadata:
+    size: "~362 MB (Q8_0)"
+    context: "16K"
+    vram_usage: "~0.5GB (model + cache)"
+    source: "LiquidAI/LFM2.5-350M + LoRA fine-tune"
+    kv_cache: "q8_0 + q8_0"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+    architecture: lfm2
+    parameters: 362000000
+    context_length: 16384
+    quantization: Q8_0

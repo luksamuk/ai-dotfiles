@@ -763,7 +763,6 @@ cmd_testchat() {
 
 cmd_voiceclone() {
   local tui_dir="$HOME/projects/ai/voiceclone-tui"
-  local venv_python="$tui_dir/.venv/bin/python"
 
   if [[ ! -f "$tui_dir/voice_tui.py" ]]; then
     echo "Error: voiceclone-tui not found at $tui_dir/voice_tui.py" >&2
@@ -771,14 +770,15 @@ cmd_voiceclone() {
     exit 1
   fi
 
-  if [[ ! -x "$venv_python" ]]; then
-    echo "Error: voiceclone venv not found at $venv_python" >&2
-    echo "The TUI will offer to create it on first run." >&2
-    echo "Or run manually: python3 -m venv $tui_dir/.venv" >&2
-    exit 1
+  # Uses system python3 — only needs rich + questionary (no torch, no venv)
+  # llama-tts native binary handles all inference in C++
+  local python_bin="python3"
+  if ! "$python_bin" -c "import rich, questionary" 2>/dev/null; then
+    echo "Installing TUI dependencies (rich, questionary)..."
+    pip3 install --user rich questionary 2>&1 | tail -3
   fi
 
-  exec "$venv_python" "$tui_dir/voice_tui.py" "$@"
+  exec "$python_bin" "$tui_dir/voice_tui.py" "$@"
 }
 
 cmd_worldsim() {

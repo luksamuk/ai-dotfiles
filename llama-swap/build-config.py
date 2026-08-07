@@ -67,6 +67,7 @@ ORIGINAL_ORDER = [
     "gemma4-e4b",       # ✅ upstream ik backend (Bee was slower at 36 vs 40 tok/s)
     "gemma4-e2b",            # ✅
     "lfm2.5-1.2b",           # ✅
+    "lfm2.5-2.6b",           # ✅ Dense hybrid, agentic RL, on-device
     "lfm2.5-vl-450m",       # ✅
     "webworld-8b",           # ✅
     "qwen3.6-35b-a3b",       # ✅
