@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""TurboQuant Benchmark v2 — ik/q4_0+hadamard vs bee/turbo3_tcq for dense models.
-Key constraint: turbo3_tcq requires ALL KV cache on GPU (no CPU offload).
-Models that don't fit entirely in VRAM cannot use turbo3_tcq."""
+"""TurboQuant Benchmark v2 — ik/q4_0+hadamard for dense models.
+Key constraint: models must fit in VRAM for optimal performance."""
 import json, subprocess, time, os, sys, requests
 
 RESULTS_DIR = os.path.expanduser("~/turboquant-bench-results")
@@ -10,7 +9,6 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 MODELS_DIR = os.path.expanduser("~/.llama-models")
 IK_SERVER = os.path.expanduser("~/git/ik_llama.cpp/build/bin/llama-server")
 UPSTREAM_SERVER = os.path.expanduser("~/git/llama.cpp/build/bin/llama-server")
-BEE_SERVER = os.path.expanduser("~/git/beellama.cpp/build/bin/llama-server")
 PORT = 19999
 CTX = 32768  # 32K context for faster benchmarks
 
@@ -23,11 +21,6 @@ BENCHES = [
         "model_file": f"{MODELS_DIR}/gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf",
         "configs": [
             ("upstream_q4_0", UPSTREAM_SERVER, "q4_0", "q4_0",
-             ["--no-mmproj", "--fit", "on", "--fit-ctx", "4096",
-              "--jinja", "--reasoning", "on", "--flash-attn", "on",
-              "--temp", "0.7", "--top-p", "0.9", "--top-k", "40",
-              "--min-p", "0.01", "--repeat-penalty", "1.0"]),
-            ("bee_turbo3_tcq", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
              ["--no-mmproj", "--fit", "on", "--fit-ctx", "4096",
               "--jinja", "--reasoning", "on", "--flash-attn", "on",
               "--temp", "0.7", "--top-p", "0.9", "--top-k", "40",
@@ -46,11 +39,6 @@ BENCHES = [
               "--flash-attn", "auto",
               "--temp", "0.7", "--top-p", "0.9", "--top-k", "20",
               "--min-p", "0.01", "--repeat-penalty", "1.05"]),
-            ("bee_turbo3_tcq", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
-             ["--jinja", "--fit", "on", "--fit-ctx", "4096",
-              "--reasoning", "on", "--flash-attn", "on",
-              "--temp", "0.7", "--top-p", "0.9", "--top-k", "20",
-              "--min-p", "0.01", "--repeat-penalty", "1.05"]),
         ],
     },
     # E4B — medium size
@@ -63,11 +51,6 @@ BENCHES = [
               "--jinja", "--parallel-tool-calls", "--reasoning", "on",
               "--k-cache-hadamard", "--v-cache-hadamard",
               "--flash-attn", "auto",
-              "--temp", "0.7", "--top-p", "0.9", "--top-k", "40",
-              "--min-p", "0.01", "--repeat-penalty", "1.0"]),
-            ("bee_turbo3_tcq", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
-             ["--no-mmproj", "--fit", "on", "--fit-ctx", "4096",
-              "--jinja", "--reasoning", "on", "--flash-attn", "on",
               "--temp", "0.7", "--top-p", "0.9", "--top-k", "40",
               "--min-p", "0.01", "--repeat-penalty", "1.0"]),
         ],
@@ -84,15 +67,10 @@ BENCHES = [
               "--flash-attn", "auto",
               "--temp", "0.7", "--top-p", "0.9", "--top-k", "20",
               "--min-p", "0.01", "--repeat-penalty", "1.05"]),
-            ("bee_turbo3_tcq", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
-             ["--jinja", "--fit", "on", "--fit-ctx", "4096",
-              "--reasoning", "on", "--flash-attn", "on",
-              "--temp", "0.7", "--top-p", "0.9", "--top-k", "20",
-              "--min-p", "0.01", "--repeat-penalty", "1.05"]),
         ],
     },
     # [REMOVED] gemma4-12b — model deleted Jun 2026, benchmark entry kept for historical reference
-    # 12B — NO mmproj (text-only), turbo3_tcq might be tight
+    # 12B — NO mmproj (text-only)
     # {
     #     "key": "gemma4-12b", "name": "Gemma 4 12B (text-only)",
     #     "model_file": f"{MODELS_DIR}/gemma-4-12b-it-qat-q4_0.gguf",
@@ -100,10 +78,6 @@ BENCHES = [
     #         ("upstream_q4_0_mmproj", UPSTREAM_SERVER, "q4_0", "q4_0",
     #          ["--mmproj", f"{MODELS_DIR}/mmproj-gemma-4-12b-it-qat-q4_0.gguf",
     #           "--fit", "on", "--fit-target", "768", "--fit-ctx", "4096",
-    #           "--jinja", "--reasoning", "on", "--flash-attn", "on",
-    #           "--min-p", "0.01", "--repeat-penalty", "1.05"]),
-    #         ("bee_turbo3_tcq_nomproj", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
-    #          ["--no-mmproj", "--fit", "on", "--fit-ctx", "4096",
     #           "--jinja", "--reasoning", "on", "--flash-attn", "on",
     #           "--min-p", "0.01", "--repeat-penalty", "1.05"]),
     #     ],

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# turboquant-bench.sh — Benchmark comparativo: ik (q4_0+hadamard) vs bee (turbo3_tcq)
+# turboquant-bench.sh — Benchmark comparativo: ik (q4_0+hadamard)
 # Roda UM modelo por vez (6GB VRAM!). Nunca dois ao mesmo tempo.
 # Mede: velocidade (tok/s), qualidade (Snake benchmark), footprint (VRAM/RAM)
 #
@@ -14,7 +14,6 @@ RESULTS_DIR="$HOME/turboquant-bench-results"
 mkdir -p "$RESULTS_DIR"
 
 IK_SERVER="$HOME/git/ik_llama.cpp/build/bin/llama-server"
-BEE_SERVER="$HOME/git/beellama.cpp/build/bin/llama-server"
 MODELS_DIR="$HOME/.llama-models"
 SNAKE_DIR="$HOME/projects/ai/benchmarks/snake"
 PORT=19999
@@ -88,7 +87,7 @@ get_metrics() {
 
 run_benchmark() {
     local model_key=$1
-    local backend=$2  # "ik" or "bee"
+    local backend=$2  # "ik"
     local server_bin=$3
     local cache_k=$4
     local cache_v=$5
@@ -297,13 +296,6 @@ for model_key in "${TARGETS[@]}"; do
     # Run ik benchmark (q4_0/q8_0 + hadamard)
     run_benchmark "$model_key" "ik" "$IK_SERVER" "q8_0" "q4_0" "--k-cache-hadamard --v-cache-hadamard"
 
-    # Cool down
-    echo "  Cooling down (10s)..."
-    sleep 10
-
-    # Run bee benchmark (turbo3_tcq)
-    run_benchmark "$model_key" "bee" "$BEE_SERVER" "turbo3_tcq" "turbo3_tcq" ""
-
     # Cool down between models
     echo "  Cooling down (15s)..."
     sleep 15
@@ -319,7 +311,7 @@ ls -la "${RESULTS_DIR}/"*.json 2>/dev/null
 echo ""
 echo "Summary:"
 for model_key in "${TARGETS[@]}"; do
-    for backend in ik bee; do
+    for backend in ik; do
         f="${RESULTS_DIR}/${model_key}_${backend}.json"
         if [ -f "$f" ]; then
             python3 -c "

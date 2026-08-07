@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""TurboQuant Benchmark: ik (q4_0/q8_0+hadamard) vs bee (turbo3_tcq) for dense models."""
+"""TurboQuant Benchmark: ik (q4_0/q8_0+hadamard) for dense models."""
 import json, subprocess, time, os, sys, requests
 
 RESULTS_DIR = os.path.expanduser("~/turboquant-bench-results")
@@ -8,7 +8,6 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 MODELS_DIR = os.path.expanduser("~/.llama-models")
 IK_SERVER = os.path.expanduser("~/git/ik_llama.cpp/build/bin/llama-server")
 UPSTREAM_SERVER = os.path.expanduser("~/git/llama.cpp/build/bin/llama-server")
-BEE_SERVER = os.path.expanduser("~/git/beellama.cpp/build/bin/llama-server")
 PORT = 19999
 
 SNAKE_PROMPT = """Write one complete Python 3 file using only the standard library. Return only Python code. Do not use markdown, comments, tests, examples, or explanatory text. Implement a deterministic Task store module with a compact, repetitive structure that is easy to predict. Required shape: - imports: dataclasses, datetime, typing - dataclass Task with fields id: int, title: str, status: str, created_at: str - class TaskStore with an internal dict[int, Task] - methods: add, get, rename, mark_done, reopen, delete, clear, list_all, list_open, list_done, count_open, count_done, titles, to_dicts, __len__, __contains__ - add assigns increasing integer ids starting at 1 - valid statuses are "open" and "done" - all list methods return tasks sorted by id - count_open and count_done use explicit loops - titles returns task titles sorted by task id - to_dicts returns deterministic dictionaries sorted by id - to_dicts includes id, title, status, and created_at keys for every task - raise ValueError for empty title or missing task id - use straightforward if statements and explicit loops - keep method bodies short and similar in style - no argparse, no JSON, no file IO, no unittest, no pytest - target about 110 to 132 lines of code - define __all__ = ["Task", "TaskStore"] - stop immediately after defining __all__"""
@@ -28,11 +27,6 @@ BENCHES = [
     #           "--fit", "on", "--fit-target", "768", "--fit-ctx", "8192",
     #           "--jinja", "--reasoning", "on", "--flash-attn", "on",
     #           "--min-p", "0.01", "--repeat-penalty", "1.05"]),
-    #         ("bee_turbo3_tcq", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
-    #          ["--mmproj", f"{MODELS_DIR}/mmproj-gemma-4-12b-it-qat-q4_0.gguf",
-    #           "--fit", "on", "--fit-target", "768", "--fit-ctx", "8192",
-    #           "--jinja", "--reasoning", "on", "--flash-attn", "on",
-    #           "--min-p", "0.01", "--repeat-penalty", "1.05"]),
     #     ],
     # },
     {
@@ -42,11 +36,6 @@ BENCHES = [
         "mmproj": None,
         "configs": [
             ("upstream", UPSTREAM_SERVER, "q4_0", "q4_0",
-             ["--no-mmproj", "--fit", "on", "--fit-ctx", "4096",
-              "--jinja", "--reasoning", "on", "--flash-attn", "on",
-              "--temp", "0.7", "--top-p", "0.9", "--top-k", "40",
-              "--min-p", "0.01", "--repeat-penalty", "1.0"]),
-            ("bee_turbo3_tcq", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
              ["--no-mmproj", "--fit", "on", "--fit-ctx", "4096",
               "--jinja", "--reasoning", "on", "--flash-attn", "on",
               "--temp", "0.7", "--top-p", "0.9", "--top-k", "40",
@@ -66,11 +55,6 @@ BENCHES = [
               "--flash-attn", "auto",
               "--temp", "0.7", "--top-p", "0.9", "--top-k", "40",
               "--min-p", "0.01", "--repeat-penalty", "1.0"]),
-            ("bee_turbo3_tcq", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
-             ["--no-mmproj", "--fit", "on", "--fit-ctx", "4096",
-              "--jinja", "--reasoning", "on", "--flash-attn", "on",
-              "--temp", "0.7", "--top-p", "0.9", "--top-k", "40",
-              "--min-p", "0.01", "--repeat-penalty", "1.0"]),
         ],
     },
     {
@@ -86,11 +70,6 @@ BENCHES = [
               "--flash-attn", "auto",
               "--temp", "0.7", "--top-p", "0.9", "--top-k", "20",
               "--min-p", "0.01", "--repeat-penalty", "1.05"]),
-            ("bee_turbo3_tcq", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
-             ["--jinja", "--fit", "on", "--fit-ctx", "4096",
-              "--reasoning", "on", "--flash-attn", "on",
-              "--temp", "0.7", "--top-p", "0.9", "--top-k", "20",
-              "--min-p", "0.01", "--repeat-penalty", "1.05"]),
         ],
     },
     {
@@ -104,11 +83,6 @@ BENCHES = [
               "--reasoning", "on",
               "--k-cache-hadamard", "--v-cache-hadamard",
               "--flash-attn", "auto",
-              "--temp", "0.7", "--top-p", "0.9", "--top-k", "20",
-              "--min-p", "0.01", "--repeat-penalty", "1.05"]),
-            ("bee_turbo3_tcq", BEE_SERVER, "turbo3_tcq", "turbo3_tcq",
-             ["--jinja", "--fit", "on", "--fit-ctx", "4096",
-              "--reasoning", "on", "--flash-attn", "on",
               "--temp", "0.7", "--top-p", "0.9", "--top-k", "20",
               "--min-p", "0.01", "--repeat-penalty", "1.05"]),
         ],
