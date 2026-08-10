@@ -168,7 +168,7 @@
     },
     "llama-swap": {
       "api": "openai-completions",
-      "apiKey": "***",
+      "apiKey": "not-needed",
       "baseUrl": "http://127.0.0.1:12434/v1",
       "compat": {
         "supportsDeveloperRole": false,
@@ -188,9 +188,31 @@
           "maxTokens": 32768
         },
         {
+          "id": "agentworld-35b:think",
+          "name": "AgentWorld 35B (Thinking)",
+          "description": "35B MoE reasoning model for agentic tasks.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
           "id": "bonsai-27b-1bit",
           "name": "Bonsai 27B 1-bit",
-          "description": "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit weights, full thinking/reasoning at 3.9 GB. 89.5% of FP16 intelligence.",
+          "description": "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit weights, full thinking/reasoning at 3.9 GB.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 32768,
+          "maxTokens": 32768
+        },
+        {
+          "id": "bonsai-27b-1bit:think",
+          "name": "Bonsai 27B 1-bit (Thinking)",
+          "description": "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit weights, full thinking/reasoning at 3.9 GB.",
           "reasoning": true,
           "input": [
             "text"
@@ -201,7 +223,18 @@
         {
           "id": "gemma4-e2b",
           "name": "Gemma 4 E2B",
-          "description": "Gemma 4 E2B QAT — Unsloth Dynamic 2.0 (UD-Q4_K_XL). Higher accuracy and smaller than Google Q4_0.",
+          "description": "Gemma 4 E2B QAT — Unsloth Dynamic 2.0 (UD-Q4_K_XL).",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "gemma4-e2b:think",
+          "name": "Gemma 4 E2B (Thinking)",
+          "description": "Gemma 4 E2B QAT — Unsloth Dynamic 2.0 (UD-Q4_K_XL).",
           "reasoning": true,
           "input": [
             "text"
@@ -221,21 +254,31 @@
           "maxTokens": 8192
         },
         {
-          "id": "glm-ocr",
-          "name": "GLM-OCR",
-          "description": "Vision model specialized in OCR and text extraction from images.",
-          "reasoning": false,
+          "id": "glm-4.7-flash:think",
+          "name": "GLM 4.7 Flash (Thinking)",
+          "description": "GLM 4.7 Flash — fast agentic coding model with dual-mode thinking support.",
+          "reasoning": true,
           "input": [
-            "text",
-            "image"
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 8192
+        },
+        {
+          "id": "lfm2.5-2.6b",
+          "name": "LFM 2.5 2.6B",
+          "description": "Liquid AI 2.6B hybrid model — fast reasoning and tool calling, 131K context in 3.5 GB.",
+          "reasoning": true,
+          "input": [
+            "text"
           ],
           "contextWindow": 131072,
           "maxTokens": 32768
         },
         {
-          "id": "lfm2.5-2.6b",
-          "name": "LFM 2.5 2.6B",
-          "description": "Liquid AI 2.6B hybrid model — 6B/30 attention layers with Q6_K weights. Fast reasoning and tool calling, 131K context in 3.5 GB.",
+          "id": "lfm2.5-2.6b:think",
+          "name": "LFM 2.5 2.6B (Thinking)",
+          "description": "Liquid AI 2.6B hybrid model — fast reasoning and tool calling, 131K context in 3.5 GB.",
           "reasoning": true,
           "input": [
             "text"
@@ -246,7 +289,18 @@
         {
           "id": "lfm2.5-8b-a1b",
           "name": "LFM 2.5 8B",
-          "description": "Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Built for fast, reliable tool calling on consumer hardware.",
+          "description": "Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Fast, reliable tool calling.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "lfm2.5-8b-a1b:think",
+          "name": "LFM 2.5 8B (Thinking)",
+          "description": "Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Fast, reliable tool calling.",
           "reasoning": true,
           "input": [
             "text"
@@ -257,7 +311,7 @@
         {
           "id": "nanbeige4.2-3b",
           "name": "Nanbeige 4.2 3B",
-          "description": "Compact agentic model with Looped Transformer architecture. 3B non-embedding params, strong on agent and code tasks.",
+          "description": "Compact agentic model with Looped Transformer architecture. 3B non-embedding params.",
           "reasoning": true,
           "input": [
             "text"
@@ -266,20 +320,52 @@
           "maxTokens": 32768
         },
         {
-          "id": "qwen3-vl-4b",
-          "name": "Qwen3-VL 4B",
-          "description": "Vision-language model with 4B params, strong multimodal reasoning.",
+          "id": "nanbeige4.2-3b:think",
+          "name": "Nanbeige 4.2 3B (Thinking)",
+          "description": "Compact agentic model with Looped Transformer architecture. 3B non-embedding params.",
           "reasoning": true,
           "input": [
-            "text",
-            "image"
+            "text"
           ],
           "contextWindow": 32768,
           "maxTokens": 32768
         },
         {
+          "id": "ornith-1.0-35b",
+          "name": "Ornith 1.0 35B",
+          "description": "Ornith-1.0 — open-source LLM specialized for agentic coding, trained with self-scaffolding RL. 35B MoE, ~3B active/token.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "ornith-1.0-35b:think",
+          "name": "Ornith 1.0 35B (Thinking)",
+          "description": "Ornith-1.0 — open-source LLM specialized for agentic coding, trained with self-scaffolding RL. 35B MoE, ~3B active/token.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
           "id": "qwen3.5-4b",
           "name": "Qwen3.5 4B",
+          "description": "Qwen 3.5 open-source multimodal model — exceptional utility and performance, integrating broad agentic capabilities.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "qwen3.5-4b:think",
+          "name": "Qwen3.5 4B (Thinking)",
           "description": "Qwen 3.5 open-source multimodal model — exceptional utility and performance, integrating broad agentic capabilities.",
           "reasoning": true,
           "input": [
@@ -300,152 +386,6 @@
           "maxTokens": 32768
         },
         {
-          "id": "translategemma-4b",
-          "name": "TranslateGemma 4B",
-          "description": "Multilingual translation model based on Gemma 3, supporting 33+ languages.",
-          "reasoning": false,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "unlimited-ocr",
-          "name": "Unlimited-OCR",
-          "description": "Baidu's vision model specialized in OCR and text extraction from images.",
-          "reasoning": false,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 32768,
-          "maxTokens": 32768
-        },
-        {
-          "id": "ornith-1.0-35b",
-          "name": "Ornith 1.0 35B",
-          "description": "GLM 4.7 Flash — fast agentic coding model with dual-mode thinking support.",
-          "reasoning": false,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 8192
-        },
-        {
-          "id": "agentworld-35b:think",
-          "name": "AgentWorld 35B (Thinking)",
-          "description": "35B MoE reasoning model for agentic tasks.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "bonsai-27b-1bit:think",
-          "name": "Bonsai 27B 1-bit (Thinking)",
-          "description": "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit weights, full thinking/reasoning at 3.9 GB. 89.5% of FP16 intelligence.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 32768,
-          "maxTokens": 32768
-        },
-        {
-          "id": "gemma4-e2b:think",
-          "name": "Gemma 4 E2B (Thinking)",
-          "description": "Gemma 4 E2B QAT — Unsloth Dynamic 2.0 (UD-Q4_K_XL). Higher accuracy and smaller than Google Q4_0.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "glm-4.7-flash:think",
-          "name": "GLM 4.7 Flash (Thinking)",
-          "description": "GLM 4.7 Flash — fast agentic coding model with dual-mode thinking support.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 8192
-        },
-        {
-          "id": "glm-ocr:think",
-          "name": "GLM-OCR (Thinking)",
-          "description": "Vision model specialized in OCR and text extraction from images.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "lfm2.5-2.6b:think",
-          "name": "LFM 2.5 2.6B (Thinking)",
-          "description": "Liquid AI 2.6B hybrid model — 6B/30 attention layers with Q6_K weights. Fast reasoning and tool calling, 131K context in 3.5 GB.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "lfm2.5-8b-a1b:think",
-          "name": "LFM 2.5 8B (Thinking)",
-          "description": "Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Built for fast, reliable tool calling on consumer hardware.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "nanbeige4.2-3b:think",
-          "name": "Nanbeige 4.2 3B (Thinking)",
-          "description": "Compact agentic model with Looped Transformer architecture. 3B non-embedding params, strong on agent and code tasks.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 32768,
-          "maxTokens": 32768
-        },
-        {
-          "id": "qwen3-vl-4b:think",
-          "name": "Qwen3-VL 4B (Thinking)",
-          "description": "Vision-language model with 4B params, strong multimodal reasoning.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 32768,
-          "maxTokens": 32768
-        },
-        {
-          "id": "qwen3.5-4b:think",
-          "name": "Qwen3.5 4B (Thinking)",
-          "description": "Qwen 3.5 open-source multimodal model — exceptional utility and performance, integrating broad agentic capabilities.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
           "id": "qwen3.5-9b:think",
           "name": "Qwen3.5 9B (Thinking)",
           "description": "Qwen 3.5 9B — strong reasoning and agentic capabilities at the 9B parameter scale.",
@@ -455,40 +395,6 @@
           ],
           "contextWindow": 131072,
           "maxTokens": 32768
-        },
-        {
-          "id": "translategemma-4b:think",
-          "name": "TranslateGemma 4B (Thinking)",
-          "description": "Multilingual translation model based on Gemma 3, supporting 33+ languages.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "unlimited-ocr:think",
-          "name": "Unlimited-OCR (Thinking)",
-          "description": "Baidu's vision model specialized in OCR and text extraction from images.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 32768,
-          "maxTokens": 32768
-        },
-        {
-          "id": "ornith-1.0-35b:think",
-          "name": "Ornith 1.0 35B (Thinking)",
-          "description": "GLM 4.7 Flash — fast agentic coding model with dual-mode thinking support.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 8192
         }
       ]
     }
