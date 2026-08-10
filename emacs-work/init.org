@@ -1,0 +1,501 @@
+#+TITLE:    Work Emacs Configuration
+#+AUTHOR:   Lucas S. Vieira
+#+BABEL:    :cache yes
+#+PROPERTY: header-args:emacs-lisp :tangle yes
+#+STARTUP:  content
+
+* Preparation
+
+This is a lightweight Emacs configuration for work environments. It
+provides essential packages, a dark theme, basic C/C++ indentation,
+and AI assistance via Ellama (connecting to a local llama-swap
+fleet).
+
+To use it, copy this file to your =~/.emacs.d/init.org=, then
+bootstrap it with the following =~/.emacs.d/init.el=:
+
+#+begin_src emacs-lisp :tangle no
+;; Bootstrap: tangle init.org on first load
+(require 'org)
+(org-babel-tangle-file
+ (expand-file-name "init.org" user-emacs-directory))
+(load (expand-file-name "init.el" user-emacs-directory))
+#+end_src
+
+** Bootstrapping
+
+Tangle and compile this file on save.
+
+#+begin_src emacs-lisp
+;;;; -*- lexical-binding: t -*-
+
+(defun tangle-init ()
+  "If the current buffer is 'init.org' the code-blocks are
+tangled, and the tangled file is compiled."
+  (when (equal (buffer-file-name)
+               (expand-file-name (concat user-emacs-directory "init.org")))
+    (let ((prog-mode-hook nil))
+      (org-babel-tangle))))
+
+(add-hook 'after-save-hook 'tangle-init)
+#+end_src
+
+** Increase general specs
+
+This increases the GC threshold to reduce garbage collection
+frequency, and tweaks other parameters.
+
+#+begin_src emacs-lisp
+(setq gc-cons-threshold (* 100 1024 1024) ; 100 MB
+      read-process-output-max (* 1024 1024))
+#+end_src
+
+** Packaging
+
+Prepare packages.
+
+#+begin_src emacs-lisp
+(setq package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
+                         ("melpa" . "https://melpa.org/packages/")
+                         ("nongnu" . "https://elpa.nongnu.org/nongnu/")))
+
+(package-initialize)
+#+end_src
+
+*** use-package
+
+#+begin_src emacs-lisp
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+
+(eval-when-compile (require 'use-package))
+#+end_src
+
+#+begin_src emacs-lisp
+(setq use-package-always-ensure t
+      use-package-always-defer  nil)
+#+end_src
+
+*** Quelpa
+
+#+begin_src emacs-lisp
+(use-package quelpa)
+(use-package quelpa-use-package :after quelpa)
+#+end_src
+
+*** Straight.el
+
+Some packages use =straight.el= along with =use-package=.
+
+#+begin_src emacs-lisp
+(defvar bootstrap-version)
+
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+#+end_src
+
+* Appearance
+
+** Fonts
+
+Font: Terminus 11.
+
+#+begin_src emacs-lisp
+(defconst my-default-font "Terminus-11")
+(defconst my-default-font-mono my-default-font)
+(defconst my-default-font-variable "Cardo")
+#+end_src
+
+#+begin_src emacs-lisp
+(set-face-attribute 'default nil :family my-default-font-mono :height 90)
+(set-face-attribute 'fixed-pitch nil :family my-default-font-mono :height 1.0)
+(set-face-attribute 'variable-pitch nil :family my-default-font-variable :height 1.0)
+#+end_src
+
+** Visual
+
+Frame alist for standalone or daemonized Emacs.
+
+#+begin_src emacs-lisp
+(defconst my-frame-alist
+  `((font                 . ,my-default-font)
+    (scroll-bar           . -1)
+    (height               . 50)
+    (width                . 90)
+    (cursor-type          . box)
+    (alpha                . 90)
+    (vertical-scroll-bars . nil)))
+(setq default-frame-alist my-frame-alist)
+#+end_src
+
+Solaire-mode distinguishes non-editable buffers.
+
+#+begin_src emacs-lisp
+(use-package solaire-mode
+  :config (solaire-global-mode +1))
+#+end_src
+
+** Themes
+
+Dark theme: Catppuccin.
+
+#+begin_src emacs-lisp
+(use-package catppuccin-theme)
+
+(defconst my-default-theme-dark 'catppuccin)
+
+(defun theme-dark ()
+  "Sets the dark theme."
+  (interactive)
+  (load-theme my-default-theme-dark t))
+#+end_src
+
+Load dark theme on startup.
+
+#+begin_src emacs-lisp
+(theme-dark)
+#+end_src
+
+General visual rules.
+
+#+begin_src emacs-lisp
+(setq inhibit-startup-screen        t
+      inhibit-splash-screen         t
+      show-paren-mode               1
+      show-paren-delay              0
+      scroll-bar-mode               -1
+      tab-width                     4
+      scroll-step                   1
+      scroll-conservatively         101
+      mouse-wheel-scroll-amount     '(1)
+      mouse-wheel-progressive-speed nil
+      initial-major-mode            'org-mode
+      initial-scratch-message "\
+,#+title:  Scratch Buffer
+,#+author:
+
+# This buffer is for notes you don't want to save.
+# If you want to create a file, visit that file with C-x C-f,
+# then enter the text in that file's own buffer.
+
+")
+(menu-bar-mode -99)
+(tool-bar-mode -1)
+#+end_src
+
+Line numbers in programming and Org modes.
+
+#+begin_src emacs-lisp
+(add-hook 'prog-mode-hook #'display-line-numbers-mode)
+(add-hook 'org-mode-hook #'display-line-numbers-mode)
+#+end_src
+
+** Keybindings
+
+#+begin_src emacs-lisp
+(global-set-key (kbd "C-+") #'text-scale-increase)
+(global-set-key (kbd "C--") #'text-scale-decrease)
+#+end_src
+
+** Autocompletion
+
+#+begin_src emacs-lisp
+(setq tab-always-indent 'complete)
+(add-to-list 'completion-styles 'initials t)
+#+end_src
+
+** Modeline
+
+#+begin_src emacs-lisp
+(use-package telephone-line
+  :config (progn
+            (setq telephone-line-primary-left-separator    'telephone-line-cubed-left
+                  telephone-line-secondary-left-separator  'telephone-line-cubed-hollow-left
+                  telephone-line-primary-right-separator   'telephone-line-cubed-right
+                  telephone-line-secondary-right-separator 'telephone-line-cubed-hollow-right
+                  telephone-line-height                    24))
+  (telephone-line-mode 1))
+#+end_src
+
+** Ivy
+
+#+begin_src emacs-lisp
+(use-package counsel)
+
+(use-package all-the-icons-ivy)
+(use-package ivy
+  :config (progn
+            (ivy-mode 1)
+            (setq ivy-use-virtual-buffers  t
+                  ivy-count-format         "(%d/%d) ")))
+#+end_src
+
+*** Ivy-rich
+
+#+begin_src emacs-lisp
+(use-package all-the-icons-ivy-rich)
+(use-package ivy-rich
+  :config (progn
+            (ivy-rich-mode 1)
+            (setcdr (assq t ivy-format-functions-alist)
+                    #'ivy-format-function-line)))
+#+end_src
+
+* Language Configurations
+
+** C/C++
+
+Configure C/C++ support. Indentation width 4 with spaces, K&R style.
+
+#+begin_src emacs-lisp
+(require 'cc-mode)
+
+(defun my-c-mode-hook ()
+  (setq c-basic-offset   4
+        c-default-style  "k&r"
+        indent-tabs-mode nil)
+  (c-set-offset 'substatement-open 0))
+
+(add-hook 'c++-mode-hook #'my-c-mode-hook)
+(add-hook 'c-mode-hook   #'my-c-mode-hook)
+#+end_src
+
+* Miscellaneous
+
+** Company
+
+Autocompletion backend.
+
+#+begin_src emacs-lisp
+(use-package company
+  :config
+  (progn
+    (add-hook 'after-init-hook 'global-company-mode)
+    (setq company-idle-delay 0.2
+          company-minimum-prefix-length 1
+          company-selection-wrap-around t)
+    (company-tng-configure-default)))
+#+end_src
+
+*** Company-posframe
+
+#+begin_src emacs-lisp
+(use-package company-posframe
+  :config (company-posframe-mode 1))
+#+end_src
+
+** VTerm
+
+Terminal emulator inside Emacs.
+
+#+begin_src emacs-lisp
+(use-package vterm
+  :config (setq vterm-kill-buffer-on-exit t))
+#+end_src
+
+F7 opens a new terminal.
+
+#+begin_src emacs-lisp
+(global-set-key [f7] 'vterm)
+#+end_src
+
+** Projectile
+
+Project management.
+
+#+begin_src emacs-lisp
+(use-package projectile
+  :config (progn (projectile-mode +1)
+                 (define-key projectile-mode-map
+                   (kbd "C-c p") 'projectile-command-map)
+                 (setq projectile-completion-system 'ivy)
+                 (add-to-list
+                  'projectile-globally-ignored-directories
+                  "node_modules")))
+#+end_src
+
+** All-the-icons
+
+#+begin_src emacs-lisp
+(use-package all-the-icons)
+#+end_src
+
+** Neotree
+
+File tree on F8.
+
+#+begin_src emacs-lisp
+(use-package neotree
+  :after projectile
+  :requires all-the-icons
+  :config (progn
+            (global-set-key [f8] 'neotree-toggle)
+            (setq neo-theme (if (or (display-graphic-p)
+                                    (daemonp))
+                                'icons
+                              'arrow)
+                  projectile-switch-project-action
+                  'neotree-projectile-action)))
+#+end_src
+
+** Magit
+
+Git porcelain.
+
+#+begin_src emacs-lisp
+(use-package magit
+  :bind (("C-x g" . magit-status)))
+#+end_src
+
+** Which-key
+
+Shows available keybindings.
+
+#+begin_src emacs-lisp
+(use-package which-key
+  :config (which-key-mode 1))
+#+end_src
+
+* AI
+
+** Ellama
+
+AI assistant using local llama-swap models. The endpoint points to a
+machine on the local network running the llama-swap fleet.
+
+Models available:
+- =ornith-1.0-35b= (35B MoE, agentic coding, flagship)
+- =glm-4.7-flash= (30B MoE MLA, general-purpose)
+- =qwen3.5-9b= / =qwen3.5-4b= (light, multimodal)
+- =lfm2.5-8b-a1b= (8B MoE, general-purpose)
+- =lfm2.5-2.6b= (lightweight, fast)
+
+All models support =:think= variants for reasoning mode.
+
+#+begin_src emacs-lisp
+;; --- Configuration: adjust this IP as needed ---
+(defconst my-llama-swap-endpoint "http://192.168.3.50:12434/v1/"
+  "llama-swap API endpoint on the local network.")
+;; ----------------------------------------------
+
+(use-package ellama
+  :init
+  (setopt ellama-keymap-prefix "C-x E")
+  (global-set-key (kbd "C-x e") 'ellama)
+  (setopt ellama-language "Portuguese")
+  (setopt ellama-auto-scroll t)
+  (require 'llm-openai)
+  (require 'llm-models)
+
+  ;; Silence "not free software" warnings.
+  (setopt llm-warn-on-nonfree nil)
+
+  ;; Register local models in llm-models to avoid warnings.
+  (llm-models-add
+   :name "ornith-1.0-35b"
+   :symbol 'ornith-1.0-35b
+   :capabilities '(tool-use reasoning json-response)
+   :context-length 131072
+   :regex "ornith-1.0-35b")
+  (llm-models-add
+   :name "glm-4.7-flash"
+   :symbol 'glm-4.7-flash
+   :capabilities '(tool-use reasoning json-response)
+   :context-length 131072
+   :regex "glm-4.7-flash")
+  (llm-models-add
+   :name "qwen3.5-9b"
+   :symbol 'qwen3.5-9b
+   :capabilities '(tool-use reasoning json-response)
+   :context-length 131072
+   :regex "qwen3.5-9b")
+  (llm-models-add
+   :name "qwen3.5-4b"
+   :symbol 'qwen3.5-4b
+   :capabilities '(tool-use reasoning json-response)
+   :context-length 131072
+   :regex "qwen3.5-4b")
+  (llm-models-add
+   :name "lfm2.5-8b-a1b"
+   :symbol 'lfm2.5-8b-a1b
+   :capabilities '(tool-use reasoning json-response)
+   :context-length 131072
+   :regex "lfm2.5-8b-a1b")
+  (llm-models-add
+   :name "lfm2.5-2.6b"
+   :symbol 'lfm2.5-2.6b
+   :capabilities '(tool-use reasoning json-response)
+   :context-length 131072
+   :regex "lfm2.5-2.6b")
+
+  (setopt ellama-naming-scheme 'ellama-generate-name-by-llm)
+
+  ;; Main provider: Ornith (flagship, local llama-swap)
+  (setopt ellama-provider
+          (make-llm-openai-compatible
+           :chat-model "ornith-1.0-35b:think"
+           :url my-llama-swap-endpoint))
+
+  ;; Coding provider: same as main
+  (setopt ellama-coding-provider
+          (make-llm-openai-compatible
+           :chat-model "ornith-1.0-35b:think"
+           :url my-llama-swap-endpoint))
+
+  ;; Selectable providers (all local, via llama-swap)
+  (setopt ellama-providers
+	  '(("Ornith 1.0 35B" (make-llm-openai-compatible
+		              :chat-model "ornith-1.0-35b:think"
+		              :url my-llama-swap-endpoint))
+	    ("GLM 4.7 Flash" (make-llm-openai-compatible
+		              :chat-model "glm-4.7-flash:think"
+		              :url my-llama-swap-endpoint))
+	    ("Qwen 3.5 9B" (make-llm-openai-compatible
+		            :chat-model "qwen3.5-9b:think"
+		            :url my-llama-swap-endpoint))
+	    ("Qwen 3.5 4B" (make-llm-openai-compatible
+		            :chat-model "qwen3.5-4b:think"
+		            :url my-llama-swap-endpoint))
+	    ("LFM2.5 8B" (make-llm-openai-compatible
+		          :chat-model "lfm2.5-8b-a1b:think"
+		          :url my-llama-swap-endpoint))
+	    ("LFM2.5 2.6B" (make-llm-openai-compatible
+		            :chat-model "lfm2.5-2.6b:think"
+		            :url my-llama-swap-endpoint))))
+
+  (setopt ellama-chat-display-action-function #'display-buffer-full-frame)
+  (setopt ellama-instant-display-action-function #'display-buffer-at-bottom)
+  :config
+  ;; Agentic coding: enable all tools, enforce DLP, block irreversible
+  ;; actions, longer agent loops.
+  (ellama-setup-agentic-coding)
+  (ellama-context-header-line-global-mode +1)
+  (ellama-session-header-line-global-mode +1)
+  (advice-add 'pixel-scroll-precision :before #'ellama-disable-scroll)
+  (advice-add 'end-of-buffer :after #'ellama-enable-scroll))
+#+end_src
+
+* Profiling
+
+** Startup report
+
+#+begin_src emacs-lisp
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (message "Emacs ready in %s with %d garbage collections."
+                     (format "%.2f seconds"
+                             (float-time
+                              (time-subtract after-init-time
+                                             before-init-time)))
+                     gcs-done)))
+#+end_src
