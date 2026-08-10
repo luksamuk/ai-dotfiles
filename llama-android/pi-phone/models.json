@@ -1,0 +1,255 @@
+{
+  "providers": {
+    "llama-swap": {
+      "api": "openai-completions",
+      "apiKey": "not-needed",
+      "baseUrl": "http://100.65.187.74:12434/v1",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false,
+        "thinkingFormat": "qwen-chat-template"
+      },
+      "models": [
+        {
+          "id": "bonsai-27b-1bit",
+          "name": "Bonsai 27B 1-bit",
+          "description": "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit weights, full thinking/reasoning at 3.9 GB.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 32768,
+          "maxTokens": 32768
+        },
+        {
+          "id": "bonsai-27b-1bit:think",
+          "name": "Bonsai 27B 1-bit (Thinking)",
+          "description": "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit weights, full thinking/reasoning at 3.9 GB.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 32768,
+          "maxTokens": 32768
+        },
+        {
+          "id": "gemma4-e2b",
+          "name": "Gemma 4 E2B",
+          "description": "Gemma 4 E2B QAT — Unsloth Dynamic 2.0 (UD-Q4_K_XL).",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "gemma4-e2b:think",
+          "name": "Gemma 4 E2B (Thinking)",
+          "description": "Gemma 4 E2B QAT — Unsloth Dynamic 2.0 (UD-Q4_K_XL).",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "glm-4.7-flash",
+          "name": "GLM 4.7 Flash",
+          "description": "GLM 4.7 Flash — fast agentic coding model with dual-mode thinking support.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 8192
+        },
+        {
+          "id": "glm-4.7-flash:think",
+          "name": "GLM 4.7 Flash (Thinking)",
+          "description": "GLM 4.7 Flash — fast agentic coding model with dual-mode thinking support.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 8192
+        },
+        {
+          "id": "lfm2.5-2.6b",
+          "name": "LFM 2.5 2.6B",
+          "description": "Liquid AI 2.6B hybrid model — fast reasoning and tool calling, 131K context in 3.5 GB.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "lfm2.5-2.6b:think",
+          "name": "LFM 2.5 2.6B (Thinking)",
+          "description": "Liquid AI 2.6B hybrid model — fast reasoning and tool calling, 131K context in 3.5 GB.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "lfm2.5-8b-a1b",
+          "name": "LFM 2.5 8B",
+          "description": "Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Fast, reliable tool calling.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "lfm2.5-8b-a1b:think",
+          "name": "LFM 2.5 8B (Thinking)",
+          "description": "Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Fast, reliable tool calling.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "nanbeige4.2-3b",
+          "name": "Nanbeige 4.2 3B",
+          "description": "Compact agentic model with Looped Transformer architecture. 3B non-embedding params.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 32768,
+          "maxTokens": 32768
+        },
+        {
+          "id": "nanbeige4.2-3b:think",
+          "name": "Nanbeige 4.2 3B (Thinking)",
+          "description": "Compact agentic model with Looped Transformer architecture. 3B non-embedding params.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 32768,
+          "maxTokens": 32768
+        },
+        {
+          "id": "ornith-1.0-35b",
+          "name": "Ornith 1.0 35B",
+          "description": "Ornith-1.0 — open-source LLM specialized for agentic coding, trained with self-scaffolding RL. 35B MoE, ~3B active/token.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "ornith-1.0-35b:think",
+          "name": "Ornith 1.0 35B (Thinking)",
+          "description": "Ornith-1.0 — open-source LLM specialized for agentic coding, trained with self-scaffolding RL. 35B MoE, ~3B active/token.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "qwen3.5-4b",
+          "name": "Qwen3.5 4B",
+          "description": "Qwen 3.5 open-source model — exceptional utility and performance, integrating broad agentic capabilities.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "qwen3.5-4b:think",
+          "name": "Qwen3.5 4B (Thinking)",
+          "description": "Qwen 3.5 open-source model — exceptional utility and performance, integrating broad agentic capabilities.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "qwen3.5-9b",
+          "name": "Qwen3.5 9B",
+          "description": "Qwen 3.5 9B — strong reasoning and agentic capabilities at the 9B parameter scale.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "qwen3.5-9b:think",
+          "name": "Qwen3.5 9B (Thinking)",
+          "description": "Qwen 3.5 9B — strong reasoning and agentic capabilities at the 9B parameter scale.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        }
+      ]
+    },
+    "local": {
+      "api": "openai-completions",
+      "apiKey": "not-needed",
+      "baseUrl": "http://127.0.0.1:8181/v1",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "lfm2.5-2.6b",
+          "name": "LFM 2.5 2.6B (Local)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 32768,
+          "maxTokens": 8192
+        },
+        {
+          "id": "qwen3.5-2b",
+          "name": "Qwen3.5 2B (Local)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 32768,
+          "maxTokens": 8192
+        },
+        {
+          "id": "qwen3.5-4b",
+          "name": "Qwen3.5 4B (Local)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 8192,
+          "maxTokens": 4096
+        }
+      ]
+    }
+  }
+}
