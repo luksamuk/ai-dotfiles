@@ -80,7 +80,7 @@ ORIGINAL_ORDER = [
     # "littlelamb-0.3b-tc",   # REMOVED Jun 2026 — tool-calling broken, too small
     "minicpm-v-4.6",         # ✅
     "qwen3-vl-4b",           # ✅ VLM with native grounding
-    "agents-a1-4b",          # ✅ InternScience agentic VLM 4B (Qwen3.5 base, tool calling + vision)
+    # [DISABLED] agents-a1-4b — doom loops in long tasks, removed Aug 2026
     "smolvlm2-500m-video",  # ✅ ultra-light video VLM
     "lfm2.5-vl-1.6b",       # ✅ LFM flagship VLM with grounding
     "athenas-symbiote-9b",  # ✅ Qwen3.5-9B LoRA PT-BR legal (OAB/ENEM)
