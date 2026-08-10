@@ -2,18 +2,11 @@
 # copilot-local — GitHub Copilot CLI 100% local via llama-swap
 #
 # Usage:
-#   copilot-local                     # Interactive session (default: KAT-Coder V2.5 Dev :think)
-#   copilot-local kat-35b          # Use KAT-Coder V2.5 Dev (think mode)
-#   copilot-local kat-35b-base     # Use KAT-Coder V2.5 Dev (base, no thinking)
-#   copilot-local kat-coder          # Use KAT-Coder V2.5 Dev (think mode)
-#   copilot-local kat-coder-base     # Use KAT-Coder V2.5 Dev (base, no thinking)
+#   copilot-local                     # Interactive session (default: GLM 4.7 Flash :think)
 #   copilot-local glm-4.7-flash      # Use GLM 4.7 Flash (think mode)
 #   copilot-local glm-4.7-flash-base # Use GLM 4.7 Flash (base, no thinking)
 #   copilot-local qwen3.6-35b         # Use Qwen 3.6 35B (think mode, vision 👁)
-#   copilot-local gemma4-e4b          # Use Gemma 4 E4B (think mode)
 #   copilot-local qwen3.5-9b          # Use Qwen 3.5 9B (think mode)
-#   copilot-local nmc                 # Use North Mini Code
-#   copilot-local nmc-base            # Use North Mini Code (base, no thinking)
 #   copilot-local -p "task"           # Print mode (non-interactive)
 #   copilot-local --bare -p "task" --max-turns 5
 #
@@ -36,20 +29,15 @@ unset COPILOT_PROVIDER_BEARER_TOKEN
 
 # ── Model selection ──
 # Default model (used when no argument is given)
-DEFAULT_MODEL="kat-coder-v2.5-dev:think"
+DEFAULT_MODEL="glm-4.7-flash:think"
 
 # Model shortcuts: short name → llama-swap model ID
 declare -A MODELS=(
-  [kat-35b]="kat-coder-v2.5-dev:think"
-  [kat-35b-base]="kat-coder-v2.5-dev"
-  [kat-coder]="kat-coder-v2.5-dev:think"
-  [kat-coder-base]="kat-coder-v2.5-dev"
   [glm-4.7-flash]="glm-4.7-flash:think"
   [glm-4.7-flash-base]="glm-4.7-flash"
-  [gemma4-e4b]="gemma4-e4b:think"
   [qwen3.5-9b]="qwen3.5-9b:think"
-  [nmc]="north-mini-code:think"
-  [nmc-base]="north-mini-code"
+  [lfm2.5-2.6b]="lfm2.5-2.6b:think"
+  [lfm2.5-2.6b-base]="lfm2.5-2.6b"
 )
 
 # Check if first arg is a model shortcut

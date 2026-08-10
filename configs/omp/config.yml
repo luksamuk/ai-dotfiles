@@ -9,11 +9,11 @@ modelRoles:
   # task (executor): Qwen 3.5 9B — dense 9B, rápido pra subtarefas locais
   # advisor (debug/diagnóstico): Qwen 3.5 9B — dense, arquitetura diferente do MoE, segundo par de olhos
   # designer: GLM Flash — modelo leve pra geração de texto/design
-  default: llama-swap/kat-coder-v2.5-dev:think
+  default: llama-swap/glm-4.7-flash:think
   smol: llama-swap/qwen3.5-4b:think
   slow: llama-swap/qwen3.5-9b:think
   vision: llama-swap/qwen3-vl-4b:think
-  plan: llama-swap/kat-coder-v2.5-dev:think
+  plan: llama-swap/glm-4.7-flash:think
   designer: llama-swap/glm-4.7-flash:think
   commit: llama-swap/qwen3.5-4b
   tiny: llama-swap/qwen3.5-4b:think

@@ -50,12 +50,12 @@ num_ctx = 131072
 thinking = true
 tools = true
 
-[models."gemma4-e4b"]
-provider = "llama-swap"
-model_id = "gemma4-e4b:think"
-num_ctx = 131072
-thinking = true
-tools = true
+# [models."gemma4-e4b"]
+# provider = "llama-swap"
+# model_id = "gemma4-e4b:think"
+# num_ctx = 131072
+# thinking = true
+# tools = true
 
 [models."lfm2.5-8b-a1b"]
 provider = "llama-swap"
@@ -70,29 +70,29 @@ thinking = true
 tools = true
 
 
-[models."kat-coder-v2.5-dev"]
-provider = "llama-swap"
-model_id = "kat-coder-v2.5-dev:think"
-num_ctx = 131072
-temperature = 0.6
-top_p = 0.9
-top_k = 20
-min_p = 0.0
-repeat_penalty = 1.0
-thinking = true
-tools = true
+# [models."kat-coder-v2.5-dev"]
+# provider = "llama-swap"
+# model_id = "kat-coder-v2.5-dev:think"
+# num_ctx = 131072
+# temperature = 0.6
+# top_p = 0.9
+# top_k = 20
+# min_p = 0.0
+# repeat_penalty = 1.0
+# thinking = true
+# tools = true
 
-[models."north-mini-code"]
-provider = "llama-swap"
-model_id = "north-mini-code:think"
-num_ctx = 65536
-temperature = 0.6
-top_p = 0.9
-top_k = 20
-min_p = 0.0
-repeat_penalty = 1.0
-thinking = true
-tools = true
+# [models."north-mini-code"]
+# provider = "llama-swap"
+# model_id = "north-mini-code:think"
+# num_ctx = 65536
+# temperature = 0.6
+# top_p = 0.9
+# top_k = 20
+# min_p = 0.0
+# repeat_penalty = 1.0
+# thinking = true
+# tools = true
 
 [models."glm-4.7-flash"]
 provider = "llama-swap"
@@ -118,16 +118,58 @@ repeat_penalty = 1.0
 thinking = true
 tools = true
 
-[models."hy-mt2-1.8b"]
+[models."lfm2.5-2.6b"]
 provider = "llama-swap"
-model_id = "hy-mt2-1.8b"
+model_id = "lfm2.5-2.6b"
 num_ctx = 131072
-temperature = 0.2
-top_k = 40
-top_p = 0.9
-repeat_penalty = 1.1
-thinking = false
-tools = false
+thinking = true
+tools = true
+
+[models."lfm2.5-2.6b:think"]
+provider = "llama-swap"
+model_id = "lfm2.5-2.6b:think"
+num_ctx = 131072
+thinking = true
+tools = true
+
+# [models."maple-preview"]
+# provider = "llama-swap"
+# model_id = "maple-preview"
+# num_ctx = 131072
+# thinking = true
+# tools = true
+
+# [models."maple-preview:think"]
+# provider = "llama-swap"
+# model_id = "maple-preview:think"
+# num_ctx = 131072
+# thinking = true
+# tools = true
+
+# [models."btl-4-compact"]
+# provider = "llama-swap"
+# model_id = "btl-4-compact"
+# num_ctx = 131072
+# thinking = true
+# tools = true
+
+# [models."btl-4-compact:think"]
+# provider = "llama-swap"
+# model_id = "btl-4-compact:think"
+# num_ctx = 131072
+# thinking = true
+# tools = true
+
+# [models."hy-mt2-1.8b"]
+# provider = "llama-swap"
+# model_id = "hy-mt2-1.8b"
+# num_ctx = 131072
+# temperature = 0.2
+# top_k = 40
+# top_p = 0.9
+# repeat_penalty = 1.1
+# thinking = false
+# tools = false
 
 [models."translategemma-4b"]
 provider = "llama-swap"
@@ -140,25 +182,25 @@ repeat_penalty = 1.1
 thinking = false
 tools = false
 
-[models."lfm2.5-vl-450m"]
-provider = "llama-swap"
-model_id = "lfm2.5-vl-450m"
-num_ctx = 131072
-temperature = 0.7
-top_p = 0.9
-thinking = false
-tools = false
-vision = true
+# [models."lfm2.5-vl-450m"]
+# provider = "llama-swap"
+# model_id = "lfm2.5-vl-450m"
+# num_ctx = 131072
+# temperature = 0.7
+# top_p = 0.9
+# thinking = false
+# tools = false
+# vision = true
 
-[models."lfm2.5-vl-1.6b-extract"]
-provider = "llama-swap"
-model_id = "lfm2.5-vl-1.6b-extract"
-num_ctx = 131072
-temperature = 0.2
-top_p = 0.9
-thinking = false
-tools = false
-vision = true
+# [models."lfm2.5-vl-1.6b-extract"]
+# provider = "llama-swap"
+# model_id = "lfm2.5-vl-1.6b-extract"
+# num_ctx = 131072
+# temperature = 0.2
+# top_p = 0.9
+# thinking = false
+# tools = false
+# vision = true
 
 [models."qwen3-vl-4b"]
 provider = "llama-swap"
@@ -299,3 +341,9 @@ provider = "ollama"
 model_id = "deepseek-v4-pro:cloud"
 num_ctx = 1048576
 thinking = true
+[models."ornith-1.0-35b"]
+provider = "llama-swap"
+model_id = "ornith-1.0-35b:think"
+num_ctx = 131072
+thinking = true
+tools = true
