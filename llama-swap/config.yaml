@@ -526,99 +526,6 @@ models:
       quantization: Q6_K
       note: "Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja."
 # -------------------------------------------
-# LING-3.0-TINY - ik_llama.cpp BACKEND
-# BailingMoE3 hybrid: KDA (Kimi Delta Attention) + MLA (Multi-Head Latent Attention)
-# 7.9B total, 1.3B active per token. 128 routed experts, 8 active + 1 shared.
-# 24 layers, 3:1 KDA-MLA stacking. 262K context native.
-# APEX I-Compact quantization (MoE-aware, beats Q8_0 at half size).
-# Abliterated variant (85% fewer refusals, KL 0.0677 — light, no capability degradation).
-# Chat template embedded in GGUF (Bailing V3 format: <role>...</role><|role_end|>).
-# Thinking mode: "detailed thinking on/off" in system prompt.
-# Tool calling: native function blocks with parameter tags.
-# Backend: ik_llama.cpp (PR #2295 merged Aug 2026 — bailingmoe3 support).
-# APEX I-Compact = 3.99 GB — fits entirely in 6GB VRAM with room for context.
-# KDA = linear attention, KV cache quasi-constant regardless of context length.
-# -------------------------------------------
-  "ling-3.0-tiny":
-    name: "Ling 3.0 Tiny"
-    description: "inclusionAI lightweight hybrid reasoning MoE. 7.9B total, 1.3B active. KDA + MLA architecture with 128 experts. APEX I-Compact quantization. Abliterated (85% fewer refusals)."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/ling-3.0-tiny/Ling-3.0-tiny-abliterated-APEX-I-Compact.gguf
-      --fit
-      --fit-margin 512
-      --jinja
-      --parallel 1
-      --parallel-tool-calls
-      --ctx-size ${small_model_max_ctx}
-      --temp 1.0
-      --top-p 0.95
-      --top-k 20
-      --min-p 0.0
-      --repeat-penalty 1.0
-      --reasoning on
-      --cache-type-k q4_0
-      --cache-type-v q4_0
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --no-graph-reuse
-      --ctx-checkpoints 0
-      --ctx-checkpoints-interval 0
-      --batch-size 512
-      --ubatch-size 128
-      --metrics
-    filters:
-      stripParams: "temperature, top_p, top_k, repeat_penalty"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.8
-          top_k: 20
-          repeat_penalty: 1.0
-          presence_penalty: 1.5
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-          top_k: 20
-          repeat_penalty: 1.0
-          presence_penalty: 0.0
-    ttl: 60
-    health_check_timeout: 300
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: "~3.99 GB (APEX I-Compact)"
-      context: "64K-128K (dynamic)"
-      vram_usage: "~4.5GB VRAM (model 3.99GB + q4_0 hadamard KV + compute)"
-      source: "SC117/Ling-3.0-tiny-abliterated-APEX-GGUF (APEX I-Compact)"
-      kv_cache: "q4_0/q4_0 + hadamard (KDA linear attn = minimal KV, only 6/24 layers use MLA)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: bailingmoe3
-      parameters: 7900000000
-      context_length: 262144
-      embedding_length: 2560
-      quantization: APEX I-Compact (4.10 bpw)
-      note: "BailingMoE3 hybrid KDA+MLA MoE. 7.9B/1.3B active, 128 experts (8+1). APEX I-Compact beats Q8_0 at half size. Abliterated (85% fewer refusals, KL 0.0677). KDA = linear attention, KV cache quasi-constant. ik_llama.cpp PR #2295 backend."
-# -------------------------------------------
 # ORNITH-1.0-35B - MoE AGENTIC CODING (text-only)
 # MoE 35B params, ~3B ativo por token. 256 experts, 8+1 active.
 # Post-trained Qwen 3.5 35B MoE (self-scaffolding agentic coding RL).
@@ -1669,7 +1576,7 @@ matrix:
     # Modelos médios
     q9: qwen3.5-9b
     g4: gemma4-e2b
-    ling: ling-3.0-tiny
+    # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
     # Pesados (offload)
     # aw: agentworld-35b  # disabled Aug 2026
     orn35: ornith-1.0-35b
@@ -1691,13 +1598,13 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | q4a | lfm8 | lfm26 | ling) & (nomic | lfmemb | lfmcol)"
+    small_vision: "(q4 | q4a | lfm8 | lfm26) & (nomic | lfmemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | lfm8 | lfm26 | ling) & (nomic | lfmemb | lfmcol)"
+    small_embed: "(q4 | q4a | lfm8 | lfm26) & (nomic | lfmemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | q4a | lfm8 | lfm26 | nb42 | ling"
+    small_only: "q4 | q4a | lfm8 | lfm26 | nb42"
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "ocr | uocr | qwvl | lfmvl3"
@@ -1732,7 +1639,6 @@ matrix:
     bonsai1: 7
     q9: 4
     g4: 3
-    ling: 3
     ttsext: 4
     ocr: 3
     uocr: 3

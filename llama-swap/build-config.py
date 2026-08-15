@@ -69,7 +69,7 @@ ORIGINAL_ORDER = [
     "gemma4-e2b",            # ✅
     "lfm2.5-1.2b",           # ✅
     "lfm2.5-2.6b",           # ✅ Dense hybrid, agentic RL, on-device
-    "ling-3.0-tiny",         # ✅ BailingMoE3 hybrid KDA+MLA, 7.9B/1.3B active (ik PR #2295)
+    # "ling-3.0-tiny",       # DISABLED Aug 2026 — doom loop in Pi agentic bench
     "lfm2.5-vl-450m",       # ✅
     "webworld-8b",           # ✅
     "qwen3.6-35b-a3b",       # ✅
