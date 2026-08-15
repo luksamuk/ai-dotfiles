@@ -1,0 +1,90 @@
+# -------------------------------------------
+# QWEN3.8-27B - DENSE VLM WITH DELTANET (text+vision)
+# Dense 27B, hybrid Gated DeltaNet + Gated Attention.
+# 64 layers: 16 x (3 x (Gated DeltaNet -> FFN) -> 1 x (Gated Attention -> FFN))
+# Native VLM (image + video), 262K context native, extensible to 1M with YaRN.
+# UD-IQ2_XXS ~9GB - most aggressive Unsloth Dynamic V3.0 quant (~2.25 bpw).
+# llama.cpp upstream: GATED_DELTA_NET merged since March, MTP supported.
+# DeltaNet = linear attention -> KV cache is O(1) per token, constant regardless of context.
+# 128K context does NOT explode KV cache like standard attention models.
+#
+# Samplers (official Qwen3.8 model card):
+#   Thinking: temp=1.0, top_p=0.95, top_k=20, min_p=0.0, repetition_penalty=1.0
+#   Instruct: temp=0.7, top_p=0.80, top_k=20, min_p=0.0, presence_penalty=1.5, repetition_penalty=1.0
+#
+# VRAM math (RTX 3050 6GB):
+#   Model weights: ~9GB -> partial GPU offload, rest to RAM
+#   mmproj: ~1.5GB (F16) -> can offload to RAM
+#   KV cache: minimal (DeltaNet linear attention, only 16/64 layers use standard attention)
+#   --n-gpu-layers 40: conservative start, leaves ~800MB-1GB for system
+#
+# Dual mode: base (instruct, no think) and :think (reasoning)
+# Uses qwen-fixed-chat-template.jinja - same fix as Ornith/other Qwen models.
+# -------------------------------------------
+"qwen3.8-27b":
+  name: "Qwen3.8 27B"
+  description: "Qwen3.8-27B: dense 27B VLM with Gated DeltaNet linear attention + Gated Attention hybrid. Native image/video understanding, 262K context. Most capable Qwen generation - coding, agentic tasks, long-horizon planning."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/qwen3.8-27b/Qwen3.8-27B-UD-IQ2_XXS.gguf
+    --ctx-size 65536
+    --n-gpu-layers 25
+    --temp ${qwen38_instruct_temp}
+    --top-p ${qwen38_instruct_top_p}
+    --top-k ${qwen38_instruct_top_k}
+    --min-p ${qwen38_instruct_min_p}
+    --repeat-penalty ${qwen38_instruct_repeat_penalty}
+    --presence-penalty ${qwen38_instruct_presence_penalty}
+    --reasoning on
+    --jinja
+    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --flash-attn auto
+    --metrics
+  filters:
+    stripParams: "temperature, top_p, presence_penalty"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.80
+        presence_penalty: 1.5
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+        presence_penalty: 0.0
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~9 GB (UD-IQ2_XXS)"
+    context: "1K-128K (target), 262K native, 1M with YaRN"
+    vram_usage: "~4.5GB VRAM (40 layers) + ~4.5GB RAM offload. DeltaNet KV cache near-constant."
+    source: "unsloth/Qwen3.8-27B-GGUF"
+    kv_cache: "q4_0 (DeltaNet linear attn = minimal KV, only 16/64 layers use standard attention)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 27000000000
+    context_length: 262144
+    embedding_length: 5120
+    quantization: UD-IQ2_XXS (Unsloth Dynamic V3.0, ~2.25 bpw)
+    note: "Dense 27B with Gated DeltaNet (linear attention) + Gated Attention hybrid. 64 layers: 48 DeltaNet + 16 attention. Native VLM (image+video). IQ2_XXS is the most aggressive quant - expect degradation on complex reasoning. DeltaNet makes KV cache near-constant regardless of context. --n-gpu-layers 40 as starting point, adjust based on headroom. Uses llama.cpp upstream (not ik) - GATED_DELTA_NET merged since March. Samplers from official model card: instruct mode uses presence_penalty=1.5 to prevent repetition, thinking mode uses temp=1.0 for diverse reasoning."

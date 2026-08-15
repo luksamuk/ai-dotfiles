@@ -63,6 +63,7 @@ ORIGINAL_ORDER = [
     "lfm2.5-1.2b-vllm",     # vLLM backend (paused — no venv, auto-download on first serve)
     "lfm2.5-sgl",            # SGLang backend (paused — no venv)
     "qwen3.5-4b",      # ✅ Bee/TurboQuant (upstream backup em _disabled/)
+    "qwen3.5-4b-abliterated",  # ✅ Abliterated (Huihui) — refusal removed, params aligned to qwen3.5-4b
     "qwen3.5-9b",      # ✅ Bee/TurboQuant (upstream backup em _disabled/)
     "gemma4-e4b",       # ✅ upstream ik backend (Bee was slower at 36 vs 40 tok/s)
     "gemma4-e2b",            # ✅
@@ -73,13 +74,14 @@ ORIGINAL_ORDER = [
     "qwen3.6-35b-a3b",       # ✅
     "ornith-1.0-35b",        # ✅ Post-trained Qwen 3.5 35B MoE (agentic coding RL)
     "kat-coder-v2.5-dev",    # ✅ Post-trained Qwen 3.6 35B MoE (SOTA agentic coding, SWE-bench 69.4)
-    "agentworld-35b",         # ✅ World model (7 domains)
+    # "agentworld-35b",         # DISABLED Aug 2026 — world model, not conversational, 16GB removed
     "agents-a1-35b",          # ✅ 35B MoE long-horizon search + tool calling (reactivated Jul 2026)
     "bonsai-27b-1bit",        # ✅ 27B 1-bit (Q1_0) — upstream llama.cpp, ngram-mod spec decode (reactivated Jul 2026)
     "qwopus-coder-9b",       # ✅
     # "littlelamb-0.3b-tc",   # REMOVED Jun 2026 — tool-calling broken, too small
     "minicpm-v-4.6",         # ✅
     "qwen3-vl-4b",           # ✅ VLM with native grounding
+    "lfm2.5-vl-3b",           # ✅ LFM2.5 VLM 3B — grounding + OCR with layout, SigLIP2 NaFlex
     # [DISABLED] agents-a1-4b — doom loops in long tasks, removed Aug 2026
     "smolvlm2-500m-video",  # ✅ ultra-light video VLM
     "lfm2.5-vl-1.6b",       # ✅ LFM flagship VLM with grounding
