@@ -26,6 +26,7 @@
 #   [REMOVED] glm-4.7-flash — superseded by Qwen3.6 35B MoE
 #   minicpm-v-4.6        - MiniCPM-V 4.6 Q5_K_M (~0.54 GB) + mmproj F16 (~1.03 GB) - VLM, video+text, 256K ctx
 #   qwen3-vl-4b          - Qwen3-VL-4B-Instruct Q4_K_M (~2.5 GB) + mmproj Q8_0 (~454 MB) - VLM, native grounding, 256K ctx
+#   lfm2.5-vl-3b         - LFM2.5-VL-3B Q6_K (~2.22 GB) + mmproj Q8_0 (~583 MB) - VLM, grounding + OCR with layout, 32K ctx
 #   smolvlm2-500m-video  - SmolVLM2-500M-Video Q8_0 (~437 MB) + mmproj Q8_0 (~109 MB) - ultra-light video VLM
 #   [REMOVED] minicpm5-1b — disabled Jul 2026, LFM2.5-230M better for tool calling at smaller size
 #   minicpm5-1b-agentic   - MiniCPM5-1B Nemotron SFT+DPO agentic tool use Q4_K_M (~688 MB) - fine-tuned tool calling
@@ -88,6 +89,9 @@ declare -A MODELS=(
   # LFM2.5-2.6B - Liquid AI on-device agentic model, dense hybrid, 128K context
   # Q6_K = 2.22 GB, reasoning model, trained with agentic RL inside Hermes Agent
   ["lfm2.5-2.6b"]="LiquidAI/LFM2.5-2.6B-GGUF LFM2.5-2.6B-Q6_K.gguf"
+  # Ling-3.0-tiny - inclusionAI BailingMoE3 hybrid KDA+MLA, 7.9B/1.3B active, 128 experts
+  # APEX I-Compact = 3.99 GB, abliterated. ik_llama.cpp backend (PR #2295).
+  ["ling-3.0-tiny"]="SC117/Ling-3.0-tiny-abliterated-APEX-GGUF Ling-3.0-tiny-abliterated-APEX-I-Compact.gguf"
   ["qwen3.5-9b"]="w-ahmad/Qwen3.5-9B-GGUF-MoQ Qwen3.5-9B-MoQ-3.6.gguf"
   # [REMOVED] gemma4-e4b — disabled Jul 2026, redundant with E2B (no code use case)
   # ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
@@ -143,6 +147,8 @@ declare -A MODELS=(
   ["minicpm-v-4.6"]="openbmb/MiniCPM-V-4.6-gguf MiniCPM-V-4_6-Q5_K_M.gguf"
   # Qwen3-VL-4B-Instruct — dense 4B VLM with native 2D/3D grounding, qwen3vl arch
   ["qwen3-vl-4b"]="Qwen/Qwen3-VL-4B-Instruct-GGUF Qwen3VL-4B-Instruct-Q4_K_M.gguf mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf"
+  # LFM2.5-VL-3B — Liquid AI VLM with SigLIP2 NaFlex, grounding + OCR with layout, lfm2_vl arch
+  ["lfm2.5-vl-3b"]="LiquidAI/LFM2.5-VL-3B-GGUF LFM2.5-VL-3B-Q6_K.gguf"
   # SmolVLM2-500M-Video — ultra-light video VLM, llama arch, 500M params
   ["smolvlm2-500m-video"]="ggml-org/SmolVLM2-500M-Video-Instruct-GGUF SmolVLM2-500M-Video-Instruct-Q8_0.gguf mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf"
   # [REMOVED] minicpm5-1b — disabled Jul 2026, LFM2.5-230M better for tool calling at smaller size
@@ -168,10 +174,10 @@ declare -A MODELS=(
   ["hy-mt2-1.8b"]="tencent/Hy-MT2-1.8B-GGUF Hy-MT2-1.8B-Q4_K_M.gguf"
   # [REMOVED] translategemma-4b — removed from fleet Jun 2026 (unused)
   # ["translategemma-4b"]="mradermacher/translategemma-4b-it-GGUF translategemma-4b-it.Q4_K_M.gguf"
-  # Qwen3.5-4B-abliterated -- refusal-removed variant for adversarial testing
+  # Qwen3.5-4B-abliterated -- refusal-removed variant (Huihui/Qwen3.5-4B-abliterated)
   # Same qwen35 arch as base Qwen3.5-4B, Abliterix orthogonalized steering
-  # i1 (imatrix) quant for better quality at same bitrate
-  ["qwen3.5-4b-abliterated"]="mradermacher/Qwen3.5-4B-abliterated-i1-GGUF Qwen3.5-4B-abliterated-i1-Q4_K_M.gguf"
+  # Renamed from Qwen3.5-4B-abliterated-i1-GGUF to Huihui-Qwen3.5-4B-abliterated-GGUF (Aug 2026)
+  ["qwen3.5-4b-abliterated"]="mradermacher/Huihui-Qwen3.5-4B-abliterated-GGUF Huihui-Qwen3.5-4B-abliterated.Q4_K_M.gguf"
   # GLM-OCR -- OCR and document understanding specialist (glm4 arch, mmproj required)
   # #1 on OmniDocBench V1.5 (94.62). Complements LFM2.5-VL-450M.
   # Q8_0 model + Q8_0 mmproj from official ggml-org release
@@ -226,6 +232,8 @@ declare -A MMPROJ=(
   ["lfm2.5-vl-450m-extract"]="LiquidAI/LFM2.5-VL-450M-Extract-GGUF mmproj-LFM2.5-VL-450M-Extract-F16.gguf"
   # LFM2.5-VL-450M-Hand-Tracking — shared mmproj (same vision encoder as Extract)
   ["lfm2.5-vl-450m-hand-tracking-q8_0"]="luksamuk/LFM2.5-VL-450M-Hand-Tracking-GGUF mmproj-LFM2.5-VL-450M-hand-tracking-F16.gguf"
+  # LFM2.5-VL-3B mmproj — Q8_0 vision encoder (583 MB)
+  ["lfm2.5-vl-3b"]="LiquidAI/LFM2.5-VL-3B-GGUF mmproj-LFM2.5-VL-3B-Q8_0.gguf"
   ["lfm2.5-vl-450m-hand-tracking-q4_k_m"]="luksamuk/LFM2.5-VL-450M-Hand-Tracking-GGUF mmproj-LFM2.5-VL-450M-hand-tracking-F16.gguf"
   ["qwen3.6-35b-a3b"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF mmproj-F16.gguf mmproj-Qwen3.6-35B-A3B-F16.gguf"
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-4B-F16.gguf"
@@ -353,6 +361,7 @@ show_sizes() {
   echo "  gpt-oss-20b      ~11.00 GB  (Q4_K_M) - Heavy offload, dense coding text-only"
   echo "  minicpm-v-4.6      ~0.54 GB  (Q5_K_M) + 1.03 GB mmproj - VLM video+image+text, 256K ctx"
   echo "  qwen3-vl-4b        ~2.50 GB  (Q4_K_M) + 454 MB mmproj - VLM native grounding, 256K ctx"
+  echo "  lfm2.5-vl-3b       ~2.22 GB  (Q6_K) + 583 MB mmproj - VLM grounding + OCR layout, 32K ctx"
   echo "  smolvlm2-500m-video ~437 MB  (Q8_0) + 109 MB mmproj - ultra-light video VLM, 500M"
   # [REMOVED] minicpm5-1b — disabled Jul 2026
   echo "  minicpm5-1b-agentic ~0.69 GB  (Q4_K_M) - Nemotron SFT+DPO agentic tool use fine-tune"
