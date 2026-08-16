@@ -1,0 +1,148 @@
+healthCheckTimeout: 120
+logLevel: info
+logTimeFormat: rfc3339
+logToStdout: proxy
+startPort: 8999
+models:
+  gemma4-e2b:
+    name: Gemma 4 E2B
+    description: Gemma 4 E2B QAT Q4_0 - general-purpose agentic reasoning and tool calling
+    cmd: |
+      /home/hermes/llama.cpp/build/bin/llama-server
+      --port ${PORT}
+      --model /home/hermes/models/gemma-4-E2B_q4_0-it.gguf
+      --host 0.0.0.0
+      -c 16384
+      -t 4
+      --mlock
+      --temp 0.7
+      --top-p 0.9
+      --top-k 20
+      --repeat-penalty 1.05
+      --jinja
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --min-p 0.01
+    ttl: 300
+    unload: 120
+    metadata:
+      size: 3.2 GB
+      context: '16384'
+      source: google/gemma-4-E2B-it-qat-q4_0-gguf
+      features:
+        thinking: true
+  lfm2.5-vl-450m:
+    name: LFM2.5-VL 450M
+    description: Vision-language model for structured extraction from images
+    cmd: |
+      /home/hermes/llama.cpp/build/bin/llama-server
+      --port ${PORT}
+      --model /home/hermes/models/LFM2.5-VL-450M-Q8_0.gguf
+      --mmproj /home/hermes/models/mmproj-LFM2.5-VL-450m-F16.gguf
+      --host 0.0.0.0
+      -c 8192
+      -t 4
+      --mlock
+      --temp 0.3
+      --top-p 0.9
+      --repeat-penalty 1.0
+      --jinja
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+    ttl: 300
+    unload: 120
+    metadata:
+      size: 543 MB
+      context: '8192'
+      source: LiquidAI/LFM2.5-VL-450M-GGUF
+      features:
+        thinking: false
+        vision: true
+  lfm2.5-230m:
+    name: LFM2.5 230M
+    description: Liquid AI LFM2.5-230M Q4_K_M - ultra-light tool calling and data extraction
+    cmd: |
+      /home/hermes/llama.cpp/build/bin/llama-server
+      --port ${PORT}
+      --model /home/hermes/models/LFM2.5-230M-Q4_K_M.gguf
+      --host 0.0.0.0
+      -c 8192
+      -t 4
+      --mlock
+      --temp 0.3
+      --top-p 0.9
+      --top-k 20
+      --repeat-penalty 1.05
+      --jinja
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --min-p 0.01
+    ttl: 300
+    unload: 120
+    metadata:
+      size: 147 MB
+      context: '8192'
+      source: LiquidAI/LFM2.5-230M-GGUF Q4_K_M
+      features:
+        thinking: false
+        vision: false
+        tools: true
+  lfm2.5-8b-a1b:
+    name: LFM 2.5 8B APEX
+    description: Liquid AI MoE hybrid 8B/1B active — APEX I-Mini, tool calling + reasoning on Pi
+    cmd: |
+      /home/hermes/llama.cpp/build/bin/llama-server
+      --port ${PORT}
+      --model /home/hermes/models/LFM2.5-8B-A1B-APEX-I-Mini.gguf
+      --host 0.0.0.0
+      -c 8192
+      -t 4
+      --mlock
+      --temp 0.2
+      --top-p 0.8
+      --top-k 40
+      --repeat-penalty 1.05
+      --jinja
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --min-p 0.15
+    ttl: 300
+    unload: 120
+    metadata:
+      size: 3.4 GB
+      context: '8192'
+      source: mudler/LFM2.5-8B-A1B-APEX-GGUF I-Mini
+      features:
+        thinking: true
+        vision: false
+        tools: true
+  lfm2.5-2.6b:
+    name: LFM 2.5 2.6B
+    description: Liquid AI on-device agentic model. 2.6B dense hybrid, always-thinking, tool calling.
+    cmd: |
+      /home/hermes/llama.cpp/build/bin/llama-server
+      --port ${PORT}
+      --model /home/hermes/models/LFM2.5-2.6B-IQ2_M.gguf
+      --chat-template-file /home/hermes/llama-swap/lfm2.5-chat-template.jinja
+      --host 0.0.0.0
+      -c 8192
+      -t 4
+      --mlock
+      --temp 0.1
+      --top-p 0.9
+      --top-k 50
+      --repeat-penalty 1.1
+      --jinja
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --min-p 0.0
+    ttl: 300
+    unload: 120
+    metadata:
+      size: 975 MB
+      context: '8192'
+      source: bartowski/LiquidAI_LFM2.5-2.6B-GGUF IQ2_M
+      features:
+        thinking: true
+        vision: false
+        tools: true

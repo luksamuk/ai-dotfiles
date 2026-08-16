@@ -1,0 +1,101 @@
+---
+# Sisyphus — Homepage Services
+
+- Busca & Monitoramento:
+    - SearXNG:
+        href: http://192.168.3.8:8888/
+        icon: searxng.png
+        description: Metabuscador self-hosted
+    - Uptime Kuma:
+        href: http://192.168.3.8:3001/
+        icon: uptime-kuma.png
+        description: Monitoramento de uptime
+        widget:
+            type: uptimekuma
+            url: http://127.0.0.1:3001
+            slug: sisyphus
+
+- Rede:
+    - Pi-hole:
+        href: http://192.168.3.8:8080/admin/
+        icon: pi-hole.png
+        description: Bloqueador de anúncios e DNS
+        widget:
+            type: pihole
+            url: http://127.0.0.1:8080
+            version: 6
+    - Tailscale:
+        href: https://login.tailscale.com/admin/machines
+        icon: tailscale.png
+        description: VPN mesh
+
+- IA & Inferência:
+    - LLM Swap:
+        href: http://192.168.3.8:8081/
+        icon: /icons/llama-swap.png
+        description: Painel de gerenciamento de modelos
+        widget:
+            type: customapi
+            url: http://127.0.0.1:8081/v1/models
+            mappings:
+                - label: Disponíveis
+                  field: data.length
+    - Gemma 4 E2B:
+        icon: /icons/gemma.png
+        description: Raciocínio e tool calling (3,2 GB)
+        widget:
+            type: customapi
+            url: http://127.0.0.1:8082/gemma4-e2b
+            mappings:
+                - label: Status
+                  field: status
+                - label: Tamanho
+                  field: size
+                - label: Thinking
+                  field: thinking
+                - label: Context
+                  field: context
+    - LFM2.5-VL 450M:
+        icon: /icons/lfm2.5.png
+        description: Visão e extração de imagens (543 MB)
+        widget:
+            type: customapi
+            url: http://127.0.0.1:8082/lfm2.5-vl-450m
+            mappings:
+                - label: Status
+                  field: status
+                - label: Tamanho
+                  field: size
+                - label: Vision
+                  field: vision
+                - label: Context
+                  field: context
+
+- Memória:
+    - ChromaDB:
+        icon: /icons/chroma.png
+        description: Busca semântica de memórias
+        widget:
+            type: customapi
+            url: http://127.0.0.1:8082/chromadb
+            mappings:
+                - label: Coleções
+                  field: collections
+                - label: Embedding
+                  field: embedding
+
+- Produtividade:
+    - Karakeep:
+        href: http://192.168.3.8:3200/
+        icon: /icons/karakeep.png
+        description: Bookmarks com auto-tagging
+    - Forgejo:
+        href: http://192.168.3.8:3300/
+        icon: /icons/forgejo.png
+        description: Git server self-hosted
+
+- Sistema:
+    - Homepage:
+        href: http://192.168.3.8:3000/
+        icon: homepage.png
+        description: Dashboard central
