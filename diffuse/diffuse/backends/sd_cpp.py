@@ -48,6 +48,8 @@ def load_pipeline_sd_cpp(model_name: str) -> tuple:
     backend_type = model_info.get("backend_type", "sd_cpp")
     if backend_type == "zimage_sd_cpp":
         return load_pipeline_sd_cpp_zimage(model_name, model_root, sd_cli)
+    if backend_type == "mageflow_sd_cpp":
+        return load_pipeline_sd_cpp_mageflow(model_name, model_root, sd_cli)
 
     lora_dir = model_root / "lora"
     config = {
@@ -115,6 +117,91 @@ def load_pipeline_sd_cpp_zimage(model_name: str, model_root: Path, sd_cli: str) 
     }
 
     return config, 0.0
+
+
+def load_pipeline_sd_cpp_mageflow(model_name: str, model_root: Path, sd_cli: str) -> tuple:
+    """Prepare sd-cli config for Mage-Flow-Edit-Turbo. Returns (config_dict, 0.0).
+
+    Mage-Flow-Edit uses:
+    - DiT GGUF (NVFP4) as diffusion model
+    - Qwen3-VL-4B GGUF as text encoder (--llm)
+    - Qwen3-VL-4B mmproj F16 as vision encoder (--llm_vision)
+    - Mage-VAE GGUF as VAE
+    - Reference image via -r flag (instruction-based editing, no masks)
+    - Turbo: 4 steps, cfg=1.0
+    """
+    dit_gguf = str(model_root / "mageflow-edit-turbo-nvfp4.gguf")
+    vae_gguf = str(model_root / "pig_mageflow_vae_fp32-f16.gguf")
+    llm_gguf = str(model_root / "Qwen3VL-4B-Instruct-Q4_K_M.gguf")
+    mmproj_gguf = str(model_root / "mmproj-Qwen3VL-4B-Instruct-F16.gguf")
+
+    for label, path in [("DiT", dit_gguf), ("VAE", vae_gguf), ("LLM", llm_gguf), ("mmproj", mmproj_gguf)]:
+        if not Path(path).exists():
+            raise FileNotFoundError(f"{label} not found: {path}")
+
+    config = {
+        "sd_cli": sd_cli,
+        "diffusion_model": dit_gguf,
+        "llm": llm_gguf,
+        "llm_vision": mmproj_gguf,
+        "vae": vae_gguf,
+        "is_mageflow": True,
+    }
+
+    return config, 0.0
+
+
+def generate_image_mageflow_sd_cpp(
+    config: dict, prompt: str, seed: int, width: int, height: int,
+    output_path: Path, ref_image: str, cpu_fallback: bool = False,
+) -> tuple:
+    """Generate edited image using sd-cli with Mage-Flow-Edit-Turbo.
+
+    Mage-Flow-Edit is instruction-based: it takes a reference image and a text
+    instruction (e.g. "change the background to a beach") and produces an
+    edited image. No masks needed. Turbo = 4 steps, cfg=1.0.
+    """
+    log.info("Generating via sd-cli Mage-Flow-Edit: seed=%d ref=%s", seed, ref_image)
+
+    cmd = [
+        config["sd_cli"],
+        "--diffusion-model", config["diffusion_model"],
+        "--llm", config["llm"],
+        "--llm_vision", config["llm_vision"],
+        "--vae", config["vae"],
+        "-r", ref_image,
+        "-p", prompt,
+        "--cfg-scale", "1.0",
+        "--steps", "4",
+        "--sampling-method", "euler",
+        "--diffusion-fa",
+        "--offload-to-cpu",
+        "-v",
+        "--seed", str(seed),
+        "-o", str(output_path),
+    ]
+
+    if cpu_fallback:
+        cmd += ["--backend", "cpu"]
+        log.warning("Retrying with CPU-only backend — this will be very slow")
+
+    t0 = time.perf_counter()
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    wall_time = time.perf_counter() - t0
+
+    if result.returncode != 0:
+        stderr_lines = result.stderr.strip().split("\n")[-20:]
+        for line in stderr_lines:
+            log.error("sd-cli: %s", line)
+        raise RuntimeError(f"sd-cli failed (rc={result.returncode}). Last error: {stderr_lines[-1] if stderr_lines else 'unknown'}")
+
+    if not output_path.exists():
+        raise FileNotFoundError(f"sd-cli did not produce output: {output_path}")
+
+    file_size_mb = output_path.stat().st_size / (1024 * 1024)
+    log.info("sd-cli Mage-Flow completed in %.1fs, output %.2f MiB", wall_time, file_size_mb)
+
+    return output_path, wall_time, 0.0
 
 
 def load_pipeline_sd_cpp_video(model_name: str) -> tuple:

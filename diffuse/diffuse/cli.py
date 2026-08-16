@@ -163,6 +163,7 @@ def parse_args() -> argparse.Namespace:
             "  binary-gemlite   — 1-bit Bonsai, T2I only\n"
             "  ideogram4-q4      — Ideogram 4, T2I (JSON prompts with --enhance)\n"
             "  hidream-sdnq      — HiDream-O1 SDNQ, T2I + image editing (--edit)\n"
+            "  mageflow-edit-turbo — Mage-Flow-Edit-Turbo, 4B instruction-based image editing (--edit)\n"
             "\n"
             "Resolution guide (RTX 3050 6GB):\n"
             "  Bonsai:     512×512 max (OOM above this)\n"
@@ -219,7 +220,7 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--edit", metavar="IMAGE", type=Path, default=None,
-        help="Reference image for HiDream editing mode. Pass an image path to use instruction-based editing.",
+        help="Reference image for editing (hidream or mageflow-edit-turbo). Pass an image path to use instruction-based editing.",
     )
     p.add_argument(
         "--input-image", metavar="IMAGE", type=Path, default=None,
@@ -344,12 +345,13 @@ def main() -> None:
     else:
         require_model_dir(model_name)
 
-    # ── Validate --edit (only for hidream backend) ──
+    # ── Validate --edit (only for hidream and mageflow backends) ──
     ref_image_paths = None
     if args.edit:
-        if backend_type != "hidream":
-            print(f"  ⚠️  --edit is only supported with hidream backend (got {backend_type})")
+        if backend_type not in ("hidream", "mageflow_sd_cpp"):
+            print(f"  ⚠️  --edit is only supported with hidream or mageflow-edit-turbo backend (got {backend_type})")
             print(f"     Use: diffuse -m hidream-sdnq --edit {args.edit} -p 'instruction'")
+            print(f"      or: diffuse -m mageflow-edit-turbo --edit {args.edit} -p 'instruction'")
             sys.exit(1)
         if not args.edit.exists():
             # If not found as-is, try resolving relative to original CWD
@@ -386,6 +388,11 @@ def main() -> None:
     # ── Z-Image subprocess early path (uses sd-cli, same as Ideogram 4) ─────
     if backend_type == "zimage_sd_cpp":
         _run_zimage_sd_cpp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height)
+        return
+
+    # ── Mage-Flow-Edit-Turbo early path (uses sd-cli, instruction-based editing) ──
+    if backend_type == "mageflow_sd_cpp":
+        _run_mageflow_sd_cpp_edit(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
         return
 
     # ── LLM eviction (free VRAM for diffusion) ──
@@ -1282,6 +1289,103 @@ def _run_zimage_sd_cpp_image(
             output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
                 config, prompt, seed, width, height, output_path, cpu_fallback=True,
                 nsfw=args.nsfw,
+            )
+        else:
+            raise
+    wall_time = time.perf_counter() - wall_t0
+
+    print(f"  [3/3] Done — unloading...")
+
+    save_metadata(
+        model_name, prompt, seed, width, height, steps,
+        0.0, diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+    )
+    print_debrief(
+        model_name, model_info, prompt, seed,
+        width, height, steps, 0.0,
+        diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+        original_prompt=original_prompt,
+    )
+
+
+def _run_mageflow_sd_cpp_edit(
+    args,
+    model_name: str,
+    model_info: dict,
+    prompt: str,
+    original_prompt: str,
+    seed: int,
+    width: int,
+    height: int,
+    ref_image_paths: list[str] | None,
+) -> None:
+    """Handle Mage-Flow-Edit-Turbo image editing via sd-cli.
+
+    Mage-Flow-Edit is instruction-based: pass a reference image with --edit
+    and a text instruction as the prompt. No masks needed. Turbo = 4 steps.
+    """
+    from diffuse.backends.sd_cpp import (
+        load_pipeline_sd_cpp,
+        generate_image_mageflow_sd_cpp,
+    )
+
+    if not ref_image_paths:
+        print("  ✗ Mage-Flow-Edit requires --edit IMAGE to specify a reference image")
+        sys.exit(1)
+
+    ref_image = ref_image_paths[0]
+    steps = 4  # Turbo distilled
+    guidance = 1.0  # Turbo: cfg=1.0
+
+    print(f"  🎨 Mage-Flow-Edit-Turbo: editing {Path(ref_image).name}")
+    print(f"     Instruction: {prompt[:80]}{'...' if len(prompt) > 80 else ''}")
+    print(f"     {width}x{height}, {steps} steps, seed={seed}")
+
+    # ── Prompt enhancement ──
+    enhanced = None
+    if args.enhance or args.enhance_with:
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
+        enhance_type = model_info.get("enhance_type", "vision")
+
+        if enhance_type == "vision":
+            print(f"\n  ✨ Enhancing edit instruction via {enhance_model} (vision mode)...")
+            enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
+        else:
+            enhanced, raw_response = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
+
+        if enhanced and enhanced != prompt:
+            print(f"     Expanded to ({len(enhanced)} chars)")
+            prompt = enhanced
+
+    # Evict LLMs before loading
+    running = llama_swap_running_models()
+    if running:
+        print(f"  🔄 Evicting LLM models: {', '.join(running)}")
+        evict_llm()
+        print(f"     VRAM freed for image editing")
+
+    print(f"  [1/3] Loading Mage-Flow-Edit-Turbo pipeline ({model_info['bits']})...")
+    config, load_time = load_pipeline_sd_cpp(model_name)
+    print(f"        sd-cli config ready")
+
+    # Output path
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+
+    print(f"  [2/3] Editing...")
+    wall_t0 = time.perf_counter()
+    try:
+        output_path, diffusion_time, peak_hbm = generate_image_mageflow_sd_cpp(
+            config, prompt, seed, width, height, output_path, ref_image,
+        )
+    except RuntimeError as e:
+        if "CUDA" in str(e) and args.cpu_fallback:
+            print(f"  ⚠️  CUDA failed — retrying on CPU (this will be very slow)...")
+            output_path, diffusion_time, peak_hbm = generate_image_mageflow_sd_cpp(
+                config, prompt, seed, width, height, output_path, ref_image,
+                cpu_fallback=True,
             )
         else:
             raise

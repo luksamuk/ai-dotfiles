@@ -124,4 +124,29 @@ MODELS: dict[str, dict] = {
             {"name": "flux2-vae.safetensors (VAE)", "path": "ideogram-4-Q4_0/vae/flux2-vae.safetensors", "size_gb": 0.2},
         ],
     },
+    # Mage-Flow-Edit-Turbo (sd-cli / stable-diffusion.cpp — instruction-based image editing)
+    # 4B NR-MMDiT, 4 steps, cfg=1.0 (Turbo). Uses Qwen3-VL-4B as text+vision encoder.
+    # GGUF from gguf-org, VAE included. Only edit-turbo variant (no T2I GGUF yet).
+    "mageflow-edit-turbo": {
+        "backend_id": "mageflow-edit-turbo-sd-cpp",
+        "dir": "mageflow-edit-turbo",
+        "backend_type": "mageflow_sd_cpp",
+        "category": "image",
+        "bits": "NVFP4 GGUF",
+        "description": "Mage-Flow-Edit-Turbo — 4B NR-MMDiT, 4-step instruction-based image editing, no masks needed",
+        "enhance_model": "qwen3.6-35b-a3b",
+        "enhance_type": "vision",
+        "hf_files": [
+            {"repo": "gguf-org/mageflow-gguf",
+             "files": ["mageflow-edit-turbo-nvfp4.gguf", "pig_mageflow_vae_fp32-f16.gguf"]},
+            {"repo": "Qwen/Qwen3-VL-4B-Instruct-GGUF",
+             "files": ["Qwen3VL-4B-Instruct-Q4_K_M.gguf", "mmproj-Qwen3VL-4B-Instruct-F16.gguf"]},
+        ],
+        "components": [
+            {"name": "mageflow-edit-turbo-nvfp4.gguf (DiT)", "path": "mageflow-edit-turbo/mageflow-edit-turbo-nvfp4.gguf", "size_gb": 2.3},
+            {"name": "pig_mageflow_vae_fp32-f16.gguf (VAE)", "path": "mageflow-edit-turbo/pig_mageflow_vae_fp32-f16.gguf", "size_gb": 0.33},
+            {"name": "Qwen3VL-4B-Instruct-Q4_K_M.gguf (text encoder)", "path": "mageflow-edit-turbo/Qwen3VL-4B-Instruct-Q4_K_M.gguf", "size_gb": 2.4},
+            {"name": "mmproj-Qwen3VL-4B-Instruct-F16.gguf (vision encoder)", "path": "mageflow-edit-turbo/mmproj-Qwen3VL-4B-Instruct-F16.gguf", "size_gb": 0.8},
+        ],
+    },
 }
