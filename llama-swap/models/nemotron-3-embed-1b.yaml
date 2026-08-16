@@ -1,0 +1,60 @@
+# -------------------------------------------
+# NEMOTRON-3-EMBED-1B - UPSTREAM BACKEND (embedding model, CPU-only)
+# 1.14B params (pruned from Ministral-3-3B), 2048-dim mean-pooled embeddings
+# Architecture: ministral3 (mistral3 graph builder, 16 layers, bidirectional attention)
+# Embedding model — use via /v1/embeddings endpoint for RAG, semantic search, similarity
+# NOT a chat model — --embeddings flag required, --pooling mean for proper embeddings
+# Input prefix required: "query: " for queries, "passage: " for documents
+# 32768 max context (model card), configured 4096 (validated by community, 262K declared but untested)
+# 34 language support (incl PT) — multilingual and cross-lingual retrieval
+# SOTA at 1B scale on multilingual retrieval benchmarks (MMTEB)
+# --cont-batching: safe for embedding (no generation, just encoding)
+# KV cache: f16 — embedding models benefit from precision, not compression
+# CPU-ONLY (-ngl 0): frees VRAM for LLMs. ~30ms/embedding on M3 Max, estimated ~80-100ms on i7-13650HX
+# Q8_0 quantized from BF16 safetensors (converted via convert_hf_to_gguf.py + llama-quantize)
+# Conversion: BF16 safetensors -> F16 GGUF -> Q8_0 GGUF (config.json architectures patched to Ministral3ForCausalLM for converter compat, weights unchanged)
+# -------------------------------------------
+"nemotron-3-embed-1b":
+  name: "Nemotron 3 Embed 1B"
+  description: "NVIDIA multilingual text embedding model optimized for retrieval and semantic similarity. 2048-dim mean-pooled vectors. SOTA at 1B scale across 34 languages."
+  env:
+    - "CUDA_VISIBLE_DEVICES="
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/nemotron-3-embed-1b/nemotron-3-embed-1b-Q8_0.gguf
+    --embeddings
+    --pooling mean
+    --ctx-size 4096
+    --cont-batching
+    --parallel 1
+    --cache-type-k f16
+    --cache-type-v f16
+    -ngl 0
+      --metrics
+  ttl: 300
+  capabilities:
+    in: ['text']
+    out: []
+    tools: false
+    reranker: false
+    context: 4096
+  metadata:
+    architecture: ministral3
+    parameters: 1140000000
+    context_length: 4096
+    embedding_length: 2048
+    quantization: Q8_0
+    size: "~1.2 GB (Q8_0)"
+    vram_usage: "~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)"
+    source: "nvidia/Nemotron-3-Embed-1B-BF16 (converted Q8_0)"
+    kv_cache: "f16"
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      embedding: true
+      insert: false
+      audio: false
+      image: false
+    note: "Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with 'query: ' for queries and 'passage: ' for documents. 34 languages. 2048-dim L2-normalized vectors. Supports dimension slicing (1024/512) with re-normalization. SOTA at 1B scale on MMTEB."

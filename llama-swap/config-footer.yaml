@@ -63,28 +63,29 @@ matrix:
     # Embedding
     nomic: nomic-embed-text-v2-moe
     lfmemb: lfm2.5-embedding-350m
+    nemb: nemotron-3-embed-1b
     # Reranker (late-interaction, CPU-only)
     lfmcol: lfm2.5-colbert-350m
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | q4a | lfm8 | lfm26) & (nomic | lfmemb | lfmcol)"
+    small_vision: "(q4 | q4a | lfm8 | lfm26) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | lfm8 | lfm26) & (nomic | lfmemb | lfmcol)"
+    small_embed: "(q4 | q4a | lfm8 | lfm26) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
     small_only: "q4 | q4a | lfm8 | lfm26 | nb42"
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "ocr | uocr | qwvl | lfmvl3"
-    vision_embed: "(ocr | uocr | qwvl | lfmvl3) & (nomic | lfmemb | lfmcol)"
+    vision_embed: "(ocr | uocr | qwvl | lfmvl3) & (nomic | lfmemb | nemb | lfmcol)"
 
     # Modelos médios + Embedding/Reranker
-    medium: "(q9 | g4) & (nomic | lfmemb | lfmcol)"
+    medium: "(q9 | g4) & (nomic | lfmemb | nemb | lfmcol)"
 
     # Modelos pesados (offload) + Embedding/Reranker
-    heavy: "(orn35 | glm | bonsai1) & (nomic | lfmemb | lfmcol)"
+    heavy: "(orn35 | glm | bonsai1) & (nomic | lfmemb | nemb | lfmcol)"
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -94,13 +95,13 @@ matrix:
     tts_external: "ttsext"
 
     # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
-    embed_only: "nomic & lfmemb & lfmcol"
+    embed_only: "nomic & lfmemb & nemb & lfmcol"
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
 
     # Reranker + Embedding (two-stage retrieval: dense → rerank)
-    rerank_embed: "lfmcol & (nomic | lfmemb)"
+    rerank_embed: "lfmcol & (nomic | lfmemb | nemb)"
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
@@ -121,5 +122,6 @@ matrix:
     nb42: 2
     nomic: 1
     lfmemb: 1
+    nemb: 1
     lfmcol: 1
     tg: 2

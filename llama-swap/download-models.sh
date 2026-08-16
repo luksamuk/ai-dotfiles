@@ -35,6 +35,7 @@
 #   qwen3.5-4b-abliterated - Qwen3.5-4B abliterated i1-Q4_K_M (~2.71 GB) - no refusal, adversarial testing
 #   glm-ocr               - GLM-OCR Q8_0 (~0.95 GB + 0.48 GB mmproj) - OCR/document specialist
 #   nomic-embed-text-v2-moe - Nomic Embed v2 MoE Q4_K_M (~0.33 GB) - embedding, RAG/search
+#   nemotron-3-embed-1b - Nemotron 3 Embed 1B Q8_0 (~1.2 GB) - embedding, RAG/search (MANUAL CONVERSION)
 #   [REMOVED] littlelamb-0.3b-tc — removed from fleet Jun 2026 (tool-calling broken, too small to be useful)
 #   webworld-8b          - WebWorld-8B i1-Q5_K_M (~5.9 GB) - web world model, predicts next page state
 #   qwen3.6-35b-a3b      - Qwen3.6-35B-A3B APEX I-Compact (~17.3 GB) - MoE coding + tools
@@ -186,6 +187,13 @@ declare -A MODELS=(
   # 475M params (305M active), 768-dim with Matryoshka, 100+ languages
   # Q4_K_M only 328MB -- runs via /v1/embeddings with --embeddings --pooling mean
   ["nomic-embed-text-v2-moe"]="nomic-ai/nomic-embed-text-v2-moe-GGUF nomic-embed-text-v2-moe.Q4_K_M.gguf nomic-embed-text-v2-moe-Q4_K_M.gguf"
+  # Nemotron-3-Embed-1B -- NVIDIA multilingual embedding model for RAG/semantic search
+  # 1.14B params (pruned from Ministral-3-3B), 2048-dim mean-pooled, 34 languages
+  # Q8_0 ~1.2 GB -- MANUAL CONVERSION (no community Q8_0 GGUF available)
+  # Converted from BF16 safetensors -> F16 GGUF -> Q8_0 via llama.cpp convert_hf_to_gguf.py + llama-quantize
+  # Steps: 1) hf download nvidia/Nemotron-3-Embed-1B-BF16 2) Patch config.json architectures to Ministral3ForCausalLM
+  # 3) python3 convert_hf_to_gguf.py --outtype f16 4) llama-quantize Q8_0 5) Clean up safetensors + F16
+  ["nemotron-3-embed-1b"]="LOCAL nemotron-3-embed-1b/nemotron-3-embed-1b-Q8_0.gguf"
   # Nanbeige4.1-3B — BOSS Zhipin dense 3B reasoning + agentic coding model
   # Architecture: LlamaForCausalLM (llama) — supported in ALL backends
   # Q4_K_M ~1.8 GB — fits entirely in 6GB VRAM with room to spare
@@ -278,7 +286,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, qwen3.5-4b-abliterated, glm-ocr, nomic-embed-text-v2-moe, mellum2-12b-thinking, ornstein-36-35b, all"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, qwen3.5-4b-abliterated, glm-ocr, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, all"
     return 1
   fi
   
@@ -376,6 +384,7 @@ show_sizes() {
   echo "  qwen3.5-4b-abliterated   ~2.71 GB  (i1-Q4_K_M) - Abliterated Qwen3.5-4B, no refusal"
   echo "  glm-ocr             ~0.95 GB  (Q8_0) + 0.48 GB mmproj - OCR/document specialist"
   echo "  nomic-embed-text-v2-moe  ~0.33 GB  (Q4_K_M) - Embedding, RAG/search/similarity"
+  echo "  nemotron-3-embed-1b      ~1.2 GB   (Q8_0)   - Embedding, multilingual RAG (MANUAL CONVERSION)"
   echo "  nanbeige4.2-3b       ~2.40 GB  (Q4_K_M) - Looped Transformer 3B, thinking + XML tools (nanbeige fork)"
   echo "  mellum2-12b-thinking  ~7.60 GB  (Q4_K_M) - JetBrains MoE 12B/2.5B, reasoning + tools (manual conversion)"
   echo "  ornstein-36-35b       ~21.70 GB (Q4_K_M) - Qwen3.6-35B NSC-ACE-SABER fine-tune, +2.87pp BFCL (test only)"

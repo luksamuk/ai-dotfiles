@@ -90,6 +90,10 @@ ORIGINAL_ORDER = [
     "nanbeige4.2-3b",        # ✅ Nanbeige 4.2 3B — Looped Transformer, nanbeige-llama.cpp fork
     # "mellum2-12b-thinking",   # DISABLED: tool calling broken (no chat_template in GGUF, --tool-call-parser hermes is vLLM-only). Awaiting community GGUF.
     # "ornstein-36-35b",        # DISABLED: Q4_K_M too large (21.7GB) — needs APEX I-Compact conversion (~16.1GB)
+    "nomic-embed-text-v2-moe",  # ✅ Embedding (CPU-only, Q4_K_M)
+    "lfm2.5-embedding-350m",    # ✅ Embedding (CPU-only, Q8_0)
+    "lfm2.5-colbert-350m",      # ✅ Reranker (CPU-only, Q8_0)
+    "nemotron-3-embed-1b",      # ✅ Embedding (CPU-only, Q8_0, converted from BF16)
 ]
 
 

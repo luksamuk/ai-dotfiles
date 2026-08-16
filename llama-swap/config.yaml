@@ -846,6 +846,142 @@ models:
       embedding_length: 3072
       quantization: Q4_K_M
       note: 'Looped Transformer (22 layers x2 loops = 44 effective). Upstream llama.cpp (PR #25994). Multi-turn tool calling FIXED vs 4.1 (#22684). Thinking toggle via enable_thinking.'
+  nomic-embed-text-v2-moe:
+    name: Nomic Embed v2
+    description: Multilingual MoE text embedding model that excels at multilingual retrieval, supporting ~100 languages with state-of-the-art performance at the 300M parameter scale.
+    env:
+    - CUDA_VISIBLE_DEVICES=
+    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/nomic-embed-text-v2-moe-Q4_K_M.gguf\n--embeddings\n--pooling mean\n--ctx-size 512\n--cont-batching\n--parallel 1\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
+    ttl: 300
+    capabilities:
+      in:
+      - text
+      out: []
+      tools: false
+      reranker: false
+      context: 512
+    metadata:
+      architecture: nomic-bert
+      parameters: 475000000
+      context_length: 512
+      embedding_length: 768
+      quantization: Q4_K_M
+      size: ~0.33 GB (Q4_K_M)
+      vram_usage: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)
+      source: nomic-ai/nomic-embed-text-v2-moe-GGUF (Q4_K_M)
+      kv_cache: f16
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: true
+        insert: false
+        audio: false
+        image: false
+      note: 'Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with ''search_query: '' or ''search_document: ''. 100+ languages. Matryoshka → 256 dims.'
+  lfm2.5-embedding-350m:
+    name: LFM2.5 Embed 350M
+    description: Liquid AI dense bi-encoder for fast multilingual retrieval. Single 1024-dim vector per document. Best-in-class dense embedder at 350M scale across 11 languages.
+    env:
+    - CUDA_VISIBLE_DEVICES=
+    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-Embedding-350M-Q8_0.gguf\n--embeddings\n--pooling cls\n--ctx-size 512\n--cont-batching\n--parallel 1\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
+    ttl: 300
+    capabilities:
+      in:
+      - text
+      out: []
+      tools: false
+      reranker: false
+      context: 512
+    metadata:
+      architecture: lfm2-bidir
+      parameters: 354000000
+      context_length: 512
+      embedding_length: 1024
+      quantization: Q8_0
+      size: ~379 MB (Q8_0)
+      vram_usage: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)
+      source: LiquidAI/LFM2.5-Embedding-350M-GGUF (Q8_0)
+      kv_cache: f16
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: true
+        insert: false
+        audio: false
+        image: false
+      note: 'Embedding-only model. Use /v1/embeddings endpoint. Asymmetric prompts: ''query: '' for queries, ''document: '' for passages. 11 languages. Dense bi-encoder — one 1024-dim vector per document.'
+  lfm2.5-colbert-350m:
+    name: LFM2.5 ColBERT 350M
+    description: Liquid AI late-interaction reranker with best-in-class multilingual performance. Per-token 128-dim vectors matched via MaxSim. Higher accuracy than dense embedders across 11 languages.
+    env:
+    - CUDA_VISIBLE_DEVICES=
+    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-ColBERT-350M-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 512\n--cont-batching\n--parallel 1\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
+    ttl: 300
+    capabilities:
+      in:
+      - text
+      out: []
+      tools: false
+      reranker: true
+      context: 512
+    metadata:
+      architecture: lfm2-bidir
+      parameters: 353000000
+      context_length: 512
+      embedding_length: 128
+      quantization: Q8_0
+      size: ~378 MB (Q8_0)
+      vram_usage: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)
+      source: LiquidAI/LFM2.5-ColBERT-350M-GGUF (Q8_0)
+      kv_cache: f16
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: true
+        insert: false
+        audio: false
+        image: false
+      note: Late-interaction model. OAI-compatible /v1/embeddings uses mean-pooled 128-dim vectors. For true MaxSim reranking, use raw /embedding endpoint for per-token vectors and compute MaxSim client-side. Asymmetric prompts from config_sentence_transformers.json. 11 languages. Higher accuracy than dense (0.605 vs 0.577 NDCG@10) but larger index (per-token vectors).
+  nemotron-3-embed-1b:
+    name: Nemotron 3 Embed 1B
+    description: NVIDIA multilingual text embedding model optimized for retrieval and semantic similarity. 2048-dim mean-pooled vectors. SOTA at 1B scale across 34 languages.
+    env:
+    - CUDA_VISIBLE_DEVICES=
+    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/nemotron-3-embed-1b/nemotron-3-embed-1b-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 4096\n--cont-batching\n--parallel 1\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
+    ttl: 300
+    capabilities:
+      in:
+      - text
+      out: []
+      tools: false
+      reranker: false
+      context: 4096
+    metadata:
+      architecture: ministral3
+      parameters: 1140000000
+      context_length: 4096
+      embedding_length: 2048
+      quantization: Q8_0
+      size: ~1.2 GB (Q8_0)
+      vram_usage: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)
+      source: nvidia/Nemotron-3-Embed-1B-BF16 (converted Q8_0)
+      kv_cache: f16
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: true
+        insert: false
+        audio: false
+        image: false
+      note: 'Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with ''query: '' for queries and ''passage: '' for documents. 34 languages. 2048-dim L2-normalized vectors. Supports dimension slicing (1024/512) with re-normalization. SOTA at 1B scale on MMTEB.'
   glm-4.7-flash:
     name: GLM 4.7 Flash
     description: GLM-4.7-Flash is a 30B Mixture-of-Experts model with Multi-head Latent Attention (MLA), 64 experts with 4 active per token. Built for fast, efficient conversational AI and tool calling.
@@ -973,108 +1109,6 @@ models:
       embedding_length: 2048
       quantization: APEX I-Compact
       note: 'MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. APEX I-Compact: 13% smaller than Q4_0, imatrix v1.3 calibrated. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek.'
-  lfm2.5-colbert-350m:
-    name: LFM2.5 ColBERT 350M
-    description: Liquid AI late-interaction reranker with best-in-class multilingual performance. Per-token 128-dim vectors matched via MaxSim. Higher accuracy than dense embedders across 11 languages.
-    env:
-    - CUDA_VISIBLE_DEVICES=
-    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-ColBERT-350M-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 512\n--cont-batching\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
-    ttl: 300
-    capabilities:
-      in:
-      - text
-      out: []
-      tools: false
-      reranker: true
-      context: 512
-    metadata:
-      architecture: lfm2-bidir
-      parameters: 353000000
-      context_length: 512
-      embedding_length: 128
-      quantization: Q8_0
-      size: ~378 MB (Q8_0)
-      vram_usage: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)
-      source: LiquidAI/LFM2.5-ColBERT-350M-GGUF (Q8_0)
-      kv_cache: f16
-      features:
-        completion: false
-        tools: false
-        thinking: false
-        vision: false
-        embedding: true
-        insert: false
-        audio: false
-        image: false
-      note: Late-interaction model. OAI-compatible /v1/embeddings uses mean-pooled 128-dim vectors. For true MaxSim reranking, use raw /embedding endpoint for per-token vectors and compute MaxSim client-side. Asymmetric prompts from config_sentence_transformers.json. 11 languages. Higher accuracy than dense (0.605 vs 0.577 NDCG@10) but larger index (per-token vectors).
-  lfm2.5-embedding-350m:
-    name: LFM2.5 Embed 350M
-    description: Liquid AI dense bi-encoder for fast multilingual retrieval. Single 1024-dim vector per document. Best-in-class dense embedder at 350M scale across 11 languages.
-    env:
-    - CUDA_VISIBLE_DEVICES=
-    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-Embedding-350M-Q8_0.gguf\n--embeddings\n--pooling cls\n--ctx-size 512\n--cont-batching\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
-    ttl: 300
-    capabilities:
-      in:
-      - text
-      out: []
-      tools: false
-      reranker: false
-      context: 512
-    metadata:
-      architecture: lfm2-bidir
-      parameters: 354000000
-      context_length: 512
-      embedding_length: 1024
-      quantization: Q8_0
-      size: ~379 MB (Q8_0)
-      vram_usage: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)
-      source: LiquidAI/LFM2.5-Embedding-350M-GGUF (Q8_0)
-      kv_cache: f16
-      features:
-        completion: false
-        tools: false
-        thinking: false
-        vision: false
-        embedding: true
-        insert: false
-        audio: false
-        image: false
-      note: 'Embedding-only model. Use /v1/embeddings endpoint. Asymmetric prompts: ''query: '' for queries, ''document: '' for passages. 11 languages. Dense bi-encoder — one 1024-dim vector per document.'
-  nomic-embed-text-v2-moe:
-    name: Nomic Embed v2
-    description: Multilingual MoE text embedding model that excels at multilingual retrieval, supporting ~100 languages with state-of-the-art performance at the 300M parameter scale.
-    env:
-    - CUDA_VISIBLE_DEVICES=
-    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/nomic-embed-text-v2-moe-Q4_K_M.gguf\n--embeddings\n--pooling mean\n--ctx-size 512\n--cont-batching\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
-    ttl: 300
-    capabilities:
-      in:
-      - text
-      out: []
-      tools: false
-      reranker: false
-      context: 512
-    metadata:
-      architecture: nomic-bert
-      parameters: 475000000
-      context_length: 512
-      embedding_length: 768
-      quantization: Q4_K_M
-      size: ~0.33 GB (Q4_K_M)
-      vram_usage: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)
-      source: nomic-ai/nomic-embed-text-v2-moe-GGUF (Q4_K_M)
-      kv_cache: f16
-      features:
-        completion: false
-        tools: false
-        thinking: false
-        vision: false
-        embedding: true
-        insert: false
-        audio: false
-        image: false
-      note: 'Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with ''search_query: '' or ''search_document: ''. 100+ languages. Matryoshka → 256 dims.'
   qwen3-tts:
     name: Qwen3-TTS 0.6B
     description: Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible /v1/audio/speech endpoint with voice profiles from voiceclone-tui.
@@ -1277,20 +1311,21 @@ matrix:
     ttsext: qwen3-tts
     nomic: nomic-embed-text-v2-moe
     lfmemb: lfm2.5-embedding-350m
+    nemb: nemotron-3-embed-1b
     lfmcol: lfm2.5-colbert-350m
   sets:
-    small_vision: (q4 | q4a | lfm8 | lfm26) & (nomic | lfmemb | lfmcol)
-    small_embed: (q4 | q4a | lfm8 | lfm26) & (nomic | lfmemb | lfmcol)
+    small_vision: (q4 | q4a | lfm8 | lfm26) & (nomic | lfmemb | nemb | lfmcol)
+    small_embed: (q4 | q4a | lfm8 | lfm26) & (nomic | lfmemb | nemb | lfmcol)
     small_only: q4 | q4a | lfm8 | lfm26 | nb42
     vision_only: ocr | uocr | qwvl | lfmvl3
-    vision_embed: (ocr | uocr | qwvl | lfmvl3) & (nomic | lfmemb | lfmcol)
-    medium: (q9 | g4) & (nomic | lfmemb | lfmcol)
-    heavy: (orn35 | glm | bonsai1) & (nomic | lfmemb | lfmcol)
+    vision_embed: (ocr | uocr | qwvl | lfmvl3) & (nomic | lfmemb | nemb | lfmcol)
+    medium: (q9 | g4) & (nomic | lfmemb | nemb | lfmcol)
+    heavy: (orn35 | glm | bonsai1) & (nomic | lfmemb | nemb | lfmcol)
     translate_only: tg
     tts_external: ttsext
-    embed_only: nomic & lfmemb & lfmcol
+    embed_only: nomic & lfmemb & nemb & lfmcol
     rerank_only: lfmcol
-    rerank_embed: lfmcol & (nomic | lfmemb)
+    rerank_embed: lfmcol & (nomic | lfmemb | nemb)
   evict_costs:
     orn35: 9
     glm: 9
@@ -1309,5 +1344,6 @@ matrix:
     nb42: 2
     nomic: 1
     lfmemb: 1
+    nemb: 1
     lfmcol: 1
     tg: 2
