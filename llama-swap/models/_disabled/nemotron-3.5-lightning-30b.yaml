@@ -1,0 +1,100 @@
+# -------------------------------------------
+# NVIDIA NEMOTRON 3.5 LIGHTNING 30B-A3B — Hybrid Mamba-2 + MoE Agent Model
+#
+# Architecture: nemotron-h-moe (Mamba-2 + MoE + Attention hybrid)
+#   - 30B total params, 3B active per forward pass
+#   - Hybrid: Mamba-2 SSM layers + MoE expert layers + select Attention layers
+#   - Mamba-2 gives O(1) per-token inference (vs O(n^2) for attention)
+#   - Multi-Token Prediction (MTP) in pre-training
+#   - Configurable reasoning mode (enable_thinking via chat template)
+#   - Context up to 1M (256K practical on single H100)
+#
+# Backend: llama.cpp upstream (ik_llama.cpp does NOT support nemotron-h, Mamba-2, or NVFP4)
+#   - Upstream has LLM_ARCH_NEMOTRON_H_MOE + Mamba-2 + GGML_TYPE_NVFP4 since ~March 2026
+#   - --fit on: auto offload to fit RTX 3050 6GB
+#   - --n-cpu-moe: keep MoE experts on CPU (only 3B active, experts are bandwidth-bound)
+#   - --flash-attn auto: enables FA on attention layers, skips on Mamba (not needed)
+#
+# Quant: Q4_K_M (23.7 GB) — standard 4-bit K-quant
+#   - NVFP4 (20.9 GB) tested but unusably slow on Ampere (0.6 tok/s, no tensor core accel)
+#   - Q4_K_M is 13% larger but same upstream backend, no NVFP4 kernel overhead
+#   - Fallback: NVFP4 if Q4_K_M doesn't fit memory
+#
+# Performance expectations (RTX 3050 6GB, upstream llama.cpp):
+#   MoE with 3B active: decode should be fast (little compute per token)
+#   Mamba-2 layers: O(1) per token, no KV cache needed for SSM layers
+#   Only attention layers need KV cache — hybrid means much smaller KV footprint
+#   Cold start: 30-90s (loading 20.9 GB + mmap)
+#   VRAM: ~5GB VRAM (fit-managed) + ~16-18GB RAM (model + KV cache + SSM state)
+#
+# Languages: English, Spanish, French, German, Italian, Japanese
+#   NO Portuguese — not a general-purpose replacement for Qwen/LFM
+#   Best for: agentic execution, coding, specialization experiments
+#
+# License: OpenMDW-1.1 (commercial use OK)
+# Release: August 11, 2026
+# -------------------------------------------
+"nemotron-3.5-lightning-30b":
+  name: "Nemotron 3.5 Lightning 30B"
+  description: "NVIDIA Nemotron 3.5 Lightning is a 30B Mixture-of-Experts model with 3B active parameters, built on a hybrid Mamba-2 + MoE + Attention architecture. Designed for always-on agents and high-volume specialized task execution. Configurable reasoning mode."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/nemotron-3.5-lightning-30b/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_K_M.gguf
+    --fit on
+    --fit-target 256
+    --ctx-size 131072
+    --temp 1.0
+    --top-p 0.95
+    --top-k -1
+    --min-p 0.0
+    --repeat-penalty 1.0
+    --reasoning on
+    --jinja
+    --parallel 1
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --flash-attn auto
+    --n-cpu-moe 99
+      --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 1.0
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+  ttl: 600
+  health_check_timeout: 600
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~23.7 GB (Q4_K_M)"
+    context: "1K-131K (hybrid Mamba-2 keeps KV cache small)"
+    vram_usage: "~5GB VRAM + ~19GB RAM (upstream llama.cpp, --fit managed)"
+    source: "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF"
+    kv_cache: "q4_0"
+    features:
+      completion: true
+      tools: false
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: nemotron-h-moe
+    parameters: 30000000000
+    context_length: 131072
+    embedding_length: 3072
+    quantization: q4_k_m
+    note: "30B MoE with hybrid Mamba-2 + MoE + Attention. 3B active per token. Q4_K_M quant (23.7GB). NVFP4 tested but unusably slow on Ampere (0.6 tok/s). Mamba-2 SSM layers need no KV cache — only attention layers do. No Portuguese support (EN/ES/FR/DE/IT/JA). OpenMDW-1.1 license."

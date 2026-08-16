@@ -1,0 +1,64 @@
+# -------------------------------------------
+# LFM2.5-VL-3B — Liquid AI VLM with grounding + OCR
+# 3B params (2.6B LFM2.5 backbone + SigLIP2 NaFlex 400M vision)
+# lfm2_vl arch — supported in upstream llama.cpp
+# Better grounding than 1.6B, full-page OCR with layout annotation
+# 32K context, 16 languages (incl Portuguese)
+# SigLIP2 NaFlex: native resolution, 512x512 patch splitting + thumbnail
+# Recommended for single-turn high-throughput: object detection, OCR, translation
+# NOT recommended for long-context reasoning-intensive tasks
+# Backend: upstream llama.cpp (lfm2_vl arch supported)
+# -------------------------------------------
+"lfm2.5-vl-3b":
+  name: "LFM2.5-VL 3B"
+  description: "Liquid AI VLM with native grounding, OCR with layout annotation, and SigLIP2 NaFlex vision. 3B params, 32K context, 16 languages."
+  tags: ["vision"]
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/lfm2.5-vl-3b/LFM2.5-VL-3B-Q6_K.gguf
+    --mmproj ${models_dir}/lfm2.5-vl-3b/mmproj-LFM2.5-VL-3B-Q8_0.gguf
+    --media-path ${media_path}
+    --jinja
+    --fit on
+    --fit-target ${vram_margin}
+    --fit-ctx 8192
+    --ctx-size 32768
+    --parallel 1
+    --temp 0.3
+    --top-p 0.9
+    --top-k 40
+    --min-p 0.0
+    --repeat-penalty 1.1
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --flash-attn on
+    --metrics
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 32768
+  metadata:
+    size: "~2.22 GB (Q6_K) + 583 MB mmproj (Q8_0)"
+    context: "8K-32K (dynamic)"
+    vram_usage: "~3.5 GB (model 2.22GB + mmproj 583MB + cache + compute)"
+    source: "LiquidAI/LFM2.5-VL-3B-GGUF (Q6_K + mmproj Q8_0)"
+    kv_cache: "q8_0"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: true
+    architecture: lfm2_vl
+    parameters: 3000000000
+    context_length: 32768
+    embedding_length: 2048
+    quantization: Q6_K
+    note: "VLM with SigLIP2 NaFlex (native resolution, 512x512 patches + thumbnail). Better grounding + OCR with layout than 1.6B. Single-turn high-throughput: object detection, OCR, translation. 16 languages incl Portuguese."

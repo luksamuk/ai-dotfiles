@@ -1,36 +1,40 @@
 # -------------------------------------------
 # QWEN3.5-4B-ABLITERATED - ik BACKEND (Hadamard KV cache)
 # Qwen3.5-4B with refusal behaviors removed via Abliterix (orthogonalized steering + Bayesian optimization)
-# KL divergence 0.0065 — minimal capability degradation. For Sprachspiel adversarial testing ONLY.
+# KL divergence 0.0065 — minimal capability degradation. For adversarial testing and NSFW prompt enhancement.
 # Same architecture as base Qwen3.5-4B (qwen35) — all llama-swap flags work identically
-# Switched from Bee/TurboQuant to ik — i1 quant format causes Bee slash bug.
-# ik with hadamard cache gives near-fp16 quality.
-# --parallel-tool-calls: enables multiple tool calls in single response
+# Parameters aligned to qwen3.5-4b normal (Aug 2026): q4_0 KV cache, parallel 1, small_model_max_ctx,
+# no-graph-reuse, ctx-checkpoints, batch-size 512, ubatch-size 128
 # -------------------------------------------
 "qwen3.5-4b-abliterated":
   name: "Qwen3.5 4B Abliterated"
-  description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance. Abliterated variant with refusal behaviors removed for adversarial testing."
+  description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance. Abliterated variant with refusal behaviors removed for adversarial testing and NSFW prompt enhancement."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/Qwen3.5-4B-abliterated.i1-Q4_K_M.gguf
+    --model ${models_dir}/qwen3.5-4b-abliterated/Huihui-Qwen3.5-4B-abliterated.Q4_K_M.gguf
     --jinja
     --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-    --parallel 2
+    --parallel 1
     --parallel-tool-calls
     --fit
     --fit-margin 512
-    --ctx-size 131072
+    --ctx-size ${small_model_max_ctx}
     --temp ${default_temp}
     --top-p ${default_top_p}
     --top-k ${default_top_k}
     --min-p ${default_min_p}
     --repeat-penalty ${default_repeat_penalty}
     --reasoning on
-    --cache-type-k q8_0
+    --cache-type-k q4_0
     --cache-type-v q4_0
     --k-cache-hadamard
     --v-cache-hadamard
     --flash-attn auto
+    --no-graph-reuse
+    --ctx-checkpoints 0
+    --ctx-checkpoints-interval 0
+    --batch-size 512
+    --ubatch-size 128
     --metrics
   filters:
     stripParams: "temperature, top_p"
@@ -58,12 +62,12 @@
     parameters: 4210000000
     context_length: 262144
     embedding_length: 2560
-    quantization: i1-Q4_K_M
-    size: "~2.71 GB (i1-Q4_K_M)"
+    quantization: Q4_K_M
+    size: "~2.71 GB (Q4_K_M)"
     context: "64K-128K (dynamic)"
-    vram_usage: "~3.5GB VRAM (model + hadamard cache)"
-    source: "mradermacher/Qwen3.5-4B-abliterated-i1-GGUF (i1-Q4_K_M)"
-    kv_cache: "q8_0 + q4_0 hadamard"
+    vram_usage: "~4.5GB VRAM (model 2.71GB + q4_0/q4_0 hadamard cache + compute)"
+    source: "mradermacher/Huihui-Qwen3.5-4B-abliterated-GGUF (Q4_K_M)"
+    kv_cache: "q4_0/q4_0 + hadamard"
     features:
       completion: true
       tools: true
@@ -73,4 +77,4 @@
       insert: false
       audio: false
       image: false
-    note: "Abliterated variant for Sprachspiel adversarial testing — no refusal. Switched from Bee to ik — i1 format causes Bee slash bug."
+    note: "Abliterated variant — refusal behaviors removed via Abliterix. Parameters aligned to qwen3.5-4b normal (Aug 2026). Uses Huihui-Qwen3.5-4B-abliterated (renamed from Qwen3.5-4B-abliterated-i1)."
