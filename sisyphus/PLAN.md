@@ -233,11 +233,60 @@ Build 9802 already supports `--spec-type ngram-mod`. Flags for upstream:
 
 ---
 
-## Open Questions
+## Decisions (Aug 2026)
 
-1. **Context size**: Start with 32K (safe) or 64K (ambitious)? Prefill at 2.5 tok/s makes 64K impractical for cold starts (~7 hours), but ngram-mod + warm sessions could make it viable for multi-turn.
-2. **Pi-hole**: Fix or remove? Needs separate debugging session (DNS config, network topology).
-3. **Karakeep**: Still using it? 3 containers + 2.1GB images is heavy if unused.
-4. **Sub-agent (230M)**: Worth keeping always-on, or spin up on demand only?
-5. **Agent choice**: PicoClaw (Go, ultra-light) vs custom Python (more flexible, heavier)?
-6. **llama.cpp update**: Do it now (Phase 2) or after the architecture migration?
+1. **Context size**: 64K minimum. Test ambitious first, scale down if needed. ngram-mod + warm sessions should help with multi-turn.
+2. **Pi-hole**: CONSERERTAR. Goal: confidence to set as DNS server on router. Context: elderly parents clicking ads, Google blocking uBlock Origin. Needs thorough testing session.
+3. **Karakeep**: REMOVED. Containers stopped, images removed, storage purged. (Meilisearch data needs `sudo rm -rf ~/docker/karakeep` — user must run.)
+4. **Sub-agent 230M**: ALWAYS-ON. `--parallel 1` (ngram requires it). NOT for context compression — Liquid docs say 230M is for data extraction + lightweight tool calling only, not reasoning/code/creative. Use cases: structured extraction, tool calling, intent detection. For compression, use the 2.6B main model.
+5. **Agent**: PicoClaw (rozdol/picoclaw). Python, RPi4-native, SQLite memory, user allowlist (single-user security), OpenAI-compatible API, Telegram bot with /ask + /task commands. Single global session guaranteed by ALLOWED_USER_IDS.
+6. **llama.cpp update**: DONE FIRST. Build in progress (Phase 2).
+
+## ARM Optimization Findings (RPi4 Cortex-A72)
+
+- **Architecture**: ARMv8.0-A, Cortex-A72 @ 1.5GHz, 4 cores
+- **GGML_NATIVE=ON**: CMake adds `-mcpu=native` automatically
+- **GGML_NEON=ON**: Auto-detected (ARM NEON SIMD)
+- **DOTPROD**: NOT available (ARMv8.2-A feature, Pi4 is v8.0) — `HAVE_DOTPROD` empty
+- **i8mm**: NOT available (also v8.2-A+)
+- **No further CMAKE flags to add** — Pi4 is already at its architectural ceiling
+- **Best optimizations**: `--threads 4`, `--mlock`, ngram-mod, `--parallel 1`, q4_0 KV cache
+- **RPi5 vs RPi4**: Pi5 has Cortex-A76 (v8.2-A, dotprod, i8mm, 2-3x faster). Pi4 is limited to NEON only.
+
+## PicoClaw Analysis (rozdol/picoclaw)
+
+**What it is**: Lightweight Python Telegram AI agent orchestrator for RPi4 (1GB RAM minimum).
+- Two systemd services: `picoclaw.service` (Telegram) + `picoclaw-worker.service` (async jobs)
+- SQLite-backed persistent memory + skills (WAL mode)
+- `ALLOWED_USER_IDS` — user allowlist (empty = deny all, perfect for single-user)
+- OpenAI-compatible LLM support (`openai` or `openrouter` provider)
+- Multi-agent routing: researcher, coder, ops
+- Commands: /ask (sync), /task (async), /memory, /skills, /agents, /device, /whoami
+- Memory: `MEMORY <text>` saves per-chat facts, injected as system context
+- Skills: reusable instruction snippets, enabled per-chat
+- Install: `git clone` to /opt/picoclaw, `pip install -r requirements.txt`, configure .env
+- systemd units included (picoclaw.service + picoclaw-worker.service)
+
+**Configuration plan**:
+- `LLM_PROVIDER=openai` (point to localhost:8081)
+- `OPENAI_API_KEY=llama-swap` (placeholder, llama-server ignores)
+- `OPENAI_BASE_URL=http://localhost:8081/v1` (or similar, needs check)
+- `ALLOWED_USER_IDS=<user's Telegram ID>` (single-user lock)
+- `TELEGRAM_BOT_TOKEN=<from BotFather>`
+
+**Single session guarantee**: ALLOWED_USER_IDS ensures only the owner can interact. No parallel sessions — SQLite handles one conversation at a time. Worker queue serializes async jobs.
+
+## LFM2.5-230M Use Cases (Liquid AI docs)
+
+**Recommended**:
+- Data extraction (structured data from unstructured text)
+- Lightweight on-device agentic tasks (tool calling)
+- Single-step function calling
+- Large-scale extraction pipelines
+
+**NOT recommended**:
+- Reasoning-heavy workloads (advanced math, code generation, creative writing)
+- Context compression / summarization
+- Multi-step reasoning chains
+
+**For compression**: Use LFM2.5-2.6B (main model) — it's a reasoning model with 128K context, always-thinking, and can handle summarization/compression tasks. The 230M is a specialist, not a generalist.
