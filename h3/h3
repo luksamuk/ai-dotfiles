@@ -1,0 +1,1035 @@
+#!/bin/bash
+# h3 — atalho para gerar vídeo+áudio via MiniMax H3 no Wan2GP
+#
+# Modos:
+#   t2v   — text-to-video+audio (padrão)
+#   i2v   — image-to-video+audio (FL2VA: primeira e/ou última frame)
+#   ref   — reference-to-video+audio (Ref2VA: imagens, vídeos, áudios de referência)
+#
+# Uso:
+#   h3 "prompt"                                      # t2v 4.5s
+#   h3 "prompt" --frames 241                          # ~10s
+#   h3 "prompt" --image-start foto.jpg                # FL2VA: primeira frame
+#   h3 "prompt" --image-start a.jpg --image-end b.jpg # FL2VA: primeira + última
+#   h3 "prompt" --image-end foto.jpg                  # FL2VA: última frame only
+#   h3 "prompt" --ref-img char.jpg --ref-video vid.mp4 # Ref2VA: img + vídeo
+#   h3 "prompt" --ref-img a.jpg --ref-img b.jpg --ref-audio audio.wav
+#   h3 "prompt" --ref-video vid.mp4 --use-soundtrack  # Ref2VA: vídeo + soundtrack
+#   h3 "prompt" --enhance                             # expande prompt via LLM
+#   h3 "prompt" --dry-run                             # mostra configs e encerra
+#   h3 --web                                          # interface web
+
+WAN2GP_DIR="$HOME/git/Wan2GP"
+VENV="$WAN2GP_DIR/.venv"
+OUTPUT_DIR="$PWD"
+LLAMA_SWAP_URL="http://localhost:12434/v1/chat/completions"
+
+# H3 defaults (do handler: 20 steps, guidance 1.0, flow_shift 12, euler, 24fps)
+PROMPT=""
+FRAMES=107        # ~4.5s a 24fps (mínimo do H3)
+STEPS=50
+SEED=42
+GUIDANCE=1.0
+FLOW_SHIFT=12.0
+DRY_RUN=""
+WEB=false
+ENHANCE=false
+ENHANCE_MODEL=""
+ENHANCE_DEFAULT="qwen3.5-4b"
+RESOLUTION="832x480"
+SHOW_ENHANCED=false
+VISION_DESCRIBE=true
+VLM_MODEL="qwen3-vl-4b"
+MAX_IMAGE_MP="1.0"  # Max megapixels per image (ref2va ref images + fl2va start/end frames)
+# Redimensiona imagens que excedem este limite para /tmp antes de processar,
+# mantendo aspect ratio e alinhamento ao fator 32 do Qwen3-VL.
+
+# NSFW LoRA — suporta múltiplas LoRAs empilhadas com forças individuais
+NSFW=false
+NSFW_LORAS=()                       # lista de LoRAs NSFW (repeatable)
+# Defaults: genitália feminina + masculina
+NSFW_DEFAULT_LORAS=("hmpussy_v6" "HMPenis_v2_e35")
+# Forças recomendadas por LoRA (empírico)
+declare -A NSFW_LORA_STRENGTHS=(
+  ["HMNSFW_AIO_V2"]="0.5"
+  ["hmpussy_v6"]="0.5"
+  ["minimax_vag"]="0.6"
+  ["vagassist_e40"]="0.5"
+  ["HMInnie_v1_e50"]="0.5"
+  ["HMPenis_v2_e35"]="0.5"
+)
+NSFW_AVAILABLE_LORAS="HMNSFW_AIO_V2 hmpussy_v6 minimax_vag vagassist_e40 HMInnie_v1_e50 HMPenis_v2_e35"
+
+# Turbo LoRA (destilação — reduz 80 steps pra 4-8)
+# Usar versão ComfyUI-pruned (compatível com Wan2GP). A versão diffusers original
+# tem keys diferentes (transformer_blocks/token_refiner) que o Wan2GP não reconhece.
+TURBO=false
+TURBO_STEPS=8                       # steps fixado (4-8, 8 = melhor qualidade)
+TURBO_STRENGTH="1.0"                # lightx2v recomenda 1.0
+TURBO_FILE="minimax_h3_ref2v_turbo_4step_v0.1_comfyui_resized_avg_rank_21_bf16.safetensors"
+
+# Realism LoRA (fal/MiniMax-H3-Realism-People-LoRA) — melhora rostos, pele, expressões
+# Só toca attention projections (qkv_proj + out_proj), sem conflito com NSFW/Turbo
+# Trigger word: r34l1sm (adicionada automaticamente ao início do prompt se ativo)
+REALISM=false
+REALISM_STRENGTH="1.0"               # fal recomenda 1.0; 0.6-0.8 pra toque leve
+REALISM_FILE="h3_realism_people.safetensors"
+REALISM_TRIGGER="r34l1sm"
+
+# FL2VA inputs
+IMAGE_START=""
+IMAGE_END=""
+
+# Ref2VA inputs
+REF_IMAGES=()
+REF_VIDEO=""
+REF_VIDEO2=""
+REF_AUDIO=""
+REF_AUDIO2=""
+USE_SOUNDTRACK=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --frames) FRAMES="$2"; shift 2 ;;
+    --steps)  STEPS="$2"; shift 2 ;;
+    --seed)   SEED="$2"; shift 2 ;;
+    --guidance) GUIDANCE="$2"; shift 2 ;;
+    --flow-shift) FLOW_SHIFT="$2"; shift 2 ;;
+    --dry-run) DRY_RUN="1"; shift ;;
+    --web)     WEB=true; shift ;;
+    --enhance) ENHANCE=true; shift ;;
+    --enhance-with) ENHANCE=true; ENHANCE_MODEL="$2"; shift 2 ;;
+    --resolution) RESOLUTION="$2"; shift 2 ;;
+    --show-enhanced) SHOW_ENHANCED=true; shift ;;
+    --no-vision-describe) VISION_DESCRIBE=false; shift ;;
+    --max-image-mp) MAX_IMAGE_MP="$2"; shift 2 ;;
+    # FL2VA
+    --image-start) IMAGE_START="$2"; shift 2 ;;
+    --image-end)   IMAGE_END="$2"; shift 2 ;;
+    # Ref2VA
+    --ref-img)    REF_IMAGES+=("$2"); shift 2 ;;
+    --ref-video)  REF_VIDEO="$2"; shift 2 ;;
+    --ref-video2) REF_VIDEO2="$2"; shift 2 ;;
+    --ref-audio)  REF_AUDIO="$2"; shift 2 ;;
+    --ref-audio2) REF_AUDIO2="$2"; shift 2 ;;
+    --use-soundtrack) USE_SOUNDTRACK=true; shift ;;
+    --nsfw) NSFW=true; shift ;;
+    --nsfw-lora) NSFW=true; NSFW_LORAS+=("$2"); shift 2 ;;
+    --nsfw-strength) NSFW=true; NSFW_OVERRIDE_STRENGTH="$2"; shift 2 ;;  # sobrescreve todas
+    --turbo) TURBO=true; shift ;;
+    --turbo-strength) TURBO=true; TURBO_STRENGTH="$2"; shift 2 ;;
+    --realism) REALISM=true; shift ;;
+    --realism-strength) REALISM=true; REALISM_STRENGTH="$2"; shift 2 ;;
+    -h|--help)
+      cat << 'HELPEOF'
+h3 — gerar vídeo+áudio via MiniMax H3
+
+Uso: h3 "prompt" [opções]
+
+Modos:
+  (padrão)                     Text-to-Video+Audio (t2v)
+  --image-start PATH           FL2VA: primeira frame do vídeo
+  --image-end PATH             FL2VA: última frame do vídeo
+  --image-start A --image-end B  FL2VA: primeira + última frame
+  --ref-img PATH (repeatable)  Ref2VA: imagem de referência (até 9)
+  --ref-video PATH              Ref2VA: vídeo de referência 1
+  --ref-video2 PATH             Ref2VA: vídeo de referência 2
+  --ref-audio PATH              Ref2VA: áudio de referência 1
+  --ref-audio2 PATH             Ref2VA: áudio de referência 2
+  --use-soundtrack              Ref2VA: usar soundtrack do vídeo de referência
+
+Opções gerais:
+  --frames N         Número de frames (default: 107, ~4.5s). 107=min, 481=~20s
+  --steps N          Steps de denoising (default: 50)
+  --seed N           Seed (default: 42)
+  --guidance N       Guidance scale (default: 1.0)
+  --flow-shift N     Flow shift (default: 12.0)
+  --resolution WxH   Resolução (default: 832x480). Ex: 480x256, 416x224
+  --enhance          Expande prompt via LLM (llama-swap)
+  --enhance-with M   LLM específico para enhance (default: qwen3.5-4b)
+  --show-enhanced    Mostra prompt expandido antes de gerar
+  --no-vision-describe  Pula a descrição visual via VLM (qwen3-vl-4b)
+  --max-image-mp N    Max megapixels por imagem (default: 1.0). Imagens maiores
+                     são redimensionadas para /tmp mantendo aspect ratio.
+  --dry-run          Mostra as configurações e encerra sem gerar
+  --nsfw              Carrega LoRAs NSFW (default: hmpussy_v6@0.5 + HMPenis_v2_e35@0.5)
+                     Usa os dois por padrão: genitália feminina + masculina
+  --nsfw-lora NAME    Especifica um LoRA NSFW (repeatable, empilha múltiplos):
+                     HMNSFW_AIO_V2   (AIO: posições variadas, 0.5)
+                     hmpussy_v6     (genitália feminina, 0.5)
+                     minimax_vag    (genitália feminina leve, 0.6)
+                     vagassist_e40  (assistência vaginal, 0.5)
+                     HMInnie_v1_e50 (innie vagina, 0.5)
+                     HMPenis_v2_e35 (genitália masculina, 0.5)
+  --nsfw-strength N   Sobrescreve força de TODOS os LoRAs NSFW (default: força
+                     recomendada de cada um, range 0.1-1.0)
+  --turbo             Ativa LoRA Turbo (destilação: ~10x mais rápido)
+                     Use com --steps 8 (default com turbo) ou --steps 4-6
+                     Mais que 8 steps não melhora e pode gerar artifacts
+  --turbo-strength N  Força do LoRA Turbo (default: 1.0, lightx2v recomenda 1.0)
+  --realism           Ativa LoRA Realism People (rostos, pele, expressões)
+                     Trigger word r34l1sm adicionada ao início do prompt
+  --realism-strength N  Força do LoRA Realism (default: 1.0, 0.6-0.8 leve)
+  --web              Abre interface web (Gradio UI)
+  -h, --help         Esta ajuda
+
+Regras Ref2VA:
+  - Vídeos de referência: 2-15s cada, total máximo 15s
+  - Áudios de referência: 2-15s cada, total máximo 15s
+  - Máximo 12 arquivos de referência no total
+  - Áudio requer >= referências visuais (imgs+vídeos) que áudios
+  - --use-soundtrack usa o audio track dos vídeos de referência
+
+Enhance:
+  Usa llama-swap (localhost:12434) para expandir o prompt.
+  O LLM não recebe as imagens/vídeos/áudios em si. Recebe apenas o prompt
+  do usuário + um contexto estruturado dizendo quantos de cada tipo foram
+  passados e em qual modo (first-frame vs referência). Assim o LLM escreve
+  o prompt H3 com os labels corretos (<Picture N>, <Video N>, <Audio N>)
+  sem mudar a semântica do que o usuário pediu.
+  Com --enhance e imagens de entrada, o Qwen3-VL-4B descreve cada imagem
+  antes do enhance, enriquecendo o contexto visual do LLM. Use
+  --no-vision-describe para pular essa etapa.
+
+Modelos (symlinked em ckpts/):
+  Transformer:  MiniMax-H3-FL2VA-pruned_int8_convrot.safetensors (21 GB)
+  Text Encoder: qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf (5 GB)
+  VAEs:         MiniMax-H3-video_vae_fp16 + audio_vae_fp32 (5.5 GB)
+
+Exemplos:
+  h3 "A jazz duo performing in a softly lit club"
+  h3 "A jazz duo in a club" --enhance --steps 30
+  h3 "Will Smith eating spaghetti" --image-start will.jpg --enhance
+  h3 "A character walks through a forest" --image-start forest.jpg --image-end exit.jpg
+  h3 "A hero with a red cape" --ref-img hero.jpg --ref-video action.mp4
+  h3 "Continue this scene" --ref-video scene.mp4 --use-soundtrack
+  h3 "A singer performs" --ref-img singer.jpg --ref-audio song.wav --enhance --show-enhanced
+  h3 "explicit prompt here" --nsfw                            # NSFW default (pussy@0.5 + penis@0.5)
+  h3 "explicit prompt here" --nsfw --nsfw-lora hmpussy_v6    # Só feminina (0.5)
+  h3 "explicit prompt here" --nsfw --nsfw-lora hmpussy_v6 --nsfw-lora HMPenis_v2_e35  # Ambos explícitos
+  h3 "explicit prompt here" --nsfw --nsfw-strength 0.3        # Todos a 0.3 (mais sutil)
+  h3 "explicit prompt here" --nsfw --turbo                    # NSFW + Turbo (8 steps, ~10x rápido)
+  h3 "explicit prompt here" --nsfw --turbo --realism          # NSFW + Turbo + rostos realistas
+  h3 "explicit prompt here" --nsfw --nsfw-strength 0.3 --enhance
+  h3 "explicit prompt here" --turbo --steps 6            # Turbo com 6 steps (melhor qualidade)
+  h3 "prompt here" --realism --realism-strength 0.8           # Realism leve (sem NSFW/Turbo)
+HELPEOF
+      exit 0 ;;
+    *) PROMPT="$1"; shift ;;
+  esac
+done
+
+if [[ "$WEB" == true ]]; then
+  source "$VENV/bin/activate"
+  cd "$WAN2GP_DIR"
+  python wgp.py --profile 1 --t2v
+  exit 0
+fi
+
+if [[ -z "$PROMPT" ]]; then
+  echo "Erro: prompt obrigatório. Use: h3 \"seu prompt\""
+  echo "Ajuda: h3 --help"
+  exit 1
+fi
+
+# ── Resolver paths relativos para absolutos ──────────────────────────────
+# O Wan2GP resolve paths relativos em relação ao próprio diretório (~/git/Wan2GP),
+# não em relação ao cwd do usuário. Convertemos tudo pra absoluto aqui.
+resolve_path() {
+  local p="$1"
+  [[ -z "$p" ]] && return 0
+  # Expande ~ e resolve relativo ao cwd do usuário
+  python3 -c "import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))" "$p"
+}
+
+IMAGE_START=$(resolve_path "$IMAGE_START")
+IMAGE_END=$(resolve_path "$IMAGE_END")
+REF_VIDEO=$(resolve_path "$REF_VIDEO")
+REF_VIDEO2=$(resolve_path "$REF_VIDEO2")
+REF_AUDIO=$(resolve_path "$REF_AUDIO")
+REF_AUDIO2=$(resolve_path "$REF_AUDIO2")
+
+# Resolver array de imagens
+if [[ ${#REF_IMAGES[@]} -gt 0 ]]; then
+  RESOLVED_REFS=()
+  for img in "${REF_IMAGES[@]}"; do
+    RESOLVED_REFS+=("$(resolve_path "$img")")
+  done
+  REF_IMAGES=("${RESOLVED_REFS[@]}")
+fi
+
+# Validar que arquivos existem
+for f in "$IMAGE_START" "$IMAGE_END" "$REF_VIDEO" "$REF_VIDEO2" "$REF_AUDIO" "$REF_AUDIO2" "${REF_IMAGES[@]}"; do
+  if [[ -n "$f" && ! -f "$f" ]]; then
+    echo "Erro: arquivo não encontrado: $f"
+    exit 1
+  fi
+done
+
+# ── Redimensionar imagens grandes para /tmp ──────────────────────────────
+# O Qwen3-VL text encoder converte imagens em patches de 32px (16 patch_size
+# × 2 merge_size). Imagens grandes (ex: 4000×3000 = 12MP) geram ~46K tokens
+# visuais cada, consumindo VRAM que pode causar OOM no text_encoder.
+# Redimensionamos para no máximo MAX_IMAGE_MP megapixels, mantendo aspect ratio
+# e alinhando ao fator 32. Imagens dentro do limite passam direto.
+# Arquivos temporários ficam em /tmp (tmpfs) e são limpos ao final.
+H3_TEMP_IMAGES=()
+cleanup_temp_images() {
+  for f in "${H3_TEMP_IMAGES[@]}"; do
+    [[ -n "$f" && -f "$f" ]] && rm -f "$f"
+  done
+}
+trap cleanup_temp_images EXIT
+
+resize_image_if_needed() {
+  local img_path="$1"
+  [[ -z "$img_path" ]] && return 0
+
+  local max_pixels
+  max_pixels=$(python3 -c "print(int(float('$MAX_IMAGE_MP') * 1000000))")
+
+  # Extrai dimensões com ffmpeg/ffprobe (fallback para PIL se necessário)
+  local dims
+  dims=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0:s=x "$img_path" 2>/dev/null) || return 0
+  [[ -z "$dims" ]] && return 0
+
+  local w h
+  w=$(echo "$dims" | cut -d'x' -f1)
+  h=$(echo "$dims" | cut -d'x' -f2)
+
+  local total_pixels=$((w * h))
+  if (( total_pixels <= max_pixels )); then
+    return 0  # Imagem dentro do limite, não redimensiona
+  fi
+
+  # Calcula novo tamanho mantendo aspect ratio, alinhado ao fator 32
+  local RESIZED_OUT resized_path resized_w resized_h
+  RESIZED_OUT=$(python3 -c "
+import math, os, hashlib
+w, h = $w, $h
+max_px = $max_pixels
+factor = 32  # patch_size(16) × merge_size(2)
+# Calcular escala
+scale = math.sqrt(max_px / (w * h))
+new_w = max(factor, math.floor(w * scale / factor) * factor)
+new_h = max(factor, math.floor(h * scale / factor) * factor)
+# Garantir que não excede max_pixels
+while new_w * new_h > max_px:
+    if new_w >= new_h:
+        new_w -= factor
+    else:
+        new_h -= factor
+    if new_w < factor or new_h < factor:
+        break
+ext = os.path.splitext('$img_path')[1].lower()
+if ext not in ('.jpg', '.jpeg', '.png', '.webp', '.bmp'):
+    ext = '.jpg'
+content_hash = hashlib.md5(os.path.abspath('$img_path').encode()).hexdigest()[:8]
+print(f'/tmp/h3_resized_{content_hash}{ext}')
+print(new_w)
+print(new_h)
+")
+  resized_path=$(echo "$RESIZED_OUT" | sed -n '1p')
+  resized_w=$(echo "$RESIZED_OUT" | sed -n '2p')
+  resized_h=$(echo "$RESIZED_OUT" | sed -n '3p')
+
+  # Se já existe (mesma imagem redimensionada antes), reutiliza
+  if [[ -f "$resized_path" ]]; then
+    echo "$resized_path"
+    return 0
+  fi
+
+  echo "  Redimensionando: $(basename "$img_path") ${w}x${h} → ${resized_w}x${resized_h} (max ${MAX_IMAGE_MP}MP)" >&2
+  if ! ffmpeg -y -i "$img_path" -vf "scale=${resized_w}:${resized_h}" -q:v 2 "$resized_path" 2>/dev/null; then
+    echo "    Aviso: falha ao redimensionar, usando imagem original" >&2
+    return 0
+  fi
+
+  echo "$resized_path"
+}
+
+# Aplicar resize em todas as imagens (FL2VA + Ref2VA)
+if [[ -n "$IMAGE_START" ]]; then
+  RESIZED=$(resize_image_if_needed "$IMAGE_START")
+  if [[ -n "$RESIZED" ]]; then
+    H3_TEMP_IMAGES+=("$RESIZED")
+    IMAGE_START="$RESIZED"
+  fi
+fi
+if [[ -n "$IMAGE_END" ]]; then
+  RESIZED=$(resize_image_if_needed "$IMAGE_END")
+  if [[ -n "$RESIZED" ]]; then
+    H3_TEMP_IMAGES+=("$RESIZED")
+    IMAGE_END="$RESIZED"
+  fi
+fi
+if [[ ${#REF_IMAGES[@]} -gt 0 ]]; then
+  RESOLVED_REFS=()
+  for img in "${REF_IMAGES[@]}"; do
+    RESIZED=$(resize_image_if_needed "$img")
+    if [[ -n "$RESIZED" ]]; then
+      H3_TEMP_IMAGES+=("$RESIZED")
+      RESOLVED_REFS+=("$RESIZED")
+    else
+      RESOLVED_REFS+=("$img")
+    fi
+  done
+  REF_IMAGES=("${RESOLVED_REFS[@]}")
+fi
+
+# ── Detectar modo ─────────────────────────────────────────────────────────
+FL2VA_MODE=false
+REF2VA_MODE=false
+
+if [[ -n "$IMAGE_START" || -n "$IMAGE_END" ]]; then
+  FL2VA_MODE=true
+fi
+
+if [[ ${#REF_IMAGES[@]} -gt 0 || -n "$REF_VIDEO" || -n "$REF_VIDEO2" || -n "$REF_AUDIO" || -n "$REF_AUDIO2" || "$USE_SOUNDTRACK" == true ]]; then
+  REF2VA_MODE=true
+fi
+
+if [[ "$FL2VA_MODE" == true && "$REF2VA_MODE" == true ]]; then
+  echo "Erro: FL2VA (--image-start/--image-end) e Ref2VA (--ref-img/--ref-video/--ref-audio) são mutuamente exclusivos."
+  exit 1
+fi
+
+# ── Verificar que os modelos existem em disco ────────────────────────────
+# O Wan2GP baixa modelos faltantes automaticamente, o que pode lotar o disco.
+# Bloquear antes se não tiver o checkpoint.
+CKPTS_DIR="$WAN2GP_DIR/ckpts"
+if [[ "$REF2VA_MODE" == true ]]; then
+  MODEL_FILE="$CKPTS_DIR/MiniMax-H3-Ref2VA-pruned_int8_convrot.safetensors"
+else
+  MODEL_FILE="$CKPTS_DIR/MiniMax-H3-FL2VA-pruned_int8_convrot.safetensors"
+fi
+TEXT_ENCODER="$CKPTS_DIR/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf"
+VIDEO_VAE="$CKPTS_DIR/MiniMax-H3-video_vae_fp16.safetensors"
+AUDIO_VAE="$CKPTS_DIR/MiniMax-H3-audio_vae_fp32.safetensors"
+
+for f in "$MODEL_FILE" "$TEXT_ENCODER" "$VIDEO_VAE" "$AUDIO_VAE"; do
+  if [[ ! -e "$f" ]]; then
+    echo "Erro: modelo não encontrado: $f"
+    echo "Baixe manualmente antes de gerar. O Wan2GP tentaria baixar automaticamente"
+    echo "e pode lotar o disco."
+    exit 1
+  fi
+done
+
+# ── Construir prompt types e model_type ──────────────────────────────────
+if [[ "$REF2VA_MODE" == true ]]; then
+  MODEL_TYPE="minimax_h3_ref2va_pruned"
+  TASK_TYPE="ref2va"
+  VIDEO_PROMPT_TYPE=""
+  [[ ${#REF_IMAGES[@]} -gt 0 ]] && VIDEO_PROMPT_TYPE+="I"
+  if [[ -n "$REF_VIDEO" && -n "$REF_VIDEO2" ]]; then
+    VIDEO_PROMPT_TYPE+="V+G"
+  elif [[ -n "$REF_VIDEO" ]]; then
+    VIDEO_PROMPT_TYPE+="VG"
+  fi
+  AUDIO_PROMPT_TYPE=""
+  if [[ "$USE_SOUNDTRACK" == true ]]; then
+    AUDIO_PROMPT_TYPE="K"
+  elif [[ -n "$REF_AUDIO" && -n "$REF_AUDIO2" ]]; then
+    AUDIO_PROMPT_TYPE="AB"
+  elif [[ -n "$REF_AUDIO" ]]; then
+    AUDIO_PROMPT_TYPE="A"
+  fi
+  IMAGE_PROMPT_TYPE=""
+elif [[ "$FL2VA_MODE" == true ]]; then
+  MODEL_TYPE="minimax_h3_fl2va_pruned"
+  TASK_TYPE="i2v"
+  IMAGE_PROMPT_TYPE=""
+  [[ -n "$IMAGE_START" ]] && IMAGE_PROMPT_TYPE+="S"
+  [[ -n "$IMAGE_END" ]] && IMAGE_PROMPT_TYPE+="E"
+  VIDEO_PROMPT_TYPE=""
+  AUDIO_PROMPT_TYPE=""
+else
+  MODEL_TYPE="minimax_h3_fl2va_pruned"
+  TASK_TYPE="t2v"
+  IMAGE_PROMPT_TYPE=""
+  VIDEO_PROMPT_TYPE=""
+  AUDIO_PROMPT_TYPE=""
+fi
+
+# ── Validar Ref2VA: pelo menos 1 referência ──────────────────────────────
+if [[ "$REF2VA_MODE" == true ]]; then
+  VISUAL_COUNT=${#REF_IMAGES[@]}
+  [[ -n "$REF_VIDEO" ]] && ((VISUAL_COUNT++))
+  [[ -n "$REF_VIDEO2" ]] && ((VISUAL_COUNT++))
+  if [[ "$USE_SOUNDTRACK" == true ]]; then
+    AUDIO_COUNT=1  # soundtrack usa 1 slot por vídeo
+  else
+    AUDIO_COUNT=0
+    [[ -n "$REF_AUDIO" ]] && ((AUDIO_COUNT++))
+    [[ -n "$REF_AUDIO2" ]] && ((AUDIO_COUNT++))
+  fi
+  if [[ $VISUAL_COUNT -eq 0 && $AUDIO_COUNT -eq 0 ]]; then
+    echo "Erro: Ref2VA requer pelo menos uma referência (imagem, vídeo ou áudio)."
+    exit 1
+  fi
+  if [[ $AUDIO_COUNT -gt $VISUAL_COUNT ]]; then
+    echo "Erro: Ref2VA requer pelo menos tantas referências visuais (imgs+vídeos=$VISUAL_COUNT) quanto áudios ($AUDIO_COUNT)."
+    exit 1
+  fi
+  if [[ "$USE_SOUNDTRACK" == true && -z "$REF_VIDEO" && -z "$REF_VIDEO2" ]]; then
+    echo "Erro: --use-soundtrack requer pelo menos um --ref-video."
+    exit 1
+  fi
+fi
+
+# ── Prompt enhancement ──────────────────────────────────────────────────
+# O LLM não recebe as imagens/vídeos/áudios em si. Ele recebe o prompt do
+# usuário + um contexto estruturado dizendo quantos de cada tipo foram
+# passados e em qual modo (first-frame vs referência). O LLM usa isso pra
+# escrever o prompt H3 com os labels corretos (<Picture N>, <Video N>,
+# <Audio N>) sem mudar a semântica do que o usuário pediu.
+if [[ "$ENHANCE" == true ]]; then
+  if [[ -z "$ENHANCE_MODEL" ]]; then
+    ENHANCE_MODEL="$ENHANCE_DEFAULT"
+  fi
+
+  # Sempre usar o system prompt de TEXTO (o LLM não vê as imagens)
+  if [[ "$REF2VA_MODE" == true ]]; then
+    SYSTEM_PROMPT_VAR="REF2VA_TEXT_SYSTEM_PROMPT"
+  else
+    SYSTEM_PROMPT_VAR="FL2VA_TEXT_SYSTEM_PROMPT"
+  fi
+
+  # Construir contexto de mídia para anexar ao prompt do usuário
+  MEDIA_CONTEXT=""
+  if [[ "$FL2VA_MODE" == true ]]; then
+    # Calcula duração em segundos (24fps)
+    DURATION_SEC=$(python3 -c "print(f'{$FRAMES / 24:.1f}')")
+    MEDIA_CONTEXT="[Generation mode: First-Last Frame to Video and Audio (FL2VA)]\n[Output duration: ${DURATION_SEC} seconds ($FRAMES frames at 24fps). All timestamps in the prompt must fall within 0.00–${DURATION_SEC}s.]\n"
+    PIC_COUNT=0
+    if [[ -n "$IMAGE_START" ]]; then
+      ((PIC_COUNT++))
+      MEDIA_CONTEXT+="<Picture 1> is the first frame of the output video at 0.00 seconds.\n"
+    fi
+    if [[ -n "$IMAGE_END" ]]; then
+      ((PIC_COUNT++))
+      if [[ $PIC_COUNT -eq 2 ]]; then
+        MEDIA_CONTEXT+="<Picture 2> is the last frame of the output video, aligning with the exact end time (${DURATION_SEC}s).\n"
+      else
+        MEDIA_CONTEXT+="<Picture 1> is the last frame of the output video, aligning with the exact end time (${DURATION_SEC}s).\n"
+      fi
+    fi
+    MEDIA_CONTEXT+="Total boundary images: $PIC_COUNT.\n"
+  elif [[ "$REF2VA_MODE" == true ]]; then
+    # Calcula duração em segundos (24fps)
+    DURATION_SEC=$(python3 -c "print(f'{$FRAMES / 24:.1f}')")
+    MEDIA_CONTEXT="[Generation mode: Reference to Video and Audio (Ref2VA)]\n[Output duration: ${DURATION_SEC} seconds ($FRAMES frames at 24fps). All timestamps in the prompt must fall within 0.00–${DURATION_SEC}s.]\n"
+    PIC_COUNT=${#REF_IMAGES[@]}
+    VID_COUNT=0
+    [[ -n "$REF_VIDEO" ]] && ((VID_COUNT++))
+    [[ -n "$REF_VIDEO2" ]] && ((VID_COUNT++))
+    AUD_COUNT=0
+    if [[ "$USE_SOUNDTRACK" == true ]]; then
+      AUD_COUNT=$VID_COUNT  # soundtrack usa 1 slot por vídeo
+      MEDIA_CONTEXT+="Audio: using soundtrack(s) from $VID_COUNT reference video(s).\n"
+    else
+      [[ -n "$REF_AUDIO" ]] && ((AUD_COUNT++))
+      [[ -n "$REF_AUDIO2" ]] && ((AUD_COUNT++))
+    fi
+    if [[ $PIC_COUNT -gt 0 ]]; then
+      MEDIA_CONTEXT+="<Picture 1> through <Picture $PIC_COUNT>: $PIC_COUNT reference image(s) (general reference assets, not output keyframes unless the user explicitly requests it).\n"
+    fi
+    if [[ $VID_COUNT -gt 0 ]]; then
+      MEDIA_CONTEXT+="<Video 1"$( [[ $VID_COUNT -gt 1 ]] && echo " through <Video $VID_COUNT" )">: $VID_COUNT reference video(s) (contextual material for motion, appearance, or content guidance; not a guaranteed frame-exact continuation unless the user explicitly requests continuation).\n"
+    fi
+    if [[ $AUD_COUNT -gt 0 ]] && [[ "$USE_SOUNDTRACK" != true ]]; then
+      MEDIA_CONTEXT+="<Audio 1"$( [[ $AUD_COUNT -gt 1 ]] && echo " through <Audio $AUD_COUNT" )">: $AUD_COUNT reference audio clip(s) (2-15 seconds each, for voice, music, rhythm, or effects guidance).\n"
+    fi
+    MEDIA_CONTEXT+="Total reference files: $((PIC_COUNT + VID_COUNT + AUD_COUNT)) (images: $PIC_COUNT, videos: $VID_COUNT, audio: $AUD_COUNT).\n"
+    MEDIA_CONTEXT+="Requirements: at least as many visual references (images+videos=$((PIC_COUNT + VID_COUNT))) as audio references ($AUD_COUNT).\n"
+  else
+    # Calcula duração em segundos (24fps)
+    DURATION_SEC=$(python3 -c "print(f'{$FRAMES / 24:.1f}')")
+    MEDIA_CONTEXT="[Generation mode: Text to Video and Audio (T2V) — no input images, videos, or audio]\n[Output duration: ${DURATION_SEC} seconds ($FRAMES frames at 24fps). All timestamps in the prompt must fall within 0.00–${DURATION_SEC}s.]\n"
+  fi
+
+  # ── Vision describe: descrever imagens via VLM antes do enhance ──────────
+  # O LLM de enhance não vê as imagens. O VLM (qwen3-vl-4b) lê cada imagem
+  # e produz uma descrição detalhada que é injetada no media context, dando
+  # ao LLM de enhance informação visual concreta sobre cores, composição,
+  # sujeitos, iluminação, etc.
+  VISION_DESCRIPTIONS=""
+  if [[ "$VISION_DESCRIBE" == true ]]; then
+    # Coletar lista de imagens para descrever
+    VISION_IMAGES=()
+    VISION_LABELS=()
+    if [[ "$FL2VA_MODE" == true ]]; then
+      PIC_IDX=0
+      if [[ -n "$IMAGE_START" ]]; then
+        ((PIC_IDX++))
+        VISION_IMAGES+=("$IMAGE_START")
+        VISION_LABELS+=("<Picture $PIC_IDX> (first frame)")
+      fi
+      if [[ -n "$IMAGE_END" ]]; then
+        ((PIC_IDX++))
+        VISION_IMAGES+=("$IMAGE_END")
+        VISION_LABELS+=("<Picture $PIC_IDX> (last frame)")
+      fi
+    elif [[ "$REF2VA_MODE" == true ]]; then
+      PIC_IDX=0
+      for img in "${REF_IMAGES[@]}"; do
+        ((PIC_IDX++))
+        VISION_IMAGES+=("$img")
+        VISION_LABELS+=("<Picture $PIC_IDX> (reference)")
+      done
+    fi
+
+    if [[ ${#VISION_IMAGES[@]} -gt 0 ]]; then
+      echo "=== Vision describe: ${#VISION_IMAGES[@]} imagem(s) via $VLM_MODEL ==="
+      VISION_DESCRIBE_ERR=$(mktemp /tmp/h3_vision_err_XXXX.err)
+      VISION_DESCRIPTIONS=$(python3 -c "
+import json, urllib.request, urllib.error, sys, time, base64, os
+
+LLAMA_SWAP_URL = '$LLAMA_SWAP_URL'
+VLM_MODEL = '$VLM_MODEL'
+IMAGES = $(python3 -c "import json,sys; print(json.dumps(sys.argv[1:]))" "${VISION_IMAGES[@]}")
+LABELS = $(python3 -c "import json,sys; print(json.dumps(sys.argv[1:]))" "${VISION_LABELS[@]}")
+
+VLM_PROMPT = '''Describe this image in detail for video generation reference. Cover: subjects (people, animals, objects), appearance, clothing, pose, expression, setting/environment, lighting, colors, composition, mood, and any visible text. Be concise but thorough. 2-4 sentences.'''
+
+def describe_image(img_path, label):
+    with open(img_path, 'rb') as f:
+        b64 = base64.b64encode(f.read()).decode('utf-8')
+    ext = os.path.splitext(img_path)[1].lower().lstrip('.')
+    mime = 'jpeg' if ext in ('jpg', 'jpeg', '') else ext
+    data_uri = f'data:image/{mime};base64,{b64}'
+    payload = json.dumps({
+        'model': VLM_MODEL,
+        'messages': [{
+            'role': 'user',
+            'content': [
+                {'type': 'text', 'text': VLM_PROMPT},
+                {'type': 'image_url', 'image_url': {'url': data_uri}},
+            ],
+        }],
+        'temperature': 0.3,
+        'max_tokens': 512,
+    }).encode('utf-8')
+    req = urllib.request.Request(
+        LLAMA_SWAP_URL, data=payload,
+        headers={'Content-Type': 'application/json'}, method='POST',
+    )
+    max_retries = 12
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                data = json.loads(resp.read())
+                desc = data['choices'][0]['message'].get('content', '').strip()
+                if not desc:
+                    print(f'[WARN] VLM returned empty content for {label}', file=sys.stderr)
+                    return f'{label}: [description unavailable]'
+                return f'{label}: {desc}'
+        except urllib.error.HTTPError as e:
+            if e.code == 400 and attempt < max_retries - 1:
+                print(f'[INFO] VLM loading (attempt {attempt+1}/{max_retries}), retrying in 10s...', file=sys.stderr)
+                time.sleep(10)
+                continue
+            print(f'[ERROR] VLM failed for {label}: {e}', file=sys.stderr)
+            return f'{label}: [description unavailable]'
+        except Exception as e:
+            if attempt < max_retries - 1:
+                print(f'[WARN] VLM retry {attempt+1}/{max_retries} for {label}: {e}', file=sys.stderr)
+                time.sleep(5)
+                continue
+            print(f'[ERROR] VLM failed for {label}: {e}', file=sys.stderr)
+            return f'{label}: [description unavailable]'
+    return f'{label}: [description unavailable]'
+
+descriptions = []
+for img_path, label in zip(IMAGES, LABELS):
+    desc = describe_image(img_path, label)
+    descriptions.append(desc)
+    print(f'  {label}: {desc[:80]}...', file=sys.stderr)
+
+print('\n'.join(descriptions))
+" 2>"$VISION_DESCRIBE_ERR")
+      if [[ -s "$VISION_DESCRIBE_ERR" ]]; then
+        cat "$VISION_DESCRIBE_ERR" >&2
+      fi
+      rm -f "$VISION_DESCRIBE_ERR"
+
+      if [[ -n "$VISION_DESCRIPTIONS" ]]; then
+        echo "=== Vision describe concluido ==="
+        # Adicionar descricoes ao media context
+        MEDIA_CONTEXT+=$'\n--- Image descriptions (from vision model) ---\n'
+        MEDIA_CONTEXT+="$VISION_DESCRIPTIONS"
+        MEDIA_CONTEXT+=$'\n'
+      else
+        echo "=== Aviso: vision describe falhou, prosseguindo sem descricoes ==="
+      fi
+
+      # Evict VLM from llama-swap to free VRAM before enhance LLM
+      LLAMA_SWAP_CLI_EVICT="${LLAMA_SWAP_CLI:-${HOME}/git/ai-dotfiles/llama-swap/llama-swap-cli}"
+      if [[ -x "$LLAMA_SWAP_CLI_EVICT" ]]; then
+        "$LLAMA_SWAP_CLI_EVICT" unload 2>/dev/null && echo "=== VLM evictado da VRAM ===" || true
+      else
+        curl -s --fail -X POST http://localhost:12434/v1/unload 2>/dev/null && echo "=== VLM evictado via API ===" || true
+      fi
+      echo ""
+    fi
+  fi
+
+  # User message = mídia contexto + prompt original (via arquivo temp)
+  ENHANCE_USER_FILE=$(mktemp /tmp/h3_user_msg_XXXX.json)
+  python3 -c "
+import json
+media_ctx = '''$MEDIA_CONTEXT'''.strip()
+prompt = '''$PROMPT'''
+user_msg = media_ctx + '\n\n--- User prompt ---\n' + prompt
+with open('$ENHANCE_USER_FILE', 'w') as f:
+    json.dump(user_msg, f)
+"
+
+  echo "=== Enhancing prompt via $ENHANCE_MODEL ($SYSTEM_PROMPT_VAR) ==="
+  echo "=== Media context: $(echo -e "$MEDIA_CONTEXT" | head -1) ==="
+  ENHANCED_PROMPT=$(python3 -c "
+import json, urllib.request, urllib.error, sys, time, os
+
+LLAMA_SWAP_URL = '$LLAMA_SWAP_URL'
+MODEL = '$ENHANCE_MODEL'
+with open('$ENHANCE_USER_FILE') as f:
+    USER_MSG = json.load(f)
+SYSTEM_PROMPT_VAR = '$SYSTEM_PROMPT_VAR'
+
+# Ler system prompt do prompt_enhancer.py do Wan2GP
+ns = {}
+with open(os.path.join('$WAN2GP_DIR', 'models', 'minimax_h3', 'prompt_enhancer.py')) as f:
+    exec(f.read(), ns)
+SYSTEM_PROMPT = ns[SYSTEM_PROMPT_VAR]
+
+payload = json.dumps({
+    'model': MODEL,
+    'messages': [
+        {'role': 'system', 'content': SYSTEM_PROMPT},
+        {'role': 'user', 'content': USER_MSG},
+    ],
+    'temperature': 0.7,
+    'max_tokens': 65536,
+}).encode('utf-8')
+
+req = urllib.request.Request(
+    LLAMA_SWAP_URL,
+    data=payload,
+    headers={'Content-Type': 'application/json'},
+    method='POST',
+)
+
+max_retries = 12
+for attempt in range(max_retries):
+    try:
+        with urllib.request.urlopen(req, timeout=900) as resp:
+            data = json.loads(resp.read())
+            msg = data['choices'][0]['message']
+            enhanced = msg.get('content', '').strip()
+            reasoning = msg.get('reasoning_content', '')
+            if not enhanced and reasoning:
+                print(f'[WARN] LLM returned empty content with {len(reasoning)} chars of reasoning — using raw prompt', file=sys.stderr)
+                print('__ENHANCE_FAILED__')
+                print(USER_MSG.split('--- User prompt ---\n')[-1] if '--- User prompt ---' in USER_MSG else USER_MSG)
+                sys.exit(0)
+            print(enhanced)
+            break
+    except urllib.error.HTTPError as e:
+        if e.code == 400 and attempt < max_retries - 1:
+            print(f'[INFO] Model loading (attempt {attempt+1}/{max_retries}), retrying in 10s...', file=sys.stderr)
+            time.sleep(10)
+            continue
+        print(f'[ERROR] Enhancement failed: {e} — using raw prompt', file=sys.stderr)
+        print('__ENHANCE_FAILED__')
+        print(USER_MSG.split('--- User prompt ---\n')[-1] if '--- User prompt ---' in USER_MSG else USER_MSG)
+        sys.exit(0)
+    except Exception as e:
+        print(f'[ERROR] Enhancement failed: {e} — using raw prompt', file=sys.stderr)
+        print('__ENHANCE_FAILED__')
+        print(USER_MSG.split('--- User prompt ---\n')[-1] if '--- User prompt ---' in USER_MSG else USER_MSG)
+        sys.exit(0)
+" 2>"$ENHANCE_USER_FILE.err")
+  if [[ -s "$ENHANCE_USER_FILE.err" ]]; then
+    cat "$ENHANCE_USER_FILE.err" >&2
+  fi
+  rm -f "$ENHANCE_USER_FILE.err"
+  rm -f "$ENHANCE_USER_FILE"
+
+  # Detectar se o enhance falhou (marcador __ENHANCE_FAILED__ na primeira linha)
+  if [[ "$ENHANCED_PROMPT" == __ENHANCE_FAILED__* ]]; then
+    # Remove marcador e usa prompt original
+    PROMPT="${ENHANCED_PROMPT#__ENHANCE_FAILED__}"
+    PROMPT="${PROMPT#$'\n'}"  # remove newline inicial
+    echo "=== Enhance falhou, usando prompt original ==="
+  elif [[ -n "$ENHANCED_PROMPT" ]]; then
+    PROMPT="$ENHANCED_PROMPT"
+    echo "Prompt expandido (${#PROMPT} chars)"
+    if [[ "$SHOW_ENHANCED" == true ]]; then
+      echo "---"
+      echo "$PROMPT"
+      echo "---"
+    fi
+  fi
+  echo ""
+
+  # Evict LLM from llama-swap to free VRAM before generation
+  LLAMA_SWAP_CLI="${LLAMA_SWAP_CLI:-${HOME}/git/ai-dotfiles/llama-swap/llama-swap-cli}"
+  if [[ -x "$LLAMA_SWAP_CLI" ]]; then
+    "$LLAMA_SWAP_CLI" unload 2>/dev/null && echo "=== LLM evictado da VRAM ===" || true
+  else
+    curl -s --fail -X POST http://localhost:12434/v1/unload 2>/dev/null && echo "=== LLM evictado via API ===" || echo "=== Aviso: não foi possível evictar LLM (modo sem enhance: ignorável) ==="
+  fi
+  echo ""
+fi
+
+# ── Construir settings JSON ──────────────────────────────────────────────
+SETTINGS_FILE=$(mktemp /tmp/h3_settings_XXXX.json)
+
+# ── Validar LoRAs NSFW se ativado ──────────────────────────────────────────
+if [[ "$NSFW" == true ]]; then
+  # Se nenhuma LoRA especificada, usar defaults (feminina + masculina)
+  if [[ ${#NSFW_LORAS[@]} -eq 0 ]]; then
+    NSFW_LORAS=("${NSFW_DEFAULT_LORAS[@]}")
+  fi
+  # Validar cada LoRA e pegar força recomendada
+  NSFW_LORA_NAMES=()
+  NSFW_LORA_MULTS=()
+  for lora_name in "${NSFW_LORAS[@]}"; do
+    LORA_FILE="$WAN2GP_DIR/loras/minimax_h3/${lora_name}.safetensors"
+    if [[ ! -f "$LORA_FILE" ]]; then
+      echo "Erro: LoRA NSFW não encontrado: $LORA_FILE"
+      echo "Disponíveis em ~/git/Wan2GP/loras/minimax_h3/:"
+      ls -1 "$WAN2GP_DIR/loras/minimax_h3/"*.safetensors 2>/dev/null | xargs -I{} basename {} .safetensors | sed 's/^/  /'
+      exit 1
+    fi
+    NSFW_LORA_NAMES+=("$lora_name")
+    # Se --nsfw-strength foi passado, sobrescreve; senão usa força recomendada
+    if [[ -n "${NSFW_OVERRIDE_STRENGTH:-}" ]]; then
+      NSFW_LORA_MULTS+=("$NSFW_OVERRIDE_STRENGTH")
+    else
+      NSFW_LORA_MULTS+=("${NSFW_LORA_STRENGTHS[$lora_name]:-0.5}")
+    fi
+  done
+  # Mostrar LoRAs ativas com forças
+  NSFW_DISPLAY=""
+  for i in "${!NSFW_LORA_NAMES[@]}"; do
+    NSFW_DISPLAY+="$((${i}+1)). ${NSFW_LORA_NAMES[$i]}@${NSFW_LORA_MULTS[$i]}  "
+  done
+  echo "=== NSFW LoRAs: $NSFW_DISPLAY==="
+fi
+
+# ── Turbo: validar e forçar steps ─────────────────────────────────────────
+if [[ "$TURBO" == true ]]; then
+  TURBO_FILE_PATH="$WAN2GP_DIR/loras/minimax_h3/${TURBO_FILE}"
+  if [[ ! -f "$TURBO_FILE_PATH" ]]; then
+    echo "Erro: LoRA Turbo não encontrado: $TURBO_FILE_PATH"
+    echo "Baixe com: hf download lightx2v/Minimax-h3-Turbo minimax_h3_ref2v_turbo_4step_v0.1_bf16.safetensors --local-dir ~/git/Wan2GP/loras/minimax_h3/"
+    exit 1
+  fi
+  # Turbo requer 4-8 steps — forçar 8 se usuário não setou --steps explicitamente
+  if [[ "$STEPS" == "50" ]]; then
+    STEPS=8
+  fi
+  # Warn se user passou --steps > 8
+  if [[ "$STEPS" -gt 8 ]]; then
+    echo "Aviso: --turbo com $STEPS steps. LoRA Turbo é destilada pra 4-8 steps."
+    echo "        Mais que 8 não melhora qualidade e pode gerar over-sharp artifacts."
+    echo "        Use --steps 8 (ou 4-6) com --turbo."
+    echo ""
+  fi
+  echo "=== Turbo: LoRA '${TURBO_FILE}' ativo (força $TURBO_STRENGTH, $STEPS steps) ==="
+fi
+
+# ── Realism: validar ─────────────────────────────────────────────────────
+if [[ "$REALISM" == true ]]; then
+  REALISM_FILE_PATH="$WAN2GP_DIR/loras/minimax_h3/${REALISM_FILE}"
+  if [[ ! -f "$REALISM_FILE_PATH" ]]; then
+    echo "Erro: LoRA Realism não encontrada: $REALISM_FILE_PATH"
+    echo "Baixe com: hf download fal/MiniMax-H3-Realism-People-LoRA h3-realism-people-t2v-i2v-r2v.safetensors --local-dir ~/git/Wan2GP/loras/minimax_h3/"
+    exit 1
+  fi
+  # Adicionar trigger word ao início do prompt se não estiver presente
+  if [[ "$PROMPT" != *"$REALISM_TRIGGER"* ]]; then
+    PROMPT="$REALISM_TRIGGER, $PROMPT"
+  fi
+  echo "=== Realism: LoRA '${REALISM_FILE}' ativo (força $REALISM_STRENGTH, trigger '$REALISM_TRIGGER') ==="
+fi
+
+# Passar arrays e variáveis para Python via env
+export H3_MODEL_TYPE="$MODEL_TYPE"
+export H3_TASK_TYPE="$TASK_TYPE"
+export H3_PROMPT="$PROMPT"
+export H3_RESOLUTION="$RESOLUTION"
+export H3_FRAMES="$FRAMES"
+export H3_STEPS="$STEPS"
+export H3_SEED="$SEED"
+export H3_GUIDANCE="$GUIDANCE"
+export H3_FLOW_SHIFT="$FLOW_SHIFT"
+export H3_IMAGE_START="$IMAGE_START"
+export H3_IMAGE_END="$IMAGE_END"
+export H3_IMAGE_PROMPT_TYPE="$IMAGE_PROMPT_TYPE"
+export H3_VIDEO_PROMPT_TYPE="$VIDEO_PROMPT_TYPE"
+export H3_AUDIO_PROMPT_TYPE="$AUDIO_PROMPT_TYPE"
+export H3_REF_VIDEO="$REF_VIDEO"
+export H3_REF_VIDEO2="$REF_VIDEO2"
+export H3_REF_AUDIO="$REF_AUDIO"
+export H3_REF_AUDIO2="$REF_AUDIO2"
+export H3_NSFW="$NSFW"
+export H3_NSFW_LORAS_JSON=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1:]))" "${NSFW_LORA_NAMES[@]}")
+export H3_NSFW_MULTS_JSON=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1:]))" "${NSFW_LORA_MULTS[@]}")
+export H3_TURBO="$TURBO"
+export H3_TURBO_FILE="$TURBO_FILE"
+export H3_TURBO_STRENGTH="$TURBO_STRENGTH"
+export H3_REALISM="$REALISM"
+export H3_REALISM_FILE="$REALISM_FILE"
+export H3_REALISM_STRENGTH="$REALISM_STRENGTH"
+# Passar array de imagens como JSON
+export H3_REF_IMAGES_JSON=$(python3 -c "import json,sys; print(json.dumps([x for x in sys.argv[1:]]))" "${REF_IMAGES[@]}")
+
+python3 -c "
+import json, os
+
+settings = {
+    'model_type': os.environ['H3_MODEL_TYPE'],
+    'task_type': os.environ['H3_TASK_TYPE'],
+    'model': {
+        'name': 'MiniMax H3 FL2VA Q4_0',
+        'architecture': os.environ['H3_MODEL_TYPE'],
+        'settings_dir': [''],
+        'group': 'minimax_h3',
+        'URLs': ['MiniMax-H3-FL2VA-pruned_int8_convrot.safetensors'],
+        'text_encoder_variant': 'gguf_q4_k_m',
+        'text_encoder_URLs': ['qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf'],
+        'video_vae_file': 'MiniMax-H3-video_vae_fp16.safetensors',
+        'audio_vae_file': 'MiniMax-H3-audio_vae_fp32.safetensors'
+    },
+    'prompt': os.environ['H3_PROMPT'],
+    'resolution': os.environ['H3_RESOLUTION'],
+    'video_length': int(os.environ['H3_FRAMES']),
+    'guidance_scale': float(os.environ['H3_GUIDANCE']),
+    'flow_shift': float(os.environ['H3_FLOW_SHIFT']),
+    'num_inference_steps': int(os.environ['H3_STEPS']),
+    'seed': int(os.environ['H3_SEED']),
+    'output_filename': '{date(YYYYMMDD_HHmmss)}_h3_{seed}',
+}
+
+# FL2VA fields
+if os.environ.get('H3_IMAGE_START'):
+    settings['image_start'] = os.environ['H3_IMAGE_START']
+if os.environ.get('H3_IMAGE_END'):
+    settings['image_end'] = os.environ['H3_IMAGE_END']
+if os.environ.get('H3_IMAGE_PROMPT_TYPE'):
+    settings['image_prompt_type'] = os.environ['H3_IMAGE_PROMPT_TYPE']
+
+# Ref2VA fields
+ref_images = json.loads(os.environ.get('H3_REF_IMAGES_JSON', '[]'))
+if ref_images:
+    settings['image_refs'] = ref_images
+if os.environ.get('H3_REF_VIDEO'):
+    settings['video_guide'] = os.environ['H3_REF_VIDEO']
+if os.environ.get('H3_REF_VIDEO2'):
+    settings['video_guide2'] = os.environ['H3_REF_VIDEO2']
+if os.environ.get('H3_REF_AUDIO'):
+    settings['audio_guide'] = os.environ['H3_REF_AUDIO']
+if os.environ.get('H3_REF_AUDIO2'):
+    settings['audio_guide2'] = os.environ['H3_REF_AUDIO2']
+if os.environ.get('H3_VIDEO_PROMPT_TYPE'):
+    settings['video_prompt_type'] = os.environ['H3_VIDEO_PROMPT_TYPE']
+if os.environ.get('H3_AUDIO_PROMPT_TYPE'):
+    settings['audio_prompt_type'] = os.environ['H3_AUDIO_PROMPT_TYPE']
+
+# LoRAs — empilhar NSFW + Turbo com forças individuais
+activated_loras = []
+loras_multipliers = []
+
+# NSFW LoRAs (múltiplas, cada uma com sua força)
+if os.environ.get('H3_NSFW') == 'true':
+    nsfw_loras = json.loads(os.environ.get('H3_NSFW_LORAS_JSON', '[]'))
+    nsfw_mults = json.loads(os.environ.get('H3_NSFW_MULTS_JSON', '[]'))
+    for i, lora_name in enumerate(nsfw_loras):
+        activated_loras.append(lora_name + '.safetensors')
+        mult = float(nsfw_mults[i]) if i < len(nsfw_mults) else 0.5
+        loras_multipliers.append(mult)
+
+# Turbo LoRA (destilação)
+if os.environ.get('H3_TURBO') == 'true':
+    turbo_file = os.environ.get('H3_TURBO_FILE', 'minimax_h3_ref2v_turbo_4step_v0.1_bf16.safetensors')
+    turbo_strength = float(os.environ.get('H3_TURBO_STRENGTH', '1.0'))
+    activated_loras.append(turbo_file)
+    loras_multipliers.append(turbo_strength)
+
+# Realism LoRA (rostos, pele, expressões)
+if os.environ.get('H3_REALISM') == 'true':
+    realism_file = os.environ.get('H3_REALISM_FILE', 'h3_realism_people.safetensors')
+    realism_strength = float(os.environ.get('H3_REALISM_STRENGTH', '1.0'))
+    activated_loras.append(realism_file)
+    loras_multipliers.append(realism_strength)
+
+if activated_loras:
+    settings['activated_loras'] = activated_loras
+    # Wan2GP aceita string espaço-separada de floats
+    settings['loras_multipliers'] = ' '.join(str(m) for m in loras_multipliers)
+
+with open('$SETTINGS_FILE', 'w') as f:
+    json.dump(settings, f, indent=2)
+"
+
+# ── Info display ─────────────────────────────────────────────────────────
+echo "=== MiniMax H3 — Wan2GP ==="
+echo "Modo: $TASK_TYPE"
+echo "Model type: $MODEL_TYPE"
+echo "Prompt: $PROMPT"
+echo "Frames: $FRAMES (~$(python3 -c "print(f'{$FRAMES/24:.1f}')")s)"
+echo "Steps: $STEPS"
+echo "Seed: $SEED"
+echo "Guidance: $GUIDANCE"
+echo "Flow shift: $FLOW_SHIFT"
+echo "Resolution: $RESOLUTION"
+if [[ "$NSFW" == true ]]; then
+  echo "NSFW LoRAs: $NSFW_DISPLAY"
+fi
+if [[ "$TURBO" == true ]]; then
+  echo "Turbo: $TURBO_FILE (força $TURBO_STRENGTH, $STEPS steps)"
+fi
+if [[ "$REALISM" == true ]]; then
+  echo "Realism: $REALISM_FILE (força $REALISM_STRENGTH, trigger '$REALISM_TRIGGER')"
+fi
+if [[ "$FL2VA_MODE" == true ]]; then
+  [[ -n "$IMAGE_START" ]] && echo "Image start: $IMAGE_START"
+  [[ -n "$IMAGE_END" ]] && echo "Image end: $IMAGE_END"
+  echo "Image prompt type: $IMAGE_PROMPT_TYPE"
+fi
+if [[ "$REF2VA_MODE" == true ]]; then
+  [[ ${#REF_IMAGES[@]} -gt 0 ]] && echo "Ref images: ${REF_IMAGES[*]}"
+  [[ -n "$REF_VIDEO" ]] && echo "Ref video 1: $REF_VIDEO"
+  [[ -n "$REF_VIDEO2" ]] && echo "Ref video 2: $REF_VIDEO2"
+  [[ -n "$REF_AUDIO" ]] && echo "Ref audio 1: $REF_AUDIO"
+  [[ -n "$REF_AUDIO2" ]] && echo "Ref audio 2: $REF_AUDIO2"
+  [[ "$USE_SOUNDTRACK" == true ]] && echo "Use soundtrack: yes"
+  echo "Video prompt type: $VIDEO_PROMPT_TYPE"
+  echo "Audio prompt type: $AUDIO_PROMPT_TYPE"
+fi
+echo "Output: $OUTPUT_DIR"
+echo ""
+
+# ── Dry-run: mostrar tudo e encerrar ─────────────────────────────────────
+if [[ "$DRY_RUN" == "1" ]]; then
+  echo "=== DRY RUN — settings JSON ==="
+  cat "$SETTINGS_FILE"
+  echo ""
+  echo "=== Encerrando sem gerar (--dry-run) ==="
+  rm -f "$SETTINGS_FILE"
+  exit 0
+fi
+
+source "$VENV/bin/activate"
+cd "$WAN2GP_DIR"
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+START_TIME=$(date +%s)
+python wgp.py --process "$SETTINGS_FILE" --profile 5 --output-dir "$OUTPUT_DIR" --verbose 2
+END_TIME=$(date +%s)
+ELAPSED=$((END_TIME - START_TIME))
+echo ""
+echo "=== Tempo total: ${ELAPSED}s ($((ELAPSED / 60))m$((ELAPSED % 60))s) ==="
+rm -f "$SETTINGS_FILE"
