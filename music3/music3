@@ -1,0 +1,255 @@
+#!/bin/bash
+# music3 — gerar música via MiniMax Music 3 (diffusers, low-VRAM RTX 3050 6GB)
+#
+# Uso:
+#   music3 "descrição musical" --lyrics-file lyrics.txt
+#   music3 --caption-file caption.txt --lyrics-file lyrics.txt --duration 120
+#   music3 "dark synthwave" --lyrics "[Verse]\\n..." --enhance --seed 42
+#   music3 "jazz" --lyrics "[intro]" --duration 5 --dry-run
+#   music3 --help
+#
+# Tempo estimado (RTX 3050 6GB, group offloading leaf_level):
+#   5s   → ~29 min
+#   30s  → ~2h
+#   60s  → ~4h
+#   120s → ~8h
+#   300s → ~20h
+# Recomendado: rodar de madrugada.
+
+set -euo pipefail
+
+MUSIC3_DIR="$HOME/git/minimax-music3"
+VENV="$MUSIC3_DIR/.venv"
+GENERATE_PY="$HOME/git/ai-dotfiles/music3/generate.py"
+LLAMA_SWAP_URL="${LLAMA_SWAP_URL:-http://localhost:12434/v1/chat/completions}"
+LLAMA_SWAP_CLI="${LLAMA_SWAP_CLI:-$HOME/git/ai-dotfiles/llama-swap/llama-swap-cli}"
+ENHANCE_MODEL="${ENHANCE_MODEL:-qwen3.5-4b}"
+
+PROMPT=""
+LYRICS=""
+LYRICS_FILE=""
+CAPTION_FILE=""
+DURATION=60.0
+SEED=7
+OUTPUT=""
+DRY_RUN=""
+ENHANCE=false
+SHOW_ENHANCED=false
+
+usage() {
+  cat << 'HELPEOF'
+music3 — gerar música via MiniMax Music 3 (diffusers, low-VRAM)
+
+Uso: music3 "descrição musical" [opções]
+
+Argumentos:
+  "prompt"              Descrição musical (natural language ou Structured Caption)
+  --caption-file PATH   Arquivo com Structured Caption completa
+  --lyrics "texto"      Lyrics inline (com tags [Verse], [Chorus], etc.)
+  --lyrics-file PATH    Arquivo com lyrics
+  --duration N          Duração em segundos (default: 60, max: 360)
+  --seed N              Seed (default: 7)
+  --output PATH         Arquivo de saída WAV
+  --enhance             Expande prompt curto em Structured Caption via LLM
+  --enhance-with MODEL  LLM específico para enhance (default: qwen3.5-4b)
+  --show-enhanced       Mostra caption expandida antes de gerar
+  --dry-run             Valida config sem gerar
+  -h, --help            Esta ajuda
+
+Tempo estimado (RTX 3050 6GB):
+  5s → ~29 min | 30s → ~2h | 60s → ~4h | 120s → ~8h | 300s → ~20h
+
+Exemplos:
+  music3 "warm acoustic pop, female vocals, guitar" --lyrics-file lyrics.txt
+  music3 --caption-file caption.txt --lyrics-file lyrics.txt --duration 120 --seed 42
+  music3 "dark synthwave 128 BPM" --lyrics "[Verse]\\nTest" --enhance --show-enhanced
+  music3 "jazz" --lyrics "[intro]" --duration 5 --dry-run
+HELPEOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --lyrics) LYRICS="$2"; shift 2 ;;
+    --lyrics-file) LYRICS_FILE="$2"; shift 2 ;;
+    --caption-file) CAPTION_FILE="$2"; shift 2 ;;
+    --duration) DURATION="$2"; shift 2 ;;
+    --seed) SEED="$2"; shift 2 ;;
+    --output) OUTPUT="$2"; shift 2 ;;
+    --dry-run) DRY_RUN="--dry-run"; shift ;;
+    --enhance) ENHANCE=true; shift ;;
+    --enhance-with) ENHANCE=true; ENHANCE_MODEL="$2"; shift 2 ;;
+    --show-enhanced) SHOW_ENHANCED=true; shift ;;
+    -h|--help) usage; exit 0 ;;
+    --) shift; break ;;
+    -*) echo "Opção desconhecida: $1"; usage; exit 1 ;;
+    *) PROMPT="$1"; shift ;;
+  esac
+done
+
+# Validar lyrics
+if [[ -n "$LYRICS_FILE" ]]; then
+  if [[ ! -f "$LYRICS_FILE" ]]; then
+    echo "Erro: arquivo de lyrics não encontrado: $LYRICS_FILE"
+    exit 1
+  fi
+elif [[ -z "$LYRICS" ]]; then
+  echo "Erro: lyrics obrigatório. Use --lyrics ou --lyrics-file"
+  echo "Dica: para instrumental, use --lyrics \"[intro]\""
+  echo "Ajuda: music3 --help"
+  exit 1
+fi
+
+# Validar prompt
+if [[ -z "$PROMPT" && -z "$CAPTION_FILE" ]]; then
+  echo "Erro: descrição musical obrigatória. Use prompt direto ou --caption-file"
+  echo "Ajuda: music3 --help"
+  exit 1
+fi
+
+# Caption file
+if [[ -n "$CAPTION_FILE" ]]; then
+  if [[ ! -f "$CAPTION_FILE" ]]; then
+    echo "Erro: arquivo de caption não encontrado: $CAPTION_FILE"
+    exit 1
+  fi
+  PROMPT=$(cat "$CAPTION_FILE")
+fi
+
+# Enhance: expandir prompt curto em Structured Caption
+if [[ "$ENHANCE" == true && -z "$CAPTION_FILE" ]]; then
+  echo "=== Enhancing prompt via $ENHANCE_MODEL ===" >&2
+  ENHANCED=$(python3 -c "
+import json, urllib.request, os, sys
+
+LLAMA_SWAP_URL = '$LLAMA_SWAP_URL'
+MODEL = '$ENHANCE_MODEL'
+USER_PROMPT = '''$PROMPT'''
+
+SYSTEM_PROMPT = '''You are a professional music caption writer for MiniMax Music 3. Rewrite the user's short description into a full Structured Caption with exactly three sections.
+
+Output format:
+
+Global Metadata
+Basic Attributes: bpm is X. key is X, and scale is X. Genre / subgenre.
+Global Emotional Progression: 2-3 sentences describing the emotional arc.
+Application Scenarios & Imagery: 1-2 sentences describing where this music plays.
+Sonics & Production Profile: 2-3 sentences on soundstage, frequency, dynamics.
+
+Vocal Details
+Vocal Gender & Timbre: Singer A (Male/Female). Voice type and texture.
+Vocal Style: Delivery style, phrasing, dynamics.
+Harmony/Backing Vocals: Presence and description.
+Vocal FX: Reverb, delay, compression, etc.
+
+Arrangement
+Instrument Lifecycle Description (Primary/Secondary Layering):
+Primary: Main instrument(s) and role.
+Secondary: Supporting instruments and when they enter.
+Groove & Foundation Progression: Drums, bass, rhythm characteristics.
+Embellishments, Textures & Spatial FX: Flourishes, textures, spatial effects.
+
+Rules:
+- Use present tense, descriptive prose.
+- Be specific: name instruments, tempos, keys, techniques.
+- Do not add lyrics or change the user's genre intent.
+- Output only the caption, no commentary.'''
+
+payload = json.dumps({
+    'model': MODEL,
+    'messages': [
+        {'role': 'system', 'content': SYSTEM_PROMPT},
+        {'role': 'user', 'content': USER_PROMPT},
+    ],
+    'temperature': 0.7,
+    'max_tokens': 4096,
+}).encode('utf-8')
+
+req = urllib.request.Request(LLAMA_SWAP_URL, data=payload,
+    headers={'Content-Type': 'application/json'}, method='POST')
+
+import time
+for attempt in range(12):
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read())
+            print(data['choices'][0]['message']['content'].strip())
+            break
+    except Exception as e:
+        if attempt < 11:
+            print(f'[INFO] Model loading (attempt {attempt+1}/12), retrying...', file=sys.stderr)
+            time.sleep(10)
+        else:
+            print(f'[ERROR] Enhance failed: {e}', file=sys.stderr)
+            print('__ENHANCE_FAILED__')
+            print(USER_PROMPT)
+" 2>&1)
+
+  if [[ "$ENHANCED" == __ENHANCE_FAILED__* ]]; then
+    PROMPT="${ENHANCED#__ENHANCE_FAILED__}"
+    PROMPT="${PROMPT#$'\n'}"
+    echo "=== Enhance falhou, usando prompt original ===" >&2
+  else
+    PROMPT="$ENHANCED"
+    echo "Caption expandida (${#PROMPT} chars)" >&2
+    if [[ "$SHOW_ENHANCED" == true ]]; then
+      echo "---"
+      echo "$PROMPT"
+      echo "---"
+    fi
+  fi
+  echo "" >&2
+
+  # Evict LLM to free VRAM for Music3
+  if [[ -x "$LLAMA_SWAP_CLI" ]]; then
+    "$LLAMA_SWAP_CLI" unload 2>/dev/null && echo "=== LLM evictado ===" >&2 || true
+  else
+    curl -s --fail -X POST http://localhost:12434/v1/unload 2>/dev/null && echo "=== LLM evictado ===" >&2 || true
+  fi
+  echo "" >&2
+fi
+
+# Construir argumentos
+ARGS=()
+[[ -n "$LYRICS_FILE" ]] && ARGS+=(--lyrics-file "$LYRICS_FILE")
+[[ -n "$LYRICS" ]] && ARGS+=(--lyrics "$LYRICS")
+[[ -n "$PROMPT" ]] && ARGS+=(--prompt "$PROMPT")
+ARGS+=(--duration "$DURATION" --seed "$SEED")
+[[ -n "$OUTPUT" ]] && ARGS+=(--output "$OUTPUT")
+[[ -n "$DRY_RUN" ]] && ARGS+=("$DRY_RUN")
+
+# Estimativa de tempo
+estimate_time() {
+  local dur=$1
+  # ~10s per AR frame + ~15s per flow step (30 steps)
+  # AR frames = duration * 25
+  local ar_frames=$((dur * 25))
+  local ar_time=$((ar_frames * 10))
+  local flow_time=$((30 * 15))
+  local total=$((ar_time + flow_time))
+  local mins=$((total / 60))
+  echo "${mins}min"
+}
+
+EST=$(estimate_time "$DURATION")
+
+# Info
+echo "=== MiniMax Music 3 ===" >&2
+echo "Duration: ${DURATION}s" >&2
+echo "Seed: $SEED" >&2
+[[ -n "$LYRICS_FILE" ]] && echo "Lyrics: $LYRICS_FILE" >&2
+[[ -n "$LYRICS" ]] && echo "Lyrics: inline (${#LYRICS} chars)" >&2
+echo "Prompt: ${#PROMPT} chars" >&2
+[[ "$ENHANCE" == true ]] && echo "Enhanced: yes" >&2
+[[ -n "$OUTPUT" ]] && echo "Output: $OUTPUT" >&2
+echo "Tempo estimado: ~${EST}" >&2
+echo "" >&2
+
+# Executar
+source "$VENV/bin/activate"
+export HF_HUB_OFFLINE=1
+START_TIME=$(date +%s)
+python "$GENERATE_PY" "${ARGS[@]}"
+END_TIME=$(date +%s)
+ELAPSED=$((END_TIME - START_TIME))
+echo ""
+echo "=== Tempo total: ${ELAPSED}s ($((ELAPSED / 60))m$((ELAPSED % 60))s) ==="
