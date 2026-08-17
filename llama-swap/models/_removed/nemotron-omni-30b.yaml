@@ -12,7 +12,9 @@
 #   BeeLama.cpp DOES support nemotron_h_moe (same arch code as upstream).
 #
 # Quant: UD-Q4_K_XL (22.3 GB) — Unsloth Dynamic XL
-#   Mixed quant (i-quants in middle layers). Both upstream and Bee support i-quants.
+#   Mixed quant (i-quants in middle layers). Supported by upstream, Bee, AND ik_llama
+#   (ik_llama has native IQ2_XXS/IQ3_XXS/IQ4_XS support, including R4/R8 variants).
+#   Blocker is arch (nemotron_h_moe), NOT quant format.
 #   Slightly better quality than Q4_K_M at practically same size (+0.1 GB).
 #
 # mmproj: mmproj-F16.gguf (1.5 GB) — unified vision + audio projector
@@ -96,4 +98,4 @@
     context_length: 262144
     embedding_length: 2048
     quantization: UD-Q4_K_XL
-    note: "Uses upstream llama.cpp (ik_llama lacks nemotron_h_moe support). BeeLama also supports this arch if DFlash/TurboQuant wanted later."
+    note: "Uses upstream llama.cpp (ik_llama lacks nemotron_h_moe arch support — NOT an i-quant issue, ik_llama supports IQ2_XXS/IQ3_XXS/IQ4_XS natively). BeeLama also supports this arch if DFlash/TurboQuant wanted later."

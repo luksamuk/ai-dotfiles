@@ -98,7 +98,7 @@ macros:
   #   Qwen3-14B        ✅ head_k=128 (128%64==0)
   #   Qwen3.6-35B-A3B  ✅ head_k=128
     #   Nemotron-3-Nano  ✅ head_k=128 (REMOVED — poor quality)
-    # Nemotron-Omni-30B ✅ head_k=128 (NOT added — upstream-only, ik doesn't support nemotron_h_moe)
+  #   Nemotron-Omni-30B ✅ head_k=128 (NOT added — ik_llama lacks nemotron_h_moe arch, NOT i-quants. ik_llama supports IQ2_XXS/IQ3_XXS/IQ4_XS natively)
   #   Gemma-4 E2B/E4B  ✅ head_k=256, iSWA attn_rot fixed (b8815+)
   #   Gemma-4 26B-MoE  ✅ head_k=256, iSWA attn_rot fixed (b8815+)
   #   LFM2.5-1.2B       ✅ head_k=64 (64%64==0) — dense hybrid
