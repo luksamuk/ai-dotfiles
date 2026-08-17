@@ -36,6 +36,9 @@ matrix:
     lfm8: lfm2.5-8b-a1b
     lfm26: lfm2.5-2.6b
     nb42: nanbeige4.2-3b
+    # Empero Qwen3.8 distillations (upstream llama.cpp, qwen35 arch)
+    eq2: empero-qwen3.8-2b
+    eq4: empero-qwen3.8-4b
     # Portal 2 personality cores (conversational, Q8_0)
     # inst: instella-moe-16b  # disabled
     # Vision
@@ -69,13 +72,13 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | q4a | lfm8 | lfm26) & (nomic | lfmemb | nemb | lfmcol)"
+    small_vision: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | lfm8 | lfm26) & (nomic | lfmemb | nemb | lfmcol)"
+    small_embed: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | q4a | lfm8 | lfm26 | nb42"
+    small_only: "q4 | q4a | lfm8 | lfm26 | nb42 | eq2 | eq4"
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "ocr | uocr | qwvl | lfmvl3"
@@ -120,6 +123,8 @@ matrix:
     lfm8: 2
     lfm26: 2
     nb42: 2
+    eq2: 2
+    eq4: 3
     nomic: 1
     lfmemb: 1
     nemb: 1

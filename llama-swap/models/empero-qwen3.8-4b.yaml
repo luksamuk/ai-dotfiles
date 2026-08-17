@@ -1,0 +1,73 @@
+# -------------------------------------------
+# EMPERO QWEN3.8-4B - ik_llama.cpp BACKEND
+# Empero distillation of Qwen3.8-2.4T-A95B into Qwen3.5-4B architecture.
+# Full-parameter SFT on ~45K curated teacher CoT traces.
+# MMLU CoT 0.354 -> 0.553 (+0.199). GSM8K 0.850 -> 0.785 (-0.065, math regression).
+# Hybrid Gated DeltaNet (3:1) + full attention. Reasoning model.
+# Chat template embedded in GGUF (supports tool calling natively).
+# ik_llama.cpp with hadamard KV cache + --parallel-tool-calls.
+# 50.1 tok/s @ RTX 3050 6GB (ik_llama benchmark 2026-08-16).
+# Reasoning model: always thinks. No :think variant — thinking is always on.
+# Tool calling requires thinking enabled to function correctly.
+# Architecture: qwen35 — same as Qwen3.5-4B, fully supported by ik_llama.
+# -------------------------------------------
+"empero-qwen3.8-4b":
+  name: "Empero Qwen3.8 4B"
+  description: "Empero distillation of Qwen3.8-2.4T-A95B into Qwen3.5-4B. Full-parameter SFT on ~45K curated teacher CoT traces. MMLU 0.354 to 0.553, GSM8K 0.850 to 0.785. Hybrid Gated DeltaNet + full attention. Reasoning model — always thinks. Tool calling supported."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/empero-qwen3.8-4b/Qwen3.8-4B-Q4_K_M.gguf
+    --jinja
+    --fit
+    --fit-margin 512
+    --parallel 1
+    --parallel-tool-calls
+    --ctx-size ${small_model_max_ctx}
+    --temp ${default_temp}
+    --top-p ${default_top_p}
+    --top-k ${default_top_k}
+    --min-p ${default_min_p}
+    --repeat-penalty ${default_repeat_penalty}
+    --reasoning on
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --no-graph-reuse
+    --ctx-checkpoints 0
+    --ctx-checkpoints-interval 0
+    --batch-size 512
+    --ubatch-size 128
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~2.78 GB (Q4_K_M)"
+    context: "64K-128K (dynamic)"
+    vram_usage: "~4.4GB VRAM (model 2.78GB + q4_0 hadamard KV cache + compute)"
+    source: "empero-ai/Qwen3.8-4B-GGUF (Q4_K_M)"
+    kv_cache: "q4_0/q4_0 + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 4000000000
+    context_length: 262144
+    embedding_length: 2560
+    quantization: Q4_K_M
+    note: "Empero distillation of Qwen3.8-2.4T-A95B into Qwen3.5-4B. Full-parameter SFT on ~45K curated teacher CoT traces. MMLU 0.354->0.553, GSM8K 0.850->0.785 (math regression vs base). Hybrid Gated DeltaNet (3:1 with full attention). Reasoning model — always thinks, no :think variant. Chat template embedded in GGUF supports tool calling. Tool calling REQUIRES thinking enabled. 50.1 tok/s @ RTX 3050 6GB (ik_llama). Architecture qwen35 — fully supported by ik_llama.cpp."
