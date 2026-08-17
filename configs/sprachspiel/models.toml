@@ -347,3 +347,19 @@ model_id = "ornith-1.0-35b:think"
 num_ctx = 131072
 thinking = true
 tools = true
+
+# --- EMPERO QWEN3.8 (distillation, always thinks, no :think variant) ---
+
+[models."empero-qwen3.8-2b"]
+provider = "llama-swap"
+model_id = "empero-qwen3.8-2b"
+num_ctx = 131072
+thinking = true
+tools = true
+
+[models."empero-qwen3.8-4b"]
+provider = "llama-swap"
+model_id = "empero-qwen3.8-4b"
+num_ctx = 131072
+thinking = true
+tools = true
