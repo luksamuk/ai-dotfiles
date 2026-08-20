@@ -1,12 +1,12 @@
 [model]
-default = "ornith-1.0-35b:think"
+default = "ornith-1.5-35b"
 
 [model.query]
 model = "qwen3.5-4b"
 tools = true
 
 [model.chat]
-model = "ornith-1.0-35b:think"
+model = "ornith-1.5-35b"
 tools = true
 
 [model.summarize]
@@ -21,13 +21,13 @@ tools = false
 
 # --- CODE MODE ---
 [model.code]
-model = "ornith-1.0-35b:think"
+model = "ornith-1.5-35b"
 thinking = true
 tools = true
 
 # --- VISION MODE ---
 [model.vision]
-model = "qwen3-vl-4b"
+model = "ornith-1.5-35b"
 tools = false
 
 [model.ocr]
@@ -54,7 +54,7 @@ port = 80
 auto_extract = true
 auto_extract_notify = true
 max_facts = 3
-semantic_threshold = 0.85
+semantic_threshold = 0.70
 
 [feedback]
 access_reinforcement = true
@@ -69,8 +69,8 @@ implicit_capture = true
 llm_feedback_weight = 0.3
 
 [retrieval]
-keyword_weight = 0.7
-semantic_weight = 0.3
+keyword_weight = 0.4
+semantic_weight = 0.6
 
 [thinking_trace]
 enabled = false
@@ -82,10 +82,16 @@ enabled = false
 [indexing]
 # Embedding model alias (key in models.toml [models.*]). Required.
 # The alias must be declared with `embeddings = true` and
-# `dimensions = 768` in models.toml [models."nomic"]. The provider
-# is inferred from the alias — no provider override here.
-#model = "nomic"
-model = "lfm2.5-embedding-350m"
+# `dimensions = N` in models.toml. The provider is inferred from
+# the alias — no provider override here.
+model = "nemotron-3-embed-1b"
+
+# Prefix prepended to each text before embedding.
+# nomic-embed-text models use "search_document: " (the default).
+# Models that don't need a prefix (BGE, GTE) should set this to "".
+# Nemotron-3-Embed uses asymmetric: "query: " for queries, "document: " for passages.
+# Sprachspiel embeds documents/passages, so use "document: ".
+prefix = "document: "
 
 # Probe /v1/embeddings at startup to verify the model is served.
 # When true (default), sprach makes 1 POST /v1/embeddings call.
@@ -96,5 +102,5 @@ model = "lfm2.5-embedding-350m"
 probe = true
 
 # RRF weights (moved from the old [retrieval] section).
-keyword_weight = 0.7
-semantic_weight = 0.3
+keyword_weight = 0.4
+semantic_weight = 0.6
