@@ -74,6 +74,21 @@ macros:
   "think_min_p": "0.0"
   "think_repeat_penalty": "1.0"
 
+  # Qwen3.8-27B official samplers (from model card)
+  # Thinking: temp=1.0, top_p=0.95, top_k=20, min_p=0.0, repetition_penalty=1.0
+  # Instruct: temp=0.7, top_p=0.80, top_k=20, min_p=0.0, presence_penalty=1.5, repetition_penalty=1.0
+  "qwen38_think_temp": "1.0"
+  "qwen38_think_top_p": "0.95"
+  "qwen38_think_top_k": "20"
+  "qwen38_think_min_p": "0.0"
+  "qwen38_think_repeat_penalty": "1.0"
+  "qwen38_instruct_temp": "0.7"
+  "qwen38_instruct_top_p": "0.80"
+  "qwen38_instruct_top_k": "20"
+  "qwen38_instruct_min_p": "0.0"
+  "qwen38_instruct_repeat_penalty": "1.0"
+  "qwen38_instruct_presence_penalty": "1.5"
+
   # Contexto para modelos pequenos (cabem inteiros na VRAM)
   # fit-ctx: mínimo garantido, ctx-size: máximo teto
   "small_model_min_ctx": "65536"   # 64K mínimo (tool-calling/agentes)
@@ -446,6 +461,79 @@ models:
       quantization: UD-Q4_K_XL
       note: "Unsloth Dynamic 2.0 QAT. Better accuracy than Google Q4_0 (Top-1 98.16% vs 89.29%), 22% smaller. Upstream only — NOT compatible with ik_llama."
 # -------------------------------------------
+# LFM2.5-1.2B-Instruct - Liquid AI on-device instruct model (dense hybrid)
+# 1.2B params, 30 layers (22 double-gated short conv + 8 GQA)
+# 128K context, 128K vocab, 16 languages incl Portuguese
+# ChatML-like format, same as LFM2.5-2.6B and 8B-A1B
+# GGUF has NO chat_template - requires --chat-template-file
+# Backend: upstream llama.cpp (lfm2 arch, dense model)
+# QAD Q4_0 = 696 MB - fits entirely in VRAM with room for context
+# DSpark: F16 draft sidecar (567 MB), block size 9, up to 2.87x speedup on-device
+# Smallest LFM2.5 model — good for edge/embedded or as lightweight agent
+# -------------------------------------------
+  lfm2.5-1.2b:
+    name: "LFM 2.5 1.2B"
+    description: "Liquid AI on-device instruct model. 1.2B dense hybrid with 128K context. Smallest LFM2.5 — ideal for edge deployment and lightweight agents. DSpark speculative decoding for up to 2.87x speedup."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/lfm2.5-1.2b/LFM2.5-1.2B-Instruct-QAD-Q4_0.gguf
+      --fit on
+      --fit-ctx 131072
+      --ctx-size 131072
+      --parallel 1
+      --chat-template-file ${templates_dir}/lfm2.5-chat-template.jinja
+      --temp 0.1
+      --top-p 0.9
+      --top-k 50
+      --min-p 0.0
+      --repeat-penalty 1.1
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --flash-attn on
+      --jinja
+      -md ${models_dir}/lfm2.5-1.2b/LFM2.5-1.2B-Instruct-DSpark-Draft-v1-F16.gguf
+      --spec-type draft-dspark
+      --spec-draft-n-max 10
+      --spec-draft-n-min 0
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 0.1
+          top_p: 0.9
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: false
+      reranker: false
+      context: 131072
+    metadata:
+      size: "~696 MB (QAD Q4_0) + 567 MB DSpark draft"
+      context: "64K-128K (dynamic)"
+      vram_usage: "~1.5GB VRAM (model + draft + KV)"
+      source: "LiquidAI/LFM2.5-1.2B-Instruct-GGUF (QAD Q4_0)"
+      kv_cache: "q4_0"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 1200000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: QAD Q4_0
+      note: "Smallest LFM2.5. Dense hybrid (22 conv + 8 GQA). Instruct variant (no reasoning tag). 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. QAD Q4_0 recovers ~97% of BF16 quality. DSpark F16 draft sidecar (567MB) adds up to 2.87x speedup on-device. Ideal for edge/embedded or as lightweight agent."
+# -------------------------------------------
 # LFM2.5-2.6B - Liquid AI agentic on-device model (dense hybrid, text-only)
 # 2.69B params, 30 layers (22 double-gated short conv + 8 GQA)
 # Pre-trained on ~34T tokens, 128K context, 128K vocab
@@ -465,7 +553,7 @@ models:
     description: "Liquid AI on-device agentic model. 2.6B dense hybrid with 128K context. Trained with agentic RL inside Hermes Agent. Best-in-class tool use for its size."
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-Q6_K.gguf
+      --model ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-QAD-Q4_0.gguf
       --fit on
       --fit-target ${vram_margin}
       --fit-ctx 131072
@@ -482,6 +570,10 @@ models:
       --cache-type-v q4_0
       --flash-attn on
       --jinja
+      -md ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-DSpark-Draft-v1-F16.gguf
+      --spec-type draft-dspark
+      --spec-draft-n-max 10
+      --spec-draft-n-min 0
       --metrics
     filters:
       stripParams: "temperature, top_p"
@@ -505,10 +597,10 @@ models:
       reranker: false
       context: 131072
     metadata:
-      size: "~2.22 GB (Q6_K)"
+      size: "~1.55 GB (QAD Q4_0)"
       context: "64K-128K (dynamic)"
-      vram_usage: "~4.6GB VRAM (model 2.22GB + q4_0 KV 131K + compute)"
-      source: "LiquidAI/LFM2.5-2.6B-GGUF (Q6_K)"
+      vram_usage: "~3.9GB VRAM (model 1.55GB + q4_0 KV 131K + compute)"
+      source: "LiquidAI/LFM2.5-2.6B-GGUF (QAD Q4_0)"
       kv_cache: "q4_0"
       features:
         completion: true
@@ -523,32 +615,49 @@ models:
       parameters: 2690000000
       context_length: 131072
       embedding_length: 2048
-      quantization: Q6_K
-      note: "Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only 8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM in 6GB."
+      quantization: QAD Q4_0
+      note: "Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only 8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM in 6GB. QAD (Quantization-Aware Distillation) recovers ~97% of BF16 quality vs native Q4_0. DSpark speculative decoding via F16 draft sidecar (633MB) — up to 2.27x speedup on-device, 57% latency reduction for function calling."
 # -------------------------------------------
-# ORNITH-1.0-35B - MoE AGENTIC CODING (text-only)
+# ORNITH-1.5-35B-A3B - MoE AGENTIC CODING + VISION (APEX, no MTP)
 # MoE 35B params, ~3B ativo por token. 256 experts, 8+1 active.
-# Post-trained Qwen 3.5 35B MoE (self-scaffolding agentic coding RL).
-# Same qwen35moe architecture as Qwen3.6-35B-A3B.
-# APEX I-Compact ~16.5GB — 22% smaller than Q4_K_M (21.2GB), imatrix v1.3 calibrated.
+# Self-improving RL: extends Ornith-1.0 self-scaffolding into full self-improvement loop
+# (task generation + scaffold construction + solution rollouts).
+# Same qwen35moe architecture as Ornith-1.0 and Qwen3.6-35B-A3B.
+
+# APEX Compact ~16.5GB — APEX mixed-precision, no MTP draft head.
+# No MTP: saves ~500MB VRAM vs MTP variant. Uses ngram-mod for speculative decoding.
+# Vision: mmproj.gguf (899MB, CLIP-based) — --no-mmproj-offload keeps it in RAM
+#   to preserve VRAM for model weights.
 # ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
 # --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx
-# --ctx-size 131072: same safe ceiling as Qwen 3.6
+
+# Samplers (from model card):
+#   General tasks: temp=0.6, top_p=0.95, top_k=20
+#   Benchmarks: temp=1.0
+
+# --ctx-size 131072: same safe ceiling (model supports 262K, YaRN extends to 1M)
 # Dual mode: base (chat, no think) and :think (reasoning)
-# Identity: base Qwen 3.5 — should identify as Qwen, not Google (unlike 9B Gemma 4 base)
+# Uses qwen-fixed-chat-template.jinja — embedded GGUF template lacks
+# tool-call format instructions, causing leakage without the fixed template.
+
+# Benchmark (Aug 2026, RTX 3050 6GB, ik_llama v4840):
+#   Text: ~36 tok/s (ngram-mod), VRAM ~4.7GB (vs 5.2GB with MTP Compact)
+#   vs MTP Compact: 36 vs 45 tok/s, but ~500MB less VRAM
 # -------------------------------------------
-  "ornith-1.0-35b":
-    name: "Ornith 1.0 35B"
-    description: "Ornith-1.0 is a family of open-source LLMs specialized for agentic coding, trained with a novel self-scaffolding reinforcement learning approach that jointly optimizes the scaffold and the solution."
+  "ornith-1.5-35b":
+    name: "Ornith 1.5 35B"
+    description: "Ornith-1.5 is a family of open-source LLMs trained with end-to-end self-improvement — the model proposes new tasks, generates task-specific scaffolds, and produces solution rollouts for RL, continuously creating new learning experiences. APEX Compact quantization with vision support."
     cmd: |
       ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/ornith-1.0-35b/Ornith-1.0-35B-APEX-I-Compact.gguf
+      --model ${models_dir}/ornith-1.5-35b/Ornith-1.5-35B-A3B-APEX-Compact.gguf
+      --mmproj ${models_dir}/ornith-1.5-35b/mmproj.gguf
+      --no-mmproj-offload
       --fit
       --fit-margin 1024
       --ctx-size 131072
-      --temp 1.0
-      --top-p 1.0
-      --top-k ${code_top_k}
+      --temp 0.6
+      --top-p 0.95
+      --top-k 20
       --min-p ${code_min_p}
       --repeat-penalty ${code_repeat_penalty}
       --reasoning on
@@ -571,139 +680,45 @@ models:
         "${MODEL_ID}":
           chat_template_kwargs:
             enable_thinking: false
-          temperature: 1.0
-          top_p: 1.0
+          temperature: 0.6
+          top_p: 0.95
         "${MODEL_ID}:think":
           chat_template_kwargs:
             enable_thinking: true
-          temperature: 1.0
-          top_p: 1.0
+          temperature: 0.6
+          top_p: 0.95
     ttl: 900
     health_check_timeout: 900
     capabilities:
       in:
         - 'text'
+        - 'image'
       out:
         - 'text'
       tools: true
       reranker: false
       context: 131072
     metadata:
-      size: "~16.5 GB (APEX I-Compact)"
-      context: "1K-131K (safe max)"
-      vram_usage: "~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s)"
-      source: "mudler/Ornith-1.0-35B-APEX-GGUF"
+      size: "~16.5 GB (APEX Compact) + 899 MB mmproj"
+      context: "1K-131K (safe max, model supports 262K)"
+      vram_usage: "~4.7GB VRAM + ~15GB pinned RAM (ik pinned memory, ~36 tok/s ngram-mod)"
+      source: "mudler/Ornith-1.5-35B-A3B-APEX-GGUF"
       kv_cache: "q4_0 + attn_rot + hadamard"
       features:
         completion: true
         tools: true
         thinking: true
-        vision: false
+        vision: true
         embedding: false
         insert: false
         audio: false
-        image: false
+        image: true
       architecture: qwen35moe
       parameters: 35000000000
       context_length: 262144
       embedding_length: 2048
-      quantization: I-Compact
-      note: "Post-trained Qwen 3.5 35B MoE. Self-scaffolding RL for agentic coding. 256 experts, 8+1 active, ~3B active/token. APEX I-Compact: 22% smaller than Q4_K_M, imatrix v1.3 calibrated. Expected 33-34 t/s matching Qwen 3.6 APEX. Uses qwen-fixed-chat-template.jinja — embedded GGUF template lacks tool-call format instructions, causing <|mask_start|>/<tool_code> leakage."
-# -------------------------------------------
-# BONSAI 27B 1-BIT — PrismML binary {−1,+1} LLM (Q1_0, upstream llama.cpp)
-# prism-ml/Bonsai-27B-gguf — Qwen3.6-27B base, 27.3B binary weights at 1.125 bpw.
-# Architecture: same hybrid attention as ternary variant.
-# Weight format: GGUF Q1_0 — {−1,+1} in 1-bit slots with FP16 group-wise scaling.
-#   Q1_0 CUDA kernels merged upstream (b9867+) — no fork needed anymore!
-# 3.53 GB on disk, ~3.9 GB deployed. Fits entirely in RTX 3050 6GB VRAM.
-# 89.5% of FP16 intelligence retained (76.11 avg on 15 benchmarks).
-# Math: 90.17. Coding: 82.75. Agentic: 69.31.
-# Apache 2.0 license.
-
-# Backend: upstream llama.cpp (Q1_0 CUDA support merged b9867+)
-# Speculative decoding: ngram-mod (n_max=64, n_min=48, ngram_size_n=24)
-#   — no drafter model needed, uses ngram lookup from KV cache
-#   — 27B at ~20 tok/s baseline, up to 31 tok/s with ngram-mod on repeated patterns
-# Flash attention: on (Q1_0 + FA compatible)
-# KV cache: q4_0 (maximizes context within 6GB VRAM)
-# ctx: 32K — experimental bisturi mode, full GPU offload on RTX 3050 6GB
-#   27B no bolso pra uso cirúrgico. ~720 MiB margem VRAM.
-#   (32K = 27 tok/s, 48K = 20 tok/s tight, 64K = OOM)
-# Dual mode: base (chat, no think) and :think (reasoning)
-# Sampling: temp 0.7, top_p 0.95, top_k 20 per model card.
-# -------------------------------------------
-  "bonsai-27b-1bit":
-    name: "Bonsai 27B 1-bit"
-    description: "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit weights, full thinking/reasoning at 3.9 GB. 89.5% of FP16 intelligence. Fits entirely in 6GB VRAM. Now on upstream llama.cpp with ngram-mod speculative decoding."
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/bonsai-27b-1bit/Bonsai-27B-Q1_0.gguf
-      --jinja
-      --reasoning on
-      -ngl 99
-      --ctx-size 32768
-      --temp 0.7
-      --top-p 0.95
-      --top-k 20
-      --min-p 0
-      --repeat-penalty 1.0
-      --parallel 1
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --flash-attn on
-      --spec-type ngram-mod
-      --spec-ngram-mod-n-max 64
-      --spec-ngram-mod-n-min 48
-      --spec-ngram-mod-n-match 24
-      --metrics
-    filters:
-      stripParams: "temperature, top_p, top_k, min_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.95
-          top_k: 20
-          min_p: 0
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.95
-          top_k: 20
-          min_p: 0
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 32768
-    metadata:
-      size: "~3.9 GB (Q1_0 binary 1.125 bpw)"
-      context: "32K (full GPU offload, RTX 3050 6GB — experimental/bisturi)"
-      vram_usage: "~4.8 GB (model + KV cache q4_0, fits entirely in GPU)"
-      source: "prism-ml/Bonsai-27B-gguf (Q1_0)"
-      kv_cache: "q4_0 + attn_rot"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen3
-      parameters: 27300000000
-      context_length: 262144
-      embedding_length: 3584
-      quantization: Q1_0 (binary 1.125 bpw)
-      note: "Reativado Jul 2026 — Q1_0 CUDA kernels merged upstream (b9867+), sem fork. ngram-mod speculative decoding para ~20-31 tok/s em RTX 3050 6GB. 48K ctx é o sweet spot de full-GPU offload."
+      quantization: APEX Compact (no MTP)
+      note: "APEX Compact without MTP draft head. Saves ~500MB VRAM vs MTP variant. Uses ngram-mod for speculative decoding (~36 tok/s vs 45 with MTP). Vision via mmproj with --no-mmproj-offload. Same quality as MTP variant — MTP only affects speed, not quality. Lower VRAM pressure allows running alongside IDE/other GPU processes."
 # -------------------------------------------
 # QWEN3-VL-4B-INSTRUCT — Qwen multimodal VLM
 # Dense 4B, qwen3vl arch, 256K native context
@@ -846,100 +861,6 @@ models:
       embedding_length: 2048
       quantization: Q6_K
       note: "VLM with SigLIP2 NaFlex (native resolution, 512x512 patches + thumbnail). Better grounding + OCR with layout than 1.6B. Single-turn high-throughput: object detection, OCR, translation. 16 languages incl Portuguese."
-# -------------------------------------------
-# NANBEIGE4.2-3B — UPSTREAM BACKEND (PR #25994 merged)
-# Looped Transformer: 22 layers reused 2x (num_loops=2) = 44 effective layers
-# LoopSplit + mHC with depth attention + concatenated n-gram embeddings
-# 4B total params (3B non-embedding), Q4_K_M ~2.4 GB
-# Architecture: nanbeige — now in upstream llama.cpp (commit b77d64675)
-# Vocab: 166,144. Context: 262K. head_dim=128.
-
-# Tool calling: XML format (tool_call_format="xml" in chat template)
-#   --jinja parses correctly, tested single + multi-turn (bug #22684 from 4.1 FIXED)
-# Thinking: enable_thinking toggle in chat template (dual mode: base + :think)
-#   preserve_thinking recommended for multi-turn tool use
-
-# Backend: upstream llama.cpp (PR #25994 merged 2026-07-27)
-#   Inherits: --fit on, --flash-attn auto, --parallel-tool-calls, MMQ/MMVQ
-#   --reasoning on for thinking extraction
-
-# KV cache budget (RTX 3050 6GB):
-#   Model: ~2.4 GB (Q4_K_M)
-#   44 effective layers, 8 KV heads, head_dim 128
-#   q4_0 KV: 44 KiB/token -> ~70K tokens fit in ~3GB remaining VRAM
-#   ctx-size 65536 with q4_0 is safe (leaves ~1GB headroom)
-
-# Inference params per model card:
-#   Reasoning/chat: temp=0.6, top_p=0.95, top_k=20
-#   Agentic/tool-use: temp=1.0
-# -------------------------------------------
-  "nanbeige4.2-3b":
-    name: "Nanbeige 4.2 3B"
-    description: "Compact agentic model with Looped Transformer architecture. 3B non-embedding params delivering solid performance on general-agent and code-agent tasks, outperforming larger models like Qwen3.5-9B and Gemma4-12B on agentic benchmarks."
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/nanbeige4.2-3b/nanbeige4.2-3b-Q4_K_M.gguf
-      --jinja
-      --fit on
-      --parallel 1
-      --ctx-size 65536
-      --temp 0.6
-      --top-p 0.95
-      --top-k 20
-      --min-p 0.0
-      --repeat-penalty 1.05
-      --reasoning on
-      --cache-type-k q4_0
-      --cache-type-v q4_0
-      --flash-attn auto
-      --metrics
-    filters:
-      stripParams: "temperature, top_p, top_k"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.95
-          top_k: 20
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-            preserve_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-          top_k: 20
-    ttl: 60
-    health_check_timeout: 300
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 65536
-    metadata:
-      size: "~2.4 GB (Q4_K_M)"
-      context: "65K (262K max, but 44 effective layers double KV cache — 65K sweet spot on 6GB with q4_0)"
-      vram_usage: "~2.4 GB model + ~2.9 GB q4_0 KV @ 65K + compute"
-      source: "owao/Nanbeige4.2-3B-GGUF (Q4_K_M)"
-      kv_cache: "q4_0/q4_0"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: nanbeige
-      parameters: 4000000000
-      context_length: 262144
-      embedding_length: 3072
-      quantization: Q4_K_M
-      note: "Looped Transformer (22 layers x2 loops = 44 effective). Upstream llama.cpp (PR #25994). Multi-turn tool calling FIXED vs 4.1 (#22684). Thinking toggle via enable_thinking."
 # -------------------------------------------
 # NOMIC-EMBED-TEXT-V2-MOE - UPSTREAM BACKEND (embedding model, CPU-only)
 # 475M params (305M active, MoE top-2/8 experts), 768-dim embeddings with Matryoshka → 256
@@ -1617,6 +1538,99 @@ models:
         - "Supports voice cloning with reference audio samples"
         - "Portuguese (pt-BR) voices with accent control"
 # -------------------------------------------
+# QWEN3.8-27B - DENSE VLM WITH DELTANET (text+vision)
+# Dense 27B, hybrid Gated DeltaNet + Gated Attention.
+# 64 layers: 16 x (3 x (Gated DeltaNet -> FFN) -> 1 x (Gated Attention -> FFN))
+# Native VLM (image + video), 262K context native, extensible to 1M with YaRN.
+# UD-IQ1_M ~6.7GB - Unsloth Dynamic V3.0 1-bit quant (~2.0 bpw).
+#   Unsloth reports ~77% of original quality at 1-bit. Aggressive but testable.
+# llama.cpp upstream: GATED_DELTA_NET merged since March, MTP supported.
+# DeltaNet = linear attention -> KV cache is O(1) per token, constant regardless of context.
+# 128K context does NOT explode KV cache like standard attention models.
+
+# Samplers (official Qwen3.8 model card):
+#   Thinking: temp=1.0, top_p=0.95, top_k=20, min_p=0.0, repetition_penalty=1.0
+#   Instruct: temp=0.7, top_p=0.80, top_k=20, min_p=0.0, presence_penalty=1.5, repetition_penalty=1.0
+
+# VRAM math (RTX 3050 6GB):
+#   Model weights: ~6.7GB -> partial GPU offload, rest to RAM
+#   mmproj: ~885MB (F16) -> can offload to RAM
+#   KV cache: minimal (DeltaNet linear attention, only 16/64 layers use standard attention)
+#   --n-gpu-layers 35: conservative start, leaves headroom for system + mmproj
+
+# Dual mode: base (instruct, no think) and :think (reasoning)
+# Uses qwen-fixed-chat-template.jinja - same fix as Ornith/other Qwen models.
+# -------------------------------------------
+  "qwen3.8-27b":
+    name: "Qwen3.8 27B"
+    description: "Qwen3.8-27B: dense 27B VLM with Gated DeltaNet linear attention + Gated Attention hybrid. Native image/video understanding, 262K context. Most capable Qwen generation - coding, agentic tasks, long-horizon planning."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/qwen3.8-27b-1bit/Qwen3.8-27B-UD-IQ1_M.gguf
+      --ctx-size 131072
+      --n-gpu-layers 25
+      --temp ${qwen38_instruct_temp}
+      --top-p ${qwen38_instruct_top_p}
+      --top-k ${qwen38_instruct_top_k}
+      --min-p ${qwen38_instruct_min_p}
+      --repeat-penalty ${qwen38_instruct_repeat_penalty}
+      --presence-penalty ${qwen38_instruct_presence_penalty}
+      --reasoning on
+      --jinja
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+      --parallel 1
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --flash-attn auto
+      --metrics
+    filters:
+      stripParams: "temperature, top_p, presence_penalty"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.80
+          presence_penalty: 1.5
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          presence_penalty: 0.0
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - 'text'
+        - 'image'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: "~6.7 GB (UD-IQ1_M)"
+      context: "1K-131K (deploy), 262K native, 1M with YaRN"
+      vram_usage: "~4.5GB VRAM (35 layers) + ~3GB RAM offload. DeltaNet KV cache near-constant."
+      source: "unsloth/Qwen3.8-27B-GGUF"
+      kv_cache: q4_0 (DeltaNet, 16/64 attn layers)
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: true
+      architecture: qwen35
+      parameters: 27000000000
+      context_length: 262144
+      embedding_length: 5120
+      quantization: UD-IQ1_M (~2.0 bpw)
+      note: "Dense 27B DeltaNet+Attn hybrid (48+16 layers). Native VLM. IQ1_M ~77% quality. Uses upstream llama.cpp (GATED_DELTA_NET). Instruct: presence_penalty=1.5. Thinking: temp=1.0."
+# -------------------------------------------
 # TRANSLATEGEMMA 4B — Google translation model
 # Gemma 3-based, 55 languages, translation-focused
 # Arch: gemma3 — supported in upstream llama.cpp
@@ -1681,67 +1695,6 @@ models:
         - "Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma"
         - "Needs explicit translation prompt (Sprachspiel format works)"
       note: "Translation model. Sprachspiel translate mode default. 55 languages."
-# -------------------------------------------
-# UNLIMITED-OCR - UPSTREAM BACKEND (mmproj required)
-# Baidu Unlimited-OCR: DeepSeek-OCR architecture (SAM+CLIP vision tower + DeepSeek-V2 MoE text decoder)
-# 3B params, specialized in one-shot long-horizon document parsing
-# mmproj required: SAM+CLIP vision projector (F16, 774 MiB)
-# Supports: document->markdown, plain OCR, bounding boxes, figure/chart parsing
-# Prompt vocabulary: "document parsing.", "Free OCR.", "Describe this image in detail."
-# Add <|grounding|> prefix for bounding box output
-# Architecture: deepseek-ocr / unlimited-ocr — supported in upstream llama.cpp (#24969, #24717)
-# Temperature 0 for OCR, --temp 0 for deterministic output
-# KV cache: f16 (vision models need precision)
-# -------------------------------------------
-  "unlimited-ocr":
-    name: "Unlimited OCR"
-    description: "Baidu Unlimited-OCR: 3B vision-language OCR model for long-horizon document parsing. DeepSeek-OCR architecture with SAM+CLIP vision tower. Outputs structured markdown with optional bounding boxes."
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/unlimited-ocr/Unlimited-OCR-Q4_K_M.gguf
-      --mmproj ${models_dir}/unlimited-ocr/mmproj-Unlimited-OCR-F16.gguf
-      --jinja
-      --media-path ${media_path}
-      -ngl 99
-      --ctx-size 32768
-      --parallel 1
-      --temp 0
-      --top-p 1.0
-      --repeat-penalty 1.0
-      --reasoning off
-      --cache-type-k q4_0
-      --cache-type-v q4_0
-      --metrics
-    ttl: 60
-    capabilities:
-      in:
-        - 'text'
-        - 'image'
-      out:
-        - 'text'
-      tools: false
-      reranker: false
-      context: 32768
-    metadata:
-      architecture: deepseek-ocr
-      parameters: 3000000000
-      context_length: 32768
-      embedding_length: 2048
-      quantization: Q4_K_M
-      size: "~1.9 GB (Q4_K_M) + ~774 MB mmproj (F16)"
-      vram_usage: "~3.5GB (model + mmproj + f16 cache)"
-      source: "sahilchachra/Unlimited-OCR-GGUF (Q4_K_M + mmproj F16)"
-      kv_cache: "f16"
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: true
-      note: "Specialized OCR/document parsing model. Prompts: 'document parsing.', 'Free OCR.', '<|grounding|>Convert the document to markdown.' for bounding boxes. NOT a general chat model."
 # Hooks: ações na inicialização do llama-swap
 # preload: carrega modelos síncronamente antes de aceitar requests
 # Ideal para vLLM (startup lento = 30-90s sem warm-up)
@@ -1779,7 +1732,7 @@ matrix:
     # m5a: minicpm5-1b-agentic  # disabled
     lfm8: lfm2.5-8b-a1b
     lfm26: lfm2.5-2.6b
-    nb42: nanbeige4.2-3b
+    # nb42: nanbeige4.2-3b  # disabled Aug 2026 — poor Portuguese
     # Empero Qwen3.8 distillations (upstream llama.cpp, qwen35 arch)
     eq2: empero-qwen3.8-2b
     eq4: empero-qwen3.8-4b
@@ -1787,7 +1740,7 @@ matrix:
     # inst: instella-moe-16b  # disabled
     # Vision
     ocr: glm-ocr
-    uocr: unlimited-ocr
+    # uocr: unlimited-ocr  # disabled Aug 2026 — unused
     qwvl: qwen3-vl-4b
     lfmvl3: lfm2.5-vl-3b
     # Modelos médios
@@ -1796,10 +1749,12 @@ matrix:
     # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
     # Pesados (offload)
     # aw: agentworld-35b  # disabled Aug 2026
-    orn35: ornith-1.0-35b
+    orn15: ornith-1.5-35b
     glm: glm-4.7-flash
-    # Bonsai 1-bit reativado Jul 2026 — Q1_0 CUDA no upstream, ngram-mod spec decode
-    bonsai1: bonsai-27b-1bit
+    # Bonsai 1-bit disabled Aug 2026 — user request
+    # bonsai1: bonsai-27b-1bit
+    # Qwen3.8-27B dense 1-bit (UD-IQ1_M, ~6.7GB, DeltaNet linear attention)
+    qw38: qwen3.8-27b
     # Tradução
     tg: translategemma-4b
     # Português jurídico (Qwen3.5-9B LoRA, instruct)
@@ -1822,17 +1777,17 @@ matrix:
     small_embed: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | q4a | lfm8 | lfm26 | nb42 | eq2 | eq4"
+    small_only: "q4 | q4a | lfm8 | lfm26 | eq2 | eq4"
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr | uocr | qwvl | lfmvl3"
-    vision_embed: "(ocr | uocr | qwvl | lfmvl3) & (nomic | lfmemb | nemb | lfmcol)"
+    vision_only: "ocr | qwvl | lfmvl3"
+    vision_embed: "(ocr | qwvl | lfmvl3) & (nomic | lfmemb | nemb | lfmcol)"
 
     # Modelos médios + Embedding/Reranker
     medium: "(q9 | g4) & (nomic | lfmemb | nemb | lfmcol)"
 
     # Modelos pesados (offload) + Embedding/Reranker
-    heavy: "(orn35 | glm | bonsai1) & (nomic | lfmemb | nemb | lfmcol)"
+    heavy: "(orn15 | glm | qw38) & (nomic | lfmemb | nemb | lfmcol)"
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -1852,21 +1807,19 @@ matrix:
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
-    orn35: 9
+    orn15: 9
     glm: 9
-    bonsai1: 7
+    qw38: 7
     q9: 4
     g4: 3
     ttsext: 4
     ocr: 3
-    uocr: 3
     qwvl: 3
     lfmvl3: 3
     q4: 2
     q4a: 2
     lfm8: 2
     lfm26: 2
-    nb42: 2
     eq2: 2
     eq4: 3
     nomic: 1

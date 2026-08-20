@@ -1,0 +1,99 @@
+# -------------------------------------------
+# ORNITH-1.5-35B-A3B - MoE AGENTIC CODING + VISION (APEX, no MTP)
+# MoE 35B params, ~3B ativo por token. 256 experts, 8+1 active.
+# Self-improving RL: extends Ornith-1.0 self-scaffolding into full self-improvement loop
+# (task generation + scaffold construction + solution rollouts).
+# Same qwen35moe architecture as Ornith-1.0 and Qwen3.6-35B-A3B.
+#
+# APEX Compact ~16.5GB — APEX mixed-precision, no MTP draft head.
+# No MTP: saves ~500MB VRAM vs MTP variant. Uses ngram-mod for speculative decoding.
+# Vision: mmproj.gguf (899MB, CLIP-based) — --no-mmproj-offload keeps it in RAM
+#   to preserve VRAM for model weights.
+# ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
+# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx
+#
+# Samplers (from model card):
+#   General tasks: temp=0.6, top_p=0.95, top_k=20
+#   Benchmarks: temp=1.0
+#
+# --ctx-size 131072: same safe ceiling (model supports 262K, YaRN extends to 1M)
+# Dual mode: base (chat, no think) and :think (reasoning)
+# Uses qwen-fixed-chat-template.jinja — embedded GGUF template lacks
+# tool-call format instructions, causing leakage without the fixed template.
+#
+# Benchmark (Aug 2026, RTX 3050 6GB, ik_llama v4840):
+#   Text: ~36 tok/s (ngram-mod), VRAM ~4.7GB (vs 5.2GB with MTP Compact)
+#   vs MTP Compact: 36 vs 45 tok/s, but ~500MB less VRAM
+# -------------------------------------------
+"ornith-1.5-35b":
+  name: "Ornith 1.5 35B"
+  description: "Ornith-1.5 is a family of open-source LLMs trained with end-to-end self-improvement — the model proposes new tasks, generates task-specific scaffolds, and produces solution rollouts for RL, continuously creating new learning experiences. APEX Compact quantization with vision support."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/ornith-1.5-35b/Ornith-1.5-35B-A3B-APEX-Compact.gguf
+    --mmproj ${models_dir}/ornith-1.5-35b/mmproj.gguf
+    --no-mmproj-offload
+    --fit
+    --fit-margin 1024
+    --ctx-size 131072
+    --temp 0.6
+    --top-p 0.95
+    --top-k 20
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --reasoning on
+    --jinja
+    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --prefetch-experts
+    --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
+      --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~16.5 GB (APEX Compact) + 899 MB mmproj"
+    context: "1K-131K (safe max, model supports 262K)"
+    vram_usage: "~4.7GB VRAM + ~15GB pinned RAM (ik pinned memory, ~36 tok/s ngram-mod)"
+    source: "mudler/Ornith-1.5-35B-A3B-APEX-GGUF"
+    kv_cache: "q4_0 + attn_rot + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: true
+    architecture: qwen35moe
+    parameters: 35000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: APEX Compact (no MTP)
+    note: "APEX Compact without MTP draft head. Saves ~500MB VRAM vs MTP variant. Uses ngram-mod for speculative decoding (~36 tok/s vs 45 with MTP). Vision via mmproj with --no-mmproj-offload. Same quality as MTP variant — MTP only affects speed, not quality. Lower VRAM pressure allows running alongside IDE/other GPU processes."
