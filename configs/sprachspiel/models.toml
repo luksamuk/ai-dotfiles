@@ -24,17 +24,6 @@ num_ctx = 131072
 thinking = true
 tools = true
 
-[models."bonsai-27b-1bit"]
-provider = "llama-swap"
-model_id = "bonsai-27b-1bit:think"
-num_ctx = 32768
-temperature = 0.7
-top_p = 0.95
-top_k = 20
-min_p = 0.0
-repeat_penalty = 1.0
-thinking = true
-tools = true
 
 [models."athenas-symbiote-9b"]
 provider = "llama-swap"
@@ -132,6 +121,17 @@ num_ctx = 131072
 thinking = true
 tools = true
 
+[models."lfm2.5-1.2b"]
+provider = "llama-swap"
+model_id = "lfm2.5-1.2b"
+num_ctx = 131072
+temperature = 0.1
+top_p = 0.9
+top_k = 50
+repeat_penalty = 1.1
+thinking = false
+tools = false
+
 # [models."maple-preview"]
 # provider = "llama-swap"
 # model_id = "maple-preview"
@@ -224,16 +224,6 @@ thinking = false
 tools = false
 vision = true
 
-[models."unlimited-ocr"]
-provider = "llama-swap"
-model_id = "unlimited-ocr"
-num_ctx = 32768
-temperature = 0.0
-top_p = 1.0
-repeat_penalty = 1.0
-thinking = false
-tools = false
-vision = true
 
 [models."nomic"]
 provider = "llama-swap"
@@ -284,7 +274,6 @@ model_id = "kimi-k2.7-code:cloud"
 num_ctx = 262144
 thinking = true
 vision = true
-
 
 
 [models."minimax-m2.7"]
@@ -347,12 +336,18 @@ provider = "ollama"
 model_id = "deepseek-v4-pro:cloud"
 num_ctx = 1048576
 thinking = true
-[models."ornith-1.0-35b"]
+[models."ornith-1.5-35b"]
 provider = "llama-swap"
-model_id = "ornith-1.0-35b:think"
+model_id = "ornith-1.5-35b:think"
 num_ctx = 131072
+temperature = 0.6
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
 thinking = true
 tools = true
+vision = true
 
 # --- EMPERO QWEN3.8 (distillation, always thinks, no :think variant) ---
 
@@ -367,5 +362,17 @@ tools = true
 provider = "llama-swap"
 model_id = "empero-qwen3.8-4b"
 num_ctx = 131072
+thinking = true
+tools = true
+
+[models."qwen3.8-27b"]
+provider = "llama-swap"
+model_id = "qwen3.8-27b:think"
+num_ctx = 131072
+temperature = 1.0
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
 thinking = true
 tools = true

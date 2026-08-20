@@ -121,6 +121,17 @@
           "maxTokens": 32768
         },
         {
+          "id": "lfm2.5-1.2b",
+          "name": "LFM 2.5 1.2B",
+          "description": "Liquid AI on-device instruct model. 1.2B dense hybrid, 128K context. Smallest LFM2.5 — ideal for edge and lightweight agents. DSpark speculative decoding for up to 2.87x speedup.",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 8192
+        },
+        {
           "id": "nanbeige4.2-3b",
           "name": "Nanbeige 4.2 3B",
           "description": "Compact agentic model with Looped Transformer architecture. 3B non-embedding params.",
@@ -143,23 +154,25 @@
           "maxTokens": 32768
         },
         {
-          "id": "ornith-1.0-35b",
-          "name": "Ornith 1.0 35B",
-          "description": "Ornith-1.0 — open-source LLM specialized for agentic coding, trained with self-scaffolding RL. 35B MoE, ~3B active/token.",
+          "id": "ornith-1.5-35b",
+          "name": "Ornith 1.5 35B",
+          "description": "Ornith-1.5 — self-improving RL MoE for agentic coding. 35B MoE, ~3B active/token. APEX Compact with vision.",
           "reasoning": true,
           "input": [
-            "text"
+            "text",
+            "image"
           ],
           "contextWindow": 131072,
           "maxTokens": 32768
         },
         {
-          "id": "ornith-1.0-35b:think",
-          "name": "Ornith 1.0 35B (Thinking)",
-          "description": "Ornith-1.0 — open-source LLM specialized for agentic coding, trained with self-scaffolding RL. 35B MoE, ~3B active/token.",
+          "id": "ornith-1.5-35b:think",
+          "name": "Ornith 1.5 35B (Thinking)",
+          "description": "Ornith-1.5 — self-improving RL MoE for agentic coding. 35B MoE, ~3B active/token. APEX Compact with vision.",
           "reasoning": true,
           "input": [
-            "text"
+            "text",
+            "image"
           ],
           "contextWindow": 131072,
           "maxTokens": 32768
