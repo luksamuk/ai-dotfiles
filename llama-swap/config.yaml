@@ -637,6 +637,9 @@ models:
 
 # --ctx-size 131072: same safe ceiling (model supports 262K, YaRN extends to 1M)
 # Dual mode: base (chat, no think) and :think (reasoning)
+# --reasoning-budget 8192: caps thinking tokens at 8192 when :think is active.
+#   Base mode is unaffected (template injects closed think block, budget never triggers).
+# --reasoning-budget-message: smooth transition when budget is exhausted.
 # Uses qwen-fixed-chat-template.jinja — embedded GGUF template lacks
 # tool-call format instructions, causing leakage without the fixed template.
 
@@ -661,6 +664,8 @@ models:
       --min-p ${code_min_p}
       --repeat-penalty ${code_repeat_penalty}
       --reasoning on
+      --reasoning-budget 8192
+      --reasoning-budget-message Let me conclude my reasoning and provide the answer.
       --jinja
       --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
       --parallel 1
