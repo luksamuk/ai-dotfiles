@@ -612,12 +612,12 @@ models:
       embedding_length: 2048
       quantization: QAD Q4_0
       note: Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only 8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM in 6GB. QAD (Quantization-Aware Distillation) recovers ~97% of BF16 quality vs native Q4_0. DSpark speculative decoding via F16 draft sidecar (633MB) — up to 2.27x speedup on-device, 57% latency reduction for function calling.
-  qwen2.5-1.5b-pollard:
-    name: Qwen2.5 1.5B Pollard
-    description: 'Pollard memory-fit Qwen2.5-1.5B-Instruct, CPU-only. Role/depth-aware quant: q4_K sensitive, Q4_K_M bulk. 44 tok/s on i7-13650HX. Zero VRAM — coexists with GPU MoE models.'
+  qwen2.5-coder-1.5b-pollard:
+    name: Qwen2.5 Coder 1.5B Pollard
+    description: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct, CPU-only. IQ4_XS with imatrix. FIM native. Code completion on CPU, zero VRAM, coexists with GPU MoE.
     cmd: '${llama_server} --port ${PORT}
 
-      --model ${models_dir}/qwen2.5-1.5b-pollard-fit1gb/Qwen2.5-1.5B-Instruct-Pollard-Q4_K_S.gguf
+      --model ${models_dir}/qwen2.5-coder-1.5b-pollard/Qwen2.5-Coder-1.5B-Instruct-Pollard-IQ4_XS.gguf
 
       --jinja
 
@@ -671,10 +671,10 @@ models:
       reranker: false
       context: 32768
     metadata:
-      size: ~834 MB (Pollard fit1GB)
+      size: ~824 MB (Pollard IQ4_XS + imatrix)
       context: 32K (completion)
       vram_usage: 0 (CPU-only)
-      source: PollardWeights/Qwen2.5-1.5B-Instruct-Pollard (fit1GB / Q4_K_S)
+      source: PollardWeights/Qwen2.5-Coder-1.5B-Instruct-Pollard (IQ4_XS)
       kv_cache: q8_0
       features:
         completion: true
@@ -682,15 +682,15 @@ models:
         thinking: false
         vision: false
         embedding: false
-        insert: false
+        insert: true
         audio: false
         image: false
       architecture: qwen2
       parameters: 1540000000
       context_length: 32768
       embedding_length: 1536
-      quantization: Pollard fit1GB (q4_K sensitive + Q4_K_M bulk)
-      note: CPU-only variant for coexistence with GPU MoE models. CUDA_VISIBLE_DEVICES='' forces CPU. 42.5 tok/s on i7-13650HX. Zero VRAM cost — runs alongside Ornith 35B or other heavy GPU models without competition. ngram-mod enabled (helps on CPU where compute is bottleneck).
+      quantization: Pollard IQ4_XS (imatrix-guided, role/depth-aware)
+      note: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE. ngram-mod enabled.
   ornith-1.5-35b:
     name: Ornith 1.5 35B
     description: Ornith-1.5 is a family of open-source LLMs trained with end-to-end self-improvement — the model proposes new tasks, generates task-specific scaffolds, and produces solution rollouts for RL, continuously creating new learning experiences. APEX Compact quantization with vision support.
@@ -1714,7 +1714,7 @@ matrix:
     lfm26: lfm2.5-2.6b
     eq2: empero-qwen3.8-2b
     eq4: empero-qwen3.8-4b
-    qpoll: qwen2.5-1.5b-pollard
+    qpoll: qwen2.5-coder-1.5b-pollard
     spc: portal-core-space
     fct: portal-core-fact
     adv: portal-core-adventure

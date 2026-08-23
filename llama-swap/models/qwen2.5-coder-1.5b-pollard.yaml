@@ -1,20 +1,21 @@
 # -------------------------------------------
-# QWEN2.5-1.5B-INSTRUCT-POLLARD FIT1GB - CPU-ONLY (coexist with GPU MoE)
-# Pollard memory-fit quantization: role/depth-aware precision allocation.
-# Sensitive tensors at q4_K, FFN bulk at Q4_K_M. Sized to 1GB RAM tier.
+# QWEN2.5-CODER-1.5B-INSTRUCT-POLLARD - CPU-ONLY (coexist with GPU MoE)
+# Pollard memory-fit quantization with imatrix guidance.
+# Role/depth-aware precision: sensitive tensors high precision, FFN bulk compressed.
+# IQ4_XS = 824 MB. imatrix computed on mixed prose + code corpus.
 # Architecture: qwen2 (28 layers, dense 1.54B params).
-# ChatML format. No FIM (Instruct, not Coder). No thinking mode.
-# Backend: upstream llama.cpp, CPU-ONLY (CUDA_VISIBLE_DEVICES=""").
+# Qwen2.5-Coder FIM tokens: <|fim_prefix|>, <|fim_suffix|>, <|fim_middle|>
+# Also supports repo-level completion via <|repo_name|> and <|file_sep|>
+# Backend: upstream llama.cpp, CPU-ONLY (CUDA_VISIBLE_DEVICES="").
 # Purpose: code completion on CPU while GPU runs heavy MoE (Ornith 35B etc).
-# 42.5 tok/s on i7-13650HX CPU-only (measured Aug 2026).
-# 834 MB model + ~1.5GB RAM total. Zero VRAM cost.
+# ~44 tok/s on i7-13650HX CPU-only (estimated, same arch as Instruct variant).
 # -------------------------------------------
-"qwen2.5-1.5b-pollard":
-  name: "Qwen2.5 1.5B Pollard"
-  description: "Pollard memory-fit Qwen2.5-1.5B-Instruct, CPU-only. Role/depth-aware quant: q4_K sensitive, Q4_K_M bulk. 44 tok/s on i7-13650HX. Zero VRAM — coexists with GPU MoE models."
+"qwen2.5-coder-1.5b-pollard":
+  name: "Qwen2.5 Coder 1.5B Pollard"
+  description: "Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct, CPU-only. IQ4_XS with imatrix. FIM native. Code completion on CPU, zero VRAM, coexists with GPU MoE."
   cmd: |
     ${llama_server} --port ${PORT}
-    --model ${models_dir}/qwen2.5-1.5b-pollard-fit1gb/Qwen2.5-1.5B-Instruct-Pollard-Q4_K_S.gguf
+    --model ${models_dir}/qwen2.5-coder-1.5b-pollard/Qwen2.5-Coder-1.5B-Instruct-Pollard-IQ4_XS.gguf
     --jinja
     --parallel 1
     --ctx-size ${completion_ctx}
@@ -46,10 +47,10 @@
     reranker: false
     context: 32768
   metadata:
-    size: "~834 MB (Pollard fit1GB)"
+    size: "~824 MB (Pollard IQ4_XS + imatrix)"
     context: "32K (completion)"
     vram_usage: "0 (CPU-only)"
-    source: "PollardWeights/Qwen2.5-1.5B-Instruct-Pollard (fit1GB / Q4_K_S)"
+    source: "PollardWeights/Qwen2.5-Coder-1.5B-Instruct-Pollard (IQ4_XS)"
     kv_cache: "q8_0"
     features:
       completion: true
@@ -57,12 +58,12 @@
       thinking: false
       vision: false
       embedding: false
-      insert: false
+      insert: true
       audio: false
       image: false
     architecture: qwen2
     parameters: 1540000000
     context_length: 32768
     embedding_length: 1536
-    quantization: Pollard fit1GB (q4_K sensitive + Q4_K_M bulk)
-    note: "CPU-only variant for coexistence with GPU MoE models. CUDA_VISIBLE_DEVICES='' forces CPU. 42.5 tok/s on i7-13650HX. Zero VRAM cost — runs alongside Ornith 35B or other heavy GPU models without competition. ngram-mod enabled (helps on CPU where compute is bottleneck)."
+    quantization: Pollard IQ4_XS (imatrix-guided, role/depth-aware)
+    note: "Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE. ngram-mod enabled."
