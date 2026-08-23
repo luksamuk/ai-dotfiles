@@ -41,6 +41,8 @@ matrix:
     eq4: empero-qwen3.8-4b
     # Pollard memory-fit Qwen2.5-1.5B-Instruct (role/depth-aware quantization)
     qpoll: qwen2.5-1.5b-pollard-fit1gb
+    # CPU-only variant (coexists with GPU MoE models)
+    qpollcpu: qwen2.5-1.5b-pollard-fit1gb-cpu
     # Portal 2 personality cores (conversational, Q8_0, LFM2.5-350M)
     spc: portal-core-space
     fct: portal-core-fact
@@ -94,8 +96,8 @@ matrix:
     # Modelos médios + Embedding/Reranker
     medium: "(q9 | g4) & (nomic | lfmemb | nemb | lfmcol)"
 
-    # Modelos pesados (offload) + Embedding/Reranker
-    heavy: "(orn15 | glm | qw38) & (nomic | lfmemb | nemb | lfmcol)"
+    # Modelos pesados (offload) + Embedding/Reranker + CPU completion
+    heavy: "(orn15 | glm | qw38) & (nomic | lfmemb | nemb | lfmcol) & qpollcpu"
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -131,6 +133,7 @@ matrix:
     eq2: 2
     eq4: 3
     qpoll: 1
+    qpollcpu: 1
     spc: 1
     fct: 2
     adv: 2

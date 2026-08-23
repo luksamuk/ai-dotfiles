@@ -92,6 +92,7 @@ declare -A MODELS=(
   # Q6_K = 2.22 GB, reasoning model, trained with agentic RL inside Hermes Agent
   ["lfm2.5-2.6b"]="LiquidAI/LFM2.5-2.6B-GGUF LFM2.5-2.6B-Q6_K.gguf"
   # Pollard fit1GB ultra-light (q4_K sensitive tensors, Q4_K_M bulk)
+  # Also used by CPU-only variant (qwen2.5-1.5b-pollard-fit1gb-cpu) — same GGUF, different YAML
   ["qwen2.5-1.5b-pollard-fit1gb"]="PollardWeights/Qwen2.5-1.5B-Instruct-Pollard Qwen2.5-1.5B-Instruct-Pollard-Q4_K_S.gguf"
   # Ling-3.0-tiny - inclusionAI BailingMoE3 hybrid KDA+MLA, 7.9B/1.3B active, 128 experts
   # APEX I-Compact = 3.99 GB, abliterated. ik_llama.cpp backend (PR #2295).

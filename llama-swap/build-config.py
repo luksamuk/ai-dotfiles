@@ -70,6 +70,7 @@ ORIGINAL_ORDER = [
     "lfm2.5-1.2b",           # ✅
     "lfm2.5-2.6b",           # ✅ Dense hybrid, agentic RL, on-device
     "qwen2.5-1.5b-pollard-fit1gb",  # ✅ Pollard fit1GB ultra-light (q4_K sensitive)
+    "qwen2.5-1.5b-pollard-fit1gb-cpu",  # ✅ Pollard fit1GB CPU-only (coexist with GPU MoE)
     # "ling-3.0-tiny",       # DISABLED Aug 2026 — doom loop in Pi agentic bench
     "lfm2.5-vl-450m",       # ✅
     "webworld-8b",           # ✅
