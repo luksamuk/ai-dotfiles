@@ -39,10 +39,8 @@ matrix:
     # Empero Qwen3.8 distillations (upstream llama.cpp, qwen35 arch)
     eq2: empero-qwen3.8-2b
     eq4: empero-qwen3.8-4b
-    # Pollard memory-fit Qwen2.5-1.5B-Instruct (role/depth-aware quantization)
-    qpoll: qwen2.5-1.5b-pollard-fit1gb
-    # CPU-only variant (coexists with GPU MoE models)
-    qpollcpu: qwen2.5-1.5b-pollard-fit1gb-cpu
+    # Pollard memory-fit Qwen2.5-1.5B-Instruct CPU-only (coexists with GPU MoE)
+    qpoll: qwen2.5-1.5b-pollard
     # Portal 2 personality cores (conversational, Q8_0, LFM2.5-350M)
     spc: portal-core-space
     fct: portal-core-fact
@@ -81,13 +79,13 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | qpoll | spc | fct | adv) & (nomic | lfmemb | nemb | lfmcol)"
+    small_vision: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | qpoll | spc | fct | adv) & (nomic | lfmemb | nemb | lfmcol)"
+    small_embed: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | qpoll | spc | fct | adv"
+    small_only: "q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv"
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "ocr | qwvl | lfmvl3"
@@ -97,7 +95,7 @@ matrix:
     medium: "(q9 | g4) & (nomic | lfmemb | nemb | lfmcol)"
 
     # Modelos pesados (offload) + Embedding/Reranker + CPU completion
-    heavy: "(orn15 | glm | qw38) & (nomic | lfmemb | nemb | lfmcol) & qpollcpu"
+    heavy: "(orn15 | glm | qw38) & (nomic | lfmemb | nemb | lfmcol) & qpoll"
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -133,7 +131,6 @@ matrix:
     eq2: 2
     eq4: 3
     qpoll: 1
-    qpollcpu: 1
     spc: 1
     fct: 2
     adv: 2
