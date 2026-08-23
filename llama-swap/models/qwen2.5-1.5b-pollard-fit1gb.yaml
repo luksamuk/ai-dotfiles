@@ -1,0 +1,67 @@
+# -------------------------------------------
+# QWEN2.5-1.5B-INSTRUCT-POLLARD FIT1GB - upstream llama.cpp BACKEND
+# Pollard memory-fit quantization: role/depth-aware precision allocation.
+# Sensitive tensors at q4_K, FFN bulk at Q4_K_M. Sized to 1GB RAM tier (phones/ultra-light).
+# Architecture: qwen2 (28 layers, dense 1.54B params).
+# ChatML format. No FIM (Instruct, not Coder). No thinking mode.
+# Backend: upstream llama.cpp (qwen2 arch long-supported, no special build).
+# 93.1 tok/s on M4 Mac Mini (vendor benchmark, not independently verified).
+# -------------------------------------------
+"qwen2.5-1.5b-pollard-fit1gb":
+  name: "Qwen2.5 1.5B Pollard fit1GB"
+  description: "Pollard memory-fit quantization of Qwen2.5-1.5B-Instruct. Role/depth-aware precision: sensitive tensors at q4_K, FFN bulk at Q4_K_M. ChatML, no FIM. Ultra-light 1GB tier."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/qwen2.5-1.5b-pollard-fit1gb/Qwen2.5-1.5B-Instruct-Pollard-Q4_K_S.gguf
+    --jinja
+    --fit on
+    --fit-target ${vram_margin}
+    --parallel 1
+    --ctx-size ${completion_ctx}
+    --temp ${default_temp}
+    --top-p ${default_top_p}
+    --top-k ${default_top_k}
+    --min-p ${default_min_p}
+    --repeat-penalty ${default_repeat_penalty}
+    --cache-type-k ${small_cache_k}
+    --cache-type-v ${small_cache_v}
+    --flash-attn auto
+    --batch-size 512
+    --ubatch-size 128
+    --spec-type ngram-mod
+    --spec-ngram-mod-n-match 24
+    --spec-ngram-mod-n-min 48
+    --spec-ngram-mod-n-max 64
+    --no-webui
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 32768
+  metadata:
+    size: "~834 MB (Pollard fit1GB)"
+    context: "32K (completion)"
+    vram_usage: "~1.5GB VRAM (model 834MB + q8_0 KV 32K + compute)"
+    source: "PollardWeights/Qwen2.5-1.5B-Instruct-Pollard (fit1GB / Q4_K_S)"
+    kv_cache: "q8_0"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen2
+    parameters: 1540000000
+    context_length: 32768
+    embedding_length: 1536
+    quantization: Pollard fit1GB (q4_K sensitive + Q4_K_M bulk)
+    note: "Pollard role/depth-aware memory-fit quantization, ultra-light tier. Sensitive tensors (embeddings, attention q/k/v/o, norms, output head) at q4_K, FFN bulk at Q4_K_M. 93.1 tok/s on M4 Mac (vendor). qwen2 arch (28 layers, dense 1.54B). ChatML format. Instruct model — no FIM, no thinking mode."

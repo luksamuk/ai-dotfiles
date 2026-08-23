@@ -35,15 +35,20 @@ matrix:
     # m5a: minicpm5-1b-agentic  # disabled
     lfm8: lfm2.5-8b-a1b
     lfm26: lfm2.5-2.6b
-    nb42: nanbeige4.2-3b
+    # nb42: nanbeige4.2-3b  # disabled Aug 2026 — poor Portuguese
     # Empero Qwen3.8 distillations (upstream llama.cpp, qwen35 arch)
     eq2: empero-qwen3.8-2b
     eq4: empero-qwen3.8-4b
-    # Portal 2 personality cores (conversational, Q8_0)
+    # Pollard memory-fit Qwen2.5-1.5B-Instruct (role/depth-aware quantization)
+    qpoll: qwen2.5-1.5b-pollard-fit1gb
+    # Portal 2 personality cores (conversational, Q8_0, LFM2.5-350M)
+    spc: portal-core-space
+    fct: portal-core-fact
+    adv: portal-core-adventure
     # inst: instella-moe-16b  # disabled
     # Vision
     ocr: glm-ocr
-    uocr: unlimited-ocr
+    # uocr: unlimited-ocr  # disabled Aug 2026 — unused
     qwvl: qwen3-vl-4b
     lfmvl3: lfm2.5-vl-3b
     # Modelos médios
@@ -52,10 +57,12 @@ matrix:
     # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
     # Pesados (offload)
     # aw: agentworld-35b  # disabled Aug 2026
-    orn35: ornith-1.0-35b
+    orn15: ornith-1.5-35b
     glm: glm-4.7-flash
-    # Bonsai 1-bit reativado Jul 2026 — Q1_0 CUDA no upstream, ngram-mod spec decode
-    bonsai1: bonsai-27b-1bit
+    # Bonsai 1-bit disabled Aug 2026 — user request
+    # bonsai1: bonsai-27b-1bit
+    # Qwen3.8-27B dense 1-bit (UD-IQ1_M, ~6.7GB, DeltaNet linear attention)
+    qw38: qwen3.8-27b
     # Tradução
     tg: translategemma-4b
     # Português jurídico (Qwen3.5-9B LoRA, instruct)
@@ -72,23 +79,23 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4) & (nomic | lfmemb | nemb | lfmcol)"
+    small_vision: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | qpoll | spc | fct | adv) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4) & (nomic | lfmemb | nemb | lfmcol)"
+    small_embed: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | qpoll | spc | fct | adv) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | q4a | lfm8 | lfm26 | nb42 | eq2 | eq4"
+    small_only: "q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | qpoll | spc | fct | adv"
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr | uocr | qwvl | lfmvl3"
-    vision_embed: "(ocr | uocr | qwvl | lfmvl3) & (nomic | lfmemb | nemb | lfmcol)"
+    vision_only: "ocr | qwvl | lfmvl3"
+    vision_embed: "(ocr | qwvl | lfmvl3) & (nomic | lfmemb | nemb | lfmcol)"
 
     # Modelos médios + Embedding/Reranker
     medium: "(q9 | g4) & (nomic | lfmemb | nemb | lfmcol)"
 
     # Modelos pesados (offload) + Embedding/Reranker
-    heavy: "(orn35 | glm | bonsai1) & (nomic | lfmemb | nemb | lfmcol)"
+    heavy: "(orn15 | glm | qw38) & (nomic | lfmemb | nemb | lfmcol)"
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -108,23 +115,25 @@ matrix:
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
-    orn35: 9
+    orn15: 9
     glm: 9
-    bonsai1: 7
+    qw38: 7
     q9: 4
     g4: 3
     ttsext: 4
     ocr: 3
-    uocr: 3
     qwvl: 3
     lfmvl3: 3
     q4: 2
     q4a: 2
     lfm8: 2
     lfm26: 2
-    nb42: 2
     eq2: 2
     eq4: 3
+    qpoll: 1
+    spc: 1
+    fct: 2
+    adv: 2
     nomic: 1
     lfmemb: 1
     nemb: 1
