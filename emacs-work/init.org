@@ -370,11 +370,12 @@ Shows available keybindings.
 
 ** Ellama
 
-AI assistant using local llama-swap models. The endpoint points to a
-machine on the local network running the llama-swap fleet.
+AI assistant using local llama-swap models. The endpoint points to
+the local llama-swap fleet.
 
 Models available:
-- =ornith-1.0-35b= (35B MoE, agentic coding, flagship)
+- =ornith-1.5-35b= (35B MoE A3B, agentic coding, flagship)
+- =qwen3.8-27b= (27B dense 1-bit, DeltaNet linear attention, VLM)
 - =glm-4.7-flash= (30B MoE MLA, general-purpose)
 - =qwen3.5-9b= / =qwen3.5-4b= (light, multimodal)
 - =lfm2.5-8b-a1b= (8B MoE, general-purpose)
@@ -384,7 +385,7 @@ All models support =:think= variants for reasoning mode.
 
 #+begin_src emacs-lisp
 ;; --- Configuration: adjust this IP as needed ---
-(defconst my-llama-swap-endpoint "http://192.168.3.50:12434/v1/"
+(defconst my-llama-swap-endpoint "http://localhost:12434/v1/"
   "llama-swap API endpoint on the local network.")
 ;; ----------------------------------------------
 
@@ -402,11 +403,17 @@ All models support =:think= variants for reasoning mode.
 
   ;; Register local models in llm-models to avoid warnings.
   (llm-models-add
-   :name "ornith-1.0-35b"
-   :symbol 'ornith-1.0-35b
+   :name "ornith-1.5-35b"
+   :symbol 'ornith-1.5-35b
    :capabilities '(tool-use reasoning json-response)
    :context-length 131072
-   :regex "ornith-1.0-35b")
+   :regex "ornith-1.5-35b")
+  (llm-models-add
+   :name "qwen3.8-27b"
+   :symbol 'qwen3.8-27b
+   :capabilities '(tool-use reasoning json-response)
+   :context-length 65536
+   :regex "qwen3.8-27b")
   (llm-models-add
    :name "glm-4.7-flash"
    :symbol 'glm-4.7-flash
@@ -440,23 +447,26 @@ All models support =:think= variants for reasoning mode.
 
   (setopt ellama-naming-scheme 'ellama-generate-name-by-llm)
 
-  ;; Main provider: Ornith (flagship, local llama-swap)
+  ;; Main provider: Ornith 1.5 (flagship, local llama-swap)
   (setopt ellama-provider
           (make-llm-openai-compatible
-           :chat-model "ornith-1.0-35b:think"
+           :chat-model "ornith-1.5-35b:think"
            :url my-llama-swap-endpoint))
 
   ;; Coding provider: same as main
   (setopt ellama-coding-provider
           (make-llm-openai-compatible
-           :chat-model "ornith-1.0-35b:think"
+           :chat-model "ornith-1.5-35b:think"
            :url my-llama-swap-endpoint))
 
   ;; Selectable providers (all local, via llama-swap)
   (setopt ellama-providers
-	  '(("Ornith 1.0 35B" (make-llm-openai-compatible
-		              :chat-model "ornith-1.0-35b:think"
+	  '(("Ornith 1.5 35B" (make-llm-openai-compatible
+		              :chat-model "ornith-1.5-35b:think"
 		              :url my-llama-swap-endpoint))
+	    ("Qwen 3.8 27B" (make-llm-openai-compatible
+		             :chat-model "qwen3.8-27b:think"
+		             :url my-llama-swap-endpoint))
 	    ("GLM 4.7 Flash" (make-llm-openai-compatible
 		              :chat-model "glm-4.7-flash:think"
 		              :url my-llama-swap-endpoint))
