@@ -29,17 +29,6 @@ macros:
   think_top_k: '20'
   think_min_p: '0.0'
   think_repeat_penalty: '1.0'
-  qwen38_think_temp: '1.0'
-  qwen38_think_top_p: '0.95'
-  qwen38_think_top_k: '20'
-  qwen38_think_min_p: '0.0'
-  qwen38_think_repeat_penalty: '1.0'
-  qwen38_instruct_temp: '0.7'
-  qwen38_instruct_top_p: '0.80'
-  qwen38_instruct_top_k: '20'
-  qwen38_instruct_min_p: '0.0'
-  qwen38_instruct_repeat_penalty: '1.0'
-  qwen38_instruct_presence_penalty: '1.5'
   small_model_min_ctx: '65536'
   small_model_max_ctx: '131072'
   completion_ctx: '32768'
@@ -1548,93 +1537,6 @@ models:
       - Voice profiles loaded from ~/.config/voiceclone-tui/voices.json
       - Supports voice cloning with reference audio samples
       - Portuguese (pt-BR) voices with accent control
-  qwen3.8-27b:
-    name: Qwen3.8 27B
-    description: 'Qwen3.8-27B: dense 27B VLM with Gated DeltaNet linear attention + Gated Attention hybrid. Native image/video understanding, 262K context. Most capable Qwen generation - coding, agentic tasks, long-horizon planning.'
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/qwen3.8-27b-1bit/Qwen3.8-27B-UD-IQ1_M.gguf
-
-      --ctx-size 131072
-
-      --n-gpu-layers 25
-
-      --temp ${qwen38_instruct_temp}
-
-      --top-p ${qwen38_instruct_top_p}
-
-      --top-k ${qwen38_instruct_top_k}
-
-      --min-p ${qwen38_instruct_min_p}
-
-      --repeat-penalty ${qwen38_instruct_repeat_penalty}
-
-      --presence-penalty ${qwen38_instruct_presence_penalty}
-
-      --reasoning on
-
-      --jinja
-
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-
-      --parallel 1
-
-      --cache-type-k ${large_cache_k}
-
-      --cache-type-v ${large_cache_v}
-
-      --flash-attn auto
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p, presence_penalty
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.8
-          presence_penalty: 1.5
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-          presence_penalty: 0.0
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      - image
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~6.7 GB (UD-IQ1_M)
-      context: 1K-131K (deploy), 262K native, 1M with YaRN
-      vram_usage: ~4.5GB VRAM (35 layers) + ~3GB RAM offload. DeltaNet KV cache near-constant.
-      source: unsloth/Qwen3.8-27B-GGUF
-      kv_cache: q4_0 (DeltaNet, 16/64 attn layers)
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: true
-      architecture: qwen35
-      parameters: 27000000000
-      context_length: 262144
-      embedding_length: 5120
-      quantization: UD-IQ1_M (~2.0 bpw)
-      note: 'Dense 27B DeltaNet+Attn hybrid (48+16 layers). Native VLM. IQ1_M ~77% quality. Uses upstream llama.cpp (GATED_DELTA_NET). Instruct: presence_penalty=1.5. Thinking: temp=1.0.'
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
@@ -1725,7 +1627,6 @@ matrix:
     g4: gemma4-e2b
     orn15: ornith-1.5-35b
     glm: glm-4.7-flash
-    qw38: qwen3.8-27b
     tg: translategemma-4b
     ttsext: qwen3-tts
     nomic: nomic-embed-text-v2-moe
@@ -1739,7 +1640,7 @@ matrix:
     vision_only: ocr | qwvl | lfmvl3
     vision_embed: (ocr | qwvl | lfmvl3) & (nomic | lfmemb | nemb | lfmcol)
     medium: (q9 | g4) & (nomic | lfmemb | nemb | lfmcol)
-    heavy: (orn15 | glm | qw38) & (nomic | lfmemb | nemb | lfmcol) & qpoll
+    heavy: (orn15 | glm) & (nomic | lfmemb | nemb | lfmcol) & qpoll
     translate_only: tg
     tts_external: ttsext
     embed_only: nomic & lfmemb & nemb & lfmcol
@@ -1748,7 +1649,6 @@ matrix:
   evict_costs:
     orn15: 9
     glm: 9
-    qw38: 7
     q9: 4
     g4: 3
     ttsext: 4

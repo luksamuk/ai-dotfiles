@@ -61,8 +61,8 @@ matrix:
     glm: glm-4.7-flash
     # Bonsai 1-bit disabled Aug 2026 — user request
     # bonsai1: bonsai-27b-1bit
-    # Qwen3.8-27B dense 1-bit (UD-IQ1_M, ~6.7GB, DeltaNet linear attention)
-    qw38: qwen3.8-27b
+    # Qwen3.8-27B dense 1-bit disabled Aug 2026 — too slow, user never uses
+    # qw38: qwen3.8-27b
     # Tradução
     tg: translategemma-4b
     # Português jurídico (Qwen3.5-9B LoRA, instruct)
@@ -95,7 +95,8 @@ matrix:
     medium: "(q9 | g4) & (nomic | lfmemb | nemb | lfmcol)"
 
     # Modelos pesados (offload) + Embedding/Reranker + CPU completion
-    heavy: "(orn15 | glm | qw38) & (nomic | lfmemb | nemb | lfmcol) & qpoll"
+    # qw38 removed Aug 2026 — model disabled
+    heavy: "(orn15 | glm) & (nomic | lfmemb | nemb | lfmcol) & qpoll"
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -117,7 +118,7 @@ matrix:
   evict_costs:
     orn15: 9
     glm: 9
-    qw38: 7
+    # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed
     q9: 4
     g4: 3
     ttsext: 4

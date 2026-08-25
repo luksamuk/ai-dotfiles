@@ -6,9 +6,19 @@
   "share": "manual",
   "enabled_providers": [
     "ollama",
-    "local"
+    "local",
+    "empero"
   ],
   "provider": {
+    "empero": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Empero",
+      "options": {
+        "baseURL": "https://free.empero.org/v1",
+        "timeout": 3600000
+      },
+      "models": {}
+    },
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "Ollama",
@@ -643,46 +653,6 @@
           "modalities": {
             "input": [
               "text"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "capabilities": [
-            "tools"
-          ],
-          "limit": {
-            "context": 131072,
-            "output": 32768
-          }
-        },
-        "qwen3.8-27b": {
-          "name": "Qwen3.8 27B",
-          "reasoning": true,
-          "modalities": {
-            "input": [
-              "text",
-              "image"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "capabilities": [
-            "tools"
-          ],
-          "limit": {
-            "context": 131072,
-            "output": 32768
-          }
-        },
-        "qwen3.8-27b:think": {
-          "name": "Qwen3.8 27B Think",
-          "reasoning": true,
-          "modalities": {
-            "input": [
-              "text",
-              "image"
             ],
             "output": [
               "text"

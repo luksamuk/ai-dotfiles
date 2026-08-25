@@ -75,21 +75,7 @@ macros:
   "think_min_p": "0.0"
   "think_repeat_penalty": "1.0"
 
-  # Qwen3.8-27B official samplers (from model card)
-  # Thinking: temp=1.0, top_p=0.95, top_k=20, min_p=0.0, repetition_penalty=1.0
-  # Instruct: temp=0.7, top_p=0.80, top_k=20, min_p=0.0, presence_penalty=1.5, repetition_penalty=1.0
-  "qwen38_think_temp": "1.0"
-  "qwen38_think_top_p": "0.95"
-  "qwen38_think_top_k": "20"
-  "qwen38_think_min_p": "0.0"
-  "qwen38_think_repeat_penalty": "1.0"
-  "qwen38_instruct_temp": "0.7"
-  "qwen38_instruct_top_p": "0.80"
-  "qwen38_instruct_top_k": "20"
-  "qwen38_instruct_min_p": "0.0"
-  "qwen38_instruct_repeat_penalty": "1.0"
-  "qwen38_instruct_presence_penalty": "1.5"
-  
+  # Qwen3.8-27B samplers removed Aug 2026 — model disabled
   # Contexto para modelos pequenos (cabem inteiros na VRAM)
   # fit-ctx: mínimo garantido, ctx-size: máximo teto
   "small_model_min_ctx": "65536"   # 64K mínimo (tool-calling/agentes)
