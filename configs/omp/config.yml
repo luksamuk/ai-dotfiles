@@ -1,24 +1,21 @@
-# omp config.yml — migrated from Pi's settings.json
-# Backup only. Active config: ~/.omp/agent/config.yml
+# omp config.yml — roles mirroring the Hefesto Hermes profile
+# default = GLM 5.3 (senior programmer, same as Hefesto's main model)
+# plan/advisor/slow = Kimi K3 (Master Architect — expensive, used for critique)
+# everything else = GLM 5.3 Flash (minion model — fast, cheap, vision)
 
 setupVersion: 1
 defaultThinkingLevel: medium
 modelRoles:
-  # Roles baseadas em benchmarks Agentic v2 + Marathon Jul 2026
-  # plan (orquestrador): KAT-Coder-V2.5-Dev — agentic coding, self-scaffolding RL
-  # task (executor): Qwen 3.5 9B — dense 9B, rápido pra subtarefas locais
-  # advisor (debug/diagnóstico): Qwen 3.5 9B — dense, arquitetura diferente do MoE, segundo par de olhos
-  # designer: GLM Flash — modelo leve pra geração de texto/design
-  default: llama-swap/glm-4.7-flash:think
-  smol: llama-swap/qwen3.5-4b:think
-  slow: llama-swap/qwen3.5-9b:think
-  vision: llama-swap/qwen3-vl-4b:think
-  plan: llama-swap/glm-4.7-flash:think
-  designer: llama-swap/glm-4.7-flash:think
-  commit: llama-swap/qwen3.5-4b
-  tiny: llama-swap/qwen3.5-4b:think
-  task: llama-swap/qwen3.5-9b:think
-  advisor: llama-swap/qwen3.5-9b:think
+  default: ollama/glm-5.3:cloud
+  smol: ollama/glm-5.3-flash:cloud
+  slow: ollama/kimi-k3:cloud
+  vision: ollama/glm-5.3-flash:cloud
+  plan: ollama/kimi-k3:cloud
+  designer: ollama/glm-5.3-flash:cloud
+  commit: ollama/glm-5.3-flash:cloud
+  tiny: ollama/glm-5.3-flash:cloud
+  task: ollama/glm-5.3-flash:cloud
+  advisor: ollama/kimi-k3:cloud
 compaction:
   strategy: context-full
 task:

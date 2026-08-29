@@ -1,269 +1,66 @@
+# omp models.yml — cloud-only via local Ollama proxy
+# Provider: local Ollama daemon (localhost:11434), authenticated to the user's
+# Ollama account — :cloud model IDs route to Ollama Cloud, no key needed here
+# (nothing sensitive is versioned in this public repo).
+# Mirrors the Hefesto Hermes profile: default=glm-5.3, minions=glm-5.3-flash,
+# architect/planner=kimi-k3.
+
 providers:
-  llama-swap:
-    baseUrl: http://127.0.0.1:12434/v1
-    api: openai-completions
-    auth: none
-    compat:
-      supportsDeveloperRole: false
-      supportsReasoningEffort: false
-      thinkingFormat: qwen-chat-template
-      qwenPreserveThinking: true
-    models:
-    - id: bonsai-27b-1bit
-      name: Bonsai 27B 1-bit
-      description: PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit
-        weights, full thinking/reasoning at 3.9 GB. 89.5% of FP16 intelligence.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 32768
-      maxTokens: 32768
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-    - id: bonsai-27b-1bit:think
-      name: Bonsai 27B 1-bit (Thinking)
-      description: PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with 1.125-bit
-        weights, full thinking/reasoning at 3.9 GB. 89.5% of FP16 intelligence.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 32768
-      maxTokens: 32768
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-    - id: gemma4-e2b
-      name: Gemma 4 E2B
-      description: Gemma 4 E2B QAT — Unsloth Dynamic 2.0 (UD-Q4_K_XL). Higher accuracy
-        and smaller than Google Q4_0.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 131072
-      maxTokens: 32768
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-    - id: gemma4-e2b:think
-      name: Gemma 4 E2B (Thinking)
-      description: Gemma 4 E2B QAT — Unsloth Dynamic 2.0 (UD-Q4_K_XL). Higher accuracy
-        and smaller than Google Q4_0.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 131072
-      maxTokens: 32768
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-    - id: lfm2.5-8b-a1b
-      name: LFM 2.5 8B
-      description: Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Built
-        for fast, reliable tool calling on consumer hardware.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 131072
-      maxTokens: 32768
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-    - id: lfm2.5-8b-a1b:think
-      name: LFM 2.5 8B (Thinking)
-      description: Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Built
-        for fast, reliable tool calling on consumer hardware.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 131072
-      maxTokens: 32768
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-    - id: qwen3.5-4b
-      name: Qwen3.5 4B
-      description: Qwen 3.5 open-source multimodal model — exceptional utility and
-        performance, integrating broad agentic capabilities.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 32768
-      maxTokens: 32768
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-    - id: qwen3.5-4b:think
-      name: Qwen3.5 4B (Thinking)
-      description: Qwen 3.5 open-source multimodal model — exceptional utility and
-        performance, integrating broad agentic capabilities.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 32768
-      maxTokens: 32768
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-    - id: qwen3.5-9b
-      name: Qwen3.5 9B
-      description: Qwen 3.5 9B — strong reasoning and agentic capabilities at the
-        9B parameter scale.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 131072
-      maxTokens: 32768
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-    - id: qwen3.5-9b:think
-      name: Qwen3.5 9B (Thinking)
-      description: Qwen 3.5 9B — strong reasoning and agentic capabilities at the
-        9B parameter scale.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 131072
-      maxTokens: 32768
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-    - id: glm-4.7-flash
-      name: GLM 4.7 Flash
-      description: GLM 4.7 Flash — fast agentic coding model with dual-mode thinking
-        support.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 131072
-      maxTokens: 8192
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-    - id: glm-4.7-flash:think
-      name: GLM 4.7 Flash (Thinking)
-      description: GLM 4.7 Flash — fast agentic coding model with dual-mode thinking
-        support.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 131072
-      maxTokens: 8192
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-    - id: lfm2.5-2.6b
-      name: LFM 2.5 2.6B
-      description: Liquid AI 2.6B hybrid model — 6B/30 attention layers with Q6_K
-        weights. Fast reasoning and tool calling, 131K context in 3.5 GB.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 131072
-      maxTokens: 32768
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-    - id: lfm2.5-2.6b:think
-      name: LFM 2.5 2.6B (Thinking)
-      description: Liquid AI 2.6B hybrid model — 6B/30 attention layers with Q6_K
-        weights. Fast reasoning and tool calling, 131K context in 3.5 GB.
-      reasoning: true
-      input:
-      - text
-      contextWindow: 131072
-      maxTokens: 32768
-      thinking:
-        mode: effort
-        efforts:
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-  sisyphus:
-    baseUrl: http://192.168.3.8:8081/v1
+  ollama:
+    baseUrl: http://127.0.0.1:11434/v1
     api: openai-completions
     auth: none
     models:
-    - id: gemma4-e2b
-      name: Gemma 4 E2B 📟
+    - id: glm-5.3:cloud
+      name: GLM 5.3
+      description: >-
+        GLM 5.3 — senior programmer model. Same role as Hefesto's main
+        model: implementation, routine debugging, test writing.
       reasoning: true
       input:
       - text
-      contextWindow: 16384
-      maxTokens: 4096
-      cost:
-        input: 0
-        output: 0
-        cacheRead: 0
-        cacheWrite: 0
+      contextWindow: 1048576
+      maxTokens: 32768
+      thinking:
+        mode: effort
+        efforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
+    - id: glm-5.3-flash:cloud
+      name: GLM 5.3 Flash
+      description: >-
+        GLM 5.3 Flash — fast, cheap, vision-capable. The minion model:
+        exploratory scans, boilerplate, parallel subtasks. Same model as
+        the Hermes default profile.
+      reasoning: true
+      input:
+      - text
+      - image
+      contextWindow: 1048576
+      maxTokens: 32768
+      thinking:
+        mode: effort
+        efforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
+    - id: kimi-k3:cloud
+      name: Kimi K3
+      description: >-
+        Kimi K3 — frontier reasoner, the Master Architect. Plan critique,
+        design review, gnarly cross-module debugging. Expensive — reserve
+        for high-stakes planning (see config.yml roles).
+      reasoning: true
+      input:
+      - text
+      - image
+      contextWindow: 1048576
+      maxTokens: 32768
       thinking:
         mode: effort
         efforts:
