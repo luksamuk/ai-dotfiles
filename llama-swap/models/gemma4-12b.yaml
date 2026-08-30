@@ -45,8 +45,9 @@
         top_p: 0.9
   ttl: 60
   metadata:
-    size: "~6.7 GB (Q4_0) + mmproj F16 168MB"
-    context: "8K (--fit on, target 768)"
+    health_check_timeout: 1800   # read_timeout do testchat = 1830s (audio análise do Gemma é lenta)
+    size: ~6.7 GB (Q4_0) + mmproj F16 168MB
+    context: 8K (--fit on, target 768)
     vram_usage: "~6.9GB com kvarn4"
     source: "google/gemma-4-12b-it (Q4_0 + mmproj F16)"
     kv_cache: "kvarn4 (PPL ~ fp16 a ~4 bits)"
