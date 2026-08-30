@@ -290,7 +290,12 @@ cmd_list() {
     local model_id="$1"
     local yaml_file="${models_dir}/${model_id}.yaml"
     if [[ -f "$yaml_file" ]]; then
-      grep -m1 '^\s*architecture:' "$yaml_file" | sed 's/.*architecture:\s*//' | tr -d '"'
+      # Tolerante: fragmento sem 'architecture:' deve devolver "-", nunca falhar
+      # (grep exit 1 matava o loop inteiro sob set -euo pipefail — bug 30/08:
+      # list parava no primeiro modelo sem a chave, exibindo só os primeiros).
+      local arch
+      arch=$(grep -m1 '^\s*architecture:' "$yaml_file" | sed 's/.*architecture:\s*//' | tr -d '"') || true
+      echo "${arch:--}"
     else
       echo "-"
     fi
