@@ -1664,6 +1664,51 @@ models:
       embedding_length: 2048
       quantization: APEX I-Compact
       note: 'MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. APEX I-Compact: 13% smaller than Q4_0, imatrix v1.3 calibrated. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek.'
+  music-flamingo:
+    name: Music Flamingo
+    description: 'NVIDIA Music Flamingo 7B (Audio Flamingo 3) — LALM especialista em música. Conversa livre sobre áudio: gênero, instrumentação, estrutura, letras. Q4_K_M + mmproj (encoder AF-Whisper). Sem visão, sem tools.'
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/music-flamingo/music-flamingo-hf.Q4_K_M.gguf
+
+      --mmproj ${models_dir}/music-flamingo/music-flamingo-hf.mmproj-Q8_0.gguf
+
+      --ctx-size 8192
+
+      --temp 0.7
+
+      --top-p 0.9
+
+      --min-p 0.01
+
+      --flash-attn on
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+    ttl: 60
+    metadata:
+      size: ~4.7 GB (Q4_K_M) + mmproj Q8_0 0.72GB
+      context: 8K (áudio consome tokens — 60s ≈ alguns centenas)
+      vram_usage: ~3.6GB total (medido)
+      source: mradermacher/music-flamingo-hf-GGUF (Q4_K_M) / nvidia/music-flamingo-hf
+      kv_cache: f16 (default — cache quant não testado com path de áudio)
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: true
+        image: false
+      architecture: musicflamingo
+      parameters: 7000000000
+      context_length: 8192
+      quantization: Q4_K_M
+      note: 'Especialista em música (AF3). Audio-chat user-only, sem recusas (validado). input_audio formatos: wav/mp3/ogg/flac/m4a/aac. Text-only OK também. Alternativa omni geral: Qwen2.5-Omni-7B (não testado).'
   qwen3-tts:
     name: Qwen3-TTS 0.6B
     description: Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible /v1/audio/speech endpoint with voice profiles from voiceclone-tui.

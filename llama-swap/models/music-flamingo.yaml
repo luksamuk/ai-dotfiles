@@ -1,0 +1,48 @@
+# -------------------------------------------
+# MUSIC FLAMINGO — NVIDIA (LALM especialista em música)
+# nvidia/music-flamingo-hf (13/11/2025), vertente música do Audio Flamingo 3.
+# Base 7B (LLaVA-arch) + encoder AF-Whisper (mmproj separado, 0.72GB Q8_0).
+# Audio-CHAT de verdade: entende música/songs, responde perguntas sobre
+# gênero/instrumentação/tempo/estrutura/letras. NÃO tem visão (mmproj aqui é
+# o encoder de áudio, não de imagem) — texto + áudio apenas.
+# GGUF: mradermacher/music-flamingo-hf-GGUF (Q4_K_M 4.68GB).
+# Suporte upstream llama.cpp: PR #18470 (31/12/2025) — vanilla e Bee ok; ik NÃO.
+# Validado 31/08 (server descartável 10699): 60s de WAV → descrição detalhada
+# de músia em 30s, VRAM 3.6GB, sem recusas. Texto puro saneado.
+# -------------------------------------------
+"music-flamingo":
+  name: "Music Flamingo"
+  description: "NVIDIA Music Flamingo 7B (Audio Flamingo 3) — LALM especialista em música. Conversa livre sobre áudio: gênero, instrumentação, estrutura, letras. Q4_K_M + mmproj (encoder AF-Whisper). Sem visão, sem tools."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/music-flamingo/music-flamingo-hf.Q4_K_M.gguf
+    --mmproj ${models_dir}/music-flamingo/music-flamingo-hf.mmproj-Q8_0.gguf
+    --ctx-size 8192
+    --temp 0.7
+    --top-p 0.9
+    --min-p 0.01
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+  ttl: 60
+  metadata:
+    size: "~4.7 GB (Q4_K_M) + mmproj Q8_0 0.72GB"
+    context: "8K (áudio consome tokens — 60s ≈ alguns centenas)"
+    vram_usage: "~3.6GB total (medido)"
+    source: "mradermacher/music-flamingo-hf-GGUF (Q4_K_M) / nvidia/music-flamingo-hf"
+    kv_cache: "f16 (default — cache quant não testado com path de áudio)"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: true
+      image: false
+    architecture: musicflamingo
+    parameters: 7000000000
+    context_length: 8192
+    quantization: Q4_K_M
+    note: "Especialista em música (AF3). Audio-chat user-only, sem recusas (validado). input_audio formatos: wav/mp3/ogg/flac/m4a/aac. Text-only OK também. Alternativa omni geral: Qwen2.5-Omni-7B (não testado)."
