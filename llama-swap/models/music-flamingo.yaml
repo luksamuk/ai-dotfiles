@@ -24,9 +24,13 @@
     --flash-attn on
   filters:
     stripParams: "temperature, top_p"
-  # ttl 0 = reinicia a cada request: 2º request de áudio na MESMA instância
-  # devolve vazio (wedge de estado pós-áudio no llama.cpp; 1º sempre funciona)
-  ttl: 0
+  # ttl 60 = reciclagem padrão da frota. IMPORTANTE: ttl:0 é "nunca expira" na
+  # build atual (until:None em /running, provado 31/08) — NÃO use como
+  # restart-per-request. Wedge de áudio: o 2º+ request input_audio na MESMA
+  # instância devolve vazio (bug mtmd upstream); o ttl 60 resolve na prática
+  # pois sessões espaçadas >60s sempre pegam instância fresca. Se tweezer
+  # requests de áudio em <60s: unload manual entre eles.
+  ttl: 60
   metadata:
     size: "~4.7 GB (Q4_K_M) + mmproj Q8_0 0.72GB"
     context: "8K (áudio consome tokens — 60s ≈ alguns centenas)"
