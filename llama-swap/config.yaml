@@ -1364,20 +1364,20 @@ models:
       embedding_length: 2560
       quantization: Q4_K_M
       note: Empero distillation of Qwen3.8-2.4T-A95B into Qwen3.5-4B. Full-parameter SFT on ~45K curated teacher CoT traces. MMLU 0.354->0.553, GSM8K 0.850->0.785 (math regression vs base). Hybrid Gated DeltaNet (3:1 with full attention). Reasoning model — always thinks, no :think variant. Chat template embedded in GGUF supports tool calling. Tool calling REQUIRES thinking enabled. 50.1 tok/s @ RTX 3050 6GB (ik_llama). Architecture qwen35 — fully supported by ik_llama.cpp.
-  gemma4-12b-bee:
-    name: Gemma 4 12B (Bee)
-    description: Gemma 4 12B Q4_0 — BeeLlama.cpp v0.4.4 com KVarN kvarn4 KV cache. Multimodal unificado (texto+áudio+imagem).
+  gemma4-12b:
+    name: Gemma 4 12B Heretic
+    description: Gemma 4 12B IQ4_XS abliterated (Heretic) — BeeLlama.cpp v0.4.4 com KVarN kvarn4. Multimodal unificado (texto+áudio+imagem), sem recusas.
     cmd: '${bee_server} --port ${PORT}
 
-      --model ${models_dir}/gemma-4-12b/gemma-4-12b-it-Q4_0.gguf
+      --model ${models_dir}/gemma-4-12b/gemma-4-12b-heretic-IQ4_XS.gguf
 
-      --mmproj ${models_dir}/gemma-4-12b/mmproj-F16.gguf
+      --mmproj ${models_dir}/gemma-4-12b/gemma-4-12b-heretic-mmproj-f16.gguf
 
       --fit on
 
       --fit-target 768
 
-      --ctx-size 8192
+      --ctx-size 131072
 
       --jinja
 
@@ -1398,23 +1398,23 @@ models:
       '
     filters:
       stripParams: temperature, top_p
-    variants:
-      default:
-        chat_template_kwargs:
-          enable_thinking: false
-        temperature: 0.7
-        top_p: 0.9
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
     ttl: 60
     metadata:
-      size: ~6.7 GB (Q4_0) + mmproj F16 168MB
-      context: 8K (--fit on, target 768)
-      vram_usage: ~6.9GB com kvarn4
-      source: google/gemma-4-12b-it (Q4_0 + mmproj F16)
+      size: ~6.6 GB (IQ4_XS) + mmproj F16 175MB
+      context: 128K (--fit on, target 768; áudio exige ctx menor)
+      vram_usage: ~6.8GB com kvarn4
+      source: culturerevolt/gemma-4-12b-heretic-abliterated-GGUF (IQ4_XS imatrix)
       kv_cache: kvarn4 (PPL ~ fp16 a ~4 bits)
       features:
         completion: true
@@ -1427,9 +1427,10 @@ models:
         image: true
       architecture: gemma4
       parameters: 12000000000
-      context_length: 8192
-      quantization: Q4_0
-      note: 'BeeLlama.cpp v0.4.4 com KVarN kvarn4 (suportado so em Qwen3.6/Gemma 4). mmproj unificado vision+audio (gemma4a preprocessor). ctx 131072 proibido p/ audio (crash mtmd). tools=false: validar antes de habilitar.'
+      context_length: 131072
+      quantization: IQ4_XS
+      abliterated: true
+      note: 'Heretic abliteration (sem recusas categóricas). tools=false: validar antes de habilitar. ctx 131072 proibido p/ áudio (crash mtmd) — se usar áudio, rebaixar ctx. KVarN so em Qwen3.6/Gemma 4.'
   glm-4.7-flash:
     name: GLM 4.7 Flash
     description: GLM-4.7-Flash is a 30B Mixture-of-Experts model with Multi-head Latent Attention (MLA), 64 experts with 4 active per token. Built for fast, efficient conversational AI and tool calling.

@@ -1,69 +1,71 @@
 # -------------------------------------------
-# GEMMA-4-12B - Bee BACKEND (TurboQuant KV cache)
-# BeeLlama.cpp with turbo3_tcq KV cache (~5x compression, PPL ≈ fp16)
-# head_dim=256 → attn_rot ✅ (auto-activates on Bee with quantized cache)
-# Q4_0 QAT dense 12B params (~6.7GB + 168 MB mmproj)
-# UNIFIED MULTIMODAL: mmproj loads vision+audio projector
-# --n-gpu-layers 99: model + mmproj fit in 6GB with turbo3_tcq cache
-# Dual mode: base (chat) and :think (reasoning)
+# GEMMA-4-12B - Bee BACKEND (KVarN KV cache)
+# BeeLlama.cpp v0.4.4 (re-clonado 2026-08-29, upstream 84e908c6)
+# KVarN target KV-cache compression: kvarn4 ≈ turbo4_tcq antigo (PPL ≈ fp16 a ~4 bits)
+# head_dim=256 → attn_rot ✅ em Gemma 4 no Bee
+# Q4_0 dense 12B (~6.7GB) + mmproj F16 unificado (vision+audio, 168MB)
+#   → analisar WAV do Music 3 (gemma4a preprocessor herdado do upstream 13/08)
+# --fit on + kvarn4: modelo + mmproj cabem nos 6GB com cache comprimido
+# KVarN suportado APENAS em Qwen3.6 e Gemma 4 (fork surface intencional)
+# DFlash NÃO usado (retirement club-3090 era bug sm_89; nem precisamos)
+# Dual mode: base (chat) e :think (reasoning)
+# BUG CONHECIDO (2026-08-29, bisect confirmado): `--timeout 0` QUEBRA requests
+#   de áudio (broken pipe imediato no POST /v1/chat/completions com input_audio,
+#   repro 100%). Removido daqui. Ficou tb documentado que reasoning_effort:none
+#   (OpenAI field) NAO desliga o thinking no Bee — o cliente DEVE enviar
+#   chat_template_kwargs.enable_thinking=false (a variante default só cobre
+#   requests sem o campo). Áudio validado na fleet pós-fix (s44, MATCH 12s).
+#   ctx 131072 segue proibido p/ audio (crash mtmd).
 # -------------------------------------------
 "gemma4-12b-bee":
   name: "Gemma 4 12B (Bee)"
-  description: "Gemma 4 12B QAT Q4_0 — BeeLlama.cpp with TurboQuant turbo3_tcq KV cache. Unified multimodal."
+  description: "Gemma 4 12B Q4_0 — BeeLlama.cpp v0.4.4 com KVarN kvarn4 KV cache. Multimodal unificado (texto+áudio+imagem)."
   cmd: |
     ${bee_server} --port ${PORT}
-    --model ${models_dir}/gemma-4-12b-it-qat-q4_0.gguf
-    --mmproj ${models_dir}/mmproj-gemma-4-12b-it-qat-q4_0.gguf
+    --model ${models_dir}/gemma-4-12b/gemma-4-12b-it-Q4_0.gguf
+    --mmproj ${models_dir}/gemma-4-12b/mmproj-F16.gguf
     --fit on
     --fit-target 768
-    --ctx-size 131072
-    --timeout 0
+    --ctx-size 8192
     --jinja
     --reasoning on
-    --cache-type-k turbo3_tcq
-    --cache-type-v turbo3_tcq
+    --cache-type-k kvarn4
+    --cache-type-v kvarn4
     --flash-attn on
     --min-p 0.01
     --repeat-penalty 1.05
     --metrics
   filters:
     stripParams: "temperature, top_p"
-    setParamsByID:
-      "${MODEL_ID}":
-        chat_template_kwargs:
-          enable_thinking: false
-        temperature: 0.7
-        top_p: 0.9
-      "${MODEL_ID}:think":
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 1.2
-        top_p: 0.95
-  ttl: 300
-  capabilities:
-    in: ['text', 'image', 'audio']
-    out: ['text']
-    tools: true
-    reranker: false
-    context: 262144
+  variants:
+    default:
+      chat_template_kwargs:
+        enable_thinking: false
+      temperature: 0.7
+      top_p: 0.9
+    "${MODEL_ID}:think":
+      chat_template_kwargs:
+        enable_thinking: true
+      temperature: 0.6
+      top_p: 0.9
+  ttl: 60
   metadata:
-    size: "~6.7 GB (Q4_0 QAT + 168 MB mmproj)"
-    context: "8K-128K (dynamic, TurboQuant)"
-    vram_usage: "~5GB VRAM + ~354 MB mmproj (Bee turbo3_tcq cache)"
-    source: "google/gemma-4-12B-it-qat-q4_0-gguf"
-    kv_cache: "turbo3_tcq (BeeLlama.cpp — ~5x compression)"
+    size: "~6.7 GB (Q4_0) + mmproj F16 168MB"
+    context: "8K (--fit on, target 768)"
+    vram_usage: "~6.9GB com kvarn4"
+    source: "google/gemma-4-12b-it (Q4_0 + mmproj F16)"
+    kv_cache: "kvarn4 (PPL ~ fp16 a ~4 bits)"
     features:
       completion: true
-      tools: true
+      tools: false
       thinking: true
       vision: true
       embedding: false
       insert: false
       audio: true
-      image: false
+      image: true
     architecture: gemma4
     parameters: 12000000000
-    context_length: 262144
-    embedding_length: 3072
-    quantization: Q4_0_QAT
-    note: "BeeLlama backend with TurboQuant. No --fit (Bee doesn't have it). --n-gpu-layers 99 for full VRAM. TurboQuant saves ~2GB KV cache at 128K."
+    context_length: 8192
+    quantization: Q4_0
+    note: "BeeLlama.cpp v0.4.4 com KVarN kvarn4 (suportado so em Qwen3.6/Gemma 4). mmproj unificado vision+audio (gemma4a preprocessor). ctx 131072 proibido p/ audio (crash mtmd). tools=false: validar antes de habilitar."
