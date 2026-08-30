@@ -1,10 +1,10 @@
 # -------------------------------------------
 # GEMMA-4-12B - Bee BACKEND (KVarN KV cache)
 # BeeLlama.cpp v0.4.4 (upstream 84e908c6) — KVarN target KV-cache compression
-# Modelo: huihui-ai/Huihui-gemma-4-12B-it-qat-q4_0-unquantized-abliterated (Abliterix)
-#   — abliteração em pesos: sem recusa mesmo sem system prompt (testado 30/08;
-#     Heretic culturerevolt IQ4_XS recusava user-only, ficou em _disabled/)
-# Q4_K 7.38GB (Huihui sobre base QAT q4_0 unquantized) + mmproj bf16 (175MB)
+# Modelo: google/gemma-4-12b-it (Q4_0 original) + mmproj F16 unificado
+#   — par original do bee (REVERT 31/08: experimentos abliterated Heretic e
+#     Huihui rejeitados em produção; histórico nos commits 2f2f4e6/9400a64)
+# Q4_0 dense 12B (~6.7GB) + mmproj F16 unificado (vision+audio, 168MB)
 # KVarN suportado APENAS em Qwen3.6 e Gemma 4 (fork surface intencional)
 # Multimodal unificado: texto + imagem (+áudio via gemma4a preprocessor)
 # BUG CONHECIDO (2026-08-29, bisect confirmado): `--timeout 0` QUEBRA requests
@@ -13,15 +13,15 @@
 #   chat_template_kwargs.enable_thinking=false (setParamsByID cobre isso).
 # -------------------------------------------
 "gemma4-12b":
-  name: "Gemma 4 12B Abliterated"
-  description: "Gemma 4 12B Q4_K abliterated (Huihui/Abliterix) — BeeLlama.cpp v0.4.4 com KVarN kvarn4. Multimodal unificado (texto+áudio+imagem), sem recusas em nível de pesos."
+  name: "Gemma 4 12B"
+  description: "Gemma 4 12B Q4_0 — BeeLlama.cpp v0.4.4 com KVarN kvarn4. Multimodal unificado (texto+áudio+imagem)."
   cmd: |
     ${bee_server} --port ${PORT}
-    --model ${models_dir}/gemma-4-12b/huihui-gemma-4-12B-it-abliterated-Q4_K.gguf
-    --mmproj ${models_dir}/gemma-4-12b/huihui-gemma-4-12B-mmproj-bf16.gguf
+    --model ${models_dir}/gemma-4-12b/gemma-4-12b-it-Q4_0.gguf
+    --mmproj ${models_dir}/gemma-4-12b/mmproj-F16.gguf
     --fit on
     --fit-target 768
-    --ctx-size 131072
+    --ctx-size 8192
     --jinja
     --reasoning on
     --cache-type-k kvarn4
@@ -45,10 +45,10 @@
         top_p: 0.9
   ttl: 60
   metadata:
-    size: "~7.4 GB (Q4_K sobre base QAT) + mmproj bf16 175MB"
-    context: "128K (--fit on, target 768; áudio exige ctx menor)"
-    vram_usage: "~7.6GB com kvarn4"
-    source: "huihui-ai/Huihui-gemma-4-12B-it-qat-q4_0-unquantized-abliterated-GGUF (Q4_K)"
+    size: "~6.7 GB (Q4_0) + mmproj F16 168MB"
+    context: "8K (--fit on, target 768)"
+    vram_usage: "~6.9GB com kvarn4"
+    source: "google/gemma-4-12b-it (Q4_0 + mmproj F16)"
     kv_cache: "kvarn4 (PPL ~ fp16 a ~4 bits)"
     features:
       completion: true
@@ -61,8 +61,6 @@
       image: true
     architecture: gemma4
     parameters: 12000000000
-    context_length: 131072
-    quantization: Q4_K
-    abliterated: true
-    method: "Abliterix (Huihui) — refusal behavior removido em pesos"
-    note: "Sem recusa user-only (validado 30/08: erotica explicita sem system). tools=false: validar antes de habilitar. ctx 131072 proibido p/ áudio (crash mtmd) — se usar áudio, rebaixar ctx. KVarN so em Qwen3.6/Gemma 4. Alternativa testada e rejeitada: culturerevolt heretic IQ4_XS (recusa sem system)."
+    context_length: 8192
+    quantization: Q4_0
+    note: "REVERT 31/08: modelo original Google Q4_0 (par validado do bee). Experimentos abliterated (Heretic IQ4_XS, Huihui Q4_K) rejeitados em produção — vision describe instável no fit do Bee. tools=false: validar antes de habilitar. ctx 131072 proibido p/ áudio (crash mtmd). KVarN so em Qwen3.6/Gemma 4. GGUFs experimentais ainda em ~/.llama-models/gemma-4-12b/ (limpar quando confirmado)."
