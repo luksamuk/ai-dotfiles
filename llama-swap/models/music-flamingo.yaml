@@ -22,10 +22,11 @@
     --top-p 0.9
     --min-p 0.01
     --flash-attn on
-    --metrics
   filters:
     stripParams: "temperature, top_p"
-  ttl: 60
+  # ttl 0 = reinicia a cada request: 2º request de áudio na MESMA instância
+  # devolve vazio (wedge de estado pós-áudio no llama.cpp; 1º sempre funciona)
+  ttl: 0
   metadata:
     size: "~4.7 GB (Q4_K_M) + mmproj Q8_0 0.72GB"
     context: "8K (áudio consome tokens — 60s ≈ alguns centenas)"
