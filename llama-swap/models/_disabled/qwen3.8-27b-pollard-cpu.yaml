@@ -1,0 +1,79 @@
+# -------------------------------------------
+# QWEN3.8-27B POLLARD (IQ3_S) - CPU-ONLY VARIANT
+# Same GGUF as qwen3.8-27b-pollard. env CUDA_VISIBLE_DEVICES= forces true CPU-only
+# (-ngl 0 alone does NOT release VRAM on ik_llama: compute buffer still ~3.3GB).
+# No --fit (VRAM fitting is meaningless), no flash-attn (GPU-only), no hadamard
+# (GPU TurboQuant KV), KV q8_0 (lossless enough on CPU, halves RAM vs f16).
+# ngram-mod spec decode: helps CPU decode, zero cost when no ngram matches.
+# APEX reference (2026-08-27, same box): CPU-only 3.40 tok/s (-9% vs GPU offload;
+# bottleneck = RAM bandwidth ~45GB/s reading ~8GB/token for dense 27B).
+# A/B via toggle: mv this fragment OR the GPU one to models/_disabled/, rebuild, HUP.
+# -------------------------------------------
+"qwen3.8-27b-pollard-cpu":
+  name: "Qwen3.8 27B Pollard (CPU-only)"
+  description: "Qwen3.8-27B dense VLM (DeltaNet hybrid), Pollard IQ3_S, CPU-only inference. Zero VRAM — coexists with GPU MoE models. A/B variant for CPU vs GPU-offload comparison."
+  cmd: |
+    env CUDA_VISIBLE_DEVICES=
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/Qwen3.8-27B-Pollard-IQ3_S.gguf
+    --mmproj ${models_dir}/mmproj-Qwen3.8-27B-bf16.gguf
+    --no-mmproj-offload
+    --mlock
+    --ctx-size 131072
+    --temp 0.7
+    --top-p 0.80
+    --top-k 20
+    --min-p 0.0
+    --repeat-penalty 1.0
+    --presence-penalty 1.5
+    --jinja
+    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+    --parallel 1
+    --cache-type-k q8_0
+    --cache-type-v q8_0
+    --spec-type mtp:n_max=1,p_min=0.0
+    --metrics
+  filters:
+    stripParams: "temperature, top_p, presence_penalty"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.80
+        presence_penalty: 1.5
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+        presence_penalty: 0.0
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~12.08 GB (Pollard IQ3_S) + 0.93 GB mmproj (bf16)"
+    context: "1K-131K (deploy), 262K native, 1M with YaRN"
+    vram_usage: "0 MiB VRAM (CUDA_VISIBLE_DEVICES=). All in RAM, ~14 GB RSS. Verify with nvidia-smi --query-compute-apps."
+    source: "PollardWeights/Qwen3.8-27B-Pollard (IQ3_S + mmproj bf16), CPU-only variant"
+    kv_cache: "q8_0 (CPU, no hadamard)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: true
+    architecture: qwen35
+    parameters: 27000000000
+    context_length: 262144
+    embedding_length: 5120
+    quantization: "Pollard IQ3_S (imatrix Qwen3.8-27B, from Q8_0)"
+    note: "CPU-only A/B variant of qwen3.8-27b-pollard. Same samplers. MTP spec decode (Pollard GGUF HAS NextN head blk.64, verified). APEX CPU-only reference: 3.40 tok/s."

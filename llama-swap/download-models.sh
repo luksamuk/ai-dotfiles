@@ -18,6 +18,7 @@
 #   [REMOVED] lfm2.5-1.2b — superseded by LFM2.5-8B-A1B, disabled May 2026
 #   lfm2.5-2.6b           - LFM2.5-2.6B Q6_K (~2.22 GB) - dense hybrid, agentic RL, on-device, 128K ctx
 #   qwen2.5-coder-1.5b-pollard - Qwen2.5-Coder-1.5B-Instruct Pollard IQ4_XS (~824 MB) - FIM, imatrix, CPU-only
+#   qwen3.8-27b-pollard - Qwen3.8-27B Pollard IQ3_S (~12 GB) + mmproj bf16 - dense VLM DeltaNet
 #   lfm2.5-1.2b-think      - LFM2.5-1.2B-Thinking Q8_0 (~1.25 GB) - edge reasoning, CoT
 #   lfm2-24b              - LFM2-24B-A2B Q4_K_M (~14.4 GB) - MoE hybrid, 2.3B active
 #   [REMOVED] granite-4.1-3b — tool-calling failed in Pi, removed May 2026
@@ -93,6 +94,8 @@ declare -A MODELS=(
   ["lfm2.5-2.6b"]="LiquidAI/LFM2.5-2.6B-GGUF LFM2.5-2.6B-Q6_K.gguf"
   # Pollard Coder IQ4_XS with imatrix (FIM, CPU-only, coexists with GPU MoE)
   ["qwen2.5-coder-1.5b-pollard"]="PollardWeights/Qwen2.5-Coder-1.5B-Instruct-Pollard Qwen2.5-Coder-1.5B-Instruct-Pollard-IQ4_XS.gguf"
+  # Pollard Qwen3.8-27B IQ3_S — dense VLM DeltaNet, exact imatrix, from Q8_0 source (~12 GB)
+  ["qwen3.8-27b-pollard"]="PollardWeights/Qwen3.8-27B-Pollard Qwen3.8-27B-Pollard-IQ3_S.gguf"
   # Ling-3.0-tiny - inclusionAI BailingMoE3 hybrid KDA+MLA, 7.9B/1.3B active, 128 experts
   # APEX I-Compact = 3.99 GB, abliterated. ik_llama.cpp backend (PR #2295).
   ["ling-3.0-tiny"]="SC117/Ling-3.0-tiny-abliterated-APEX-GGUF Ling-3.0-tiny-abliterated-APEX-I-Compact.gguf"
@@ -238,6 +241,7 @@ declare -A MODELS=(
 # Multimodal projector files (downloaded alongside their vision models)
 # Format: "repo filename [local_filename]"
 declare -A MMPROJ=(
+  ["qwen3.8-27b-pollard"]="PollardWeights/Qwen3.8-27B-Pollard mmproj-Qwen3.8-27B-bf16.gguf"
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF mmproj-LFM2.5-VL-450m-F16.gguf"
   ["lfm2.5-vl-1.6b-extract"]="LiquidAI/LFM2.5-VL-1.6B-Extract-GGUF mmproj-LFM2.5-VL-1.6B-Extract-F16.gguf"
   ["lfm2.5-vl-450m-extract"]="LiquidAI/LFM2.5-VL-450M-Extract-GGUF mmproj-LFM2.5-VL-450M-Extract-F16.gguf"
@@ -289,7 +293,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, qwen3.5-4b-abliterated, glm-ocr, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, all"
+    echo "Available: qwen3.5-4b, qwen3.5-9b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, qwen3.8-27b-pollard, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, qwen3.5-4b-abliterated, glm-ocr, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, all"
     return 1
   fi
   
@@ -355,6 +359,7 @@ show_sizes() {
   echo "  lfm2.5-vl-1.6b-extract 0.70 GB  (Q4_K_M) + 0.82 GB mmproj - Structured vision extraction (JSON), lfm2 arch (upstream llama.cpp only)"
   echo "  lfm2.5-2.6b          ~2.22 GB  (Q6_K) - Dense hybrid, agentic RL, on-device, 128K ctx, 16 langs"
   echo "  qwen2.5-coder-1.5b-pollard ~824 MB (Pollard IQ4_XS) - FIM, imatrix, CPU-only"
+  echo "  qwen3.8-27b-pollard   ~12.08 GB (Pollard IQ3_S) + 0.93 GB mmproj - Dense VLM DeltaNet, imatrix, 262K ctx"
   # [REMOVED] lfm2.5-1.2b — superseded by LFM2.5-8B-A1B
   # [REMOVED] lfm2.5-1.2b-think — superseded by LFM2.5-8B-A1B
   echo "  lfm2-24b            ~14.40 GB  (Q4_K_M) - Heavy offload, MoE hybrid"

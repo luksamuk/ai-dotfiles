@@ -730,6 +730,107 @@ models:
       embedding_length: 2048
       quantization: APEX Compact (no MTP)
       note: APEX Compact without MTP draft head. Saves ~500MB VRAM vs MTP variant. Uses ngram-mod for speculative decoding (~36 tok/s vs 45 with MTP). Vision via mmproj with --no-mmproj-offload. Same quality as MTP variant — MTP only affects speed, not quality. Lower VRAM pressure allows running alongside IDE/other GPU processes.
+  qwen3.8-27b-pollard:
+    name: Qwen3.8 27B Pollard
+    description: Qwen3.8-27B dense VLM (DeltaNet hybrid) in Pollard IQ3_S quantization with imatrix. Native image/video understanding, 262K context. Pollard requantized from Q8_0 with exact imatrix.
+    cmd: '${ik_llama_server} --port ${PORT}
+
+      --model ${models_dir}/Qwen3.8-27B-Pollard-IQ3_S.gguf
+
+      --mmproj ${models_dir}/mmproj-Qwen3.8-27B-bf16.gguf
+
+      --no-mmproj-offload
+
+      --fit
+
+      --fit-margin 896
+
+      --mlock
+
+      --ctx-size 131072
+
+      --temp 0.7
+
+      --top-p 0.80
+
+      --top-k 20
+
+      --min-p 0.0
+
+      --repeat-penalty 1.0
+
+      --presence-penalty 1.5
+
+      --jinja
+
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+
+      --parallel 1
+
+      --parallel-tool-calls
+
+      --cache-type-k ${large_cache_k}
+
+      --cache-type-v ${large_cache_v}
+
+      --k-cache-hadamard
+
+      --v-cache-hadamard
+
+      --flash-attn auto
+
+      --spec-type mtp:n_max=1,p_min=0.0
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p, presence_penalty
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.8
+          presence_penalty: 1.5
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          presence_penalty: 0.0
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+      - text
+      - image
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~12.08 GB (Pollard IQ3_S) + 0.93 GB mmproj (bf16)
+      context: 1K-131K (deploy), 262K native, 1M with YaRN
+      vram_usage: ~5GB VRAM (--fit auto) + ~7GB RAM offload. DeltaNet KV near-constant at 128K.
+      source: PollardWeights/Qwen3.8-27B-Pollard (IQ3_S + mmproj bf16)
+      kv_cache: q4_0 + hadamard (DeltaNet, 16/64 attn layers)
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: true
+      architecture: qwen35
+      parameters: 27000000000
+      context_length: 262144
+      embedding_length: 5120
+      quantization: Pollard IQ3_S (imatrix Qwen3.8-27B, from Q8_0)
+      note: 'Dense 27B DeltaNet+Attn hybrid (48+16 layers). Native VLM. Pollard quant w/ exact imatrix, embedded MTP head blk.64 (verified in GGUF). Instruct: presence_penalty=1.5. Thinking: temp=1.0. APEX reference same box: 3.75 GPU / 3.40 CPU tok/s.'
   qwen3-vl-4b:
     name: Qwen3-VL 4B
     description: Qwen3-VL dense 4B vision-language model with native 2D/3D grounding, OCR in 32 languages, visual agent GUI, and video understanding.
@@ -1845,6 +1946,7 @@ matrix:
     g4: gemma4-e2b
     orn15: ornith-1.5-35b
     glm: glm-4.7-flash
+    qw38p: qwen3.8-27b-pollard
     tg: translategemma-4b
     ttsext: qwen3-tts
     nomic: nomic-embed-text-v2-moe
@@ -1858,7 +1960,7 @@ matrix:
     vision_only: ocr | qwvl | lfmvl3
     vision_embed: (ocr | qwvl | lfmvl3) & (nomic | lfmemb | nemb | lfmcol)
     medium: (q9 | g4) & (nomic | lfmemb | nemb | lfmcol)
-    heavy: (orn15 | glm) & (nomic | lfmemb | nemb | lfmcol) & qpoll
+    heavy: (orn15 | glm | qw38p) & (nomic | lfmemb | nemb | lfmcol) & qpoll
     translate_only: tg
     tts_external: ttsext
     embed_only: nomic & lfmemb & nemb & lfmcol
@@ -1867,6 +1969,7 @@ matrix:
   evict_costs:
     orn15: 9
     glm: 9
+    qw38p: 7
     q9: 4
     g4: 3
     ttsext: 4
