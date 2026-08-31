@@ -77,7 +77,6 @@ model = "minimax-m2.7:cloud"
 model_provider = "ollama-cloud"
 
 
-
 # MiniMax M3 — coding & agentic, 1M context, multimodal
 [profiles."minimax-m3"]
 model = "minimax-m3:cloud"
@@ -129,6 +128,22 @@ model = "glm-4.7-flash"
 model_provider = "llama-swap"
 
 # ============================================================
+[profiles."ornith-1.5-35b"]
+model = "ornith-1.5-35b"
+model_provider = "llama-swap"
+
+[profiles."ornith-1.5-35b:think"]
+model = "ornith-1.5-35b:think"
+model_provider = "llama-swap"
+
+[profiles."bonsai-27b"]
+model = "bonsai-27b"
+model_provider = "llama-swap"
+
+[profiles."bonsai-27b:think"]
+model = "bonsai-27b:think"
+model_provider = "llama-swap"
+
 # Profiles — Sisyphus Pi (LIMITED — same issue as llama-swap)
 # ============================================================
 
@@ -172,9 +187,6 @@ model_provider = "llama-swap"
 # Local models added after fleet update 2026-06-06
 # ============================================================
 
-[profiles."bonsai-27b-1bit"]
-model = "bonsai-27b-1bit"
-model_provider = "llama-swap"
 
 [profiles."gemma4-e2b"]
 model = "gemma4-e2b"

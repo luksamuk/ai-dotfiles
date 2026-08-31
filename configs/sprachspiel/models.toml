@@ -6,7 +6,7 @@ stream_idle_timeout_secs = 900
 
 [provider."llama-swap"]
 kind = "openai"
-base_url = "http://100.65.187.74:12434/v1"
+base_url = "http://localhost:12434/v1"
 read_timeout_secs = 900
 stream_idle_timeout_secs = 900
 
@@ -120,17 +120,6 @@ model_id = "lfm2.5-2.6b:think"
 num_ctx = 131072
 thinking = true
 tools = true
-
-[models."lfm2.5-1.2b"]
-provider = "llama-swap"
-model_id = "lfm2.5-1.2b"
-num_ctx = 131072
-temperature = 0.1
-top_p = 0.9
-top_k = 50
-repeat_penalty = 1.1
-thinking = false
-tools = false
 
 # [models."maple-preview"]
 # provider = "llama-swap"
@@ -347,7 +336,6 @@ min_p = 0.0
 repeat_penalty = 1.0
 thinking = true
 tools = true
-vision = true
 
 # --- EMPERO QWEN3.8 (distillation, always thinks, no :think variant) ---
 
@@ -365,8 +353,7 @@ num_ctx = 131072
 thinking = true
 tools = true
 
-[models."qwen3.8-27b"]
-# DISABLED Aug 2026 — model too slow, user never uses
+# [models."qwen3.8-27b"]
 # provider = "llama-swap"
 # model_id = "qwen3.8-27b:think"
 # num_ctx = 131072
@@ -377,3 +364,39 @@ tools = true
 # repeat_penalty = 1.0
 # thinking = true
 # tools = true
+# 
+# # --- GRANITE 4.2 8B (IBM, dense 8B, IQ4_XS, agentic RL, Apache 2.0) ---
+# IBM-recommended samplers: temperature=1.0, top_p=0.95
+# 3 modes: base (non-thinking), :high (full CoT), :low (low-effort)
+
+[models."granite-4.2-8b"]
+provider = "llama-swap"
+model_id = "granite-4.2-8b"
+num_ctx = 131072
+temperature = 1.0
+top_p = 0.95
+thinking = false
+tools = true
+
+[models."granite-4.2-8b:high"]
+provider = "llama-swap"
+model_id = "granite-4.2-8b:high"
+num_ctx = 131072
+temperature = 1.0
+top_p = 0.95
+thinking = true
+tools = true
+
+[models."granite-4.2-8b:low"]
+provider = "llama-swap"
+model_id = "granite-4.2-8b:low"
+num_ctx = 131072
+temperature = 1.0
+top_p = 0.95
+thinking = true
+tools = true
+
+[models."bonsai-27b"]
+provider = "llama-swap"
+model_id = "bonsai-27b"
+name = "Bonsai 27B (1-bit)"

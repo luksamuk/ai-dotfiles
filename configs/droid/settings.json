@@ -214,28 +214,6 @@
       "provider": "generic-chat-completion-api"
     },
     {
-      "model": "bonsai-27b-1bit",
-      "id": "custom:Bonsai-27B-1bit-[Local]-0",
-      "index": 43,
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "displayName": "Bonsai 27B 1-bit [Local]",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true,
-      "provider": "generic-chat-completion-api"
-    },
-    {
-      "model": "bonsai-27b-1bit:think",
-      "id": "custom:Bonsai-27B-1bit-(Thinking)-[Local]-0",
-      "index": 44,
-      "baseUrl": "http://127.0.0.1:12434/v1",
-      "apiKey": "llama-swap",
-      "displayName": "Bonsai 27B 1-bit (Thinking) [Local]",
-      "maxOutputTokens": 32768,
-      "noImageSupport": true,
-      "provider": "generic-chat-completion-api"
-    },
-    {
       "model": "gemma4-e2b",
       "id": "custom:Gemma-4-E2B-[Local]-0",
       "index": 45,
@@ -280,30 +258,52 @@
       "provider": "generic-chat-completion-api"
     },
     {
-      "model": "ornith-1.0-35b",
-      "id": "custom:Ornith-1.0-35B-[Local]-0",
+      "model": "ornith-1.5-35b",
+      "id": "custom:Ornith-1.5-35B-[Local]-0",
       "index": 55,
       "baseUrl": "http://127.0.0.1:12434/v1",
       "apiKey": "llama-swap",
-      "displayName": "Ornith 1.0 35B [Local]",
+      "displayName": "Ornith 1.5 35B [Local]",
       "maxOutputTokens": 32768,
       "noImageSupport": true,
       "provider": "generic-chat-completion-api"
     },
     {
-      "model": "ornith-1.0-35b:think",
-      "id": "custom:Ornith-1.0-35B-(Thinking)-[Local]-0",
+      "model": "ornith-1.5-35b:think",
+      "id": "custom:Ornith-1.5-35B-(Thinking)-[Local]-0",
       "index": 56,
       "baseUrl": "http://127.0.0.1:12434/v1",
       "apiKey": "llama-swap",
-      "displayName": "Ornith 1.0 35B (Thinking) [Local]",
+      "displayName": "Ornith 1.5 35B (Thinking) [Local]",
+      "maxOutputTokens": 32768,
+      "reasoningEffort": "none",
+      "provider": "generic-chat-completion-api"
+    },
+    {
+      "model": "bonsai-27b",
+      "id": "custom:Bonsai-27B-(1-bit)-[Local]-0",
+      "index": 57,
+      "baseUrl": "http://127.0.0.1:12434/v1",
+      "apiKey": "llama-swap",
+      "displayName": "Bonsai 27B (1-bit) [Local]",
       "maxOutputTokens": 32768,
       "noImageSupport": true,
+      "provider": "generic-chat-completion-api"
+    },
+    {
+      "model": "bonsai-27b:think",
+      "id": "custom:Bonsai-27B-(1-bit)-(Thinking)-[Local]-0",
+      "index": 58,
+      "baseUrl": "http://127.0.0.1:12434/v1",
+      "apiKey": "llama-swap",
+      "displayName": "Bonsai 27B (1-bit) (Thinking) [Local]",
+      "maxOutputTokens": 32768,
+      "reasoningEffort": "none",
       "provider": "generic-chat-completion-api"
     }
   ],
   "sessionDefaultSettings": {
-    "model": "custom:Ornith-1.0-35B-(Thinking)-[Local]-0",
+    "model": "custom:Ornith-1.5-35B-(Thinking)-[Local]-0",
     "reasoningEffort": "none",
     "autonomyMode": "normal",
     "interactionMode": "auto",
@@ -311,13 +311,13 @@
   },
   "logoAnimation": "always",
   "missionModelSettings": {
-    "validationWorkerModel": "custom:Ornith-1.0-35B-(Thinking)-[Local]-0",
+    "validationWorkerModel": "custom:Ornith-1.5-35B-(Thinking)-[Local]-0",
     "validationWorkerReasoningEffort": "none",
     "skipScrutiny": true,
-    "workerModel": "custom:Ornith-1.0-35B-(Thinking)-[Local]-0",
+    "workerModel": "custom:Ornith-1.5-35B-(Thinking)-[Local]-0",
     "workerReasoningEffort": "none"
   },
-  "missionOrchestratorModel": "custom:Ornith-1.0-35B-(Thinking)-[Local]-0",
+  "missionOrchestratorModel": "custom:Ornith-1.5-35B-(Thinking)-[Local]-0",
   "missionOrchestratorReasoningEffort": "none",
   "diffMode": "unified",
   "theme": "factory-dark",

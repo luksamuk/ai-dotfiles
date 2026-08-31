@@ -64,37 +64,29 @@ Notas:
 Todos os modelos do fleet estão disponíveis no Pi (exceção: modelo de embedding excluído).
 Modelos com raciocínio têm variante =:think= que ativa modo de thinking.
 
-*** Modelos com Tool-Calling
-
-| Model ID                      | Nome                          | Contexto | Input          | :think |
+| Model ID | Nome | Contexto | Input | :think |
 |--------------------------------+-------------------------------+----------+----------------+--------|
-| =lfm2.5-8b-a1b=                | LFM 2.5 8B MoE               |    131K  | text           | sim    |
-| =nanbeige4.2-3b=               | Nanbeige 4.2 3B              |     32K  | text           | sim    |
-| =qwen3.5-4b=                   | Qwen3.5 4B                   |    131K  | text           | sim    |
-| =qwen3.5-9b=                   | Qwen3.5 9B                   |    262K  | text           | sim    |
-| =kat-coder-v2.5-dev=               | KAT-Coder V2.5 Dev               |    131K  | text           | sim    |
-| =kat-coder-v2.5-dev=           | KAT-Coder V2.5 Dev           |    131K  | text           | sim    |
-
-
-*** Modelos Multimodal (Visão/Audio)
-
-| Model ID                      | Nome                          | Contexto | Input          | :think |
-|--------------------------------+-------------------------------+----------+----------------+--------|
-| =glm-ocr=                      | GLM-OCR                      |    131K  | text+image     | não    |
-| =lfm2.5-vl-450m=               | LFM2.5-VL 450M               |    128K  | text+image     | não    |
-| =qwen3-vl-4b=                  | Qwen3-VL 4B                  |     32K  | text+image     | sim    |
-
-*** Modelos de Propósito Específico (sem tool-calling)
-
-| Model ID                      | Nome                          | Contexto | :think |
-|--------------------------------+-------------------------------+----------+--------|
-| =hy-mt2-1.8b=                  | Hy-MT2 1.8B                  |    262K  | não    |
-
-*** Variante :think
-
-Modelos com raciocínio toggável têm variante =:think= que ativa modo de thinking. Nome exibido com sufixo "(Thinking)".
-
-Modelos marcados com ★ são /always thinking/ — sempre geram raciocínio, sem toggle. Não têm variante =:think=.
+| =empero-qwen3.8-2b= | Empero Qwen3.8 2B |  128K | text           | -      |
+| =empero-qwen3.8-4b= | Empero Qwen3.8 4B |  128K | text           | -      |
+| =gemma4-e2b= | Gemma 4 E2B |  128K | text           | -      |
+| =gemma4-e2b:think= | Gemma 4 E2B (Thinking) |  128K | text           | sim    |
+| =glm-4.7-flash= | GLM 4.7 Flash |  128K | text           | -      |
+| =glm-4.7-flash:think= | GLM 4.7 Flash (Thinking) |  128K | text           | sim    |
+| =granite-4.2-8b= | Granite 4.2 8B |  128K | text           | -      |
+| =granite-4.2-8b:high= | Granite 4.2 8B (Thinking) |  128K | text           | -      |
+| =granite-4.2-8b:low= | Granite 4.2 8B (Low Effort) |  128K | text           | -      |
+| =lfm2.5-2.6b= | LFM 2.5 2.6B |  128K | text           | -      |
+| =lfm2.5-2.6b:think= | LFM 2.5 2.6B (Thinking) |  128K | text           | sim    |
+| =lfm2.5-8b-a1b= | LFM 2.5 8B |  128K | text           | -      |
+| =lfm2.5-8b-a1b:think= | LFM 2.5 8B (Thinking) |  128K | text           | sim    |
+| =ornith-1.5-35b= | Ornith 1.5 35B |  128K | text           | -      |
+| =ornith-1.5-35b:think= | Ornith 1.5 35B (Thinking) |  128K | text           | sim    |
+| =bonsai-27b= | Bonsai 27B 1-bit |  256K | text           | -      |
+| =bonsai-27b:think= | Bonsai 27B 1-bit (Thinking) |  256K | text           | sim    |
+| =qwen3.5-4b= | Qwen3.5 4B |  128K | text           | -      |
+| =qwen3.5-4b:think= | Qwen3.5 4B (Thinking) |  128K | text           | sim    |
+| =qwen3.5-9b= | Qwen3.5 9B |  128K | text           | -      |
+| =qwen3.5-9b:think= | Qwen3.5 9B (Thinking) |  128K | text           | sim    |
 
 ** Modelos Edge (Sisyphus) — 3 modelos
 
@@ -163,7 +155,7 @@ Configuração recomendada em =settings.json= para modelos locais:
 
 - =reserveTokens: 16384= — reserva espaço suficiente para respostas longas (+ raciocínio em modelos =:think=)
 - =keepRecentTokens: 20000= — mantém as mensagens mais recentes intactas durante compação
-- Modelo padrão atual: =kat-coder-v2.5-dev:think= (provider =llama-swap=)
+- Modelo padrão atual: =ornith-1.5-35b:think= (provider =llama-swap=)
 
 ** Uso
 
@@ -172,10 +164,10 @@ Configuração recomendada em =settings.json= para modelos locais:
 pi --model glm-5.1:cloud
 
 # Usar modelo local (provider padrão já é llama-swap)
-pi --model kat-coder-v2.5-dev
+pi --model ornith-1.5-35b
 
 # Usar modelo local com raciocínio
-pi --model "kat-coder-v2.5-dev:think"
+pi --model "ornith-1.5-35b:think"
 
 # Usar modelo local multimodal (visão + áudio)
 pi --model glm-ocr

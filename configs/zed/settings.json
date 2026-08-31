@@ -21,10 +21,14 @@
     },
     "default_model": {
       "provider": "llama-swap",
-      "model": "ornith-1.0-35b:think",
+      "model": "ornith-1.5-35b:think",
       "enable_thinking": false
     },
     "favorite_models": [
+      {
+        "model": "bonsai-27b:think",
+        "provider": "llama-swap"
+      },
       {
         "provider": "llama-swap",
         "model": "qwen3.5-9b:think",
@@ -111,15 +115,15 @@
             "supports_thinking": true
           },
           {
-            "name": "bonsai-27b-1bit",
+            "name": "bonsai-27b",
             "display_name": "Bonsai 27B 1-bit",
-            "max_tokens": 32768,
+            "max_tokens": 131072,
             "supports_thinking": false
           },
           {
-            "name": "bonsai-27b-1bit:think",
-            "display_name": "Bonsai 27B 1-bit (Think)",
-            "max_tokens": 32768,
+            "name": "bonsai-27b:think",
+            "display_name": "Bonsai 27B (Thinking)",
+            "max_tokens": 131072,
             "supports_thinking": true
           },
           {
