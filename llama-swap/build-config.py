@@ -76,7 +76,8 @@ ORIGINAL_ORDER = [
     "qwen3.6-35b-a3b",       # ✅
     "ornith-1.0-35b",        # ✅ Post-trained Qwen 3.5 35B MoE (agentic coding RL)
     "ornith-1.5-35b",        # ✅ Self-improving RL MoE (task generation + scaffold + rollouts)
-    "qwen3.8-27b-pollard",   # ✅ Pollard IQ3_S quant of Qwen/Qwen3.8-27B (dense VLM, DeltaNet)
+    "bonsai-27b",            # ✅ PrismML 1-bit 27B (Q1_0 binary, upstream llama.cpp, ngram/dspark spec)
+    # "qwen3.8-27b-pollard",   # REMOVED Aug 30 2026 — 2.75 tok/s, superseded by bonsai-27b
     "kat-coder-v2.5-dev",    # ✅ Post-trained Qwen 3.6 35B MoE (SOTA agentic coding, SWE-bench 69.4)
     # "agentworld-35b",         # DISABLED Aug 2026 — world model, not conversational, 16GB removed
     "agents-a1-35b",          # ✅ 35B MoE long-horizon search + tool calling (reactivated Jul 2026)

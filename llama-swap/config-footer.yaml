@@ -63,7 +63,8 @@ matrix:
     # bonsai1: bonsai-27b-1bit
     # Qwen3.8-27B dense 1-bit disabled Aug 2026 — too slow, user never uses
     # qw38: qwen3.8-27b
-    qw38p: qwen3.8-27b-pollard
+    # qw38p: qwen3.8-27b-pollard  # removed Aug 30 2026 — 2.75 tok/s, superseded by bonsai-27b (10x faster, same class)
+    bonsai: bonsai-27b
     # Tradução
     tg: translategemma-4b
     # Português jurídico (Qwen3.5-9B LoRA, instruct)
@@ -97,7 +98,8 @@ matrix:
 
     # Modelos pesados (offload) + Embedding/Reranker + CPU completion
     # qw38 removed Aug 2026 — model disabled
-    heavy: "(orn15 | glm | qw38p) & (nomic | lfmemb | nemb | lfmcol) & qpoll"
+    # bonsai1 removed Aug 2026 — user request (reactivated as bonsai, Sep 2026)
+    heavy: "(orn15 | glm | bonsai) & (nomic | lfmemb | nemb | lfmcol) & qpoll"
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -120,7 +122,8 @@ matrix:
     orn15: 9
     glm: 9
     # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed
-    qw38p: 7
+    # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
+    bonsai: 8
     q9: 4
     g4: 3
     ttsext: 4
