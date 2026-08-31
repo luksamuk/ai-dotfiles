@@ -81,7 +81,7 @@
     context: "131072 (KV on host via --no-kv-offload); 64K-262K native"
     vram_usage: "~4.4 GB VRAM (Q1_0 weights + compute; mmproj in RAM, KV in host RAM)"
     source: "prism-ml/Bonsai-27B-gguf (Q1_0 + dspark-Q4_1 sidecar + mmproj Q8_0)"
-    kv_cache: "q4_0 (host RAM via --no-kv-offload, 16/64 full-attn layers)"
+    kv_cache: "q4_0 (host RAM)"
     features:
       completion: true
       tools: true
@@ -91,9 +91,9 @@
       insert: false
       audio: false
       image: true
-    architecture: qwen3
+    architecture: qwen35
     parameters: 27300000000
     context_length: 262144
-    embedding_length: 3584
-    quantization: "Q1_0 (binary 1.125 bpw, Qwen3.6-27B base)"
-    note: "1-bit 27B, full GPU resident. Aug 2026: 128K ctx via --no-kv-offload experiment, mmproj enabled, dspark sidecar staged for A/B. Jul 2026 measurements: 32K=27 tok/s, 48K=20 tok/s with ngram-mod."
+    embedding_length: 5120
+    quantization: Q1_0
+    note: "1-bit binary 1.125 bpw, Qwen3.6-27B base. Full GPU resident. Aug 30 2026: canonical 128K ctx via --no-kv-offload (KV in host RAM), 10.95 tok/s; speed mode 48K KV-GPU, 22.91 tok/s; mmproj-RAM; dspark sidecar incompatible, deleted. Jul 2026 measurements: 32K=27 tok/s, 48K=20 tok/s with ngram-mod."

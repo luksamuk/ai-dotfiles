@@ -679,7 +679,7 @@ models:
       parameters: 1540000000
       context_length: 32768
       embedding_length: 1536
-      quantization: Pollard IQ4_XS (imatrix-guided, role/depth-aware)
+      quantization: Pollard IQ4_XS
       note: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE. ngram-mod enabled.
   ornith-1.5-35b:
     name: Ornith 1.5 35B
@@ -728,7 +728,7 @@ models:
       parameters: 35000000000
       context_length: 262144
       embedding_length: 2048
-      quantization: APEX Compact (no MTP)
+      quantization: APEX Compact
       note: APEX Compact without MTP draft head. Saves ~500MB VRAM vs MTP variant. Uses ngram-mod for speculative decoding (~36 tok/s vs 45 with MTP). Vision via mmproj with --no-mmproj-offload. Same quality as MTP variant — MTP only affects speed, not quality. Lower VRAM pressure allows running alongside IDE/other GPU processes.
   bonsai-27b:
     name: Bonsai 27B 1-bit
@@ -809,9 +809,9 @@ models:
     metadata:
       size: ~3.9 GB (Q1_0 binary 1.125 bpw) + 0.63 GB mmproj
       context: 131072 (KV on host via --no-kv-offload); 64K-262K native
-      vram_usage: ~4.6 GB VRAM (weights + mmproj + compute); KV cache in RAM
+      vram_usage: ~4.4 GB VRAM (Q1_0 weights + compute; mmproj in RAM, KV in host RAM)
       source: prism-ml/Bonsai-27B-gguf (Q1_0 + dspark-Q4_1 sidecar + mmproj Q8_0)
-      kv_cache: q4_0 (host RAM via --no-kv-offload, 16/64 full-attn layers)
+      kv_cache: q4_0 (host RAM)
       features:
         completion: true
         tools: true
@@ -821,12 +821,12 @@ models:
         insert: false
         audio: false
         image: true
-      architecture: qwen3
+      architecture: qwen35
       parameters: 27300000000
       context_length: 262144
-      embedding_length: 3584
-      quantization: Q1_0 (binary 1.125 bpw, Qwen3.6-27B base)
-      note: '1-bit 27B, full GPU resident. Aug 2026: 128K ctx via --no-kv-offload experiment, mmproj enabled, dspark sidecar staged for A/B. Jul 2026 measurements: 32K=27 tok/s, 48K=20 tok/s with ngram-mod.'
+      embedding_length: 5120
+      quantization: Q1_0
+      note: '1-bit binary 1.125 bpw, Qwen3.6-27B base. Full GPU resident. Aug 30 2026: canonical 128K ctx via --no-kv-offload (KV in host RAM), 10.95 tok/s; speed mode 48K KV-GPU, 22.91 tok/s; mmproj-RAM; dspark sidecar incompatible, deleted. Jul 2026 measurements: 32K=27 tok/s, 48K=20 tok/s with ngram-mod.'
   qwen3-vl-4b:
     name: Qwen3-VL 4B
     description: Qwen3-VL dense 4B vision-language model with native 2D/3D grounding, OCR in 32 languages, visual agent GUI, and video understanding.
@@ -1513,7 +1513,7 @@ models:
       context: 8K (--fit on, target 768)
       vram_usage: ~6.9GB com kvarn4
       source: google/gemma-4-12b-it (Q4_0 + mmproj F16)
-      kv_cache: kvarn4 (PPL ~ fp16 a ~4 bits)
+      kv_cache: kvarn4
       features:
         completion: true
         tools: false
@@ -1527,7 +1527,7 @@ models:
       parameters: 12000000000
       context_length: 8192
       quantization: Q4_0
-      note: 'REVERT 31/08: modelo original Google Q4_0 (par validado do bee). Experimentos abliterated (Heretic IQ4_XS, Huihui Q4_K) rejeitados em produção — vision describe instável no fit do Bee. tools=false: validar antes de habilitar. ctx 131072 proibido p/ áudio (crash mtmd). KVarN so em Qwen3.6/Gemma 4. GGUFs experimentais ainda em ~/.llama-models/gemma-4-12b/ (limpar quando confirmado).'
+      note: 'REVERT 31/08: modelo original Google Q4_0 (par validado do bee). Experimentos abliterated (Heretic IQ4_XS, Huihui Q4_K) rejeitados em produção — vision describe instável no fit do Bee. tools=false: validar antes de habilitar. ctx 131072 proibido p/ áudio (crash mtmd). KVarN so em Qwen3.6/Gemma 4. kvarn4: PPL ~ fp16 a ~4 bits. GGUFs experimentais ainda em ~/.llama-models/gemma-4-12b/ (limpar quando confirmado).'
   glm-4.7-flash:
     name: GLM 4.7 Flash
     description: GLM-4.7-Flash is a 30B Mixture-of-Experts model with Multi-head Latent Attention (MLA), 64 experts with 4 active per token. Built for fast, efficient conversational AI and tool calling.
@@ -1746,7 +1746,7 @@ models:
       context: 128K
       vram_usage: ~5.2GB VRAM (4.2 GB model + KV)
       source: mudler/LFM2.5-8B-A1B-APEX-GGUF
-      kv_cache: q8_0 + q4_0 hadamard
+      kv_cache: q8_0 + q4_0 + hadamard
       features:
         completion: true
         tools: true
@@ -1790,7 +1790,7 @@ models:
       context: 8K (2.3k tok de prompt p/ 60s de wav; cabe ~3-4min de audio)
       vram_usage: ~3.6GB total (medido, modelo+mmproj+ctx 8K)
       source: unsloth/Qwen2.5-Omni-7B-GGUF (UD-Q5_K_XL)
-      kv_cache: f16 (default — quant de cache não testado com path de áudio)
+      kv_cache: f16
       features:
         completion: true
         tools: false
@@ -1804,7 +1804,7 @@ models:
       parameters: 8000000000
       context_length: 8192
       quantization: UD-Q5_K_XL
-      note: 'A/B 31/08 vs gemma4-12b e music-flamingo: melhor equilíbrio velocidade/profundidade p/ audio-forense (93s vs 330s do gemma; descrição com glitch+bpm+key que o flamingo não entregou). Versão 3B (UD-Q5_K_XL 2.44GB) testada antes: rápida (21s) mas rasa e repetitiva — descartada. Wedge de áudio NÃO se aplica a este modelo (3 requests de áudio seguidos OK). Cartão: 256k ctx nativo, truncado a 8K pro fit da 3050.'
+      note: 'A/B 31/08 vs gemma4-12b e music-flamingo: melhor equilíbrio velocidade/profundidade p/ audio-forense (93s vs 330s do gemma; descrição com glitch+bpm+key que o flamingo não entregou). Versão 3B (UD-Q5_K_XL 2.44GB) testada antes: rápida (21s) mas rasa e repetitiva — descartada. Wedge de áudio NÃO se aplica a este modelo (3 requests de áudio seguidos OK). Cartão: 256k ctx nativo, truncado a 8K pro fit da 3050. KV f16: quant de cache não testada com path de áudio.'
   qwen3-tts:
     name: Qwen3-TTS 0.6B
     description: Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible /v1/audio/speech endpoint with voice profiles from voiceclone-tui.
@@ -1845,7 +1845,8 @@ models:
       parameters: 600000000
       context_length: 0
       embedding_length: 0
-      quantization: torch-direct (no GGUF)
+      quantization: torch-direct
+      note: Backend torch-direct (sem GGUF). Nenhum KV cache — decodificação de áudio sequencial, sem cache de atenção exposto.
       caveats:
       - External FastAPI server on port 8880 (not llama.cpp)
       - Must install qwen_tts and dependencies in ~/projects/ai/tts-api/.venv

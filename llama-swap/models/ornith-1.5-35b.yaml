@@ -100,5 +100,5 @@
     parameters: 35000000000
     context_length: 262144
     embedding_length: 2048
-    quantization: APEX Compact (no MTP)
+    quantization: APEX Compact
     note: "APEX Compact without MTP draft head. Saves ~500MB VRAM vs MTP variant. Uses ngram-mod for speculative decoding (~36 tok/s vs 45 with MTP). Vision via mmproj with --no-mmproj-offload. Same quality as MTP variant — MTP only affects speed, not quality. Lower VRAM pressure allows running alongside IDE/other GPU processes."

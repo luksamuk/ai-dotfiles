@@ -43,7 +43,8 @@
     parameters: 600000000
     context_length: 0
     embedding_length: 0
-    quantization: "torch-direct (no GGUF)"
+    quantization: torch-direct
+    note: "Backend torch-direct (sem GGUF). Nenhum KV cache — decodificação de áudio sequencial, sem cache de atenção exposto."
     caveats:
       - "External FastAPI server on port 8880 (not llama.cpp)"
       - "Must install qwen_tts and dependencies in ~/projects/ai/tts-api/.venv"
