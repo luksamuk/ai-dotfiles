@@ -1,0 +1,90 @@
+# -------------------------------------------
+# GRANITE 4.2 8B - ik BACKEND (Hadamard KV cache)
+# Dense 8B params, IQ4_XS ~4.6GB.
+# Native reasoning with 3 modes via chat_template_kwargs:
+#   granite-4.2-8b      (no tag)  — non-thinking, direct answer
+#   granite-4.2-8b:high           — full chain-of-thought reasoning
+#   granite-4.2-8b:low            — low-effort thinking, short reasoning budget
+# Agentic RL trained: tool calling, terminal, code execution in sandbox.
+# Apache 2.0 license. Released 2026-08-25.
+# IBM-recommended samplers: temperature=1.0, top_p=0.95 (all modes)
+# -------------------------------------------
+"granite-4.2-8b":
+  name: "Granite 4.2 8B"
+  description: "IBM Granite 4.2 8B — dense reasoning model with native thinking, agentic RL training, and tool calling. Purpose-built for enterprise agentic workflows."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/granite-4.2-8b-IQ4_XS.gguf
+    --fit
+    --fit-margin 512
+    --jinja
+    --chat-template-file ${templates_dir}/granite-4.2-chat-template.jinja
+    --parallel 1
+    --parallel-tool-calls
+    --ctx-size ${small_model_max_ctx}
+    --temp 1.0
+    --top-p 0.95
+    --top-k ${default_top_k}
+    --min-p ${default_min_p}
+    --repeat-penalty ${default_repeat_penalty}
+    --reasoning on
+    --cache-type-k q4_0
+    --cache-type-v q4_0
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --no-graph-reuse
+    --ctx-checkpoints 0
+    --ctx-checkpoints-interval 0
+    --batch-size 512
+    --ubatch-size 128
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 1.0
+        top_p: 0.95
+      "${MODEL_ID}:high":
+        chat_template_kwargs:
+          enable_thinking: true
+          low_effort: false
+        temperature: 1.0
+        top_p: 0.95
+      "${MODEL_ID}:low":
+        chat_template_kwargs:
+          enable_thinking: true
+          low_effort: true
+        temperature: 1.0
+        top_p: 0.95
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~4.6 GB (IQ4_XS)"
+    context: "128K native (512K extended)"
+    vram_usage: "~5.2GB VRAM (text-only, ik with hadamard cache)"
+    source: "ibm-granite/granite-4.2-8b (IQ4_XS, self-quantized)"
+    kv_cache: "q4_0/q4_0 + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: granite
+    parameters: 8000000000
+    context_length: 131072
+    embedding_length: 4096
+    quantization: IQ4_XS
+    note: "3 thinking modes: base (non-thinking), :high (full CoT), :low (low-effort). IBM-recommended samplers: temp=1.0, top_p=0.95. Agentic RL trained. Apache 2.0. IQ4_XS self-quantized — 4.42 BPW."

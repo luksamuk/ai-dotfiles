@@ -3,46 +3,59 @@
 # Dense 27B, hybrid Gated DeltaNet + Gated Attention.
 # 64 layers: 16 x (3 x (Gated DeltaNet -> FFN) -> 1 x (Gated Attention -> FFN))
 # Native VLM (image + video), 262K context native, extensible to 1M with YaRN.
-# UD-IQ1_M ~6.7GB - Unsloth Dynamic V3.0 1-bit quant (~2.0 bpw).
-#   Unsloth reports ~77% of original quality at 1-bit. Aggressive but testable.
-# llama.cpp upstream: GATED_DELTA_NET merged since March, MTP supported.
-# DeltaNet = linear attention -> KV cache is O(1) per token, constant regardless of context.
-# 128K context does NOT explode KV cache like standard attention models.
+# APEX I-Nano ~11.24GB - APEX mixed-precision, ~3.3 bpw.
+#   22.1% better KL than flat quant at same size. MTP head included (blk.64, Q8_0).
+# ik_llama backend: --fit (auto VRAM), --mlock (pinned RAM), hadamard KV, MTP spec decode.
+#
+# VRAM math (RTX 3050 6GB, ik_llama --fit):
+#   Model weights: ~11.24GB -> ~30 layers in VRAM (~5GB), ~34 layers in RAM (~6GB)
+#   mmproj: ~930MB (F16) -> --no-mmproj-offload keeps it in RAM
+#   KV cache @ 128K: minimal — DeltaNet O(1) for 48/64 layers, standard attn only 16/64
+#   --fit auto-determines n-gpu-layers based on available VRAM after KV + system overhead
+#
+# MTP speculative decoding: --spec-type mtp:n_max=1,p_min=0.0
+#   Uses blk.64 (Q8_0 MTP/NextN head) embedded in the GGUF.
+#   Reported +35-52% tok/s (third-party, unverified by mudler).
 #
 # Samplers (official Qwen3.8 model card):
 #   Thinking: temp=1.0, top_p=0.95, top_k=20, min_p=0.0, repetition_penalty=1.0
 #   Instruct: temp=0.7, top_p=0.80, top_k=20, min_p=0.0, presence_penalty=1.5, repetition_penalty=1.0
 #
-# VRAM math (RTX 3050 6GB):
-#   Model weights: ~6.7GB -> partial GPU offload, rest to RAM
-#   mmproj: ~885MB (F16) -> can offload to RAM
-#   KV cache: minimal (DeltaNet linear attention, only 16/64 layers use standard attention)
-#   --n-gpu-layers 35: conservative start, leaves headroom for system + mmproj
-#
 # Dual mode: base (instruct, no think) and :think (reasoning)
-# Uses qwen-fixed-chat-template.jinja - same fix as Ornith/other Qwen models.
+# Uses qwen-fixed-chat-template.jinja — same fix as Ornith/other Qwen models.
+#
+# Expected throughput: ~3-5 tok/s (dense 27B, heavy RAM offload + MTP boost)
+# DeltaNet makes 128K context viable — KV cache stays near-constant regardless of ctx length.
 # -------------------------------------------
 "qwen3.8-27b":
   name: "Qwen3.8 27B"
-  description: "Qwen3.8-27B: dense 27B VLM with Gated DeltaNet linear attention + Gated Attention hybrid. Native image/video understanding, 262K context. Most capable Qwen generation - coding, agentic tasks, long-horizon planning."
+  description: "Qwen3.8-27B: dense 27B VLM with Gated DeltaNet linear attention + Gated Attention hybrid. APEX Nano quantization (~3.3 bpw, 22.1% better than flat). Native image/video understanding, 262K context. MTP speculative decoding. ik_llama with heavy offload."
   cmd: |
-    ${llama_server} --port ${PORT}
-    --model ${models_dir}/qwen3.8-27b-1bit/Qwen3.8-27B-UD-IQ1_M.gguf
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/qwen3.8-27b/Qwen3.8-27B-APEX-I-Nano.gguf
+    --mmproj ${models_dir}/qwen3.8-27b/mmproj-Qwen3.8-27B-F16.gguf
+    --no-mmproj-offload
+    --fit
+    --fit-margin 2048
+    --mlock
     --ctx-size 131072
-    --n-gpu-layers 25
-    --temp ${qwen38_instruct_temp}
-    --top-p ${qwen38_instruct_top_p}
-    --top-k ${qwen38_instruct_top_k}
-    --min-p ${qwen38_instruct_min_p}
-    --repeat-penalty ${qwen38_instruct_repeat_penalty}
-    --presence-penalty ${qwen38_instruct_presence_penalty}
+    --temp 0.7
+    --top-p 0.80
+    --top-k 20
+    --min-p 0.0
+    --repeat-penalty 1.0
+    --presence-penalty 1.5
     --reasoning on
     --jinja
     --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
     --parallel 1
+    --parallel-tool-calls
     --cache-type-k ${large_cache_k}
     --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
     --flash-attn auto
+    --spec-type mtp:n_max=1,p_min=0.0
     --metrics
   filters:
     stripParams: "temperature, top_p, presence_penalty"
@@ -68,11 +81,11 @@
     reranker: false
     context: 131072
   metadata:
-    size: "~6.7 GB (UD-IQ1_M)"
+    size: "~11.24 GB (APEX Nano) + 930 MB mmproj"
     context: "1K-131K (deploy), 262K native, 1M with YaRN"
-    vram_usage: "~4.5GB VRAM (35 layers) + ~3GB RAM offload. DeltaNet KV cache near-constant."
-    source: "unsloth/Qwen3.8-27B-GGUF"
-    kv_cache: q4_0 (DeltaNet, 16/64 attn layers)
+    vram_usage: "~5GB VRAM (--fit auto) + ~7GB RAM offload. DeltaNet KV cache near-constant at 128K."
+    source: "mudler/Qwen3.8-27B-APEX-GGUF"
+    kv_cache: "q4_0 + hadamard (DeltaNet, 16/64 attn layers)"
     features:
       completion: true
       tools: true
@@ -86,5 +99,5 @@
     parameters: 27000000000
     context_length: 262144
     embedding_length: 5120
-    quantization: UD-IQ1_M (~2.0 bpw)
-    note: "Dense 27B DeltaNet+Attn hybrid (48+16 layers). Native VLM. IQ1_M ~77% quality. Uses upstream llama.cpp (GATED_DELTA_NET). Instruct: presence_penalty=1.5. Thinking: temp=1.0."
+    quantization: APEX I-Nano (~3.3 bpw)
+    note: "Dense 27B DeltaNet+Attn hybrid (48+16 layers). Native VLM. APEX Nano 22.1% better KL than flat. ik_llama with --fit + --mlock + MTP spec decode. Instruct: presence_penalty=1.5. Thinking: temp=1.0. Expected ~3-5 tok/s with heavy offload."

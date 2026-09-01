@@ -18,7 +18,7 @@ lfm2.5-2.6b:
   description: "Liquid AI on-device agentic model. 2.6B dense hybrid with 128K context. Trained with agentic RL inside Hermes Agent. Best-in-class tool use for its size."
   cmd: |
     ${llama_server} --port ${PORT}
-    --model ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-Q6_K.gguf
+    --model ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-QAD-Q4_0.gguf
     --fit on
     --fit-target ${vram_margin}
     --fit-ctx 131072
@@ -35,6 +35,10 @@ lfm2.5-2.6b:
     --cache-type-v q4_0
     --flash-attn on
     --jinja
+    -md ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-DSpark-Draft-v1-F16.gguf
+    --spec-type draft-dspark
+    --spec-draft-n-max 10
+    --spec-draft-n-min 0
     --metrics
   filters:
     stripParams: "temperature, top_p"
@@ -58,10 +62,10 @@ lfm2.5-2.6b:
     reranker: false
     context: 131072
   metadata:
-    size: "~2.22 GB (Q6_K)"
+    size: "~1.55 GB (QAD Q4_0)"
     context: "64K-128K (dynamic)"
-    vram_usage: "~4.6GB VRAM (model 2.22GB + q4_0 KV 131K + compute)"
-    source: "LiquidAI/LFM2.5-2.6B-GGUF (Q6_K)"
+    vram_usage: "~3.9GB VRAM (model 1.55GB + q4_0 KV 131K + compute)"
+    source: "LiquidAI/LFM2.5-2.6B-GGUF (QAD Q4_0)"
     kv_cache: "q4_0"
     features:
       completion: true
@@ -76,5 +80,5 @@ lfm2.5-2.6b:
     parameters: 2690000000
     context_length: 131072
     embedding_length: 2048
-    quantization: Q6_K
-    note: "Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only 8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM in 6GB."
+    quantization: QAD Q4_0
+    note: "Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only 8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM in 6GB. QAD (Quantization-Aware Distillation) recovers ~97% of BF16 quality vs native Q4_0. DSpark speculative decoding via F16 draft sidecar (633MB) — up to 2.27x speedup on-device, 57% latency reduction for function calling."
