@@ -26,14 +26,14 @@ def _resolve_sd_cli() -> str:
 
 
 def _resolve_sd_cli_zimage() -> str:
-    """Find sd-cli-zimage binary (compiled from z-image-omini-base branch)."""
+    """Find sd-cli-zimage binary (master branch with native Z-Image support)."""
     base = Path(SD_CLI_PATH).parent
     zimage_cli = base / "sd-cli-zimage"
     if zimage_cli.exists():
         return str(zimage_cli)
     raise FileNotFoundError(
         f"sd-cli-zimage not found at {zimage_cli}\n"
-        f"  Build it: cd ~/git/stable-diffusion.cpp && git checkout z-image-omini-base && "
+        f"  Build it: cd ~/git/stable-diffusion.cpp && git checkout master && "
         f"cd build && make -j$(nproc) sd-cli && cp bin/sd-cli ~/git/ai-dotfiles/diffuse/bin/sd-cli-zimage"
     )
 
@@ -73,16 +73,16 @@ def load_pipeline_sd_cpp_zimage(model_name: str, model_root: Path, sd_cli: str) 
     """Prepare sd-cli config for Z-Image-Turbo. Returns (config_dict, 0.0)."""
     model_info = MODELS[model_name]
 
-    # Use the dedicated z-image sd-cli binary (compiled from z-image-omini-base branch)
+    # Use the sd-cli binary (master branch has native Z-Image support since #1020)
     sd_cli = _resolve_sd_cli_zimage()
 
     # Find the best GGUF for our VRAM
     import torch
     vram_gb = torch.cuda.mem_get_info()[1] / 1e9 if torch.cuda.is_available() else 999
     if vram_gb <= 6:
-        preferred = ["Q3_K_S", "Q3_K_M", "Q4_K_S", "Q4_K_M"]
+        preferred = ["Q3_K_S", "Q3_K", "Q3_K_M", "Q4_K_S", "Q4_K_M"]
     else:
-        preferred = ["Q4_K_M", "Q4_K_S", "Q3_K_M", "Q3_K_S"]
+        preferred = ["Q4_K_M", "Q4_K_S", "Q3_K_M", "Q3_K", "Q3_K_S"]
 
     gguf_files = list(model_root.glob("z_image_turbo-*.gguf"))
     dit_gguf = None
@@ -105,8 +105,7 @@ def load_pipeline_sd_cpp_zimage(model_name: str, model_root: Path, sd_cli: str) 
     # VAE: use the Z-Image pipeline VAE (same as Flux)
     vae_path = str(model_root / "pipeline" / "vae" / "diffusion_pytorch_model.safetensors")
     if not Path(vae_path).exists():
-        # Fallback to Ideogram 4's Flux VAE
-        vae_path = str(model_root.parent / "ideogram-4-Q4_0" / "vae" / "flux2-vae.safetensors")
+        raise FileNotFoundError(f"Z-Image VAE not found at {vae_path}")
 
     config = {
         "sd_cli": sd_cli,

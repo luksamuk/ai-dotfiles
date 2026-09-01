@@ -48,8 +48,8 @@ def parse_size(s: str) -> tuple[int, int]:
     except ValueError:
         raise argparse.ArgumentTypeError(f"--size must be 'WxH' (e.g. 1024x1024), got {s!r}")
     for dim, name in ((w, "width"), (h, "height")):
-        if not 256 <= dim <= 2048:
-            raise argparse.ArgumentTypeError(f"--size {name} {dim} out of range — must be 256–2048")
+        if not 256 <= dim <= 4096:
+            raise argparse.ArgumentTypeError(f"--size {name} {dim} out of range — must be 256–4096")
         if dim % 16:
             raise argparse.ArgumentTypeError(f"--size {name} {dim} must be a multiple of 16")
     return w, h

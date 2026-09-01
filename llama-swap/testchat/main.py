@@ -70,6 +70,17 @@ AUDIO_EXTENSIONS = {'.wav', '.mp3', '.ogg', '.flac', '.m4a', '.aac', '.wma', '.o
 VIDEO_EXTENSIONS = {'.mp4', '.mkv', '.webm', '.avi', '.mov', '.mts', '.m4v'}
 VIDEO_MAX_FRAMES = 16  # Limite de frames para não estourar contexto
 
+# Custom system prompts per model ID (loaded from JSON file)
+# Allows injecting persona system prompts for models like portal-core-*
+_SYSTEM_PROMPTS = {}
+_sp_path = Path(__file__).parent / "system_prompts.json"
+if _sp_path.exists():
+    try:
+        with open(_sp_path) as _f:
+            _SYSTEM_PROMPTS = json.load(_f)
+    except Exception:
+        pass
+
 # MIME types
 MIME_MAP = {
     '.jpg': 'image/jpeg',
@@ -1060,6 +1071,14 @@ class StreamingChat:
                 messages = [{"role": "system", "content": PEPE_TURBO_SYSTEM}] + messages
             elif is_pepe:
                 messages = [{"role": "system", "content": PEPE_SYSTEM}] + messages
+
+            # Custom system prompts from system_prompts.json
+            # For Pepe Turbo, use the virtual ID for lookup since selected_model
+            # is already resolved to the backend ID
+            _lookup_id = "pepe-turbo" if is_pepe_turbo else self.selected_model
+            if _lookup_id in _SYSTEM_PROMPTS and not is_pepe and not is_pepe_turbo:
+                sp = _SYSTEM_PROMPTS[_lookup_id]["system_prompt"]
+                messages = [{"role": "system", "content": sp}] + messages
             
             # Marca o início da request (TTFT)
             self.request_start_time = time.time()

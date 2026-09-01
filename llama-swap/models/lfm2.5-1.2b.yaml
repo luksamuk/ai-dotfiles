@@ -1,0 +1,73 @@
+# -------------------------------------------
+# LFM2.5-1.2B-Instruct - Liquid AI on-device instruct model (dense hybrid)
+# 1.2B params, 30 layers (22 double-gated short conv + 8 GQA)
+# 128K context, 128K vocab, 16 languages incl Portuguese
+# ChatML-like format, same as LFM2.5-2.6B and 8B-A1B
+# GGUF has NO chat_template - requires --chat-template-file
+# Backend: upstream llama.cpp (lfm2 arch, dense model)
+# QAD Q4_0 = 696 MB - fits entirely in VRAM with room for context
+# DSpark: F16 draft sidecar (567 MB), block size 9, up to 2.87x speedup on-device
+# Smallest LFM2.5 model — good for edge/embedded or as lightweight agent
+# -------------------------------------------
+lfm2.5-1.2b:
+  name: "LFM 2.5 1.2B"
+  description: "Liquid AI on-device instruct model. 1.2B dense hybrid with 128K context. Smallest LFM2.5 — ideal for edge deployment and lightweight agents. DSpark speculative decoding for up to 2.87x speedup."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/lfm2.5-1.2b/LFM2.5-1.2B-Instruct-QAD-Q4_0.gguf
+    --fit on
+    --fit-ctx 131072
+    --ctx-size 131072
+    --parallel 1
+    --chat-template-file ${templates_dir}/lfm2.5-chat-template.jinja
+    --temp 0.1
+    --top-p 0.9
+    --top-k 50
+    --min-p 0.0
+    --repeat-penalty 1.1
+    --cache-type-k q4_0
+    --cache-type-v q4_0
+    --flash-attn on
+    --jinja
+    -md ${models_dir}/lfm2.5-1.2b/LFM2.5-1.2B-Instruct-DSpark-Draft-v1-F16.gguf
+    --spec-type draft-dspark
+    --spec-draft-n-max 10
+    --spec-draft-n-min 0
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 0.1
+        top_p: 0.9
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in:
+      - 'text'
+    out:
+      - 'text'
+    tools: false
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~696 MB (QAD Q4_0) + 567 MB DSpark draft"
+    context: "64K-128K (dynamic)"
+    vram_usage: "~1.5GB VRAM (model + draft + KV)"
+    source: "LiquidAI/LFM2.5-1.2B-Instruct-GGUF (QAD Q4_0)"
+    kv_cache: "q4_0"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: lfm2
+    parameters: 1200000000
+    context_length: 131072
+    embedding_length: 2048
+    quantization: QAD Q4_0
+    note: "Smallest LFM2.5. Dense hybrid (22 conv + 8 GQA). Instruct variant (no reasoning tag). 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. QAD Q4_0 recovers ~97% of BF16 quality. DSpark F16 draft sidecar (567MB) adds up to 2.87x speedup on-device. Ideal for edge/embedded or as lightweight agent."

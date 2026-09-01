@@ -41,6 +41,10 @@ macros:
   # Caminho para ik_llama.cpp — fork otimizado para MoE (pinned memory, faster expert offload)
   # Build local em ~/git/ik_llama.cpp/build/bin/llama-server
   "ik_llama_server": "${env.HOME}/git/ik_llama.cpp/build/bin/llama-server"
+
+  # Caminho para bee-server (BeeLlama.cpp fork — KVarN KV cache, sm_86 ok)
+  # Build local em ~/git/beellama.cpp/build/bin/llama-server
+  "bee_server": "${env.HOME}/git/beellama.cpp/build/bin/llama-server"
   
   # Caminho para o vLLM (installed in ~/.vllm venv)
   "vllm_bin": "${env.HOME}/.vllm/bin/vllm"
