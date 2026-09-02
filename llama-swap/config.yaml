@@ -1032,6 +1032,102 @@ models:
       quantization: Q6_K
       note: "VLM with SigLIP2 NaFlex (native resolution, 512x512 patches + thumbnail). Better grounding + OCR with layout than 1.6B. Single-turn high-throughput: object detection, OCR, translation. 16 languages incl Portuguese."
 # -------------------------------------------
+# NANBEIGE4.2-3B — UPSTREAM BACKEND (PR #25994 merged)
+# Looped Transformer: 22 layers reused 2x (num_loops=2) = 44 effective layers
+# LoopSplit + mHC with depth attention + concatenated n-gram embeddings
+# 4B total params (3B non-embedding), Q4_K_M ~2.4 GB
+# Architecture: nanbeige — now in upstream llama.cpp (commit b77d64675)
+# Vocab: 166,144. Context: 262K. head_dim=128.
+
+# Tool calling: XML format (tool_call_format="xml" in chat template)
+#   --jinja parses correctly, tested single + multi-turn (bug #22684 from 4.1 FIXED)
+#   2026-09-02 re-enable: tool args only parse CLEAN on :think variant @ temp 1.0.
+#   Base variant (thinking off, temp 0.6) mangles tool call arguments — use :think for agentic.
+# Thinking: enable_thinking toggle in chat template (dual mode: base + :think)
+#   preserve_thinking recommended for multi-turn tool use
+
+# Backend: upstream llama.cpp (PR #25994 merged 2026-07-27)
+#   Inherits: --fit on, --flash-attn auto, --parallel-tool-calls, MMQ/MMVQ
+#   --reasoning on for thinking extraction
+
+# KV cache budget (RTX 3050 6GB):
+#   Model: ~2.4 GB (Q4_K_M)
+#   44 effective layers, 8 KV heads, head_dim 128
+#   q4_0 KV: 44 KiB/token -> ~70K tokens fit in ~3GB remaining VRAM
+#   ctx-size 65536 with q4_0 is safe (leaves ~1GB headroom)
+
+# Inference params per model card:
+#   Reasoning/chat: temp=0.6, top_p=0.95, top_k=20
+#   Agentic/tool-use: temp=1.0
+# -------------------------------------------
+  "nanbeige4.2-3b":
+    name: "Nanbeige 4.2 3B"
+    description: "Compact agentic model with Looped Transformer architecture. 3B non-embedding params delivering solid performance on general-agent and code-agent tasks, outperforming larger models like Qwen3.5-9B and Gemma4-12B on agentic benchmarks."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/nanbeige4.2-3b/nanbeige4.2-3b-Q4_K_M.gguf
+      --jinja
+      --fit on
+      --parallel 1
+      --ctx-size 65536
+      --temp 0.6
+      --top-p 0.95
+      --top-k 20
+      --min-p 0.0
+      --repeat-penalty 1.05
+      --reasoning on
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --flash-attn auto
+      --metrics
+    filters:
+      stripParams: "temperature, top_p, top_k"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.95
+          top_k: 20
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+            preserve_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 20
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 65536
+    metadata:
+      size: "~2.4 GB (Q4_K_M)"
+      context: "65K (262K max, but 44 effective layers double KV cache — 65K sweet spot on 6GB with q4_0)"
+      vram_usage: "~2.4 GB model + ~2.9 GB q4_0 KV @ 65K + compute"
+      source: "owao/Nanbeige4.2-3B-GGUF (Q4_K_M)"
+      kv_cache: "q4_0/q4_0"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: nanbeige
+      parameters: 4000000000
+      context_length: 262144
+      embedding_length: 3072
+      quantization: Q4_K_M
+      note: "Looped Transformer (22 layers x2 loops = 44 effective). Upstream llama.cpp (PR #25994). Multi-turn tool calling FIXED vs 4.1 (#22684). Thinking toggle via enable_thinking."
+# -------------------------------------------
 # NOMIC-EMBED-TEXT-V2-MOE - UPSTREAM BACKEND (embedding model, CPU-only)
 # 475M params (305M active, MoE top-2/8 experts), 768-dim embeddings with Matryoshka → 256
 # Architecture: nomic-bert — supported in upstream llama.cpp
@@ -2058,7 +2154,7 @@ matrix:
     # m5a: minicpm5-1b-agentic  # disabled
     lfm8: lfm2.5-8b-a1b
     lfm26: lfm2.5-2.6b
-    # nb42: nanbeige4.2-3b  # disabled Aug 2026 — poor Portuguese
+    nb42: nanbeige4.2-3b
     # Empero Qwen3.8 distillations (upstream llama.cpp, qwen35 arch)
     eq2: empero-qwen3.8-2b
     eq4: empero-qwen3.8-4b

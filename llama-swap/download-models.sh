@@ -211,10 +211,10 @@ declare -A MODELS=(
   # head_dim=128 → attn_rot ✅, vocab 166K (larger than Qwen3.5's 151K)
   # [REMOVED] nanbeige4.1-3b — multi-turn tool calling broken (#22684), GGUF deleted
   # Nanbeige4.2-3B — Looped Transformer (22 layers x2 = 44 effective), 3B non-embedding
-  # Architecture: nanbeige (custom — requires nanbeige-llama.cpp fork, branch nanbeige42)
+  # Architecture: nanbeige — supported in upstream llama.cpp (PR #25994, #27730)
   # Multi-turn tool calling FIXED vs 4.1. Thinking toggle via enable_thinking.
   # Q4_K_M ~2.4 GB — fits entirely in 6GB VRAM
-  ["nanbeige4.2-3b"]="owao/Nanbeige4.2-3B-GGUF nanbeige4.2-3b-Q4_K_M.gguf"
+  ["nanbeige4.2-3b"]="owao/Nanbeige4.2-3B-GGUF Nanbeige4.2-3B-Q4_K_M.gguf nanbeige4.2-3b/nanbeige4.2-3b-Q4_K_M.gguf"
   # Mellum2-12B-A2.5B-Thinking — JetBrains MoE 12B/2.5B, reasoning + tool calling
   # Architecture: Qwen3-MoE derivative (MellumForCausalLM alias registered in ik)
   # MANUAL CONVERSION (2026-06-01): no community GGUF available yet
@@ -315,9 +315,10 @@ download_model() {
     # Download directly to models dir (avoids tmpfs /tmp for large models)
     hf download "$repo" "$remote_file" --local-dir "$MODELS_DIR"
     
-    # Rename if needed
+    # Rename if needed (mkdir -p handles local filenames in subdirectories)
     if [[ "$remote_file" != "$local_file" ]]; then
       echo "  Renaming: $remote_file → $local_file"
+      mkdir -p "$MODELS_DIR/$(dirname "$local_file")"
       mv "$MODELS_DIR/$remote_file" "$MODELS_DIR/$local_file"
     fi
     

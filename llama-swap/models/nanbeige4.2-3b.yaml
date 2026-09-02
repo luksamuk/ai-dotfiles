@@ -8,6 +8,8 @@
 #
 # Tool calling: XML format (tool_call_format="xml" in chat template)
 #   --jinja parses correctly, tested single + multi-turn (bug #22684 from 4.1 FIXED)
+#   2026-09-02 re-enable: tool args only parse CLEAN on :think variant @ temp 1.0.
+#   Base variant (thinking off, temp 0.6) mangles tool call arguments — use :think for agentic.
 # Thinking: enable_thinking toggle in chat template (dual mode: base + :think)
 #   preserve_thinking recommended for multi-turn tool use
 #
