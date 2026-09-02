@@ -215,6 +215,9 @@ declare -A MODELS=(
   # Multi-turn tool calling FIXED vs 4.1. Thinking toggle via enable_thinking.
   # Q4_K_M ~2.4 GB — fits entirely in 6GB VRAM
   ["nanbeige4.2-3b"]="owao/Nanbeige4.2-3B-GGUF Nanbeige4.2-3B-Q4_K_M.gguf nanbeige4.2-3b/nanbeige4.2-3b-Q4_K_M.gguf"
+  # Ornith-1.5-35B ONYX (el4) — APEX-evolution quant, MTP head PRESERVED (blk.40.nextn Q8_0)
+  # compact tier 16.4GB — experiment vs incumbent APEX Compact (15.4GB, MTP stripped)
+  ["ornith-1.5-35b-onyx"]="el4/Ornith-1.5-35B-A3B-ONYX-GGUF Ornith-1.5-35B-A3B-ONYX-compact.gguf ornith-1.5-35b/Ornith-1.5-35B-A3B-ONYX-compact.gguf"
   # Mellum2-12B-A2.5B-Thinking — JetBrains MoE 12B/2.5B, reasoning + tool calling
   # Architecture: Qwen3-MoE derivative (MellumForCausalLM alias registered in ik)
   # MANUAL CONVERSION (2026-06-01): no community GGUF available yet

@@ -681,16 +681,27 @@ models:
       quantization: Pollard IQ4_XS
       note: "Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE. ngram-mod enabled."
 # -------------------------------------------
-# ORNITH-1.5-35B-A3B - MoE AGENTIC CODING + VISION (APEX, no MTP)
+# ORNITH-1.5-35B-A3B - MoE AGENTIC CODING + VISION (ONYX compact + MTP, DEFAULT)
 # MoE 35B params, ~3B ativo por token. 256 experts, 8+1 active.
 # Self-improving RL: extends Ornith-1.0 self-scaffolding into full self-improvement loop
 # (task generation + scaffold construction + solution rollouts).
 # Same qwen35moe architecture as Ornith-1.0 and Qwen3.6-35B-A3B.
 
-# APEX Compact ~16.5GB — APEX mixed-precision, no MTP draft head.
-# No MTP: saves ~500MB VRAM vs MTP variant. Uses ngram-mod for speculative decoding.
-# Vision: mmproj.gguf (899MB, CLIP-based) — --no-mmproj-offload keeps it in RAM
-#   to preserve VRAM for model weights.
+# PROMOTED 2026-09-02 after A/B vs APEX Compact (N=3, same prompt/samplers):
+#   ONYX compact + MTP:  45.1 tok/s mean (46.1/44.8/44.5), VRAM 4646 MiB (75.6%)
+#   APEX Compact + ngram: 40.6 tok/s mean (40.2/40.7/40.9), VRAM 4232 MiB (68.9%)
+#   MTP acceptance 85-93% (head well calibrated on this base).
+#   +11.1% throughput for +414 MiB VRAM. User decision: speed wins.
+
+# ONYX (el4) = APEX evolution: dynamic layer sensitivity + router-weighted
+# imatrix (crushes cold MoE experts, protects hot ones in-tensor).
+# ONYX PRESERVES MTP head (blk.40.nextn.* Q8_0, verified via GGUFReader:
+# nextn_predict_layers=1, 4 nextn tensors). --spec-type mtp is SAFE here.
+# (OOM pitfall applies only to GGUFs with 0 nextn layers — see
+# references/mtp-speculative-decoding.md)
+
+# Vision: mmproj.gguf (899MB, CLIP-based, shared with APEX — same encoder).
+#   --no-mmproj-offload keeps it in RAM to preserve VRAM for weights.
 # ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
 # --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx
 
@@ -706,16 +717,16 @@ models:
 # Uses qwen-fixed-chat-template.jinja — embedded GGUF template lacks
 # tool-call format instructions, causing leakage without the fixed template.
 
-# Benchmark (Aug 2026, RTX 3050 6GB, ik_llama v4840):
-#   Text: ~36 tok/s (ngram-mod), VRAM ~4.7GB (vs 5.2GB with MTP Compact)
-#   vs MTP Compact: 36 vs 45 tok/s, but ~500MB less VRAM
+# Benchmark (Sep 2026 A/B, RTX 3050 6GB, N=3 same prompt):
+#   ONYX compact + MTP: 45.1 tok/s, VRAM 4646 MiB, accept 85-93% — DEFAULT
+#   APEX Compact + ngram-mod: 40.6 tok/s, VRAM 4232 MiB (_disabled, GGUF on disk)
 # -------------------------------------------
   "ornith-1.5-35b":
     name: "Ornith 1.5 35B"
-    description: "Ornith-1.5 is a family of open-source LLMs trained with end-to-end self-improvement — the model proposes new tasks, generates task-specific scaffolds, and produces solution rollouts for RL, continuously creating new learning experiences. APEX Compact quantization with vision support."
+    description: "Ornith-1.5 is a family of open-source LLMs trained with end-to-end self-improvement — the model proposes new tasks, generates task-specific scaffolds, and produces solution rollouts for RL, continuously creating new learning experiences. ONYX quantization (el4, APEX evolution) with MTP speculative decoding and vision support."
     cmd: |
       ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/ornith-1.5-35b/Ornith-1.5-35B-A3B-APEX-Compact.gguf
+      --model ${models_dir}/ornith-1.5-35b/Ornith-1.5-35B-A3B-ONYX-compact.gguf
       --mmproj ${models_dir}/ornith-1.5-35b/mmproj.gguf
       --no-mmproj-offload
       --fit
@@ -740,8 +751,8 @@ models:
       --flash-attn auto
       --defer-experts
       --prefetch-experts
-      --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
-        --metrics
+      --spec-type mtp:n_max=1,p_min=0.0
+      --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
@@ -767,10 +778,10 @@ models:
       reranker: false
       context: 131072
     metadata:
-      size: "~16.5 GB (APEX Compact) + 899 MB mmproj"
+      size: "~16.4 GB (ONYX compact) + 899 MB mmproj"
       context: "1K-131K (safe max, model supports 262K)"
-      vram_usage: "~4.7GB VRAM + ~15GB pinned RAM (ik pinned memory, ~36 tok/s ngram-mod)"
-      source: "mudler/Ornith-1.5-35B-A3B-APEX-GGUF"
+      vram_usage: "~4.6GB VRAM measured + ~16GB pinned RAM (45 tok/s with MTP, accept 85-93%)"
+      source: "el4/Ornith-1.5-35B-A3B-ONYX-GGUF (compact tier)"
       kv_cache: "q4_0 + attn_rot + hadamard"
       features:
         completion: true
@@ -785,8 +796,8 @@ models:
       parameters: 35000000000
       context_length: 262144
       embedding_length: 2048
-      quantization: APEX Compact
-      note: "APEX Compact without MTP draft head. Saves ~500MB VRAM vs MTP variant. Uses ngram-mod for speculative decoding (~36 tok/s vs 45 with MTP). Vision via mmproj with --no-mmproj-offload. Same quality as MTP variant — MTP only affects speed, not quality. Lower VRAM pressure allows running alongside IDE/other GPU processes."
+      quantization: ONYX compact
+      note: "Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF still on disk."
 # -------------------------------------------
 # BONSAI 27B 1-BIT — PrismML binary {-1,+1} LLM (Q1_0, upstream llama.cpp)
 # prism-ml/Bonsai-27B-gguf — Qwen3.6-27B base, 27.3B binary weights at 1.125 bpw.
