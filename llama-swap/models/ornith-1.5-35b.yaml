@@ -37,7 +37,8 @@
 #
 # Benchmark (Sep 2026 A/B, RTX 3050 6GB, N=3 same prompt):
 #   ONYX compact + MTP: 45.1 tok/s, VRAM 4646 MiB, accept 85-93% — DEFAULT
-#   APEX Compact + ngram-mod: 40.6 tok/s, VRAM 4232 MiB (_disabled, GGUF on disk)
+#   APEX Compact + ngram-mod: 40.6 tok/s, VRAM 4232 MiB (_disabled, GGUF deleted
+#   2026-09-02 — re-download from mudler/Ornith-1.5-35B-A3B-APEX-GGUF to revert)
 # -------------------------------------------
 "ornith-1.5-35b":
   name: "Ornith 1.5 35B"
@@ -112,4 +113,4 @@
     context_length: 262144
     embedding_length: 2048
     quantization: ONYX compact
-    note: "Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF still on disk."
+    note: "Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF deleted Sep 2026 (re-download from mudler repo if reverting)."
