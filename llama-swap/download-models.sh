@@ -144,6 +144,12 @@ declare -A MODELS=(
   ["qwopus-35b"]="mudler/Qwopus3.6-35B-A3B-v1-APEX-GGUF Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf"
   # [REMOVED] gemma4-26b-a4b APEX I-Compact — superseded by QAT Q4_0 (faster, smaller, same quality)
   # [REMOVED] gemma4-26b-a4b QAT Q4_0 — removed from fleet Jun 2026 (replaced by Qwen 3.6 + North Mini Code)
+  # GPT-2 124M — museum piece (2019 original). NOT downloadable via script:
+  # GGUF is a LOCAL conversion of openai-community/gpt2 safetensors
+  # (hf download openai-community/gpt2 model.safetensors config.json merges.txt
+  #  vocab.json tokenizer_config.json + convert_hf_to_gguf.py --outtype f16).
+  # Conversion requires the h.0.attn.bias patch in conversion/gpt2.py (see model YAML).
+  # ["gpt-2-124m"]="<local conversion>"
   ["gpt-oss-20b"]="unsloth/gpt-oss-20b-GGUF gpt-oss-20b-Q4_K_M.gguf"
   # North-Mini-Code — Cohere 30B-A3B MoE agentic coding model, Q4_K_M (18.6 GB)
   # Architecture: cohere2moe — requires ik_llama patches (see model YAML for details)

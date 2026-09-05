@@ -719,7 +719,8 @@ models:
 
 # Benchmark (Sep 2026 A/B, RTX 3050 6GB, N=3 same prompt):
 #   ONYX compact + MTP: 45.1 tok/s, VRAM 4646 MiB, accept 85-93% — DEFAULT
-#   APEX Compact + ngram-mod: 40.6 tok/s, VRAM 4232 MiB (_disabled, GGUF on disk)
+#   APEX Compact + ngram-mod: 40.6 tok/s, VRAM 4232 MiB (_disabled, GGUF deleted
+#   2026-09-02 — re-download from mudler/Ornith-1.5-35B-A3B-APEX-GGUF to revert)
 # -------------------------------------------
   "ornith-1.5-35b":
     name: "Ornith 1.5 35B"
@@ -797,7 +798,7 @@ models:
       context_length: 262144
       embedding_length: 2048
       quantization: ONYX compact
-      note: "Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF still on disk."
+      note: "Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF deleted Sep 2026 (re-download from mudler repo if reverting)."
 # -------------------------------------------
 # BONSAI 27B 1-BIT — PrismML binary {-1,+1} LLM (Q1_0, upstream llama.cpp)
 # prism-ml/Bonsai-27B-gguf — Qwen3.6-27B base, 27.3B binary weights at 1.125 bpw.
@@ -1927,6 +1928,153 @@ models:
         image: false
       note: "Specialized OCR model — use prompts like 'OCR', 'OCR markdown', 'Table Recognition:'. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction."
 # -------------------------------------------
+# GPT-2 124M — the 2019 original (openai-community/gpt2)
+# Museum piece: NOT useful, historical value only.
+# 124M params, 12 layers, 768 embd, learned position embeddings (WPE)
+# NO RoPE — position table is exactly 1024 entries, so ctx is HARD-CAPPED
+# at 1024 (llama-server clamps -c to n_ctx_train; verified empirically).
+# No chat template (predates instruction tuning). Authentic interface is
+# /v1/completions — chat completions render default ChatML and the model
+# just continues text, which is period-correct behavior.
+# Sampling: temp 1.0 / top_k 40 — exactly the setup from the GPT-2 paper
+# (Radford et al. 2019, which introduced top-k sampling). No repeat penalty,
+# no top-p (nucleus sampling only came in 2020).
+# Quant: F16 (252 MB) — full precision for authenticity, trivial size.
+# Conversion: required 1-line patch to conversion/gpt2.py (upstream bug:
+# causal-mask buffers h.*.attn.bias yielded instead of dropped after
+# refactor #17114 — ValueError "Can not map tensor 'h.0.attn.bias'").
+# Backend: upstream llama.cpp (gpt2 arch)
+# -------------------------------------------
+  "gpt-2-124m":
+    name: "GPT-2 124M"
+    description: "The original GPT-2 small (2019). Text completion only, 1024 context. Museum piece — not useful, historical."
+    tags:
+      - "chat"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gpt-2-124m/gpt-2-124m-f16.gguf
+      --ctx-size 1024
+      --parallel 1
+      --cont-batching
+      --fit on
+      --fit-target ${vram_margin}
+      --no-webui
+      --temp 1.0
+      --top-k 40
+      --top-p 1.0
+      --repeat-penalty 1.0
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 1.0
+          top_p: 1.0
+    health_check_timeout: 300
+    ttl: 60
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: false
+      reranker: false
+      context: 1024
+    metadata:
+      size: "~252 MB (F16)"
+      context: "1K (hard cap: learned position embeddings, no RoPE)"
+      vram_usage: "~0.4GB (model + KV)"
+      source: "openai-community/gpt2 (safetensors, converted locally with convert_hf_to_gguf.py)"
+      kv_cache: "f16"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gpt2
+      parameters: 124000000
+      context_length: 1024
+      embedding_length: 768
+      quantization: F16
+      note: "Historical model from Feb 2019. Use /v1/completions (text completion) — no chat template exists. Context is physically limited to 1024 by the WPE position table. Q8_0 variant kept on disk as reference (gpt-2-124m-q8_0.gguf, 137 MB)."
+# -------------------------------------------
+# GPT-2 XL 1.5B — the 2019 flagship (openai-community/gpt2-xl)
+# The "too dangerous to release" model: withheld by OpenAI for months
+# in Feb-Nov 2019, famous for the unicorn story demo.
+# 1.5B params, 48 layers, 1600 embd, 25 heads, learned position embeddings
+# NO RoPE — WPE table is exactly 1024 entries, ctx HARD-CAPPED at 1024
+# (llama-server clamps -c to n_ctx_train; verified empirically).
+# No chat template (predates instruction tuning). Authentic interface is
+# /v1/completions — chat completions render default ChatML and the model
+# just continues text, period-correct behavior.
+# Sampling: temp 1.0 / top_k 40 — the setup from the GPT-2 paper
+# (Radford et al. 2019). No repeat penalty, no top-p.
+# Quant: F16 (3.12 GB) — full precision, fits RTX 3050 6GB entirely in
+# VRAM (~3.75GB with KV at ctx 1024). ~37 t/s on 4 threads.
+# Converted locally with the h.0.attn.bias patch (see gpt-2-124m.yaml).
+# Backend: upstream llama.cpp (gpt2 arch)
+# -------------------------------------------
+  "gpt-2-xl":
+    name: "GPT-2 XL 1.5B"
+    description: "The original GPT-2 XL (2019), the 'too dangerous to release' flagship. Text completion only, 1024 context. Museum piece — not useful, historical."
+    tags:
+      - "chat"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gpt-2-xl/gpt-2-xl-f16.gguf
+      --ctx-size 1024
+      --parallel 1
+      --cont-batching
+      --fit on
+      --fit-target ${vram_margin}
+      --no-webui
+      --temp 1.0
+      --top-k 40
+      --top-p 1.0
+      --repeat-penalty 1.0
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 1.0
+          top_p: 1.0
+    health_check_timeout: 300
+    ttl: 60
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: false
+      reranker: false
+      context: 1024
+    metadata:
+      size: "~3.12 GB (F16)"
+      context: "1K (hard cap: learned position embeddings, no RoPE)"
+      vram_usage: "~3.75GB (model + KV)"
+      source: "openai-community/gpt2-xl (safetensors, converted locally with convert_hf_to_gguf.py)"
+      kv_cache: "f16"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gpt2
+      parameters: 1500000000
+      context_length: 1024
+      embedding_length: 1600
+      quantization: F16
+      note: "GPT-2 flagship from Feb 2019 (withheld by OpenAI until Nov 2019 — the unicorn-story model). Use /v1/completions (text completion) — no chat template exists. Context physically limited to 1024 by the WPE position table."
+# -------------------------------------------
 # LFM2.5-8B-A1B MoE - UPSTREAM backend (lfm2moe hybrid conv+attention)
 # 8.3B total / 1.5B active, 32 experts x top-4, 18 conv + 6 GQA layers
 # Context: 131K (128K rope), vocab 128K, reasoning + tool calling
@@ -2171,6 +2319,9 @@ matrix:
     eq4: empero-qwen3.8-4b
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
     qpoll: qwen2.5-coder-1.5b-pollard
+    # GPT-2 124M — museum piece (2019 original, completion-only, ctx 1024)
+    gpt2: gpt-2-124m
+    gpt2xl: gpt-2-xl
     # Portal 2 personality cores (conversational, Q8_0, LFM2.5-350M)
     spc: portal-core-space
     fct: portal-core-fact
@@ -2211,13 +2362,16 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv) & (nomic | lfmemb | nemb | lfmcol)"
+    small_vision: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv) & (nomic | lfmemb | nemb | lfmcol)"
+    small_embed: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv"
+    small_only: "q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2 | gpt2xl"
+
+    # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
+    gpt2xl_embed: "gpt2xl & (nomic | lfmemb | nemb | lfmcol)"
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "ocr | qwvl | lfmvl3"
@@ -2267,6 +2421,8 @@ matrix:
     eq2: 2
     eq4: 3
     qpoll: 1
+    gpt2: 1
+    gpt2xl: 3
     spc: 1
     fct: 2
     adv: 2

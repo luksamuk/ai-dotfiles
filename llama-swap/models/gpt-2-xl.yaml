@@ -1,0 +1,70 @@
+# -------------------------------------------
+# GPT-2 XL 1.5B — the 2019 flagship (openai-community/gpt2-xl)
+# The "too dangerous to release" model: withheld by OpenAI for months
+# in Feb-Nov 2019, famous for the unicorn story demo.
+# 1.5B params, 48 layers, 1600 embd, 25 heads, learned position embeddings
+# NO RoPE — WPE table is exactly 1024 entries, ctx HARD-CAPPED at 1024
+# (llama-server clamps -c to n_ctx_train; verified empirically).
+# No chat template (predates instruction tuning). Authentic interface is
+# /v1/completions — chat completions render default ChatML and the model
+# just continues text, period-correct behavior.
+# Sampling: temp 1.0 / top_k 40 — the setup from the GPT-2 paper
+# (Radford et al. 2019). No repeat penalty, no top-p.
+# Quant: F16 (3.12 GB) — full precision, fits RTX 3050 6GB entirely in
+# VRAM (~3.75GB with KV at ctx 1024). ~37 t/s on 4 threads.
+# Converted locally with the h.0.attn.bias patch (see gpt-2-124m.yaml).
+# Backend: upstream llama.cpp (gpt2 arch)
+# -------------------------------------------
+"gpt-2-xl":
+  name: "GPT-2 XL 1.5B"
+  description: "The original GPT-2 XL (2019), the 'too dangerous to release' flagship. Text completion only, 1024 context. Museum piece — not useful, historical."
+  tags: ["chat"]
+  cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gpt-2-xl/gpt-2-xl-f16.gguf
+      --ctx-size 1024
+      --parallel 1
+      --cont-batching
+      --fit on
+      --fit-target ${vram_margin}
+      --no-webui
+      --temp 1.0
+      --top-k 40
+      --top-p 1.0
+      --repeat-penalty 1.0
+      --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 1.0
+        top_p: 1.0
+  health_check_timeout: 300
+  ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 1024
+  metadata:
+    size: "~3.12 GB (F16)"
+    context: "1K (hard cap: learned position embeddings, no RoPE)"
+    vram_usage: "~3.75GB (model + KV)"
+    source: "openai-community/gpt2-xl (safetensors, converted locally with convert_hf_to_gguf.py)"
+    kv_cache: "f16"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: gpt2
+    parameters: 1500000000
+    context_length: 1024
+    embedding_length: 1600
+    quantization: F16
+    note: "GPT-2 flagship from Feb 2019 (withheld by OpenAI until Nov 2019 — the unicorn-story model). Use /v1/completions (text completion) — no chat template exists. Context physically limited to 1024 by the WPE position table."

@@ -302,6 +302,40 @@
 
 ---
 
+### 16. gpt-2-124m — GPT-2 Small (museum)
+
+| Parameter | Value |
+|-----------|-------|
+| **Source** | openai-community/gpt2 (original Feb 2019 checkpoint) |
+| **Quant** | F16 (252 MB) — local conversion, NOT in download-models.sh |
+| **Backend** | `llama_server` (upstream, gpt2 arch) |
+| **KV cache** | f16 |
+| **Context** | **1024 hard cap** — learned WPE position table, no RoPE (llama-server clamps to n_ctx_train) |
+| **Tool calling** | ❌ No |
+| **Vision** | ❌ No |
+| **Sampling** | temp 1.0 / top-k 40 (GPT-2 paper setup) / repeat-penalty 1.0 |
+| **TTL** | 60s |
+| **Known issues** | No chat template — use `/v1/completions`. Chat completions render ChatML and the model just continues text (period-correct). Conversion needs the `h.0.attn.bias` patch in `conversion/gpt2.py` (upstream bug from refactor #17114). Speed: ~320 t/s. |
+
+---
+
+### 17. gpt-2-xl — GPT-2 XL 1.5B (museum)
+
+| Parameter | Value |
+|-----------|-------|
+| **Source** | openai-community/gpt2-xl (the "too dangerous to release" flagship, Feb 2019, unicorn-story model) |
+| **Quant** | F16 (3.12 GB) — local conversion, NOT in download-models.sh |
+| **Backend** | `llama_server` (upstream, gpt2 arch) |
+| **KV cache** | f16 |
+| **Context** | **1024 hard cap** — learned WPE position table, no RoPE |
+| **Tool calling** | ❌ No |
+| **Vision** | ❌ No |
+| **Sampling** | temp 1.0 / top-k 40 (GPT-2 paper setup) / repeat-penalty 1.0 |
+| **TTL** | 60s |
+| **Known issues** | No chat template — use `/v1/completions`. Same conversion patch as 124m. Fits VRAM entirely (~3.75 GB w/ KV). Speed: ~37 t/s. Dedicated matrix set `gpt2xl_embed`. |
+
+---
+
 ## Disabled Models
 
 Configs preserved in `models/_disabled/` (GGUF deleted, can be re-downloaded):

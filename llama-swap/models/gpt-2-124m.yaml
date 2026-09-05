@@ -1,0 +1,71 @@
+# -------------------------------------------
+# GPT-2 124M — the 2019 original (openai-community/gpt2)
+# Museum piece: NOT useful, historical value only.
+# 124M params, 12 layers, 768 embd, learned position embeddings (WPE)
+# NO RoPE — position table is exactly 1024 entries, so ctx is HARD-CAPPED
+# at 1024 (llama-server clamps -c to n_ctx_train; verified empirically).
+# No chat template (predates instruction tuning). Authentic interface is
+# /v1/completions — chat completions render default ChatML and the model
+# just continues text, which is period-correct behavior.
+# Sampling: temp 1.0 / top_k 40 — exactly the setup from the GPT-2 paper
+# (Radford et al. 2019, which introduced top-k sampling). No repeat penalty,
+# no top-p (nucleus sampling only came in 2020).
+# Quant: F16 (252 MB) — full precision for authenticity, trivial size.
+# Conversion: required 1-line patch to conversion/gpt2.py (upstream bug:
+# causal-mask buffers h.*.attn.bias yielded instead of dropped after
+# refactor #17114 — ValueError "Can not map tensor 'h.0.attn.bias'").
+# Backend: upstream llama.cpp (gpt2 arch)
+# -------------------------------------------
+"gpt-2-124m":
+  name: "GPT-2 124M"
+  description: "The original GPT-2 small (2019). Text completion only, 1024 context. Museum piece — not useful, historical."
+  tags: ["chat"]
+  cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/gpt-2-124m/gpt-2-124m-f16.gguf
+      --ctx-size 1024
+      --parallel 1
+      --cont-batching
+      --fit on
+      --fit-target ${vram_margin}
+      --no-webui
+      --temp 1.0
+      --top-k 40
+      --top-p 1.0
+      --repeat-penalty 1.0
+      --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 1.0
+        top_p: 1.0
+  health_check_timeout: 300
+  ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 1024
+  metadata:
+    size: "~252 MB (F16)"
+    context: "1K (hard cap: learned position embeddings, no RoPE)"
+    vram_usage: "~0.4GB (model + KV)"
+    source: "openai-community/gpt2 (safetensors, converted locally with convert_hf_to_gguf.py)"
+    kv_cache: "f16"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: gpt2
+    parameters: 124000000
+    context_length: 1024
+    embedding_length: 768
+    quantization: F16
+    note: "Historical model from Feb 2019. Use /v1/completions (text completion) — no chat template exists. Context is physically limited to 1024 by the WPE position table. Q8_0 variant kept on disk as reference (gpt-2-124m-q8_0.gguf, 137 MB)."

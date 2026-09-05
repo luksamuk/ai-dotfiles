@@ -41,6 +41,9 @@ matrix:
     eq4: empero-qwen3.8-4b
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
     qpoll: qwen2.5-coder-1.5b-pollard
+    # GPT-2 124M — museum piece (2019 original, completion-only, ctx 1024)
+    gpt2: gpt-2-124m
+    gpt2xl: gpt-2-xl
     # Portal 2 personality cores (conversational, Q8_0, LFM2.5-350M)
     spc: portal-core-space
     fct: portal-core-fact
@@ -81,13 +84,16 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv) & (nomic | lfmemb | nemb | lfmcol)"
+    small_vision: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv) & (nomic | lfmemb | nemb | lfmcol)"
+    small_embed: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv"
+    small_only: "q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2 | gpt2xl"
+
+    # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
+    gpt2xl_embed: "gpt2xl & (nomic | lfmemb | nemb | lfmcol)"
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "ocr | qwvl | lfmvl3"
@@ -137,6 +143,8 @@ matrix:
     eq2: 2
     eq4: 3
     qpoll: 1
+    gpt2: 1
+    gpt2xl: 3
     spc: 1
     fct: 2
     adv: 2
