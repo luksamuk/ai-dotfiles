@@ -1,0 +1,75 @@
+# -------------------------------------------
+# K2-HORIZON-MOVA-36B-A4B — ROUND 1 (baseline: config do kassane, do jeito que tá)
+# Propósito: A/B honesto — medir a config dele ANTES das nossas melhorias.
+# Diferenças vs round 2: ctx 8192, sem hadamard, fit-margin 256, samplers 0.7/0.6.
+# Única adaptação: caminhos de binário/template locais (macros da frota).
+# ATIVA APÓS: build do fork (kassane-ik_llama.cpp) + verificação.
+# Fonte: issue #1 do ai-dotfiles (config original do kassane)
+# -------------------------------------------
+"k2-horizon-36b-r1":
+  name: "K2-Horizon MoVA 36B (R1 kassane)"
+  description: "K2-Horizon-MoVA-36B-A4B Q3_K_M. 36B MoE (100 experts, 8 ativos), k2-horizon arch. MoVA no caminho de V. Reasoning model. BASELINE: config original do kassane."
+  cmd: |
+    ${ik2_llama_server} --port ${PORT}
+    --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-Q3_K_M.gguf
+    --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
+    -ngl 99
+    --override-tensor "exps=CPU,tok_embd=CPU,output=CPU"
+    --ctx-size 8192
+    --temp 1.0
+    --top-p 0.95
+    --top-k 20
+    --min-p 0.0
+    --repeat-penalty 1
+    --reasoning on
+    --jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --flash-attn auto
+    --ubatch-size 1024
+    --reasoning-budget 8192
+    --reasoning-budget-message "Now answer directly."
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 0.7
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 1200
+  health_check_timeout: 900
+  capabilities:
+    in:
+      - 'text'
+    out:
+      - 'text'
+    tools: true
+    reranker: false
+    context: 8192
+  metadata:
+    size: "~17 GB (Q3_K_M)"
+    context: "8K (config baseline do kassane)"
+    vram_usage: "TBD no primeiro load"
+    source: "abenzerps/K2-Horizon-MoVA-36B-A4B-GGUF (SHA256 verificado 662610e0)"
+    kv_cache: "q4_0"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: k2-horizon
+    parameters: 36000000000
+    context_length: 524288
+    quantization: Q3_K_M
+    note: "ROUND 1 — baseline do kassane. Text-only (GGUF sem mmproj). Requer ik2_llama_server (fork kassane, build local). Comparação justa com R2: MESMO GGUF Q3_K_M."

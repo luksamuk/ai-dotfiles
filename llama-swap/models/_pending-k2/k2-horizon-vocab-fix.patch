@@ -1,0 +1,19 @@
+diff --git a/src/llama-vocab.cpp b/src/llama-vocab.cpp
+index 3c1f974..2b2513c 100644
+--- a/src/llama-vocab.cpp
++++ b/src/llama-vocab.cpp
+@@ -2170,12 +2170,12 @@ void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
+                 clean_spaces = false;
+             } else if (
+                 tokenizer_pre == "solar-open") {
++                pre_type = LLAMA_VOCAB_PRE_TYPE_SOLAR_OPEN;
++                clean_spaces = false;
+             } else if (
+                     tokenizer_pre == "k2-horizon") {
+                 pre_type = LLAMA_VOCAB_PRE_TYPE_K2HORIZON;
+                 clean_spaces = false;
+-                pre_type = LLAMA_VOCAB_PRE_TYPE_SOLAR_OPEN;
+-                clean_spaces = false;
+             } else {
+                 throw std::runtime_error(format("unknown pre-tokenizer type: '%s'", tokenizer_pre.c_str()));
+             }

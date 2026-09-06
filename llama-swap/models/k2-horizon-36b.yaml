@@ -1,0 +1,87 @@
+# -------------------------------------------
+# K2-HORIZON-MOVA-36B-A4B — ROUND 2 (config nossa, pós-learnings do R1)
+# R1 provou: --fit NÃO funciona neste modelo (attn_v_exps não é tratado como MoE tensor;
+# resto de 5.8GB não cabe na 6GB) e o alias "base" dele PENSAVA (template default
+# reasoning_effort=high sem enable_thinking=false).
+# R2 usa mapeamento MANUAL: -ngl 99 + override exps=CPU (pega ffn_*_exps E attn_v_exps
+# pelo substring) + tok_embd/output na CPU. Medido no R1 (8K): VRAM total 3283 MiB,
+# CUDA0 pesos 706 MiB, CUDA_Host 16.1GB pinned, KV 432 MiB @8K.
+# KV q4_0 real: ~49KB/token (48 camadas) -> 131072 tokens ~ 6.4GB -> RAM via --no-kv-offload.
+# Hadamard K/V: TESTADO E REJEITADO — corrompe output (glitch de tokens: "10 10",
+# "4444") em qualquer ctx; sem hadamard a mesma sequência sai exata. Provavelmente
+# a de-transformação (fa_h) não roda no caminho de atenção que o K2 usa
+# (K quantizado no head_dim 128 evita o IQK FA). Ver R1/issue.
+# Samplers: base 0.7 conservador; :think com temp 1.0/top_p 0.95 OFICIAL do IFM.
+# Reasoning: --reasoning-format deepseek (reasoning_content) + reasoning_effort high
+# via kwargs (default do template) + budget 16384 como teto anti-runaway.
+# Mesmo GGUF Q3_K_M do R1 — A/B isola o efeito da config.
+# -------------------------------------------
+"k2-horizon-36b":
+  name: "K2-Horizon MoVA 36B"
+  description: "K2-Horizon-MoVA-36B-A4B Q3_K_M. 36B MoE (100 experts, 8 ativos) + MoVA (64 value-experts, top-4) no caminho de V. k2-horizon arch. Reasoning model (thinking em reasoning_content). Text-only."
+  cmd: |
+    ${ik2_llama_server} --port ${PORT}
+    --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-Q3_K_M.gguf
+    --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
+    -ngl 99
+    --override-tensor "exps=CPU,tok_embd=CPU,output=CPU"
+    --no-kv-offload
+    --ctx-size 131072
+    --temp 1.0
+    --top-p 0.95
+    --reasoning on
+    --reasoning-format deepseek
+    --chat-template-kwargs '{"reasoning_effort":"high"}'
+    --jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --flash-attn auto
+    --ubatch-size 1024
+    --reasoning-budget 16384
+    --reasoning-budget-message "Now answer directly."
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+  ttl: 1200
+  health_check_timeout: 900
+  capabilities:
+    in:
+      - 'text'
+    out:
+      - 'text'
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~17 GB (Q3_K_M)"
+    context: "1K-131K (modelo suporta 512K nativo; teto da frota; KV q4_0 6.4GB em RAM)"
+    vram_usage: "~3.3GB VRAM + ~16GB RAM pinned (medido @8K no R1; 131K muda só o KV em RAM)"
+    source: "abenzerps/K2-Horizon-MoVA-36B-A4B-GGUF (SHA256 662610e0)"
+    kv_cache: "q4_0 + attn_rot (head_dim 128); hadamard TESTADO E REJEITADO (corrompe output no K2)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: k2-horizon
+    parameters: 36000000000
+    context_length: 524288
+    quantization: Q3_K_M
+    note: "ROUND 2 — config da casa. ATENÇÃO: 131K consome ~28GB de RAM (pinned 16GB + KV 6.4GB + sistema) — feche apps pesados; fallback seguro é ctx 65536 (~3.2GB de KV). Backend: ik2_llama_server (fork kassane, patch vocab cf03d82). R1 mediu 16.3 tok/s decode / 48.8 tok/s prefill @8K ctx 8192. Template abenzerps (IFM embutida pressupõe parser k2_horizon do fork MBZUAI — inexistente aqui). Snake test R1: 180 linhas compilando (curses/score/aceleração)."
