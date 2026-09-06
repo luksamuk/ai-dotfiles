@@ -336,6 +336,27 @@
 
 ---
 
+### 18. k2-horizon-36b — K2-Horizon MoVA 36B-A4B (experimental, via kassane fork)
+
+| Parameter | Value |
+|-----------|-------|
+| **Source** | IFM K2-Horizon-MoVA-36B-A4B (36B MoE, 4B active, 100 experts top-8 + 1 shared; MoVA = 64 value-experts top-4 no caminho de V) |
+| **Quant** | Q3_K_M ~17 GB (abenzerps, SHA256 662610e0) |
+| **Backend** | `ik2_llama_server` — fork kassane/ik_llama.cpp branch k2-horizon (build cf03d82 + vocab fix; arch suportada SÓ lá, ikawrakow main não tem k2-horizon) |
+| **KV cache** | `q4_0` + attn_rot (head_dim 128). Hadamard **rejeitado** (corrompe output no K2). KV real: ~49KB/token (48 layers) → 432 MiB @8K, 6.4 GB @131K (em RAM, `--no-kv-offload`) |
+| **Load** | Mapeamento manual: `-ngl 99 --override-tensor "exps=CPU,tok_embd=CPU,output=CPU"` — `--fit` NÃO funciona (attn_v_exps não é tratado como MoE tensor; resíduo 5.8 GB > 6 GB VRAM) |
+| **VRAM/RAM** | ~3.3 GB VRAM (weights CUDA0 706 MiB) + 16.1 GB pinned @8K; ~28 GB RAM total @131K |
+| **Context** | R1 8192 (baseline kassane) / R2 131072 (nossa; 512K nativo) |
+| **Thinking** | ✅ reasoning_effort via `--chat-template-kwargs` (default high); `--reasoning-format deepseek` → reasoning_content; budget 16384 (anti-runaway) |
+| **Template** | abenzerps chat_template.jinja (a embutida do IFM exige parser k2_horizon do fork MBZUAI) |
+| **Tool calling** | ✅ (tool_call_format xml/json/xml_typed no template) |
+| **Vision** | ❌ No mmproj no ecossistema GGUF |
+| **Speed (RTX 3050 6GB)** | decode 15.2–16.3 tok/s; prefill 38–54 tok/s (offload pesado) |
+| **Status** | Experimental — issue #1 do ai-dotfiles (kassane). Awaiting: merge da arch no ikawrakow main; Q4_K_M (~21 GB) como upgrade |
+| **Known issues** | RAM @131K roza o limite (28/31 GB — fechar apps); alias "base" sem enable_thinking:false PENSA (template default high) |
+
+---
+
 ## Disabled Models
 
 Configs preserved in `models/_disabled/` (GGUF deleted, can be re-downloaded):
