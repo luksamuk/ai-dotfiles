@@ -1,0 +1,18 @@
+{#-
+GPT-2 chat template (concatenation shim)
+GPT-2 predates chat models — there is NO authentic chat format.
+This template makes /v1/chat/completions degrade gracefully to what
+GPT-2 actually is: a text completion engine. All message contents
+(system, user, assistant) are concatenated verbatim with NO separators
+and NO special tokens (ChatML <|im_end|> etc. are not in the GPT-2
+vocab — the default fallback would tokenize them as garbage text).
+
+Single-turn = identical to raw /v1/completions. Multi-turn concatenates
+turns as one document, the best a base model can do.
+
+The authentic interface remains /v1/completions. This shim only exists
+so chat-endpoint callers get clean continuation instead of ChatML noise.
+-#}
+{%- for message in messages -%}
+{{- message.content -}}
+{%- endfor -%}

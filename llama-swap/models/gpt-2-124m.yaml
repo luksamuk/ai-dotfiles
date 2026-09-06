@@ -5,8 +5,9 @@
 # NO RoPE — position table is exactly 1024 entries, so ctx is HARD-CAPPED
 # at 1024 (llama-server clamps -c to n_ctx_train; verified empirically).
 # No chat template (predates instruction tuning). Authentic interface is
-# /v1/completions — chat completions render default ChatML and the model
-# just continues text, which is period-correct behavior.
+# /v1/completions. Chat completions use templates/gpt2-chat-template.jinja
+# (concatenation shim: messages joined verbatim, no special tokens) so
+# chat-endpoint callers get clean continuation instead of ChatML noise.
 # Sampling: temp 1.0 / top_k 40 — exactly the setup from the GPT-2 paper
 # (Radford et al. 2019, which introduced top-k sampling). No repeat penalty,
 # no top-p (nucleus sampling only came in 2020).
@@ -29,6 +30,8 @@
       --fit on
       --fit-target ${vram_margin}
       --no-webui
+      --jinja
+      --chat-template-file ${templates_dir}/gpt2-chat-template.jinja
       --temp 1.0
       --top-k 40
       --top-p 1.0
