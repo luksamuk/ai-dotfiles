@@ -6,6 +6,10 @@
 # R2 usa mapeamento MANUAL: -ngl 99 + override exps=CPU (pega ffn_*_exps E attn_v_exps
 # pelo substring) + tok_embd/output na CPU. Medido no R1 (8K): VRAM total 3283 MiB,
 # CUDA0 pesos 706 MiB, CUDA_Host 16.1GB pinned, KV 432 MiB @8K.
+# Otimização 08/09: output tensor na GPU (+30% decode: 15.2 -> 19.6-20.9 t/s medidos,
+# VRAM +0.9GB). Testado e descartado: MoVA value-experts na GPU (ffn_*_exps=CPU explícito)
+# mesmo decode, VRAM 5.5GB/90% (não sobrevive a 131K). Output layer no CUDA é o que importa
+# (maior matmul por token).
 # KV q4_0 real: ~49KB/token (48 camadas) -> 131072 tokens ~ 6.4GB -> RAM via --no-kv-offload.
 # Hadamard K/V: TESTADO E REJEITADO — corrompe output (glitch de tokens: "10 10",
 # "4444") em qualquer ctx; sem hadamard a mesma sequência sai exata. Provavelmente
@@ -24,7 +28,7 @@
     --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-Q3_K_M.gguf
     --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
     -ngl 99
-    --override-tensor "exps=CPU,tok_embd=CPU,output=CPU"
+    --override-tensor "exps=CPU,tok_embd=CPU"
     --no-kv-offload
     --ctx-size 131072
     --temp 1.0
