@@ -2,7 +2,7 @@
 
 Reproducing @kassane's setup on a smaller card: RTX 3050 6GB VRAM, 31GB RAM. Same model file (abenzerps Q3_K_M, SHA256 verified), same chat template (abenzerps `chat_template.jinja`), same arch branch (kassane's `k2-horizon`), fork point `fe215a8c` of ikawrakow/ik_llama.cpp.
 
-All findings below are reproducible; deterministic tests ran at temperature 0. The full measured matrix is in this repo: `llama-swap/models/_pending-k2/ISSUE_NOTES.md` (this document), plus the tokenizer patch attached (`k2-horizon-vocab-fix.patch`).
+All findings below are reproducible; deterministic tests ran at temperature 0. The tokenizer patch is attached to the issue reply (`k2-horizon-vocab-fix.patch`).
 
 ---
 
