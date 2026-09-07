@@ -1334,12 +1334,17 @@ class StreamingChat:
         self.status = "Gerando resposta final..."
         yield self.render()
         
-        # Stream 2nd turn inline — tools present with tool_choice:"none" so the
-        # chat template still renders tool definitions and the server-side
-        # parser stays active (without it, raw <ifm|tool_calls> tags leaked
-        # into content when the model re-emitted calls — seen on k2-horizon).
+        # Stream 2nd turn inline — tools present with tool_choice "auto" so the
+        # chat template renders tool definitions AND the server-side parser
+        # stays active (with tool_choice "none" the parser is SKIPPED and any
+        # model re-emission leaks raw <ifm|tool_calls> tags into content).
+        # Guard against infinite tool loops: one extra round max.
         _turn2_tools = getattr(self, "_last_tools", None)
-        for layout in self.stream_chat(prompt="", messages=base_messages, tools=_turn2_tools, tool_choice="none"):
+        _turn2_choice = "auto" if _turn2_tools else None
+        self._tool_round_depth = getattr(self, "_tool_round_depth", 0) + 1
+        if self._tool_round_depth > 2 or not _turn2_tools:
+            _turn2_choice = "none" if _turn2_tools else None
+        for layout in self.stream_chat(prompt="", messages=base_messages, tools=_turn2_tools, tool_choice=_turn2_choice):
             yield layout
     
     def run(self):
@@ -1486,6 +1491,7 @@ class StreamingChat:
             try:
                 tools_payload = MOCK_TOOLS if self.supports_tools else None
                 self._last_tools = tools_payload  # preserved for tool round-trip turn
+                self._tool_round_depth = 0  # reset per prompt (loop guard in handle_tool_calls)
                 for layout in self.stream_chat(clean_prompt, image_paths, audio_paths, tools=tools_payload):
                     live.update(layout)
                 
