@@ -1667,9 +1667,11 @@ class StreamingChat:
                     # Context usage se temos prompt_n
                     if ts and ts.get("prompt_n") and model_info.get("context"):
                         prompt_n_val = ts["prompt_n"]
-                        # Extrai o maior número de context (ex: "32K-128K (dynamic)" -> 131072)
-                        ctx_str = model_info["context"].upper()
-                        ctx_max = parse_context_to_tokens(ctx_str)
+                        # Deployed context: prefer the API's context_length (exact
+                        # value from the fragment's capabilities), NOT the biggest
+                        # number in the metadata text — "1K-131K (... 512K nativo)"
+                        # parses to 524288 and shows the wrong ceiling (k2-horizon).
+                        ctx_max = model_info.get("context_length") or parse_context_to_tokens(model_info["context"].upper())
                         if ctx_max:
                             pct = prompt_n_val / ctx_max * 100
                             bar_len = 20
