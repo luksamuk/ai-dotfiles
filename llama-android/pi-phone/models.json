@@ -198,6 +198,50 @@
           ],
           "contextWindow": 131072,
           "maxTokens": 32768
+        },
+        {
+          "id": "spark-x2.5-4b",
+          "name": "Spark X2.5 4B",
+          "description": "XHToken hybrid SWA, 131K ctx, fastest dense decode (45 t/s). Tool calls so no :think.",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "spark-x2.5-4b:think",
+          "name": "Spark X2.5 4B (Thinking)",
+          "description": "Spark com thinking (agente: usar este). Causa raiz + tool call clean.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "minicpm5-2b",
+          "name": "MiniCPM5 2B",
+          "description": "OpenBMB 2B, 131K ctx, tool calling limpo nos dois modos, needle @131K. Estavel (CV 2.3%).",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "minicpm5-2b:think",
+          "name": "MiniCPM5 2B (Thinking)",
+          "description": "MiniCPM5-2B com thinking. Melhor disciplina de tool call do A/B (0 falso positivo).",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
         }
       ]
     },
