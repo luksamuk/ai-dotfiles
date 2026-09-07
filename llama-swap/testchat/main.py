@@ -993,7 +993,7 @@ class StreamingChat:
         
         return layout
     
-    def stream_chat(self, prompt: str, image_paths: list[str] = None, audio_paths: list[str] = None, messages: list = None, tools: list = None) -> Iterator[Layout]:
+    def stream_chat(self, prompt: str, image_paths: list[str] = None, audio_paths: list[str] = None, messages: list = None, tools: list = None, tool_choice: str = None) -> Iterator[Layout]:
         """Realiza o streaming do chat usando requests diretamente.
         
         Args:
@@ -1093,7 +1093,7 @@ class StreamingChat:
             # Add tools if supported
             if tools:
                 payload["tools"] = tools
-                payload["tool_choice"] = "auto"
+                payload["tool_choice"] = tool_choice or "auto"
                 # LFM2 models support parallel tool calls via pythonic format
                 # upstream llama.cpp disables them by default — explicitly enable
                 if self.selected_model.startswith("lfm2"):
@@ -1334,8 +1334,12 @@ class StreamingChat:
         self.status = "Gerando resposta final..."
         yield self.render()
         
-        # Stream 2nd turn inline — NO tools to prevent infinite loops
-        for layout in self.stream_chat(prompt="", messages=base_messages, tools=None):
+        # Stream 2nd turn inline — tools present with tool_choice:"none" so the
+        # chat template still renders tool definitions and the server-side
+        # parser stays active (without it, raw <ifm|tool_calls> tags leaked
+        # into content when the model re-emitted calls — seen on k2-horizon).
+        _turn2_tools = getattr(self, "_last_tools", None)
+        for layout in self.stream_chat(prompt="", messages=base_messages, tools=_turn2_tools, tool_choice="none"):
             yield layout
     
     def run(self):
@@ -1481,6 +1485,7 @@ class StreamingChat:
         ) as live:
             try:
                 tools_payload = MOCK_TOOLS if self.supports_tools else None
+                self._last_tools = tools_payload  # preserved for tool round-trip turn
                 for layout in self.stream_chat(clean_prompt, image_paths, audio_paths, tools=tools_payload):
                     live.update(layout)
                 
