@@ -88,4 +88,4 @@
     parameters: 36000000000
     context_length: 524288
     quantization: Q3_K_M
-    note: "ROUND 2 — config da casa. ATENÇÃO: 131K consome ~28GB de RAM (pinned 16GB + KV 6.4GB + sistema) — feche apps pesados; fallback seguro é ctx 65536 (~3.2GB de KV). Backend: ik2_llama_server (fork kassane, patch vocab cf03d82). R1 mediu 16.3 tok/s decode / 48.8 tok/s prefill @8K ctx 8192. Template abenzerps (IFM embutida pressupõe parser k2_horizon do fork MBZUAI — inexistente aqui). Snake test R1: 180 linhas compilando (curses/score/aceleração)."
+    note: "Mapeamento manual (--fit falha nesta arch): experts FFN na CPU (pinned), value-experts MoVA + output na GPU, KV em RAM. Flag UMA = seguro anti-OOM apenas. Hadamard K rejeitada (glitches determinísticos; lado V, incl. MoVA, verificado limpo). 131K consome ~24GB de RAM total (incl. sistema) — feche apps pesados. Backend: fork do kassane + patch de vocab anexado. Template: abenzerps (a embutida do IFM pressupõe o parser k2_horizon do fork MBZUAI)."
