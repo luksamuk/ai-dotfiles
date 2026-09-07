@@ -404,6 +404,28 @@
           ],
           "contextWindow": 131072,
           "maxTokens": 32768
+        },
+        {
+          "id": "minicpm5-2b",
+          "name": "MiniCPM5 2B",
+          "description": "OpenBMB MiniCPM5-2B: dense 2B (arch llama), 131K ctx nativo, tool calling limpo em ambos os modos, decode 78-84 t/s. Vendor SOTA 2B (AA Intelligence 15, acima de Granite 8B). Text-only, sem MTP.",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "minicpm5-2b:think",
+          "name": "MiniCPM5 2B (Thinking)",
+          "description": "OpenBMB MiniCPM5-2B com thinking. Tool calling limpo nos dois modos. Fleet-best decode estavel (78 t/s CV 2.3%), needle @131K correta. Melhor disciplina de tool call do A/B (0 falso positivo).",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
         }
       ]
     }
