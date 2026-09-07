@@ -1,0 +1,82 @@
+# -------------------------------------------
+# MINICPM5-2B — OpenBMB (Apache-2.0)
+# Dense 2B, LlamaForCausalLM PURO (arch llama) — roda no upstream e no ik
+# sem fork/patch. 42 layers, GQA 16/2, head_dim 128, ctx 131K nativo
+# (rope_theta 5M). Text-only, sem vision, sem MTP/NextN.
+#
+# GGUF: openbmb/MiniCPM5-2B-GGUF (OFICIAL do vendor):
+#   Q4_K_M 1.45GB / Q8_0 2.50GB / F16 4.69GB
+#
+# KV budget (RTX 3050 6GB): 42 layers x 2 KV heads x 128 dim.
+# f16 KV = ~42 KiB/token (131K = 5.4GB — NAO CABE). q4_0 KV
+# = ~10.6 KiB/token -> 131K ~1.35GB. Modelo 1.45GB + KV + buffers ~3.8GB.
+#
+# Tool calling: XML-style <function name=...><param name=...>...</param></function>
+# (SGLang usa parser dedicado 'minicpm5'; no llama-server verificar se o GGUF
+# carrega metadata de tool-call — se nao, calls aparecem cruas no content).
+# Thinking: template dual-mode (enable_thinking), blocos think.
+# Vendor: temp 1.0 / top_p 0.95. Historico da familia (1B): erava grafia
+# de nomes raros em Q8_0 — smoke test de grafia obrigatorio (Q8_0 e Q4).
+# Bench vendor: SWE-Verified 46.4 > Pro 14.4 (ordenacao correta, honesto);
+# mas linhas com dagger = avaliacao do proprio vendor — validar na pratica.
+# STATUS: fragmento preparado 2026-09-07, AGUARDANDO smoke test (GPU ocupada
+# com round agentic do Spark). Nao ativado no fleet ainda.
+# -------------------------------------------
+"minicpm5-2b":
+  name: "MiniCPM5 2B"
+  description: "OpenBMB MiniCPM5-2B: dense 2B (arch llama puro), 131K ctx nativo, tool calling + agentic focus. Vendor claims 2B-class SOTA (avg 53.9, competitive com 4B). Q4_K_M 1.45GB oficial. Irmao maior do MiniCPM5-1B (desativado Jul 2026: perdia de LFM2.5-230M em tool calling e erava grafia)."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/minicpm5-2b/MiniCPM5-2B-Q4_K_M.gguf
+    --jinja
+    --fit on
+    --parallel 1
+    --ctx-size 131072
+    --reasoning on
+    --cache-type-k q4_0
+    --cache-type-v q4_0
+    --flash-attn auto
+    --metrics
+  filters:
+    stripParams: "temperature, top_p, top_k"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+  ttl: 900
+  health_check_timeout: 300
+  capabilities:
+    in:
+      - 'text'
+    out:
+      - 'text'
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~1.45 GB (Q4_K_M oficial)"
+    context: "1K-131K (nativo, sem scaling)"
+    vram_usage: "~3.8GB estimado @131K (modelo 1.45GB + KV q4_0 ~1.35GB + buffers) — MEDIR no smoke"
+    source: "openbmb/MiniCPM5-2B-GGUF (oficial vendor)"
+    kv_cache: "q4_0"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: llama
+    parameters: 2000000000
+    context_length: 131072
+    quantization: Q4_K_M
+    note: "Sem MTP. Vendor sampling 1.0/0.95 (think). Familia: 1B foi desativado Jul 2026 — o 2B precisa provar grafia + tool call no smoke. GGUF oficial do vendor (quants proprios)."

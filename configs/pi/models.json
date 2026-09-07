@@ -382,6 +382,28 @@
           ],
           "contextWindow": 131072,
           "maxTokens": 32768
+        },
+        {
+          "id": "spark-x2.5-4b",
+          "name": "Spark X2.5 4B",
+          "description": "XHToken Spark-X2.5-4B - hybrid SWA attention, 1M ctx native (fleet 131K). Fast prefill/decode. Text-only, no MTP. Tool calling requires thinking mode.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "spark-x2.5-4b:think",
+          "name": "Spark X2.5 4B (Thinking)",
+          "description": "Spark-X2.5-4B com thinking. Tool calling CLEAN so no :think (base alucina resultados de tool em PT). Hybrid SWA, 131K ctx, upstream backend.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
         }
       ]
     }

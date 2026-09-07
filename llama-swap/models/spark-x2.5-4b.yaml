@@ -1,0 +1,84 @@
+# -------------------------------------------
+# SPARK-X2.5-4B — XHToken/iFLYTEK (Apache-2.0)
+# Hybrid attention: 36 layers (27 sliding-window 512 + 9 full-attention)
+# GQA 16/4 heads, head_dim 256, RoPE partial 0.25 (theta 5M) nas full,
+# full-rotary (theta 10K) nas SWA -> 1M ctx nativo. Text-only, NO MTP/NextN.
+# Arch: spark2_5 — upstream llama.cpp only (PR #27868, merged 2026-09-06,
+# build 2171+). ik_llama.cpp NAO suporta (checado via API 2026-09-07).
+#
+# GGUF: miifanboy i1 imatrix Q4_K_M (2.42GB) — quantize comunitario.
+#
+# KV budget (RTX 3050 6GB): 9 full-attn layers, 4 KV heads x 256 dim.
+# q4_0 KV: ~9.2 KiB/token -> 131K = ~1.2GB. Modelo + KV + buffers @131K
+# = 5.19GB medido. 131K validado: needle @123.4K recuperada exata.
+# Sliding layers (512) nao acumulam KV — e isso que permite 131K folgado.
+#
+# Tool calling: CLEAN no :think (enable_thinking true, temp 1.0 vendor).
+# Base (no-think) ALUCINA resultados de tool em PT — nao usar p/ agente.
+# Thinking: tags de think no content, extraidas p/ reasoning_content via
+# --reasoning on; template dual-mode (enable_thinking).
+# Sampling: vendor generation_config temp=1.0/top_p=0.95 (agentic/think);
+# base 0.7 (licao K2: temp de model card e p/ scoring, nao p/ agente).
+# Agentic bench 03 (2026-09-07): TIMEOUT 40min, 0 nudges, reasoning loop sem entregavel
+# (VERIFICACAO.md nunca escrito). NAO usar p/ coding agente — papel: motor rapido de ctx longo.
+# Bench: llama-bench SEGFAULTA nesta arch (GGML_ASSERT n_backends>0 no
+# encode hibrido) — medir via llama-server timings (validado 2026-09-07).
+# -------------------------------------------
+"spark-x2.5-4b":
+  name: "Spark X2.5 4B"
+  description: "XHToken/iFLYTEK Spark-X2.5-4B: hybrid SWA attention (27 sliding + 9 full layers), native 1M ctx claim, 4B params, agentic-focused (SWE-Bench Pro claim unverified; Nanbeige 3B wins 7/9 shared benches). Text-only, no vision, no MTP. Upstream backend (spark2_5). 131K ctx validated: needle @123.4K OK, prefill 1074 t/s @105K, decode 20 t/s @123K, 45 t/s short-ctx."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/spark-x2.5-4b/Spark-X2.5-4B-Q4_K_M.gguf
+    --jinja
+    --fit on
+    --parallel 1
+    --ctx-size 131072
+    --reasoning on
+    --cache-type-k q4_0
+    --cache-type-v q4_0
+    --flash-attn auto
+    --metrics
+  filters:
+    stripParams: "temperature, top_p, top_k"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+  ttl: 900
+  health_check_timeout: 300
+  capabilities:
+    in:
+      - 'text'
+    out:
+      - 'text'
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~2.5 GB (Q4_K_M i1)"
+    context: "1K-131K (frota); modelo suporta 1M nativo"
+    vram_usage: "~5.2GB total @131K (medido: modelo 2.42GB + KV q4_0 ~1.2GB + buffers)"
+    source: "miifanboy/Spark-X2.5-4B-i1-GGUF (imatrix), base XHToken/Spark-X2.5-4B"
+    kv_cache: "q4_0"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: spark2_5
+    parameters: 4000000000
+    context_length: 1048576
+    quantization: Q4_K_M
+    note: "Tool calling so no :think. Sem MTP (sem NextN) — nao usar --spec-type mtp (ik fallback OOM). llama-bench segfaulta nesta arch — medir via llama-server timings."
