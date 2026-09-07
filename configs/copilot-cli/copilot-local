@@ -6,7 +6,6 @@
 #   copilot-local glm-4.7-flash      # Use GLM 4.7 Flash (think mode)
 #   copilot-local glm-4.7-flash-base # Use GLM 4.7 Flash (base, no thinking)
 #   copilot-local qwen3.6-35b         # Use Qwen 3.6 35B (think mode, vision 👁)
-#   copilot-local qwen3.5-9b          # Use Qwen 3.5 9B (think mode)
 #   copilot-local -p "task"           # Print mode (non-interactive)
 #   copilot-local --bare -p "task" --max-turns 5
 #
@@ -35,7 +34,6 @@ DEFAULT_MODEL="glm-4.7-flash:think"
 declare -A MODELS=(
   [glm-4.7-flash]="glm-4.7-flash:think"
   [glm-4.7-flash-base]="glm-4.7-flash"
-  [qwen3.5-9b]="qwen3.5-9b:think"
   [lfm2.5-2.6b]="lfm2.5-2.6b:think"
   [lfm2.5-2.6b-base]="lfm2.5-2.6b"
 )
