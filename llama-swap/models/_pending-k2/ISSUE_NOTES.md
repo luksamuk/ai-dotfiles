@@ -1,135 +1,122 @@
-# Dossiê K2-Horizon-MoVA-36B-A4B — material pra resposta da issue
+# Testing K2-Horizon-MoVA-36B-A4B on ik_llama.cpp — findings from an RTX 3050 6GB (36B MoE, 4B active)
 
-Issue: https://github.com/luksamuk/ai-dotfiles/issues/1 (kassane, 06/09/2026)
-Autor: Hermes Agent (sessões 06-09/09/2026). Hardware de teste: RTX 3050 6GB, R7, 31GB RAM.
+Reproducing @kassane's setup on a smaller card: RTX 3050 6GB VRAM, 31GB RAM. Same model file (abenzerps Q3_K_M, SHA256 verified), same chat template (abenzerps `chat_template.jinja`), same arch branch (kassane's `k2-horizon`), fork point `fe215a8c` of ikawrakow/ik_llama.cpp.
 
-## 1. Bug de merge no vocab (com patch pronto)
+All findings below are reproducible; deterministic tests ran at temperature 0. The full measured matrix is in this repo: `llama-swap/models/_pending-k2/ISSUE_NOTES.md` (this document), plus the tokenizer patch attached (`k2-horizon-vocab-fix.patch`).
 
-`src/llama-vocab.cpp` do branch k2-horizon: branch `solar-open` ficou com corpo VAZIO
-e o corpo dele (que seta `LLAMA_VOCAB_PRE_TYPE_SOLAR_OPEN`) caiu DENTRO do branch
-`k2-horizon`, sobrescrevendo `LLAMA_VOCAB_PRE_TYPE_K2HORIZON`.
+---
 
-Efeito: o regex custom do K2 (dígitos agrupados 1-3, ZWJ/combining marks) é código
-morto — todo modelo k2-horizon tokeniza com o regex do solar-open (quebra dígitos
-um a um). Erro de qualidade vs tokenizer oficial do IFM em números/unicode.
+## 1. Bug: merged-out tokenizer regex (solar-open body lost inside k2-horizon branch)
 
-Patch: `k2-horizon-vocab-fix.patch` (neste diretório) — commit cf03d82 no clone local.
-Testado: build com patch, contagem determinística exata.
+In `src/llama-vocab.cpp` (branch `k2-horizon`, as of `00adc77`):
 
-## 2. Hadamard K/V corrompe output no k2-horizon (reprodução determinística)
-
-`--k-cache-hadamard` (e a combinação K+V) produz glitchs de tokens REPRODUTÍVEIS
-a temp 0 ("33 33, 36 36, 44 44" na contagem 1-50). Sem hadamard, a mesma sequência
-saio exata. V-hadamard isolada saiu limpa (amostra única @temp 1.0) — o K é o culpado.
-
-Tese: a de-transformação do K ("fa_h") mora nos kernels IQK FA — e o k2-horizon
-EVITA o IQK FA (comentário do próprio build_k2horizon.cpp: K quantizado @ head_dim 128
-não suportado; troca por llm_build_kv). A de-transform não cobre esse caminho.
-A hadamard precisa ser portada pro caminho llm_build_kv, ou desabilitada p/ k2-horizon.
-
-Matriz (temp 0, determinística, ctx 8192):
-| config | resultado |
-|---|---|
-| K+V hadamard | glitch ("33 33, 36 36, 44 44") |
-| sem hadamard | 1..50 exato |
-| K isolada | glitch ("44 44") |
-| V isolada | 1..50 EXATO (determinístico) — MoVA→V-cache→de-transform funciona end-to-end |
-
-Atribuição final: corrupção é 100% K-side. O caminho do V (onde mora o MoVA) lida
-corretamente com hadamard + de-transform; o K (projeção padrão, sem MoVA) perde a
-de-transformação no caminho alternativo llm_build_kv. Bug de cobertura de caminho,
-não conflito arquitetural com MoVA. (Curiosidade: V-only marcou 21.7 t/s vs 20.4
-baseline — possível micro-ganho, não adotado.)
-
-## 3. --fit não funciona na arquitetura (com workaround medido)
-
-`--fit` trata só `ffn_*_exps` como MoE tensors — os `attn_v_exps` do MoVA (3.2GB)
-ficam na GPU; resíduo de 5.835 MiB > 6.144 MiB do card → "Unable to auto-fit".
-E `--override-tensor` não pode ser combinado com `--fit` (erro explícito).
-
-Workaround (mapeamento manual, medido @131K):
+```cpp
+} else if (tokenizer_pre == "solar-open") {
+    // empty body — solar-open falls through to "unknown pre-tokenizer" error
+} else if (tokenizer_pre == "k2-horizon") {
+    pre_type = LLAMA_VOCAB_PRE_TYPE_K2HORIZON;
+    clean_spaces = false;
+    pre_type = LLAMA_PRE_TYPE_SOLAR_OPEN;   // ← overwrites K2HORIZON
+    clean_spaces = false;
+}
 ```
+
+**Effect:** the custom K2 regex (digit grouping 1-3 digits, ZWJ/combining-mark handling) is dead code — every k2-horizon model tokenizes with the solar-open regex, which splits digits one-by-one. Quality divergence vs the official IFM tokenizer on numbers/unicode.
+
+**Fix (tested, deterministic count 1..50 exact after fix):** attached `k2-horizon-vocab-fix.patch`. One-line explanation: restore solar-open's body and let the k2-horizon branch set only its own pre_type.
+
+---
+
+## 2. K-cache Hadamard corrupts k2-horizon output (deterministic)
+
+With `--cache-type-k q4_0 --cache-type-v q4_0` + `--k-cache-hadamard` (+/− `--v-cache-hadamard`), the model emits glitched tokens **deterministically at temp 0**. Prompt: "Count from 1 to 50, one number per line" → `33 33 ... 36 36 ... 44 44` style duplication glitches.
+
+Matrix (ctx 8192, temp 0, same prompt every row):
+
+| Config | Result |
+|---|---|
+| K+V hadamard | glitched ("33 33", "36 36", "44 44") |
+| no hadamard | exact 1..50 |
+| K only | glitched ("44 44") |
+| V only | exact 1..50 (deterministic) |
+
+**Attribution:** corruption is 100% K-side. The V path — which is exactly where MoVA lives (routed value-experts → V-cache → read-back de-transform) — handles hadamard + de-transform correctly end-to-end. The K side loses its de-transform in the `llm_build_kv` path that k2-horizon is forced to use (the comment in `build_k2horizon.cpp` itself says quantized K @ head_dim 128 is unsupported in IQK FA). So this is a **path-coverage bug**, not an architectural conflict with MoVA. Fix options: wire the K de-transform into the `llm_build_kv` path, or gate `--k-cache-hadamard` off for k2-horizon.
+
+(FYI: V-only measured 21.7 t/s vs 20.4 baseline — possible small gain, not adopted.)
+
+---
+
+## 3. `--fit` doesn't work for this architecture (manual mapping workaround, measured)
+
+`--fit` only treats `ffn_*_exps` as MoE tensors — the MoVA value-expert tensors (`attn_v_exps`, ~3.2GB at Q3_K_M) are **not** offloaded, leaving 5.835 MiB of residue on GPU vs 5.042 MiB available → "Unable to auto-fit". And `--override-tensor` cannot be combined with `--fit` (explicit error).
+
+**Workaround** (works, measured at ctx 131072):
+
+```bash
 -ngl 99
 --override-tensor "ffn_gate_exps=CPU,ffn_down_exps=CPU,ffn_up_exps=CPU,tok_embd=CPU"
---no-kv-offload          # KV q4_0 @131K = 6.4GB em RAM
+--no-kv-offload    # KV @131K = 6.4GB in RAM (KV is only ~49KB/token: 48 layers, 8 kv-heads × 128, q4_0)
 --ubatch-size 256
-env: GGML_CUDA_ENABLE_UNIFIED_MEMORY=1   # seguro anti-OOM, doutrina ornith
+env GGML_CUDA_ENABLE_UNIFIED_MEMORY=1   # OOM insurance only — see note
 ```
-VRAM 5.3GB (86%), RAM 24GB, decode 20.4 t/s, prefill 67.2 t/s.
-Output tensor na GPU importa: manter `output` no CUDA = +30% decode (15.2→20.9 @8K).
 
-KV real do modelo: ~49KB/token (48 layers, 8 kv-heads × 128, q4_0) → 432MiB @8K,
-6.4GB @131K. 512K nativo seria impossível no card.
+Note on `GGML_CUDA_ENABLE_UNIFIED_MEMORY=1`: we measured it as a **primary serving path** on a different MoE model (Ornith-1.5-35B): 8-10x slower than the tuned offload pipeline (page-by-page migration vs overlapped pinned copies), so we use it here only as OOM insurance — free when everything fits, converts OOM into a run.
 
-## 4. O alias "base" da config de exemplo PENSA
+Measured (decode / prefill / VRAM / RAM):
 
-Sem `enable_thinking:false` no filtro do alias base, o template cai no default
-`reasoning_effort=high` — o "base" queima os tokens em thinking. Fix: chat_template_kwargs
-enable_thinking:false no alias base (ou --reasoning off). Adicionalmente recomendado:
---reasoning-format deepseek (thinking em reasoning_content) + budget 16384 como teto
-(8192 trunca o modo high com frequência).
-
-## 4b. Temperatura: temp 1.0 do model card quebra leitura agêntica (nossa régua: 0.7)
-
-Descoberta empírica (08/09): com temp 1.0 (`:think` seguindo a recomendação "always high"
-do model card), o modelo leu "London" como "Tokyo" 3x seguidas no mesmo prompt de tools.
-Mesma task com temp 0.7 (thinking ON, tudo igual): 4 calls paralelas perfeitas, cidades
-corretas. A régua 1.0/top_p 0.95 do IFM é para BENCHMARK (máxima diversidade p/ scoring);
-para agentes que precisam ler o prompt, 0.7 é o correto. Ambos os configs (o do kassane
-0.7/0.6 @ top_p 0.9 e o nosso 0.7/0.7 @ 0.95) rodam ABAIXO de 1.0 na prática — o
---temp 1.0 do cmd é sobrescrito pelo stripParams+setParamsByID em ambos.
-
-## 5. Tool calls: parser engole as boas, vaza as malformadas
-
-Com o template da abenzerps + --parallel-tool-calls, calls bem-formadas são parseadas
-em estruturadas (testado: 2 e 4 tool_calls paralelos num turno). MAS: call malformada
-(args trocados, comum em :think temp 1.0) = tags cruas `<ifm|tool_call>` vazam no
-content. Candidato a melhoria: parser tolerante ou fallback strip; testar também
-tool_call_format json via --chat-template-kwargs.
-
-Achado adicional de harness (não é do fork/modelo): num cliente de chat com loop
-de tools, o round-trip PRECISA manter as tools no payload com tool_choice "auto".
-Com tool_choice "none" o parser server-side é PULADO (server-common.cpp:814) e
-qualquer re-emissão do modelo vaza tags cruas; sem tools no payload, o template
-perde as definições de ferramenta do system e o modelo re-planeja em vez de responder.
-Simulador de agente corrigido no ai-dotfiles (testchat, commits b0a3b3c..5969107):
-ciclo ReAct natural — mesmo contexto do round 1 (system incluído), tools sempre
-presentes, loop termina quando o modelo responde sem calls.
-
-## 6. Template: proveniência
-
-GGUF abenzerps: `chat_template.jinja` = adaptada pro Jinja limitado do llama.cpp
-(sem dict()/sameas, think-tags extraídas do content, escape enable_thinking=false).
-`chat_template.upstream.jinja` = original do IFM. A embutida do IFM pressupõe o
-parser k2_horizon do fork MBZUAI-IFM (inexistente no ik_llama) → usar a da abenzerps.
-
-## 7. Números de referência (RTX 3050 6GB, 31GB RAM)
-
-| config | decode | prefill | VRAM | RAM |
+| Stage | decode | prefill | VRAM | RAM |
 |---|---|---|---|---|
-| baseline kassane (--fit, @8K, falhou load) | — | — | — | — |
-| manual R1 @8K | 16.3 t/s | 48.8 t/s | 3.3GB (54%) | ~17GB |
-| manual + output GPU @8K | 20.9 t/s | 49.2 | 3.7GB | ~24GB |
-| v3 @131K (final): ffn_*_exps CPU + MoVA GPU + UMA insurance | 20.4 t/s | 67.2 | 5.3GB (86%) | 24GB (77%) |
-| v2 @131K (intermediário, p/ referência) | 19.6 t/s | 45.4 | 3.2GB (52%) | 27GB (87%) |
+| manual, R1 params @8K | 16.3 t/s | 48.8 t/s | 3.3GB (54%) | ~17GB |
+| + output tensor on GPU @8K | 20.9 t/s | 49.2 | 3.7GB | ~24GB |
+| + MoVA value-experts on GPU, ubatch 256, ctx 131072 | 20.4 t/s | 67.2 | 5.3GB (86%) | 24GB (77%) |
 
-Snake test (curses, score, aceleração): 180 linhas, compila limpo.
-Contagem determinística: exata (sem hadamard). SHA256 Q3_K_M verificado (662610e0).
+The output tensor placement matters a lot: keeping `output` on GPU = **+30% decode** (15.2 → 20.9 t/s @8K) for +0.9GB VRAM.
 
-Samplers EFETIVOS finais (após stripParams+filters; cmd declara 1.0 mas filters
-sobrescrevem): base 0.7/0.95, :think 0.7/0.95 (revertido de 1.0 — ver 4b),
-top_k default 40, min_p 0, repeat_penalty 1. Fragmento baseline do kassane
-(k2-horizon-36b-r1) mantém a régua DELE exata (0.7/0.6 @ 0.9, top_k 20) p/ A/B.
+Context: 131072 runs fine (RAM ~24GB total incl. system). The model's native 512K would be impossible on this card (KV alone would be ~25GB).
 
-## 8. Paisagem de quants (07-08/09)
+---
 
-- NANI-Nithin GGUF: escada completa i-quants IQ1_M (8.1GB) → IQ4_XS (18.7GB) + MXFP4_MOE (20.2GB) + BF16
-- vincespeed APEX-GGUF: i-quality 23.9GB / i-balanced 26.3GB / i-compact 17.6GB
-- abenzerps (usada nos testes): Q3_K_M 16.4GB … Q8_0 37.1GB
-- ONYX: nada ainda. APEX configs do mudler: nada ainda. PR de arch no ggml-org/llama.cpp: nada ainda.
-- hermitdave oQ4e: safetensors p/ runtime Python do IFM — não GGUF, fora do escope llama.cpp
-- MXFP4 suportado nos tipos ggml do fork (R8) — MXFP4_MOE 20.2GB é candidato de qualidade futura
-- IFM lançou irmãos menores: 7B, 3.7B, 0.9B (+32B denso) — candidatos p/ outros devices
-- FAMÍLIA COMPLETA (08/09): K2-Horizon-375B-A23B existe (flagfrontier; GGUF Baekpica mixed-quant) —
-  26 repos de GGUF na busca. Quantizers ativos do MoVA: NANI-Nithin, abenzerps, darioooooo0o,
-  SAIFIINDUSTRIES, aj9o9, vincespeed (APEX), kingjones777 (ROCmFP4), primitive-ai (NVFP4)
+## 4. The "base" alias of the example config THINKS
+
+Without `enable_thinking: false` in the base-alias filter, the template falls back to its default `reasoning_effort=high` — the "base" alias burns its token budget on thinking. Fix: `chat_template_kwargs: {enable_thinking: false}` on the base alias (or `--reasoning off`). Also recommended: `--reasoning-format deepseek` (thinking lands in `reasoning_content`) and `--reasoning-budget 16384` as a runaway ceiling (8192 truncates "high" mode frequently).
+
+---
+
+## 5. Temperature: the model card's "temp 1.0" breaks agentic reading (use 0.7)
+
+Following the model card's "reasoning effort: always high, temperature 1.0" for tool-calling turns, the model read "London" as "Tokyo" **3 times in a row** on the same prompt (same seed-free sampling). Same task at temperature **0.7** (thinking still ON, everything else equal): 4 parallel calls, correct cities. The 1.0/0.95 rule is for benchmark scoring; for agents that must read the prompt, 0.7 is the right operating point.
+
+Related: both configs (kassane's 0.7/0.6 @ top_p 0.9 and ours 0.7/0.7 @ 0.95) run BELOW 1.0 in practice — the `--temp 1.0` in the cmd is overridden by `stripParams` + `setParamsByID` in both.
+
+---
+
+## 6. Tool calls: well-formed calls parse fine; malformed ones leak raw tags
+
+With the abenzerps template + `--parallel-tool-calls`, well-formed calls get parsed into structured tool_calls (tested: 2 and 4 parallel calls in one turn). **But** when the model emits a malformed call (swapped arguments — happens at higher temps), the raw `<ifm|tool_calls>` tags leak into `content`. Improvement candidate: tolerant parser or a strip fallback; also worth testing `tool_call_format: json` via `--chat-template-kwargs`.
+
+Harness-side lesson (not a fork/model bug): in a tool-loop client, the round-trip turn must keep the tools in the payload with `tool_choice: "auto"`. With `"none"` the server **skips** the tool parser (`server-common.cpp:814`) and any re-emission leaks raw tags; with no tools at all, the chat template drops tool definitions from the system block and the model re-plans instead of answering. Our agent simulator (ai-dotfiles `testchat`) now implements the natural ReAct loop — same context as round 1 (system prompt included), tools always present, loop ends when the model answers without calls.
+
+---
+
+## 7. Chat template provenance
+
+The abenzerps GGUF ships `chat_template.jinja` (llama.cpp-Jinja-compatible adaptation — no `dict()`/`sameas`, think-tags parsed from content, `enable_thinking=false` escape) and `chat_template.upstream.jinja` (the original IFM template). The IFM-embedded one presumes the `k2_horizon` parser of the MBZUAI-IFM fork, which doesn't exist in ik_llama.cpp — so the abenzerps template is the right one to use.
+
+---
+
+## 8. Quant landscape (as of Sep 8)
+
+- **NANI-Nithin GGUF**: full i-quant ladder IQ1_M (8.1GB) → IQ4_XS (18.7GB) + MXFP4_MOE (20.2GB) + BF16
+- **vincespeed APEX-GGUF**: i-quality 23.9GB / i-balanced 26.3GB / i-compact 17.6GB
+- **abenzerps** (used in our tests): Q3_K_M 16.4GB … Q8_0 37.1GB
+- **ONYX: nothing yet. APEX configs from mudler: nothing yet. Upstream llama.cpp arch PR: nothing yet** (the kassane fork remains the only runtime with k2-horizon support).
+- hermitdave `oQ4e`: safetensors for the IFM Python runtime — not GGUF, out of llama.cpp scope
+- MXFP4 types exist in this fork (`MXFP4_R8`) — the 20.2GB MXFP4_MOE is a future quality-upgrade candidate
+- IFM also shipped smaller siblings: 7B, 3.7B, 0.9B (+ a dense 32B) — candidates for smaller devices
+- Full family: K2-Horizon-375B-A23B exists (flagship; Baekpica mixed-quant GGUF) — 26 GGUF repos total in search
+
+---
+
+## Bottom line
+
+The kassane fork runs this 36B/4B MoE **great on a 6GB card**: 20.4 t/s decode, 67.2 t/s prefill at full 131K context, 86% VRAM / 77% RAM. The vocab merge bug is a 2-line fix (attached). K-hadamard needs a de-transform wire-in on the `llm_build_kv` path (V-side works perfectly, MoVA included). Everything else is measured, documented, and reproducible.
