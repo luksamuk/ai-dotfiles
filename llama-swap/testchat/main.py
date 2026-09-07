@@ -993,7 +993,7 @@ class StreamingChat:
         
         return layout
     
-    def stream_chat(self, prompt: str, image_paths: list[str] = None, audio_paths: list[str] = None, messages: list = None, tools: list = None, tool_choice: str = None) -> Iterator[Layout]:
+    def stream_chat(self, prompt: str, image_paths: list[str] = None, audio_paths: list[str] = None, messages: list = None, tools: list = None, tool_choice: str = None, chat_template_kwargs: dict = None) -> Iterator[Layout]:
         """Realiza o streaming do chat usando requests diretamente.
         
         Args:
@@ -1094,6 +1094,8 @@ class StreamingChat:
             if tools:
                 payload["tools"] = tools
                 payload["tool_choice"] = tool_choice or "auto"
+            if chat_template_kwargs:
+                payload["chat_template_kwargs"] = chat_template_kwargs
                 # LFM2 models support parallel tool calls via pythonic format
                 # upstream llama.cpp disables them by default — explicitly enable
                 if self.selected_model.startswith("lfm2"):
@@ -1344,7 +1346,11 @@ class StreamingChat:
         self._tool_round_depth = getattr(self, "_tool_round_depth", 0) + 1
         if self._tool_round_depth > 2 or not _turn2_tools:
             _turn2_choice = "none" if _turn2_tools else None
-        for layout in self.stream_chat(prompt="", messages=base_messages, tools=_turn2_tools, tool_choice=_turn2_choice):
+        # Round-trip: suppress thinking so the model ANSWERS from tool results
+        # instead of re-planning (and possibly re-calling) — fixes "starts over"
+        # behavior and truncated answers on :think variants (k2-horizon).
+        _turn2_kwargs = {"enable_thinking": False} if self.use_thinking_variant else None
+        for layout in self.stream_chat(prompt="", messages=base_messages, tools=_turn2_tools, tool_choice=_turn2_choice, chat_template_kwargs=_turn2_kwargs):
             yield layout
     
     def run(self):
