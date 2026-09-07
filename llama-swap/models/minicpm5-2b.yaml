@@ -19,8 +19,11 @@
 # de nomes raros em Q8_0 — smoke test de grafia obrigatorio (Q8_0 e Q4).
 # Bench vendor: SWE-Verified 46.4 > Pro 14.4 (ordenacao correta, honesto);
 # mas linhas com dagger = avaliacao do proprio vendor — validar na pratica.
-# STATUS: fragmento preparado 2026-09-07, AGUARDANDO smoke test (GPU ocupada
-# com round agentic do Spark). Nao ativado no fleet ainda.
+# SMOKE 2026-09-07: PASSOU. Grafia perfeita (luksamuk/Diamantina/JK/Itaipava/Navi),
+# tool call CLEAN em AMBOS os modos (GGUF oficial carrega metadata), decode 83.9 t/s
+# (fleet-best denso), needle @60K e @105K corretas (no-think a 105K falha, think passa),
+# prefill 1216 t/s @54K / 759 @105K. VRAM medida 4.08GB @131K (estimativa 3.8 ok).
+# ATIVADO no fleet (minicpm5-2b + :think). Q8_0 guardado p/ re-teste de grafia se Q4 erar.
 # -------------------------------------------
 "minicpm5-2b":
   name: "MiniCPM5 2B"

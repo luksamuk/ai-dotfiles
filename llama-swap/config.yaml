@@ -1741,6 +1741,75 @@ models:
       embedding_length: 2048
       quantization: APEX I-Compact
       note: 'MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. APEX I-Compact: 13% smaller than Q4_0, imatrix v1.3 calibrated. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format deepseek.'
+  minicpm5-2b:
+    name: MiniCPM5 2B
+    description: 'OpenBMB MiniCPM5-2B: dense 2B (arch llama puro), 131K ctx nativo, tool calling + agentic focus. Vendor claims 2B-class SOTA (avg 53.9, competitive com 4B). Q4_K_M 1.45GB oficial. Irmao maior do MiniCPM5-1B (desativado Jul 2026: perdia de LFM2.5-230M em tool calling e erava grafia).'
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/minicpm5-2b/MiniCPM5-2B-Q4_K_M.gguf
+
+      --jinja
+
+      --fit on
+
+      --parallel 1
+
+      --ctx-size 131072
+
+      --reasoning on
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --flash-attn auto
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p, top_k
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.95
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+    ttl: 900
+    health_check_timeout: 300
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~1.45 GB (Q4_K_M oficial)
+      context: 1K-131K (nativo, sem scaling)
+      vram_usage: ~3.8GB estimado @131K (modelo 1.45GB + KV q4_0 ~1.35GB + buffers) — MEDIR no smoke
+      source: openbmb/MiniCPM5-2B-GGUF (oficial vendor)
+      kv_cache: q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: llama
+      parameters: 2000000000
+      context_length: 131072
+      quantization: Q4_K_M
+      note: 'Sem MTP. Vendor sampling 1.0/0.95 (think). Familia: 1B foi desativado Jul 2026 — o 2B precisa provar grafia + tool call no smoke. GGUF oficial do vendor (quants proprios).'
   qwen3-tts:
     name: Qwen3-TTS 0.6B
     description: Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible /v1/audio/speech endpoint with voice profiles from voiceclone-tui.
@@ -1789,6 +1858,75 @@ models:
       - Voice profiles loaded from ~/.config/voiceclone-tui/voices.json
       - Supports voice cloning with reference audio samples
       - Portuguese (pt-BR) voices with accent control
+  spark-x2.5-4b:
+    name: Spark X2.5 4B
+    description: 'XHToken/iFLYTEK Spark-X2.5-4B: hybrid SWA attention (27 sliding + 9 full layers), native 1M ctx claim, 4B params, agentic-focused (SWE-Bench Pro claim unverified; Nanbeige 3B wins 7/9 shared benches). Text-only, no vision, no MTP. Upstream backend (spark2_5). 131K ctx validated: needle @123.4K OK, prefill 1074 t/s @105K, decode 20 t/s @123K, 45 t/s short-ctx.'
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/spark-x2.5-4b/Spark-X2.5-4B-Q4_K_M.gguf
+
+      --jinja
+
+      --fit on
+
+      --parallel 1
+
+      --ctx-size 131072
+
+      --reasoning on
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --flash-attn auto
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p, top_k
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.95
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+    ttl: 900
+    health_check_timeout: 300
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~2.5 GB (Q4_K_M i1)
+      context: 1K-131K (frota); modelo suporta 1M nativo
+      vram_usage: '~5.2GB total @131K (medido: modelo 2.42GB + KV q4_0 ~1.2GB + buffers)'
+      source: miifanboy/Spark-X2.5-4B-i1-GGUF (imatrix), base XHToken/Spark-X2.5-4B
+      kv_cache: q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: spark2_5
+      parameters: 4000000000
+      context_length: 1048576
+      quantization: Q4_K_M
+      note: Tool calling so no :think. Sem MTP (sem NextN) — nao usar --spec-type mtp (ik fallback OOM). llama-bench segfaulta nesta arch — medir via llama-server timings.
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
