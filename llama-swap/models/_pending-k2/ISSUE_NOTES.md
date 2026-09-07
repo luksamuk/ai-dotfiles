@@ -33,7 +33,13 @@ Matriz (temp 0, determinística, ctx 8192):
 | K+V hadamard | glitch ("33 33, 36 36, 44 44") |
 | sem hadamard | 1..50 exato |
 | K isolada | glitch ("44 44") |
-| V isolada | limpa (não determinística — confirmar) |
+| V isolada | 1..50 EXATO (determinístico) — MoVA→V-cache→de-transform funciona end-to-end |
+
+Atribuição final: corrupção é 100% K-side. O caminho do V (onde mora o MoVA) lida
+corretamente com hadamard + de-transform; o K (projeção padrão, sem MoVA) perde a
+de-transformação no caminho alternativo llm_build_kv. Bug de cobertura de caminho,
+não conflito arquitetural com MoVA. (Curiosidade: V-only marcou 21.7 t/s vs 20.4
+baseline — possível micro-ganho, não adotado.)
 
 ## 3. --fit não funciona na arquitetura (com workaround medido)
 
