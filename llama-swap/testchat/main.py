@@ -1336,22 +1336,23 @@ class StreamingChat:
         self.status = "Gerando resposta final..."
         yield self.render()
         
-        # Stream 2nd turn inline — tools present with tool_choice "auto" so the
-        # chat template renders tool definitions AND the server-side parser
-        # stays active (with tool_choice "none" the parser is SKIPPED and any
-        # model re-emission leaks raw <ifm|tool_calls> tags into content).
-        # Guard against infinite tool loops: one extra round max.
-        _turn2_tools = getattr(self, "_last_tools", None)
-        _turn2_choice = "auto" if _turn2_tools else None
+        # Agentic round-trip: thinking stays ON (the model may deliberate between
+        # rounds), tools present with tool_choice "auto" so the chat template
+        # renders tool definitions AND the server-side parser captures any
+        # re-emitted calls as STRUCTURED tool_calls (with "none" the parser is
+        # skipped and re-emissions leak raw tags — measured on k2-horizon).
+        # Depth guard: max 2 tool rounds per prompt, then force "none".
+        _turn_tools = getattr(self, "_last_tools", None)
+        _turn_choice = "auto" if _turn_tools else None
         self._tool_round_depth = getattr(self, "_tool_round_depth", 0) + 1
-        if self._tool_round_depth > 2 or not _turn2_tools:
-            _turn2_choice = "none" if _turn2_tools else None
-        # Round-trip: suppress thinking so the model ANSWERS from tool results
-        # instead of re-planning (and possibly re-calling) — fixes "starts over"
-        # behavior and truncated answers on :think variants (k2-horizon).
-        _turn2_kwargs = {"enable_thinking": False} if self.use_thinking_variant else None
-        for layout in self.stream_chat(prompt="", messages=base_messages, tools=_turn2_tools, tool_choice=_turn2_choice, chat_template_kwargs=_turn2_kwargs):
+        if self._tool_round_depth > 2 or not _turn_tools:
+            _turn_choice = "none" if _turn_tools else None
+        for layout in self.stream_chat(prompt="", messages=base_messages, tools=_turn_tools, tool_choice=_turn_choice):
             yield layout
+        # If the model called tools again in this round, iterate: execute the
+        # new calls and stream another round (true agentic loop, thinking ON).
+        if _turn_choice == "auto" and self.tool_calls:
+            yield from self.handle_tool_calls(user_prompt)
     
     def run(self):
         """Executa o chat interativo."""
