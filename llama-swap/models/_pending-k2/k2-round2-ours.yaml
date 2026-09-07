@@ -11,6 +11,11 @@
 # mesmo decode, VRAM 5.5GB/90% (não sobrevive a 131K). Output layer no CUDA é o que importa
 # (maior matmul por token).
 # KV q4_0 real: ~49KB/token (48 camadas) -> 131072 tokens ~ 6.4GB -> RAM via --no-kv-offload.
+# v3 (08/09): value-experts do MoVA na GPU (ffn_*_exps explicito, ubatch 256) ->
+# VRAM ~85% @131K, RAM ~-3.2GB (27 -> ~23GB). Decode idêntico ao A (20.9 = 20.9 @8K).
+# UMA (GGML_CUDA_ENABLE_UNIFIED_MEMORY=1) como SEGURO anti-OOM (doutrina experimento
+# ornith 31/08: NUNCA caminho primário p/ MoE — 8-10x mais lento; com modelo residente
+# é ~grátis e converte OOM em run).
 # Hadamard K/V: TESTADO E REJEITADO — corrompe output (glitch de tokens: "10 10",
 # "4444") em qualquer ctx; sem hadamard a mesma sequência sai exata. Provavelmente
 # a de-transformação (fa_h) não roda no caminho de atenção que o K2 usa
@@ -28,7 +33,7 @@
     --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-Q3_K_M.gguf
     --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
     -ngl 99
-    --override-tensor "exps=CPU,tok_embd=CPU"
+    --override-tensor "ffn_gate_exps=CPU,ffn_down_exps=CPU,ffn_up_exps=CPU,tok_embd=CPU"
     --no-kv-offload
     --ctx-size 131072
     --temp 1.0
@@ -42,10 +47,12 @@
     --cache-type-k ${large_cache_k}
     --cache-type-v ${large_cache_v}
     --flash-attn auto
-    --ubatch-size 1024
+    --ubatch-size 256
     --reasoning-budget 16384
     --reasoning-budget-message "Now answer directly."
     --metrics
+  env:
+    - "GGML_CUDA_ENABLE_UNIFIED_MEMORY=1"
   filters:
     stripParams: "temperature, top_p"
     setParamsByID:
