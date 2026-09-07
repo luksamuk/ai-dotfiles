@@ -1907,7 +1907,7 @@ models:
 
       -ngl 99
 
-      --override-tensor "exps=CPU,tok_embd=CPU,output=CPU"
+      --override-tensor "ffn_gate_exps=CPU,ffn_down_exps=CPU,ffn_up_exps=CPU,tok_embd=CPU"
 
       --no-kv-offload
 
@@ -1935,7 +1935,7 @@ models:
 
       --flash-attn auto
 
-      --ubatch-size 1024
+      --ubatch-size 256
 
       --reasoning-budget 16384
 
@@ -1944,6 +1944,8 @@ models:
       --metrics
 
       '
+    env:
+    - GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
     filters:
       stripParams: temperature, top_p
       setParamsByID:
@@ -1955,7 +1957,7 @@ models:
         ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
-          temperature: 1.0
+          temperature: 0.7
           top_p: 0.95
     ttl: 1200
     health_check_timeout: 900
@@ -1972,7 +1974,7 @@ models:
       context: 1K-131K (modelo suporta 512K nativo; teto da frota; KV q4_0 6.4GB em RAM)
       vram_usage: ~3.3GB VRAM + ~16GB RAM pinned (medido @8K no R1; 131K muda só o KV em RAM)
       source: abenzerps/K2-Horizon-MoVA-36B-A4B-GGUF (SHA256 662610e0)
-      kv_cache: q4_0 + attn_rot (head_dim 128); hadamard TESTADO E REJEITADO (corrompe output no K2)
+      kv_cache: q4_0 + attn_rot (head_dim 128)
       features:
         completion: true
         tools: true

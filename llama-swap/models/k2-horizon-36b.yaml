@@ -1,30 +1,22 @@
 # -------------------------------------------
-# K2-HORIZON-MOVA-36B-A4B — ROUND 2 (config nossa, pós-learnings do R1)
-# R1 provou: --fit NÃO funciona neste modelo (attn_v_exps não é tratado como MoE tensor;
-# resto de 5.8GB não cabe na 6GB) e o alias "base" dele PENSAVA (template default
-# reasoning_effort=high sem enable_thinking=false).
-# R2 usa mapeamento MANUAL: -ngl 99 + override exps=CPU (pega ffn_*_exps E attn_v_exps
-# pelo substring) + tok_embd/output na CPU. Medido no R1 (8K): VRAM total 3283 MiB,
-# CUDA0 pesos 706 MiB, CUDA_Host 16.1GB pinned, KV 432 MiB @8K.
-# Otimização 08/09: output tensor na GPU (+30% decode: 15.2 -> 19.6-20.9 t/s medidos,
-# VRAM +0.9GB). Testado e descartado: MoVA value-experts na GPU (ffn_*_exps=CPU explícito)
-# mesmo decode, VRAM 5.5GB/90% (não sobrevive a 131K). Output layer no CUDA é o que importa
-# (maior matmul por token).
-# KV q4_0 real: ~49KB/token (48 camadas) -> 131072 tokens ~ 6.4GB -> RAM via --no-kv-offload.
-# v3 (08/09): value-experts do MoVA na GPU (ffn_*_exps explicito, ubatch 256) ->
-# VRAM ~85% @131K, RAM ~-3.2GB (27 -> ~23GB). Decode idêntico ao A (20.9 = 20.9 @8K).
-# UMA (GGML_CUDA_ENABLE_UNIFIED_MEMORY=1) como SEGURO anti-OOM (doutrina experimento
-# ornith 31/08: NUNCA caminho primário p/ MoE — 8-10x mais lento; com modelo residente
-# é ~grátis e converte OOM em run).
-# Hadamard K/V: TESTADO E REJEITADO — corrompe output (glitch de tokens: "10 10",
-# "4444") em qualquer ctx; sem hadamard a mesma sequência sai exata. Provavelmente
-# a de-transformação (fa_h) não roda no caminho de atenção que o K2 usa
-# (K quantizado no head_dim 128 evita o IQK FA). Ver R1/issue.
-# Samplers: base 0.7/top_p 0.95; :think 0.7/0.95 (temp 1.0 do model card REVERTIDO
-# 09/09 — quebrava leitura agêntica: London->Tokyo 3x; ver dossiê ISSUE_NOTES 4b).
-# Reasoning: --reasoning-format deepseek (reasoning_content) + reasoning_effort high
-# via kwargs (default do template) + budget 16384 como teto anti-runaway.
-# Mesmo GGUF Q3_K_M do R1 — A/B isola o efeito da config.
+# K2-HORIZON-MOVA-36B-A4B — RTX 3050 6GB (manual mapping; --fit fails on this arch)
+# Why --fit fails: attn_v_exps (MoVA value-experts, ~3.2GB @Q3_K_M) is not treated
+# as a MoE tensor, and --override-tensor cannot be combined with --fit (measured:
+# 5.8GB residue > 5.0GB free on 6GB card).
+# Manual mapping:
+#   - FFN experts + tok_embd on CPU (pinned); MoVA value-experts + output on GPU
+#   - output on GPU = +30% decode (15.2 -> 20.9 t/s @8K for +0.9GB VRAM)
+#   - KV q4_0 = ~49KB/token (48 layers, 8 kv-heads x 128) -> 6.4GB @131K in RAM
+#   - ubatch 256: compute buffer fits with MoVA experts resident (5.3GB / 86% VRAM)
+# GGML_CUDA_ENABLE_UNIFIED_MEMORY=1 = OOM insurance ONLY (as primary path, UMA
+# runs 8-10x slower on MoE: page migration vs overlapped pinned copies).
+# Hadamard K/V REJECTED on k2-horizon: deterministic token glitches at temp 0
+# (K de-transform missing on the llm_build_kv attention path; V side, incl. MoVA
+# routing, verified clean end-to-end — see issue dossier).
+# Samplers: 0.7/0.95 both modes. Model-card temp 1.0 broke agentic reading
+# ("London" read as "Tokyo" 3x in a row); benchmark temp is for scoring, not agents.
+# Reasoning: thinking lands in reasoning_content (--reasoning-format deepseek),
+# effort high (template default), budget 16384 as runaway ceiling.
 # -------------------------------------------
 "k2-horizon-36b":
   name: "K2-Horizon MoVA 36B"
