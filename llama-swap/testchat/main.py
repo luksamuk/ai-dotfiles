@@ -1075,13 +1075,27 @@ class StreamingChat:
             # Custom system prompts from system_prompts.json
             # For Pepe Turbo, use the virtual ID for lookup since selected_model
             # is already resolved to the backend ID
+            # NOTE: round-trip turns pass pre-built messages (system included)
+            # — only inject for fresh user prompts (messages has no system yet).
             _lookup_id = "pepe-turbo" if is_pepe_turbo else self.selected_model
-            if _lookup_id in _SYSTEM_PROMPTS and not is_pepe and not is_pepe_turbo:
-                sp = _SYSTEM_PROMPTS[_lookup_id]["system_prompt"]
-                messages = [{"role": "system", "content": sp}] + messages
-            
+            _roundtrip = bool(messages) and messages[0].get("role") == "assistant" or (
+                len(messages) > 1 and messages[0].get("role") == "user"
+                and any(m.get("role") == "tool" for m in messages)
+            )
+            if not _roundtrip:
+                if is_pepe_turbo:
+                    messages = [{"role": "system", "content": PEPE_TURBO_SYSTEM}] + messages
+                elif is_pepe:
+                    messages = [{"role": "system", "content": PEPE_SYSTEM}] + messages
+                if _lookup_id in _SYSTEM_PROMPTS and not is_pepe and not is_pepe_turbo:
+                    sp = _SYSTEM_PROMPTS[_lookup_id]["system_prompt"]
+                    messages = [{"role": "system", "content": sp}] + messages
             # Marca o início da request (TTFT)
             self.request_start_time = time.time()
+
+            # Preserve the exact message list this round saw (incl. injected
+            # system prompt) — tool round-trips continue from THIS context.
+            self._last_built_messages = list(messages)
             
             # Build request payload
             payload = {
@@ -1284,11 +1298,14 @@ class StreamingChat:
         yield self.render()
         
         # Build messages with tool results
-        # Extract original assistant content (before tool call embeds)
-        original_content = self.response_content.split("\n\n---\n\n")[0] or None
+        # Assistant content of THIS round = text streamed after the last
+        # separator (round 1 has none yet).
+        original_content = self.response_content.rsplit("\n\n---\n\n", 1)[-1] or None
         if original_content and not original_content.strip():
             original_content = None
-        base_messages = [{"role": "user", "content": user_prompt}]
+        # Context continues from what the previous round actually sent —
+        # includes the system prompt injected by stream_chat (same as turn 1).
+        base_messages = list(getattr(self, "_last_built_messages", None) or [{"role": "user", "content": user_prompt}])
         assistant_msg = {
             "role": "assistant",
             "content": original_content,
@@ -1336,21 +1353,16 @@ class StreamingChat:
         self.status = "Gerando resposta final..."
         yield self.render()
         
-        # Agentic round-trip: thinking stays ON (the model may deliberate between
-        # rounds), tools present with tool_choice "auto" so the chat template
-        # renders tool definitions AND the server-side parser captures any
-        # re-emitted calls as STRUCTURED tool_calls (with "none" the parser is
-        # skipped and re-emissions leak raw tags — measured on k2-horizon).
-        # Depth guard: max 2 tool rounds per prompt, then force "none".
+        # Agentic round-trip (ReAct cycle, per user spec): same system prompt
+        # as round 1 (via _last_built_messages), same tools, tool_choice auto,
+        # thinking exactly as the selected variant defines. The model may
+        # answer (loop ends, back to user input) or call tools again
+        # (recursion runs the cycle again). No forced end-state.
         _turn_tools = getattr(self, "_last_tools", None)
         _turn_choice = "auto" if _turn_tools else None
-        self._tool_round_depth = getattr(self, "_tool_round_depth", 0) + 1
-        if self._tool_round_depth > 2 or not _turn_tools:
-            _turn_choice = "none" if _turn_tools else None
         for layout in self.stream_chat(prompt="", messages=base_messages, tools=_turn_tools, tool_choice=_turn_choice):
             yield layout
-        # If the model called tools again in this round, iterate: execute the
-        # new calls and stream another round (true agentic loop, thinking ON).
+        # Model called tools again → run the cycle again with the new results.
         if _turn_choice == "auto" and self.tool_calls:
             yield from self.handle_tool_calls(user_prompt)
     
