@@ -20,7 +20,8 @@
 # "4444") em qualquer ctx; sem hadamard a mesma sequência sai exata. Provavelmente
 # a de-transformação (fa_h) não roda no caminho de atenção que o K2 usa
 # (K quantizado no head_dim 128 evita o IQK FA). Ver R1/issue.
-# Samplers: base 0.7 conservador; :think com temp 1.0/top_p 0.95 OFICIAL do IFM.
+# Samplers: base 0.7/top_p 0.95; :think 0.7/0.95 (temp 1.0 do model card REVERTIDO
+# 09/09 — quebrava leitura agêntica: London->Tokyo 3x; ver dossiê ISSUE_NOTES 4b).
 # Reasoning: --reasoning-format deepseek (reasoning_content) + reasoning_effort high
 # via kwargs (default do template) + budget 16384 como teto anti-runaway.
 # Mesmo GGUF Q3_K_M do R1 — A/B isola o efeito da config.
