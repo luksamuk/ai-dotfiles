@@ -1,7 +1,7 @@
 # Dossiê K2-Horizon-MoVA-36B-A4B — material pra resposta da issue
 
 Issue: https://github.com/luksamuk/ai-dotfiles/issues/1 (kassane, 06/09/2026)
-Autor: Hermes Agent (sessões 06-08/09/2026). Hardware de teste: RTX 3050 6GB, R7, 31GB RAM.
+Autor: Hermes Agent (sessões 06-09/09/2026). Hardware de teste: RTX 3050 6GB, R7, 31GB RAM.
 
 ## 1. Bug de merge no vocab (com patch pronto)
 
@@ -69,13 +69,32 @@ enable_thinking:false no alias base (ou --reasoning off). Adicionalmente recomen
 --reasoning-format deepseek (thinking em reasoning_content) + budget 16384 como teto
 (8192 trunca o modo high com frequência).
 
+## 4b. Temperatura: temp 1.0 do model card quebra leitura agêntica (nossa régua: 0.7)
+
+Descoberta empírica (08/09): com temp 1.0 (`:think` seguindo a recomendação "always high"
+do model card), o modelo leu "London" como "Tokyo" 3x seguidas no mesmo prompt de tools.
+Mesma task com temp 0.7 (thinking ON, tudo igual): 4 calls paralelas perfeitas, cidades
+corretas. A régua 1.0/top_p 0.95 do IFM é para BENCHMARK (máxima diversidade p/ scoring);
+para agentes que precisam ler o prompt, 0.7 é o correto. Ambos os configs (o do kassane
+0.7/0.6 @ top_p 0.9 e o nosso 0.7/0.7 @ 0.95) rodam ABAIXO de 1.0 na prática — o
+--temp 1.0 do cmd é sobrescrito pelo stripParams+setParamsByID em ambos.
+
 ## 5. Tool calls: parser engole as boas, vaza as malformadas
 
 Com o template da abenzerps + --parallel-tool-calls, calls bem-formadas são parseadas
-em estruturadas (testado: 2 tool_calls paralelos num turno). MAS: call malformada
+em estruturadas (testado: 2 e 4 tool_calls paralelos num turno). MAS: call malformada
 (args trocados, comum em :think temp 1.0) = tags cruas `<ifm|tool_call>` vazam no
 content. Candidato a melhoria: parser tolerante ou fallback strip; testar também
 tool_call_format json via --chat-template-kwargs.
+
+Achado adicional de harness (não é do fork/modelo): num cliente de chat com loop
+de tools, o round-trip PRECISA manter as tools no payload com tool_choice "auto".
+Com tool_choice "none" o parser server-side é PULADO (server-common.cpp:814) e
+qualquer re-emissão do modelo vaza tags cruas; sem tools no payload, o template
+perde as definições de ferramenta do system e o modelo re-planeja em vez de responder.
+Simulador de agente corrigido no ai-dotfiles (testchat, commits b0a3b3c..5969107):
+ciclo ReAct natural — mesmo contexto do round 1 (system incluído), tools sempre
+presentes, loop termina quando o modelo responde sem calls.
 
 ## 6. Template: proveniência
 
@@ -91,10 +110,16 @@ parser k2_horizon do fork MBZUAI-IFM (inexistente no ik_llama) → usar a da abe
 | baseline kassane (--fit, @8K, falhou load) | — | — | — | — |
 | manual R1 @8K | 16.3 t/s | 48.8 t/s | 3.3GB (54%) | ~17GB |
 | manual + output GPU @8K | 20.9 t/s | 49.2 | 3.7GB | ~24GB |
-| + MoVA GPU @131K (final) | 20.4 t/s | 67.2 | 5.3GB (86%) | 24GB (77%) |
+| v3 @131K (final): ffn_*_exps CPU + MoVA GPU + UMA insurance | 20.4 t/s | 67.2 | 5.3GB (86%) | 24GB (77%) |
+| v2 @131K (intermediário, p/ referência) | 19.6 t/s | 45.4 | 3.2GB (52%) | 27GB (87%) |
 
 Snake test (curses, score, aceleração): 180 linhas, compila limpo.
 Contagem determinística: exata (sem hadamard). SHA256 Q3_K_M verificado (662610e0).
+
+Samplers EFETIVOS finais (após stripParams+filters; cmd declara 1.0 mas filters
+sobrescrevem): base 0.7/0.95, :think 0.7/0.95 (revertido de 1.0 — ver 4b),
+top_k default 40, min_p 0, repeat_penalty 1. Fragmento baseline do kassane
+(k2-horizon-36b-r1) mantém a régua DELE exata (0.7/0.6 @ 0.9, top_k 20) p/ A/B.
 
 ## 8. Paisagem de quants (07-08/09)
 
