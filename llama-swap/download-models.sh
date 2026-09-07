@@ -6,7 +6,7 @@
 #   qwen3.5-0.8b         - Qwen3.5-0.8B UD-Q3_K_XL (~0.46 GB) + mmproj (~196 MB) - fits in VRAM, vision+text
 #   qwen3.5-4b           - Qwen3.5-4B MoQ-3.75 (~1.92 GB) - fits in VRAM
 #   [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
-#   qwen3.5-9b           - Qwen3.5-9B MoQ-3.6 (~3.75 GB) - fits in VRAM + mmproj
+#   [REMOVED Sep 2026] qwen3.5-9b — user request
 #   [REMOVED] gemma4-e4b — disabled Jul 2026, redundant with E2B (no code use case, E2B is lighter)
 #   gemma4-e2b       - Gemma-4 E2B Q4_0 QAT (~3.2 GB) - higher quality than PTQ, text-only
 #   [REMOVED] gemma4-12b — incompetent at code, 6.7GB freed, Jun 2026
@@ -34,7 +34,7 @@
 #   minicpm5-1b-agentic   - MiniCPM5-1B Nemotron SFT+DPO agentic tool use Q4_K_M (~688 MB) - fine-tuned tool calling
 #   smolllm3-3b           - SmolLM3-3B UD-Q5_K_XL (~2.06 GB) - dense, tool-calling, 128K ctx
 #   qwopus-coder-9b       - Qwopus3.5-9B-Coder Q4_K_M (~5.63 GB) + mmproj - agentic coding + tools
-#   qwen3.5-4b-abliterated - Qwen3.5-4B abliterated i1-Q4_K_M (~2.71 GB) - no refusal, adversarial testing
+#   [REMOVED Sep 2026] qwen3.5-4b-abliterated — user request
 #   glm-ocr               - GLM-OCR Q8_0 (~0.95 GB + 0.48 GB mmproj) - OCR/document specialist
 #   nomic-embed-text-v2-moe - Nomic Embed v2 MoE Q4_K_M (~0.33 GB) - embedding, RAG/search
 #   nemotron-3-embed-1b - Nemotron 3 Embed 1B Q8_0 (~1.2 GB) - embedding, RAG/search (MANUAL CONVERSION)
@@ -102,7 +102,7 @@ declare -A MODELS=(
   # Ling-3.0-tiny - inclusionAI BailingMoE3 hybrid KDA+MLA, 7.9B/1.3B active, 128 experts
   # APEX I-Compact = 3.99 GB, abliterated. ik_llama.cpp backend (PR #2295).
   ["ling-3.0-tiny"]="SC117/Ling-3.0-tiny-abliterated-APEX-GGUF Ling-3.0-tiny-abliterated-APEX-I-Compact.gguf"
-  ["qwen3.5-9b"]="w-ahmad/Qwen3.5-9B-GGUF-MoQ Qwen3.5-9B-MoQ-3.6.gguf"
+  # [REMOVED Sep 2026] qwen3.5-9b — user request
   # [REMOVED] gemma4-e4b — disabled Jul 2026, redundant with E2B (no code use case)
   # ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
   ["gemma4-e2b"]="google/gemma-4-E2B-it-qat-q4_0-gguf gemma-4-E2B_q4_0-it.gguf"
@@ -193,7 +193,7 @@ declare -A MODELS=(
   # Qwen3.5-4B-abliterated -- refusal-removed variant (Huihui/Qwen3.5-4B-abliterated)
   # Same qwen35 arch as base Qwen3.5-4B, Abliterix orthogonalized steering
   # Renamed from Qwen3.5-4B-abliterated-i1-GGUF to Huihui-Qwen3.5-4B-abliterated-GGUF (Aug 2026)
-  ["qwen3.5-4b-abliterated"]="mradermacher/Huihui-Qwen3.5-4B-abliterated-GGUF Huihui-Qwen3.5-4B-abliterated.Q4_K_M.gguf"
+  # [REMOVED Sep 2026] qwen3.5-4b-abliterated — user request
   # GLM-OCR -- OCR and document understanding specialist (glm4 arch, mmproj required)
   # #1 on OmniDocBench V1.5 (94.62). Complements LFM2.5-VL-450M.
   # Q8_0 model + Q8_0 mmproj from official ggml-org release
@@ -264,7 +264,7 @@ declare -A MMPROJ=(
   ["lfm2.5-vl-450m-hand-tracking-q4_k_m"]="luksamuk/LFM2.5-VL-450M-Hand-Tracking-GGUF mmproj-LFM2.5-VL-450M-hand-tracking-F16.gguf"
   ["qwen3.6-35b-a3b"]="mudler/Qwen3.5-35B-A3B-APEX-GGUF mmproj-F16.gguf mmproj-Qwen3.6-35B-A3B-F16.gguf"
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-4B-F16.gguf"
-  ["qwen3.5-9b"]="unsloth/Qwen3.5-9B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-9B-F16.gguf"
+  # [REMOVED Sep 2026] qwen3.5-9b mmproj — user request
   ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF mmproj-F16.gguf mmproj-gemma-4-E4B-F16.gguf"
 # [REMOVED] gemma4-e2b mmproj — deleted Jun 2026, vision not needed (dedicated VLMs in fleet)
   ["qwen3.5-0.8b"]="unsloth/Qwen3.5-0.8B-GGUF mmproj-F16.gguf mmproj-Qwen3.5-0.8B-F16.gguf"
@@ -286,7 +286,7 @@ declare -A MMPROJ=(
 # Legacy aliases with colons (for backwards compatibility)
 declare -A ALIASES=(
   ["qwen3.5:4b"]="qwen3.5-4b"
-  ["qwen3.5:9b"]="qwen3.5-9b"
+  # [REMOVED Sep 2026] qwen3.5:9b alias
   ["gemma4:e4b"]="gemma4-e4b"
   ["gemma4:e2b"]="gema4-e2b"
   ["nemotron-3-nano:4b"]="nemotron-3-nano-4b"
@@ -305,7 +305,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen3.5-4b, qwen3.5-9b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, qwen3.5-4b-abliterated, glm-ocr, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, all"
+    echo "Available: qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, all"
     return 1
   fi
   
@@ -362,7 +362,6 @@ show_sizes() {
   echo "Model Sizes (quantization noted):"
   echo "  qwen3.5-0.8b          ~0.47 GB  (UD-Q3_K_XL) + ~0.20 GB mmproj - Tiny, vision+text"
   echo "  qwen3.5-4b            ~2.80 GB  (UD-Q4_K_XL) - ik_llama + hadamard KV, 131K ctx"
-  echo "  qwen3.5-9b           ~3.75 GB  (MoQ-3.6) - Fits in VRAM + mmproj"
   echo "  gemma4-e4b           ~4.63 GB  (Q4_K_M) - Fits in VRAM + mmproj"
   echo "  gemma4-e2b       ~3.2 GB   (Q4_0 QAT) - Text-only, higher quality than PTQ"
   echo "  [REMOVED] gemma4-12b — incompetent at code, 6.7GB freed, Jun 2026"
@@ -403,7 +402,6 @@ show_sizes() {
   echo "  [REMOVED] nemotron-3-nano-4b"
   echo "  [REMOVED] qwen3.5-9b-ace — worse perplexity, no imatrix quant"
   echo "  qwopus-coder-9b      ~5.63 GB  (Q4_K_M) + mmproj - Dense 9B, agentic coding + tools"
-  echo "  qwen3.5-4b-abliterated   ~2.71 GB  (i1-Q4_K_M) - Abliterated Qwen3.5-4B, no refusal"
   echo "  glm-ocr             ~0.95 GB  (Q8_0) + 0.48 GB mmproj - OCR/document specialist"
   echo "  nomic-embed-text-v2-moe  ~0.33 GB  (Q4_K_M) - Embedding, RAG/search/similarity"
   echo "  nemotron-3-embed-1b      ~1.2 GB   (Q8_0)   - Embedding, multilingual RAG (MANUAL CONVERSION)"
@@ -422,7 +420,6 @@ show_sizes() {
   echo ""
   echo "Legacy names with colons (still work):"
   echo "  qwen3.5:4b   → qwen3.5-4b"
-  echo "  qwen3.5:9b   → qwen3.5-9b"
   echo "  gemma4:e4b   → gemma4-e4b"
   echo "  gemma4:e2b   → gemma4-e2b"
   echo "  nemotron-3-nano:4b → nemotron-3-nano-4b"

@@ -31,7 +31,6 @@ matrix:
   vars:
     # Modelos pequenos
     q4: qwen3.5-4b
-    q4a: qwen3.5-4b-abliterated
     # m5a: minicpm5-1b-agentic  # disabled
     lfm8: lfm2.5-8b-a1b
     lfm26: lfm2.5-2.6b
@@ -55,7 +54,6 @@ matrix:
     qwvl: qwen3-vl-4b
     lfmvl3: lfm2.5-vl-3b
     # Modelos médios
-    q9: qwen3.5-9b
     g4: gemma4-e2b
     # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
     # Pesados (offload)
@@ -84,13 +82,13 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)"
+    small_vision: "(q4 | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)"
+    small_embed: "(q4 | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2 | gpt2xl"
+    small_only: "q4 | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2 | gpt2xl"
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     gpt2xl_embed: "gpt2xl & (nomic | lfmemb | nemb | lfmcol)"
@@ -100,7 +98,7 @@ matrix:
     vision_embed: "(ocr | qwvl | lfmvl3) & (nomic | lfmemb | nemb | lfmcol)"
 
     # Modelos médios + Embedding/Reranker
-    medium: "(q9 | g4) & (nomic | lfmemb | nemb | lfmcol)"
+    medium: "g4 & (nomic | lfmemb | nemb | lfmcol)"
 
     # Modelos pesados (offload) + Embedding/Reranker + CPU completion
     # qw38 removed Aug 2026 — model disabled
@@ -130,14 +128,12 @@ matrix:
     # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed
     # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
     bonsai: 8
-    q9: 4
     g4: 3
     ttsext: 4
     ocr: 3
     qwvl: 3
     lfmvl3: 3
     q4: 2
-    q4a: 2
     lfm8: 2
     lfm26: 2
     eq2: 2

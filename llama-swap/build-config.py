@@ -63,8 +63,6 @@ ORIGINAL_ORDER = [
     "lfm2.5-1.2b-vllm",     # vLLM backend (paused — no venv, auto-download on first serve)
     "lfm2.5-sgl",            # SGLang backend (paused — no venv)
     "qwen3.5-4b",      # ✅ Bee/TurboQuant (upstream backup em _disabled/)
-    "qwen3.5-4b-abliterated",  # ✅ Abliterated (Huihui) — refusal removed, params aligned to qwen3.5-4b
-    "qwen3.5-9b",      # ✅ Bee/TurboQuant (upstream backup em _disabled/)
     "gemma4-e4b",       # ✅ upstream ik backend (Bee was slower at 36 vs 40 tok/s)
     "gemma4-e2b",            # ✅
     "lfm2.5-1.2b",           # ✅

@@ -144,206 +144,6 @@ models:
       embedding_length: 2560
       quantization: UD-Q4_K_XL
       note: ik_llama.cpp with hadamard KV cache + --fit for dynamic context. Ngram spec decode via ik syntax. Uses qwen-fixed-chat-template.jinja for tool-call instructions. Formerly qwen3.5-4b-mtp, consolidated Jul 2026.
-  qwen3.5-4b-abliterated:
-    name: Qwen3.5 4B Abliterated
-    description: Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance. Abliterated variant with refusal behaviors removed for adversarial testing and NSFW prompt enhancement.
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/qwen3.5-4b-abliterated/Huihui-Qwen3.5-4B-abliterated.Q4_K_M.gguf
-
-      --jinja
-
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-
-      --parallel 1
-
-      --parallel-tool-calls
-
-      --fit
-
-      --fit-margin 512
-
-      --ctx-size ${small_model_max_ctx}
-
-      --temp ${default_temp}
-
-      --top-p ${default_top_p}
-
-      --top-k ${default_top_k}
-
-      --min-p ${default_min_p}
-
-      --repeat-penalty ${default_repeat_penalty}
-
-      --reasoning on
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --k-cache-hadamard
-
-      --v-cache-hadamard
-
-      --flash-attn auto
-
-      --no-graph-reuse
-
-      --ctx-checkpoints 0
-
-      --ctx-checkpoints-interval 0
-
-      --batch-size 512
-
-      --ubatch-size 128
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    health_check_timeout: 300
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      architecture: qwen35
-      parameters: 4210000000
-      context_length: 262144
-      embedding_length: 2560
-      quantization: Q4_K_M
-      size: ~2.71 GB (Q4_K_M)
-      context: 64K-128K (dynamic)
-      vram_usage: ~4.5GB VRAM (model 2.71GB + q4_0/q4_0 hadamard cache + compute)
-      source: mradermacher/Huihui-Qwen3.5-4B-abliterated-GGUF (Q4_K_M)
-      kv_cache: q4_0/q4_0 + hadamard
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      note: Abliterated variant — refusal behaviors removed via Abliterix. Parameters aligned to qwen3.5-4b normal (Aug 2026). Uses Huihui-Qwen3.5-4B-abliterated (renamed from Qwen3.5-4B-abliterated-i1).
-  qwen3.5-9b:
-    name: Qwen3.5 9B
-    description: Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning.
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/Qwen3.5-9B-MoQ-3.6.gguf
-
-      --fit
-
-      --fit-margin 512
-
-      --jinja
-
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-
-      --parallel 1
-
-      --parallel-tool-calls
-
-      --ctx-size ${small_model_max_ctx}
-
-      --temp ${default_temp}
-
-      --top-p ${default_top_p}
-
-      --top-k ${default_top_k}
-
-      --min-p ${default_min_p}
-
-      --repeat-penalty ${default_repeat_penalty}
-
-      --reasoning on
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --k-cache-hadamard
-
-      --v-cache-hadamard
-
-      --flash-attn auto
-
-      --no-graph-reuse
-
-      --ctx-checkpoints 0
-
-      --ctx-checkpoints-interval 0
-
-      --batch-size 512
-
-      --ubatch-size 128
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.9
-    ttl: 60
-    health_check_timeout: 300
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~3.75 GB (MoQ-3.6)
-      context: 64K-128K (dynamic)
-      vram_usage: ~4.8GB VRAM (text-only, ik with hadamard cache)
-      source: w-ahmad/Qwen3.5-9B-GGUF-MoQ (MoQ-3.6)
-      kv_cache: q4_0/q4_0 + hadamard
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 8950000000
-      context_length: 262144
-      embedding_length: 4096
-      quantization: MoQ-3.6
-      note: 'MoQ-3.6 replaces UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25 vs 20/25 Snake), 32% smaller (3.75 vs 5.55 GB). MTP OOM on 6GB VRAM. OOM fix: q4_0 K cache (was q8_0), ctx-checkpoints=0, batch-size=512, ubatch=128 — prevents CUDA OOM at ~92K tokens on RTX 3050 6GB. --spec-type ngram-mod removed (spec decode buffers compete for VRAM with context checkpoints, aggravating OOM).'
   gemma4-e2b:
     name: Gemma 4 E2B
     description: Gemma 4 E2B QAT — Unsloth Dynamic 2.0 (UD-Q4_K_XL). Higher accuracy and smaller than Google Q4_0.
@@ -1896,99 +1696,6 @@ models:
       embedding_length: 1600
       quantization: F16
       note: GPT-2 flagship from Feb 2019 (withheld by OpenAI until Nov 2019 — the unicorn-story model). Use /v1/completions (text completion) — no chat template exists. Context physically limited to 1024 by the WPE position table.
-  k2-horizon-36b:
-    name: K2-Horizon MoVA 36B
-    description: K2-Horizon-MoVA-36B-A4B Q3_K_M. 36B MoE (100 experts, 8 ativos) + MoVA (64 value-experts, top-4) no caminho de V. k2-horizon arch. Reasoning model (thinking em reasoning_content). Text-only.
-    cmd: '${ik2_llama_server} --port ${PORT}
-
-      --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-Q3_K_M.gguf
-
-      --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
-
-      -ngl 99
-
-      --override-tensor "ffn_gate_exps=CPU,ffn_down_exps=CPU,ffn_up_exps=CPU,tok_embd=CPU"
-
-      --no-kv-offload
-
-      --ctx-size 131072
-
-      --temp 1.0
-
-      --top-p 0.95
-
-      --reasoning on
-
-      --reasoning-format deepseek
-
-      --chat-template-kwargs ''{"reasoning_effort":"high"}''
-
-      --jinja
-
-      --parallel 1
-
-      --parallel-tool-calls
-
-      --cache-type-k ${large_cache_k}
-
-      --cache-type-v ${large_cache_v}
-
-      --flash-attn auto
-
-      --ubatch-size 256
-
-      --reasoning-budget 16384
-
-      --reasoning-budget-message "Now answer directly."
-
-      --metrics
-
-      '
-    env:
-    - GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.95
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.95
-    ttl: 1200
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~17 GB (Q3_K_M)
-      context: 1K-131K (modelo suporta 512K nativo; teto da frota; KV q4_0 6.4GB em RAM)
-      vram_usage: ~3.3GB VRAM + ~16GB RAM pinned (medido @8K no R1; 131K muda só o KV em RAM)
-      source: abenzerps/K2-Horizon-MoVA-36B-A4B-GGUF (SHA256 662610e0)
-      kv_cache: q4_0 + attn_rot
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: k2-horizon
-      parameters: 36000000000
-      context_length: 524288
-      quantization: Q3_K_M
-      note: 'Mapeamento manual (--fit falha nesta arch): experts FFN na CPU (pinned), value-experts MoVA + output na GPU, KV em RAM. Flag UMA = seguro anti-OOM apenas. Hadamard K rejeitada (glitches determinísticos; lado V, incl. MoVA, verificado limpo). 131K consome ~24GB de RAM total (incl. sistema) — feche apps pesados. Backend: fork do kassane + patch de vocab anexado. Template: abenzerps (a embutida do IFM pressupõe o parser k2_horizon do fork MBZUAI).'
   lfm2.5-8b-a1b:
     name: LFM 2.5 8B
     description: Liquid AI MoE hybrid — 8.3B total, 1.5B active per token. Built for fast, reliable tool calling on consumer hardware.
@@ -2156,7 +1863,6 @@ hooks:
 matrix:
   vars:
     q4: qwen3.5-4b
-    q4a: qwen3.5-4b-abliterated
     lfm8: lfm2.5-8b-a1b
     lfm26: lfm2.5-2.6b
     nb42: nanbeige4.2-3b
@@ -2171,7 +1877,6 @@ matrix:
     ocr: glm-ocr
     qwvl: qwen3-vl-4b
     lfmvl3: lfm2.5-vl-3b
-    q9: qwen3.5-9b
     g4: gemma4-e2b
     orn15: ornith-1.5-35b
     glm: glm-4.7-flash
@@ -2183,13 +1888,13 @@ matrix:
     nemb: nemotron-3-embed-1b
     lfmcol: lfm2.5-colbert-350m
   sets:
-    small_vision: (q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)
-    small_embed: (q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)
-    small_only: q4 | q4a | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2 | gpt2xl
+    small_vision: (q4 | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)
+    small_embed: (q4 | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)
+    small_only: q4 | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2 | gpt2xl
     gpt2xl_embed: gpt2xl & (nomic | lfmemb | nemb | lfmcol)
     vision_only: ocr | qwvl | lfmvl3
     vision_embed: (ocr | qwvl | lfmvl3) & (nomic | lfmemb | nemb | lfmcol)
-    medium: (q9 | g4) & (nomic | lfmemb | nemb | lfmcol)
+    medium: g4 & (nomic | lfmemb | nemb | lfmcol)
     heavy: (orn15 | glm | bonsai) & (nomic | lfmemb | nemb | lfmcol) & qpoll
     translate_only: tg
     tts_external: ttsext
@@ -2200,14 +1905,12 @@ matrix:
     orn15: 9
     glm: 9
     bonsai: 8
-    q9: 4
     g4: 3
     ttsext: 4
     ocr: 3
     qwvl: 3
     lfmvl3: 3
     q4: 2
-    q4a: 2
     lfm8: 2
     lfm26: 2
     eq2: 2
