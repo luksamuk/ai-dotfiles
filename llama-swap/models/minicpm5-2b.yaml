@@ -1,33 +1,47 @@
 # -------------------------------------------
-# MINICPM5-2B — OpenBMB (Apache-2.0)
+# MINICPM5-2B — OpenBMB (Apache-2.0) — quant POLLARD IQ4_XS
 # Dense 2B, LlamaForCausalLM PURO (arch llama) — roda no upstream e no ik
 # sem fork/patch. 42 layers, GQA 16/2, head_dim 128, ctx 131K nativo
 # (rope_theta 5M). Text-only, sem vision, sem MTP/NextN.
 #
-# GGUF: openbmb/MiniCPM5-2B-GGUF (OFICIAL do vendor):
-#   Q4_K_M 1.45GB / Q8_0 2.50GB / F16 4.69GB
+# PROMOVIDO 2026-09-08 (user decision): PollardWeights IQ4_XS "PollardMix"
+# (measured-allocation: bits por sensibilidade de camada) no lugar do
+# Q4_K_M oficial. Comparação completa nos 3 ambientes (testchat ReAct,
+# :think, N=1; bench direto greedy N=3):
+#   GPU decode:   Pollard 86.5 t/s vs Q4_K_M 82.1 (empate técnico, ±5)
+#   CPU decode:   Pollard 19.5     vs Q4_K_M 27.6 (Q4_K_M vence, -30% IQ dequant)
+#   GPU prefill:  Pollard 3039     vs Q4_K_M 2870 tok/s
+#   GPU TTFT:     Pollard 1.43s    vs Q4_K_M 1.85s (-23%)
+#   Disco:        1341 MB vs 1489 MB (-148MB, ~10%)
+#   Verdict: GPU -> Pollard (mesmo decode, arranque mais rápido, menor).
+#            CPU -> Q4_K_M (mas user usa GPU aqui).
+#
+# TOOL CALL: no modo BASE o IQ4_XS falha (responde texto plano onde deveria
+# chamar <function ...>); na variante :think funciona BEM — 4 parallel calls
+# corretas no testchat, parse limpo. 3º caso do padrão "tools só no :think"
+# (nanbeige4.2-3b, spark-x2.5-4b). Agentes: usar sempre :think.
 #
 # KV budget (RTX 3050 6GB): 42 layers x 2 KV heads x 128 dim.
-# f16 KV = ~42 KiB/token (131K = 5.4GB — NAO CABE). q4_0 KV
-# = ~10.6 KiB/token -> 131K ~1.35GB. Modelo 1.45GB + KV + buffers ~3.8GB.
+# q4_0 KV = ~10.6 KiB/token -> 131K ~1.35GB. Modelo 1.41GB + KV + buffers ~3.8GB.
 #
 # Tool calling: XML-style <function name=...><param name=...>...</param></function>
-# (SGLang usa parser dedicado 'minicpm5'; no llama-server verificar se o GGUF
-# carrega metadata de tool-call — se nao, calls aparecem cruas no content).
+# (SGLang usa parser dedicado 'minicpm5'). GGUF Pollard carrega metadata de
+# tool-call + template EMBUTIDOS (byte-idênticos ao oficial — strings grep).
 # Thinking: template dual-mode (enable_thinking), blocos think.
-# Vendor: temp 1.0 / top_p 0.95. Historico da familia (1B): erava grafia
-# de nomes raros em Q8_0 — smoke test de grafia obrigatorio (Q8_0 e Q4).
-# Bench vendor: SWE-Verified 46.4 > Pro 14.4 (ordenacao correta, honesto);
-# mas linhas com dagger = avaliacao do proprio vendor — validar na pratica.
-# SMOKE 2026-09-07: PASSOU. Grafia perfeita (luksamuk/Diamantina/JK/Itaipava/Navi),
-# tool call CLEAN em AMBOS os modos (GGUF oficial carrega metadata), decode 83.9 t/s
-# (fleet-best denso), needle @60K e @105K corretas (no-think a 105K falha, think passa),
-# prefill 1216 t/s @54K / 759 @105K. VRAM medida 4.08GB @131K (estimativa 3.8 ok).
-# ATIVADO no fleet (minicpm5-2b + :think). Q8_0 guardado p/ re-teste de grafia se Q4 erar.
+# Vendor: temp 1.0 / top_p 0.95. Grafia PT perfeita no IQ4_XS
+# (luksamuk/Diamantina/Navi/Itaipava — smoke 07-08/09).
+#
+# REMOVIDOS 2026-09-08: Q4_K_M oficial, Q8_0 oficial, Pollard Q5_K_M (GGUFs
+# deletados; Pollard Q5_K_M era o rung aprovado de mais-bits — re-download:
+#   hf download PollardWeights/MiniCPM5-2B-Pollard MiniCPM5-2B-Pollard-Q5_K_M.gguf
+# fallback Q4_K_M oficial (p/ CPU ou tools-no-base):
+#   hf download openbmb/MiniCPM5-2B-GGUF MiniCPM5-2B-Q4_K_M.gguf
+# PENDENTE: descrições no Pi models.json (configs/pi) ainda citam Q4_K_M —
+# atualizar na próxima passada de harness sync.
 # -------------------------------------------
 "minicpm5-2b":
   name: "MiniCPM5 2B"
-  description: "OpenBMB MiniCPM5-2B: dense 2B (arch llama puro), 131K ctx nativo, tool calling + agentic focus. Vendor claims 2B-class SOTA (avg 53.9, competitive com 4B). Q4_K_M 1.45GB oficial. Irmao maior do MiniCPM5-1B (desativado Jul 2026: perdia de LFM2.5-230M em tool calling e erava grafia)."
+  description: "OpenBMB MiniCPM5-2B (Q4_K_M oficial): dense 2B, 131K ctx nativo, tool calling limpo em ambos os modos. Text-only, sem MTP."
   cmd: |
     ${llama_server} --port ${PORT}
     --model ${models_dir}/minicpm5-2b/MiniCPM5-2B-Q4_K_M.gguf
@@ -66,7 +80,7 @@
   metadata:
     size: "~1.45 GB (Q4_K_M oficial)"
     context: "1K-131K (nativo, sem scaling)"
-    vram_usage: "~3.8GB estimado @131K (modelo 1.45GB + KV q4_0 ~1.35GB + buffers) — MEDIR no smoke"
+    vram_usage: "~4.1GB @131K (modelo 1.45GB + KV q4_0 ~1.35GB + buffers)"
     source: "openbmb/MiniCPM5-2B-GGUF (oficial vendor)"
     kv_cache: "q4_0"
     features:
@@ -81,5 +95,5 @@
     architecture: llama
     parameters: 2000000000
     context_length: 131072
-    quantization: Q4_K_M
-    note: "Sem MTP. Vendor sampling 1.0/0.95 (think). Familia: 1B foi desativado Jul 2026 — o 2B precisa provar grafia + tool call no smoke. GGUF oficial do vendor (quants proprios)."
+    quantization: "Q4_K_M"
+    note: "Pollard IQ4_XS testado 07-08/09 e REVERTIDO 08/09: loop infinito em tarefa de código simples (Adler32) no uso real — dados do A/B permanecem válidos (empate decode GPU, TTFT -23%, -148MB, CPU -30%), mas o comportamento agêntico pesa mais. Tool call: Q4_K_M clean nos DOIS modos (IQ4_XS só no :think). REMOVIDOS 08/09: Q8_0 oficial, Pollard Q5_K_M (GGUFs deletados). Pollard IQ4_XS GGUF MANTIDO no dir como opção A/B futura. Fallback docs no header."

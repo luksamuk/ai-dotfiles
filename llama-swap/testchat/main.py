@@ -565,8 +565,27 @@ class StreamingChat:
         self._selected_model_info = {}
         # Streaming timing stats
         self.stream_start_time = None
-        self.request_start_time = None  # TTFT: timestamp do início da request
-        self.first_token_time = None     # TTFT: timestamp do primeiro token recebido
+        self.request_start_time = None  # TTFT: timestamp do início da request (por round)
+        self.first_token_time = None     # TTFT: timestamp do primeiro token recebido (por round)
+        self.turn_start_time = None       # TTFT do turno: início da 1a request (não reseta em round-trip)
+        self.turn_first_token_time = None # TTFT do turno: primeiro token de qualquer round
+        # Acumuladores do turno (ReAct: reasoning + rounds de tool call).
+        # Hiatos entre rounds (script processa tools, monta contexto) NÃO contam.
+        self.turn_decode_ms = 0.0         # soma de predicted_ms de todos os rounds
+        self.turn_predicted_n = 0         # soma de tokens gerados de todos os rounds
+        self.turn_prompt_ms = 0.0         # soma de prompt_ms (prefill) de todos os rounds
+        self.turn_prompt_n = 0            # soma de tokens de prompt de todos os rounds
+        self.turn_cache_n = 0             # soma de cache hits de todos os rounds
+        # Janelas por categoria (estatística não-viciada): a taxa de cada
+        # categoria só conta o tempo em que ELA estava sendo gerada. Sem isso,
+        # no round 2 o content fica parado enquanto o denominador cresce com o
+        # thinking -> taxa do content despenca (bug visto: 1.9 -> 1.7 t/s).
+        self.reasoning_active_s = 0.0     # janelas de streaming de reasoning
+        self.content_active_s = 0.0       # janelas de streaming de content
+        self.last_reasoning_ts = None     # último chunk de reasoning (p/ fechar janela)
+        self.last_content_ts = None       # último chunk de content (p/ fechar janela)
+        self.round_decode_start = None    # início da janela de decode do round atual
+        self.turn_first_round_prompt = None  # prefill da 1a request (o eval grande)
         self.stream_chars = 0
         self.last_timing_stats = None
     
@@ -942,9 +961,9 @@ class StreamingChat:
         
         footer_line1 = f"{status_icon} {self.status}"
         
-        # TTFT
-        if self.request_start_time and self.first_token_time:
-            ttft = self.first_token_time - self.request_start_time
+        # TTFT (por turno — enter → primeiro token; estável durante todo o turno)
+        if self.turn_start_time and self.turn_first_token_time:
+            ttft = self.turn_first_token_time - self.turn_start_time
             if ttft < 2.0:
                 ttft_color = "green"
             elif ttft < 5.0:
@@ -953,11 +972,24 @@ class StreamingChat:
                 ttft_color = "red"
             footer_line1 += f"  │  TTFT [{ttft_color}]{ttft:.1f}s[/]"
         
-        # Linha 2: Métricas de streaming
+        # Linha 2: Métricas de streaming — janelas por categoria (não-viciadas
+        # em NENHUMA direção). Cada taxa divide tokens da categoria pelo tempo
+        # em que ELA estava sendo gerada (janelas fechadas no fim de cada round).
+        # O reasoning não "envelhece" durante o content, e vice-versa. O hiato
+        # de tool call não entra em nenhuma. "⏱" = tempo ativo do turno.
         if self.has_reasoning or self.has_response:
-            elapsed = 0.0
-            if self.stream_start_time:
-                elapsed = time.time() - self.stream_start_time
+            # Janelas: somas fechadas + janela aberta do round EM ANDAMENTO
+            # (uma categoria por vez emite; a outra está congelada).
+            now = time.time()
+            reason_elapsed = self.reasoning_active_s
+            if self.last_reasoning_ts is not None:
+                reason_elapsed += now - self.last_reasoning_ts
+            content_elapsed = self.content_active_s
+            if self.last_content_ts is not None:
+                content_elapsed += now - self.last_content_ts
+            # Tempo ativo total do turno (footer "⏱"): soma das janelas de
+            # decode de todos os rounds — sem hiatos, sem reset de fase.
+            elapsed = (time.time() - self.round_decode_start) + self.turn_active_ms / 1000 if self.round_decode_start else self.turn_active_ms / 1000
             resp_chars = len(self.response_content)
             reason_chars = len(self.reasoning_content)
             est_resp_tok = max(1, resp_chars // 4) if resp_chars else 0
@@ -965,18 +997,18 @@ class StreamingChat:
             
             metric_parts = []
             
-            # Tempo decorrido
+            # Tempo decorrido (ativo do turno)
             if elapsed > 0.1:
                 metric_parts.append(f"⏱ {elapsed:.1f}s")
             
-            # Raciocínio (se thinking)
+            # Raciocínio (se thinking): tokens / janela de reasoning
             if self.use_thinking_variant and est_reason_tok > 0:
-                reason_tok_s = f"{est_reason_tok / elapsed:.1f}" if elapsed > 0.1 else "..."
+                reason_tok_s = f"{est_reason_tok / reason_elapsed:.1f}" if reason_elapsed > 0.1 else "..."
                 metric_parts.append(f"🤔 {est_reason_tok} tok @ {reason_tok_s}t/s")
             
-            # Resposta
-            if est_resp_tok > 0 and elapsed > 0.1:
-                resp_tok_s = f"{est_resp_tok / elapsed:.1f}"
+            # Resposta: tokens EXIBIDOS / janela de content
+            if est_resp_tok > 0 and content_elapsed > 0.1:
+                resp_tok_s = f"{est_resp_tok / content_elapsed:.1f}"
                 metric_parts.append(f"💬 {est_resp_tok} tok @ {resp_tok_s}t/s")
             
             # Velocidade real do llama.cpp (se disponível)
@@ -1010,6 +1042,13 @@ class StreamingChat:
         self.stream_start_time = None
         self.request_start_time = None
         self.first_token_time = None
+        # TTFT do turno: marca só na PRIMEIRA request do turno (round-trips de
+        # tool call não resetam — o TTFT exibido é enter → 1o token do turno).
+        if self.turn_start_time is None:
+            self.turn_start_time = time.time()
+        # Janela de decode deste round começa AGORA (primeiro chunk que chegar
+        # abre a janela de fato — round_decode_start). Fecha no fim do round.
+        self.round_decode_start = time.time()
         self.stream_chars = 0
         self.last_timing_stats = None
         self.tool_calls = []  # Reset tool calls for this turn
@@ -1169,6 +1208,9 @@ class StreamingChat:
                         # Check for timings in the final chunk (llama.cpp extension)
                         if "timings" in data:
                             timings = data["timings"]
+                            # ACUMULA no turno (ReAct multi-round): hiatos entre
+                            # rounds não existem nesses números (são tempos de
+                            # execução do modelo, medidos pelo llama.cpp).
                             self.last_timing_stats = {
                                 "prompt_n": timings.get("prompt_n", 0),
                                 "prompt_ms": timings.get("prompt_ms", 0),
@@ -1178,6 +1220,11 @@ class StreamingChat:
                                 "predicted_per_second": timings.get("predicted_per_second", 0),
                                 "cache_n": timings.get("cache_n", 0),
                             }
+                            self.turn_decode_ms += timings.get("predicted_ms", 0)
+                            self.turn_predicted_n += timings.get("predicted_n", 0)
+                            self.turn_prompt_ms += timings.get("prompt_ms", 0)
+                            self.turn_prompt_n += timings.get("prompt_n", 0)
+                            self.turn_cache_n += timings.get("cache_n", 0)
                         
                         if "choices" not in data or not data["choices"]:
                             continue
@@ -1215,8 +1262,21 @@ class StreamingChat:
                                 self.status = "Raciocinando..."
                                 if not self.stream_start_time:
                                     self.stream_start_time = time.time()
-                                if not self.first_token_time:
-                                    self.first_token_time = time.time()
+                            # Timestamp do 1o token: por-round E por-turno,
+                            # desacoplado dos flags (flags persistem entre
+                            # rounds de tool call — bug do TTFT acumulado).
+                            if not self.first_token_time:
+                                self.first_token_time = time.time()
+                            if not self.turn_first_token_time:
+                                self.turn_first_token_time = time.time()
+                            # Janela de reasoning: intervalo entre chunks DENTRO
+                            # do round conta como tempo de geração. A janela
+                            # fecha EXPLICITAMENTE no fim do round (sem heurística
+                            # de timeout — hiato de tool call nunca vaza aqui).
+                            now = time.time()
+                            if self.last_reasoning_ts is not None:
+                                self.reasoning_active_s += now - self.last_reasoning_ts
+                            self.last_reasoning_ts = now
                             self.reasoning_content += reasoning
                             self.stream_chars += len(reasoning)
                             yield self.render()
@@ -1227,8 +1287,18 @@ class StreamingChat:
                                 self.status = "Gerando resposta..."
                                 if not self.stream_start_time:
                                     self.stream_start_time = time.time()
-                                if not self.first_token_time:
-                                    self.first_token_time = time.time()
+                            # Mesma correção do reasoning: timestamp por-round
+                            # e por-turno, independente dos flags.
+                            if not self.first_token_time:
+                                self.first_token_time = time.time()
+                            if not self.turn_first_token_time:
+                                self.turn_first_token_time = time.time()
+                            # Janela de content: idem reasoning — sem timeout,
+                            # fechamento explícito no fim do round.
+                            now = time.time()
+                            if self.last_content_ts is not None:
+                                self.content_active_s += now - self.last_content_ts
+                            self.last_content_ts = now
                             self.response_content += content
                             self.stream_chars += len(content)
                             yield self.render()
@@ -1237,6 +1307,24 @@ class StreamingChat:
             
             # Finalize tool calls from accumulator
             self.tool_calls = [tool_calls_accumulator[i] for i in sorted(tool_calls_accumulator.keys())]
+            
+            # Fecha as janelas de categoria deste round — EXPLICITAMENTE.
+            # Sem isso, o reasoning "continuaria" durante o content do round
+            # seguinte (vício na direção oposta: taxa do 🤔 caindo enquanto o
+            # modelo só emite resposta), e vice-versa.
+            now = time.time()
+            if self.last_reasoning_ts is not None:
+                self.reasoning_active_s += now - self.last_reasoning_ts
+                self.last_reasoning_ts = None
+            if self.last_content_ts is not None:
+                self.content_active_s += now - self.last_content_ts
+                self.last_content_ts = None
+            
+            # Fecha a janela ativa de decode deste round (o hiato entre rounds
+            # fica FORA — round_decode_start é reaberto na próxima request).
+            if self.round_decode_start:
+                self.turn_active_ms += (time.time() - self.round_decode_start) * 1000
+                self.round_decode_start = None
             
             self.status = "Concluído!"
             yield self.render()
@@ -1511,6 +1599,16 @@ class StreamingChat:
                 tools_payload = MOCK_TOOLS if self.supports_tools else None
                 self._last_tools = tools_payload  # preserved for tool round-trip turn
                 self._tool_round_depth = 0  # reset per prompt (loop guard in handle_tool_calls)
+                # Novo turno: reseta TUDO que é por-turno (round-trips de tool
+                # call não passam por aqui — por isso o reset é aqui).
+                self.turn_start_time = None
+                self.turn_first_token_time = None
+                self.turn_decode_ms = 0.0
+                self.turn_predicted_n = 0
+                self.turn_prompt_ms = 0.0
+                self.turn_prompt_n = 0
+                self.turn_cache_n = 0
+                self.turn_active_ms = 0.0
                 for layout in self.stream_chat(clean_prompt, image_paths, audio_paths, tools=tools_payload):
                     live.update(layout)
                 
@@ -1607,10 +1705,19 @@ class StreamingChat:
                 timing_lines = []
                 ts = self.last_timing_stats
                 
+                # --- Métricas do llama.cpp timings — ACUMULADAS do turno ---
+                # ReAct multi-round: soma predicted_ms/prompt_ms de todos os
+                # rounds (llama.cpp mede por request; hiatos ficam fora).
+                ts = self.last_timing_stats
+                turn_decode_s = self.turn_decode_ms / 1000
+                turn_predicted_n = self.turn_predicted_n
+                
                 # --- TTFT (Time To First Token) ---
-                # TTFT total percebido: request → primeiro token (inclui swap + rede + prompt eval)
-                if self.request_start_time and self.first_token_time:
-                    ttft = self.first_token_time - self.request_start_time
+                # TTFT do TURNO: enter do usuário → primeiro token (qualquer
+                # round, incluindo round-trips de tool call). Não é afetado
+                # por rounds internos — é o tempo que o usuário esperou de verdade.
+                if self.turn_start_time and self.turn_first_token_time:
+                    ttft = self.turn_first_token_time - self.turn_start_time
                     # Cor com base na velocidade: verde < 2s, amarelo < 5s, vermelho > 5s
                     if ttft < 2.0:
                         ttft_style = "bold green"
@@ -1620,32 +1727,27 @@ class StreamingChat:
                         ttft_style = "bold red"
                     timing_lines.append(f"[bold]TTFT:[/] {ttft:.2f}s [{ttft_style}]{'●' * int(min(ttft, 10))}[/]")
                 
-                # --- Métricas do llama.cpp timings ---
-                if ts:
-                    prompt_n = ts.get("prompt_n", 0)
-                    predicted_n = ts.get("predicted_n", 0)
-                    prompt_per_s = ts.get("prompt_per_second", 0)
-                    predicted_per_s = ts.get("predicted_per_second", 0)
-                    prompt_ms = ts.get("prompt_ms", 0)
-                    predicted_ms = ts.get("predicted_ms", 0)
-                    cache_n = ts.get("cache_n", 0)
-                    total_tokens = prompt_n + predicted_n
-                    
-                    # TTFT do modelo: tempo de prompt eval (processamento real do input)
-                    if prompt_ms:
-                        prompt_eval_s = prompt_ms / 1000
-                        timing_lines.append(f"[bold]Eval:[/] {prompt_n} tok in {prompt_eval_s:.1f}s — {prompt_per_s:.1f} tok/s")
-                    
-                    if predicted_n:
-                        timing_lines.append(f"[bold]Decode:[/] {predicted_n} tok in {predicted_ms/1000:.1f}s — [bold green]{predicted_per_s:.1f} tok/s[/]")
-                    if cache_n:
-                        timing_lines.append(f"[dim]Cached: {cache_n} tok[/]")
-                    if total_tokens:
-                        total_time = (prompt_ms + predicted_ms) / 1000
-                        timing_lines.append(f"[bold]Total:[/] {total_tokens} tok in {total_time:.1f}s")
-                elif self.stream_start_time:
-                    # Fallback: show estimated stats
-                    elapsed = time.time() - self.stream_start_time
+                # --- Decode acumulado (média real do turno, hiatos fora) ---
+                if turn_predicted_n and turn_decode_s > 0:
+                    turn_decode_ts = turn_predicted_n / turn_decode_s
+                    timing_lines.append(
+                        f"[bold]Decode:[/] {turn_predicted_n} tok in {turn_decode_s:.1f}s — [bold green]{turn_decode_ts:.1f} tok/s[/]"
+                        + ("  [dim](soma de rounds ReAct)[/]" if self._tool_round_depth else "")
+                    )
+                
+                # --- Prefill acumulado (média real, todas as requests) ---
+                if self.turn_prompt_ms and self.turn_prompt_n:
+                    turn_prompt_s = self.turn_prompt_ms / 1000
+                    turn_prompt_ts = self.turn_prompt_n / turn_prompt_s
+                    timing_lines.append(
+                        f"[bold]Prefill:[/] {self.turn_prompt_n} tok in {turn_prompt_s:.1f}s — {turn_prompt_ts:.1f} tok/s"
+                    )
+                if self.turn_cache_n:
+                    timing_lines.append(f"[dim]Cached (rounds): {self.turn_cache_n} tok[/]")
+                
+                # Fallback: sem timings do llama.cpp, estima pelo relógio ativo
+                if not ts and self.turn_active_ms > 0:
+                    elapsed = self.turn_active_ms / 1000
                     resp_chars = len(self.response_content)
                     reason_chars = len(self.reasoning_content)
                     est_resp_tok = max(1, resp_chars // 4) if resp_chars else 0
