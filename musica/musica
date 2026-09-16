@@ -1,0 +1,218 @@
+#!/bin/bash
+# musica — gerador de música local, AGNÓSTICO DE MODELO (audio.cpp)
+#
+# Irmão do `diffuse` (imagem) e do `h3` (vídeo). Um binário, várias famílias.
+# O modelo se escolhe por --modelo; o resto da interface é igual.
+#
+# Uso:
+#   musica --letra-file L.txt --legenda-file C.txt --modelo ace --dur 30
+#   musica --letra-file L.txt --legenda "MPB 1979, violao de nylon" --modelo ace
+#   musica --letra-file L.txt --legenda-file C.txt --modelo ace --seed 7 --bpm 140
+#   musica --instrumental --legenda-file C.txt --modelo ace --dur 30
+#   musica --lista                                    # famílias disponíveis
+#   musica --dry-run ...                              # mostra o comando e encerra
+#
+# AVISO OPERACIONAL: rode via `tu run`, NUNCA em terminal background puro.
+# Background + unified memory = morte silenciosa (5/5 reproduções).
+
+set -o pipefail
+
+# ---------- caminhos ----------
+AUDIOCPP_HOME="${AUDIOCPP_HOME:-$HOME/git/audio.cpp}"
+BIN="$AUDIOCPP_HOME/build/linux-cuda-release/bin/audiocpp_cli"
+OUT_DIR="${MUSICA_OUT_DIR:-$PWD}"
+SPECS_OVERRIDE="${MUSICA_SPECS:-}"   # dir com overrides de model_specs (ex: ace_step)
+
+# ---------- defaults ----------
+MODELO="ace"
+DUR=30
+SEED=42
+STEPS=""
+GUIDANCE=""
+LETRA=""
+LETRA_FILE=""
+LEGENDA=""
+LEGENDA_FILE=""
+BPM=""
+TOM=""
+COMPASSO=""
+IDIOMA="pt"
+INSTRUMENTAL=0
+OUT=""
+DRY_RUN=0
+EXTRA=()
+
+uso() {
+  sed -n '2,20p' "$0" | sed 's/^# \?//'
+  exit 0
+}
+
+# ---------- familias suportadas ----------
+# formato: apelido|familia_audio.cpp|dir_relativo_do_modelo|modelo_minimo
+lista_modelos() {
+  cat <<'EOF'
+Familias de musica no audio.cpp (use com --modelo):
+
+  ace     ACE-Step 1.5 (turbo)      models/Ace-Step1.5
+          Controle simbolico: --bpm --tom --compasso --idioma
+          Rota cover disponivel. MIT. ~31s por 30s de musica.
+
+  base    ACE-Step 1.5 (base, 50 steps)   models/Ace-Step1.5
+          Mais qualidade, mais lento. Mesma interface do ace.
+
+  xl      ACE-Step 1.5 XL (4B DiT)   models/Ace-Step1.5-xl
+          Exige ~12GB VRAM com offload. Provavelmente nao cabe em 6GB.
+
+  stable  Stable Audio 3             models/stable-audio-3
+          Instrumentais, loops, ambiencia, SFX. SEM letra.
+
+  heart   HeartMuLa OSS 3B           models/heartmula
+          Letra + tags. Adesao a letra em nivel de tag.
+
+Para instalar pesos de uma familia:
+  cd ~/git/audio.cpp && python3 tools/model_manager_v2.py install <familia>
+
+ATENCAO: o repo de pacotes audio-cpp/audio.cpp-gguf esta quebrado no CDN
+(~5 KB/s). Prefira os repos oficiais das familias quando existirem.
+EOF
+}
+
+# ---------- parse ----------
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --modelo|-m)      MODELO="$2"; shift 2 ;;
+    --letra)          LETRA="$2"; shift 2 ;;
+    --letra-file)     LETRA_FILE="$2"; shift 2 ;;
+    --legenda)        LEGENDA="$2"; shift 2 ;;
+    --legenda-file)   LEGENDA_FILE="$2"; shift 2 ;;
+    --dur|--duration) DUR="$2"; shift 2 ;;
+    --seed)           SEED="$2"; shift 2 ;;
+    --steps)          STEPS="$2"; shift 2 ;;
+    --guidance)       GUIDANCE="$2"; shift 2 ;;
+    --bpm)            BPM="$2"; shift 2 ;;
+    --tom)            TOM="$2"; shift 2 ;;
+    --compasso)       COMPASSO="$2"; shift 2 ;;
+    --idioma)         IDIOMA="$2"; shift 2 ;;
+    --instrumental)   INSTRUMENTAL=1; shift ;;
+    --out|-o)         OUT="$2"; shift 2 ;;
+    --out-dir)        OUT_DIR="$2"; shift 2 ;;
+    --specs)          SPECS_OVERRIDE="$2"; shift 2 ;;
+    --dry-run)        DRY_RUN=1; shift ;;
+    --lista|--list)   lista_modelos; exit 0 ;;
+    -h|--help|--uso)  uso ;;
+    *)                EXTRA+=("$1"); shift ;;
+  esac
+done
+
+# ---------- resolver familia -> familia_audio.cpp ----------
+case "$MODELO" in
+  ace)    FAMILIA="ace_step";              MDIR="models/Ace-Step1.5";      VSTEPS="${STEPS:-8}"  ;;
+  base)   FAMILIA="ace_step";              MDIR="models/Ace-Step1.5";      VSTEPS="${STEPS:-50}" ;;
+  xl)     FAMILIA="ace_step";              MDIR="models/Ace-Step1.5-xl";   VSTEPS="${STEPS:-8}"  ;;
+  stable) FAMILIA="stable_audio";          MDIR="models/stable-audio-3";   VSTEPS="${STEPS:-8}"  ;;
+  heart)  FAMILIA="heartmula";             MDIR="models/heartmula";        VSTEPS="${STEPS:-8}"  ;;
+  *)      echo "modelo desconhecido: $MODELO (use --lista)" >&2; exit 1 ;;
+esac
+
+# ACE-Step 'base' exige troca de variante do DiT
+LOAD_OPT=()
+[ "$MODELO" = "base" ] && LOAD_OPT+=(--load-option ace_step.dit_model_path=acestep-v15-base)
+
+# ---------- ler entradas ----------
+[ -n "$LETRA_FILE" ] && LETRA="$(cat "$LETRA_FILE")"
+[ -n "$LEGENDA_FILE" ] && LEGENDA="$(cat "$LEGENDA_FILE")"
+
+if [ "$INSTRUMENTAL" = "1" ]; then
+  case "$FAMILIA" in
+    ace_step)      LETRA="[Instrumental]";;
+    minimax_music3) LETRA=$'##\n[Instrumental]\n##';;
+    *)             LETRA="[Instrumental]";;
+  esac
+fi
+
+if [ -z "$LETRA" ]; then
+  echo "erro: sem letra. use --letra ou --letra-file (ou --instrumental)" >&2
+  exit 1
+fi
+if [ -z "$LEGENDA" ]; then
+  echo "erro: sem legenda. use --legenda ou --legenda-file" >&2
+  exit 1
+fi
+
+# ---------- nome de saida ----------
+[ -z "$OUT" ] && OUT="$OUT_DIR/${FAMILIA}_${MODELO}_s${SEED}_${DUR}s.wav"
+
+# ---------- montar comando ----------
+CMD=("$BIN" --task gen --family "$FAMILIA" --model "$MDIR" --backend cuda)
+[ -n "$SPECS_OVERRIDE" ] && CMD+=(--model-spec-override "$SPECS_OVERRIDE")
+
+case "$FAMILIA" in
+  ace_step)
+    CMD+=(--task-route text2music)
+    CMD+=(--text "$LEGENDA")
+    CMD+=(--lyrics "$LETRA")
+    CMD+=(--language "$IDIOMA")
+    CMD+=(--duration-seconds "$DUR")
+    CMD+=(--num-inference-steps "$VSTEPS")
+    [ -n "$GUIDANCE" ] && CMD+=(--guidance-scale "$GUIDANCE")
+    CMD+=(--seed "$SEED")
+    [ -n "$BPM" ] && CMD+=(--request-option "bpm=$BPM")
+    [ -n "$TOM" ] && CMD+=(--request-option "keyscale=$TOM")
+    [ -n "$COMPASSO" ] && CMD+=(--request-option "timesignature=$COMPASSO")
+    CMD+=(--session-option ace_step.mem_saver=true)
+    CMD+=("${LOAD_OPT[@]}")
+    ;;
+  minimax_music3)
+    CMD+=(--text "$LEGENDA")
+    CMD+=(--lyrics "$LETRA")
+    CMD+=(--request-option "duration_sec=$DUR")
+    CMD+=(--request-option "num_inference_steps=${VSTEPS:-30}")
+    CMD+=(--request-option "seed=$SEED")
+    ;;
+  stable_audio|heartmula)
+    CMD+=(--text "$LEGENDA")
+    [ "$FAMILIA" = "heartmula" ] && CMD+=(--lyrics "$LETRA")
+    CMD+=(--duration-seconds "$DUR")
+    CMD+=(--seed "$SEED")
+    ;;
+esac
+
+CMD+=(--out "$OUT" --metrics)
+[ ${#EXTRA[@]} -gt 0 ] && CMD+=("${EXTRA[@]}")
+
+# ---------- executar ----------
+echo "=== musica — familia=$FAMILIA modelo=$MODELO ==="
+echo "  saida : $OUT"
+echo "  dur   : ${DUR}s | seed: $SEED | steps: $VSTEPS"
+[ -n "$BPM" ] && echo "  bpm   : $BPM"
+[ -n "$TOM" ] && echo "  tom   : $TOM"
+[ -n "$COMPASSO" ] && echo "  compasso: $COMPASSO"
+echo "  idioma: $IDIOMA | instrumental: $INSTRUMENTAL"
+echo
+
+if [ "$DRY_RUN" = "1" ]; then
+  echo "--- comando (dry-run, nada executado) ---"
+  printf '%q ' "${CMD[@]}"; echo
+  exit 0
+fi
+
+# Unified memory e' o que faz os modelos maiores caberem em 6GB.
+# NAO remover sem testar: sem UMA, ACE-Step nao passa da alocacao do DiT.
+export GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
+
+mkdir -p "$(dirname "$OUT")"
+START=$(date +%s)
+"${CMD[@]}"
+RC=$?
+EL=$(( $(date +%s) - START ))
+
+echo
+echo "=== fim: $RC — $((EL/60))min $((EL%60))s ==="
+# O marcador NAO e prova de sucesso: verificar o arquivo.
+if [ -f "$OUT" ]; then
+  ls -la "$OUT"
+  ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 "$OUT"
+else
+  echo "!!! WAV AUSENTE — a run FALHOU, nao celebrar !!!"
+fi
+exit $RC
