@@ -118,6 +118,33 @@ llama-swap-cli testchat
 uv run main.py
 ```
 
+### Modos de prompt via linha de comando
+
+```bash
+uv run main.py --raw                       # prompt neutro: sem system injetado, sem tools
+uv run main.py --no-system                 # sem system injetado, mantendo as mock tools
+uv run main.py --system "Você é um tutor de matemática. Responda em bullets."
+```
+
+| Flag | Efeito |
+|------|--------|
+| `--raw` | Nenhum system prompt injetado E nenhuma ferramenta enviada — só a mensagem do usuário. Teste puro do framework (RCEF escrito à mão) |
+| `--no-system` | Sem system injetado, mas mantém `tools` quando o modelo suporta |
+| `--system "texto"` | Injeta o texto como system prompt (no lugar dos built-ins Pepe/portal-core) |
+
+O modo ativo aparece no header da TUI (`[RAW — sem system, sem tools]`, `[SYSTEM customizado]` ou `[sem system]`).
+Sem flags, o comportamento é o de sempre: system built-in por modelo (quando houver) + mock tools automáticas.
+
+### Tela de capabilities: system prompt e prompt renderizado
+
+Na tela inicial (após selecionar o modelo), o testchat mostra três quadros de transparência:
+
+1. **System Prompt efetivo** — com `--system`, o texto completo que será injetado; com `--raw`/`--no-system`, o aviso de que nada será injetado; no modo normal, o perfil built-in ativo (PEPE/portal-core) ou "nenhum".
+2. **Payload JSON** — o payload OpenAI-compatível (`messages` + `tools`) que o testchat envia ao servidor.
+3. **Prompt real renderizado** — buscado via `/upstream/<modelo>/apply-template` do llama-swap: os bytes finais que o chat template do backend entrega ao modelo, incluindo a seção `# Tools` gerada a partir do campo `tools` do payload (é assim que o modelo "sabe" quais ferramentas existem, mesmo sem system prompt). Truncado em 30 linhas com total de chars.
+
+Útil pra demonstrações de prompt engineering: mostre o payload, mostre o prompt renderizado, compare `--raw` (sem tools → prompt sem seção `# Tools`) contra o modo normal (seção `# Tools` presente).
+
 ### Fluxo
 
 1. **Menu de modelos**: Selecione o modelo usando ↑/↓ (features marcadas com ícones 🤔 🛠️ 👁️)

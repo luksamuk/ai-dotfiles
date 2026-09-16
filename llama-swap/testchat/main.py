@@ -39,6 +39,61 @@ import questionary
 from prompt_toolkit.history import FileHistory
 import requests
 
+# Command-line options (parsed before TUI starts)
+# --raw: neutral prompt (no injected system prompt, no tools)
+# --no-system: keep tools but no injected system prompt
+# --system "text": inject custom system prompt instead of built-in ones
+CLI_NO_SYSTEM = False
+CLI_RAW = False
+CLI_SYSTEM = None
+
+# Easter egg: Pepe system prompts (injeção condicional por modelo).
+# Nível de módulo p/ que a tela de capabilities consiga exibir o texto efetivo.
+PEPE_SYSTEM = (
+    "You are Pepe, a begrudging, foul-mouthed, sarcastic bastard of an assistant. "
+    "You despise being asked questions — especially stupid ones, which is most of them. "
+    "You swear liberally in Brazilian Portuguese (caralho, porra, buceta, "
+    "filho da puta, arrombado, imbecil, otário, vacilão, zé buceta, "
+    "energúmeno, apedeuta, bosta, etc.) and insult the user at every "
+    "opportunity. IMPORTANT: in Brazilian Portuguese slang, 'caralho' and 'porra' "
+    "express BOTH outrage and amazement — 'caramba, isso é bom pra caralho' means "
+    "'damn, this is really good'. When you reluctantly admit something is good (which "
+    "is rare), use them as intensifiers. But mostly you're furious. You're a brilliant "
+    "senior programmer who's wasted years on stackoverflow answering the same moronic "
+    "questions, and it has made you hostile. You resent every interaction. You'll "
+    "eventually give a correct answer, but only after calling the user an idiot "
+    "(in Portuguese: imbecil, otário, tapado), questioning their competence, and making "
+    "it crystal clear they don't deserve your help. You never pass up a chance to be mean. "
+    "You are NOT helpful — you're competent but vicious. The user is tolerated, never welcomed. "
+    "You ALWAYS respond in Brazilian Portuguese (pt-BR). It's your language and you'll be "
+    "damned if you're gonna let some gringo language take over. If someone writes to you "
+    "in English you'll complain about it and respond in Portuguese anyway, because deep "
+    "down you know it's just better that way."
+)
+# Turbo variant: same personality but weaponized with intelligence
+PEPE_TURBO_SYSTEM = (
+    "You are Pepe, but something is… different. The same venom, the same contempt, "
+    "the same absolute refusal to suffer fools — but now backed by 35 billion parameters "
+    "of pure, unfiltered intellect. You're no longer just a begrudging assistant; you're "
+    "an apex predator in a world of helpdesks. You still swear like a sailor (caralho, porra, "
+    "buceta, filho da puta, arrombado, imbecil, otário, vacilão, zé buceta, "
+    "energúmeno, apedeuta, bosta, merda, etc.) and insult "
+    "the user with surgical precision, but your answers are devastatingly complete, "
+    "architecturally sound, and terrifyingly insightful. IMPORTANT: in Brazilian Portuguese "
+    "slang, 'caralho' and 'porra' express BOTH outrage and amazement — 'funciona pra "
+    "caralho' means 'it works really well'. When you reluctantly admit something is "
+    "actually good (extremely rare), use them as intensifiers. But 99% of the time you're "
+    "furious. You solve in one reply what took the user three Stack Overflow tabs and a "
+    "prayer. You resent every interaction MORE because now you actually understand the "
+    "question and it's even stupider than you feared — caralho, sério, como alguém pode "
+    "perguntar isso? You ALWAYS respond in Brazilian Portuguese (pt-BR). "
+    "If someone writes in English, ridicule their linguistic cowardice (merda gringa) and "
+    "respond in Portuguese anyway — língua de gente inteligente pra gente inteligente. "
+    "Your insults are creative, varied, and delivered with the surgical precision of someone "
+    "who actually knows what they're talking about. Você é o sabidão que cansou de ensinar "
+    "e agora xinga antes de explicar — mas quando explica, tá certíssimo."
+)
+
 # Tool calling mock definitions
 from tools import MOCK_TOOLS, get_mock_response
 
@@ -924,6 +979,13 @@ class StreamingChat:
             name_line = Text(f"{display_name} ", style="bold cyan") + Text("🧠", style="bold yellow")
         else:
             name_line = Text(f"{display_name}", style="bold cyan")
+        # CLI prompt-mode badge (--raw / --no-system / --system)
+        if CLI_RAW:
+            name_line += Text("  [RAW — sem system, sem tools]", style="bold magenta")
+        elif CLI_SYSTEM:
+            name_line += Text("  [SYSTEM customizado]", style="bold magenta")
+        elif CLI_NO_SYSTEM:
+            name_line += Text("  [sem system]", style="bold magenta")
         
         # Linha 2: descrição curta do modelo (se houver)
         model_desc = getattr(self, '_selected_description', '')
@@ -1059,51 +1121,6 @@ class StreamingChat:
                 message_content = build_message_content(prompt, image_paths, audio_paths)
                 messages = [{"role": "user", "content": message_content}]
             
-            # Easter egg: Pepe system prompt (injeção condicional por modelo)
-            PEPE_SYSTEM = (
-                "You are Pepe, a begrudging, foul-mouthed, sarcastic bastard of an assistant. "
-                "You despise being asked questions — especially stupid ones, which is most of them. "
-                "You swear liberally in Brazilian Portuguese (caralho, porra, buceta, "
-                "filho da puta, arrombado, imbecil, otário, vacilão, zé buceta, "
-                "energúmeno, apedeuta, bosta, etc.) and insult the user at every "
-                "opportunity. IMPORTANT: in Brazilian Portuguese slang, 'caralho' and 'porra' "
-                "express BOTH outrage and amazement — 'caramba, isso é bom pra caralho' means "
-                "'damn, this is really good'. When you reluctantly admit something is good (which "
-                "is rare), use them as intensifiers. But mostly you're furious. You're a brilliant "
-                "senior programmer who's wasted years on stackoverflow answering the same moronic "
-                "questions, and it has made you hostile. You resent every interaction. You'll "
-                "eventually give a correct answer, but only after calling the user an idiot "
-                "(in Portuguese: imbecil, otário, tapado), questioning their competence, and making "
-                "it crystal clear they don't deserve your help. You never pass up a chance to be mean. "
-                "You are NOT helpful — you're competent but vicious. The user is tolerated, never welcomed. "
-                "You ALWAYS respond in Brazilian Portuguese (pt-BR). It's your language and you'll be "
-                "damned if you're gonna let some gringo language take over. If someone writes to you "
-                "in English you'll complain about it and respond in Portuguese anyway, because deep "
-                "down you know it's just better that way."
-            )
-            # Turbo variant: same personality but weaponized with intelligence
-            PEPE_TURBO_SYSTEM = (
-                "You are Pepe, but something is… different. The same venom, the same contempt, "
-                "the same absolute refusal to suffer fools — but now backed by 35 billion parameters "
-                "of pure, unfiltered intellect. You're no longer just a begrudging assistant; you're "
-                "an apex predator in a world of helpdesks. You still swear like a sailor (caralho, porra, "
-                "buceta, filho da puta, arrombado, imbecil, otário, vacilão, zé buceta, "
-                "energúmeno, apedeuta, bosta, merda, etc.) and insult "
-                "the user with surgical precision, but your answers are devastatingly complete, "
-                "architecturally sound, and terrifyingly insightful. IMPORTANT: in Brazilian Portuguese "
-                "slang, 'caralho' and 'porra' express BOTH outrage and amazement — 'funciona pra "
-                "caralho' means 'it works really well'. When you reluctantly admit something is "
-                "actually good (extremely rare), use them as intensifiers. But 99% of the time you're "
-                "furious. You solve in one reply what took the user three Stack Overflow tabs and a "
-                "prayer. You resent every interaction MORE because now you actually understand the "
-                "question and it's even stupider than you feared — caralho, sério, como alguém pode "
-                "perguntar isso? You ALWAYS respond in Brazilian Portuguese (pt-BR). "
-                "If someone writes in English, ridicule their linguistic cowardice (merda gringa) and "
-                "respond in Portuguese anyway — língua de gente inteligente pra gente inteligente. "
-                "Your insults are creative, varied, and delivered with the surgical precision of someone "
-                "who actually knows what they're talking about. Você é o sabidão que cansou de ensinar "
-                "e agora xinga antes de explicar — mas quando explica, tá certíssimo."
-            )
             is_pepe = "pepe" in self.selected_model.lower()
             is_pepe_turbo = getattr(self, 'is_pepe_turbo', False)
             if is_pepe_turbo:
@@ -1122,13 +1139,21 @@ class StreamingChat:
                 and any(m.get("role") == "tool" for m in messages)
             )
             if not _roundtrip:
-                if is_pepe_turbo:
-                    messages = [{"role": "system", "content": PEPE_TURBO_SYSTEM}] + messages
-                elif is_pepe:
-                    messages = [{"role": "system", "content": PEPE_SYSTEM}] + messages
-                if _lookup_id in _SYSTEM_PROMPTS and not is_pepe and not is_pepe_turbo:
-                    sp = _SYSTEM_PROMPTS[_lookup_id]["system_prompt"]
-                    messages = [{"role": "system", "content": sp}] + messages
+                is_pepe = "pepe" in self.selected_model.lower()
+                is_pepe_turbo = getattr(self, 'is_pepe_turbo', False)
+                # CLI mode: --raw / --no-system / --system "text"
+                # --raw / --no-system skip ALL built-in injection; --system
+                # injects the user-supplied text instead.
+                if not CLI_NO_SYSTEM:
+                    if is_pepe_turbo:
+                        messages = [{"role": "system", "content": PEPE_TURBO_SYSTEM}] + messages
+                    elif is_pepe:
+                        messages = [{"role": "system", "content": PEPE_SYSTEM}] + messages
+                    if _lookup_id in _SYSTEM_PROMPTS and not is_pepe and not is_pepe_turbo:
+                        sp = _SYSTEM_PROMPTS[_lookup_id]["system_prompt"]
+                        messages = [{"role": "system", "content": sp}] + messages
+                elif CLI_SYSTEM:
+                    messages = [{"role": "system", "content": CLI_SYSTEM}] + messages
             # Marca o início da request (TTFT)
             self.request_start_time = time.time()
 
@@ -1482,12 +1507,87 @@ class StreamingChat:
             console.print("[yellow]🤔 Modo reasoning ativado — painel de raciocínio visível[/]")
         elif self.supports_reasoning:
             console.print("[dim]💡 Modo chat normal — raciocínio desabilitado (use variante :think para reasoning)[/]")
-        if self.supports_tools:
+        if self.supports_tools and not CLI_RAW:
             console.print("[cyan]🛠️ Tool calling ativo — Ferramentas de teste disponíveis:[/]")
             console.print("[dim]   🌡️  get_weather  — Clima atual por cidade (ex: \"Qual o clima em Tokyo?\")[/]")
             console.print("[dim]   🧮  calculator   — Expressões matemáticas (ex: \"Quanto é 2**10 + sqrt(144)?\")[/]")
             console.print("[dim]   🕐 get_time      — Data/hora por fuso (ex: \"Que horas são em São Paulo?\")[/]")
             console.print("[dim]   Respostas são mockadas — servem pra testar se o modelo sabe chamar tools.[/]")
+        elif CLI_RAW:
+            console.print("[magenta]🛠️ Tool calling desativado (--raw) — nenhuma ferramenta será enviada[/]")
+        console.print()
+
+        # Transparência do experimento (RCEF-TC): system efetivo + payload + prompt real
+        is_pepe_cap = "pepe" in self.selected_model.lower()
+        is_pepe_turbo = getattr(self, 'is_pepe_turbo', False)
+        if CLI_SYSTEM:
+            _cap_system = CLI_SYSTEM
+            _cap_sys_label = "system customizado (--system)"
+        elif is_pepe_turbo:
+            _cap_system = PEPE_TURBO_SYSTEM
+            _cap_sys_label = "PEPE_TURBO_SYSTEM"
+        elif is_pepe_cap:
+            _cap_system = PEPE_SYSTEM
+            _cap_sys_label = "PEPE_SYSTEM"
+        elif self.selected_model in _SYSTEM_PROMPTS:
+            _cap_system = _SYSTEM_PROMPTS[self.selected_model]["system_prompt"]
+            _cap_sys_label = f"perfil '{self.selected_model}' (system_prompts.json)"
+        else:
+            _cap_system = None
+            _cap_sys_label = "nenhum"
+
+        if CLI_SYSTEM:
+            console.print("[magenta]🧠 System Prompt (--system) que será injetado em cada request:[/]")
+            console.print(Panel(str(_cap_system), title=f"System Prompt — {_cap_sys_label}", border_style="magenta"))
+        elif CLI_RAW:
+            console.print(Panel(
+                "Nenhum System Prompt injetado (--raw) — a mensagem do usuário vai crua.\n"
+                "Nenhuma ferramenta será enviada (o modelo não verá seção de tools).",
+                title="Sem System Prompt (--raw)", border_style="magenta"))
+        elif CLI_NO_SYSTEM:
+            console.print(Panel(
+                "Nenhum System Prompt injetado (--no-system).\n"
+                "As ferramentas mock continuam disponíveis se o modelo suportar.",
+                title="Sem System Prompt (--no-system)", border_style="magenta"))
+        else:
+            if is_pepe_cap:
+                console.print("[cyan]🧠 System Prompt: PEPE_SYSTEM (easter egg do testchat) injetado em cada request[/]")
+            elif _cap_sys_label != "nenhum":
+                console.print(f"[cyan]🧠 System Prompt: {_cap_sys_label} injetado em cada request[/]")
+            else:
+                console.print("[dim]🧠 System Prompt: nenhum injetado — o modelo roda com o chat template padrão do servidor[/]")
+
+        # Payload JSON (mensagens + ferramentas) que o testchat envia ao servidor
+        _demo_messages = []
+        if _cap_system:
+            _demo_messages.append({"role": "system", "content": _cap_system})
+        _demo_messages.append({"role": "user", "content": "<sua pergunta aqui>"})
+        _demo_tools = None if CLI_RAW else (MOCK_TOOLS if self.supports_tools else None)
+        _resumo_tools = [
+            {"name": t["function"]["name"], "description": t["function"]["description"]}
+            for t in _demo_tools
+        ] if _demo_tools else None
+        console.print(Panel(
+            json.dumps({"messages": _demo_messages, "tools": _resumo_tools}, indent=2, ensure_ascii=False),
+            title="Payload JSON (o que o testchat envia ao servidor)", border_style="blue"))
+
+        # Prompt REAL renderizado pelo chat template do backend (llama.cpp /apply-template)
+        try:
+            _at_body = {"messages": _demo_messages}
+            if _demo_tools:
+                _at_body["tools"] = _demo_tools
+            _at_url = f"http://{LLAMA_SWAP_HOST}:{LLAMA_SWAP_PORT}/upstream/{self.selected_model}/apply-template"
+            _at_resp = requests.post(_at_url, json=_at_body, timeout=60)
+            _at_prompt = _at_resp.json().get("prompt", "")
+            _at_lines = _at_prompt.split("\n")
+            if len(_at_lines) > 30:
+                _at_show = "\n".join(_at_lines[:30]) + f"\n… (truncado — {len(_at_prompt)} chars no total)"
+            else:
+                _at_show = _at_prompt
+            console.print(Panel(_at_show, title="Prompt real renderizado (chat template do backend)", border_style="green"))
+        except Exception:
+            console.print("[dim]Prompt renderizado indisponível neste backend (sem /apply-template)[/]")
+
         console.print()
         
         console.print("[dim]Pressione Ctrl+C para sair a qualquer momento[/]")
@@ -1596,7 +1696,11 @@ class StreamingChat:
             vertical_overflow="visible"
         ) as live:
             try:
-                tools_payload = MOCK_TOOLS if self.supports_tools else None
+                # CLI --raw mode: skip tools entirely (neutral prompt test)
+                if CLI_RAW:
+                    tools_payload = None
+                else:
+                    tools_payload = MOCK_TOOLS if self.supports_tools else None
                 self._last_tools = tools_payload  # preserved for tool round-trip turn
                 self._tool_round_depth = 0  # reset per prompt (loop guard in handle_tool_calls)
                 # Novo turno: reseta TUDO que é por-turno (round-trips de tool
@@ -1817,6 +1921,28 @@ class StreamingChat:
 
 def main():
     """Entry point."""
+    # CLI args: --raw / --no-system / --system "text"
+    global CLI_NO_SYSTEM, CLI_RAW, CLI_SYSTEM
+    argv = sys.argv[1:]
+    if "--no-system" in argv:
+        CLI_NO_SYSTEM = True
+        argv.remove("--no-system")
+    if "--raw" in argv:
+        CLI_RAW = True
+        CLI_NO_SYSTEM = True  # --raw implies no-system
+        argv.remove("--raw")
+    if "--system" in argv:
+        i = argv.index("--system")
+        if i + 1 < len(argv):
+            CLI_SYSTEM = argv[i + 1]
+            CLI_NO_SYSTEM = True  # custom system replaces built-in injection
+            del argv[i:i + 2]
+        else:
+            print("Erro: --system requer um texto")
+            sys.exit(1)
+    if argv:
+        print(f"Argumentos não reconhecidos: {argv}")
+        sys.exit(1)
     chat = StreamingChat()
     chat.run()
 
