@@ -1,34 +1,31 @@
 # -------------------------------------------
-# GEMMA-4-12B-QAT - UPSTREAM BACKEND (--fit on, UNIFIED MULTIMODAL)
-# Google Q4_0 Quantization-Aware Training — dense 12B params.
-# Won benchmark vs PTQ on ik: 25 vs 24/25 Snake (speed progression bonus).
-# Migrated from ik to upstream: ik --gpu-layers 24 OOMs on compute buffer
-# with ctx-size > 16K. Upstream --fit on handles compute buffer automatically.
-# UNIFIED MULTIMODAL: mmproj loads vision+audio projector (~168 MB QAT).
-# Speed impact: -8% with mmproj (9.2 vs 10.0 tok/s). Worth it for multimodal.
-# Upstream doesn't have --parallel-tool-calls. Jinja template handles tool calling.
-# --fit on + --fit-target 768: leave 768 MiB headroom for desktop use.
-# --fit-ctx 8192: minimum pre-allocated context at startup.
-# --flash-attn on: stable on upstream for gemma4 dense.
-# --reasoning on: dual mode base (chat, temp 0.7) and :think (reasoning, temp 1.2).
-# head_dim=512 → attn_rot ✅ (auto-activates on upstream with quantized cache).
+# GEMMA-4-12B - Bee BACKEND (KVarN KV cache)
+# BeeLlama.cpp v0.4.4 (upstream 84e908c6) — KVarN target KV-cache compression
+# Modelo: google/gemma-4-12b-it (Q4_0 original) + mmproj F16 unificado
+#   — par original do bee (REVERT 31/08: experimentos abliterated Heretic e
+#     Huihui rejeitados em produção; histórico nos commits 2f2f4e6/9400a64)
+# Q4_0 dense 12B (~6.7GB) + mmproj F16 unificado (vision+audio, 168MB)
+# KVarN suportado APENAS em Qwen3.6 e Gemma 4 (fork surface intencional)
+# Multimodal unificado: texto + imagem (+áudio via gemma4a preprocessor)
+# BUG CONHECIDO (2026-08-29, bisect confirmado): `--timeout 0` QUEBRA requests
+#   de áudio (broken pipe) — manter ausente. ctx 131072 segue proibido p/ audio.
+#   reasoning_effort:none NAO desliga thinking no Bee — cliente deve mandar
+#   chat_template_kwargs.enable_thinking=false (setParamsByID cobre isso).
 # -------------------------------------------
 "gemma4-12b":
   name: "Gemma 4 12B"
-  description: "Gemma 4 12B QAT (Q4_0) — Unified multimodal (vision + audio). Won vs PTQ on ik (25 vs 24/25 Snake). Upstream --fit on for 128K ctx with mmproj."
+  description: "Gemma 4 12B Q4_0 — BeeLlama.cpp v0.4.4 com KVarN kvarn4. Multimodal unificado (texto+áudio+imagem)."
   cmd: |
-    ${llama_server} --port ${PORT}
-    --model ${models_dir}/gemma-4-12b-it-qat-q4_0.gguf
-    --mmproj ${models_dir}/mmproj-gemma-4-12b-it-qat-q4_0.gguf
+    ${bee_server} --port ${PORT}
+    --model ${models_dir}/gemma-4-12b/gemma-4-12b-it-Q4_0.gguf
+    --mmproj ${models_dir}/gemma-4-12b/mmproj-F16.gguf
     --fit on
     --fit-target 768
-    --fit-ctx 8192
-    --ctx-size 131072
+    --ctx-size 8192
     --jinja
-    --parallel 2
     --reasoning on
-    --cache-type-k q4_0
-    --cache-type-v q4_0
+    --cache-type-k kvarn4
+    --cache-type-v kvarn4
     --flash-attn on
     --min-p 0.01
     --repeat-penalty 1.05
@@ -44,33 +41,27 @@
       "${MODEL_ID}:think":
         chat_template_kwargs:
           enable_thinking: true
-        temperature: 1.2
-        top_p: 0.95
-  ttl: 300
-  health_check_timeout: 300
-  capabilities:
-    in: ['text', 'image', 'audio']
-    out: ['text']
-    tools: true
-    reranker: false
-    context: 131072
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 60
   metadata:
-    size: "~6.7 GB (Q4_0 QAT + 168 MB mmproj)"
-    context: "8K-128K (dynamic)"
-    vram_usage: "~5GB VRAM + ~354 MB mmproj (upstream --fit on)"
-    source: "google/gemma-4-12B-it-qat-q4_0-gguf"
-    kv_cache: "q4_0 + attn_rot"
+    health_check_timeout: 1800   # read_timeout do testchat = 1830s (audio análise do Gemma é lenta)
+    size: ~6.7 GB (Q4_0) + mmproj F16 168MB
+    context: 8K (--fit on, target 768)
+    vram_usage: "~6.9GB com kvarn4"
+    source: "google/gemma-4-12b-it (Q4_0 + mmproj F16)"
+    kv_cache: kvarn4
     features:
       completion: true
-      tools: true
+      tools: false
       thinking: true
       vision: true
       embedding: false
       insert: false
       audio: true
-      image: false
+      image: true
     architecture: gemma4
     parameters: 12000000000
-    context_length: 262144
-    embedding_length: 3072
-    quantization: Q4_0_QAT
+    context_length: 8192
+    quantization: Q4_0
+    note: "REVERT 31/08: modelo original Google Q4_0 (par validado do bee). Experimentos abliterated (Heretic IQ4_XS, Huihui Q4_K) rejeitados em produção — vision describe instável no fit do Bee. tools=false: validar antes de habilitar. ctx 131072 proibido p/ áudio (crash mtmd). KVarN so em Qwen3.6/Gemma 4. kvarn4: PPL ~ fp16 a ~4 bits. GGUFs experimentais ainda em ~/.llama-models/gemma-4-12b/ (limpar quando confirmado)."

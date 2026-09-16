@@ -25,10 +25,21 @@
 # -------------------------------------------
 "qwen3.6-35b-a3b":
   name: "Qwen 3.6 35B"
-  description: "Qwen3.6 delivers substantial upgrades in agentic coding and thinking preservation. Built on direct community feedback for a more intuitive, responsive, and productive coding experience. Text-only (vision disabled for ctx 131K)."
+  description: "Qwen3.6 delivers substantial upgrades in agentic coding and thinking preservation. Built on direct community feedback for a more intuitive, responsive, and productive coding experience. Vision enabled Sep 10 at full 131K context (needs ~20GB free host RAM; 32K fallback under memory pressure)."
+# QWEN3.6-35B-A3B - MoE CODING + VISION (APEX-MTP I-Compact)
+# VISION REACTIVATED 10/09 c/ ctx FULL 131K: mmproj-F16.gguf (899MB, unsloth —
+# projector qwen3vl_merger, projection_dim 2048 = embedding_length do LLM ✓,
+# verificado por tensor-dump contra o mmproj do ornith — idênticos).
+# --no-graph-reuse: CRITICAL — previne CUDA graph OOM do mmproj (fix ik 4704).
+# CONDIÇÃO: RAM limpa (~20GB pinned no host; navegador fechado). VRAM 5.4/6.1GB
+# estável em smoke de visão Sep 10. Cuidado: com navegador/RAM pressionada,
+# fit-margin 1024 + ctx 32K é o fallback seguro (regra Jul 2026).
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/Qwen3.6-35B-A3B-APEX-I-Compact.gguf
+    --model ${models_dir}/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-APEX-MTP-I-Compact.gguf
+    --mmproj ${models_dir}/qwen3.6-35b-a3b/mmproj_qwen36_F16.gguf
+    --no-mmproj-offload
+    --no-graph-reuse
     --fit
     --fit-margin 1024
     --ctx-size 131072
@@ -48,6 +59,8 @@
     --v-cache-hadamard
     --flash-attn auto
     --defer-experts
+    --prefetch-experts
+    --spec-type mtp:n_max=1,p_min=0.0
     --metrics
   filters:
     stripParams: "temperature, top_p"
@@ -56,31 +69,31 @@
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.6
-        top_p: 0.85
+        top_p: 0.95
       "${MODEL_ID}:think":
         chat_template_kwargs:
           enable_thinking: true
         temperature: 0.6
-        top_p: 0.9
+        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
-    in: ['text']
+    in: ['text', 'image']
     out: ['text']
     tools: true
     reranker: false
     context: 131072
   metadata:
-    size: "~17.3 GB (APEX I-Compact)"
-    context: "131K (vision disabled — mmproj removed, ctx restored)"
-    vram_usage: "~5.6 GB VRAM (5587 MiB measured) + ~14GB pinned RAM"
-    source: "mudler/Qwen3.5-35B-A3B-APEX-GGUF"
+    size: "~17.3 GB (APEX-MTP I-Compact) + 899 MB mmproj F16"
+    context: "1K-131K (vision ON, RAM limpa; fallback 32K sob pressão de RAM)"
+    vram_usage: "~5.6 GB VRAM estimado + ~14GB pinned RAM (MTP ~+414MiB, padrão ornith Sep 2026)"
+    source: "mudler/Qwen3.6-35B-A3B-APEX-MTP-GGUF (I-Compact) + mmproj unsloth (F16)"
     kv_cache: "q4_0 + attn_rot + hadamard"
     features:
       completion: true
       tools: true
       thinking: true
-      vision: false
+      vision: true
       embedding: false
       insert: false
       audio: false
@@ -89,5 +102,5 @@
     parameters: 34660000000
     context_length: 262144
     embedding_length: 2048
-    quantization: APEX I-Compact
-    note: "Vision disabled (mmproj removed to restore ctx 131K on 6GB RTX 3050). Text-only mode. 33-34 tok/s. Both base and :think modes support tools."
+    quantization: APEX-MTP I-Compact
+    note: "Sep 09: reactivated com APEX-MTP I-Compact (MTP heads baked in, nextn=1; o APEX plain ignorava --multi-token-prediction silenciosamente — audit May 2026). --spec-type mtp:n_max=1,p_min=0.0 = receita ornith-1.5 (42.6 tok/s medido Sep 10, accept 85-93%). VISION re-ativada 10/09 c/ ctx FULL 131K (RAM limpa: VRAM 5.4/6.1GB estável em smokes; fallback 32K sob pressão — regra Jul 2026). mmproj unsloth F16, verificado tensor-a-tensor vs ornith (qwen3vl_merger, proj_dim 2048). Sep 10: alinhado ao ornith — --no-mmproj-offload + --prefetch-experts + top_p 0.95 nos dois modos."

@@ -88,7 +88,7 @@ declare -A MODELS=(
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-UD-Q4_K_XL.gguf"
   # ["qwen3.5-4b-mtp"] — consolidated into qwen3.5-4b, Jul 2026
   # [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
-  ["lfm2.5-8b-a1b"]="mudler/LFM2.5-8B-A1B-APEX-GGUF LFM2.5-8B-A1B-APEX-I-Compact.gguf"
+  # ["lfm2.5-8b-a1b"]="mudler/LFM2.5-8B-A1B-APEX-GGUF LFM2.5-8B-A1B-APEX-I-Compact.gguf"  # REMOVED Sep 10 2026
   # LFM2.5-2.6B - Liquid AI on-device agentic model, dense hybrid, 128K context
   # Q6_K = 2.22 GB, reasoning model, trained with agentic RL inside Hermes Agent
   ["lfm2.5-2.6b"]="LiquidAI/LFM2.5-2.6B-GGUF LFM2.5-2.6B-Q6_K.gguf"
@@ -105,7 +105,7 @@ declare -A MODELS=(
   # [REMOVED Sep 2026] qwen3.5-9b — user request
   # [REMOVED] gemma4-e4b — disabled Jul 2026, redundant with E2B (no code use case)
   # ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
-  ["gemma4-e2b"]="google/gemma-4-E2B-it-qat-q4_0-gguf gemma-4-E2B_q4_0-it.gguf"
+  # ["gemma4-e2b"]="google/gemma-4-E2B-it-qat-q4_0-gguf gemma-4-E2B_q4_0-it.gguf"  # REMOVED Sep 10 2026
   # [REMOVED] gemma4-12b — incompetent at code, 6.7GB freed, Jun 2026
 #   [REMOVED] gemma4-e2b (PTQ) — superseded by QAT, Jun 2026
   # [REMOVED] nemotron-3-nano-4b — poor quality, superseded by Qwen3.5-4B/9B

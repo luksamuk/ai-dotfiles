@@ -32,12 +32,10 @@ matrix:
     # Modelos pequenos
     q4: qwen3.5-4b
     # m5a: minicpm5-1b-agentic  # disabled
-    lfm8: lfm2.5-8b-a1b
+    # lfm8: lfm2.5-8b-a1b  # REMOVED Sep 10 2026 — GGUF deleted (bench 16/105, user confia no 2.6b); fragment em _removed/
     lfm26: lfm2.5-2.6b
     nb42: nanbeige4.2-3b
-    # Empero Qwen3.8 distillations (upstream llama.cpp, qwen35 arch)
-    eq2: empero-qwen3.8-2b
-    eq4: empero-qwen3.8-4b
+    # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
     qpoll: qwen2.5-coder-1.5b-pollard
     # GPT-2 124M — museum piece (2019 original, completion-only, ctx 1024)
@@ -51,15 +49,16 @@ matrix:
     # Vision
     ocr: glm-ocr
     # uocr: unlimited-ocr  # disabled Aug 2026 — unused
-    qwvl: qwen3-vl-4b
+    # qwvl: qwen3-vl-4b  # REMOVED Sep 10 2026 — GGUF deleted (A/B lfm2.5-vl-3b pendente pro enhance do H3); fragment em _removed/
     lfmvl3: lfm2.5-vl-3b
-    # Modelos médios
-    g4: gemma4-e2b
+    # g4: gemma4-e2b  # REMOVED Sep 10 2026 — GGUF QAT deleted (maturidade em outros modelos); fragment em _removed/
     # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
     # Pesados (offload)
     # aw: agentworld-35b  # disabled Aug 2026
     orn15: ornith-1.5-35b
-    glm: glm-4.7-flash
+    # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
+    q36: qwen3.6-35b-a3b
+    # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
     # Bonsai 1-bit disabled Aug 2026 — user request
     # bonsai1: bonsai-27b-1bit
     # Qwen3.8-27B dense 1-bit disabled Aug 2026 — too slow, user never uses
@@ -74,7 +73,7 @@ matrix:
     # asr: qwen3-asr-0.6b  # disabled
     ttsext: qwen3-tts
     # Embedding
-    nomic: nomic-embed-text-v2-moe
+    # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
     lfmemb: lfm2.5-embedding-350m
     nemb: nemotron-3-embed-1b
     # Reranker (late-interaction, CPU-only)
@@ -82,28 +81,30 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)"
+    small_vision: "(q4 | lfm26 | spc | fct | adv | gpt2) & (nemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2) & (nomic | lfmemb | nemb | lfmcol)"
+    small_embed: "(q4 | lfm26 | spc | fct | adv | gpt2) & (nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | lfm8 | lfm26 | eq2 | eq4 | spc | fct | adv | gpt2 | gpt2xl"
+    small_only: "q4 | lfm26 | spc | fct | adv | gpt2 | gpt2xl"
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
-    gpt2xl_embed: "gpt2xl & (nomic | lfmemb | nemb | lfmcol)"
+    gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr | qwvl | lfmvl3"
-    vision_embed: "(ocr | qwvl | lfmvl3) & (nomic | lfmemb | nemb | lfmcol)"
+    vision_only: "ocr | lfmvl3"
+    vision_embed: "(ocr | lfmvl3) & (nemb | lfmcol)"
 
     # Modelos médios + Embedding/Reranker
-    medium: "g4 & (nomic | lfmemb | nemb | lfmcol)"
+    # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
+    medium: "q36 & (nemb | lfmcol)"
 
     # Modelos pesados (offload) + Embedding/Reranker + CPU completion
     # qw38 removed Aug 2026 — model disabled
     # bonsai1 removed Aug 2026 — user request (reactivated as bonsai, Sep 2026)
-    heavy: "(orn15 | glm | bonsai) & (nomic | lfmemb | nemb | lfmcol) & qpoll"
+    # glm removed Sep 09 2026 — see vars note
+    heavy: "(orn15 | q36 | bonsai) & (nemb | lfmcol) & qpoll"
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -113,38 +114,40 @@ matrix:
     tts_external: "ttsext"
 
     # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
-    embed_only: "nomic & lfmemb & nemb & lfmcol"
+    embed_only: "lfmemb & nemb & lfmcol"
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
 
     # Reranker + Embedding (two-stage retrieval: dense → rerank)
-    rerank_embed: "lfmcol & (nomic | lfmemb | nemb)"
+    rerank_embed: "lfmcol & (lfmemb | nemb)"
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
     orn15: 9
-    glm: 9
+    # glm: 9  # REMOVED Sep 09 2026 — model deleted
+    q36: 9
+    # nex25: 9  # REMOVED Sep 10 2026
     # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed
     # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
     bonsai: 8
-    g4: 3
+    # g4: 3  # REMOVED Sep 10 2026 — model deleted
     ttsext: 4
     ocr: 3
-    qwvl: 3
+    # qwvl: 3  # REMOVED Sep 10 2026
     lfmvl3: 3
     q4: 2
-    lfm8: 2
+    # lfm8: 2  # REMOVED Sep 10 2026
     lfm26: 2
-    eq2: 2
-    eq4: 3
+    # eq2: 2  # REMOVED Sep 10 2026
+    # eq4: 3  # REMOVED Sep 10 2026
     qpoll: 1
     gpt2: 1
     gpt2xl: 3
     spc: 1
     fct: 2
     adv: 2
-    nomic: 1
+    # nomic: 1  # REMOVED Sep 10 2026
     lfmemb: 1
     nemb: 1
     lfmcol: 1
