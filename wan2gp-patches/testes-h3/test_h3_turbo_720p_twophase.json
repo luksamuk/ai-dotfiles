@@ -1,0 +1,25 @@
+{
+  "model_type": "minimax_h3_fl2va_pruned",
+  "task_type": "t2v",
+  "model": {
+    "name": "MiniMax H3 FL2VA Q4_0",
+    "architecture": "minimax_h3_fl2va_pruned",
+    "settings_dir": [""],
+    "group": "minimax_h3",
+    "URLs": ["MiniMax-H3-FL2VA-pruned_int8_convrot.safetensors"],
+    "text_encoder_variant": "gguf_q4_k_m",
+    "text_encoder_URLs": ["qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf"],
+    "video_vae_file": "MiniMax-H3-video_vae_fp16.safetensors",
+    "audio_vae_file": "MiniMax-H3-audio_vae_fp32.safetensors"
+  },
+  "prompt": "A misty mountain valley at dawn, slow drifting fog rolling between rocky cliffs, dry grass swaying in cold wind. Sound: soft wind, distant birds, no background music.",
+  "resolution": "1280x720",
+  "video_length": 241,
+  "guidance_phases": "2~",
+  "guidance_scale": 1.0,
+  "flow_shift": 12.0,
+  "num_inference_steps": 8,
+  "activated_loras": ["minimax_h3_fl2v_lightx2v_turbo_8step_v1.0_resized_avg_rank_24_bf16.safetensors"],
+  "loras_multipliers": "1",
+  "seed": 1776
+}

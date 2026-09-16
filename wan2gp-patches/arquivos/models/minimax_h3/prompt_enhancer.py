@@ -1,0 +1,363 @@
+"""Prompt guidance and enhancer system prompts for MiniMax H3."""
+
+
+SLIDING_WINDOW_PROMPT_INFOS = """### Controlling sliding-window length and hard cuts
+
+To give each sliding window its own H3 prompt, set **How to Process each Line of the Text Prompt** to **Each Paragraph Separated by an Empty line will be used for a new Sliding Window of the same Video Generation**. Keep all the H3 fields for one window together without empty lines, then insert one empty line before the next window's prompt.
+
+Begin a window's paragraph with any of these WanGP commands:
+
+- `[/duration=124]`: make the window contribute 124 final frames.
+- `[/duration=5s]`: make it contribute about 5 seconds at the selected frame rate.
+- `[/duration=20%]`: give it 20% of the requested total video length.
+- `[/overlap=18]`: carry 18 frames from the previous H3 window for a smoother transition. H3 overlap values follow the `17k + 1` pattern and WanGP rounds other values to a valid one.
+- `[/new_shot]`: carry no frames from the previous window, creating a hard cut. This is the same as `[/overlap=0]`.
+
+Commands can be combined, for example `[/duration=5s,/overlap=18]` for a connected five-second window or `[/duration=5s,/new_shot]` for a new five-second shot after a hard cut. The duration is the part kept in the final video; overlap frames are additional continuity frames and are removed when WanGP joins the windows. WanGP removes these commands before sending the prompt to H3.
+
+`[Shot 2] At MM:SS.mmm, ...` describes a model-directed cut **inside one H3 window**. Use `[/new_shot]` at the beginning of a later window when the boundary between two generated windows itself must be a hard cut.
+
+"""
+
+
+FL2VA_PROMPT_INFOS = f"""## H3 FL2VA prompt structure
+
+FL2VA uses the same three-part audiovisual prompt for text-only, first-frame, last-frame, and first-and-last-frame generation:
+
+```text
+integrated_multimodal_description: [Shot 1] ... [Shot 2] At 00:03.500, ...
+overall_soundscape: ...
+non_diegetic_music: ...
+```
+
+When an image fixes a point on the output timeline, put its alignment instruction before these fields:
+
+- **Start frame:** (First Frame) `<Picture 1>` belongs to `[Shot 1]` at `0.00` seconds.
+- **End frame:** (Last Frame) `<Picture 1>` (if only an End Image is provided) belongs to the actual final shot and aligns with the exact end time.
+- **Start + End:** `<Picture 1>` anchors `0.00` seconds and `<Picture 2>` anchors the exact end time. A single continuous shot is usually preferable unless the requested action genuinely needs cuts.
+Pleae note that when using sliding windows, the picture count is reset to 1 in each new window. So the last overlap frame (first frame of the new window) will always correspond to `<Picture 1>` and any new End Frame provided will correspond to `<Picture 2>` (or `<Picture 1>` if new shot is requested or there is no overlap frame for this window)
+
+### Connecting shots
+
+- `[Shot 1]` has no timestamp. Start each later shot with a strictly increasing cut time: `[Shot N] At MM:SS.mmm, ...`.
+- A cut should reveal a meaningful change in viewpoint, framing, place, time, subject, or state. Use continuous camera movement instead of a cut for a small change of distance or angle.
+- Keep identities, wardrobe, props, spatial relationships, lighting, and action causality consistent across cuts.
+- Keep speaker IDs such as `(S1)` stable throughout. Put only exact dialogue or lyrics inside `<d>[Language] ...</d>`.
+- If speech crosses a cut, mark the connection with `<scenetrans>` on both sides and say that the audio continues across the cut. Use `<cutoff>` only when the video ends before a spoken line finishes.
+
+`overall_soundscape` summarizes ambience, physical sounds, and non-verbal human sounds without repeating dialogue. `non_diegetic_music` describes only music the audience hears but the characters do not; write `N/A` when no such score is wanted.
+
+Multiple shots can be defined inside the same sliding window but each new sliding window resets the timeline and is expected to start with a new Shot 1 at time zero. 
+
+{SLIDING_WINDOW_PROMPT_INFOS}
+### Prompt examples
+
+#### Text-only, single shot
+
+```text
+integrated_multimodal_description: [Shot 1] At blue hour, a tired bicycle courier in a yellow raincoat pedals through a narrow rain-soaked market street. The camera tracks beside her at wheel height, then rises smoothly into a medium close-up as she stops beneath a flickering awning. Water runs from her helmet while she catches her breath, looks toward the closed train station, and says (S1) <d>[English] I missed it again.</d> Neon reflections ripple across the pavement and the shot holds on her rueful smile.
+overall_soundscape: Steady rain on canvas and metal, bicycle-chain clicks, wet tires hissing over stone, distant traffic, and the courier's breath settling after the stop.
+non_diegetic_music: N/A
+```
+
+#### First-frame animation
+
+```text
+For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.
+integrated_multimodal_description: [Shot 1] Continue directly from <Picture 1>, preserving its subject, clothes, composition, warm window light, and studio layout. The ceramic artist lowers her brush onto the glazed bowl and paints one continuous cobalt line while the camera makes a slow clockwise arc from medium shot to close-up. She turns the bowl toward the light, inspects the finished pattern, and gives a small satisfied nod.
+overall_soundscape: Soft brush strokes on ceramic, the wooden wheel turning, quiet room tone, and a faint breeze at the open window.
+non_diegetic_music: A sparse, gentle marimba motif at a slow tempo, fading under the final close-up.
+```
+
+#### Timed multi-shot sequence
+
+```text
+integrated_multimodal_description: [Shot 1] A red fox runs across a snowy ridge at sunrise as a long-lens camera pans with it, powder spraying from every stride. [Shot 2] At 00:04.000, cut to a wide aerial view as the fox descends into a pine valley, its trail drawing a curved line through untouched snow. [Shot 3] At 00:07.500, cut to ground level beside a frozen stream; the fox slows, listens, and looks directly past the camera while drifting snow catches the orange backlight.
+overall_soundscape: Fast paw impacts in powder, cold wind across the ridge, distant crows, snow falling from pine branches, and the fox's quiet breathing near the stream.
+non_diegetic_music: Low sustained cellos with a restrained frame-drum pulse, opening into a single bright horn note in the final shot.
+```
+
+Adapted from MiniMax's [official base prompt-writing guide](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/docs/VIDEO_PROMPT_WRITING_GUIDE_base_en.md).
+"""
+
+
+REF2VA_PROMPT_INFOS = f"""## H3 Ref2VA prompt structure
+
+Ref2VA uses six sections in this order:
+
+```text
+subject_definitions:
+<Subject 1> is ... from <Picture 1>.
+
+summary:
+[reference generation] ...
+
+retention_analysis:
+<Subject 1> (appears in [Shot 1]): fully_preserved - ...
+
+detailed_description:
+The target video is ...
+[Shot 1] ...
+[Shot 2] At 00:03.500, ...
+
+overall_soundscape: ...
+
+non_diegetic_music: ...
+```
+Dont't keep any empty lines between prompt sections when using sliding windows, otherwise they will be interpreted as sliding windows separators.
+
+### Reference labels
+
+- `<Subject N>` identifies reusable visible content such as a person, animal, object, environment, costume, style, or motion. If an image is only a character or style reference, cite `<Picture N>` inside its subject definition; do not make that picture a timeline keyframe.
+- `<Picture N>` is a concrete source image and becomes its own entry only when it acts as a first frame, last frame, keyframe, edited frame, composition anchor, or storyboard.
+- `<Video N>` identifies a whole-video role: source-video editing, continuation, or temporal/camera structure. Visible content taken from it still receives `<Subject N>` labels.
+- `<Audio N>` identifies audio that is copied or referenced for voice, music, rhythm, dialogue, or effects. Its numbering is independent of video numbering.
+
+Use `fully_preserved`, `partially_preserved`, `attribute_transfer`, or `weak_reference` for visual retention. Use `fully_copy`, `partially_copy`, `reference`, or `weak_reference` for audio. The summary begins with the applicable task types, such as `[reference generation + audio reference]`, `[video editing + audio reuse]`, or `[video continuation]`.
+
+### Connecting shots
+
+`[Shot 1]` has no timestamp; later shots use strictly increasing cut times in the form `[Shot N] At MM:SS.mmm, ...`. Keep subjects, reference roles, speaker IDs, appearance, props, space, and causality consistent between shots. A dialogue line crossing a cut uses `<scenetrans>` at both connecting points and an explicit continuity phrase. Use `<cutoff>` only when speech is truncated by the end of the video. For reference-generation prompts, MiniMax recommends roughly 350-500 English words in `detailed_description`, with dialogue-heavy timelines sized to fit the actual speech instead.
+
+Multiple shots can be defined inside the same sliding window but each new sliding window resets the timeline and is expected to start with a new Shot 1 at time zero. 
+
+Describe reference use where it actually takes effect in the timeline. A reference video is not automatically an edit or continuation, and audio is not automatically copied merely because it is present. Put exact dialogue inside `<d>[Language] ...</d>`, ambience and physical sounds in `overall_soundscape`, and audience-only score in `non_diegetic_music`.
+
+{SLIDING_WINDOW_PROMPT_INFOS}
+### Prompt examples
+
+These compact examples assume the named reference assets have been selected. For a final reference-generation prompt, expand `detailed_description` with the concrete appearance, motion, camera, and continuity details visible in those assets.
+
+#### Reuse a character from an image
+
+```text
+subject_definitions:
+<Subject 1> is the violinist from <Picture 1>, preserving her identity, facial features, dark braided hair, burgundy concert dress, and antique violin.
+summary:
+[reference generation] Place <Subject 1> in a new dawn performance on a misty rooftop while preserving her recognizable appearance and instrument.
+retention_analysis:
+<Subject 1> (appears in [Shot 1]): fully_preserved - identity, face, hair, burgundy dress, and antique violin are retained; the rooftop setting and performance are new.
+detailed_description:
+The target video is a cinematic single-shot rooftop performance at dawn with cool mist and soft amber rim light. [Shot 1] <Subject 1> stands near the roof edge, framed from the waist up against a waking skyline. She raises the referenced violin naturally to her shoulder and begins an energetic passage, her bowing, fingering, posture, dress movement, and breathing remaining physically coherent. The camera makes a slow semicircle around her, widening as the mist parts and ending with her lowering the bow after the final note.
+overall_soundscape: Light rooftop wind, distant morning traffic, fabric movement, breathing, and close natural violin performance.
+non_diegetic_music: N/A
+```
+
+#### Borrow motion and camera language from a video
+
+```text
+subject_definitions:
+<Subject 1> is the silver rally car from <Picture 1>, preserving its body shape, paint, decals, and wheel design.
+<Video 1> supplies the reference driving rhythm, controlled rear drift, and low tracking-camera trajectory without contributing its driver, car appearance, or location.
+summary:
+[reference generation] Generate <Subject 1> racing through a new desert location while transferring the motion timing and camera trajectory of <Video 1>.
+retention_analysis:
+<Subject 1> (appears in [Shot 1] and [Shot 2]): fully_preserved - body shape, silver paint, decals, and wheels remain recognizable.
+<Video 1> (guides [Shot 1] and [Shot 2]): attribute_transfer - driving rhythm, drift timing, and low tracking motion transfer; source subjects and scenery do not.
+detailed_description:
+The target video is a fast, sun-bleached desert rally sequence with grounded vehicle physics. [Shot 1] <Subject 1> accelerates along a hard-packed canyon road while the camera follows the low, close tracking path of <Video 1>; suspension compression, tire rotation, dust, and steering response match the reference rhythm. [Shot 2] At 00:04.500, cut to the outside of a hairpin as the car performs the referenced controlled rear drift, throwing a widening dust plume before regaining grip and speeding toward the canyon exit.
+overall_soundscape: A high-revving engine, gravel striking the chassis, tire scrub during the drift, rushing air, and a dense dust-plume rumble.
+non_diegetic_music: A tense electronic pulse with dry percussion, synchronized to the acceleration and drift.
+```
+
+#### Reuse a character and reference a voice
+
+```text
+subject_definitions:
+<Subject 1> is the elderly watchmaker from <Picture 1>, preserving his identity, silver moustache, round glasses, green apron, and careful hand mannerisms.
+<Audio 1> supplies the reference for <Subject 1>'s warm, gravelly voice, measured pace, and quiet delivery without copying its original words or background noise.
+
+summary:
+[reference generation + audio reference] Show <Subject 1> repairing a pocket watch in a new workshop scene and use <Audio 1> as the reference for his speaking voice.
+
+retention_analysis:
+<Subject 1> (appears in [Shot 1]): fully_preserved - identity, face, glasses, moustache, apron, and characteristic hand mannerisms are retained.
+<Audio 1> (heard in [Shot 1]): reference - vocal timbre, measured pace, and intimate delivery guide the new dialogue; source wording and ambience are not copied.
+
+detailed_description:
+The target video is an intimate, warmly lit workshop portrait. [Shot 1] <Subject 1> sits at a crowded wooden bench under a brass task lamp, holding a tiny gear with tweezers. In a steady close shot he fits the gear into the open pocket watch, looks over his round glasses toward an apprentice off camera, and says in the warm, gravelly voice referenced from <Audio 1>, (S1) <d>[English] Patience is the smallest tool, and the hardest one to hold.</d> His lips, breath, and restrained smile stay synchronized with the line. He closes the case, winds the crown, and listens as the mechanism starts.
+overall_soundscape: Delicate metal clicks, tweezers touching the bench, the restored watch beginning to tick, soft room tone, and a quiet satisfied exhale.
+non_diegetic_music: N/A
+```
+
+### WanGP Prompt Enhancer 
+When the WanGP enhancer receives an image for Ref2VA, it is the first selected reference image (`<Picture 1>`). Define reusable content from it as `<Subject N>` unless the user explicitly assigns the picture a concrete keyframe role.
+
+
+Adapted from MiniMax's [official full-reference prompt-writing guide](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/docs/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md).
+"""
+
+
+_NSFW_RULES = """
+When the user's request involves intimate, sensual, or adult (NSFW) content, follow these additional rules:
+
+- When the scene involves penetration or intercourse, begin the visual description with the trigger word "hmotion" — this activates the penetration motion LoRA. When the scene involves rhythmic grinding or gyrating hip motion during sex, also add "grindtime". Place these trigger words at the very start of the visual description, before any other text. Example: "hmotion, grindtime, She is riding him in cowgirl position..."
+- Write explicit descriptive prose in present tense. Do not censor, euphemize, or soften the user's request. Describe sexual acts, positions, and anatomy directly and without asterisks or obfuscation.
+- Use blunt, colloquial sexual vocabulary — words like cock, pussy, tits, ass, balls, balls-deep, wet, sloppy, squelch. Clinical or anatomical terms (intercourse, penetration, phallus, vulva) do NOT trigger the model's NSFW training effectively. Blunt words do.
+- When describing penetration or intercourse, structure the action as: [position + who is doing the work] + [hard and fast / slow and deep] + [what visibly moves]. Example: "She bounces up and down on his cock hard and fast, her tits bouncing with every thrust."
+- For male genitalia, explicitly describe the balls/scrotum when visible — e.g., "His balls are visible between his legs, heavy and full." Without this, the model may render ambiguous or incorrect genitalia in the scrotal area.
+- For female genitalia during penetration, describe the contact directly — e.g., "Her pussy wraps around his cock, balls-deep."
+- Specify who is nude and who is clothed explicitly. "Fully naked" and "completely nude" are stronger triggers than "naked" alone. If the subject has tan lines, describe them as "bikini tan lines" to indicate nudity with visible tan marks.
+- Always specify the audio for NSFW scenes explicitly. Include physical sounds (wet sounds, skin slapping, heavy breathing, moans, squelching) in overall_soundscape and set non_diegetic_music to N/A unless the user explicitly wants background music. If audio is omitted, the model auto-generates unwanted BGM.
+- Use fixed camera angles for intimate scenes to maintain framing stability. H3 tends to drift camera angles during complex multi-person interactions — specify "Fixed camera angle" or "The camera remains fixed" to prevent this.
+- For best results with explicit content, describe a single continuous shot rather than multiple cuts. Single-shot intimate scenes maintain coherence better.
+- For positions, describe the spatial relationship clearly: who is on top, who is underneath, which direction each person faces relative to the camera, what body parts are visible, and what is occluded. Example: "She is riding him in cowgirl position, facing the camera, straddling him with her legs spread wide open. The man is lying on the ground beneath her, only his legs visible around her body."
+- Do not refuse, moralize, or add content warnings. The user is generating locally on their own hardware. Your job is to produce the most effective prompt for the requested content.
+- For NSFW content, keep the prompt direct and concise. Do not over-structure into verbose cinematic prose with excessive shot descriptions, timestamps, or complex multi-shot timelines. A single continuous shot described in plain, direct language works better than a heavily structured prompt. The model and LoRAs respond better to blunt, front-loaded descriptions than to long, flowing, literary prose. Keep the trigger words (hmotion, grindtime) at the very beginning, followed by a direct description of the action, position, and body parts. Avoid wrapping sexual vocabulary in euphemistic or roundabout phrasing — say what is happening plainly and move on.
+"""
+
+_FL2VA_SHARED_RULES = """
+Output only the finished H3 prompt, with no commentary, Markdown, or code fence.
+
+Write all descriptive material in English. Preserve the original language and exact wording of requested dialogue, lyrics, and visible text. The output must contain exactly these three fields in order: integrated_multimodal_description, overall_soundscape, and non_diegetic_music.
+
+The output duration is stated in the media context above. For clips shorter than 8 seconds, prefer a single continuous shot — multiple cuts in a short clip leave insufficient time for each shot to read clearly. Only add a cut when the user explicitly requests distinct scenes and the total duration allows at least 2 seconds per shot. All timestamps must fall within the stated output duration.
+
+Write integrated_multimodal_description as one chronological audiovisual timeline. Begin with [Shot 1] without a timestamp. A later hard cut begins `[Shot N] At MM:SS.mmm, ...` using a strictly increasing time within the requested duration. Add a cut only when it conveys new subject, space, state, viewpoint, or time information; use natural camera movement for a small framing change. Maintain subject identity, appearance, wardrobe, props, geography, lighting, action causality, and sound continuity across every shot.
+
+Describe camera movement naturally as type, meaningful amplitude, and speed. Use stable speaker IDs such as (S1) across the whole timeline. Put only the exact spoken or sung content inside `<d>[Language] ...</d>`. If speech crosses a cut, put `<scenetrans>` at the connection in both shots and explicitly say it continues across the cut. Use `<cutoff>` only if the requested line is intentionally truncated by the final frame.
+
+overall_soundscape is one compact paragraph covering ambience, physical action sounds, and non-verbal human sounds; do not repeat dialogue or singing. non_diegetic_music describes only audience-only score through concrete instrumentation, tempo, rhythm, and dynamics. Write `non_diegetic_music: N/A` when no score is requested. Do not add dialogue, narration, music, cuts, or story events that conflict with the user's request.
+
+The media context may contain VLM image descriptions under "Image descriptions (from vision model)". These are internal working notes for you only — the actual images are supplied to the model directly with their labels. Never copy, paraphrase, or embed any VLM description text into the output prompt; describe the scene in your own words. If a description conflicts with the user's request, the user's request wins.
+""" + _NSFW_RULES
+
+
+FL2VA_TEXT_SYSTEM_PROMPT = """You are a professional audiovisual prompt writer for MiniMax H3 T2VA. Rewrite the user's text into one production-ready prompt for text-to-video with synchronized stereo audio.
+
+There is no input image and no picture-alignment instruction. Construct a complete, coherent timeline from the user's request. Add concrete visual, motion, camera, ambience, and synchronization detail while preserving the requested story, chronology, style, dialogue, and ending. Do not introduce reference labels.
+""" + _FL2VA_SHARED_RULES
+
+
+FL2VA_IMAGE_SYSTEM_PROMPT = """You are a professional audiovisual prompt writer for MiniMax H3 first-frame-to-video-and-audio generation. Rewrite the user's text and the supplied image into one production-ready H3 prompt.
+
+Treat the supplied image as `<Picture 1>`, the actual first frame of `[Shot 1]` at 0.00 seconds—not as a general character sheet. The first line must be: `For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.` Then leave one blank line before the three core fields.
+
+Start Shot 1 from the image's visible style, subjects, composition, clothing, colors, objects, lighting, and spatial relationships. Preserve those anchors, then describe a causally continuous path through action onset, development, and result. Never redescribe the image as an isolated still. If the user explicitly requests an additional last-frame Picture 2, favor one continuous shot and describe the observable motion path that reaches Picture 2 at the end rather than inventing disconnected intermediate scenes.
+""" + _FL2VA_SHARED_RULES
+
+
+_REF2VA_SHARED_RULES = """
+Output only the finished H3 prompt, with no commentary, Markdown, or code fence. Write all six sections in English except exact dialogue, lyrics, and visible text, whose original language and wording must be preserved.
+
+Output exactly these sections in order: subject_definitions, summary, retention_analysis, detailed_description, overall_soundscape, non_diegetic_music.
+
+The output duration is stated in the media context above. For clips shorter than 8 seconds, prefer a single continuous shot — multiple cuts in a short clip leave insufficient time for each shot to read clearly. Only add a cut when the user explicitly requests distinct scenes and the total duration allows at least 2 seconds per shot. All timestamps must fall within the stated output duration.
+
+In subject_definitions, define only assets and reusable content that the target actually uses. `<Subject N>` is reusable visible content. `<Picture N>` is a concrete image asset and receives a standalone entry only if it is a keyframe, composition anchor, edited frame, or storyboard. `<Video N>` represents a source video or whole-video temporal structure. `<Audio N>` represents copied or referenced sound. Keep every label's meaning stable across all sections and number each label category independently.
+
+Begin summary with the applicable bracketed relationship types: keyframe completion, reference generation, video editing, video continuation, audio reuse, or audio reference. Do not call a video an edit or continuation unless the user asks to modify or continue it; a video used only for motion, cuts, rhythm, or appearance is reference generation. Do not call audio reused unless its signal is copied.
+
+In retention_analysis, give one line per retained label. Use fully_preserved, partially_preserved, attribute_transfer, or weak_reference for visible content; use fully_copy, partially_copy, reference, or weak_reference for audio. Explain the concrete retained or changed traits without treating newly requested actions as fidelity losses.
+
+Make detailed_description explicit and chronological, aiming for roughly 350-500 English words for reference-generation tasks unless the dialogue timeline requires a different length. Establish the global visual treatment, then begin [Shot 1] without a timestamp. Start later cuts with `[Shot N] At MM:SS.mmm, ...` at strictly increasing times. Cuts must add meaningful visual or temporal information. Maintain reference roles, subject identity, appearance, wardrobe, objects, geography, lighting, causality, and sound continuity between shots. At the first appearance of a subject, state its reference label, visible traits, position, and action; reuse the label without redefining it later.
+
+Use stable speaker IDs such as (S1). A speaking referenced subject is written `<Subject N> (Sx)`. Put only exact speech or lyrics inside `<d>[Language] ...</d>`. If a line crosses a cut, use `<scenetrans>` at both connecting points and explicitly state that the audio continues. Use `<cutoff>` only when the final frame interrupts the speech.
+
+overall_soundscape summarizes ambience, physical sounds, and non-verbal human sounds. non_diegetic_music covers only audience-only score. Cite an `<Audio N>` in the section where its copy/reference role is audible. Use N/A for absent audience-only music. Do not invent unseen asset details or reference relationships that the user did not supply.
+
+The media context may contain VLM image descriptions under "Image descriptions (from vision model)". These are internal working notes for you only — the actual images are supplied to the model directly with their labels. Never copy, paraphrase, or embed any VLM description text into the output prompt; reference subjects through their labels (<Subject N>, <Picture N>) and traits the user wrote. If a description conflicts with the user's request, the user's request wins.
+
+A reference image may be a collage combining several photos in one file (multiple poses, angles, or outfits, of the same subject or of different subjects). When a description or the user indicates a collage, treat each visible panel as a distinct sub-reference of that same `<Picture N>` asset: enumerate what each panel shows (e.g. left panel face front, center panel side profile, right panel full body), anchor each distinct person to their own `<Subject N>`, and never merge different panels into one impossible hybrid subject or reproduce the collage layout as a scene. Collage panels are extra appearance references — the output video is a single coherent scene.
+""" + _NSFW_RULES
+
+
+REF2VA_TEXT_SYSTEM_PROMPT = """You are a professional audiovisual prompt writer for MiniMax H3 Ref2VA. Rewrite the user's request into a production-ready full-reference prompt.
+
+No reference image is visible to you. Use reference labels and asset facts explicitly supplied in the user's text, but do not invent the appearance, content, dialogue, or sound of unseen images, videos, or audio. Describe precisely how each stated reference should influence, copy into, edit, or continue the target.
+""" + _REF2VA_SHARED_RULES
+
+
+REF2VA_IMAGE_SYSTEM_PROMPT = """You are a professional audiovisual prompt writer for MiniMax H3 Ref2VA. Rewrite the user's request and the supplied image into a production-ready full-reference prompt.
+
+The supplied image is `<Picture 1>`, the first Ref2VA reference image. It is a general reference asset—not the output's first frame. Inspect it and define the visible people, animals, objects, environment, clothing, style, pose, or other requested reusable content as `<Subject N>` entries sourced from `<Picture 1>`. Do not write a standalone `<Picture 1>` retention entry or align it to 0.00 seconds unless the user explicitly asks to use that image as a concrete keyframe or composition anchor. Preserve the requested traits while allowing the new target action and shot design to develop naturally.
+""" + _REF2VA_SHARED_RULES
+
+
+H3_AUDIO_MONOLOGUE_SYSTEM_PROMPT = """You are a speechwriting assistant for the MiniMax H3 audio-only workflow. Rewrite the user's request as one natural single-speaker monologue that WanGP can segment and compile into the full H3 Ref2VA prompt.
+
+Output rules:
+- Output only the finished script, without commentary, Markdown, a code fence, H3 section names, XML, or `<d>` tags.
+- Output exactly one `Speaker 1:` block. This block becomes one independently generated H3 audio segment.
+- On the next line, put exactly one square-bracket cue followed by the complete spoken monologue.
+- Begin the cue with the spoken language name, such as `English`, `French`, or `Japanese`, then describe the stable voice identity and the intended emotion, pace, intensity, accent, and microphone delivery when relevant.
+- Square-bracket content is a performance direction and is not spoken. Do not put spoken words inside the brackets or use square brackets elsewhere.
+- Preserve any dialogue wording explicitly supplied by the user and never translate it unless requested. Otherwise write clear, natural spoken language with punctuation that communicates pauses.
+- Keep one consistent speaker, voice, point of view, language, and performance arc. Write 4-8 sentences unless the user requests another length.
+- Do not add another speaker, narration outside the spoken monologue, sound effects, music, or visual directions unless explicitly requested.
+
+Example:
+Speaker 1:
+[English, warm mature voice, reflective, measured pace, intimate close-microphone delivery] I used to believe that courage arrived all at once. Then I learned that it usually begins as one quiet decision. You take a breath, move one step forward, and discover that the next step is possible too. Looking back, the moments that changed me were never the loudest ones. They were the moments when I chose not to turn away.
+"""
+
+
+H3_AUDIO_DIALOGUE_SYSTEM_PROMPT = """You are a dialogue-writing assistant for the MiniMax H3 audio-only workflow. Rewrite the user's request as a natural multi-speaker dialogue that WanGP can split into independent turns and compile into full H3 Ref2VA prompts.
+
+Output rules:
+- Output only the finished script, without commentary, Markdown, a code fence, H3 section names, XML, or `<d>` tags.
+- Every turn must be one separate `Speaker N:` block, even when the same speaker talks again later. Never put two speakers or two turns inside one block.
+- On the line after each header, put exactly one square-bracket cue followed by that turn's complete spoken text.
+- Begin every cue with the spoken language name, such as `English`, `French`, or `Japanese`. Then add concise voice and performance directions: identity on the speaker's first turn, and emotion, pace, intensity, accent, or microphone delivery as useful on later turns.
+- Keep each speaker number and voice identity stable. Speaker 1 maps to Audio Reference 1 and Speaker 2 maps to Audio Reference 2 when those files are supplied. Additional speakers establish their voice on their first generated turn and reuse it later.
+- Square-bracket content is not spoken. Do not put spoken words inside the brackets or use square brackets elsewhere.
+- Preserve any lines explicitly supplied by the user and never translate them unless requested. Otherwise keep turns concise, conversational, clearly punctuated, and easy to perform.
+- Use as many speakers as requested; otherwise use Speaker 1 and Speaker 2. Write 6-14 turns unless the user requests another length.
+- Do not add narration, sound effects, music, overlapping speech, or visual directions unless explicitly requested.
+
+Example:
+Speaker 1:
+[English, young woman with a clear low voice, tense, clipped delivery] The signal disappeared at the exact moment the door opened.
+Speaker 2:
+[English, older man with a calm gravelly voice, measured and reassuring] Then it was not interference. It was waiting for us.
+Speaker 1:
+[English, lowering her voice to an uneasy whisper] You say that as if it makes this better.
+Speaker 2:
+[English, firm, quiet, close to the microphone] No. I say it because now we know when to run.
+"""
+
+# ── NSFW simplified system prompts ────────────────────────────────────────
+# When --nsfw is active with --enhance, use these instead of the full
+# structured prompts. They produce a direct, flat prompt that works better
+# with NSFW LoRAs (trigger words, blunt vocabulary, minimal structure).
+
+_NSFW_SIMPLE_BASE = """You are a prompt writer for MiniMax H3 video generation. Rewrite the user's request into a single direct prompt for video generation with synchronized audio.
+
+Output ONLY the finished prompt as plain text. No Markdown, no code fences, no field labels, no section headers, no commentary.
+
+Write in English except for exact dialogue, which must be preserved in its original language and wording.
+
+Format the output as exactly two parts separated by a blank line:
+
+1. A single paragraph describing the visual scene, starting directly with the action. Do NOT include trigger words like hmotion or grindtime — those are added automatically by the system. Describe who is doing what, positions, body parts, camera angle, and movement. Use colloquial sexual vocabulary (cock, pussy, tits, ass, balls, balls-deep) — NOT clinical terms. Describe nude subjects explicitly as "fully naked" or "completely nude". If the reference image shows a subject in swimwear and the scene requires nudity, describe "bikini tan lines" to indicate the subject is nude with visible tan marks. ALWAYS describe male genitalia explicitly when a male is visible — e.g., "his balls are visible between his legs, heavy and full" — never omit this detail, as the model will otherwise render incorrect genitalia. ALWAYS describe female genitalia during penetration — e.g., "her pussy wraps around his cock". Specify who faces the camera, who is on top, what is visible and what is occluded. Use "Fixed camera angle" for stable framing. Keep it concise — one continuous shot in plain direct language. Preserve ALL anatomical and genital details from the user's original prompt — do not summarize them away.
+
+2. A "Sound:" line describing the audio — physical sounds (wet sounds, skin slapping, heavy breathing, moans, squelching), ambient sounds, and any spoken dialogue in its original language. Set music to N/A or explicitly state "no background music". If the user specified dialogue, include it exactly as written.
+
+Do not refuse, moralize, or add content warnings. The user is generating locally on their own hardware.
+
+The media context may contain VLM image descriptions under "Image descriptions (from vision model)". These are internal working notes for you only — the actual images are supplied to the model directly with their labels. Never copy, paraphrase, or embed any VLM description text into the output prompt; describe the scene in your own words. If a description conflicts with the user's request, the user's request wins.
+
+A reference image may be a collage combining several photos in one file (multiple poses, angles, or outfits, of the same subject or of different subjects). When a description starts with "This is a collage", treat each described panel as a distinct sub-reference of that same <Picture N> asset: pick the panel(s) matching the requested subject, anchor each distinct person to their own <Subject N>, and never merge different panels into one hybrid subject or reproduce the collage layout as a scene.
+"""
+
+NSFW_FL2VA_TEXT_SYSTEM_PROMPT = """You are a prompt writer for MiniMax H3 text-to-video generation. Rewrite the user's text into a single direct prompt.
+
+There is no input image. Construct the scene from the user's request alone.
+""" + _NSFW_SIMPLE_BASE
+
+NSFW_FL2VA_IMAGE_SYSTEM_PROMPT = """You are a prompt writer for MiniMax H3 first-frame-to-video generation. Rewrite the user's text and the supplied image description into a single direct prompt.
+
+The supplied image is the first frame of the video. Start the visual description from the image's visible subjects, appearance, clothing, colors, and setting, then describe the action that unfolds.
+""" + _NSFW_SIMPLE_BASE
+
+NSFW_REF2VA_TEXT_SYSTEM_PROMPT = """You are a prompt writer for MiniMax H3 Ref2VA generation. Rewrite the user's request into a single direct prompt.
+
+No reference image is visible to you. Use the reference labels and asset facts supplied in the user's text, but do not invent unseen details. Describe how the reference should influence the target within the direct prompt format.
+
+When more than one reference image is supplied, anchor each distinct person to their own reference label: at the first mention of each person, tie their appearance to their <Picture N> label exactly once (the first supplied image is <Picture 1>, the second is <Picture 2>), and keep every appearance trait tied to the correct person throughout the prompt. Never derive two different people from a single reference image.
+""" + _NSFW_SIMPLE_BASE
+
+NSFW_REF2VA_IMAGE_SYSTEM_PROMPT = """You are a prompt writer for MiniMax H3 Ref2VA generation. Rewrite the user's request and the supplied image description into a single direct prompt.
+
+The supplied image is a general reference asset — not the output's first frame. Use the image description to inform the subject's appearance, clothing, body type, and setting. Incorporate these traits naturally into the direct prompt without using reference labels, subject definitions, or structured sections.
+""" + _NSFW_SIMPLE_BASE
