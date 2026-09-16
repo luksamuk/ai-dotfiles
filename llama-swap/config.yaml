@@ -1443,103 +1443,6 @@ models:
       quantization: F16
       note: "GPT-2 flagship from Feb 2019 (withheld by OpenAI until Nov 2019 — the unicorn-story model). Use /v1/completions (text completion) — no chat template exists. Context physically limited to 1024 by the WPE position table."
 # -------------------------------------------
-# K2-HORIZON-7B — IFM (Apache-2.0) — denso 7B, arch custom k2_horizon
-# Tweet vendor 16/09: AA Index 21, "50% acima do melhor <10B", SWE-bench 70.6 claim.
-# Dense puro: 36 camadas TODAS MLP (mlp_only_layers 0..35), num_experts 0,
-# mova_num_experts 0 (o MoVA e o 36B-A4B, outro membro da familia).
-# hidden 4096, 32 heads (8 KV), head_dim 128, ctx nativo 524K, vocab 250624.
-
-# SUPPORT: arch k2-horizon MERGEADA no ik_llama upstream — PR #2435
-# (merged 2026-09-14), build 4908 (e64c0ea5) local. Nao precisa mais do
-# fork do kassane (backup em ~/git/kassane-ik_llama.cpp, branch k2-horizon).
-
-# GGUF: abenzerps Q4_K_M 5.59 GB (sha256 eb89c15a... conferido contra LFS).
-# Template: chat_template.jinja do abenzerps (IFM own e incompativel).
-# MMProj: NAO EXISTE (text-only em qualquer repo).
-# MTP: NAO.
-
-# AVISO CRITICO (smoke 16/09 REPROVADO pra codigo): thinking devora o budget.
-#   vendor pede reasoning_effort=high + "32k+ output tokens". Nos 4 runs:
-#   800-8000 tok de budget -> reasoning-only, content=0 (temp 1.0 E 0.6).
-#   Run 1 (800 tok) emitiu codigo com bug logico (0/4 zlib). Run temp 0.6:
-#   loop degenerado de hex 0x20 no fim do reasoning. ESTE fragmento serve
-#   APENAS para o testchat do user com budget generoso (max_tokens >= 16K
-#   recomendado, ou modo sem cap) — NAO promocao a agente sem re-teste.
-# SAMPLERS vendor: reasoning_effort high, temp 1.0, top_p 0.95.
-#   (temp 0.6 tambem degerada no smoke — o loop hex apareceu nos dois.)
-# KV: 36 layers x 8 KV x 128 x 2 = ~11.5 KiB/token q4_0 -> 131K ~1.5 GB.
-#   Dense 7B Q4_K_M 5.59 GB + KV + buffers: --fit obrigatorio, maioria KV
-#   em RAM pinned (padrao ornith/gemma4-26b).
-# Issue: luksamuk/ai-dotfiles#1 (GitHub) — CLOSED COMPLETED 11/09; reabrir
-#   so com numeros novos do 7B.
-# -------------------------------------------
-  "k2-horizon-7b":
-    name: "K2-Horizon 7B"
-    description: "IFM K2-Horizon-7B dense (k2_horizon arch, PR #2435). 512K nativo, thinking profundo (budget vendor 32K+). EXPERIMENTAL: smoke de codigo reprovado por budget de thinking — testchat apenas."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/k2-horizon-7b/K2-Horizon-7B-Q4_K_M.gguf
-      --jinja
-      --chat-template-file ${models_dir}/k2-horizon-7b/chat_template.jinja
-      --fit
-      --fit-margin 512
-      --ctx-size 131072
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
-      --min-p ${code_min_p}
-      --repeat-penalty ${code_repeat_penalty}
-      --reasoning on
-      --jinja
-      --parallel 1
-      --reasoning-budget -1
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          temperature: 1.0
-          top_p: 0.95
-        "${MODEL_ID}:think":
-          temperature: 1.0
-          top_p: 0.95
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: "~5.59 GB (Q4_K_M abenzerps) — BF16 oficial 18 GB"
-      context: "131K prático (nativo 524K); KV dense 36 layers ~1.5 GB @131K q4_0"
-      vram_usage: "5.28 GB medido @8K ctx com --fit (smoke 16/09)"
-      source: "abenzerps/K2-Horizon-7B-GGUF (Q4_K_M), base IFM/K2-Horizon-7B"
-      kv_cache: "q4_0 + hadamard K/V (v-cache ok; k-cache-hadamard teve glitches reportados pelo kassane no fork dele — monitorar)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: k2_horizon
-      parameters: 8000000000
-      context_length: 524288
-      embedding_length: 4096
-      quantization: Q4_K_M
-      note: "Thinking voraz: vendor recomenda 32K+ output tokens com reasoning_effort=high. Smoke de codigo reprovado com budgets <= 8K (4 runs: 3x content=0, 1x codigo com bug). USO EXPERIMENTAL — testchat com budget generoso."
-# -------------------------------------------
 # MINICPM5-2B — OpenBMB (Apache-2.0) — quant POLLARD IQ4_XS
 # Dense 2B, LlamaForCausalLM PURO (arch llama) — roda no upstream e no ik
 # sem fork/patch. 42 layers, GQA 16/2, head_dim 128, ctx 131K nativo
@@ -1916,7 +1819,7 @@ matrix:
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
     q36: qwen3.6-35b-a3b
     occ: occamy-1.0
-    k2h: k2-horizon-7b
+    # k2h: k2-horizon-7b  # REMOVED Sep 16 2026 — errático em chat (idioma/identidade, tool-loop instável); GGUF a decidir; fragment em _removed/
     # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
     # Bonsai 1-bit disabled Aug 2026 — user request
     # bonsai1: bonsai-27b-1bit
