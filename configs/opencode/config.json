@@ -220,82 +220,6 @@
         "timeout": 900000
       },
       "models": {
-        "gemma4-e2b": {
-          "name": "Gemma 4 E2B",
-          "reasoning": true,
-          "modalities": {
-            "input": [
-              "text"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "capabilities": [
-            "tools"
-          ],
-          "limit": {
-            "context": 131072,
-            "output": 32768
-          }
-        },
-        "gemma4-e2b:think": {
-          "name": "Gemma 4 E2B 🧠",
-          "reasoning": true,
-          "modalities": {
-            "input": [
-              "text"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "capabilities": [
-            "tools"
-          ],
-          "limit": {
-            "context": 131072,
-            "output": 32768
-          }
-        },
-        "lfm2.5-8b-a1b": {
-          "name": "LFM 2.5 8B",
-          "reasoning": true,
-          "modalities": {
-            "input": [
-              "text"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "capabilities": [
-            "tools"
-          ],
-          "limit": {
-            "context": 131072,
-            "output": 32768
-          }
-        },
-        "lfm2.5-8b-a1b:think": {
-          "name": "LFM 2.5 8B 🧠",
-          "reasoning": true,
-          "modalities": {
-            "input": [
-              "text"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "capabilities": [
-            "tools"
-          ],
-          "limit": {
-            "context": 131072,
-            "output": 32768
-          }
-        },
         "qwen3.5-4b": {
           "name": "Qwen3.5 4B",
           "reasoning": true,
@@ -332,44 +256,6 @@
           "limit": {
             "context": 131072,
             "output": 32768
-          }
-        },
-        "glm-4.7-flash": {
-          "name": "GLM 4.7 Flash",
-          "reasoning": true,
-          "modalities": {
-            "input": [
-              "text"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "capabilities": [
-            "tools"
-          ],
-          "limit": {
-            "context": 131072,
-            "output": 8192
-          }
-        },
-        "glm-4.7-flash:think": {
-          "name": "GLM 4.7 Flash 🧠",
-          "reasoning": true,
-          "modalities": {
-            "input": [
-              "text"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "capabilities": [
-            "tools"
-          ],
-          "limit": {
-            "context": 131072,
-            "output": 8192
           }
         },
         "lfm2.5-2.6b": {
@@ -410,42 +296,46 @@
             "output": 32768
           }
         },
-        "empero-qwen3.8-2b": {
-          "name": "Empero Qwen3.8 2B",
+        "ornith-1.5-35b": {
+          "model_id": "ornith-1.5-35b:think",
+          "name": "Ornith 1.5 35B (backup)",
           "reasoning": true,
-          "modalities": {
-            "input": [
-              "text"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "capabilities": [
-            "tools"
-          ],
-          "limit": {
-            "context": 131072,
-            "output": 32768
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20
           }
         },
-        "empero-qwen3.8-4b": {
-          "name": "Empero Qwen3.8 4B",
+        "qwen3.6-35b-a3b": {
+          "model_id": "qwen3.6-35b-a3b",
+          "name": "Qwen 3.6 35B A3B (APEX-MTP)",
           "reasoning": true,
-          "modalities": {
-            "input": [
-              "text"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "capabilities": [
-            "tools"
+          "input": [
+            "text"
           ],
-          "limit": {
-            "context": 131072,
-            "output": 32768
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.85,
+            "top_k": 20
+          }
+        },
+        "qwen3.6-35b-a3b:think": {
+          "model_id": "qwen3.6-35b-a3b:think",
+          "name": "Qwen 3.6 35B A3B (Thinking)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20
           }
         }
       }

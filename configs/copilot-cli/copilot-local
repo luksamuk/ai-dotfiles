@@ -2,10 +2,9 @@
 # copilot-local — GitHub Copilot CLI 100% local via llama-swap
 #
 # Usage:
-#   copilot-local                     # Interactive session (default: GLM 4.7 Flash :think)
-#   copilot-local glm-4.7-flash      # Use GLM 4.7 Flash (think mode)
-#   copilot-local glm-4.7-flash-base # Use GLM 4.7 Flash (base, no thinking)
-#   copilot-local qwen3.6-35b         # Use Qwen 3.6 35B (think mode, vision 👁)
+#   copilot-local                     # Interactive session (default: Qwen 3.6 35B :think)
+#   copilot-local qwen3.6-35b         # Use Qwen 3.6 35B (think mode, vision)
+#   copilot-local qwen3.6-35b-base    # Use Qwen 3.6 35B (base, no thinking)
 #   copilot-local -p "task"           # Print mode (non-interactive)
 #   copilot-local --bare -p "task" --max-turns 5
 #
@@ -28,12 +27,12 @@ unset COPILOT_PROVIDER_BEARER_TOKEN
 
 # ── Model selection ──
 # Default model (used when no argument is given)
-DEFAULT_MODEL="glm-4.7-flash:think"
+DEFAULT_MODEL="qwen3.6-35b-a3b:think"
 
 # Model shortcuts: short name → llama-swap model ID
 declare -A MODELS=(
-  [glm-4.7-flash]="glm-4.7-flash:think"
-  [glm-4.7-flash-base]="glm-4.7-flash"
+  [qwen3.6-35b]="qwen3.6-35b-a3b:think"
+  [qwen3.6-35b-base]="qwen3.6-35b-a3b"
   [lfm2.5-2.6b]="lfm2.5-2.6b:think"
   [lfm2.5-2.6b-base]="lfm2.5-2.6b"
 )

@@ -59,34 +59,27 @@ Notas:
 | =nemotron-3-nano:30b-cloud=    | Nemotron 3 Nano 30B 1M     |      1M  | não   |
 | =qwen3.5:cloud=                | Qwen 3.5 397B              |    262K  | sim   |
 
-** Modelo Locais (llama-swap) — 23 modelos base + 17 variantes :think
-
+** Modelo Locais (llama-swap) — 9 modelos base + 6 variantes :think
 Todos os modelos do fleet estão disponíveis no Pi (exceção: modelo de embedding excluído).
 Modelos com raciocínio têm variante =:think= que ativa modo de thinking.
 
 | Model ID | Nome | Contexto | Input | :think |
 |--------------------------------+-------------------------------+----------+----------------+--------|
-| =empero-qwen3.8-2b= | Empero Qwen3.8 2B |  128K | text           | -      |
-| =empero-qwen3.8-4b= | Empero Qwen3.8 4B |  128K | text           | -      |
-| =gemma4-e2b= | Gemma 4 E2B |  128K | text           | -      |
-| =gemma4-e2b:think= | Gemma 4 E2B (Thinking) |  128K | text           | sim    |
-| =glm-4.7-flash= | GLM 4.7 Flash |  128K | text           | -      |
-| =glm-4.7-flash:think= | GLM 4.7 Flash (Thinking) |  128K | text           | sim    |
-| =granite-4.2-8b= | Granite 4.2 8B |  128K | text           | -      |
-| =granite-4.2-8b:high= | Granite 4.2 8B (Thinking) |  128K | text           | -      |
-| =granite-4.2-8b:low= | Granite 4.2 8B (Low Effort) |  128K | text           | -      |
-| =lfm2.5-2.6b= | LFM 2.5 2.6B |  128K | text           | -      |
-| =lfm2.5-2.6b:think= | LFM 2.5 2.6B (Thinking) |  128K | text           | sim    |
-| =lfm2.5-8b-a1b= | LFM 2.5 8B |  128K | text           | -      |
-| =lfm2.5-8b-a1b:think= | LFM 2.5 8B (Thinking) |  128K | text           | sim    |
-| =ornith-1.5-35b= | Ornith 1.5 35B |  128K | text           | -      |
-| =ornith-1.5-35b:think= | Ornith 1.5 35B (Thinking) |  128K | text           | sim    |
-| =bonsai-27b= | Bonsai 27B 1-bit |  256K | text           | -      |
-| =bonsai-27b:think= | Bonsai 27B 1-bit (Thinking) |  256K | text           | sim    |
-| =qwen3.5-4b= | Qwen3.5 4B |  128K | text           | -      |
-| =qwen3.5-4b:think= | Qwen3.5 4B (Thinking) |  128K | text           | sim    |
-| =qwen3.5-9b= | Qwen3.5 9B |  128K | text           | -      |
-| =qwen3.5-9b:think= | Qwen3.5 9B (Thinking) |  128K | text           | sim    |
+| =granite-4.2-8b= | Granite 4.2 8B |  128K | text            |   -    |
+| =granite-4.2-8b:high= | Granite 4.2 8B (Thinking) |  128K | text            |   -    |
+| =granite-4.2-8b:low= | Granite 4.2 8B (Low Effort) |  128K | text            |   -    |
+| =lfm2.5-2.6b= | LFM 2.5 2.6B |  128K | text            |   -    |
+| =lfm2.5-2.6b:think= | LFM 2.5 2.6B (Thinking) |  128K | text            |  sim   |
+| =ornith-1.5-35b= | Ornith 1.5 35B |  128K | text            |   -    |
+| =ornith-1.5-35b:think= | Ornith 1.5 35B (Thinking) |  128K | text            |  sim   |
+| =bonsai-27b= | Bonsai 27B 1-bit |  256K | text            |   -    |
+| =bonsai-27b:think= | Bonsai 27B 1-bit (Thinking) |  256K | text            |  sim   |
+| =qwen3.5-4b= | Qwen3.5 4B |  128K | text            |   -    |
+| =qwen3.5-4b:think= | Qwen3.5 4B (Thinking) |  128K | text            |  sim   |
+| =minicpm5-2b= | MiniCPM5 2B |  128K | text            |   -    |
+| =minicpm5-2b:think= | MiniCPM5 2B (Thinking) |  128K | text            |  sim   |
+| =qwen3.6-35b-a3b= | Qwen 3.6 35B |  128K | text +image     |   -    |
+| =qwen3.6-35b-a3b:think= | Qwen 3.6 35B (Thinking) |  128K | text +image     |  sim   |
 
 ** Modelos Edge (Sisyphus) — 3 modelos
 

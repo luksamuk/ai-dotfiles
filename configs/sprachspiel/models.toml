@@ -19,19 +19,21 @@ tools = true
 
 
 
-[models."athenas-symbiote-9b"]
-provider = "llama-swap"
-model_id = "athenas-symbiote-9b"
-num_ctx = 32678
-think = false
-tools = false
+# [models."athenas-symbiote-9b"]
+# provider = "llama-swap"
+# model_id = "athenas-symbiote-9b"
+# num_ctx = 32678
+# think = false
+# tools = false
+# DISABLED 10/09 — fragment na frota em _disabled (model_id não resolve no llama-swap)
 
-[models."gemma4-e2b"]
-provider = "llama-swap"
-model_id = "gemma4-e2b:think"
-num_ctx = 131072
-thinking = true
-tools = true
+# [models."gemma4-e2b"]
+# provider = "llama-swap"
+# model_id = "gemma4-e2b:think"
+# num_ctx = 131072
+# thinking = true
+# tools = true
+# DISABLED 10/09 — GGUF QAT removido (maturidade em outros modelos)
 
 # [models."gemma4-e4b"]
 # provider = "llama-swap"
@@ -40,17 +42,18 @@ tools = true
 # thinking = true
 # tools = true
 
-[models."lfm2.5-8b-a1b"]
-provider = "llama-swap"
-model_id = "lfm2.5-8b-a1b:think"
-num_ctx = 131072
-temperature = 0.7
-top_p = 0.9
-top_k = 40
-min_p = 0.01
-repeat_penalty = 1.05
-thinking = true
-tools = true
+# [models."lfm2.5-8b-a1b"]
+# provider = "llama-swap"
+# model_id = "lfm2.5-8b-a1b:think"
+# num_ctx = 131072
+# temperature = 0.7
+# top_p = 0.9
+# top_k = 40
+# min_p = 0.01
+# repeat_penalty = 1.05
+# thinking = true
+# tools = true
+# DISABLED 10/09 — GGUF APEX deletado (bench 16/105; user confia no lfm2.5-2.6b)
 
 
 # [models."kat-coder-v2.5-dev"]
@@ -77,27 +80,38 @@ tools = true
 # thinking = true
 # tools = true
 
-[models."glm-4.7-flash"]
+# [models."nex-n2.5-mini"]
+# provider = "llama-swap"
+# model_id = "nex-n2.5-mini"
+# num_ctx = 131072
+# temperature = 0.7
+# top_p = 0.95
+# top_k = 40
+# thinking = true
+# tools = true
+# DISABLED 10/09 — GGUF deletado; rejeitado na régua (34/75 phase1; 0/25 poisoned
+# por think-loop; MAS 25/25 no 06-sec web-only). Re-avaliar c/ APEX/ONYX do mudler.
+# [models."nex-n2.5-mini:think"]
+# provider = "llama-swap"
+# model_id = "nex-n2.5-mini:think"
+
+[models."qwen3.6-35b-a3b"]
 provider = "llama-swap"
-model_id = "glm-4.7-flash"
+model_id = "qwen3.6-35b-a3b"
 num_ctx = 131072
 temperature = 0.6
-top_p = 0.9
+top_p = 0.85
 top_k = 20
-min_p = 0.0
-repeat_penalty = 1.0
 thinking = true
 tools = true
 
-[models."glm-4.7-flash:think"]
+[models."qwen3.6-35b-a3b:think"]
 provider = "llama-swap"
-model_id = "glm-4.7-flash:think"
+model_id = "qwen3.6-35b-a3b:think"
 num_ctx = 131072
 temperature = 0.6
 top_p = 0.9
 top_k = 20
-min_p = 0.0
-repeat_penalty = 1.0
 thinking = true
 tools = true
 
@@ -185,15 +199,19 @@ tools = false
 # tools = false
 # vision = true
 
-[models."qwen3-vl-4b"]
+[models."lfm2.5-vl-3b"]
 provider = "llama-swap"
-model_id = "qwen3-vl-4b"
-num_ctx = 32768
+model_id = "lfm2.5-vl-3b"
+num_ctx = 131072
 temperature = 0.7
 top_p = 0.9
 thinking = false
 tools = false
 vision = true
+
+# [models."qwen3-vl-4b"]  # REMOVED Sep 10 2026 — GGUF deletado (A/B c/ lfm2.5-vl-3b pendente)
+# provider = "llama-swap"
+# model_id = "qwen3-vl-4b"
 
 [models."glm-ocr"]
 provider = "llama-swap"
@@ -208,11 +226,12 @@ tools = false
 vision = true
 
 
-[models."nomic"]
-provider = "llama-swap"
-model_id = "nomic-embed-text-v2-moe"
-embeddings = true
-dimensions = 768
+# [models."nomic"]
+# provider = "llama-swap"
+# model_id = "nomic-embed-text-v2-moe"
+# embeddings = true
+# dimensions = 768
+# DISABLED 10/09 — obsoleto vs nemotron-3-embed-1b (2048 dims)
 
 [models."lfm2.5-embedding-350m"]
 provider = "llama-swap"
@@ -226,11 +245,12 @@ model_id = "nemotron-3-embed-1b"
 embeddings = true
 dimensions = 2048
 
-[models."glm-5"]
-provider = "ollama"
-model_id = "glm-5:cloud"
-num_ctx = 202752
-thinking = true
+# [models."glm-5"]
+# provider = "ollama"
+# model_id = "glm-5:cloud"
+# num_ctx = 202752
+# thinking = true
+# REMOVIDO 10/09: glm-5:cloud não existe mais no ollama (substituído por glm-5.1/5.2/5.3)
 
 [models."glm-5.1"]
 provider = "ollama"
@@ -241,7 +261,7 @@ thinking = true
 [models."glm-5.2"]
 provider = "ollama"
 model_id = "glm-5.2:cloud"
-num_ctx = 1000000
+num_ctx = 1048576
 thinking = true
 
 
@@ -262,7 +282,7 @@ vision = true
 [models."minimax-m2.7"]
 provider = "ollama"
 model_id = "minimax-m2.7:cloud"
-num_ctx = 204800
+num_ctx = 196608
 thinking = true
 vision = true
 
@@ -279,10 +299,11 @@ num_ctx = 262144
 thinking = true
 vision = true
 
-[models."qwen3-coder-next"]
-provider = "ollama"
-model_id = "qwen3-coder-next:cloud"
-num_ctx = 262144
+# [models."qwen3-coder-next"]
+# provider = "ollama"
+# model_id = "qwen3-coder-next:cloud"
+# num_ctx = 262144
+# REMOVIDO 10/09: qwen3-coder-next:cloud não existe mais no ollama
 
 [models."nemotron-3-super"]
 provider = "ollama"
@@ -305,6 +326,34 @@ thinking = true
 [models."deepseek-v4-flash"]
 provider = "ollama"
 model_id = "deepseek-v4-flash:0731-cloud"
+num_ctx = 1048576
+thinking = true
+
+# --- CLOUDS ADICIONADAS 10/09 (ollama list sync) ---
+
+[models."glm-5.3"]
+provider = "ollama"
+model_id = "glm-5.3:cloud"
+num_ctx = 1048576
+thinking = true
+
+[models."glm-5.3-flash"]
+provider = "ollama"
+model_id = "glm-5.3-flash:cloud"
+num_ctx = 1048576
+thinking = true
+vision = true
+
+[models."kimi-k3"]
+provider = "ollama"
+model_id = "kimi-k3:cloud"
+num_ctx = 1048576
+thinking = true
+vision = true
+
+[models."deepseek-v4-flash-latest"]
+provider = "ollama"
+model_id = "deepseek-v4-flash:cloud"
 num_ctx = 1048576
 thinking = true
 
@@ -333,19 +382,21 @@ tools = true
 
 # --- EMPERO QWEN3.8 (distillation, always thinks, no :think variant) ---
 
-[models."empero-qwen3.8-2b"]
-provider = "llama-swap"
-model_id = "empero-qwen3.8-2b"
-num_ctx = 131072
-thinking = true
-tools = true
+# [models."empero-qwen3.8-2b"]
+# provider = "llama-swap"
+# model_id = "empero-qwen3.8-2b"
+# num_ctx = 131072
+# thinking = true
+# tools = true
+# DISABLED 10/09 — GGUF deletado (sem caso de uso)
 
-[models."empero-qwen3.8-4b"]
-provider = "llama-swap"
-model_id = "empero-qwen3.8-4b"
-num_ctx = 131072
-thinking = true
-tools = true
+# [models."empero-qwen3.8-4b"]
+# provider = "llama-swap"
+# model_id = "empero-qwen3.8-4b"
+# num_ctx = 131072
+# thinking = true
+# tools = true
+# DISABLED 10/09 — GGUF deletado (nunca surpreendeu; user decision)
 
 # [models."qwen3.8-27b"]
 # provider = "llama-swap"
@@ -363,34 +414,34 @@ tools = true
 # IBM-recommended samplers: temperature=1.0, top_p=0.95
 # 3 modes: base (non-thinking), :high (full CoT), :low (low-effort)
 
-[models."granite-4.2-8b"]
-provider = "llama-swap"
-model_id = "granite-4.2-8b"
-num_ctx = 131072
-temperature = 1.0
-top_p = 0.95
-thinking = false
-tools = true
+# [models."granite-4.2-8b"]
+# provider = "llama-swap"
+# model_id = "granite-4.2-8b"
+# num_ctx = 131072
+# temperature = 1.0
+# top_p = 0.95
+# thinking = false
+# tools = true
+# DISABLED 10/09 — fragment na frota em _disabled/ (3 variantes comentadas juntas)
+# [models."granite-4.2-8b:high"]
+# provider = "llama-swap"
+# model_id = "granite-4.2-8b:high"
+# num_ctx = 131072
+# temperature = 1.0
+# top_p = 0.95
+# thinking = true
+# tools = true
+# [models."granite-4.2-8b:low"]
+# provider = "llama-swap"
+# model_id = "granite-4.2-8b:low"
+# num_ctx = 131072
+# temperature = 1.0
+# top_p = 0.95
+# thinking = true
+# tools = true
 
-[models."granite-4.2-8b:high"]
-provider = "llama-swap"
-model_id = "granite-4.2-8b:high"
-num_ctx = 131072
-temperature = 1.0
-top_p = 0.95
-thinking = true
-tools = true
-
-[models."granite-4.2-8b:low"]
-provider = "llama-swap"
-model_id = "granite-4.2-8b:low"
-num_ctx = 131072
-temperature = 1.0
-top_p = 0.95
-thinking = true
-tools = true
-
-[models."bonsai-27b"]
-provider = "llama-swap"
-model_id = "bonsai-27b"
-name = "Bonsai 27B (1-bit)"
+# [models."bonsai-27b"]
+# provider = "llama-swap"
+# model_id = "bonsai-27b"
+# name = "Bonsai 27B (1-bit)"
+# DISABLED 10/09 — fragment na frota em _disabled

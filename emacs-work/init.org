@@ -376,9 +376,8 @@ the local llama-swap fleet.
 Models available:
 - =ornith-1.5-35b= (35B MoE A3B, agentic coding, flagship)
 - =qwen3.8-27b= (27B dense 1-bit, DeltaNet linear attention, VLM)
-- =glm-4.7-flash= (30B MoE MLA, general-purpose)
+- =qwen3.6-35b-a3b= (35B MoE A3B, coding + vision, tools)
 - =qwen3.5-9b= / =qwen3.5-4b= (light, multimodal)
-- =lfm2.5-8b-a1b= (8B MoE, general-purpose)
 - =lfm2.5-2.6b= (lightweight, fast)
 
 All models support =:think= variants for reasoning mode.
@@ -415,11 +414,11 @@ All models support =:think= variants for reasoning mode.
    :context-length 65536
    :regex "qwen3.8-27b")
   (llm-models-add
-   :name "glm-4.7-flash"
-   :symbol 'glm-4.7-flash
+   :name "qwen3.6-35b-a3b"
+   :symbol 'qwen3.6-35b-a3b
    :capabilities '(tool-use reasoning json-response)
    :context-length 131072
-   :regex "glm-4.7-flash")
+   :regex "qwen3.6-35b-a3b")
   (llm-models-add
    :name "qwen3.5-9b"
    :symbol 'qwen3.5-9b
@@ -432,12 +431,6 @@ All models support =:think= variants for reasoning mode.
    :capabilities '(tool-use reasoning json-response)
    :context-length 131072
    :regex "qwen3.5-4b")
-  (llm-models-add
-   :name "lfm2.5-8b-a1b"
-   :symbol 'lfm2.5-8b-a1b
-   :capabilities '(tool-use reasoning json-response)
-   :context-length 131072
-   :regex "lfm2.5-8b-a1b")
   (llm-models-add
    :name "lfm2.5-2.6b"
    :symbol 'lfm2.5-2.6b
@@ -467,18 +460,15 @@ All models support =:think= variants for reasoning mode.
 	    ("Qwen 3.8 27B" (make-llm-openai-compatible
 		             :chat-model "qwen3.8-27b:think"
 		             :url my-llama-swap-endpoint))
-	    ("GLM 4.7 Flash" (make-llm-openai-compatible
-		              :chat-model "glm-4.7-flash:think"
-		              :url my-llama-swap-endpoint))
+	    ("Qwen 3.6 35B" (make-llm-openai-compatible
+		            :chat-model "qwen3.6-35b-a3b:think"
+		            :url my-llama-swap-endpoint))
 	    ("Qwen 3.5 9B" (make-llm-openai-compatible
 		            :chat-model "qwen3.5-9b:think"
 		            :url my-llama-swap-endpoint))
 	    ("Qwen 3.5 4B" (make-llm-openai-compatible
 		            :chat-model "qwen3.5-4b:think"
 		            :url my-llama-swap-endpoint))
-	    ("LFM2.5 8B" (make-llm-openai-compatible
-		          :chat-model "lfm2.5-8b-a1b:think"
-		          :url my-llama-swap-endpoint))
 	    ("LFM2.5 2.6B" (make-llm-openai-compatible
 		            :chat-model "lfm2.5-2.6b:think"
 		            :url my-llama-swap-endpoint))))
