@@ -77,7 +77,7 @@ instead of the template embedded in their GGUF metadata.
 | Template | Models | Description |
 |----------|--------|-------------|
 | `qwen-fixed-chat-template.jinja` | qwen3.5-4b, qwen3.5-4b-abliterated, qwen3.5-9b, qwen3.6-35b-a3b | Fixed Jinja chat template for Qwen 3.5 & 3.6 — fixes agentic loop stalling, KV cache invalidation, minijinja compatibility, and tool calling errors |
-| `lfm2.5-chat-template.jinja` | lfm2.5-8b-a1b | LFM2.5 chat template for empty-template GGUFs |
+| `lfm2.5-chat-template.jinja` | lfm2.5-2.6b | LFM2.5 chat template for empty-template GGUFs |
 | `laguna-chat-template.jinja` | (disabled) | Laguna XS chat template |
 
 ### Qwen Fixed Chat Template

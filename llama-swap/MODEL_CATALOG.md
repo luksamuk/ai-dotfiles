@@ -390,6 +390,16 @@ Configs in `models/_removed/` (dead code):
 | Config | Description | Reason Removed |
 |--------|-------------|----------------|
 | `ds-r1-distill-14b-32b.yaml` | DeepSeek R1 distill 14B/32B | Too large for 6 GB VRAM |
+| `empero-qwen3.8-2b.yaml` / `-4b.yaml` | Empero Qwen3.8 distillations | eq2 sem caso de uso; eq4 nunca surpreendeu |
+| `gemma4-12b.yaml` | Gemma 4 12B (era o "ouvido" do m3 `--ref-audio`) | Music 3 pausado, ref-audio não usado |
+| `gemma4-e2b.yaml` | Gemma 4 E2B QAT | Maturidade coberta por outros modelos |
+| `glm-4.7-flash.yaml` | GLM 4.7 Flash (14.6 GB) | Cloud/OpenRouter cobre o fallback |
+| `lfm2.5-1.2b.yaml` | LFM2.5 1.2B | Superseded |
+| `lfm2.5-8b-a1b.yaml` | LFM2.5 8B A1B | Bench 16/105 — 2.6B preferido |
+| `nomic-embed-text-v2-moe.yaml` | Nomic embed v2 MoE | Obsoleto vs nemotron-3-embed (2048 dims) |
+| `qwen3-vl-4b.yaml` | Qwen3-VL 4B | Removido da frota (AGUARDA migração dos consumidores: `h3` e `diffuse` ainda o têm como VLM default) |
+| `spark-x2.5-4b.yaml` | Spark X2.5 4B | Removido |
+| `nex-n2.5-mini.yaml` | Nex N2.5 Mini (21 GB) | 34/75 phase1, think-loop em tasks com deliverable; 25/25 em 06-sec web-only (nicho) |
 
 ---
 
@@ -453,3 +463,8 @@ Key macros from `config-base.yaml`:
 | Date | Change |
 |------|--------|
 | 2026-05-25 | Initial catalog created — 15 active models, 2 inference engines, benchmark data |
+| 2026-09-10 | 10 modelos removidos da frota (ver "Removed Models"); `qwen3.6-35b-a3b` reinstalado com APEX-MTP + vision a 131K ctx; `nex-n2.5-mini` movido p/ `_removed/` após régua |
+
+> Nota: as seções acima estão defasadas — vários modelos listados em "Active Models"
+> já foram removidos em migrações anteriores. Usar `llama-swap/models/*.yaml` como
+> fonte de verdade para a frota atual.
