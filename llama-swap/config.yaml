@@ -1542,6 +1542,102 @@ models:
       quantization: "Q4_K_M"
       note: "Pollard IQ4_XS testado 07-08/09 e REVERTIDO 08/09: loop infinito em tarefa de código simples (Adler32) no uso real — dados do A/B permanecem válidos (empate decode GPU, TTFT -23%, -148MB, CPU -30%), mas o comportamento agêntico pesa mais. Tool call: Q4_K_M clean nos DOIS modos (IQ4_XS só no :think). REMOVIDOS 08/09: Q8_0 oficial, Pollard Q5_K_M (GGUFs deletados). Pollard IQ4_XS GGUF MANTIDO no dir como opção A/B futura. Fallback docs no header."
 # -------------------------------------------
+# OCCAMY-1.0 - MoE CO-WORK AGENTIC (Accio-Lab) — APEX-I-MiniPlus-V2 (IsValorum)
+# Base: Qwen/Qwen3.6-35B-A3B (mesmo base do q36) + post-training: SFT full-param
+# 403M tok / 14,998 trajetórias agentic, HDPO, merge Marathon+Sprint, SAO.
+# Vendor table vs Ornith-1.5: Claw-Eval 82.2 vs 64.4 | AutomationBench 27.6 vs 18.5
+# WildClawBench 49.2 vs 45.9 | GDPval 1128 vs 855 | IFEval 91.5 vs 81.8
+# PERDE: Terminal-Bench 59.0 vs 67.8 | BFCL v4 65.4 vs 68.5. Paper: arXiv 2609.11977.
+# Quant: APEX-I-MiniPlus-V2 (IsValorum, 15/09/2026, 3.38 BPW, 13.62 GiB):
+#   IQ3_XXS experts core (10-29) / IQ3_S bordas+qkv+token_embd / IQ4_NL shexp
+#   Q6_K output+attn_output / Q8_0 attn_gate / F32 routers+norms.
+#   MAPA VERIFICADO no header (2026-09-16): F32 331 | IQ3_S 181 | IQ4_NL 120 |
+#   IQ3_XXS 60 | Q8_0 30 | Q6_K 11. SEM nextn (MTP: nenhum tensor blk.40.nextn).
+# ik_llama: i-quants IQ3_XXS/IQ3_S/IQ4_NL têm kernels CUDA MMQ + _R4 — suportado.
+#   Aviso: único A/B anterior de i-quant no fleet era DENSE com offload (-30%);
+#   em MoE 8-ativos o custo escala por experts ativos — NÃO MEDIDO ainda (ver
+#   community-model-evaluation.md "Extrapolating a measured penalty").
+# Autor do quant: 4 dias de vida, 4 repos, 225-605 dl, ZERO números de PPL/KLD.
+#   = quant artesanal sem registro de qualidade. A/B na régua decide.
+# Vision: mmproj Q8_0 614 MB (bundled). MTP: NÃO (head oficial só em safetensors
+#   SGLang, NLL 2.2850->2.6034 = head pior para respostas). Sem --spec-type.
+# Backend ik (espelha qwen36): i-quants rodam, mas se dequant pesar, plano B =
+#   upstream + IQ4_XS do mradermacher (18.7 GB) ou Q3_K_M bartowski (17.3 GB).
+# -------------------------------------------
+  "occamy-1.0":
+    name: "Occamy 1.0 35B"
+    description: "Accio-Lab Occamy-1.0: co-work agentic (long-horizon, state tracking, tool grounding). Qwen3.6-35B-A3B + SFT/HDPO/SAO. APEX-I-MiniPlus-V2 i-quant mix, vision mmproj Q8_0 bundled. Sem MTP."
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/occamy-1.0/Occamy-1.0.APEX-I-MiniPlus-V2.gguf
+      --mmproj ${models_dir}/occamy-1.0/mmproj-Accio-Lab_occamy-1.0-Q8_0.gguf
+      --no-mmproj-offload
+      --no-graph-reuse
+      --fit
+      --fit-margin 1024
+      --ctx-size 131072
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning on
+      --jinja
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+      --parallel 1
+      --parallel-tool-calls
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --defer-experts
+      --prefetch-experts
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.95
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.95
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - 'text'
+        - 'image'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: "~13.62 GiB (APEX-I-MiniPlus-V2 3.38 BPW) + 585 MiB mmproj Q8_0"
+      context: "131K (prático na 3050; nativo 262K)"
+      vram_usage: "~4-5 GB estimado (i-quant dequant + fit) — medir no smoke"
+      source: "IsValorum/Occamy-1.0-APEX-I-MiniPlus-V2-GGUF + mmproj-Accio-Lab (Q8_0), base Accio-Lab/occamy-1.0 (Qwen3.6-35B-A3B)"
+      kv_cache: "q4_0 + attn_rot + hadamard"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 35000000000
+      context_length: 262144
+      embedding_length: 2048
+# -------------------------------------------
 # QWEN3-TTS — TTS API server (Python FastAPI, not llama.cpp)
 # Qwen3-TTS 0.6B-Base with voice cloning support (8 pt-BR voices)
 # Runs as external process on port 8880 with OpenAI-compatible /v1/audio/speech endpoint
@@ -1722,6 +1818,7 @@ matrix:
     orn15: ornith-1.5-35b
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
     q36: qwen3.6-35b-a3b
+    occ: occamy-1.0
     # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
     # Bonsai 1-bit disabled Aug 2026 — user request
     # bonsai1: bonsai-27b-1bit
@@ -1791,6 +1888,7 @@ matrix:
     orn15: 9
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     q36: 9
+    occ: 9
     # nex25: 9  # REMOVED Sep 10 2026
     # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed
     # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
