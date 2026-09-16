@@ -2,7 +2,10 @@
 # QWEN2.5-CODER-1.5B-INSTRUCT-POLLARD - CPU-ONLY (coexist with GPU MoE)
 # Pollard memory-fit quantization with imatrix guidance.
 # Role/depth-aware precision: sensitive tensors high precision, FFN bulk compressed.
-# IQ4_XS = 824 MB. imatrix computed on mixed prose + code corpus.
+# Pollard v2 self-quant (2026-08-31): attn q/k/v/o -> q5_K (protected), ffn -> iq4_xs.
+# 825.90 MiB, 4.49 BPW. Bench N=5 (maple 8ce8ca6, ngl 0): pp512 +7.6% (60.88 -> 65.48),
+# tg128 empate (CIs overlap), FIM cold -6%, warm tpot equivalente.
+# v2 wired 2026-09-16 via FRAGMENT edit + rebuild (v1 de 23/ago mantido em rollback).
 # Architecture: qwen2 (28 layers, dense 1.54B params).
 # Qwen2.5-Coder FIM tokens: <|fim_prefix|>, <|fim_suffix|>, <|fim_middle|>
 # Also supports repo-level completion via <|repo_name|> and <|file_sep|>
@@ -15,7 +18,7 @@
   description: "Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct, CPU-only. IQ4_XS with imatrix. FIM native. Code completion on CPU, zero VRAM, coexists with GPU MoE."
   cmd: |
     ${llama_server} --port ${PORT}
-    --model ${models_dir}/qwen2.5-coder-1.5b-pollard/Qwen2.5-Coder-1.5B-Instruct-Pollard-IQ4_XS.gguf
+    --model ${models_dir}/qwen2.5-coder-1.5b-pollard-new/Qwen2.5-Coder-1.5B-Pollard-v2-IQ4XS-class.gguf
     --jinja
     --parallel 1
     --ctx-size ${completion_ctx}

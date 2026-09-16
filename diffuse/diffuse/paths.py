@@ -13,7 +13,7 @@ GEMLITE_PERSIST_PATH = OUTPUTS_DIR / ".gemlite_cache" / "autotune.json"
 SD_CLI_PATH = SCRIPT_DIR / "bin" / "sd-cli"
 PROMPTS_DIR = SCRIPT_DIR / "prompts"
 
-DEFAULT_VISION_MODEL = "qwen3-vl-4b"
+DEFAULT_VISION_MODEL = "lfm2.5-vl-3b"  # qwen3-vl-4b removed from fleet Sep 2026; lfm2.5-vl-3b deployed (llama-swap id + GGUF verified 2026-09-16)
 
 # ── LLM swap URL ──────────────────────────────────────────────────────────
 LLAMA_SWAP_URL = os.environ.get("LLAMA_SWAP_URL", "http://localhost:12434")
