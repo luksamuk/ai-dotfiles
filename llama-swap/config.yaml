@@ -1609,9 +1609,9 @@ matrix:
     nemb: nemotron-3-embed-1b
     lfmcol: lfm2.5-colbert-350m
   sets:
-    small_vision: (q4 | lfm26 | spc | fct | adv | gpt2) & (nemb | lfmcol)
-    small_embed: (q4 | lfm26 | spc | fct | adv | gpt2) & (nemb | lfmcol)
-    small_only: q4 | lfm26 | spc | fct | adv | gpt2 | gpt2xl
+    small_vision: (q4 | lfm26 | spc | fct | adv) & (nemb | lfmcol)
+    small_embed: (q4 | lfm26 | spc | fct | adv) & (nemb | lfmcol)
+    small_only: q4 | lfm26 | spc | fct | adv | gpt2xl
     gpt2xl_embed: gpt2xl & (nemb | lfmcol)
     vision_only: ocr | lfmvl3
     vision_embed: (ocr | lfmvl3) & (nemb | lfmcol)
@@ -1634,7 +1634,6 @@ matrix:
     q4: 2
     lfm26: 2
     qpoll: 1
-    gpt2: 1
     gpt2xl: 3
     spc: 1
     fct: 2

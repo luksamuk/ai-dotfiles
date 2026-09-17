@@ -83,14 +83,14 @@ matrix:
     lfmcol: lfm2.5-colbert-350m
 
   sets:
-    # LLM pequeno + Vision + Embedding
-    small_vision: "(q4 | lfm26 | spc | fct | adv | gpt2) & (nemb | lfmcol)"
+    # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
+    small_vision: "(q4 | lfm26 | spc | fct | adv) & (nemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | lfm26 | spc | fct | adv | gpt2) & (nemb | lfmcol)"
+    small_embed: "(q4 | lfm26 | spc | fct | adv) & (nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | lfm26 | spc | fct | adv | gpt2 | gpt2xl"
+    small_only: "q4 | lfm26 | spc | fct | adv | gpt2xl"
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"
@@ -147,7 +147,7 @@ matrix:
     # eq2: 2  # REMOVED Sep 10 2026
     # eq4: 3  # REMOVED Sep 10 2026
     qpoll: 1
-    gpt2: 1
+    # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
     gpt2xl: 3
     spc: 1
     fct: 2
