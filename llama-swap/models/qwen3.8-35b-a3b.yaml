@@ -1,0 +1,95 @@
+# -------------------------------------------
+# QWEN3.8-35B-A3B-DISTILL (Empero) — IQ4_XS + mmproj F16 oficial
+# Base: Qwen/Qwen3.6-35B-A3B (mesmo base do q36/occ) + SFT off-policy de
+#   traces dos professores Qwen3.8 2.4T-A95B e Qwen3.8-Flash-Next (interno).
+#   Pesos: math/programação competitiva. Card: MMLU -0.4pt (ruído), ARC +3-4pt.
+#   NÃO auditável (dataset interno; parte veio de prompts do endpoint grátis).
+#   Advertência do card: treinado em exemplos de 8k tokens → outputs mais
+#   curtos; long-form/long-ctx possivelmente degradado vs base. v2 em treino.
+# THINKING SEMPRE LIGADO (card): todo bloco <think> vem de trace de professor,
+#   SEM toggle adaptativo — enable_thinking:false pode ser ignorado. Os dois
+#   IDs (:think e base) vão pensar; registrar ambos por consistência da frota.
+# Quant: IQ4_XS oficial da Empero 19.6GB (imatrix, imatrix em 2/3-bit apenas).
+#   Escolha: IQ4_XS > Q4_K_M (21.7GB) — headroom no host de 31GB RAM.
+#   APEX I-Quality (21.2GB, MrFuzzihead) descartado: mesma classe de RAM,
+#   sem bench publicado. I-Compact (16.5GB) ainda NÃO upado (17/09).
+# MTP: NÃO. IQ4_XS plain não tem nextn; APEX-MTP separado existe no base
+#   qwen3.6, mas para este distill não há head APEX publicado. Sem --spec-type.
+# Vision: mmproj F16 858MB oficial da Empero (text-only fine-tune, visão
+#   herdada do base e NÃO avaliada pelo distill).
+# Backend ik (espelha occ/q36): arch GGUF = qwen35moe confirmada no header.
+# Histórico da frota: outros distills Empero Qwen3.8 (2B/4B) REMOVIDOS 10/09
+#   ("sem caso de uso" / "nunca surpreendeu"). Este 35B precisa provar na régua.
+# -------------------------------------------
+"qwen3.8-35b-a3b":
+  name: "Qwen 3.8 35B Distill"
+  description: "Empero distill de Qwen3.8 (2.4T A95B) em Qwen3.6-35B-A3B. CoT destilado, math/code-weighted. Thinking sempre ligado. IQ4_XS + mmproj F16. Sem MTP."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/qwen3.8-35b-a3b/Qwen3.8-35B-A3B-IQ4_XS.gguf
+    --mmproj ${models_dir}/qwen3.8-35b-a3b/mmproj-Qwen3.8-35B-A3B-F16.gguf
+    --no-mmproj-offload
+    --no-graph-reuse
+    --fit
+    --fit-margin 1024
+    --ctx-size 131072
+    --temp ${code_temp}
+    --top-p ${code_top_p}
+    --top-k ${code_top_k}
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --reasoning on
+    --jinja
+    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --prefetch-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~19.6 GB (IQ4_XS) + 858 MB mmproj F16"
+    context: "131K (fit adapta se RAM apertada; nativo 262K)"
+    vram_usage: "~4-5 GB estimado + ~14GB pinned RAM — medir no smoke"
+    source: "empero-ai/Qwen3.8-35B-A3B-Distill-GGUF (IQ4_XS + mmproj F16), checksums SHA256SUMS verificados 17/09"
+    kv_cache: "q4_0 + attn_rot + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 34700000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: IQ4_XS
+    note: "Sep 17: onboarding. Sampler vendor do card: temp 0.6 / top_p 0.95 / top_k 20 (filters + models.json). Greedy = failure mode documentado (repetition loop). Thinking always-on (traces de professor, sem toggle real). Sem MTP. Smoke + speed-bench pendentes; SIGHUP só após ichef2 do occamy fechar (não mexer na régua com run no forno)."

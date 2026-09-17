@@ -39,7 +39,7 @@ matrix:
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
     qpoll: qwen2.5-coder-1.5b-pollard
     # GPT-2 124M — museum piece (2019 original, completion-only, ctx 1024)
-    gpt2: gpt-2-124m
+    # gpt2: gpt-2-124m  # desativado 17/09 (disk; restore: _disabled)
     gpt2xl: gpt-2-xl
     # Portal 2 personality cores (conversational, Q8_0, LFM2.5-350M)
     spc: portal-core-space
@@ -59,6 +59,7 @@ matrix:
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
     q36: qwen3.6-35b-a3b
     occ: occamy-1.0
+    q38: qwen3.8-35b-a3b
     # k2h: k2-horizon-7b  # REMOVED Sep 16 2026 — errático em chat (idioma/identidade, tool-loop instável); GGUF a decidir; fragment em _removed/
     # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
     # Bonsai 1-bit disabled Aug 2026 — user request
@@ -130,6 +131,7 @@ matrix:
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     q36: 9
     occ: 9
+    q38: 9
     # nex25: 9  # REMOVED Sep 10 2026
     # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed
     # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
