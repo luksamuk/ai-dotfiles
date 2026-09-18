@@ -81,6 +81,7 @@ ORIGINAL_ORDER = [
     "agents-a1-35b",          # ✅ 35B MoE long-horizon search + tool calling (reactivated Jul 2026)
     "bonsai-27b-1bit",        # ✅ 27B 1-bit (Q1_0) — upstream llama.cpp, ngram-mod spec decode (reactivated Jul 2026)
     "bonsai2-27b",            # ✅ Bonsai 2 27B ternary gen-2 (PTQ1_0, PrismML fork) — quality test deploy, text-only, ngl 56
+    "neohorse-1-4b",          # ✅ NeoHorse-1 4B (TokenRhythm RSI gen-1) — Q4_K_M, ik, agentic FT de Qwen3.5-4B
     "qwopus-coder-9b",       # ✅
     # "littlelamb-0.3b-tc",   # REMOVED Jun 2026 — tool-calling broken, too small
     "minicpm-v-4.6",         # ✅
