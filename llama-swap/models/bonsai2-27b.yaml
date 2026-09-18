@@ -1,0 +1,92 @@
+# -------------------------------------------
+# BONSAI 2 27B — PrismML ternary gen-2 (PTQ1_0, fork PrismML-Eng/llama.cpp)
+# prism-ml/Ternary-Bonsai-2-27B-gguf — base Qwen3.8-27B, ternário g128 1.75 bpw.
+# 5.95 GB. 98.2% do FP16 (84.78 avg, 14 benches thinking). Gen-2 NÃO tem 1-bit.
+# REQUER fork PrismML (runtime Hadamard): stock recusa PTQ1_0/PQ2_0 (seguro).
+#   NUNCA a banda Q2_0 do repo -dev (stock carrega sem warning = gibberish).
+# DEPLOY Navi 6GB (17/09): TEXT-ONLY (mmproj fora do cmd; GGUF em disco pra
+#   reativar). Teto empírico c/ desktop limpa: -ngl 56 = 2.94 tok/s decode,
+#   pp 134; 57-63 OOM; 54 = 2.47. Serve confirmado: ngl 56 + ctx 32K +
+#   --no-kv-offload (KV q4_0 na RAM) = 5635MiB VRAM total.
+# DEGRADAÇÃO SABIDA: ngl baixo = ping-pong mata (48 = 1.66 t/s); CPU-only
+#   decode 0.53-0.64 t/s (unpack trits sem VNNI). Deploy é p/ teste de
+#   QUALIDADE (98.2% FP16) a pedido do user — velocidade não é o objetivo.
+# Template do GGUF (extraído 17/09): dual-mode REAL — enable_thinking false
+#   injeta o bloco think VAZIO (instruct direto); true/undefined → thinking
+#   com reasoning_effort (xhigh default; medium encurta; LOW NAO SUPORTADO).
+# Sampling oficial (card, em general.sampling.* no GGUF):
+#   THINKING: temp 1.0 / top_p 0.95 / top_k 20 / min_p 0 / presence 0 / repeat 1.0
+#   INSTRUCT: temp 0.7 / top_p 0.80 / top_k 20 / min_p 0 / presence_penalty 1.5
+# SEM drafter dspark publicado p/ Bonsai-2 (17/09) — sem spec decode por ora.
+# Benchmarks vendor (tg128): 5090 ~120-130 | 4090 81-91 | L4 30-32 | M5 Max 47.
+# -------------------------------------------
+"bonsai2-27b":
+  name: "Bonsai 2 27B"
+  description: "PrismML Bonsai 2 — ternário real 1.75 bpw sobre Qwen3.8-27B (híbrido ~75% atenção linear). 98.2% do FP16 (84.78 avg) em 5.95 GB. Tools nativas, thinking xhigh/medium. Text-only na Navi (mmproj em disco). Requer fork PrismML."
+  cmd: |
+    ${prism_llama_server} --port ${PORT}
+    --model ${models_dir}/bonsai2-27b/Ternary-Bonsai-2-27B-PTQ1_0.gguf
+    --jinja
+    -ngl 56
+    --ctx-size 32768
+    --no-kv-offload
+    --temp 1.0
+    --top-p 0.95
+    --top-k 20
+    --min-p 0
+    --presence-penalty 0.0
+    --repeat-penalty 1.0
+    --parallel 1
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p, top_k, min_p, presence_penalty"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.80
+        top_k: 20
+        min_p: 0
+        presence_penalty: 1.5
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+          reasoning_effort: xhigh
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 20
+        min_p: 0
+        presence_penalty: 0.0
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 32768
+  metadata:
+    size: "~5.95 GB (PTQ1_0 ternário 1.75 bpw); mmproj Q8_0 em disco, não carregado"
+    context: "32768 (KV q4_0 em host RAM via --no-kv-offload); 262144 nativo"
+    vram_usage: "~5.64 GB (ngl 56 + compute) — 5635MiB medido em serve, desktop limpa"
+    source: "prism-ml/Ternary-Bonsai-2-27B-gguf (PTQ1_0 + mmproj Q8_0)"
+    kv_cache: "q4_0 (host RAM)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 27360000000
+    context_length: 262144
+    embedding_length: 5120
+    quantization: PTQ1_0
+    note: "Deploy QUALIDADE (17/09): user pediu pra testar qualidade do output. Teto Navi: ngl 56 (2.94 t/s decode, pp 134 c/ desktop limpa); 57-63 OOM; ngl 48 = 1.66 t/s (ping-pong); CPU-only decode 0.53-0.64 t/s. Full offload OOM por ~100-200MiB. Velocidade NÃO é o objetivo aqui — 98.2% FP16 é. Vision Tower desligada por VRAM (regra: texto+ctx cheio > visão c/ ctx estrangulado); reativar mmproj = re-adicionar --mmproj + --no-mmproj-offload (custa ~0.63GB RAM). Re-teste em GPU 8GB+ ou fork otimizando unpack AVX2. Gen-1 1-bit (bonsai-27b) segue sendo o Bonsai rápido da casa."
