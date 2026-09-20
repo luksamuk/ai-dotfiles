@@ -507,9 +507,13 @@ models:
       quantization: APEX-MTP I-Compact
       note: 'Sep 09: reactivated com APEX-MTP I-Compact (MTP heads baked in, nextn=1; o APEX plain ignorava --multi-token-prediction silenciosamente — audit May 2026). --spec-type mtp:n_max=1,p_min=0.0 = receita ornith-1.5 (42.6 tok/s medido Sep 10, accept 85-93%). VISION re-ativada 10/09 c/ ctx FULL 131K (RAM limpa: VRAM 5.4/6.1GB estável em smokes; fallback 32K sob pressão — regra Jul 2026). mmproj unsloth F16, verificado tensor-a-tensor vs ornith (qwen3vl_merger, proj_dim 2048). Sep 10: alinhado ao ornith — --no-mmproj-offload + --prefetch-experts + top_p 0.95 nos dois modos.'
   qwen3.6-35b-a3b-262k:
+    name: Qwen 3.6 35B (262K TurboKV)
+    description: Same Qwen3.6-35B-A3B served by cafe-llama.cpp fork with Turbo KV cache (turbo4). The only backend that loads the model's native 262K context on 6GB VRAM. Vision verified at full 262K. Slower decode than the 131K production entry (~17 vs ~35 tok/s at 30K fill) — use for maximum-context workloads, batch/long-doc analysis.
     cmd: '${cafe_server} --port ${PORT}
 
       --model ${models_dir}/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-APEX-MTP-I-Compact.gguf
+
+      --mmproj ${models_dir}/qwen3.6-35b-a3b/mmproj_qwen36_F16.gguf
 
       --ctx-size 262144
 
@@ -546,40 +550,51 @@ models:
       --metrics
 
       '
-    aliases:
-    - qwen3.6-35b-a3b:262k
     filters:
       stripParams: temperature, top_p
       setParamsByID:
-        qwen3.6-35b-a3b-262k:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.85
-        qwen3.6-35b-a3b-262k:nothink:
+        ${MODEL_ID}:
           chat_template_kwargs:
             enable_thinking: false
           temperature: 0.6
-          top_p: 0.85
+          top_p: 0.95
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.95
     ttl: 900
     health_check_timeout: 900
     capabilities:
+      in:
+      - text
+      - image
+      out:
+      - text
       tools: true
-      vision: false
-      thinking: true
-      audio: false
-      image: false
-      embedding: false
+      reranker: false
+      context: 262144
     metadata:
-      architecture: qwen35moe
-      embedding_length: 2048
+      size: ~17.3 GB (APEX-MTP I-Compact) + 899 MB mmproj F16
       context: 262K
+      vram_usage: ~5.1 GB VRAM (turbo4 KV) + ~15GB pinned RAM (hmoe)
+      source: mudler/Qwen3.6-35B-A3B-APEX-MTP-GGUF (I-Compact) + mmproj unsloth (F16)
+      kv_cache: turbo4 (WHT-rotated, FA-fused)
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 34660000000
       context_length: 262144
-      vram_usage: ~3.4GB load / ~5GB full
-      size: 17.3GB
-      quantization: APEX-MTP I-Compact (K-quants)
-      source: mudler/Qwen3.6-35B-A3B-APEX-MTP-GGUF
-      note: Backend cafe-llama.cpp (fork quimmedes/Ark) com Turbo KV turbo4. Unico backend que carrega 262K nativo na 3050 6GB. Decode 16.6 t/s @30K fill vs 34.8 ik-prod @131K — usar p/ contexto maximo em batch, nao agentic interativo. Thinking ON por padrao (user 20/set). Validado needle + QG deterministico @30K fill. turbo2 crasha na arch hibrida; pipeline-parallel proibido em ctx longo. Vision nao testado.
+      embedding_length: 2048
+      quantization: APEX-MTP I-Compact
+      note: 'Backend cafe-llama.cpp (quimmedes/Ark fork) com Turbo KV turbo4 — unico que carrega 262K nativo na 3050 6GB (ik q4_0 KV @262K OOM). Validado 20/set: needle+QG limpos @30K fill, 16.6 t/s decode @30K, vision OK @262K full (5.1GB). Tradeoff: decode -52% vs ik-prod — batch/long-doc, não agentic interativo. Dual-mode padrão: base sem thinking, :think liga. Sem MTP (draft KV 512MiB não cabe), sem pipeline-parallel (48GB DMA @ctx longo), turbo2 crasha na arch hibrida. Tool calling nativo do cafe (smoke OK).'
   ornith-1.5-35b:
     name: Ornith 1.5 35B
     description: Ornith-1.5 is a family of open-source LLMs trained with end-to-end self-improvement — the model proposes new tasks, generates task-specific scaffolds, and produces solution rollouts for RL, continuously creating new learning experiences. ONYX quantization (el4, APEX evolution) with MTP speculative decoding and vision support.
