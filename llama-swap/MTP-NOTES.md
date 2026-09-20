@@ -106,9 +106,14 @@ as regular models (MTP tensors are loaded but ignored).
 |--------|---------|-------------|
 | llama.cpp | b9371+ | `--spec-type draft-mtp`, CVE-2025-53630 fix |
 | ik_llama.cpp | v4547+ | `--multi-token-prediction`, `--model-draft` (Gemma 4 assistant), Hadamard non-pow2 |
-| BeeLlama.cpp | v0.3.0+ | `--spec-type dflash`, reasoning-loop-guard, adaptive draft-max |
+| cafe-llama.cpp | (fork quimmedes/Ark) | `--spec-type draft-mtp` (head nextn embutido no GGUF), ngram-mod, draft-dflash |
 
-## DFlash Speculative Decoding (BeeLlama.cpp)
+> **NOTA (Set/2026)**: o BeeLlama.cpp foi removido do fleet (fork deletado; papel de KV
+> low-bit assumido pelo cafe-llama.cpp). A seção DFlash abaixo é **histórica** — descreve
+> o comportamento do fork removido, mantida como referência. O cafe suporta
+> `--spec-type draft-dflash` no mesmo espírito.
+
+## DFlash Speculative Decoding (BeeLlama.cpp — HISTÓRICO, fork removido)
 
 DFlash uses a small **drafter model** that cross-attends to the target model's hidden states
 to predict multiple tokens at once. Unlike MTP (which uses built-in draft heads), DFlash uses

@@ -1,7 +1,9 @@
 # Laguna XS 2.1 — Poolside's 33B/3B MoE agentic coding model (REVANCHE Sep/2026)
 # Fragmento REESCRITO pro cafe-llama.cpp (o ik morria no OOM de RAM: 257 experts
-# → 29GB RSS durante load). Validado em bancada systemd-run 20/set/2026:
-#   -ssd -ngl 99: RSS ready 2.4GB, load 4s, VRAM 3.5GB, decode 28.5-31.8 t/s
+# → 29GB RSS durante load). Validado 20/set/2026:
+#   Backend: cafe-llama.cpp. MoE offload por -hmoe (experts pinned em RAM):
+#   sem warmup por domínio (o -ssd tinha esse custo; user trocou p/ -hmoe e validou).
+#   VRAM 3.5GB (dense+attn na GPU) | RSS ~12-14GB pinned (fechar apps pesados)
 #
 # GGUF: Q4_K_M OFICIAL Poolside (20.27GB, 4.6bpw) — byte-exato LFS.
 #   NÃO usar APEX I-Compact (3.9bpw): trava com QUALQUER system prompt
@@ -33,7 +35,7 @@
 # Samplers laguna: temp 0.3 / top_p 0.85 / rep 1.1 (over-gen de tools mitigada).
 "laguna-xs-2.1":
   name: "Laguna XS 2.1"
-  description: "Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. Served by cafe-llama.cpp with SSD expert streaming — the only backend that loads it on 6GB VRAM. 131K context with clean quality."
+  description: "Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. Served by cafe-llama.cpp with pinned-RAM expert offload (-hmoe) — the only backend that loads it on 6GB VRAM. 131K context with clean quality."
   cmd: |
     ${cafe_server} --port ${PORT}
     --model ${models_dir}/laguna-xs-2.1/Laguna-XS-2.1-Q4_K_M.gguf
@@ -43,7 +45,7 @@
     --cache-type-k q4_0
     --cache-type-v q4_0
     --flash-attn on
-    -ssd
+    -hmoe
     -ngl 99
     --temp 0.3
     --top-p 0.85
@@ -77,7 +79,7 @@
   metadata:
     size: "~20.3 GB (Q4_K_M official)"
     context: "131K"
-    vram_usage: "~3.5GB VRAM (dense+attn) + RSS 2.4GB ready / ~14GB warm (SSD-streamed experts)"
+    vram_usage: "~3.5GB VRAM (dense+attn na GPU) + ~12-14GB RAM pinned (experts via -hmoe)"
     source: "poolside/Laguna-XS-2.1-GGUF (Q4_K_M official)"
     kv_cache: "q4_0/q4_0"
     features:
@@ -94,4 +96,4 @@
     context_length: 131072
     embedding_length: 2048
     quantization: Q4_K_M
-    note: "Revanche Sep 2026: cafe -ssd mata o blocker de RAM do ik (RSS 2.4GB vs 29GB OOM). Q4_K_M oficial obrigatorio — APEX I-Compact trava com system prompt (deletado). Template EMBUTIDO via --jinja (externo v5 nao renderiza no cafe). turbo4/turbo2 corrompem a arch SWA hibrida — teto de ctx com qualidade: 131K q4_0. Decode 31.8 t/s @131K. GGUF em ~/.llama-models/laguna-xs-2.1/."
+    note: "Revanche Sep 2026: cafe-llama.cpp carrega o que o ik nao conseguia (o ik morria com 29GB RSS no load). MoE offload via -hmoe (experts pinned em RAM, ~12-14GB, sem warmup por dominio; o -ssd era a alternativa com warmup). Q4_K_M oficial obrigatorio — APEX I-Compact trava com system prompt (deletado). Template EMBUTIDO via --jinja (externo v5 nao renderiza no cafe). turbo4/turbo2 corrompem a arch SWA hibrida — teto de ctx com qualidade: 131K q4_0. Decode 31.8 t/s @131K. Tool calling: com tools no request a grammar do cafe limita a 1 call/round e suprime o thinking (bug do fork, ver skill). GGUF em ~/.llama-models/laguna-xs-2.1/."

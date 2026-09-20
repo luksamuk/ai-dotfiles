@@ -7,7 +7,10 @@
 # Requer: llama-swap v212+ (Prometheus metrics, SIGHUP reload, reasoning UI, race fix, zstd captures)
 # Requer: llama.cpp build b9563+ (mtmd audio/TTS/video, 6 audio preprocessors: whisper/conformer/granite_speech/gemma4a/gemma4ua/qwen3a, LFM2.5 reasoning fix, Gemma4 MTP, Granite4 Vision, KV cache optimizations)
 # Requer: ik_llama.cpp v4566+ (bf16 graph reduce fix, threads-mtmd, mtmd checkpoint save/restore)
-# Requer: BeeLlama.cpp v0.3.1+ (DFlash speculative decoding, TurboQuant KV cache, Gemma4 audio fixes)
+# Requer: cafe-llama.cpp (fork quimmedes/Ark) — Turbo KV (turbo2/3/4) para contexto longo
+#   (>131K) em MoE, MoE offload (-hmoe pinned RAM / -ssd streaming do NVMe), safetensors
+#   nativo. Substituiu o beellama.cpp (removido Set/2026); upstream já tinha removido o
+#   TurboQuant/TCQ original em v0.4.0 (renomeado KVarN).
 #
 # OTIMIZAÇÕES ik_llama.cpp (modelos MoE e dense offloaded):
 #   --k-cache-hadamard / --v-cache-hadamard (-khad/-vhad): Hadamard transform no K/V cache

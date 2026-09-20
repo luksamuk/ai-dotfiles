@@ -38,13 +38,32 @@
 | Backend | Use For | Key Flags |
 |---------|---------|-----------|
 | **ik_llama.cpp** | MoE models, most dense models | `--fit --fit-margin`, `-khad/-vhad`, `--defer-experts`, `--flash-attn auto`, `--jinja`, `--parallel-tool-calls` |
-| **BeeLlama.cpp** | Small dense models (Q4_K_M only) | `--n-gpu-layers 99`, `--cache-type-k/v turbo3_tcq`, `--flash-attn on` |
-| **llama.cpp upstream** | Models incompatible with ik/Bee | `--fit on --fit-target`, `--no-mmproj` |
+| **cafe-llama.cpp** | Contexto longo (262K) e MoE que não cabe em RAM/VRAM | `--jinja` (template do GGUF), `-hmoe` (pinned RAM) ou `-ssd`, `-ctk/-ctv turbo4`, `--fit-target` |
+| **llama.cpp upstream** | Models incompatible with ik/cafe | `--fit on --fit-target`, `--no-mmproj` |
+
+### Backend notes — cafe-llama.cpp (fork quimmedes/Ark, adotado Set/2026)
+
+Substituiu o BeeLlama.cpp (removido). Usar quando o ik não dá conta:
+
+- **Contexto longo em MoE**: único backend que carrega `qwen35moe` @262K na 3050 6GB
+  (turbo4 KV; ik OOMa com q4_0 nesse ctx)
+- **MoE offload**: `-hmoe` = experts pinned em RAM (~12-14GB fixos, sem warmup) |
+  `-ssd` = experts streamados do NVMe por mmap (RSS baixo, mas warmup de 1-2 prompts
+  por domínio novo de conteúdo)
+- **Tradeoffs medidos**: prefill em prompt FRIO ~3.4x mais caro que o ik (82 vs 281 t/s
+  @15K tok) por causa do KV turbo reconstruído no kernel FA + ausência de
+  `--prefetch-experts`. Cache quente é equivalente.
+- **Não tem** (flags ik-only): `--parallel-tool-calls`, `--defer-experts`,
+  `--prefetch-experts`, `--k/v-cache-hadamard`, `--no-graph-reuse`, `--fit-margin`
+  (usar `--fit-target`)
+- **Nunca** `--pipeline-parallel` com ctx ≥131K (buffer DMA ~ctx → OOM)
+- **turbo KV em arch híbrida SWA** (laguna) CORROMPE — usar q4_0 lá
+- Detalhes completos: skill `llama-swap-fleet` → `references/cafe-llama-cpp-eval.md`
 
 ### Known Incompatibilities
 
-- **Bee + UD-Q3_K_XL**: Segfaults with TurboQuant. Use ik instead for UD-quantized models.
-- **Bee + `--parallel-tool-calls`**: Not supported. Use ik for tool-calling.
+- **cafe + turbo em laguna (SWA híbrida)**: turbo2/3/4 corrompem a saída mesmo em ctx curto — usar q4_0.
+- **cafe + `--pipeline-parallel`**: buffer DMA cresce com o ctx (48GB @131K) — proibido em ctx longo.
 - **ik + `--no-mmproj`**: Flag doesn't exist. ik ignores mmproj files automatically.
 - **ik + Gemma 4**: Must use `--jinja` for custom chat templates.
 - **AFM-4.5B**: GGUF has empty `tool_use` chat_template. Must use `--chat-template-file` with Hermes 2 Pro template for tool calling. Without it, AFM runs in plain chat mode only.
