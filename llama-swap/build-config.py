@@ -75,13 +75,13 @@ ORIGINAL_ORDER = [
     "qwen3.6-35b-a3b",       # ✅
     "ornith-1.0-35b",        # ✅ Post-trained Qwen 3.5 35B MoE (agentic coding RL)
     "ornith-1.5-35b",        # ✅ Self-improving RL MoE (task generation + scaffold + rollouts)
-    "bonsai-27b",            # ✅ PrismML 1-bit 27B (Q1_0 binary, upstream llama.cpp, ngram/dspark spec)
+    # "bonsai-27b",            # REMOVED Sep 20 2026 — GGUF deleted; user nunca usa; fragment em _disabled/
     # "qwen3.8-27b-pollard",   # REMOVED Aug 30 2026 — 2.75 tok/s, superseded by bonsai-27b
     "kat-coder-v2.5-dev",    # ✅ Post-trained Qwen 3.6 35B MoE (SOTA agentic coding, SWE-bench 69.4)
     # "agentworld-35b",         # DISABLED Aug 2026 — world model, not conversational, 16GB removed
     "agents-a1-35b",          # ✅ 35B MoE long-horizon search + tool calling (reactivated Jul 2026)
     "bonsai-27b-1bit",        # ✅ 27B 1-bit (Q1_0) — upstream llama.cpp, ngram-mod spec decode (reactivated Jul 2026)
-    "bonsai2-27b",            # ✅ Bonsai 2 27B ternary gen-2 (PTQ1_0, PrismML fork) — quality test deploy, text-only, ngl 56
+    # "bonsai2-27b",           # REMOVED Sep 20 2026 — decepcionou a comunidade; GGUF deleted; fragment em _disabled/
     "neohorse-1-4b",          # ✅ NeoHorse-1 4B (TokenRhythm RSI gen-1) — Q4_K_M, ik, agentic FT de Qwen3.5-4B
     "qwopus-coder-9b",       # ✅
     # "littlelamb-0.3b-tc",   # REMOVED Jun 2026 — tool-calling broken, too small

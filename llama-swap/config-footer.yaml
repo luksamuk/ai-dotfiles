@@ -66,12 +66,14 @@ matrix:
     # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
     # Bonsai 1-bit disabled Aug 2026 — user request
     # bonsai1: bonsai-27b-1bit
-    bonsai2: bonsai2-27b
+    # Bonsai 2 removed Sep 20 2026 — decepcionou a comunidade; GGUF deleted; fragment em _disabled/
+    # bonsai2: bonsai2-27b
     neo4: neohorse-1-4b
     # Qwen3.8-27B dense 1-bit disabled Aug 2026 — too slow, user never uses
     # qw38: qwen3.8-27b
     # qw38p: qwen3.8-27b-pollard  # removed Aug 30 2026 — 2.75 tok/s, superseded by bonsai-27b (10x faster, same class)
-    bonsai: bonsai-27b
+    # Bonsai removed Sep 20 2026 — user nunca usa; GGUF deleted; fragment em _disabled/
+    # bonsai: bonsai-27b
     # Tradução
     tg: translategemma-4b
     # Português jurídico (Qwen3.5-9B LoRA, instruct)
@@ -110,9 +112,9 @@ matrix:
     # Modelos pesados (offload) + Embedding/Reranker + CPU completion
     # qw38 removed Aug 2026 — model disabled
     # bonsai1 removed Aug 2026 — user request (reactivated as bonsai, Sep 2026)
-    # bonsai2: 9  # (movido p/ evict_costs — estava no lugar errado)
+    # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
-    heavy: "(orn15 | q36 | bonsai) & (nemb | lfmcol) & qpoll"
+    heavy: "(orn15 | q36) & (nemb | lfmcol) & qpoll"
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -140,8 +142,8 @@ matrix:
     # nex25: 9  # REMOVED Sep 10 2026
     # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed
     # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
-    bonsai: 8
-    bonsai2: 9
+    # bonsai: 8  # removed Sep 20 2026
+    # bonsai2: 9  # removed Sep 20 2026
     neo4: 2
     # g4: 3  # REMOVED Sep 10 2026 — model deleted
     ttsext: 4

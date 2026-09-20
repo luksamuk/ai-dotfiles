@@ -610,192 +610,6 @@ models:
       embedding_length: 2048
       quantization: ONYX compact
       note: 'Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF deleted Sep 2026 (re-download from mudler repo if reverting).'
-  bonsai-27b:
-    name: Bonsai 27B 1-bit
-    description: PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with true 1.125-bit binary weights, full thinking/reasoning at ~3.9 GB. 89.5% of FP16 intelligence. Full GPU offload on RTX 3050 6GB. Upstream llama.cpp with ngram-mod/dspark speculative decoding.
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/bonsai-27b/Bonsai-27B-Q1_0.gguf
-
-      --mmproj ${models_dir}/bonsai-27b/Bonsai-27B-mmproj-Q8_0.gguf
-
-      --no-mmproj-offload
-
-      --jinja
-
-      -ngl 99
-
-      --ctx-size 131072
-
-      --no-kv-offload
-
-      --temp 0.7
-
-      --top-p 0.95
-
-      --top-k 20
-
-      --min-p 0
-
-      --repeat-penalty 1.0
-
-      --parallel 1
-
-      --cache-type-k ${large_cache_k}
-
-      --cache-type-v ${large_cache_v}
-
-      --flash-attn on
-
-      --spec-type ngram-mod
-
-      --spec-ngram-mod-n-max 64
-
-      --spec-ngram-mod-n-min 48
-
-      --spec-ngram-mod-n-match 24
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p, top_k, min_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.95
-          top_k: 20
-          min_p: 0
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.95
-          top_k: 20
-          min_p: 0
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      - image
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~3.9 GB (Q1_0 binary 1.125 bpw) + 0.63 GB mmproj
-      context: 131072 (KV on host via --no-kv-offload); 64K-262K native
-      vram_usage: ~4.4 GB VRAM (Q1_0 weights + compute; mmproj in RAM, KV in host RAM)
-      source: prism-ml/Bonsai-27B-gguf (Q1_0 + dspark-Q4_1 sidecar + mmproj Q8_0)
-      kv_cache: q4_0 (host RAM)
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 27300000000
-      context_length: 262144
-      embedding_length: 5120
-      quantization: Q1_0
-      note: '1-bit binary 1.125 bpw, Qwen3.6-27B base. Full GPU resident. Aug 30 2026: canonical 128K ctx via --no-kv-offload (KV in host RAM), 10.95 tok/s; speed mode 48K KV-GPU, 22.91 tok/s; mmproj-RAM; dspark sidecar incompatible, deleted. Jul 2026 measurements: 32K=27 tok/s, 48K=20 tok/s with ngram-mod.'
-  bonsai2-27b:
-    name: Bonsai 2 27B
-    description: PrismML Bonsai 2 — ternário real 1.75 bpw sobre Qwen3.8-27B (híbrido ~75% atenção linear). 98.2% do FP16 (84.78 avg) em 5.95 GB. Tools nativas, thinking xhigh/medium. Text-only na Navi (mmproj em disco). Requer fork PrismML.
-    cmd: '${prism_llama_server} --port ${PORT}
-
-      --model ${models_dir}/bonsai2-27b/Ternary-Bonsai-2-27B-PTQ1_0.gguf
-
-      --jinja
-
-      -ngl 56
-
-      --ctx-size 32768
-
-      --no-kv-offload
-
-      --temp 1.0
-
-      --top-p 0.95
-
-      --top-k 20
-
-      --min-p 0
-
-      --presence-penalty 0.0
-
-      --repeat-penalty 1.0
-
-      --parallel 1
-
-      --cache-type-k ${large_cache_k}
-
-      --cache-type-v ${large_cache_v}
-
-      --flash-attn on
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p, top_k, min_p, presence_penalty
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.8
-          top_k: 20
-          min_p: 0
-          presence_penalty: 1.5
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-            reasoning_effort: xhigh
-          temperature: 1.0
-          top_p: 0.95
-          top_k: 20
-          min_p: 0
-          presence_penalty: 0.0
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 32768
-    metadata:
-      size: ~5.95 GB (PTQ1_0 ternário 1.75 bpw); mmproj Q8_0 em disco, não carregado
-      context: 32768 (KV q4_0 em host RAM via --no-kv-offload); 262144 nativo
-      vram_usage: ~5.64 GB (ngl 56 + compute) — 5635MiB medido em serve, desktop limpa
-      source: prism-ml/Ternary-Bonsai-2-27B-gguf (PTQ1_0 + mmproj Q8_0)
-      kv_cache: q4_0 (host RAM)
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 27360000000
-      context_length: 262144
-      embedding_length: 5120
-      quantization: PTQ1_0
-      note: 'Deploy QUALIDADE (17/09): user pediu pra testar qualidade do output. Teto Navi: ngl 56 (2.94 t/s decode, pp 134 c/ desktop limpa); 57-63 OOM; ngl 48 = 1.66 t/s (ping-pong); CPU-only decode 0.53-0.64 t/s. Full offload OOM por ~100-200MiB. Velocidade NÃO é o objetivo aqui — 98.2% FP16 é. Vision Tower desligada por VRAM (regra: texto+ctx cheio > visão c/ ctx estrangulado); reativar mmproj = re-adicionar --mmproj + --no-mmproj-offload (custa ~0.63GB RAM). Re-teste em GPU 8GB+ ou fork otimizando unpack AVX2. Gen-1 1-bit (bonsai-27b) segue sendo o Bonsai rápido da casa.'
   neohorse-1-4b:
     name: NeoHorse 1 4B
     description: TokenRhythm NeoHorse-1 — fine-tune agentic do Qwen3.5-4B (RSI routing harness gen-1). +5.93 avg sobre o base no card (64.87 vs 58.94). Text-only repack, sem MTP head. ik_llama + hadamard KV.
@@ -1883,9 +1697,7 @@ matrix:
     q36: qwen3.6-35b-a3b
     occ: occamy-1.0
     q38: qwen3.8-35b-a3b
-    bonsai2: bonsai2-27b
     neo4: neohorse-1-4b
-    bonsai: bonsai-27b
     tg: translategemma-4b
     ttsext: qwen3-tts
     lfmemb: lfm2.5-embedding-350m
@@ -1899,7 +1711,7 @@ matrix:
     vision_only: ocr | lfmvl3
     vision_embed: (ocr | lfmvl3) & (nemb | lfmcol)
     medium: (q36 | g12p) & (nemb | lfmcol)
-    heavy: (orn15 | q36 | bonsai) & (nemb | lfmcol) & qpoll
+    heavy: (orn15 | q36) & (nemb | lfmcol) & qpoll
     translate_only: tg
     tts_external: ttsext
     embed_only: lfmemb & nemb & lfmcol
@@ -1910,8 +1722,6 @@ matrix:
     q36: 9
     occ: 9
     q38: 9
-    bonsai: 8
-    bonsai2: 9
     neo4: 2
     ttsext: 4
     ocr: 3
