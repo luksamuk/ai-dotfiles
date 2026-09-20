@@ -1,0 +1,97 @@
+# Laguna XS 2.1 — Poolside's 33B/3B MoE agentic coding model (REVANCHE Sep/2026)
+# Fragmento REESCRITO pro cafe-llama.cpp (o ik morria no OOM de RAM: 257 experts
+# → 29GB RSS durante load). Validado em bancada systemd-run 20/set/2026:
+#   -ssd -ngl 99: RSS ready 2.4GB, load 4s, VRAM 3.5GB, decode 28.5-31.8 t/s
+#
+# GGUF: Q4_K_M OFICIAL Poolside (20.27GB, 4.6bpw) — byte-exato LFS.
+#   NÃO usar APEX I-Compact (3.9bpw): trava com QUALQUER system prompt
+#   (gera só invisíveis) — degradation do quant no instruction-following
+#   do 33B/257-experts. APEX deletado do disco (user decision).
+#   E o Q4_K_M é MAIS RÁPIDO que o APEX (kernels K-quant maduros vs pedágio
+#   de dequant i-quant em experts paginados do SSD).
+#
+# TEMPLATE: EMBUTIDO no GGUF (mudler/poolside v5+, sem {% generation %} blocks)
+#   via --jinja puro. NÃO usar --chat-template-file laguna-chat-template.jinja
+#   (v5 externo não renderiza generation prompt no cafe — chat vazio).
+#   Dual-mode via chat_template_kwargs.enable_thinking funciona nativo.
+#
+# KV CACHE: q4_0/q4_0 — o TETO de contexto com qualidade limpa é 131K.
+#   NÃO usar turbo4/turbo2 nesta arch: turbo4 CORROMPE o comportamento em
+#   ctx longo E curto (QG quebra, chat off-topic — SWA layers sem de-transform
+#   no caminho FA do cafe; mesmo padrão do hadamard-K do ik documentado).
+#   262K q4_0 não carrega (compute buffer 1.34GB OOM); 262K turbo4 carrega
+#   mas corrompe. Teto: 131K q4_0 (KV ~1.6GB, 10 full-attn layers × 8 kv-heads
+#   × 128 dim; as 30 layers SWA-512 têm custo fixo e não crescem).
+#
+# STATUS: _disabled/ por decisão do user (20/set) — re-deploy quando quiser:
+#   mover p/ models/, var lag + heavy set + evict 9 no config-footer,
+#   ORIGINAL_ORDER no build-config, build-config.py, smoke testchat.
+#
+# Performance validada (RTX 3050 6GB, ctx 131072):
+#   decode 31.8 t/s | QG 50/50 perfeito | thinking 2647c separado OK |
+#   tool calling nativo OK (get_weather) | chat endpoint limpo
+# Samplers laguna: temp 0.3 / top_p 0.85 / rep 1.1 (over-gen de tools mitigada).
+"laguna-xs-2.1":
+  name: "Laguna XS 2.1"
+  description: "Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. Served by cafe-llama.cpp with SSD expert streaming — the only backend that loads it on 6GB VRAM. 131K context with clean quality."
+  cmd: |
+    ${cafe_server} --port ${PORT}
+    --model ${models_dir}/laguna-xs-2.1/Laguna-XS-2.1-Q4_K_M.gguf
+    --jinja
+    --parallel 1
+    --ctx-size 131072
+    --cache-type-k q4_0
+    --cache-type-v q4_0
+    --flash-attn on
+    -ssd
+    -ngl 99
+    --temp 0.3
+    --top-p 0.85
+    --top-k 40
+    --min-p 0.02
+    --repeat-penalty 1.1
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParams:
+      stop: ["</assistant>"]
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.3
+        top_p: 0.85
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.7
+        top_p: 0.9
+  ttl: 300
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~20.3 GB (Q4_K_M official)"
+    context: "131K"
+    vram_usage: "~3.5GB VRAM (dense+attn) + RSS 2.4GB ready / ~14GB warm (SSD-streamed experts)"
+    source: "poolside/Laguna-XS-2.1-GGUF (Q4_K_M official)"
+    kv_cache: "q4_0/q4_0 (turbo KV CORROMPE nesta arch — não usar)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: laguna
+    parameters: 33000000000
+    context_length: 131072
+    embedding_length: 2048
+    quantization: Q4_K_M
+    note: "Revanche Sep 2026: cafe -ssd mata o blocker de RAM do ik (RSS 2.4GB vs 29GB OOM). Q4_K_M oficial obrigatorio — APEX I-Compact trava com system prompt (deletado). Template EMBUTIDO via --jinja (externo v5 nao renderiza no cafe). turbo4/turbo2 corrompem a arch SWA hibrida — teto de ctx com qualidade: 131K q4_0. Decode 31.8 t/s @131K. GGUF em ~/.llama-models/laguna-xs-2.1/."
