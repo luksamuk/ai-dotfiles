@@ -72,6 +72,8 @@ matrix:
     # Qwen3.8-27B dense 1-bit disabled Aug 2026 — too slow, user never uses
     # qw38: qwen3.8-27b
     # qw38p: qwen3.8-27b-pollard  # removed Aug 30 2026 — 2.75 tok/s, superseded by bonsai-27b (10x faster, same class)
+    # Qwen3.8-27B GSQ-RCO IQ2_S-mtp (ISTA-DASLab non-uniform, Sep 20) — preenche a vaga do bonsai-27b
+    q38g: qwen3.8-27b-gsq
     # Bonsai removed Sep 20 2026 — user nunca usa; GGUF deleted; fragment em _disabled/
     # bonsai: bonsai-27b
     # Tradução
@@ -114,7 +116,8 @@ matrix:
     # bonsai1 removed Aug 2026 — user request (reactivated as bonsai, Sep 2026)
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
-    heavy: "(orn15 | q36) & (nemb | lfmcol) & qpoll"
+    # q38g added Sep 20 2026 — GSQ-RCO 27B preenche a vaga pesada do bonsai
+    heavy: "(orn15 | q36 | q38g) & (nemb | lfmcol) & qpoll"
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -142,6 +145,7 @@ matrix:
     # nex25: 9  # REMOVED Sep 10 2026
     # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed
     # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
+    q38g: 8
     # bonsai: 8  # removed Sep 20 2026
     # bonsai2: 9  # removed Sep 20 2026
     neo4: 2

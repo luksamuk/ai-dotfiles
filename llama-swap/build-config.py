@@ -83,6 +83,7 @@ ORIGINAL_ORDER = [
     "bonsai-27b-1bit",        # ✅ 27B 1-bit (Q1_0) — upstream llama.cpp, ngram-mod spec decode (reactivated Jul 2026)
     # "bonsai2-27b",           # REMOVED Sep 20 2026 — decepcionou a comunidade; GGUF deleted; fragment em _disabled/
     "neohorse-1-4b",          # ✅ NeoHorse-1 4B (TokenRhythm RSI gen-1) — Q4_K_M, ik, agentic FT de Qwen3.5-4B
+    "qwen3.8-27b-gsq",        # ✅ Qwen3.8 27B GSQ-RCO IQ2_S-mtp (ISTA-DASLab non-uniform) — dense 27B, vaga do bonsai, Sep 20
     "qwopus-coder-9b",       # ✅
     # "littlelamb-0.3b-tc",   # REMOVED Jun 2026 — tool-calling broken, too small
     "minicpm-v-4.6",         # ✅
