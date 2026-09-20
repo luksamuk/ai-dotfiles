@@ -68,6 +68,7 @@ ORIGINAL_ORDER = [
     "lfm2.5-1.2b",           # ✅
     "lfm2.5-2.6b",           # ✅ Dense hybrid, agentic RL, on-device
     "qwen2.5-coder-1.5b-pollard",  # ✅ Pollard Coder IQ4_XS CPU-only (FIM, imatrix, coexists with GPU MoE)
+    "gemma4-12b-pollard",    # ✅ Pollard IQ4_XS dense 12B multimodal (measured-allocation; ativo Sep 20)
     # "ling-3.0-tiny",       # DISABLED Aug 2026 — doom loop in Pi agentic bench
     "lfm2.5-vl-450m",       # ✅
     "webworld-8b",           # ✅

@@ -1,0 +1,98 @@
+# -------------------------------------------
+# GEMMA-4-12B-IT-POLLARD - MEASURED-ALLOCATION LADDER
+# Pollard Weights (github.com/WestWaters/pollard-weights): bits por sensibilidade
+# de camada sob budget de tamanho, imatrix Calib 3.0 (prose/code/math/chat/multi).
+# PPL publicada (Calib 3.0 held-out, ctx 2048, 60 chunks; f16 ref 23.04):
+#   IQ2_XXS 4.64GB PPL 56.88 KLD 2.367 | IQ4_XS 6.78GB PPL 29.80 | Q6_K 9.65GB PPL 26.61
+# ~11.9B dense, multimodal no base (texto+imagem+audio), apache-2.0.
+# Backend: stock llama.cpp (${llama_server} = ~/git/llama.cpp build 2171,
+#   465e49b9c 2026-09-07) — GGUF padrao verificado pelo autor com pollard-ggufcheck.
+# Gemma 4: head_dim=256 → attn_rot de cache q4_0 NAO se aplica (128 % 256 != 0;
+#   o bee usava kvarn4 por isso). Cache q8_0 plain, sem attn_rot.
+# IQ2_XXS 4.64GB + KV q8_0 @ 8K ≈ 5.0-5.2GB de 6.1GB — sem --fit (nao cabe
+#   fit-margin; regra anti-OOM: headroom de custo zero neste rung).
+# Vision/audio RESOLVIDO (Sep 19, user correction confirmada): a familia gemma4
+#   e ENCODER-FREE ("unified") — o mmproj de 175MB traz so as projecoes de
+#   entrada (mm.a.input_projection p/ audio, patch_embd p/ visao) e o
+#   entendimento multimodal acontece no proprio LLM. Metadata do mmproj oficial
+#   declara gemma4uv (vision) + gemma4ua (audio); o builder GEMMA4UA do mtmd
+#   exige UM tensor so (mm.a.input_projection.weight) — presente. Aviso do
+#   server: "audio input is in experimental stage". Testes: WAV humano real
+#   (Mozilla LDC93S1) vira ~70 tokens de prompt e o modelo interpreta o
+#   CONTEUDO (baixa qualidade no 2-bit, sem transcrever palavra a palavra);
+#   espeak sintetico o modelo nega ouvir. QUALIDADE DE AUDIO: baixa no IQ2_XXS.
+# VRAM MEDIDA (Sep 19): mmproj NA GPU + fit livre = 4456MiB, ctx ajustado 4096
+#   pelo fit. PITFALLS: (1) --no-graph-reuse e flag do IK — upstream nem tem;
+#   (2) --no-mmproj-offload quebra o fit (CPU-only); (3) --ctx-size explicito
+#   impede o fit de ajustar (ele so mexe em args nao setados); (4) ik 4908:
+#   compute buffer fixo 1031.5MB => NAO CABE (4 testes, todos OOM no compute).
+#   Por isso o backend e o upstream (stock), nao o ik.
+# KV q8_0 @ 8K = ~1.6GB (48 x 8192 x 2048 x 2) — estimativa antiga de 0.5GB
+#   estava errada; com 4096 = ~0.8GB.
+# Q6_K (9.65GB) NAO cabe na 3050; IQ4_XS (6.78GB) estoura com KV — rung 7GB.
+# Bench N=5 (media+piso+CV+fail_rate): PENDENTE — quando VRAM liberar.
+# -------------------------------------------
+"gemma4-12b-pollard":
+  name: "Gemma 4 12B (Pollard IQ4_XS)"
+  description: "Pollard measured-allocation IQ4_XS de google/gemma-4-12B-it. Dense 11.9B, PPL 29.80 (recommended default do ladder)."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/pollard-gemma4-12b/gemma-4-12B-it-Pollard-IQ4_XS.gguf
+    --mmproj ${models_dir}/pollard-gemma4-12b/mmproj-gemma-4-12b-it-qat-q4_0.gguf
+    --ubatch-size 4096
+    --jinja
+    --parallel 1
+    --temp 0.4
+    --top-p 0.85
+    --fit on
+    --fit-target ${vram_margin}
+    --fit-ctx 8192
+    --min-p 0.01
+    --repeat-penalty 1.05
+    --cache-type-k q8_0
+    --cache-type-v q8_0
+    --reasoning off
+    --no-webui
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.9
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.9
+  ttl: 900
+  health_check_timeout: 300
+  capabilities:
+    in: ['text', 'image', 'audio']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 8192
+  metadata:
+    size: "~6.95 GB (IQ4_XS 6.78 + mmproj 175MB)"
+    context: "8K"
+    vram_usage: "~4.37GB"
+    source: "PollardWeights/gemma-4-12B-it-Pollard (IQ4_XS + mmproj qat-q4_0)"
+    kv_cache: "q8_0"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: true
+      image: false
+    architecture: gemma4
+    parameters: 11900000000
+    context_length: 8192
+    embedding_length: 3840
+    quantization: "Pollard IQ4_XS"
+    note: "Ladder Pollard (measured-allocation + imatrix Calib 3.0), f16 ref PPL 23.04. IQ2_XXS (4.64GB, PPL 56.88): APOSENTADO Sep 19 — vision INSERVIVEL (foto real eu.jpg: alucinava multiplas faces, genero errado); GGUF remanescente no disco (documentacao do ladder, nao serve). IQ4_XS (6.78GB, PPL 29.80): VEREDICTO Sep 19 — vision CORRETA no eu.jpg (masculino, oculos de grau armacao grossa, mao no rosto; zero alucinacao). MM: encoder-free, mmproj qat-q4_0 175MB (gem4uv+gem4ua), audio experimental. Performance @ 8K fit livre: 4370MiB VRAM, TTFT 1.5-3s, decode 10.3 t/s c/ VRAM compartilhada / 20-25 t/s limpa, prefill 209-585 t/s; nativo 256K. TTL 900 contra cold-start (leitura 6.78GB). UMA (drop-in uma-ggml.conf) removida do daemon em Sep 20 — era a causa do 0.7 t/s (decode em CPU sob cudaMallocManaged). Trade-off: qualidade > velocidade (regra user). Historico: prefill lento @ 32K era TTFT 51.7s; @ 8K caiu pra 1.5-3s."
