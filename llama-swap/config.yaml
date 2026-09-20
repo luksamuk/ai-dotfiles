@@ -714,109 +714,6 @@ models:
       embedding_length: 2560
       quantization: Q4_K_M
       note: 'Copy-YAML do qwen3.5-4b (18/09). Samplers do card TokenRhythm (protocolo SGLang: temp 1.0/top_p 0.95/presence 1.5 thinking; instruct 0.7/0.80/presence 1.5). SEM tensors nextn (o repack stripou o MTP do base — o base mantém, experimento MTP separado). Comparar na régua 155 vs qwen3.5-4b (66/75 histórico). Deploy: pending smoke (fila empero em curso 18/09).'
-  qwen3.8-27b-gsq:
-    name: Qwen3.8 27B GSQ-RCO
-    description: ISTA-DASLab GSQ-RCO IQ2_S-mtp de Qwen/Qwen3.8-27B. Dense 27B DeltaNet VLM, non-uniform 2.81 bpw com MTP head embutido.
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/qwen3.8-27b-gsq/Qwen3.8-27B-GSQ-RCO-IQ2_S-mtp.gguf
-
-      --mmproj ${models_dir}/qwen3.8-27b-gsq/mmproj-Qwen3.8-27B-BF16.gguf
-
-      --no-mmproj-offload
-
-      --fit
-
-      --fit-margin 1536
-
-      --mlock
-
-      --ctx-size 98304
-
-      --temp 0.7
-
-      --top-p 0.80
-
-      --top-k 20
-
-      --min-p 0.0
-
-      --repeat-penalty 1.0
-
-      --presence-penalty 1.5
-
-      --reasoning on
-
-      --jinja
-
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-
-      --parallel 1
-
-      --parallel-tool-calls
-
-      --cache-type-k ${large_cache_k}
-
-      --cache-type-v ${large_cache_v}
-
-      --k-cache-hadamard
-
-      --v-cache-hadamard
-
-      --flash-attn auto
-
-      --spec-type mtp:n_max=1,p_min=0.0
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p, presence_penalty
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.8
-          presence_penalty: 1.5
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-          presence_penalty: 0.0
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      - image
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 98304
-    metadata:
-      size: ~9.65 GB (IQ2_S-mtp) + 931 MB mmproj
-      context: 96K
-      vram_usage: ~4.6GB VRAM (medido) + ~5GB RAM offload (mlock)
-      source: ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF (IQ2_S-mtp + mmproj BF16)
-      kv_cache: q4_0 + hadamard (DeltaNet, 16/64 attn layers)
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 27000000000
-      context_length: 98304
-      embedding_length: 5120
-      quantization: GSQ-RCO IQ2_S-mtp (2.81 bpw)
-      note: 'GSQ+RCO (ISTA-DASLab, arXiv:2604.18556 + 2605.00649): quant-type por tensor via busca gradiente sob budget. IQ2_S-mtp = IQ2_S + MTP head blk.64 (Q6_K) — AIME25 100.00 (empata BF16), recovery zero-shot 101.8%, wiki ppl 7.39. Allocation auditavel em tensor-allocation/ do repo (866 tensors, DeltaNet ssm_* preservado BF16/F32). Preenche a vaga do bonsai-27b (removido Sep 20) e do antigo qw38 APEX-I-Nano (11.24GB). REGUA MEDIDA Sep 20 (RTX 3050 6GB, ik_llama): 3.6 t/s decode warm, TTFT 2.4s — teto fisico do dense 27B (offload-bound, ~5GB na RAM via PCIe). Cul-de-sacs testados: (1) fit-margin 1024 => OOM no pool VMM c/ navegador aberto (502 real), revertido pra 1536; (2) sem mmproj = +0.4 t/s de ruido, revertido (vision BF16 mantida); (3) UMA por-modelo (env:) = 3.1 t/s (-14%, paging do driver perde pro offload mlock do ik), revertida. Parallel tool calls VERIFICADO: 2 calls simultaneas c/ args validos via --parallel-tool-calls (ik). MTP n_max=1 embutido no GGUF. Papel: pesado ocasional de qualidade BF16-equivalente; dia a dia rapido = MoE A3B.'
   lfm2.5-vl-3b:
     name: LFM2.5-VL 3B
     description: Liquid AI VLM with native grounding, OCR with layout annotation, and SigLIP2 NaFlex vision. 3B params, 32K context, 16 languages.
@@ -1801,7 +1698,6 @@ matrix:
     occ: occamy-1.0
     q38: qwen3.8-35b-a3b
     neo4: neohorse-1-4b
-    q38g: qwen3.8-27b-gsq
     tg: translategemma-4b
     ttsext: qwen3-tts
     lfmemb: lfm2.5-embedding-350m
@@ -1815,7 +1711,7 @@ matrix:
     vision_only: ocr | lfmvl3
     vision_embed: (ocr | lfmvl3) & (nemb | lfmcol)
     medium: (q36 | g12p) & (nemb | lfmcol)
-    heavy: (orn15 | q36 | q38g) & (nemb | lfmcol) & qpoll
+    heavy: (orn15 | q36) & (nemb | lfmcol) & qpoll
     translate_only: tg
     tts_external: ttsext
     embed_only: lfmemb & nemb & lfmcol
@@ -1826,7 +1722,6 @@ matrix:
     q36: 9
     occ: 9
     q38: 9
-    q38g: 8
     neo4: 2
     ttsext: 4
     ocr: 3
