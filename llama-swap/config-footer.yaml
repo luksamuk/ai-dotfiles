@@ -63,6 +63,7 @@ matrix:
     q36: qwen3.6-35b-a3b
     q36x: qwen3.6-35b-a3b-262k
     occ: occamy-1.0
+    lag: laguna-xs-2.1
     q38: qwen3.8-35b-a3b
     # k2h: k2-horizon-7b  # REMOVED Sep 16 2026 — errático em chat (idioma/identidade, tool-loop instável); GGUF a decidir; fragment em _removed/
     # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
@@ -119,7 +120,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(orn15 | q36 | q36x) & (nemb | lfmcol) & qpoll"
+    heavy: "(orn15 | q36 | q36x | lag) & (nemb | lfmcol) & qpoll"
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -144,6 +145,7 @@ matrix:
     q36: 9
     q36x: 9
     occ: 9
+    lag: 9
     q38: 9
     # nex25: 9  # REMOVED Sep 10 2026
     # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed

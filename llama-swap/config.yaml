@@ -699,6 +699,89 @@ models:
       embedding_length: 2048
       quantization: ONYX compact
       note: 'Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF deleted Sep 2026 (re-download from mudler repo if reverting).'
+  laguna-xs-2.1:
+    name: Laguna XS 2.1
+    description: Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. Served by cafe-llama.cpp with SSD expert streaming — the only backend that loads it on 6GB VRAM. 131K context with clean quality.
+    cmd: '${cafe_server} --port ${PORT}
+
+      --model ${models_dir}/laguna-xs-2.1/Laguna-XS-2.1-Q4_K_M.gguf
+
+      --jinja
+
+      --parallel 1
+
+      --ctx-size 131072
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --flash-attn on
+
+      -ssd
+
+      -ngl 99
+
+      --temp 0.3
+
+      --top-p 0.85
+
+      --top-k 40
+
+      --min-p 0.02
+
+      --repeat-penalty 1.1
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParams:
+        stop:
+        - </assistant>
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.3
+          top_p: 0.85
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.7
+          top_p: 0.9
+    ttl: 300
+    health_check_timeout: 300
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~20.3 GB (Q4_K_M official)
+      context: 131K
+      vram_usage: ~3.5GB VRAM (dense+attn) + RSS 2.4GB ready / ~14GB warm (SSD-streamed experts)
+      source: poolside/Laguna-XS-2.1-GGUF (Q4_K_M official)
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: laguna
+      parameters: 33000000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: Q4_K_M
+      note: 'Revanche Sep 2026: cafe -ssd mata o blocker de RAM do ik (RSS 2.4GB vs 29GB OOM). Q4_K_M oficial obrigatorio — APEX I-Compact trava com system prompt (deletado). Template EMBUTIDO via --jinja (externo v5 nao renderiza no cafe). turbo4/turbo2 corrompem a arch SWA hibrida — teto de ctx com qualidade: 131K q4_0. Decode 31.8 t/s @131K. GGUF em ~/.llama-models/laguna-xs-2.1/.'
   neohorse-1-4b:
     name: NeoHorse 1 4B
     description: TokenRhythm NeoHorse-1 — fine-tune agentic do Qwen3.5-4B (RSI routing harness gen-1). +5.93 avg sobre o base no card (64.87 vs 58.94). Text-only repack, sem MTP head. ik_llama + hadamard KV.
@@ -1786,6 +1869,7 @@ matrix:
     q36: qwen3.6-35b-a3b
     q36x: qwen3.6-35b-a3b-262k
     occ: occamy-1.0
+    lag: laguna-xs-2.1
     q38: qwen3.8-35b-a3b
     neo4: neohorse-1-4b
     tg: translategemma-4b
@@ -1801,7 +1885,7 @@ matrix:
     vision_only: ocr | lfmvl3
     vision_embed: (ocr | lfmvl3) & (nemb | lfmcol)
     medium: (q36 | g12p) & (nemb | lfmcol)
-    heavy: (orn15 | q36 | q36x) & (nemb | lfmcol) & qpoll
+    heavy: (orn15 | q36 | q36x | lag) & (nemb | lfmcol) & qpoll
     translate_only: tg
     tts_external: ttsext
     embed_only: lfmemb & nemb & lfmcol
@@ -1812,6 +1896,7 @@ matrix:
     q36: 9
     q36x: 9
     occ: 9
+    lag: 9
     q38: 9
     neo4: 2
     ttsext: 4

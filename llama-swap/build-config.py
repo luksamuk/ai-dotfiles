@@ -80,6 +80,7 @@ ORIGINAL_ORDER = [
     # "bonsai-27b",            # REMOVED Sep 20 2026 — GGUF deleted; user nunca usa; fragment em _disabled/
     # "qwen3.8-27b-pollard",   # REMOVED Aug 30 2026 — 2.75 tok/s, superseded by bonsai-27b
     "kat-coder-v2.5-dev",    # ✅ Post-trained Qwen 3.6 35B MoE (SOTA agentic coding, SWE-bench 69.4)
+    "laguna-xs-2.1",         # ✅ REACTIVATED Sep 20 2026 — cafe -ssd (Q4_K_M oficial, 131K; revanche completa na skill laguna-xs2)
     # "agentworld-35b",         # DISABLED Aug 2026 — world model, not conversational, 16GB removed
     "agents-a1-35b",          # ✅ 35B MoE long-horizon search + tool calling (reactivated Jul 2026)
     "bonsai-27b-1bit",        # ✅ 27B 1-bit (Q1_0) — upstream llama.cpp, ngram-mod spec decode (reactivated Jul 2026)
