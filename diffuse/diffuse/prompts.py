@@ -14,7 +14,6 @@ _PROMPT_FILES: dict[str, str] = {
     "edit_enhance": "edit_enhance.yaml",
     "edit_vision": "edit_vision.yaml",
     "vision_analysis": "vision_analysis.yaml",
-    "video_enhance": "video_enhance.yaml",
 }
 
 # ── Cache ───────────────────────────────────────────────────────────────────
@@ -87,7 +86,3 @@ def get_edit_vision_prompt(nsfw: bool = False) -> str:
 
 def get_vision_analysis_prompt(nsfw: bool = False) -> str:
     return _toggle_safety_rules(_load_prompt("vision_analysis"), nsfw)
-
-
-def get_video_enhance_prompt(nsfw: bool = False) -> str:
-    return _toggle_safety_rules(_load_prompt("video_enhance"), nsfw)
