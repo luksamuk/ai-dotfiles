@@ -15,6 +15,7 @@ macros:
   ik_llama_server: ${env.HOME}/git/ik_llama.cpp/build/bin/llama-server
   ik2_llama_server: ${env.HOME}/git/kassane-ik_llama.cpp/build/bin/llama-server
   bee_server: ${env.HOME}/git/beellama.cpp/build/bin/llama-server
+  cafe_server: ${env.HOME}/git/cafe-llama.cpp/build/bin/llama-server
   prism_llama_server: ${env.HOME}/git/prism-llama.cpp/llama-prism-b10685-7dffb15/llama-server
   vllm_bin: ${env.HOME}/.vllm/bin/vllm
   default_temp: '0.7'
@@ -505,6 +506,80 @@ models:
       embedding_length: 2048
       quantization: APEX-MTP I-Compact
       note: 'Sep 09: reactivated com APEX-MTP I-Compact (MTP heads baked in, nextn=1; o APEX plain ignorava --multi-token-prediction silenciosamente — audit May 2026). --spec-type mtp:n_max=1,p_min=0.0 = receita ornith-1.5 (42.6 tok/s medido Sep 10, accept 85-93%). VISION re-ativada 10/09 c/ ctx FULL 131K (RAM limpa: VRAM 5.4/6.1GB estável em smokes; fallback 32K sob pressão — regra Jul 2026). mmproj unsloth F16, verificado tensor-a-tensor vs ornith (qwen3vl_merger, proj_dim 2048). Sep 10: alinhado ao ornith — --no-mmproj-offload + --prefetch-experts + top_p 0.95 nos dois modos.'
+  qwen3.6-35b-a3b-262k:
+    cmd: '${cafe_server} --port ${PORT}
+
+      --model ${models_dir}/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-APEX-MTP-I-Compact.gguf
+
+      --ctx-size 262144
+
+      --jinja
+
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+
+      --parallel 1
+
+      --cache-type-k turbo4
+
+      --cache-type-v turbo4
+
+      --flash-attn on
+
+      -hmoe
+
+      -ngl 99
+
+      -b 512
+
+      -ub 128
+
+      --temp ${code_temp}
+
+      --top-p ${code_top_p}
+
+      --top-k ${code_top_k}
+
+      --min-p ${code_min_p}
+
+      --repeat-penalty ${code_repeat_penalty}
+
+      --metrics
+
+      '
+    aliases:
+    - qwen3.6-35b-a3b:262k
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        qwen3.6-35b-a3b-262k:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.85
+        qwen3.6-35b-a3b-262k:nothink:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.85
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      tools: true
+      vision: false
+      thinking: true
+      audio: false
+      image: false
+      embedding: false
+    metadata:
+      architecture: qwen35moe
+      embedding_length: 2048
+      context: 262K
+      context_length: 262144
+      vram_usage: ~3.4GB load / ~5GB full
+      size: 17.3GB
+      quantization: APEX-MTP I-Compact (K-quants)
+      source: mudler/Qwen3.6-35B-A3B-APEX-MTP-GGUF
+      note: Backend cafe-llama.cpp (fork quimmedes/Ark) com Turbo KV turbo4. Unico backend que carrega 262K nativo na 3050 6GB. Decode 16.6 t/s @30K fill vs 34.8 ik-prod @131K — usar p/ contexto maximo em batch, nao agentic interativo. Thinking ON por padrao (user 20/set). Validado needle + QG deterministico @30K fill. turbo2 crasha na arch hibrida; pipeline-parallel proibido em ctx longo. Vision nao testado.
   ornith-1.5-35b:
     name: Ornith 1.5 35B
     description: Ornith-1.5 is a family of open-source LLMs trained with end-to-end self-improvement — the model proposes new tasks, generates task-specific scaffolds, and produces solution rollouts for RL, continuously creating new learning experiences. ONYX quantization (el4, APEX evolution) with MTP speculative decoding and vision support.
@@ -1695,6 +1770,7 @@ matrix:
     lfmvl3: lfm2.5-vl-3b
     orn15: ornith-1.5-35b
     q36: qwen3.6-35b-a3b
+    q36x: qwen3.6-35b-a3b-262k
     occ: occamy-1.0
     q38: qwen3.8-35b-a3b
     neo4: neohorse-1-4b
@@ -1711,7 +1787,7 @@ matrix:
     vision_only: ocr | lfmvl3
     vision_embed: (ocr | lfmvl3) & (nemb | lfmcol)
     medium: (q36 | g12p) & (nemb | lfmcol)
-    heavy: (orn15 | q36) & (nemb | lfmcol) & qpoll
+    heavy: (orn15 | q36 | q36x) & (nemb | lfmcol) & qpoll
     translate_only: tg
     tts_external: ttsext
     embed_only: lfmemb & nemb & lfmcol
@@ -1720,6 +1796,7 @@ matrix:
   evict_costs:
     orn15: 9
     q36: 9
+    q36x: 9
     occ: 9
     q38: 9
     neo4: 2

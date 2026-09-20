@@ -50,6 +50,12 @@ macros:
   # Build local em ~/git/beellama.cpp/build/bin/llama-server
   "bee_server": "${env.HOME}/git/beellama.cpp/build/bin/llama-server"
 
+  # Caminho para o llama-server do fork cafe-llama.cpp (quimmedes/Ark)
+  # Turbo KV cache (turbo2/3/4, FA-fused), safetensors nativo, -hmoe/-ssd MoE offload
+  # Único backend que carrega qwen35moe @262K ctx na RTX 3050 6GB (turbo4 KV)
+  # Build local em ~/git/cafe-llama.cpp/build/bin/llama-server (commit 0fbc13f, set/2026)
+  "cafe_server": "${env.HOME}/git/cafe-llama.cpp/build/bin/llama-server"
+
   # Caminho para o llama-server do fork PrismML (Bonsai-2 ternary, runtime Hadamard)
   # Binário prebuilt em ~/git/prism-llama.cpp/llama-prism-b10685-7dffb15/
   "prism_llama_server": "${env.HOME}/git/prism-llama.cpp/llama-prism-b10685-7dffb15/llama-server"

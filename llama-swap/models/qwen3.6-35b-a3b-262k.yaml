@@ -1,0 +1,88 @@
+# -------------------------------------------
+# QWEN3.6-35B-A3B-262K - CTX NATIVO MAXIMO (cafe-llama.cpp Turbo KV)
+# Mesmo modelo/GGUF do qwen3.6-35b-a3b, backend DIFERENTE: cafe-llama.cpp
+# (fork quimmedes/Ark) com Turbo KV cache — UNICO backend que carrega
+# qwen35moe @262144 ctx na RTX 3050 6GB.
+#
+# Célula validada 20/set/2026 (bancada f3, N=3, mesmo fill 30K):
+#   decode 16.6 t/s @30K fill | prefill 65 t/s | VRAM 3.4GB @load (~5GB full)
+#   needle XANTHO-7741 FOUND verbatim | contagem 1-50 perfeita (temp 0)
+#   KV turbo4 @262K ~ 1.55GB (vs q4_0 3.1GB — ik não carrega: OOM)
+#   host RAM ~14GB (hmoe pinned, comparável ao ik CUDA_Host 12.2GB)
+#
+# TRADEOFFS medidos (matriz completa em references/cafe-llama-cpp-eval.md):
+#   decode @30K fill: 16.6 vs ik-prod 34.8 (-52%) — caso de uso é batch/
+#   análise de docs longos, NÃO interativo agentic. Prefill 30K: ~7.5min.
+#
+# THINKING HABILITADO POR PADRAO (pedido do user 20/set): base ID pensa.
+#   :think alias fica redundante mas mantido por convenção de harnesses.
+#
+# ARMADILHAS do fork (NÃO mexer sem ler cafe-llama-cpp-eval.md):
+#   - NUNCA --pipeline-parallel com ctx >=131K (buffer DMA 48GB → OOM duplo)
+#   - turbo2 CRASHA na arch híbrida @131K (ggml_cuda_error, repro 2x); turbo4 limpo
+#   - MTP @262K não cabe (draft KV 512MiB) — por isso sem --spec-type aqui
+#   - cafe NÃO tem: --parallel-tool-calls, --no-graph-reuse, --defer-experts,
+#     --prefetch-experts, --k/v-cache-hadamard, --fit-margin (usar --fit-target)
+#   - mmproj/vision NÃO testado neste backend — text-only
+# -------------------------------------------
+"qwen3.6-35b-a3b-262k":
+  cmd: |
+    ${cafe_server} --port ${PORT}
+    --model ${models_dir}/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-APEX-MTP-I-Compact.gguf
+    --ctx-size 262144
+    --jinja
+    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+    --parallel 1
+    --cache-type-k turbo4
+    --cache-type-v turbo4
+    --flash-attn on
+    -hmoe
+    -ngl 99
+    -b 512
+    -ub 128
+    --temp ${code_temp}
+    --top-p ${code_top_p}
+    --top-k ${code_top_k}
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --metrics
+  aliases:
+    - "qwen3.6-35b-a3b:262k"
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "qwen3.6-35b-a3b-262k":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.85
+      "qwen3.6-35b-a3b-262k:nothink":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.85
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    tools: true
+    vision: false
+    thinking: true
+    audio: false
+    image: false
+    embedding: false
+  metadata:
+    architecture: qwen35moe
+    embedding_length: 2048
+    context: "262K"
+    context_length: 262144
+    vram_usage: "~3.4GB load / ~5GB full"
+    size: "17.3GB"
+    quantization: "APEX-MTP I-Compact (K-quants)"
+    source: "mudler/Qwen3.6-35B-A3B-APEX-MTP-GGUF"
+    note: >
+      Backend cafe-llama.cpp (fork quimmedes/Ark) com Turbo KV turbo4.
+      Unico backend que carrega 262K nativo na 3050 6GB. Decode 16.6 t/s
+      @30K fill vs 34.8 ik-prod @131K — usar p/ contexto maximo em batch,
+      nao agentic interativo. Thinking ON por padrao (user 20/set).
+      Validado needle + QG deterministico @30K fill. turbo2 crasha na arch
+      hibrida; pipeline-parallel proibido em ctx longo. Vision nao testado.
