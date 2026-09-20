@@ -11,8 +11,9 @@
 #   IDs (:think e base) vão pensar; registrar ambos por consistência da frota.
 # Quant: IQ4_XS oficial da Empero 19.6GB (imatrix, imatrix em 2/3-bit apenas).
 #   Escolha: IQ4_XS > Q4_K_M (21.7GB) — headroom no host de 31GB RAM.
-#   APEX I-Quality (21.2GB, MrFuzzihead) descartado: mesma classe de RAM,
-#   sem bench publicado. I-Compact (16.5GB) ainda NÃO upado (17/09).
+#   APEX I-Quality (21.2GB, MrFuzzihead) descartado: mesma classe de RAM.
+#   APEX I-Compact (16.5GB) FOI UPADO 17/09 11:10 (todos os 8 tiers) —
+#   baixado para A/B vs IQ4_XS no smoke; fica no disco o que ganhar.
 # MTP: NÃO. IQ4_XS plain não tem nextn; APEX-MTP separado existe no base
 #   qwen3.6, mas para este distill não há head APEX publicado. Sem --spec-type.
 # Vision: mmproj F16 858MB oficial da Empero (text-only fine-tune, visão
@@ -23,10 +24,10 @@
 # -------------------------------------------
 "qwen3.8-35b-a3b":
   name: "Qwen 3.8 35B Distill"
-  description: "Empero distill de Qwen3.8 (2.4T A95B) em Qwen3.6-35B-A3B. CoT destilado, math/code-weighted. Thinking sempre ligado. IQ4_XS + mmproj F16. Sem MTP."
+  description: "Empero distill de Qwen3.8 (2.4T A95B) em Qwen3.6-35B-A3B. CoT destilado, math/code-weighted. Thinking sempre ligado. APEX-I-Compact + mmproj F16. Sem MTP."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/qwen3.8-35b-a3b/Qwen3.8-35B-A3B-IQ4_XS.gguf
+    --model ${models_dir}/qwen3.8-35b-a3b/Qwen3.8-35B-A3B-Distill-APEX-I-Compact.gguf
     --mmproj ${models_dir}/qwen3.8-35b-a3b/mmproj-Qwen3.8-35B-A3B-F16.gguf
     --no-mmproj-offload
     --no-graph-reuse
@@ -73,10 +74,10 @@
     reranker: false
     context: 131072
   metadata:
-    size: "~19.6 GB (IQ4_XS) + 858 MB mmproj F16"
+    size: "~16.5 GB (APEX-I-Compact) + 858 MB mmproj F16"
     context: "131K (fit adapta se RAM apertada; nativo 262K)"
-    vram_usage: "~4-5 GB estimado + ~14GB pinned RAM — medir no smoke"
-    source: "empero-ai/Qwen3.8-35B-A3B-Distill-GGUF (IQ4_XS + mmproj F16), checksums SHA256SUMS verificados 17/09"
+    vram_usage: "~4-5 GB estimado + ~11GB pinned RAM — medir no smoke"
+    source: "MrFuzzihead/Qwen3.8-35B-A3B-Distill-APEX-GGUF (APEX-I-Compact, imatrix agentic/tool-calling) + mmproj F16 oficial empero-ai (SHA256SUMS verificados 17/09)"
     kv_cache: "q4_0 + attn_rot + hadamard"
     features:
       completion: true
@@ -91,5 +92,5 @@
     parameters: 34700000000
     context_length: 262144
     embedding_length: 2048
-    quantization: IQ4_XS
-    note: "Sep 17: onboarding. Sampler vendor do card: temp 0.6 / top_p 0.95 / top_k 20 (filters + models.json). Greedy = failure mode documentado (repetition loop). Thinking always-on (traces de professor, sem toggle real). Sem MTP. Smoke + speed-bench pendentes; SIGHUP só após ichef2 do occamy fechar (não mexer na régua com run no forno)."
+    quantization: APEX-I-Compact
+    note: "Sep 17: onboarding. Quant primario APEX-I-Compact (receita validada do q36); IQ4_XS em disco para A/B no smoke — fica o vencedor, perdedor deletado. Sampler vendor do card: temp 0.6 / top_p 0.95 / top_k 20 (filters + models.json). Greedy = failure mode documentado (repetition loop). Thinking always-on (traces de professor, sem toggle real). Sem MTP. Smoke + speed-bench pendentes; rebuild/sync da config so apos ichef2 do occamy fechar (watcher reload derruba o llama-server no meio da run)."
