@@ -63,7 +63,7 @@ ORIGINAL_ORDER = [
     "lfm2.5-1.2b-vllm",     # vLLM backend (paused — no venv, auto-download on first serve)
     "lfm2.5-sgl",            # SGLang backend (paused — no venv)
     "qwen3.5-4b",      # ✅ Bee/TurboQuant (upstream backup em _disabled/)
-    "qwen3.5-4b-262k",  # ✅ 262K TurboKV via cafe-llama.cpp — A/B vs prod 4B (set/2026)
+    # "qwen3.5-4b-262k",  # disabled Sep 20 2026 — cafe fica pros MoEs; fragment em _disabled/
     "gemma4-e4b",       # ✅ upstream ik backend (Bee was slower at 36 vs 40 tok/s)
     "gemma4-e2b",            # ✅
     "lfm2.5-1.2b",           # ✅
