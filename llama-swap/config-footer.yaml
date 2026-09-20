@@ -31,6 +31,7 @@ matrix:
   vars:
     # Modelos pequenos
     q4: qwen3.5-4b
+    q4x: qwen3.5-4b-262k
     # m5a: minicpm5-1b-agentic  # disabled
     # lfm8: lfm2.5-8b-a1b  # REMOVED Sep 10 2026 — GGUF deleted (bench 16/105, user confia no 2.6b); fragment em _removed/
     lfm26: lfm2.5-2.6b
@@ -99,7 +100,7 @@ matrix:
     small_embed: "(q4 | lfm26 | spc | fct | adv) & (nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | lfm26 | spc | fct | adv | gpt2xl"
+    small_only: "q4 | q4x | lfm26 | spc | fct | adv | gpt2xl"
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"
@@ -157,6 +158,7 @@ matrix:
     # qwvl: 3  # REMOVED Sep 10 2026
     lfmvl3: 3
     q4: 2
+    q4x: 2
     # lfm8: 2  # REMOVED Sep 10 2026
     lfm26: 2
     # eq2: 2  # REMOVED Sep 10 2026
