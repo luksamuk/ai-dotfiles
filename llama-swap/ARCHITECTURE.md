@@ -54,7 +54,9 @@ llama-swap/
 1. Edit the model's fragment file in `models/` or `models/_disabled/`
 2. Run `python3 build-config.py` to regenerate `config.yaml`
 3. The script auto-syncs to `~/.config/llama-swap/config.yaml`
-4. Reload llama-swap: `systemctl --user restart llama-swap`
+4. llama-swap auto-reloads on file change (watch-config, verified v255) — no restart needed.
+   If reload fails (WARN in `journalctl --user -u llama-swap`), fix the referenced file and
+   `# watch-config auto-reloads after build-config.py (NEVER send SIGHUP)` to recover. Restart only for daemon-level issues.
 
 ### Activating a Disabled Model
 

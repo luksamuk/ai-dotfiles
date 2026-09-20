@@ -172,11 +172,12 @@ python3 build-config.py --diff    # verify changes
 python3 build-config.py           # build + sync
 ```
 
-### 9. SIGHUP / Restart
+### 9. Reload (automatic)
 
 ```bash
-systemctl --user restart llama-swap
-# or: kill -HUP $(pgrep llama-swap)
+# Nothing to do: the daemon runs with -watch-config and reloads the synced
+# config by itself. NEVER send SIGHUP. A reload can cut an in-flight streaming
+# request — do not rebuild while a benchmark/long session is running.
 ```
 
 ### 10. Quick Test

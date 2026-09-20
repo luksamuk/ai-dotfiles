@@ -46,6 +46,9 @@ llama-swap-cli testchat qwen3.5-4b
 # Rebuild config after editing fragments
 cd ~/git/ai-dotfiles/llama-swap
 python3 build-config.py
+# The daemon runs with -watch-config: it reloads the new config automatically.
+# NEVER send SIGHUP. Note: a reload can cut an in-flight streaming request —
+# avoid rebuilding while a benchmark or long inference session is running.
 ```
 
 See [docs/USAGE.md](docs/USAGE.md) for full usage details and [docs/SETUP.md](docs/SETUP.md) for installation.
