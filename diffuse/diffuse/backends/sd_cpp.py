@@ -50,6 +50,8 @@ def load_pipeline_sd_cpp(model_name: str) -> tuple:
         return load_pipeline_sd_cpp_zimage(model_name, model_root, sd_cli)
     if backend_type == "mageflow_sd_cpp":
         return load_pipeline_sd_cpp_mageflow(model_name, model_root, sd_cli)
+    if backend_type == "qwen21_sd_cpp":
+        return load_pipeline_sd_cpp_qwen21(model_name, model_root, sd_cli)
 
     lora_dir = model_root / "lora"
     config = {
@@ -116,6 +118,124 @@ def load_pipeline_sd_cpp_zimage(model_name: str, model_root: Path, sd_cli: str) 
     }
 
     return config, 0.0
+
+
+def load_pipeline_sd_cpp_qwen21(model_name: str, model_root: Path, sd_cli: str) -> tuple:
+    """Prepare sd-cli config for Qwen-Image 2.1. Returns (config_dict, 0.0).
+
+    Qwen-Image 2.1 uses:
+    - DiT GGUF (Q4_K_M) as diffusion model
+    - Qwen3-VL-8B GGUF as text encoder (--llm)
+    - Qwen3-VL-8B mmproj F16 as vision encoder (--llm_vision, only needed for --edit)
+    - Its OWN VAE — not interchangeable with Qwen-Image 1.0 or Wan 2.2
+    - Reference images via -r (native editing, up to 10 images)
+    - Native resolution up to 2048x2048; dimensions must be multiples of 32
+
+    The text encoder is 4.68 GiB, which does not fit alongside the DiT on a 6 GB
+    card, so the text encoder must run on CPU.
+    """
+    dit_gguf = model_root / "qwen-image-2.1-Q4_K_M.gguf"
+    vae_path = model_root / "vae" / "qwen_image_2.1_vae_bf16.safetensors"
+    llm_gguf = model_root / "text_encoder" / "Qwen3VL-8B-Instruct-Q4_K_M.gguf"
+    mmproj_gguf = model_root / "text_encoder" / "mmproj-Qwen3VL-8B-Instruct-F16.gguf"
+
+    for label, path in [("DiT", dit_gguf), ("VAE", vae_path), ("LLM", llm_gguf)]:
+        if not path.exists():
+            raise FileNotFoundError(f"{label} not found: {path}")
+
+    config = {
+        "sd_cli": sd_cli,
+        "diffusion_model": str(dit_gguf),
+        "llm": str(llm_gguf),
+        "vae": str(vae_path),
+        "vae_model": str(vae_path),
+        "is_qwen21": True,
+    }
+
+    # Vision encoder is optional — only required for reference-image editing
+    if mmproj_gguf.exists():
+        config["llm_vision"] = str(mmproj_gguf)
+
+    return config, 0.0
+
+
+def generate_image_qwen21_sd_cpp(
+    config: dict, prompt: str, seed: int, width: int, height: int,
+    output_path: Path, ref_images: list[str] | None = None,
+    cpu_fallback: bool = False, steps: int = 28, cfg_scale: float = 4.0,
+) -> tuple:
+    """Generate (or edit) an image using sd-cli with Qwen-Image 2.1.
+
+    Qwen-Image 2.1 is NOT a Turbo/distilled model — it needs real CFG and a
+    reasonable step count. Editing is native: pass one or more reference images
+    with -r plus an instruction in -p, no masks required.
+    """
+    is_edit = bool(ref_images)
+    log.info(
+        "Generating via sd-cli Qwen-Image 2.1 %s: seed=%d size=%dx%d steps=%d cfg=%.1f",
+        "edit" if is_edit else "T2I", seed, width, height, steps, cfg_scale,
+    )
+
+    if is_edit and "llm_vision" not in config:
+        raise FileNotFoundError(
+            "Qwen-Image 2.1 editing requires the vision encoder (mmproj F16). "
+            "Download: hf download Qwen/Qwen3-VL-8B-Instruct-GGUF "
+            "mmproj-Qwen3VL-8B-Instruct-F16.gguf"
+        )
+
+    cmd = [
+        config["sd_cli"],
+        "--diffusion-model", config["diffusion_model"],
+        "--llm", config["llm"],
+        "--vae", config["vae"],
+        "-p", prompt,
+        "--cfg-scale", str(cfg_scale),
+        "--steps", str(steps),
+        "--sampling-method", "euler",
+        "--diffusion-fa",
+        "--offload-to-cpu",
+        "-H", str(height),
+        "-W", str(width),
+        "--seed", str(seed),
+        "-o", str(output_path),
+    ]
+
+    # Editing: attach reference image(s) + vision encoder
+    if is_edit:
+        cmd += ["--llm_vision", config["llm_vision"]]
+        for ref in ref_images:
+            cmd += ["-r", str(ref)]
+
+    # 6 GB VRAM budget. --clip-on-cpu / --vae-on-cpu are deprecated aliases of
+    # "--backend te=cpu,vae=cpu" but still accepted; the modern form is used when
+    # we are not in CPU-only fallback mode.
+    if not cpu_fallback:
+        cmd += ["--backend", "te=cpu,vae=cpu", "--max-vram", "5.1"]
+
+    if cpu_fallback:
+        cmd += ["--backend", "cpu"]
+        log.warning("Retrying with CPU-only backend — this will be very slow")
+
+    t0 = time.perf_counter()
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    wall_time = time.perf_counter() - t0
+
+    if result.returncode != 0:
+        stderr_lines = result.stderr.strip().split("\n")[-20:]
+        for line in stderr_lines:
+            log.error("sd-cli: %s", line)
+        raise RuntimeError(
+            f"sd-cli failed (rc={result.returncode}). "
+            f"Last error: {stderr_lines[-1] if stderr_lines else 'unknown'}"
+        )
+
+    if not output_path.exists():
+        raise FileNotFoundError(f"sd-cli did not produce output: {output_path}")
+
+    file_size_mb = output_path.stat().st_size / (1024 * 1024)
+    log.info("sd-cli Qwen-Image 2.1 completed in %.1fs, output %.2f MiB", wall_time, file_size_mb)
+
+    return output_path, wall_time, 0.0
 
 
 def load_pipeline_sd_cpp_mageflow(model_name: str, model_root: Path, sd_cli: str) -> tuple:
@@ -284,7 +404,6 @@ def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, heig
             "--clip-on-cpu",
             "--vae-on-cpu",
             "--max-vram", "5.1",
-            "--stream-layers",
             "-H", str(height),
             "-W", str(width),
             "--seed", str(seed),
@@ -426,7 +545,6 @@ def generate_video_sd_cpp(
         "--diffusion-fa",
         "--offload-to-cpu",
         "--clip-on-cpu",
-        "--stream-layers",
         "--max-vram", str(max_vram),
         "--vae-tiling",
         "-o", frame_pattern,
@@ -434,7 +552,7 @@ def generate_video_sd_cpp(
 
     # VAE on CPU only for large models (14B) — 5B fits VAE on GPU
     if vae_on_cpu:
-        cmd.insert(cmd.index("--stream-layers"), "--vae-on-cpu")
+        cmd.insert(cmd.index("--max-vram"), "--vae-on-cpu")
 
     # I2V: add clip_vision and input image
     if is_i2v:

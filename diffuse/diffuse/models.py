@@ -124,6 +124,39 @@ MODELS: dict[str, dict] = {
             {"name": "flux2-vae.safetensors (VAE)", "path": "ideogram-4-Q4_0/vae/flux2-vae.safetensors", "size_gb": 0.2},
         ],
     },
+    # Qwen-Image 2.1 (sd-cli / stable-diffusion.cpp — day-0 support, sd.cpp 137f740)
+    # 7B DiT, 32 blocks, hidden 4096. T2I + native editing (up to 10 reference images) + RGBA.
+    # Text encoder is Qwen3-VL-8B (NOT the Qwen2.5-VL-7B of Qwen-Image 1.0).
+    # The VAE is NOT interchangeable with Qwen-Image 1.0 or Wan 2.2 — the name
+    # conversion path differs (convert_diffusers_to_original_wan_vae(qwen_image_2_1=true)).
+    # Dimensions MUST be multiples of 32.
+    "qwen-image-2.1": {
+        "backend_id": "qwen-image-2.1-sd-cpp",
+        "dir": "qwen-image-2.1",
+        "backend_type": "qwen21_sd_cpp",
+        "category": "image",
+        "bits": "Q4_K_M GGUF",
+        "description": "Qwen-Image 2.1 — 7B DiT, T2I + native editing + RGBA transparency, Qwen3-VL-8B encoder",
+        "enhance_model": "qwen3.6-35b-a3b",
+        "enhance_type": "vision",
+        "default_size": (1024, 1024),
+        "hf_files": [
+            {"repo": "abenzerps/Qwen-Image-2.1-Uncensored-GGUF",
+             "files": ["qwen-image-2.1-Q4_K_M.gguf"]},
+            {"repo": "abenzerps/Qwen-Image-2.1-Uncensored-GGUF",
+             "files": ["qwen_image_2.1_vae_bf16.safetensors"], "subdir": "vae",
+             "hf_path": "vae/qwen_image_2.1_vae_bf16.safetensors"},
+            {"repo": "Qwen/Qwen3-VL-8B-Instruct-GGUF",
+             "files": ["Qwen3VL-8B-Instruct-Q4_K_M.gguf", "mmproj-Qwen3VL-8B-Instruct-F16.gguf"],
+             "subdir": "text_encoder"},
+        ],
+        "components": [
+            {"name": "qwen-image-2.1-Q4_K_M.gguf (DiT)", "path": "qwen-image-2.1/qwen-image-2.1-Q4_K_M.gguf", "size_gb": 4.3},
+            {"name": "qwen_image_2.1_vae_bf16.safetensors (VAE)", "path": "qwen-image-2.1/vae/qwen_image_2.1_vae_bf16.safetensors", "size_gb": 0.63},
+            {"name": "Qwen3VL-8B-Instruct-Q4_K_M.gguf (text encoder)", "path": "qwen-image-2.1/text_encoder/Qwen3VL-8B-Instruct-Q4_K_M.gguf", "size_gb": 4.7},
+            {"name": "mmproj-Qwen3VL-8B-Instruct-F16.gguf (vision, for --edit)", "path": "qwen-image-2.1/text_encoder/mmproj-Qwen3VL-8B-Instruct-F16.gguf", "size_gb": 1.1},
+        ],
+    },
     # Mage-Flow-Edit-Turbo (sd-cli / stable-diffusion.cpp — instruction-based image editing)
     # 4B NR-MMDiT, 4 steps, cfg=1.0 (Turbo). Uses Qwen3-VL-4B as text+vision encoder.
     # GGUF from gguf-org, VAE included. Only edit-turbo variant (no T2I GGUF yet).

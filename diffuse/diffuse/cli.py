@@ -312,7 +312,7 @@ def main() -> None:
     backend_type = model_info.get("backend_type", "gemlite")
 
     # ── Defaults per backend ──
-    # Steps: bonsai=4, ideogram4=20, hidream=28, z-image=9 (8 NFE)
+    # Steps: bonsai=4, ideogram4=20, hidream=28, z-image=9 (8 NFE), qwen21=28
     if args.steps is None:
         if backend_type == "hidream":
             args.steps = 28
@@ -320,6 +320,8 @@ def main() -> None:
             args.steps = 20
         elif backend_type == "zimage_sd_cpp":
             args.steps = 9
+        elif backend_type == "qwen21_sd_cpp":
+            args.steps = 28
         else:
             args.steps = 4
 
@@ -345,13 +347,14 @@ def main() -> None:
     else:
         require_model_dir(model_name)
 
-    # ── Validate --edit (only for hidream and mageflow backends) ──
+    # ── Validate --edit (hidream, mageflow, and qwen21 support it) ──
     ref_image_paths = None
     if args.edit:
-        if backend_type not in ("hidream", "mageflow_sd_cpp"):
-            print(f"  ⚠️  --edit is only supported with hidream or mageflow-edit-turbo backend (got {backend_type})")
+        if backend_type not in ("hidream", "mageflow_sd_cpp", "qwen21_sd_cpp"):
+            print(f"  ⚠️  --edit is only supported with hidream, mageflow-edit-turbo or qwen-image-2.1 (got {backend_type})")
             print(f"     Use: diffuse -m hidream-sdnq --edit {args.edit} -p 'instruction'")
             print(f"      or: diffuse -m mageflow-edit-turbo --edit {args.edit} -p 'instruction'")
+            print(f"      or: diffuse -m qwen-image-2.1 --edit {args.edit} -p 'instruction'")
             sys.exit(1)
         if not args.edit.exists():
             # If not found as-is, try resolving relative to original CWD
@@ -393,6 +396,11 @@ def main() -> None:
     # ── Mage-Flow-Edit-Turbo early path (uses sd-cli, instruction-based editing) ──
     if backend_type == "mageflow_sd_cpp":
         _run_mageflow_sd_cpp_edit(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
+        return
+
+    # ── Qwen-Image 2.1 early path (T2I + native editing via sd-cli) ──
+    if backend_type == "qwen21_sd_cpp":
+        _run_qwen21_sd_cpp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
         return
 
     # ── LLM eviction (free VRAM for diffusion) ──
@@ -1392,6 +1400,109 @@ def _run_mageflow_sd_cpp_edit(
     wall_time = time.perf_counter() - wall_t0
 
     print(f"  [3/3] Done — unloading...")
+
+    save_metadata(
+        model_name, prompt, seed, width, height, steps,
+        0.0, diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+    )
+    print_debrief(
+        model_name, model_info, prompt, seed,
+        width, height, steps, 0.0,
+        diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+        original_prompt=original_prompt,
+    )
+
+
+def _run_qwen21_sd_cpp_image(
+    args,
+    model_name: str,
+    model_info: dict,
+    prompt: str,
+    original_prompt: str,
+    seed: int,
+    width: int,
+    height: int,
+    ref_image_paths: list[str] | None,
+) -> None:
+    """Handle Qwen-Image 2.1 generation/editing via sd-cli.
+
+    Qwen-Image 2.1 is unified: the same model does T2I, native editing (up to 10
+    reference images, no masks) and RGBA transparency. It is NOT a distilled
+    model, so it needs real CFG and a real step count — unlike Z-Image-Turbo
+    (cfg=1, 9 steps) or Mage-Flow (cfg=1, 4 steps).
+    """
+    from diffuse.backends.sd_cpp import (
+        load_pipeline_sd_cpp,
+        generate_image_qwen21_sd_cpp,
+    )
+
+    is_edit = bool(ref_image_paths)
+    steps = args.steps if args.steps is not None else 28
+    # The leejet doc uses cfg-scale 6.0 for Qwen-Image 2.1, and editing in
+    # particular looks over-sharpened at 4.0. --cfg overrides; 4.0 stays the
+    # default for T2I until an A/B says otherwise.
+    guidance = args.cfg if args.cfg is not None else 4.0
+
+    if is_edit:
+        print(f"  \U0001f3a8 Qwen-Image 2.1 editing: {Path(ref_image_paths[0]).name}")
+        print(f"     Instruction: {prompt[:80]}{'...' if len(prompt) > 80 else ''}")
+    else:
+        print(f"  \U0001f3a8 Qwen-Image 2.1 T2I")
+    print(f"     {width}x{height}, {steps} steps, cfg={guidance}, seed={seed}")
+
+    # -- Prompt enhancement --
+    enhanced = None
+    if args.enhance or args.enhance_with:
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
+        enhance_type = model_info.get("enhance_type", "vision")
+
+        if enhance_type == "vision":
+            print(f"\n  \u2728 Enhancing prompt via {enhance_model} (vision mode)...")
+            enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
+        else:
+            enhanced, raw_response = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
+
+        if enhanced and enhanced != prompt:
+            print(f"     Expanded to ({len(enhanced)} chars)")
+            prompt = enhanced
+
+    # Evict LLMs before loading (the text encoder runs on CPU, but the DiT needs VRAM)
+    running = llama_swap_running_models()
+    if running:
+        print(f"  \U0001f504 Evicting LLM models: {', '.join(running)}")
+        evict_llm()
+        print(f"     VRAM freed for image generation")
+
+    print(f"  [1/3] Loading Qwen-Image 2.1 pipeline ({model_info['bits']})...")
+    config, load_time = load_pipeline_sd_cpp(model_name)
+    print(f"        sd-cli config ready")
+
+    # Output path
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+
+    print(f"  [2/3] {'Editing' if is_edit else 'Generating'}...")
+    wall_t0 = time.perf_counter()
+    try:
+        output_path, diffusion_time, peak_hbm = generate_image_qwen21_sd_cpp(
+            config, prompt, seed, width, height, output_path,
+            ref_images=ref_image_paths, steps=steps, cfg_scale=guidance,
+        )
+    except RuntimeError as e:
+        if "CUDA" in str(e) and args.cpu_fallback:
+            print(f"  \u26a0\ufe0f  CUDA failed - retrying on CPU (this will be very slow)...")
+            output_path, diffusion_time, peak_hbm = generate_image_qwen21_sd_cpp(
+                config, prompt, seed, width, height, output_path,
+                ref_images=ref_image_paths, cpu_fallback=True,
+                steps=steps, cfg_scale=guidance,
+            )
+        else:
+            raise
+    wall_time = time.perf_counter() - wall_t0
+
+    print(f"  [3/3] Done - unloading...")
 
     save_metadata(
         model_name, prompt, seed, width, height, steps,
