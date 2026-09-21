@@ -1038,9 +1038,9 @@ def _run_qwen21_sd_cpp_image(
     """Handle Qwen-Image 2.1 generation/editing via sd-cli.
 
     Qwen-Image 2.1 is unified: the same model does T2I, native editing (up to 10
-    reference images, no masks) and RGBA transparency. It is NOT a distilled
-    model, so it needs real CFG and a real step count — unlike Z-Image-Turbo
-    (cfg=1, 9 steps) or Mage-Flow (cfg=1, 4 steps).
+    reference images, no masks) and RGBA transparency. Unlike Z-Image-Turbo or
+    Mage-Flow it is NOT a distilled model, but its own specification still calls
+    for classifier-free guidance OFF (cfg 1.0) with 40 steps — see below.
     """
     from diffuse.backends.sd_cpp import (
         load_pipeline_sd_cpp,
