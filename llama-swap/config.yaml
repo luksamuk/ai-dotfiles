@@ -1781,6 +1781,106 @@ models:
       embedding_length: 2048
       quantization: APEX-I-Compact
       note: 'Sep 17: onboarding. Quant primario APEX-I-Compact (receita validada do q36); IQ4_XS em disco para A/B no smoke — fica o vencedor, perdedor deletado. Sampler vendor do card: temp 0.6 / top_p 0.95 / top_k 20 (filters + models.json). Greedy = failure mode documentado (repetition loop). Thinking always-on (traces de professor, sem toggle real). Sem MTP. Smoke + speed-bench pendentes; rebuild/sync da config so apos ichef2 do occamy fechar (watcher reload derruba o llama-server no meio da run).'
+  qwen3.8-4b-heretic:
+    name: Qwen3.8 4B Heretic
+    description: 'Qwen3.8-4B: destilacao full-param do Qwen3.8 2.4T na arquitetura qwen35, descensurada com Heretic v1.4.0 (refusals 6/100 vs 99/100, KL 0.0167). Mesmas flags do qwen3.5-4b; roda lado a lado.'
+    cmd: '${ik_llama_server} --port ${PORT}
+
+      --model ${models_dir}/qwen3.8-4b-heretic/Qwen3.5-4B-EmperoAI-Qwen3.8-Distill-Heretic-Abliterated-MTP-GGUF-Q4_K_M.gguf
+
+      --fit
+
+      --fit-margin 512
+
+      --jinja
+
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+
+      --parallel 1
+
+      --parallel-tool-calls
+
+      --ctx-size ${small_model_max_ctx}
+
+      --temp ${default_temp}
+
+      --top-p ${default_top_p}
+
+      --top-k ${default_top_k}
+
+      --min-p ${default_min_p}
+
+      --repeat-penalty ${default_repeat_penalty}
+
+      --reasoning on
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --k-cache-hadamard
+
+      --v-cache-hadamard
+
+      --flash-attn auto
+
+      --no-graph-reuse
+
+      --ctx-checkpoints 0
+
+      --ctx-checkpoints-interval 0
+
+      --batch-size 512
+
+      --ubatch-size 128
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.9
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~2.6 GB (Q4_K_M)
+      context: 64K-128K (dynamic)
+      vram_usage: ~4.5GB VRAM (model 2.8GB + q8_0/q4_0 hadamard cache + compute)
+      source: insraq/Qwen3.5-4B-EmperoAI-Qwen3.8-Distill-Heretic-Abliterated-MTP-GGUF (Q4_K_M)
+      kv_cache: q4_0/q4_0 + hadamard
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 4210000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: Q4_K_M
+      note: 'UNCENSORED (Heretic v1.4.0): refusals 6/100 vs 99/100 do base, KL 0.0167. Destilado do Qwen3.8 (MMLU 0.354->0.553; GSM8K 0.850->0.785). ik_llama.cpp with hadamard KV cache + --fit for dynamic context. Ngram spec decode via ik syntax. Uses qwen-fixed-chat-template.jinja for tool-call instructions. Formerly qwen3.5-4b-mtp, consolidated Jul 2026.'
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
