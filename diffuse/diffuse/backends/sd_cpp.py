@@ -217,15 +217,15 @@ def generate_image_qwen21_sd_cpp(
         log.warning("Retrying with CPU-only backend — this will be very slow")
 
     t0 = time.perf_counter()
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    rc, output_text = _run_sd_cli_streaming(cmd)
     wall_time = time.perf_counter() - t0
 
-    if result.returncode != 0:
-        stderr_lines = result.stderr.strip().split("\n")[-20:]
+    if rc != 0:
+        stderr_lines = output_text.strip().split("\n")[-20:]
         for line in stderr_lines:
             log.error("sd-cli: %s", line)
         raise RuntimeError(
-            f"sd-cli failed (rc={result.returncode}). "
+            f"sd-cli failed (rc={rc}). "
             f"Last error: {stderr_lines[-1] if stderr_lines else 'unknown'}"
         )
 
@@ -305,14 +305,14 @@ def generate_image_mageflow_sd_cpp(
         log.warning("Retrying with CPU-only backend — this will be very slow")
 
     t0 = time.perf_counter()
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    rc, output_text = _run_sd_cli_streaming(cmd)
     wall_time = time.perf_counter() - t0
 
-    if result.returncode != 0:
-        stderr_lines = result.stderr.strip().split("\n")[-20:]
+    if rc != 0:
+        stderr_lines = output_text.strip().split("\n")[-20:]
         for line in stderr_lines:
             log.error("sd-cli: %s", line)
-        raise RuntimeError(f"sd-cli failed (rc={result.returncode}). Last error: {stderr_lines[-1] if stderr_lines else 'unknown'}")
+        raise RuntimeError(f"sd-cli failed (rc={rc}). Last error: {stderr_lines[-1] if stderr_lines else 'unknown'}")
 
     if not output_path.exists():
         raise FileNotFoundError(f"sd-cli did not produce output: {output_path}")
@@ -321,6 +321,65 @@ def generate_image_mageflow_sd_cpp(
     log.info("sd-cli Mage-Flow completed in %.1fs, output %.2f MiB", wall_time, file_size_mb)
 
     return output_path, wall_time, 0.0
+def _run_sd_cli_streaming(cmd: list, label: str = "sd-cli") -> tuple:
+    """Run sd-cli, streaming its progress bar to the console while capturing output.
+
+    sd-cli already renders a progress bar via pretty_progress(), but a plain
+    subprocess.run(capture_output=True) swallows it — which is why generation
+    looked frozen for minutes. This streams stderr line-by-line, redrawing the
+    progress lines in place and passing all other lines through to the logger.
+
+    Returns (returncode, stderr_text) so callers keep their existing error handling.
+    """
+    import sys
+
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,   # sd-cli writes progress to stdout; merge to keep order
+        text=True,
+        bufsize=1,
+    )
+
+    captured = []
+    in_progress = False
+    last_len = 0
+
+    try:
+        for line in proc.stdout:
+            captured.append(line)
+            # A progress line looks like: " |====>     | 12/40 - 5.34s/it" and is
+            # carriage-return delimited by the C side, so it arrives without a
+            # trailing newline. Redraw it in place.
+            if "/" in line and ("s/it" in line or "it/s" in line):
+                text = line.strip("\r\n ")
+                if text:
+                    pad = max(0, last_len - len(text))
+                    sys.stdout.write("\r  " + text + " " * pad)
+                    sys.stdout.flush()
+                    last_len = len(text)
+                    in_progress = True
+                continue
+            if in_progress:
+                sys.stdout.write("\n")
+                sys.stdout.flush()
+                in_progress = False
+                last_len = 0
+            # Surface meaningful lines without flooding the console
+            stripped = line.rstrip()
+            if stripped and any(k in stripped for k in
+                                ("ERROR", "WARN", "sampling completed",
+                                 "generate_image completed", "decode_first_stage")):
+                print(f"  {stripped}")
+        proc.wait()
+    finally:
+        if in_progress:
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+
+    return proc.returncode, "".join(captured)
+
+
 def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, height: int, output_path: Path, cpu_fallback: bool = False, nsfw: bool = False) -> tuple:
     """Generate image using sd-cli. Returns (output_path, wall_time_seconds, 0.0)."""
     log.info("Generating via sd-cli: seed=%d size=%dx%d cpu_fallback=%s nsfw=%s", seed, width, height, cpu_fallback, nsfw)
@@ -431,15 +490,15 @@ def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, heig
                             cmd[cmd.index("-p") + 1] = prompt + " " + prompt_lora
 
     t0 = time.perf_counter()
-    result = subprocess.run(cmd, capture_output=True, text=True)  # no timeout — let sd-cli finish naturally
+    rc, output_text = _run_sd_cli_streaming(cmd)
     wall_time = time.perf_counter() - t0
 
-    if result.returncode != 0:
+    if rc != 0:
         # Print last 20 lines of stderr for debugging
-        stderr_lines = result.stderr.strip().split("\n")[-20:]
+        stderr_lines = output_text.strip().split("\n")[-20:]
         for line in stderr_lines:
             log.error("sd-cli: %s", line)
-        raise RuntimeError(f"sd-cli failed (rc={result.returncode}). Last error: {stderr_lines[-1] if stderr_lines else 'unknown'}")
+        raise RuntimeError(f"sd-cli failed (rc={rc}). Last error: {stderr_lines[-1] if stderr_lines else 'unknown'}")
 
     if not output_path.exists():
         raise FileNotFoundError(f"sd-cli did not produce output: {output_path}")

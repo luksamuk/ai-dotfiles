@@ -10,6 +10,7 @@ from diffuse.paths import LLAMA_SWAP_URL
 from diffuse.prompts import (
     get_ideogram_enhance_prompt,
     get_vision_enhance_prompt,
+    get_qwen21_enhance_prompt,
     get_vision_analysis_prompt,
     get_edit_enhance_prompt,
     get_edit_vision_prompt,
@@ -189,6 +190,79 @@ def enhance_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
 
 
 # ── Vision (natural-language) enhancement ──────────────────────────────────
+def enhance_qwen21_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
+    """Use an LLM via llama-swap to expand a prompt for Qwen-Image 2.1.
+
+    Dedicated sibling of enhance_vision_prompt: same natural-language output
+    contract, but with a system prompt written for 2.1 specifically — it leans
+    into verbatim text rendering, RGBA transparency and photorealism, and drops
+    the Ideogram safety-avoidance rules (2.1 has no content filter, and those
+    rules push the output toward "illustration" when 2.1 excels at photography).
+
+    Returns (enhanced_prompt, raw_response).
+    On failure, enhanced_prompt is the original prompt.
+    """
+    import urllib.request
+    import urllib.error
+
+    system = get_qwen21_enhance_prompt(nsfw=nsfw)
+
+    log.info("Qwen-Image 2.1 enhancing prompt via %s", model)
+    t0 = time.perf_counter()
+
+    max_tokens_val = 16384
+
+    payload = json.dumps({
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.7,
+        "max_tokens": max_tokens_val,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        f"{LLAMA_SWAP_URL}/v1/chat/completions",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    max_retries = 12  # up to ~2 minutes
+    enhanced = ""
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=None) as resp:
+                data = json.loads(resp.read())
+                msg = data["choices"][0]["message"]
+                enhanced = msg.get("content", "").strip()
+                reasoning = msg.get("reasoning_content", "")
+                if not enhanced and reasoning:
+                    log.warning("Qwen21-enhancement returned empty content with %d chars of reasoning", len(reasoning))
+                    return prompt, reasoning
+                break
+        except urllib.error.HTTPError as e:
+            if e.code == 400 and attempt < max_retries - 1:
+                log.info("Model loading (attempt %d/%d), retrying in 10s...", attempt + 1, max_retries)
+                time.sleep(10)
+                continue
+            log.error("Qwen21-enhancement failed: %s — using raw prompt", e)
+            return prompt, str(e)
+        except (urllib.error.URLError, OSError, KeyError, json.JSONDecodeError) as e:
+            log.error("Qwen21-enhancement failed: %s — using raw prompt", e)
+            return prompt, str(e)
+
+    elapsed = time.perf_counter() - t0
+    log.info("Qwen21-enhancement completed in %.1fs", elapsed)
+
+    if not enhanced:
+        log.warning("Empty qwen21-enhancement response — using raw prompt")
+        return prompt, enhanced
+
+    return enhanced, enhanced
+
+
 def enhance_vision_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     """Use an LLM via llama-swap to expand a prompt for vision models (HiDream, Bonsai).
 

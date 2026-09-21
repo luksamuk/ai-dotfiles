@@ -11,6 +11,7 @@ from diffuse.paths import PROMPTS_DIR
 _PROMPT_FILES: dict[str, str] = {
     "ideogram_enhance": "ideogram_enhance.yaml",
     "vision_enhance": "vision_enhance.yaml",
+    "qwen21_enhance": "qwen21_enhance.yaml",
     "edit_enhance": "edit_enhance.yaml",
     "edit_vision": "edit_vision.yaml",
     "vision_analysis": "vision_analysis.yaml",
@@ -74,6 +75,12 @@ def get_ideogram_enhance_prompt(nsfw: bool = False) -> str:
 
 def get_vision_enhance_prompt(nsfw: bool = False) -> str:
     return _toggle_safety_rules(_load_prompt("vision_enhance"), nsfw)
+
+
+def get_qwen21_enhance_prompt(nsfw: bool = False) -> str:
+    """Qwen-Image 2.1 has no content filter, so the Ideogram safety-rule rewrite
+    does not apply — the prompt is used verbatim."""
+    return _load_prompt("qwen21_enhance")
 
 
 def get_edit_enhance_prompt(nsfw: bool = False) -> str:

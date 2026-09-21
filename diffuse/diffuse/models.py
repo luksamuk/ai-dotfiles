@@ -105,7 +105,7 @@ MODELS: dict[str, dict] = {
         "bits": "Q4_K_M GGUF",
         "description": "Qwen-Image 2.1 — 7B DiT, T2I + native editing + RGBA transparency, Qwen3-VL-8B encoder",
         "enhance_model": "qwen3.6-35b-a3b",
-        "enhance_type": "vision",
+        "enhance_type": "qwen21",
         "default_size": (1024, 1024),
         "hf_files": [
             {"repo": "abenzerps/Qwen-Image-2.1-Uncensored-GGUF",
