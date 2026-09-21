@@ -37,7 +37,7 @@
   name: "Laguna XS 2.1"
   description: "Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. Served by cafe-llama.cpp with pinned-RAM expert offload (-hmoe) — the only backend that loads it on 6GB VRAM. 131K context with clean quality."
   cmd: |
-    ${cafe_server} --port ${PORT}
+    env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
     --model ${models_dir}/laguna-xs-2.1/Laguna-XS-2.1-Q4_K_M.gguf
     --jinja
     --parallel 1
