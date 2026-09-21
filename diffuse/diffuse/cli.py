@@ -207,13 +207,14 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--enhance-with", metavar="MODEL",
-        help="Enhance prompt using a specific llama-swap model. "
-             "Any model available in llama-swap works (e.g. qwen3.5-4b, laguna-xs2). "
+        help="Enhance prompt using a specific model. Any llama-swap model works "
+             "(e.g. qwen3.5-4b, laguna-xs2). Prefix with 'ollama:' to use the local "
+             "Ollama daemon instead (port 11434), e.g. ollama:glm-5.3-flash:cloud. "
              "Implies --enhance.",
     )
     p.add_argument(
         "--show-enhanced", action="store_true",
-        help="Print the full enhanced JSON prompt before generating.",
+        help="Print the expanded prompt right after enhancement, before generating.",
     )
     p.add_argument(
         "--cpu-fallback", action="store_true",
@@ -756,6 +757,23 @@ def _run_framepack(
         viewer = shutil.which("mpv") or shutil.which("vlc") or shutil.which("ffplay")
         if viewer:
             subprocess.Popen([viewer, str(output_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+def _show_enhanced_if_requested(args, enhanced: str | None) -> None:
+    """Print the expanded prompt right after enhancement, when --show-enhanced is set.
+
+    The flag existed but was never read, so the expanded prompt only surfaced in
+    the final debrief (after minutes of generation). Printing it here lets the
+    user abort a bad expansion before paying for the render.
+    """
+    if not getattr(args, "show_enhanced", False) or not enhanced:
+        return
+    print()
+    print("  ── Enhanced prompt " + "─" * 52)
+    for line in str(enhanced).split("\n"):
+        print(f"  │ {line}")
+    print("  " + "─" * 70)
+
+
+
 def _run_bonsai_image(
     args: argparse.Namespace,
     model_name: str,
@@ -795,6 +813,7 @@ def _run_bonsai_image(
 
         if enhanced and enhanced != prompt:
             print(f"     Expanded to ({len(enhanced)} chars)")
+            _show_enhanced_if_requested(args, enhanced)
             prompt = enhanced
 
     # Evict LLMs before loading
@@ -874,6 +893,7 @@ def _run_zimage_sd_cpp_image(
 
         if enhanced and enhanced != prompt:
             print(f"     Expanded to ({len(enhanced)} chars)")
+            _show_enhanced_if_requested(args, enhanced)
             prompt = enhanced
 
     # Evict LLMs before loading
@@ -974,6 +994,7 @@ def _run_mageflow_sd_cpp_edit(
 
         if enhanced and enhanced != prompt:
             print(f"     Expanded to ({len(enhanced)} chars)")
+            _show_enhanced_if_requested(args, enhanced)
             prompt = enhanced
 
     # Evict LLMs before loading
@@ -1080,6 +1101,7 @@ def _run_qwen21_sd_cpp_image(
 
         if enhanced and enhanced != prompt:
             print(f"     Expanded to ({len(enhanced)} chars)")
+            _show_enhanced_if_requested(args, enhanced)
             prompt = enhanced
 
     # Evict LLMs before loading (the text encoder runs on CPU, but the DiT needs VRAM)

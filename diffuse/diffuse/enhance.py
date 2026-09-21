@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import time
 
@@ -17,6 +18,26 @@ from diffuse.prompts import (
 )
 
 log = logging.getLogger("diffuse")
+
+
+# ── Ollama routing ─────────────────────────────────────────────────────────
+# Mirrors the H3 shortcut: a model prefixed with "ollama:" is served by a local
+# Ollama instance on port 11434 instead of llama-swap on 12434. Lets users reach
+# cloud models the Ollama daemon proxies, e.g. "ollama:glm-5.3-flash:cloud".
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+
+
+def resolve_enhance_endpoint(model: str) -> tuple:
+    """Resolve a model id to (base_url, model_name).
+
+    "ollama:<name>" routes to the Ollama daemon; anything else goes to llama-swap.
+    Returns the model name with the prefix stripped so the API call uses the
+    bare id.
+    """
+    if model.startswith("ollama:"):
+        return OLLAMA_URL, model[len("ollama:"):]
+    return LLAMA_SWAP_URL, model
+
 
 
 # ── JSON extraction ────────────────────────────────────────────────────────
@@ -116,8 +137,9 @@ def enhance_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     # because the model exhausts the budget during the thinking phase.
     max_tokens_val = 16384
 
+    _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
     payload = json.dumps({
-        "model": model,
+        "model": _enhance_model,
         "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},
@@ -127,7 +149,7 @@ def enhance_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     }).encode("utf-8")
 
     req = urllib.request.Request(
-        f"{LLAMA_SWAP_URL}/v1/chat/completions",
+        f"{_enhance_url}/v1/chat/completions",
         data=payload,
         headers={"Content-Type": "application/json"},
         method="POST",
@@ -212,8 +234,9 @@ def enhance_qwen21_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
 
     max_tokens_val = 16384
 
+    _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
     payload = json.dumps({
-        "model": model,
+        "model": _enhance_model,
         "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},
@@ -223,7 +246,7 @@ def enhance_qwen21_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     }).encode("utf-8")
 
     req = urllib.request.Request(
-        f"{LLAMA_SWAP_URL}/v1/chat/completions",
+        f"{_enhance_url}/v1/chat/completions",
         data=payload,
         headers={"Content-Type": "application/json"},
         method="POST",
@@ -284,8 +307,9 @@ def enhance_vision_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     # Same reasoning as ideogram enhance: thinking models need more tokens
     max_tokens_val = 16384
 
+    _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
     payload = json.dumps({
-        "model": model,
+        "model": _enhance_model,
         "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},
@@ -295,7 +319,7 @@ def enhance_vision_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     }).encode("utf-8")
 
     req = urllib.request.Request(
-        f"{LLAMA_SWAP_URL}/v1/chat/completions",
+        f"{_enhance_url}/v1/chat/completions",
         data=payload,
         headers={"Content-Type": "application/json"},
         method="POST",
@@ -339,13 +363,21 @@ def enhance_vision_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
 
 # ── Vision capability check ────────────────────────────────────────────────
 def _check_model_vision(model: str) -> bool:
-    """Check if a llama-swap model supports vision (image input) via the API.
+    """Check whether the model can accept image input.
 
-    Strips :think/:code suffixes before matching, since the /v1/models endpoint
-    lists base model names (e.g. 'minicpm-v-4.6') without suffixes.
+    llama-swap is the default: its /v1/models lists a per-model `features` map
+    that says whether vision is enabled. An "ollama:<name>" prefix routes to the
+    Ollama daemon instead, which does not expose that map — there we infer
+    capability from the model name, matching the common vision naming.
     """
     import urllib.request
     import urllib.error
+
+    if model.startswith("ollama:"):
+        # Ollama does not publish a vision flag; fall back to name heuristics.
+        name = model[len("ollama:"):].lower()
+        return any(tag in name for tag in ("vl", "vision", "llava", "gemma4", "minicpm-v", "qwen3-vl"))
+
     base_model = model.split(":")[0]
     try:
         req = urllib.request.Request(f"{LLAMA_SWAP_URL}/v1/models")
@@ -370,6 +402,7 @@ def analyze_image(image_path: str, model: str, user_prompt: str, nsfw: bool = Fa
 
     Returns the visual description string, or empty string on failure.
     """
+    _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
     import base64
     import urllib.request
     import urllib.error
@@ -393,7 +426,7 @@ def analyze_image(image_path: str, model: str, user_prompt: str, nsfw: bool = Fa
 
     def _build_payload():
         return json.dumps({
-            "model": model,
+            "model": _enhance_model,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": [
@@ -411,7 +444,7 @@ def analyze_image(image_path: str, model: str, user_prompt: str, nsfw: bool = Fa
     for attempt in range(max_retries):
         try:
             req = urllib.request.Request(
-                f"{LLAMA_SWAP_URL}/v1/chat/completions",
+                f"{_enhance_url}/v1/chat/completions",
                 data=_build_payload(),
                 headers={"Content-Type": "application/json"},
                 method="POST",
@@ -461,8 +494,9 @@ def enhance_edit_prompt(image_description: str, user_prompt: str, model: str, ns
     # Same reasoning as ideogram enhance: thinking models need more tokens
     max_tokens_val = 16384
 
+    _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
     payload = json.dumps({
-        "model": model,
+        "model": _enhance_model,
         "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": user_msg},
@@ -472,7 +506,7 @@ def enhance_edit_prompt(image_description: str, user_prompt: str, model: str, ns
     }).encode("utf-8")
 
     req = urllib.request.Request(
-        f"{LLAMA_SWAP_URL}/v1/chat/completions",
+        f"{_enhance_url}/v1/chat/completions",
         data=payload,
         headers={"Content-Type": "application/json"},
         method="POST",
@@ -524,6 +558,7 @@ def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str, nsfw
     On failure, enhanced_prompt is the original prompt and raw_response contains
     the LLM output or error string.
     """
+    _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
     import base64
     import urllib.request
     import urllib.error
@@ -549,7 +584,7 @@ def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str, nsfw
 
     def _build_payload():
         return json.dumps({
-            "model": model,
+            "model": _enhance_model,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": [
@@ -567,7 +602,7 @@ def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str, nsfw
     for attempt in range(max_retries):
         try:
             req = urllib.request.Request(
-                f"{LLAMA_SWAP_URL}/v1/chat/completions",
+                f"{_enhance_url}/v1/chat/completions",
                 data=_build_payload(),
                 headers={"Content-Type": "application/json"},
                 method="POST",
