@@ -74,6 +74,7 @@ ORIGINAL_ORDER = [
     "lfm2.5-vl-450m",       # ✅
     "webworld-8b",           # ✅
     "qwen3.6-35b-a3b",       # ✅
+    "qwen3.6-35b-a3b-heretic",  # ✅ drop-in uncensored do q36 (heretic KL 0.0015, MTP preservado, set/2026)
     "qwen3.6-35b-a3b-262k",  # ✅ 262K nativo via cafe-llama.cpp Turbo KV (alias q36x, set/2026)
     "ornith-1.0-35b",        # ✅ Post-trained Qwen 3.5 35B MoE (agentic coding RL)
     "ornith-1.5-35b",        # ✅ Self-improving RL MoE (task generation + scaffold + rollouts)
