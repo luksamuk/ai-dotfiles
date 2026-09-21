@@ -365,11 +365,25 @@ def _run_sd_cli_streaming(cmd: list, label: str = "sd-cli") -> tuple:
                 sys.stdout.flush()
                 in_progress = False
                 last_len = 0
-            # Surface meaningful lines without flooding the console
+            # Surface meaningful lines without flooding the console.
+            #
+            # The biggest silent gap is the VAE decode: on this 6GB card it runs
+            # on CPU and takes ~106s at 1024x1024, and sd-cli only logs it AFTER
+            # it finishes. "decoding 1 latents" is emitted when it STARTS, so
+            # surfacing it (plus a hint) tells the user where the wait went.
+            # Deliberately NOT matched: "loading tensors" (~40 occurrences) and
+            # other per-tensor chatter, which would flood the console.
             stripped = line.rstrip()
-            if stripped and any(k in stripped for k in
-                                ("ERROR", "WARN", "sampling completed",
-                                 "generate_image completed", "decode_first_stage")):
+            if not stripped:
+                continue
+            if "decoding 1 latents" in stripped or "decoding latents" in stripped:
+                print(f"  {stripped}")
+                print("     VAE decode — runs on CPU, usually the slowest single step")
+                continue
+            if any(k in stripped for k in
+                   ("ERROR", "WARN", "sampling completed", "generate_image completed",
+                    "decode_first_stage", "latent 1 decoded", "latents decoded",
+                    "save result image", "images saved", "generating image:")):
                 print(f"  {stripped}")
         proc.wait()
     finally:
