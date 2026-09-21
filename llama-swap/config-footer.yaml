@@ -64,7 +64,7 @@ matrix:
     q36x: qwen3.6-35b-a3b-262k
     occ: occamy-1.0
     lag: laguna-xs-2.1
-    q38: qwen3.8-35b-a3b
+    # q38: qwen3.8-35b-a3b  # disabled Sep 21 2026 — liberando disco (17GB); bench 141.0±6.2 N=5, vice da classe; pode voltar
     # k2h: k2-horizon-7b  # REMOVED Sep 16 2026 — errático em chat (idioma/identidade, tool-loop instável); GGUF a decidir; fragment em _removed/
     # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
     # Bonsai 1-bit disabled Aug 2026 — user request
@@ -146,7 +146,7 @@ matrix:
     q36x: 9
     occ: 9
     lag: 9
-    q38: 9
+    # q38: 9  # disabled Sep 21 2026
     # nex25: 9  # REMOVED Sep 10 2026
     # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed
     # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
