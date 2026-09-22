@@ -354,6 +354,38 @@
           }
         },
         {
+          "id": "qwen3.6-35b-a3b-heretic",
+          "name": "Qwen 3.6 35B A3B Heretic (APEX-MTP)",
+          "description": "Uncensored drop-in do qwen3.6-35b-a3b (heretic, KL 0.0015, 88% menos recusas). MTP preservado, mmproj compartilhado. enable_thinking: false no base.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.85,
+            "top_k": 20
+          }
+        },
+        {
+          "id": "qwen3.6-35b-a3b-heretic:think",
+          "name": "Qwen 3.6 35B A3B Heretic (Thinking)",
+          "description": "Uncensored drop-in do qwen3.6-35b-a3b com enable_thinking: true.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.9,
+            "top_k": 20
+          }
+        },
+        {
           "id": "qwen3.8-35b-a3b",
           "name": "Qwen 3.8 35B Distill",
           "reasoning": true,
