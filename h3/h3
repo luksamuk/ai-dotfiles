@@ -36,11 +36,11 @@ DRY_RUN=""
 WEB=false
 ENHANCE=false
 ENHANCE_MODEL=""
-ENHANCE_DEFAULT="qwen3.5-4b"
+ENHANCE_DEFAULT="qwen3.6-35b-a3b-heretic"
 RESOLUTION="832x480"
 SHOW_ENHANCED=false
 VISION_DESCRIBE=true
-VLM_MODEL="qwen3-vl-4b"
+VLM_MODEL="lfm2.5-vl-3b"
 VLM_MODEL_OVERRIDE=""
 MAX_IMAGE_MP="1.0"  # Max megapixels per image (ref2va ref images + fl2va start/end frames)
 # Redimensiona imagens que excedem este limite para /tmp antes de processar,
@@ -50,7 +50,7 @@ MAX_IMAGE_MP="1.0"  # Max megapixels per image (ref2va ref images + fl2va start/
 NSFW=false
 NSFW_LORAS=()                       # lista de LoRAs NSFW (repeatable)
 # Defaults: genitália feminina + penetração + movimento rítmico
-NSFW_DEFAULT_LORAS=("hmpussy_v6" "HMPenetration_I2V" "Grindtime" "HMNSFW_AIO_V2")
+NSFW_DEFAULT_LORAS=("hmpussy_v6" "HMPenetration_I2V" "Grindtime")
 # Forças recomendadas por LoRA (empírico)
 declare -A NSFW_LORA_STRENGTHS=(
   ["HMNSFW_AIO_V2"]="0.5"

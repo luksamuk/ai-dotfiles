@@ -124,6 +124,8 @@ uv run main.py
 uv run main.py --raw                       # prompt neutro: sem system injetado, sem tools
 uv run main.py --no-system                 # sem system injetado, mantendo as mock tools
 uv run main.py --system "Você é um tutor de matemática. Responda em bullets."
+uv run main.py --template                 # mostra o prompt renderizado (/apply-template) — oculto por padrão
+uv run main.py --no-history               # histórico de prompts só na sessão (não grava em ~/.rich_chat_history)
 ```
 
 | Flag | Efeito |
@@ -131,8 +133,11 @@ uv run main.py --system "Você é um tutor de matemática. Responda em bullets."
 | `--raw` | Nenhum system prompt injetado E nenhuma ferramenta enviada — só a mensagem do usuário. Teste puro do framework (RCEF escrito à mão) |
 | `--no-system` | Sem system injetado, mas mantém `tools` quando o modelo suporta |
 | `--system "texto"` | Injeta o texto como system prompt (no lugar dos built-ins Pepe/portal-core) |
+| `--template` | Mostra o prompt renderizado via POST `/apply-template` na tela de capabilities. Sem a flag, o painel não é exibido (o painel azul "Payload JSON" aparece sempre) |
+| `--no-history` | Prompts não são persistidos em `~/.rich_chat_history` — ↑/↓ funciona só dentro da sessão. Combinável com qualquer modo |
+| `-h`, `--help` | Mostra a ajuda com todas as opções e sai |
 
-O modo ativo aparece no header da TUI (`[RAW — sem system, sem tools]`, `[SYSTEM customizado]` ou `[sem system]`).
+O modo ativo aparece no header da TUI (`[RAW — sem system, sem tools]`, `[SYSTEM customizado]`, `[sem system]`, `[template]`, `[no-history]`).
 Sem flags, o comportamento é o de sempre: system built-in por modelo (quando houver) + mock tools automáticas.
 
 ### Tela de capabilities: system prompt e prompt renderizado
@@ -141,7 +146,7 @@ Na tela inicial (após selecionar o modelo), o testchat mostra três quadros de 
 
 1. **System Prompt efetivo** — com `--system`, o texto completo que será injetado; com `--raw`/`--no-system`, o aviso de que nada será injetado; no modo normal, o perfil built-in ativo (PEPE/portal-core) ou "nenhum".
 2. **Payload JSON** — o payload OpenAI-compatível (`messages` + `tools`) que o testchat envia ao servidor.
-3. **Prompt real renderizado** — buscado via `/upstream/<modelo>/apply-template` do llama-swap: os bytes finais que o chat template do backend entrega ao modelo, incluindo a seção `# Tools` gerada a partir do campo `tools` do payload (é assim que o modelo "sabe" quais ferramentas existem, mesmo sem system prompt). Truncado em 30 linhas com total de chars.
+3. **Prompt real renderizado** (opt-in via `--template`) — buscado via `/upstream/<modelo>/apply-template` do llama-swap: os bytes finais que o chat template do backend entrega ao modelo, incluindo a seção `# Tools` gerada a partir do campo `tools` do payload (é assim que o modelo "sabe" quais ferramentas existem, mesmo sem system prompt). Truncado em 30 linhas com total de chars. Sem a flag, o quadro não aparece.
 
 Útil pra demonstrações de prompt engineering: mostre o payload, mostre o prompt renderizado, compare `--raw` (sem tools → prompt sem seção `# Tools`) contra o modo normal (seção `# Tools` presente).
 
