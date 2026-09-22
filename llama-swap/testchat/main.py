@@ -17,6 +17,10 @@ Imagens no prompt:
 Áudio no prompt (modelos omni como Nemotron-3-Nano-Omni):
     Transcreva esse áudio: ~/gravacao.wav
     O que foi dito aqui? ~/meeting.mp3 ~/clip.ogg
+
+Uso:
+    uv run main.py [--raw | --no-system | --system "texto"] [--template] [--no-history]
+    uv run main.py --help
 """
 
 import sys
@@ -36,16 +40,20 @@ from rich.layout import Layout
 from rich.align import Align
 from rich import box
 import questionary
-from prompt_toolkit.history import FileHistory
+from prompt_toolkit.history import FileHistory, InMemoryHistory
 import requests
 
 # Command-line options (parsed before TUI starts)
 # --raw: neutral prompt (no injected system prompt, no tools)
 # --no-system: keep tools but no injected system prompt
 # --system "text": inject custom system prompt instead of built-in ones
+# --template: show the /apply-template preview after model selection (off by default)
+# --no-history: don't persist prompts to ~/.rich_chat_history (session-only ↑↓)
 CLI_NO_SYSTEM = False
 CLI_RAW = False
 CLI_SYSTEM = None
+CLI_SHOW_TEMPLATE = False
+CLI_NO_HISTORY = False
 
 # Easter egg: Pepe system prompts (injeção condicional por modelo).
 # Nível de módulo p/ que a tela de capabilities consiga exibir o texto efetivo.
@@ -986,6 +994,10 @@ class StreamingChat:
             name_line += Text("  [SYSTEM customizado]", style="bold magenta")
         elif CLI_NO_SYSTEM:
             name_line += Text("  [sem system]", style="bold magenta")
+        if CLI_SHOW_TEMPLATE:
+            name_line += Text("  [template]", style="bold magenta")
+        if CLI_NO_HISTORY:
+            name_line += Text("  [no-history]", style="bold magenta")
         
         # Linha 2: descrição curta do modelo (se houver)
         model_desc = getattr(self, '_selected_description', '')
@@ -1187,6 +1199,7 @@ class StreamingChat:
             # Tupla (connect_timeout, read_timeout): conecta rápido, mas espera o response
             connect_timeout = 15  # 15s pra conectar
             read_timeout = max(hct + 30, 120)  # Mínimo 120s, ou health_check + 30s buffer
+            read_timeout = min(max(read_timeout, 120), 900)  # teto 900s (request do user, Sep 2026)
             request_timeout = (connect_timeout, read_timeout)
             
             # Faz POST com streaming
@@ -1572,21 +1585,25 @@ class StreamingChat:
             title="Payload JSON (o que o testchat envia ao servidor)", border_style="blue"))
 
         # Prompt REAL renderizado pelo chat template do backend (llama.cpp /apply-template)
-        try:
-            _at_body = {"messages": _demo_messages}
-            if _demo_tools:
-                _at_body["tools"] = _demo_tools
-            _at_url = f"http://{LLAMA_SWAP_HOST}:{LLAMA_SWAP_PORT}/upstream/{self.selected_model}/apply-template"
-            _at_resp = requests.post(_at_url, json=_at_body, timeout=60)
-            _at_prompt = _at_resp.json().get("prompt", "")
-            _at_lines = _at_prompt.split("\n")
-            if len(_at_lines) > 30:
-                _at_show = "\n".join(_at_lines[:30]) + f"\n… (truncado — {len(_at_prompt)} chars no total)"
-            else:
-                _at_show = _at_prompt
-            console.print(Panel(_at_show, title="Prompt real renderizado (chat template do backend)", border_style="green"))
-        except Exception:
-            console.print("[dim]Prompt renderizado indisponível neste backend (sem /apply-template)[/]")
+        # Opt-in com --template (o POST demora e o template já é conhecido)
+        if not CLI_SHOW_TEMPLATE:
+            console.print("[dim]Prompt renderizado oculto (use --template para mostrar)[/]")
+        else:
+            try:
+                _at_body = {"messages": _demo_messages}
+                if _demo_tools:
+                    _at_body["tools"] = _demo_tools
+                _at_url = f"http://{LLAMA_SWAP_HOST}:{LLAMA_SWAP_PORT}/upstream/{self.selected_model}/apply-template"
+                _at_resp = requests.post(_at_url, json=_at_body, timeout=60)
+                _at_prompt = _at_resp.json().get("prompt", "")
+                _at_lines = _at_prompt.split("\n")
+                if len(_at_lines) > 30:
+                    _at_show = "\n".join(_at_lines[:30]) + f"\n… (truncado — {len(_at_prompt)} chars no total)"
+                else:
+                    _at_show = _at_prompt
+                console.print(Panel(_at_show, title="Prompt real renderizado (chat template do backend)", border_style="green"))
+            except Exception:
+                console.print("[dim]Prompt renderizado indisponível neste backend (sem /apply-template)[/]")
 
         console.print()
         
@@ -1594,9 +1611,12 @@ class StreamingChat:
         console.print("[dim]↑↓ no prompt para histórico[/]")
         console.print()
         
-        # Configura histórico persistente
-        history_file = os.path.expanduser("~/.rich_chat_history")
-        history = FileHistory(history_file)
+        # Configura histórico persistente (--no-history usa histórico só em
+        # memória: ↑↓ funciona na sessão, nada é gravado no arquivo)
+        history = (
+            InMemoryHistory() if CLI_NO_HISTORY
+            else FileHistory(os.path.expanduser("~/.rich_chat_history"))
+        )
         
         try:
             prompt = questionary.text(
@@ -1919,11 +1939,37 @@ class StreamingChat:
                         console.print(f"[dim]🗑️  Arquivos temporários removidos ({video_frame_count} frames + {len(video_audio_paths)} áudios)[/]")
 
 
+def _print_help():
+    """Imprime a ajuda do testchat."""
+    print("""Testchat — chat interativo com reasoning, tools e streaming
+
+Uso:
+    uv run main.py [opções]
+
+Opções:
+    -h, --help          mostra esta ajuda e sai
+    --raw               prompt neutro: sem system injetado, sem tools
+    --no-system         sem system injetado, mantendo as mock tools
+    --system "texto"    injeta o texto como system prompt
+    --template          mostra o prompt renderizado (/apply-template) após
+                        selecionar o modelo (oculto por padrão)
+    --no-history        histórico de prompts só na sessão
+                        (não grava em ~/.rich_chat_history)
+
+Variáveis de ambiente:
+    LLAMA_SWAP_HOST     host do servidor (default: 127.0.0.1)
+    LLAMA_SWAP_PORT     porta do servidor (default: 12434)
+""")
+
+
 def main():
     """Entry point."""
-    # CLI args: --raw / --no-system / --system "text"
-    global CLI_NO_SYSTEM, CLI_RAW, CLI_SYSTEM
+    # CLI args: --raw / --no-system / --system "text" / --template / --no-history
+    global CLI_NO_SYSTEM, CLI_RAW, CLI_SYSTEM, CLI_SHOW_TEMPLATE, CLI_NO_HISTORY
     argv = sys.argv[1:]
+    if "-h" in argv or "--help" in argv:
+        _print_help()
+        sys.exit(0)
     if "--no-system" in argv:
         CLI_NO_SYSTEM = True
         argv.remove("--no-system")
@@ -1940,8 +1986,15 @@ def main():
         else:
             print("Erro: --system requer um texto")
             sys.exit(1)
+    if "--no-history" in argv:
+        CLI_NO_HISTORY = True
+        argv.remove("--no-history")
+    if "--template" in argv:
+        CLI_SHOW_TEMPLATE = True
+        argv.remove("--template")
     if argv:
         print(f"Argumentos não reconhecidos: {argv}")
+        print("Use --help para ver as opções disponíveis.")
         sys.exit(1)
     chat = StreamingChat()
     chat.run()
