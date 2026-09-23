@@ -29,7 +29,7 @@ OLLAMA_URL="http://localhost:11434/v1/chat/completions"
 PROMPT=""
 FRAMES=107        # ~4.5s a 24fps (mínimo do H3)
 STEPS=50
-SEED=42
+SEED=""             # vazio = seed aleatório por geração (0-999999999, range do Wan2GP)
 GUIDANCE=1.0
 FLOW_SHIFT=12.0
 DRY_RUN=""
@@ -37,6 +37,7 @@ WEB=false
 ENHANCE=false
 ENHANCE_MODEL=""
 ENHANCE_DEFAULT="qwen3.6-35b-a3b-heretic"
+ENHANCE_WITH_VISION=false  # --enhance-with-vision: imagens vao inline no pedido de enhance
 RESOLUTION="832x480"
 SHOW_ENHANCED=false
 VISION_DESCRIBE=true
@@ -170,6 +171,7 @@ while [[ $# -gt 0 ]]; do
     --web)     WEB=true; shift ;;
     --enhance) ENHANCE=true; shift ;;
     --enhance-with) ENHANCE=true; ENHANCE_MODEL="$2"; shift 2 ;;
+    --enhance-with-vision) ENHANCE=true; ENHANCE_WITH_VISION=true; shift ;;
     --vision-with) VLM_MODEL_OVERRIDE="$2"; shift 2 ;;
     --resolution) RESOLUTION="$2"; shift 2 ;;
     --show-enhanced) SHOW_ENHANCED=true; shift ;;
@@ -224,7 +226,7 @@ Modos:
 Opções gerais:
   --frames N         Número de frames (default: 107, ~4.5s). 107=min, 481=~20s
   --steps N          Steps de denoising (default: 50)
-  --seed N           Seed (default: 42)
+  --seed N           Seed (default: aleatório, 0-999999999; passe N pra fixar)
   --guidance N       Guidance scale (default: 1.0)
   --flow-shift N     Flow shift (default: 12.0)
   --resolution WxH   Resolução (default: 832x480). Ex: 480x256, 416x224
@@ -236,6 +238,10 @@ Opções gerais:
   --enhance-with M   LLM específico para enhance (default: qwen3.5-4b)
                      Use prefixo ollama: para modelos via Ollama (porta 11434):
                      --enhance-with ollama:glm-5.2:cloud
+  --enhance-with-vision  Coringa: imagens de --image-start/--image-end/--ref-img
+                     vão INLINE no pedido de enhance (modelo precisa ter vision).
+                     Um passo só: o próprio LLM de enhance vê as refs e gera o
+                     prompt descritivo — pula o vision describe separado.
   --vision-with M    VLM específico p/ descrever refs (default: qwen3-vl-4b).
                      Aceita ollama: igual ao --enhance-with (ex: ollama:gemma4:12b)
   --show-enhanced    Mostra prompt expandido antes de gerar
@@ -353,6 +359,16 @@ if [[ -z "$PROMPT" ]]; then
   echo "Erro: prompt obrigatório. Use: h3 \"seu prompt\""
   echo "Ajuda: h3 --help"
   exit 1
+fi
+
+# ── Seed aleatório quando não passado (--seed N fixa explicitamente) ──────
+# Mesmo range do Wan2GP (random.randint(0, 999999999) quando recebe seed<0).
+# O valor sorteado aparece no summary, no dry-run e no filename ({seed}).
+if [[ -z "$SEED" ]]; then
+  SEED=$(python3 -c "import random; print(random.randint(0, 999999999))")
+  SEED_SOURCE="aleatório"
+else
+  SEED_SOURCE="fixo (--seed)"
 fi
 
 # ── Resolver paths relativos para absolutos ──────────────────────────────
@@ -623,6 +639,11 @@ fi
 if [[ -n "$VLM_MODEL_OVERRIDE" && "$ENHANCE" != true && "$DRY_RUN" != "1" ]]; then
   echo "Aviso: --vision-with precisa de --enhance pra surtir efeito (a descrição visual roda dentro do fluxo de enhance). Ignorando."
 fi
+# Com --enhance-with-vision o describe separado não roda; overrides dele não têm efeito
+if [[ "$ENHANCE_WITH_VISION" == true ]]; then
+  [[ -n "$VLM_MODEL_OVERRIDE" ]] && echo "Aviso: --vision-with não tem efeito com --enhance-with-vision (não há vision describe separado). Ignorando."
+  [[ "$VISION_DESCRIBE" == false ]] && echo "Aviso: --no-vision-describe redundante com --enhance-with-vision (describe já é pulado)."
+fi
 if [[ "$ENHANCE" == true ]]; then
   if [[ -z "$ENHANCE_MODEL" ]]; then
     ENHANCE_MODEL="$ENHANCE_DEFAULT"
@@ -752,8 +773,12 @@ if [[ "$ENHANCE" == true ]]; then
   # e produz uma descrição detalhada que é injetada no media context, dando
   # ao LLM de enhance informação visual concreta sobre cores, composição,
   # sujeitos, iluminação, etc.
+  # --enhance-with-vision (coringa): o próprio LLM de enhance tem vision
+  # (mmproj) e recebe as imagens inline — pula o describe separado.
   VISION_DESCRIPTIONS=""
-  if [[ "$VISION_DESCRIBE" == true ]]; then
+  if [[ "$ENHANCE_WITH_VISION" == true ]]; then
+    echo "=== --enhance-with-vision: imagens vao inline no enhance (sem vision describe separado) ==="
+  elif [[ "$VISION_DESCRIBE" == true ]]; then
     VLM_URL="$LLAMA_SWAP_URL"
     if [[ -n "$VLM_MODEL_OVERRIDE" ]]; then
       VLM_MODEL="$VLM_MODEL_OVERRIDE"
@@ -904,6 +929,19 @@ print('\n'.join(descriptions))
 
   # User message = mídia contexto + prompt original (via arquivo temp)
   ENHANCE_USER_FILE=$(mktemp /tmp/h3_user_msg_XXXX.json)
+  # Com --enhance-with-vision: coletar as imagens (mesma logica de labels do
+  # vision describe) pra embutir no content da user message.
+  ENHANCE_IMAGES_JSON="[]"
+  if [[ "$ENHANCE_WITH_VISION" == true ]]; then
+    ENHANCE_IMAGES=()
+    if [[ "$FL2VA_MODE" == true ]]; then
+      [[ -n "$IMAGE_START" ]] && ENHANCE_IMAGES+=("$IMAGE_START")
+      [[ -n "$IMAGE_END" ]] && ENHANCE_IMAGES+=("$IMAGE_END")
+    elif [[ "$REF2VA_MODE" == true ]]; then
+      for img in "${REF_IMAGES[@]}"; do ENHANCE_IMAGES+=("$img"); done
+    fi
+    ENHANCE_IMAGES_JSON=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1:]))" "${ENHANCE_IMAGES[@]}" 2>/dev/null || echo "[]")
+  fi
   python3 -c "
 import json
 media_ctx = '''$MEDIA_CONTEXT'''.strip()
@@ -912,6 +950,23 @@ user_msg = media_ctx + '\n\n--- User prompt ---\n' + prompt
 with open('$ENHANCE_USER_FILE', 'w') as f:
     json.dump(user_msg, f)
 "
+  # Imagens base64 pra modo vision (arquivo com lista de data URIs)
+  ENHANCE_IMAGES_FILE=""
+  if [[ "$ENHANCE_WITH_VISION" == true && "$ENHANCE_IMAGES_JSON" != "[]" ]]; then
+    ENHANCE_IMAGES_FILE=$(mktemp /tmp/h3_enhance_imgs_XXXX.json)
+    python3 -c "
+import json, base64, os, sys
+paths = json.loads('''$ENHANCE_IMAGES_JSON''')
+out = []
+for p in paths:
+    ext = os.path.splitext(p)[1].lower().lstrip('.')
+    mime = 'jpeg' if ext in ('jpg', 'jpeg', '') else ext
+    with open(p, 'rb') as f:
+        b64 = base64.b64encode(f.read()).decode('utf-8')
+    out.append(f'data:image/{mime};base64,{b64}')
+json.dump(out, open('$ENHANCE_IMAGES_FILE', 'w'))
+"
+  fi
 
   echo "=== Enhancing prompt via $ENHANCE_MODEL ($SYSTEM_PROMPT_VAR) ==="
   echo "=== Media context: $(echo -e "$MEDIA_CONTEXT" | head -1) ==="
@@ -930,11 +985,27 @@ with open(os.path.join('$WAN2GP_DIR', 'models', 'minimax_h3', 'prompt_enhancer.p
     exec(f.read(), ns)
 SYSTEM_PROMPT = ns[SYSTEM_PROMPT_VAR]
 
+# --enhance-with-vision: imagens inline como content multimodal
+ENHANCE_IMAGES_FILE = '$ENHANCE_IMAGES_FILE'
+if ENHANCE_IMAGES_FILE and os.path.exists(ENHANCE_IMAGES_FILE):
+    data_uris = json.load(open(ENHANCE_IMAGES_FILE))
+    if data_uris:
+        n = len(data_uris)
+        print(f'[INFO] enhance com {n} imagem(ns) inline (modo vision)', file=sys.stderr)
+        user_content = [{'type': 'text', 'text': USER_MSG}]
+        for uri in data_uris:
+            user_content.append({'type': 'image_url', 'image_url': {'url': uri}})
+        user_content_obj = user_content
+    else:
+        user_content_obj = USER_MSG
+else:
+    user_content_obj = USER_MSG
+
 payload = json.dumps({
     'model': MODEL,
     'messages': [
         {'role': 'system', 'content': SYSTEM_PROMPT},
-        {'role': 'user', 'content': USER_MSG},
+        {'role': 'user', 'content': user_content_obj},
     ],
     'temperature': 0.7,
     'max_tokens': 65536,
@@ -982,6 +1053,7 @@ for attempt in range(max_retries):
   fi
   rm -f "$ENHANCE_USER_FILE.err"
   rm -f "$ENHANCE_USER_FILE"
+  [[ -n "$ENHANCE_IMAGES_FILE" ]] && rm -f "$ENHANCE_IMAGES_FILE"
 
   # Detectar se o enhance falhou (marcador __ENHANCE_FAILED__ na primeira linha)
   if [[ "$ENHANCED_PROMPT" == __ENHANCE_FAILED__* ]]; then
@@ -1398,7 +1470,7 @@ echo "Model type: $MODEL_TYPE"
 echo "Prompt: $PROMPT"
 echo "Frames: $FRAMES (~$(python3 -c "print(f'{$FRAMES/24:.1f}')")s)"
 echo "Steps: $STEPS"
-echo "Seed: $SEED"
+echo "Seed: $SEED ($SEED_SOURCE)"
 echo "Guidance: $GUIDANCE"
 echo "Flow shift: $FLOW_SHIFT"
 echo "Resolution: $RESOLUTION"
