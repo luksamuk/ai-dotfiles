@@ -1,18 +1,22 @@
 # -------------------------------------------
-# KAT-CODER-V2.5-DEV — CODING ESPECIALIZADO (IsValorum MiniPlus V2.1)
-# Base: Kwaipilot/KAT-Coder-V2.5-Dev (post-trained sobre o Qwen3.6-35B-A3B).
-# Benchmarks do card: SWE-bench Verified 69.4 (vs 64.4 do Qwen3.6 base),
-# Terminal-Bench 2.1 41.0 (vs 32.0), Scicode 44.2 (vs 37.5) — ganha em todos
-# os cenários de código. MTP: o card menciona mas o GGUF (733 tensors) NAO tem nextn tail — sem speculative decoding no ik.
-# SEM mmproj: sem visão (tradeoff do KAT).
-# apache-2.0, arXiv:2607.05471.
+# QWEN3.6-35B-A3B HERETIC (mudler APEX-I-Mini) — EXPERIMENTAL
+# O MESMO heretic TPE do prod (KL 0.0015), quant APEX-I-Mini do mudler.
+# 14,32 GB — o heretic em quant leve que o usuário procurava.
+# 733 tensors, SEM MTP nextn tail (speculative off no ik, igual ao KAT).
+# Visão via mmproj.gguf (903 MB).
+#
+# vs PROD (SC117 APEX-I-Compact 17,02 GB): -2,7 GB, quant mais agressiva
+# ("Smallest viable, fastest inference" no README do mudler). EXPERIMENTAL:
+# dependendo do andar da carruagem, substitui o prod.
 # -------------------------------------------
-"kat-coder-v2.5-dev":
-  name: "KAT Coder V2.5 Dev"
-  description: "Modelo de código especializado — SWE-bench 69.4, o melhor da frota em coding agentic. 131K de contexto, MTP nativo, ferramentas e thinking. Sem visão (text-only)."
+"qwen36-heretic-apex-mini":
+  name: "Qwen 3.6 35B Heretic (APEX-I-Mini)"
+  description: "Assistente de código sem censura (heretic TPE) com visão, em 14 GB — a quant mais compacta da família. Ideal para teste de velocidade e comparação com o prod."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/kat-coder-v2.5-dev/KAT-Coder-V2.5-Dev.APEX-I-MiniPlus-V2.1.gguf
+    --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
+    --mmproj ${models_dir}/qwen36-heretic-apex-mini/mmproj.gguf
+    --no-mmproj-offload
     --no-graph-reuse
     -ngl 99
     --n-cpu-moe 34
@@ -51,22 +55,22 @@
   ttl: 900
   health_check_timeout: 900
   capabilities:
-    in: ['text']
+    in: ['text', 'image']
     out: ['text']
     tools: true
     reranker: false
     context: 131072
   metadata:
-    size: "~14.75 GB (APEX-I-MiniPlus V2.1)"
+    size: "~14.32 GB (APEX-I-Mini, heretic) + 903 MB mmproj"
     context: "1K-131K"
     vram_usage: "~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34)"
-    source: "IsValorum/KAT-Coder-V2.5-Dev-APEX-I-MiniPlus-V2.1-GGUF (base Kwaipilot/KAT-Coder-V2.5-Dev)"
+    source: "mudler/Qwen3.6-35B-A3B-uncensored-heretic-APEX-GGUF (APEX-I-Mini, base llmfan46 heretic TPE)"
     kv_cache: "q4_0/q4_0 + hadamard"
     features:
       completion: true
       tools: true
       thinking: true
-      vision: false
+      vision: true
       embedding: false
       insert: false
       audio: false
@@ -75,5 +79,5 @@
     parameters: 34660000000
     context_length: 262144
     embedding_length: 2048
-    quantization: APEX I-MiniPlus V2.1 (MTP embedded)
-    note: "Sep 24: SWE-bench 69.4 vs 64.4 do Qwen3.6 base. Sem visao. n-cpu-moe 34 (mesma receita do distill)."
+    quantization: APEX I-Mini (mudler, heretic TPE)
+    note: "Sep 24: experimental. O mesmo heretic TPE do prod em quant APEX-I-Mini do mudler (14.32 GB, -2.7 GB vs prod). MTP off (sem nextn tail). Se andar bem, substitui o prod."

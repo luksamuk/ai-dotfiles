@@ -693,87 +693,6 @@ models:
       embedding_length: 2048
       quantization: ONYX compact
       note: "Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF deleted Sep 2026 (re-download from mudler repo if reverting)."
-# -------------------------------------------
-# KAT-CODER-V2.5-DEV — CODING ESPECIALIZADO (IsValorum MiniPlus V2.1)
-# Base: Kwaipilot/KAT-Coder-V2.5-Dev (post-trained sobre o Qwen3.6-35B-A3B).
-# Benchmarks do card: SWE-bench Verified 69.4 (vs 64.4 do Qwen3.6 base),
-# Terminal-Bench 2.1 41.0 (vs 32.0), Scicode 44.2 (vs 37.5) — ganha em todos
-# os cenários de código. MTP: o card menciona mas o GGUF (733 tensors) NAO tem nextn tail — sem speculative decoding no ik.
-# SEM mmproj: sem visão (tradeoff do KAT).
-# apache-2.0, arXiv:2607.05471.
-# -------------------------------------------
-  "kat-coder-v2.5-dev":
-    name: "KAT Coder V2.5 Dev"
-    description: "Modelo de código especializado — SWE-bench 69.4, o melhor da frota em coding agentic. 131K de contexto, MTP nativo, ferramentas e thinking. Sem visão (text-only)."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/kat-coder-v2.5-dev/KAT-Coder-V2.5-Dev.APEX-I-MiniPlus-V2.1.gguf
-      --no-graph-reuse
-      -ngl 99
-      --n-cpu-moe 34
-      --ctx-size 131072
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
-      --min-p ${code_min_p}
-      --repeat-penalty ${code_repeat_penalty}
-      --reasoning on
-      --jinja
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-      --parallel 1
-      --parallel-tool-calls
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --defer-experts
-      --prefetch-experts
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.85
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: "~14.75 GB (APEX-I-MiniPlus V2.1)"
-      context: "1K-131K"
-      vram_usage: "~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34)"
-      source: "IsValorum/KAT-Coder-V2.5-Dev-APEX-I-MiniPlus-V2.1-GGUF (base Kwaipilot/KAT-Coder-V2.5-Dev)"
-      kv_cache: "q4_0/q4_0 + hadamard"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 34660000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: APEX I-MiniPlus V2.1 (MTP embedded)
-      note: "Sep 24: SWE-bench 69.4 vs 64.4 do Qwen3.6 base. Sem visao. n-cpu-moe 34 (mesma receita do distill)."
 # Laguna XS 2.1 — Poolside's 33B/3B MoE agentic coding model (REVANCHE Sep/2026)
 # Fragmento REESCRITO pro cafe-llama.cpp (o ik morria no OOM de RAM: 257 experts
 # → 29GB RSS durante load). Validado 20/set/2026:
@@ -2063,6 +1982,92 @@ models:
       quantization: Q4_K_M
       note: "UNCENSORED (Heretic v1.4.0): refusals 6/100 vs 99/100 do base, KL 0.0167. Destilado do Qwen3.8 (MMLU 0.354->0.553; GSM8K 0.850->0.785). ik_llama.cpp with hadamard KV cache + --fit for dynamic context. Ngram spec decode via ik syntax. Uses qwen-fixed-chat-template.jinja for tool-call instructions. Formerly qwen3.5-4b-mtp, consolidated Jul 2026."
 # -------------------------------------------
+# QWEN3.6-35B-A3B HERETIC (mudler APEX-I-Mini) — EXPERIMENTAL
+# O MESMO heretic TPE do prod (KL 0.0015), quant APEX-I-Mini do mudler.
+# 14,32 GB — o heretic em quant leve que o usuário procurava.
+# 733 tensors, SEM MTP nextn tail (speculative off no ik, igual ao KAT).
+# Visão via mmproj.gguf (903 MB).
+
+# vs PROD (SC117 APEX-I-Compact 17,02 GB): -2,7 GB, quant mais agressiva
+# ("Smallest viable, fastest inference" no README do mudler). EXPERIMENTAL:
+# dependendo do andar da carruagem, substitui o prod.
+# -------------------------------------------
+  "qwen36-heretic-apex-mini":
+    name: "Qwen 3.6 35B Heretic (APEX-I-Mini)"
+    description: "Assistente de código sem censura (heretic TPE) com visão, em 14 GB — a quant mais compacta da família. Ideal para teste de velocidade e comparação com o prod."
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
+      --mmproj ${models_dir}/qwen36-heretic-apex-mini/mmproj.gguf
+      --no-mmproj-offload
+      --no-graph-reuse
+      -ngl 99
+      --n-cpu-moe 34
+      --ctx-size 131072
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning on
+      --jinja
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+      --parallel 1
+      --parallel-tool-calls
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --defer-experts
+      --prefetch-experts
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.85
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.95
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - 'text'
+        - 'image'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: "~14.32 GB (APEX-I-Mini, heretic) + 903 MB mmproj"
+      context: "1K-131K"
+      vram_usage: "~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34)"
+      source: "mudler/Qwen3.6-35B-A3B-uncensored-heretic-APEX-GGUF (APEX-I-Mini, base llmfan46 heretic TPE)"
+      kv_cache: "q4_0/q4_0 + hadamard"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 34660000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: APEX I-Mini (mudler, heretic TPE)
+      note: "Sep 24: experimental. O mesmo heretic TPE do prod em quant APEX-I-Mini do mudler (14.32 GB, -2.7 GB vs prod). MTP off (sem nextn tail). Se andar bem, substitui o prod."
+# -------------------------------------------
 # TRANSLATEGEMMA 4B — Google translation model
 # Gemma 3-based, 55 languages, translation-focused
 # Arch: gemma3 — supported in upstream llama.cpp
@@ -2190,8 +2195,8 @@ matrix:
     orn15: ornith-1.5-35b
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
     q36: qwen3.6-35b-a3b-heretic
-    kat: kat-coder-v2.5-dev
     q36hc: qwen3.6-35b-a3b-heretic-cafe
+    q36m: qwen36-heretic-apex-mini
     occ: occamy-1.0
     lag: laguna-xs-2.1
     # q38: qwen3.8-35b-a3b  # disabled Sep 21 2026 — liberando disco (17GB); bench 141.0±6.2 N=5, vice da classe; pode voltar
@@ -2274,7 +2279,7 @@ matrix:
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     q36: 9
     q36hc: 9
-    kat: 9
+    q36m: 9
     occ: 9
     lag: 9
     # q38: 9  # disabled Sep 21 2026
