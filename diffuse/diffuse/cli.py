@@ -38,6 +38,18 @@ from diffuse.output import (
 
 log = logging.getLogger("diffuse")
 
+# Preserve <lora:...> tags through prompt enhancement.
+def _extract_lora_tags(prompt):
+    import re
+    tags = re.findall(r"<lora:[^>]+>", prompt)
+    clean = re.sub(r"<lora:[^>]+>", "", prompt).strip()
+    return clean, " ".join(tags)
+
+def _reapply_lora_tags(enhanced, tags):
+    if tags and "<lora:" not in enhanced:
+        return enhanced + " " + tags
+    return enhanced
+
 
 # ── Argument parsing ───────────────────────────────────────────────────────
 def parse_size(s: str) -> tuple[int, int]:
@@ -819,6 +831,7 @@ def _run_bonsai_image(
             enhanced, raw_response = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
 
         if enhanced and enhanced != prompt:
+            enhanced = _reapply_lora_tags(enhanced, lora_tags)
             print(f"     Expanded to ({len(enhanced)} chars)")
             _show_enhanced_if_requested(args, enhanced)
             prompt = enhanced
@@ -1096,6 +1109,11 @@ def _run_qwen21_sd_cpp_image(
     if args.enhance or args.enhance_with or getattr(args, "enhance_edit_with", None):
         enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
         enhance_type = model_info.get("enhance_type", "vision")
+
+        # Preserve <lora:...> tags: extract before enhance, re-apply after
+        lora_tags = ""
+        if "<lora:" in prompt:
+            prompt, lora_tags = _extract_lora_tags(prompt)
 
         # --enhance-edit-with: VLM vê a reference image e refina a instrução (one-shot)
         if is_edit and getattr(args, "enhance_edit_with", None):
