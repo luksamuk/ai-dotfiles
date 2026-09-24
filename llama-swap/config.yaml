@@ -1922,8 +1922,9 @@ models:
       --mmproj ${models_dir}/qwen3.8-35b-distill-heretic/mmproj-Q8_0.gguf
       --no-mmproj-offload
       --no-graph-reuse
-      --fit
-      --fit-margin 1536
+
+      -ngl 99
+      --n-cpu-moe 34
       --ctx-size 131072
       --temp ${code_temp}
       --top-p ${code_top_p}
