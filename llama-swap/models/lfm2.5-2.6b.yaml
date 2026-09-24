@@ -21,8 +21,8 @@ lfm2.5-2.6b:
     --model ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-QAD-Q4_0.gguf
     --fit on
     --fit-target ${vram_margin}
-    --fit-ctx 65536
-    --ctx-size 65536
+    --fit-ctx 131072
+    --ctx-size 131072
     --parallel 2
     --reasoning on
     --chat-template-file ${templates_dir}/lfm2.5-chat-template.jinja
