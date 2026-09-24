@@ -1836,9 +1836,9 @@ models:
       --ctx-size 262144
       --jinja
       --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-      --parallel 4
-      --cache-type-k turbo4
-      --cache-type-v turbo4
+      --parallel 2
+      --cache-type-k q4_0
+      --cache-type-v q4_0
       --flash-attn on
       -hmoe
       -ngl 99
