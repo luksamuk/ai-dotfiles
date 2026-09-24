@@ -13,7 +13,7 @@
   cmd: |
     env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
     --model ${models_dir}/occamy-v2.1-abliterated/Occamy-1.0.APEX-I-MiniPlus-V2.1-Abliterated.gguf
-    --mmproj ${models_dir}/occamy-v2.1-abliterated/mmproj-Q8_0.gguf
+    --mmproj ${models_dir}/occamy-1.0/mmproj-Accio-Lab_occamy-1.0-Q8_0.gguf
     --ctx-size 262144
     --jinja
     --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
