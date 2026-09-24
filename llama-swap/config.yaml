@@ -508,8 +508,8 @@ models:
       --no-mmproj-offload
       --no-graph-reuse
       --fit
-      --fit-margin 1024
-      --ctx-size 131072
+      --fit-margin 1536
+      --ctx-size 102400
       --temp ${code_temp}
       --top-p ${code_top_p}
       --top-k ${code_top_k}
@@ -552,10 +552,10 @@ models:
         - 'text'
       tools: true
       reranker: false
-      context: 131072
+      context: 102400
     metadata:
       size: "~15.85 GB (APEX-I-Compact, heretic) + 899 MB mmproj F16 (compartilhado do q36)"
-      context: "1K-131K (vision ON, RAM limpa; fallback 32K sob pressão de RAM)"
+      context: "1K-100K (vision ON, RAM limpa; fallback 32K sob pressão de RAM)"
       vram_usage: "~5.6 GB VRAM estimado + ~14GB pinned RAM (MTP ~+414MiB, padrao q36)"
       source: "SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth F16 (compartilhado do qwen3.6-35b-a3b)"
       kv_cache: "q4_0/q4_0 + hadamard"
