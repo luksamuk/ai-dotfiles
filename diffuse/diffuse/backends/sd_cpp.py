@@ -155,9 +155,10 @@ def load_pipeline_sd_cpp_qwen21(model_name: str, model_root: Path, sd_cli: str) 
         "is_qwen21": True,
     }
     if turbo:
-        # Viggle Turbo v0.2.1 distillation sigmas (6 steps) — from the official
-        # sampling recipe: sigmas=[1.0, 0.9375, 0.875, 0.75, 0.5, 0.25], CFG 1.0.
-        config["sigmas"] = "1.0,0.9375,0.875,0.75,0.5,0.25"
+        # NOTE: the Viggle README's sigma list is for the diffusers pipeline; sd-cli's
+        # custom-sigma path produces green/magenta noise with them (measured 24/set).
+        # Default scheduler at 6 steps + cfg 1.0 yields clean images — no custom sigmas.
+        pass
 
     # LoRA: aplica qualquer safetensors/gguf/pt em models/qwen-image-2.1/lora/
     lora_dir = model_root / "lora"
