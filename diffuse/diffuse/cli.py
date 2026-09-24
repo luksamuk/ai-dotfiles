@@ -213,6 +213,13 @@ def parse_args() -> argparse.Namespace:
              "Implies --enhance.",
     )
     p.add_argument(
+        "--enhance-edit-with", metavar="MODEL",
+        help="Edit-only: refine the edit instruction with a VISION-capable model "
+             "that also sees the reference image (one-shot analyze+enhance). "
+             "Any llama-swap vision model (e.g. qwen3.6-35b-a3b-heretic:think) or "
+             "'ollama:' prefix. Implies --enhance; only meaningful with --edit.",
+    )
+    p.add_argument(
         "--show-enhanced", action="store_true",
         help="Print the expanded prompt right after enhancement, before generating.",
     )
@@ -1086,11 +1093,38 @@ def _run_qwen21_sd_cpp_image(
 
     # -- Prompt enhancement --
     enhanced = None
-    if args.enhance or args.enhance_with:
+    if args.enhance or args.enhance_with or getattr(args, "enhance_edit_with", None):
         enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
         enhance_type = model_info.get("enhance_type", "vision")
 
-        if enhance_type == "qwen21":
+        # --enhance-edit-with: VLM vê a reference image e refina a instrução (one-shot)
+        if is_edit and getattr(args, "enhance_edit_with", None):
+            edit_model = args.enhance_edit_with
+            if not _check_model_vision(edit_model):
+                print(f"  \u26a0\ufe0f  {edit_model} não tem visão — caindo pro enhance text-only")
+                enhanced, raw_response = enhance_qwen21_prompt(prompt, enhance_model, nsfw=args.nsfw)
+            else:
+                print(f"\n  \U0001f441\ufe0f\u2728 {edit_model} analisa a referência e refina a instrução (one-shot)...")
+                enhanced, raw_response = analyze_and_enhance_edit(
+                    ref_image_paths[0], prompt, edit_model, nsfw=args.nsfw
+                )
+                if enhanced and enhanced != prompt:
+                    print(f"     Expanded to ({len(enhanced)} chars)")
+                    _show_enhanced_if_requested(args, enhanced)
+                    print(f"     ─── Enhanced edit prompt ───")
+                    import textwrap as _tw
+                    for line in _tw.wrap(enhanced, width=78):
+                        print(f"     {line}")
+                    print(f"     ────────────────────────────")
+                    prompt = enhanced
+                else:
+                    print(f"     ⚠️  Vision+edit enhancement falhou — usando instrução original")
+                    if raw_response and raw_response != prompt:
+                        print(f"     ─── LLM response ───")
+                        print(f"     {raw_response[:500]}")
+                        print(f"     ────────────────────")
+                enhanced = enhanced if (enhanced and enhanced != prompt) else None
+        elif enhance_type == "qwen21":
             print(f"\n  \u2728 Enhancing prompt via {enhance_model} (qwen21 mode)...")
             enhanced, raw_response = enhance_qwen21_prompt(prompt, enhance_model, nsfw=args.nsfw)
         elif enhance_type == "vision":

@@ -152,6 +152,11 @@ def load_pipeline_sd_cpp_qwen21(model_name: str, model_root: Path, sd_cli: str) 
         "is_qwen21": True,
     }
 
+    # LoRA: aplica qualquer safetensors/gguf/pt em models/qwen-image-2.1/lora/
+    lora_dir = model_root / "lora"
+    if lora_dir.exists():
+        config["lora_dir"] = str(lora_dir)
+
     # Vision encoder is optional — only required for reference-image editing
     if mmproj_gguf.exists():
         config["llm_vision"] = str(mmproj_gguf)
@@ -205,6 +210,17 @@ def generate_image_qwen21_sd_cpp(
         cmd += ["--llm_vision", config["llm_vision"]]
         for ref in ref_images:
             cmd += ["-r", str(ref)]
+
+    # LoRA: aplica qualquer safetensors/gguf/pt em models/qwen-image-2.1/lora/
+    # tag <lora:nome_sem_ext:0.6> injetada no prompt se o usuário não colocou nenhuma
+    if lora_dir := config.get("lora_dir"):
+        import os as _os
+        loras = [f for f in _os.listdir(lora_dir) if f.endswith((".safetensors", ".gguf", ".pt"))]
+        if loras:
+            cmd += ["--lora-model-dir", lora_dir]
+            if "<lora:" not in prompt:
+                prompt_lora = " ".join(f"<lora:{f.rsplit('.', 1)[0]}:0.6>" for f in loras)
+                cmd[cmd.index("-p") + 1] = prompt + " " + prompt_lora
 
     # 6 GB VRAM budget. VAE runs on GPU: measured at 1024x1024 it takes 15.3s
     # there against 105.6s on CPU (7x), and pixel-identical output (99.7% of
@@ -445,16 +461,16 @@ def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, heig
             "--seed", str(seed),
             "-o", str(output_path),
         ]
-        if nsfw:
-            lora_dir = config.get("lora_dir")
-            if lora_dir:
-                import os as _os
-                loras = [f for f in _os.listdir(lora_dir) if f.endswith((".safetensors", ".gguf", ".pt"))]
-                if loras:
-                    cmd += ["--lora-model-dir", lora_dir]
-                    if "<lora:" not in prompt:
-                        prompt_lora = " ".join(f"<lora:{f.rsplit('.', 1)[0]}:0.6>" for f in loras)
-                        cmd[cmd.index("-p") + 1] = prompt + " " + prompt_lora
+        # LoRA: aplica qualquer safetensors/gguf/pt em models/<model>/lora/
+        # (antes era incondicional ao --nsfw; agora plug-and-play sempre)
+        if lora_dir := config.get("lora_dir"):
+            import os as _os
+            loras = [f for f in _os.listdir(lora_dir) if f.endswith((".safetensors", ".gguf", ".pt"))]
+            if loras:
+                cmd += ["--lora-model-dir", lora_dir]
+                if "<lora:" not in prompt:
+                    prompt_lora = " ".join(f"<lora:{f.rsplit('.', 1)[0]}:0.6>" for f in loras)
+                    cmd[cmd.index("-p") + 1] = prompt + " " + prompt_lora
 
     # CPU fallback: remove VRAM limits and force everything on CPU
     if cpu_fallback:
@@ -493,16 +509,15 @@ def generate_image_sd_cpp(config: dict, prompt: str, seed: int, width: int, heig
                 "--seed", str(seed),
                 "-o", str(output_path),
             ]
-            if nsfw:
-                lora_dir = config.get("lora_dir")
-                if lora_dir:
-                    import os as _os
-                    loras = [f for f in _os.listdir(lora_dir) if f.endswith((".safetensors", ".gguf", ".pt"))]
-                    if loras:
-                        cmd += ["--lora-model-dir", lora_dir]
-                        if "<lora:" not in prompt:
-                            prompt_lora = " ".join(f"<lora:{f.rsplit('.', 1)[0]}:0.6>" for f in loras)
-                            cmd[cmd.index("-p") + 1] = prompt + " " + prompt_lora
+            # LoRA no CPU-fallback: mesmo comportamento plug-and-play do caminho CUDA
+            if lora_dir := config.get("lora_dir"):
+                import os as _os
+                loras = [f for f in _os.listdir(lora_dir) if f.endswith((".safetensors", ".gguf", ".pt"))]
+                if loras:
+                    cmd += ["--lora-model-dir", lora_dir]
+                    if "<lora:" not in prompt:
+                        prompt_lora = " ".join(f"<lora:{f.rsplit('.', 1)[0]}:0.6>" for f in loras)
+                        cmd[cmd.index("-p") + 1] = prompt + " " + prompt_lora
 
     t0 = time.perf_counter()
     rc, output_text = _run_sd_cli_streaming(cmd)

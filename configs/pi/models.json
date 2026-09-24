@@ -322,14 +322,15 @@
           "maxTokens": 32768
         },
         {
-          "id": "qwen3.6-35b-a3b",
-          "name": "Qwen 3.6 35B A3B (APEX-MTP)",
+          "id": "qwen3.6-35b-a3b-heretic",
+          "name": "Qwen 3.6 35B Heretic (262K)",
           "description": "Qwen3.6 35B MoE A3B, APEX-MTP I-Compact, 42.6 tok/s com MTP. enable_thinking: false no base.",
           "reasoning": true,
           "input": [
-            "text"
+            "text",
+            "image"
           ],
-          "contextWindow": 131072,
+          "contextWindow": 262144,
           "maxTokens": 32768,
           "samplingParams": {
             "temperature": 0.6,
@@ -338,14 +339,15 @@
           }
         },
         {
-          "id": "qwen3.6-35b-a3b:think",
+          "id": "qwen3.6-35b-a3b-heretic:think",
           "name": "Qwen 3.6 35B A3B (Thinking)",
           "description": "Qwen3.6-35B-A3B com enable_thinking: true.",
           "reasoning": true,
           "input": [
-            "text"
+            "text",
+            "image"
           ],
-          "contextWindow": 131072,
+          "contextWindow": 262144,
           "maxTokens": 32768,
           "samplingParams": {
             "temperature": 0.6,
@@ -356,12 +358,13 @@
         {
           "id": "qwen3.6-35b-a3b-heretic",
           "name": "Qwen 3.6 35B A3B Heretic (APEX-MTP)",
-          "description": "Uncensored drop-in do qwen3.6-35b-a3b (heretic, KL 0.0015, 88% menos recusas). MTP preservado, mmproj compartilhado. enable_thinking: false no base.",
+          "description": "Uncensored oficial (heretic KL 0.0015, 88% menos recusas) via cafe-llama.cpp, 262K ctx, visão. enable_thinking: false no base.",
           "reasoning": true,
           "input": [
-            "text"
+            "text",
+            "image"
           ],
-          "contextWindow": 131072,
+          "contextWindow": 262144,
           "maxTokens": 32768,
           "samplingParams": {
             "temperature": 0.6,
@@ -372,12 +375,13 @@
         {
           "id": "qwen3.6-35b-a3b-heretic:think",
           "name": "Qwen 3.6 35B A3B Heretic (Thinking)",
-          "description": "Uncensored drop-in do qwen3.6-35b-a3b com enable_thinking: true.",
+          "description": "Uncensored oficial (heretic) com enable_thinking: true. 262K ctx, visão.",
           "reasoning": true,
           "input": [
-            "text"
+            "text",
+            "image"
           ],
-          "contextWindow": 131072,
+          "contextWindow": 262144,
           "maxTokens": 32768,
           "samplingParams": {
             "temperature": 0.6,

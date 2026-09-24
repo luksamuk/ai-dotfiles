@@ -308,14 +308,15 @@
             "top_k": 20
           }
         },
-        "qwen3.6-35b-a3b": {
-          "model_id": "qwen3.6-35b-a3b",
-          "name": "Qwen 3.6 35B A3B (APEX-MTP)",
+        "qwen3.6-35b-a3b-heretic": {
+          "model_id": "qwen3.6-35b-a3b-heretic",
+          "name": "Qwen 3.6 35B Heretic",
           "reasoning": true,
           "input": [
-            "text"
+            "text",
+            "image"
           ],
-          "contextWindow": 131072,
+          "contextWindow": 262144,
           "maxTokens": 32768,
           "samplingParams": {
             "temperature": 0.6,
@@ -323,14 +324,15 @@
             "top_k": 20
           }
         },
-        "qwen3.6-35b-a3b:think": {
-          "model_id": "qwen3.6-35b-a3b:think",
-          "name": "Qwen 3.6 35B A3B (Thinking)",
+        "qwen3.6-35b-a3b-heretic:think": {
+          "model_id": "qwen3.6-35b-a3b-heretic:think",
+          "name": "Qwen 3.6 35B Heretic (Thinking)",
           "reasoning": true,
           "input": [
-            "text"
+            "text",
+            "image"
           ],
-          "contextWindow": 131072,
+          "contextWindow": 262144,
           "maxTokens": 32768,
           "samplingParams": {
             "temperature": 0.6,

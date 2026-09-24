@@ -487,233 +487,31 @@ models:
       quantization: "Pollard IQ4_XS"
       note: "Ladder Pollard (measured-allocation + imatrix Calib 3.0), f16 ref PPL 23.04. IQ2_XXS (4.64GB, PPL 56.88): APOSENTADO Sep 19 — vision INSERVIVEL (foto real eu.jpg: alucinava multiplas faces, genero errado); GGUF remanescente no disco (documentacao do ladder, nao serve). IQ4_XS (6.78GB, PPL 29.80): VEREDICTO Sep 19 — vision CORRETA no eu.jpg (masculino, oculos de grau armacao grossa, mao no rosto; zero alucinacao). MM: encoder-free, mmproj qat-q4_0 175MB (gem4uv+gem4ua), audio experimental. Performance @ 8K fit livre: 4370MiB VRAM, TTFT 1.5-3s, decode 10.3 t/s c/ VRAM compartilhada / 20-25 t/s limpa, prefill 209-585 t/s; nativo 256K. TTL 900 contra cold-start (leitura 6.78GB). UMA (drop-in uma-ggml.conf) removida do daemon em Sep 20 — era a causa do 0.7 t/s (decode em CPU sob cudaMallocManaged). Trade-off: qualidade > velocidade (regra user). Historico: prefill lento @ 32K era TTFT 51.7s; @ 8K caiu pra 1.5-3s."
 # -------------------------------------------
-# QWEN3.6-35B-A3B - MoE CODING + VISION (APEX I-Compact + mmproj)
-# MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
-# 33 experts, top-8 routing. APEX I-Compact ~17.3GB + mmproj 858MB F16.
-#   Mixed-precision MoE quant com imatrix diversa (chat, code, reasoning, tool-calling)
-#   Perplexity comparable to Q8_0 (6.669 vs 6.533), beats UD-Q3_K_XL on real benchmarks
+# QWEN3.6-35B-A3B-HERETIC — PRODUCAO (cafe-llama.cpp Turbo KV)
+# Uncensored oficial da frota: heretic do llmfan46 (KL 0.0015, 88% menos
+# recusas), quant SC117 APEX-I-Compact com MTP nextn=1 preservado.
+# Backend cafe-llama.cpp (quimmedes/Ark) com Turbo KV turbo4 — o unico
+# backend que carrega o contexto nativo 262K na RTX 3050 6GB.
 
-# VISION ENABLED 2026-07-10 (ik_llama build 4704):
-#   Previously vision crashed (CUDA graph OOM on 6GB RTX 3050).
-#   Fixed with --no-graph-reuse: prevents cudaGraphLaunch OOM from mmproj compute buffer.
-#   Trade-off: ctx 131072 → 32768 (mmproj uses ~560MB VRAM, less for KV cache).
-#   Speed: 27.6 tok/s with vision (vs 33-34 text-only — 17% slower).
-#   VRAM: 5587 MiB (tight but stable).
-#   Image processing: 209ms, encoding: 52ms, decode: 157ms.
+# Validado 24/set/2026: smoke 200 OK (7s, cold), vision via mmproj Q8 do
+# heretic. RAM pinned ~15 GB (hmoe) — fechar apps pesados antes de usar.
 
-# KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
-# Architecture: qwen35moe (Qwen3MoeForCausalLM)
-# Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx (vision mmproj uses ~560MB)
-# --no-graph-reuse: CRITICAL — prevents CUDA graph OOM when mmproj is loaded
-# --k-cache-hadamard / --v-cache-hadamard: Hadamard transform before K/V cache quantization
-# --defer-experts: defers expert mmap on Linux → faster model loading
-# --flash-attn auto: disables FA on short prompts (saves overhead on MoE offloaded models)
-# -------------------------------------------
-  "qwen3.6-35b-a3b":
-    name: "Qwen 3.6 35B"
-    description: "Qwen3.6 delivers substantial upgrades in agentic coding and thinking preservation. Built on direct community feedback for a more intuitive, responsive, and productive coding experience. Vision enabled Sep 10 at full 131K context (needs ~20GB free host RAM; 32K fallback under memory pressure)."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-APEX-MTP-I-Compact.gguf
-      --mmproj ${models_dir}/qwen3.6-35b-a3b/mmproj_qwen36_F16.gguf
-      --no-mmproj-offload
-      --no-graph-reuse
-      --fit
-      --fit-margin 1024
-      --ctx-size 131072
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
-      --min-p ${code_min_p}
-      --repeat-penalty ${code_repeat_penalty}
-      --reasoning on
-      --jinja
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-      --parallel 1
-      --parallel-tool-calls
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --defer-experts
-      --prefetch-experts
-      --spec-type mtp:n_max=1,p_min=0.0
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.95
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - 'text'
-        - 'image'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: "~17.3 GB (APEX-MTP I-Compact) + 899 MB mmproj F16"
-      context: "1K-131K (vision ON, RAM limpa; fallback 32K sob pressão de RAM)"
-      vram_usage: "~5.6 GB VRAM estimado + ~14GB pinned RAM (MTP ~+414MiB, padrão ornith Sep 2026)"
-      source: "mudler/Qwen3.6-35B-A3B-APEX-MTP-GGUF (I-Compact) + mmproj unsloth (F16)"
-      kv_cache: "q4_0 + attn_rot + hadamard"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 34660000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: APEX-MTP I-Compact
-      note: "Sep 09: reactivated com APEX-MTP I-Compact (MTP heads baked in, nextn=1; o APEX plain ignorava --multi-token-prediction silenciosamente — audit May 2026). --spec-type mtp:n_max=1,p_min=0.0 = receita ornith-1.5 (42.6 tok/s medido Sep 10, accept 85-93%). VISION re-ativada 10/09 c/ ctx FULL 131K (RAM limpa: VRAM 5.4/6.1GB estável em smokes; fallback 32K sob pressão — regra Jul 2026). mmproj unsloth F16, verificado tensor-a-tensor vs ornith (qwen3vl_merger, proj_dim 2048). Sep 10: alinhado ao ornith — --no-mmproj-offload + --prefetch-experts + top_p 0.95 nos dois modos."
-# -------------------------------------------
-# QWEN3.6-35B-A3B-HERETIC - DROP-IN UNCENSORED DO Q36 (SC117 APEX-I-Compact)
-# Base: llmfan46/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved
-#   (heretic sobre o Qwen3.6-35B-A3B OFICIAL — nao e merge de terceiros)
-#   88% menos recusas c/ KL divergence 0.0015 vs original (metodo heretic,
-#   mais suave que abliterated). Quant: SC117 APEX-I-Compact, APEX-MTP com
-#   nextn=1 preservado (753 tensors, verificado por header-dump Sep 2026 —
-#   o heretic-APEX do mudler e do heretic PLAIN: 733 tensors, SEM nextn,
-#   --spec-type mtp vira no-op silencioso nele. NAO USAR.)
-# Drop-in do qwen3.6-35b-a3b: mesmas flags, mesmo mmproj (vision tower do
-#   base, intocada pelo heretic), ctx 131K, MTP, hadamard, fit-margin 1024.
+# ARMADILHAS do fork (ler cafe-llama-cpp-eval.md antes de mexer):
+#   - NUNCA --pipeline-parallel com ctx >=131K (buffer DMA 48GB → OOM duplo)
+#   - turbo2 CRASHA na arch hibrida; turbo4 limpo
+#   - MTP draft @262K nao cabe (draft KV 512MiB) — sem --spec-type aqui
+#   - cafe NAO tem: --parallel-tool-calls, --no-graph-reuse, --defer-experts,
+#     --prefetch-experts, --k/v-cache-hadamard, --fit-margin (usar --fit-target)
+#   - RUNPATH do binario aponta p/ /tmp/cafe (morto) — env LD_LIBRARY_PATH
+#     OBRIGATORIA no cmd (fix 24/set, smoke 200 OK)
 # -------------------------------------------
   "qwen3.6-35b-a3b-heretic":
     name: "Qwen 3.6 35B Heretic"
-    description: "Uncensored drop-in do qwen3.6-35b-a3b (heretic, KL 0.0015, 88% menos recusas). Mesma estrutura: APEX-MTP nextn=1, vision via mmproj compartilhado, 131K ctx, q4_0+attn_rot+hadamard."
+    description: "Assistente de código sem censura, com visão e 262K de contexto — o maior da frota. Ideal para sessões longas de programação, refatoração de arquivos grandes e agentes que precisam de contexto inteiro. Roda em 6 GB de VRAM com cache Turbo KV."
     cmd: |
-      ${ik_llama_server} --port ${PORT}
+      env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
       --model ${models_dir}/qwen3.6-35b-a3b-heretic/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-I-Compact.gguf
       --mmproj ${models_dir}/qwen3.6-35b-a3b-heretic/mmproj_qwen36_F16.gguf
-      --no-mmproj-offload
-      --no-graph-reuse
-      --fit
-      --fit-margin 1024
-      --ctx-size 131072
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
-      --min-p ${code_min_p}
-      --repeat-penalty ${code_repeat_penalty}
-      --reasoning on
-      --jinja
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-      --parallel 1
-      --parallel-tool-calls
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --defer-experts
-      --prefetch-experts
-      --spec-type mtp:n_max=1,p_min=0.0
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.95
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - 'text'
-        - 'image'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: "~15.85 GB (APEX-I-Compact, heretic) + 899 MB mmproj F16 (compartilhado do q36)"
-      context: "1K-131K (vision ON, RAM limpa; fallback 32K sob pressão de RAM)"
-      vram_usage: "~5.6 GB VRAM estimado + ~14GB pinned RAM (MTP ~+414MiB, padrao q36)"
-      source: "SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth F16 (compartilhado do qwen3.6-35b-a3b)"
-      kv_cache: "q4_0 + attn_rot + hadamard"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 34660000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: APEX-I-Compact (heretic, MTP preserved)
-      note: "Sep 21: drop-in uncensored do q36. Heretic do llmfan46 (KL 0.0015 vs base) quantizado pelo SC117 com nextn=1 preservado (753 tensors = bit-compatible com APEX-MTP original; header verificado). mmproj e o MESMO arquivo do q36 (vision tower do base, heretic nao toca). MTP: --spec-type mtp:n_max=1,p_min=0.0 (receita ornith/q36)."
-# -------------------------------------------
-# QWEN3.6-35B-A3B-262K - CTX NATIVO MAXIMO (cafe-llama.cpp Turbo KV)
-# Mesmo modelo/GGUF do qwen3.6-35b-a3b, backend DIFERENTE: cafe-llama.cpp
-# (fork quimmedes/Ark) com Turbo KV cache — UNICO backend que carrega
-# qwen35moe @262144 ctx na RTX 3050 6GB.
-
-# Célula validada 20/set/2026 (bancada f3, N=3, mesmo fill 30K):
-#   decode 16.6 t/s @30K fill | prefill 65 t/s | VRAM ~5.1GB c/ mmproj
-#   needle XANTHO-7741 FOUND verbatim | contagem 1-50 perfeita (temp 0)
-#   KV turbo4 @262K ~ 1.55GB (vs q4_0 3.1GB — ik não carrega: OOM)
-#   host RAM ~15GB (hmoe pinned, comparável ao ik CUDA_Host 12.2GB)
-
-# VISION VALIDADA 20/set @262K full (mmproj F16 + turbo4, systemd-run test):
-#   descrição de imagem correta e coerente, sem crash. VRAM 5.1GB estável.
-#   Primeira OOM do teste era o backend 262k JÁ RESIDENTE competindo
-#   (VRAM 3.8GB ocupada) — não limite do backend com mmproj.
-
-# TRADEOFFS medidos (matriz completa em references/cafe-llama-cpp-eval.md):
-#   decode @30K fill: 16.6 vs ik-prod 34.8 (-52%) — caso de uso é batch/
-#   análise de docs longos, NÃO interativo agentic. Prefill 30K: ~7.5min.
-
-# DUAL-MODE PADRÃO DA FLEET: base = enable_thinking FALSE, :think = TRUE
-#   (padrão q36/ornith — user 20/set: "vamos seguir o padrão")
-
-# ARMADILHAS do fork (NÃO mexer sem ler cafe-llama-cpp-eval.md):
-#   - NUNCA --pipeline-parallel com ctx >=131K (buffer DMA 48GB → OOM duplo)
-#   - turbo2 CRASHA na arch híbrida @131K (ggml_cuda_error, repro 2x); turbo4 limpo
-#   - MTP @262K não cabe (draft KV 512MiB) — por isso sem --spec-type aqui
-#   - cafe NÃO tem: --parallel-tool-calls, --no-graph-reuse, --defer-experts,
-#     --prefetch-experts, --k/v-cache-hadamard, --fit-margin (usar --fit-target)
-#   - tool calling NATIVO do cafe funciona (smoke: get_weather OK sem
-#     --parallel-tool-calls)
-# -------------------------------------------
-  "qwen3.6-35b-a3b-262k":
-    name: "Qwen 3.6 35B (262K TurboKV)"
-    description: "Same Qwen3.6-35B-A3B served by cafe-llama.cpp fork with Turbo KV cache (turbo4). The only backend that loads the model's native 262K context on 6GB VRAM. Vision verified at full 262K. Slower decode than the 131K production entry (~17 vs ~35 tok/s at 30K fill) — use for maximum-context workloads, batch/long-doc analysis."
-    cmd: |
-      ${cafe_server} --port ${PORT}
-      --model ${models_dir}/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-APEX-MTP-I-Compact.gguf
-      --mmproj ${models_dir}/qwen3.6-35b-a3b/mmproj_qwen36_F16.gguf
       --ctx-size 262144
       --jinja
       --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
@@ -756,10 +554,10 @@ models:
       reranker: false
       context: 262144
     metadata:
-      size: "~17.3 GB (APEX-MTP I-Compact) + 899 MB mmproj F16"
-      context: "262K"
-      vram_usage: "~5.1 GB VRAM (turbo4 KV) + ~15GB pinned RAM (hmoe)"
-      source: "mudler/Qwen3.6-35B-A3B-APEX-MTP-GGUF (I-Compact) + mmproj unsloth (F16)"
+      size: "~14.66 GB (APEX-I-Compact, heretic) + 614 MB mmproj Q8"
+      context: "262K nativo"
+      vram_usage: "~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe)"
+      source: "SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth Q8"
       kv_cache: "turbo4 (WHT-rotated, FA-fused)"
       features:
         completion: true
@@ -774,8 +572,8 @@ models:
       parameters: 34660000000
       context_length: 262144
       embedding_length: 2048
-      quantization: APEX-MTP I-Compact
-      note: "Backend cafe-llama.cpp (quimmedes/Ark fork) com Turbo KV turbo4 — unico que carrega 262K nativo na 3050 6GB (ik q4_0 KV @262K OOM). Validado 20/set: needle+QG limpos @30K fill, 16.6 t/s decode @30K, vision OK @262K full (5.1GB). Tradeoff: decode -52% vs ik-prod — batch/long-doc, não agentic interativo. Dual-mode padrão: base sem thinking, :think liga. Sem MTP (draft KV 512MiB não cabe), sem pipeline-parallel (48GB DMA @ctx longo), turbo2 crasha na arch hibrida. Tool calling nativo do cafe (smoke OK)."
+      quantization: APEX-I-Compact (heretic, MTP preserved)
+      note: "Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s)."
 # -------------------------------------------
 # ORNITH-1.5-35B-A3B - MoE AGENTIC CODING + VISION (ONYX compact + MTP, DEFAULT)
 # MoE 35B params, ~3B ativo por token. 256 experts, 8+1 active.
@@ -2222,9 +2020,7 @@ matrix:
     # aw: agentworld-35b  # disabled Aug 2026
     orn15: ornith-1.5-35b
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
-    q36: qwen3.6-35b-a3b
-    q36h: qwen3.6-35b-a3b-heretic
-    q36x: qwen3.6-35b-a3b-262k
+    q36: qwen3.6-35b-a3b-heretic
     occ: occamy-1.0
     lag: laguna-xs-2.1
     # q38: qwen3.8-35b-a3b  # disabled Sep 21 2026 — liberando disco (17GB); bench 141.0±6.2 N=5, vice da classe; pode voltar
@@ -2283,7 +2079,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(orn15 | q36 | q36x | lag) & (nemb | lfmcol) & qpoll"
+    heavy: "(orn15 | q36 | lag) & (nemb | lfmcol) & qpoll"
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -2306,8 +2102,6 @@ matrix:
     orn15: 9
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     q36: 9
-    q36h: 9
-    q36x: 9
     occ: 9
     lag: 9
     # q38: 9  # disabled Sep 21 2026
