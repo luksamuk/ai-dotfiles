@@ -693,6 +693,87 @@ models:
       embedding_length: 2048
       quantization: ONYX compact
       note: "Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF deleted Sep 2026 (re-download from mudler repo if reverting)."
+# -------------------------------------------
+# KAT-CODER-V2.5-DEV — CODING ESPECIALIZADO (IsValorum MiniPlus V2.1)
+# Base: Kwaipilot/KAT-Coder-V2.5-Dev (post-trained sobre o Qwen3.6-35B-A3B).
+# Benchmarks do card: SWE-bench Verified 69.4 (vs 64.4 do Qwen3.6 base),
+# Terminal-Bench 2.1 41.0 (vs 32.0), Scicode 44.2 (vs 37.5) — ganha em todos
+# os cenários de código. MTP: o card menciona mas o GGUF (733 tensors) NAO tem nextn tail — sem speculative decoding no ik.
+# SEM mmproj: sem visão (tradeoff do KAT).
+# apache-2.0, arXiv:2607.05471.
+# -------------------------------------------
+  "kat-coder-v2.5-dev":
+    name: "KAT Coder V2.5 Dev"
+    description: "Modelo de código especializado — SWE-bench 69.4, o melhor da frota em coding agentic. 131K de contexto, MTP nativo, ferramentas e thinking. Sem visão (text-only)."
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/kat-coder-v2.5-dev/KAT-Coder-V2.5-Dev.APEX-I-MiniPlus-V2.1.gguf
+      --no-graph-reuse
+      -ngl 99
+      --n-cpu-moe 34
+      --ctx-size 131072
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --reasoning on
+      --jinja
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+      --parallel 1
+      --parallel-tool-calls
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --defer-experts
+      --prefetch-experts
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.85
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.95
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: "~14.75 GB (APEX-I-MiniPlus V2.1)"
+      context: "1K-131K"
+      vram_usage: "~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34)"
+      source: "IsValorum/KAT-Coder-V2.5-Dev-APEX-I-MiniPlus-V2.1-GGUF (base Kwaipilot/KAT-Coder-V2.5-Dev)"
+      kv_cache: "q4_0/q4_0 + hadamard"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 34660000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: APEX I-MiniPlus V2.1 (MTP embedded)
+      note: "Sep 24: SWE-bench 69.4 vs 64.4 do Qwen3.6 base. Sem visao. n-cpu-moe 34 (mesma receita do distill)."
 # Laguna XS 2.1 — Poolside's 33B/3B MoE agentic coding model (REVANCHE Sep/2026)
 # Fragmento REESCRITO pro cafe-llama.cpp (o ik morria no OOM de RAM: 257 experts
 # → 29GB RSS durante load). Validado 20/set/2026:
@@ -1898,98 +1979,6 @@ models:
       quantization: APEX I-Compact
       note: "Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s)."
 # -------------------------------------------
-# QWEN3.8-35B-A3B-DISTILL-HERETIC — candidato a CODE HUNT (Sep 2026)
-# Distilado do Qwen3.8 (ARC +0.034 fora do ruído vs Qwen3.6) na mesma arch
-# qwen35moe. ABLITERATED direcional (0/10 refusals, KL 0.0076 — NAO e o Heretic TPE do SC117,
-# e o metodo orthogonal steering que o usuario considera agressivo demais). Quant IsValorum
-# APEX-I-MiniPlus V2.1 (14.66 GB, routers F32, output Q6_K).
-# MTP DRAFT SEPARADO (mtp-Q8_0.gguf 1.99 GB) — speculative decoding.
-# mmproj Q8 (614 MB) — visão preservada.
-
-# CAVERNA upstream: bug de repetição em gerações longas (admitido pela
-# Empero-ai), Distill V2 a caminho. Benchmark agentic é o teste certo
-# pra expor isso (04-ichef-full tem gerações longas).
-
-# REQUISITO DE TESTE: validar que o ik carrega o draft separado
-# (remover as flags de spec) e aceitar decode sem speculative.
-# -------------------------------------------
-  "qwen3.8-35b-distill-abliterated":
-    name: "Qwen 3.8 35B Distill (Abliterated)"
-    description: "Qwen3.8 35B (destilado) uncensored — reasoning mais forte (ARC +3.4%) com o mesmo custo por token. 131K de contexto, visão, ferramentas e speculative decoding via MTP dedicado. Candidato a substituir o heretic no trabalho de código."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/qwen3.8-35b-distill-heretic/Qwen3.8-35B-A3B-Distill.APEX-I-MiniPlus-V2.1-Abliterated.gguf
-      --mmproj ${models_dir}/qwen3.8-35b-distill-heretic/mmproj-Q8_0.gguf
-      --no-mmproj-offload
-      --no-graph-reuse
-
-      -ngl 99
-      --n-cpu-moe 34
-      --ctx-size 131072
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
-      --min-p ${code_min_p}
-      --repeat-penalty ${code_repeat_penalty}
-      --reasoning on
-      --jinja
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-      --parallel 1
-      --parallel-tool-calls
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --defer-experts
-      --prefetch-experts
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.85
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - 'text'
-        - 'image'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: "~14.66 GB (APEX-I-MiniPlus V2.1, heretic) + 614 MB mmproj Q8"
-      context: "1K-131K"
-      vram_usage: "~5.6 GB VRAM estimado + ~15 GB pinned RAM"
-      source: "IsValorum/Qwen3.8-35B-A3B-Distill-MTP-APEX-I-MiniPlus-V2.1-Abliterated-GGUF (base empero-ai/Qwen3.8-35B-A3B-Distill)"
-      kv_cache: "q4_0/q4_0 + hadamard"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 34660000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: APEX I-MiniPlus V2.1 (heretic)
-      note: "Sep 24: candidato a CODE HUNT. Reasoning destilado do Qwen3.8 (ARC +0.034 fora do ruido). SEM MTP: o draft separado carrega 1.2-2 GB fixos em VRAM (ignora o fit do ik) e o main nao cabe. MTP off ate o ik suportar overrides no draft ou o Distill V2 sair. Bug upstream de repeticao em geracoes longas (Distill V2 a caminho)."
-# -------------------------------------------
 # QWEN3.8-4B-HERETIC - ik_llama.cpp BACKEND
 # Qwen3.5-4B (arquitetura qwen35) com pesos destilados do Qwen3.8 2.4T A95B,
 # depois descensurado com Heretic v1.4.0. Nome reflete o que o modelo E: um 3.8 distill.
@@ -2201,6 +2190,7 @@ matrix:
     orn15: ornith-1.5-35b
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
     q36: qwen3.6-35b-a3b-heretic
+    kat: kat-coder-v2.5-dev
     q36hc: qwen3.6-35b-a3b-heretic-cafe
     occ: occamy-1.0
     lag: laguna-xs-2.1
@@ -2284,6 +2274,7 @@ matrix:
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     q36: 9
     q36hc: 9
+    kat: 9
     occ: 9
     lag: 9
     # q38: 9  # disabled Sep 21 2026

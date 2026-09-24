@@ -1,0 +1,79 @@
+# -------------------------------------------
+# KAT-CODER-V2.5-DEV — CODING ESPECIALIZADO (IsValorum MiniPlus V2.1)
+# Base: Kwaipilot/KAT-Coder-V2.5-Dev (post-trained sobre o Qwen3.6-35B-A3B).
+# Benchmarks do card: SWE-bench Verified 69.4 (vs 64.4 do Qwen3.6 base),
+# Terminal-Bench 2.1 41.0 (vs 32.0), Scicode 44.2 (vs 37.5) — ganha em todos
+# os cenários de código. MTP: o card menciona mas o GGUF (733 tensors) NAO tem nextn tail — sem speculative decoding no ik.
+# SEM mmproj: sem visão (tradeoff do KAT).
+# apache-2.0, arXiv:2607.05471.
+# -------------------------------------------
+"kat-coder-v2.5-dev":
+  name: "KAT Coder V2.5 Dev"
+  description: "Modelo de código especializado — SWE-bench 69.4, o melhor da frota em coding agentic. 131K de contexto, MTP nativo, ferramentas e thinking. Sem visão (text-only)."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/kat-coder-v2.5-dev/KAT-Coder-V2.5-Dev.APEX-I-MiniPlus-V2.1.gguf
+    --no-graph-reuse
+    -ngl 99
+    --n-cpu-moe 34
+    --ctx-size 131072
+    --temp ${code_temp}
+    --top-p ${code_top_p}
+    --top-k ${code_top_k}
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --reasoning on
+    --jinja
+    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --prefetch-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.85
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~14.75 GB (APEX-I-MiniPlus V2.1)"
+    context: "1K-131K"
+    vram_usage: "~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34)"
+    source: "IsValorum/KAT-Coder-V2.5-Dev-APEX-I-MiniPlus-V2.1-GGUF (base Kwaipilot/KAT-Coder-V2.5-Dev)"
+    kv_cache: "q4_0/q4_0 + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 34660000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: APEX I-MiniPlus V2.1 (MTP embedded)
+    note: "Sep 24: SWE-bench 69.4 vs 64.4 do Qwen3.6 base. Sem visao. n-cpu-moe 34 (mesma receita do distill)."
