@@ -920,6 +920,10 @@ models:
       --cache-type-k ${small_cache_k}
       --cache-type-v ${small_cache_v}
       --flash-attn on
+      -md ${models_dir}/lfm2.5-vl-3b/dspark/LFM2.5-VL-3B-DSpark-F16.gguf
+      --spec-type draft-dspark
+      --spec-draft-n-max 10
+      --spec-draft-n-min 0
       --metrics
     ttl: 60
     health_check_timeout: 300
