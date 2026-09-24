@@ -158,7 +158,7 @@ def load_pipeline_sd_cpp_qwen21(model_name: str, model_root: Path, sd_cli: str) 
         # NOTE: the Viggle README's sigma list is for the diffusers pipeline; sd-cli's
         # custom-sigma path produces green/magenta noise with them (measured 24/set).
         # Default scheduler at 6 steps + cfg 1.0 yields clean images — no custom sigmas.
-        pass
+        config["is_turbo"] = True
 
     # LoRA: aplica qualquer safetensors/gguf/pt em models/qwen-image-2.1/lora/
     lora_dir = model_root / "lora"
@@ -227,7 +227,7 @@ def generate_image_qwen21_sd_cpp(
     # tag <lora:nome_sem_ext:0.6> injetada no prompt se o usuário não colocou nenhuma
     # Turbo destilado: SEM auto-injeção (Pruna/Fix/Detailer treinados na base 40-step
     # bagunçam a receita few-step); tags manuais continuam funcionando.
-    if lora_dir := config.get("lora_dir") if not config.get("sigmas") else None:
+    if lora_dir := config.get("lora_dir") if not config.get("is_turbo") else None:
         import os as _os
         loras = [f for f in _os.listdir(lora_dir) if f.endswith((".safetensors", ".gguf", ".pt"))]
         if loras:
