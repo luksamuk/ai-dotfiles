@@ -134,7 +134,10 @@ def load_pipeline_sd_cpp_qwen21(model_name: str, model_root: Path, sd_cli: str) 
     The text encoder is 4.68 GiB, which does not fit alongside the DiT on a 6 GB
     card, so the text encoder must run on CPU.
     """
-    dit_gguf = model_root / "qwen-image-2.1-Q4_K_M.gguf"
+    # Viggle turbo variant: model_name ending in "-turbo" swaps the DiT for the
+    # distilled Viggle Turbo GGUF (6 steps, cfg=1.0, custom sigmas) when present.
+    turbo = model_name.endswith("-turbo")
+    dit_gguf = model_root / ("qwen_image_2.1_turbo_Q6_K.gguf" if turbo else "qwen-image-2.1-Q4_K_M.gguf")
     vae_path = model_root / "vae" / "qwen_image_2.1_vae_bf16.safetensors"
     llm_gguf = model_root / "text_encoder" / "Qwen3VL-8B-Instruct-Q4_K_M.gguf"
     mmproj_gguf = model_root / "text_encoder" / "mmproj-Qwen3VL-8B-Instruct-F16.gguf"
@@ -151,6 +154,10 @@ def load_pipeline_sd_cpp_qwen21(model_name: str, model_root: Path, sd_cli: str) 
         "vae_model": str(vae_path),
         "is_qwen21": True,
     }
+    if turbo:
+        # Viggle Turbo v0.2.1 distillation sigmas (6 steps) — from the official
+        # sampling recipe: sigmas=[1.0, 0.9375, 0.875, 0.75, 0.5, 0.25], CFG 1.0.
+        config["sigmas"] = "1.0,0.9375,0.875,0.75,0.5,0.25"
 
     # LoRA: aplica qualquer safetensors/gguf/pt em models/qwen-image-2.1/lora/
     lora_dir = model_root / "lora"
@@ -204,6 +211,10 @@ def generate_image_qwen21_sd_cpp(
         "--seed", str(seed),
         "-o", str(output_path),
     ]
+
+    # Distilled turbo variants pin custom sigma schedules (--sigmas, comma-separated)
+    if config.get("sigmas"):
+        cmd += ["--sigmas", config["sigmas"]]
 
     # Editing: attach reference image(s) + vision encoder
     if is_edit:

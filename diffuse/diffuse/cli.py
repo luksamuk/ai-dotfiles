@@ -312,7 +312,7 @@ def main() -> None:
         elif backend_type == "zimage_sd_cpp":
             args.steps = 9
         elif backend_type == "qwen21_sd_cpp":
-            args.steps = 40
+            args.steps = 6 if model_name.endswith("-turbo") else 40
         else:
             args.steps = 4
 
@@ -1089,7 +1089,7 @@ def _run_qwen21_sd_cpp_image(
     )
 
     is_edit = bool(ref_image_paths)
-    steps = args.steps if args.steps is not None else 40
+    steps = args.steps if args.steps is not None else (6 if model_name.endswith("-turbo") else 40)
     # Qwen's own specification (vLLM Recipes): 40 steps with classifier-free
     # guidance OFF (cfg 1.0). Measured on this 3050: cfg 4.0 costs 11.03 s/it
     # because the DiT runs twice per step, while cfg 1.0 costs 5.5 s/it --

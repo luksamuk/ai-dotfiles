@@ -124,6 +124,27 @@ MODELS: dict[str, dict] = {
             {"name": "mmproj-Qwen3VL-8B-Instruct-F16.gguf (vision, for --edit)", "path": "qwen-image-2.1/text_encoder/mmproj-Qwen3VL-8B-Instruct-F16.gguf", "size_gb": 1.1},
         ],
     },
+    # Qwen-Image 2.1 Viggle Turbo (distilled DiT, 6 steps, cfg=1.0, custom sigmas).
+    # Same dir/VAE/encoder as qwen-image-2.1; DiT swapped by the loader (model_name
+    # ends in "-turbo" -> qwen_image_2.1_turbo_Q6_K.gguf). Source: Abiray GGUF quants.
+    "qwen-image-2.1-turbo": {
+        "backend_id": "qwen-image-2.1-sd-cpp",
+        "dir": "qwen-image-2.1",
+        "backend_type": "qwen21_sd_cpp",
+        "category": "image",
+        "bits": "Q6_K GGUF (Viggle Turbo distill)",
+        "description": "Qwen-Image 2.1 Viggle Turbo — 6 steps, cfg=1.0, pinned sigmas; T2I + editing",
+        "enhance_model": "qwen3.6-35b-a3b",
+        "enhance_type": "qwen21",
+        "default_size": (1024, 1024),
+        "components": [
+            {"name": "qwen_image_2.1_turbo_Q6_K.gguf (DiT, Viggle Turbo v0.2.1)", "path": "qwen-image-2.1/qwen_image_2.1_turbo_Q6_K.gguf", "size_gb": 5.9},
+        ],
+        "hf_files": [
+            {"repo": "Abiray/Qwen-Image-2.1-viggle-4-steps-turbo-GGUF",
+             "files": ["qwen_image_2.1_turbo_Q6_K.gguf"]},
+        ],
+    },
     # Mage-Flow-Edit-Turbo (sd-cli / stable-diffusion.cpp — instruction-based image editing)
     # 4B NR-MMDiT, 4 steps, cfg=1.0 (Turbo). Uses Qwen3-VL-4B as text+vision encoder.
     # GGUF from gguf-org, VAE included. Only edit-turbo variant (no T2I GGUF yet).
