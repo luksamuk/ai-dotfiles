@@ -1134,13 +1134,6 @@ def _run_qwen21_sd_cpp_image(
                     for line in _tw.wrap(enhanced, width=78):
                         print(f"     {line}")
                     print(f"     ────────────────────────────")
-                    prompt = _reapply_lora_tags(enhanced, lora_tags)
-                else:
-                    print(f"     ⚠️  Vision+edit enhancement falhou — usando instrução original")
-                    if raw_response and raw_response != prompt:
-                        print(f"     ─── LLM response ───")
-                        print(f"     {raw_response[:500]}")
-                        print(f"     ────────────────────")
                 enhanced = enhanced if (enhanced and enhanced != prompt) else None
         elif enhance_type == "qwen21":
             print(f"\n  \u2728 Enhancing prompt via {enhance_model} (qwen21 mode)...")
@@ -1155,6 +1148,8 @@ def _run_qwen21_sd_cpp_image(
             print(f"     Expanded to ({len(enhanced)} chars)")
             _show_enhanced_if_requested(args, enhanced)
             prompt = enhanced
+        if lora_tags:
+            prompt = _reapply_lora_tags(prompt, lora_tags)
 
     # Evict LLMs before loading (the text encoder runs on CPU, but the DiT needs VRAM)
     running = llama_swap_running_models()
