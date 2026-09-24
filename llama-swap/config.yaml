@@ -1827,8 +1827,8 @@ models:
 #     OBRIGATORIA no cmd (fix 24/set, smoke 200 OK)
 # -------------------------------------------
   "qwen3.6-35b-a3b-heretic-cafe":
-    name: "Qwen 3.6 35B Heretic (Cafe 262K)"
-    description: "Assistente de código sem censura, com visão e 262K de contexto — o maior da frota. Ideal para sessões longas de programação, refatoração de arquivos grandes e agentes que precisam de contexto inteiro. Roda em 6 GB de VRAM com cache Turbo KV."
+    name: "Qwen 3.6 35B Heretic Long"
+    description: "Assistente de código sem censura com visão e o maior contexto da frota (262K, dividido em até 4 sessões de 64K). Ideal para múltiplos agentes em paralelo, análise de documentos longos e refatorações extensas."
     cmd: |
       env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
       --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
@@ -1836,7 +1836,7 @@ models:
       --ctx-size 262144
       --jinja
       --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-      --parallel 1
+      --parallel 4
       --cache-type-k turbo4
       --cache-type-v turbo4
       --flash-attn on
