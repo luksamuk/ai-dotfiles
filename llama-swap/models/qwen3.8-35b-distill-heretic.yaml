@@ -1,0 +1,88 @@
+# -------------------------------------------
+# QWEN3.8-35B-A3B-DISTILL-HERETIC — candidato a CODE HUNT (Sep 2026)
+# Distilado do Qwen3.8 (ARC +0.034 fora do ruído vs Qwen3.6) na mesma arch
+# qwen35moe. ABLITERATED direcional (0/10 refusals, KL 0.0076 — NAO e o Heretic TPE do SC117,
+# e o metodo orthogonal steering que o usuario considera agressivo demais). Quant IsValorum
+# APEX-I-MiniPlus V2.1 (14.66 GB, routers F32, output Q6_K).
+# MTP DRAFT SEPARADO (mtp-Q8_0.gguf 1.99 GB) — speculative decoding.
+# mmproj Q8 (614 MB) — visão preservada.
+#
+# CAVERNA upstream: bug de repetição em gerações longas (admitido pela
+# Empero-ai), Distill V2 a caminho. Benchmark agentic é o teste certo
+# pra expor isso (04-ichef-full tem gerações longas).
+#
+# REQUISITO DE TESTE: validar que o ik carrega o draft separado
+# (remover as flags de spec) e aceitar decode sem speculative.
+# -------------------------------------------
+"qwen3.8-35b-distill-heretic":
+  name: "Qwen 3.8 35B Distill (Abliterated)"
+  description: "Qwen3.8 35B (destilado) uncensored — reasoning mais forte (ARC +3.4%) com o mesmo custo por token. 131K de contexto, visão, ferramentas e speculative decoding via MTP dedicado. Candidato a substituir o heretic no trabalho de código."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/qwen3.8-35b-distill-heretic/Qwen3.8-35B-A3B-Distill.APEX-I-MiniPlus-V2.1-Abliterated.gguf
+    --mmproj ${models_dir}/qwen3.8-35b-distill-heretic/mmproj-Q8_0.gguf
+    --no-mmproj-offload
+    --no-graph-reuse
+    --fit
+    --fit-margin 1536
+    --ctx-size 131072
+    --temp ${code_temp}
+    --top-p ${code_top_p}
+    --top-k ${code_top_k}
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --reasoning on
+    --jinja
+    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --prefetch-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.85
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~14.66 GB (APEX-I-MiniPlus V2.1, heretic) + 614 MB mmproj Q8"
+    context: "1K-131K"
+    vram_usage: "~5.6 GB VRAM estimado + ~15 GB pinned RAM"
+    source: "IsValorum/Qwen3.8-35B-A3B-Distill-MTP-APEX-I-MiniPlus-V2.1-Abliterated-GGUF (base empero-ai/Qwen3.8-35B-A3B-Distill)"
+    kv_cache: "q4_0/q4_0 + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 34660000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: APEX I-MiniPlus V2.1 (heretic)
+    note: "Sep 24: candidato a CODE HUNT. Reasoning destilado do Qwen3.8 (ARC +0.034 fora do ruido). SEM MTP: o draft separado carrega 1.2-2 GB fixos em VRAM (ignora o fit do ik) e o main nao cabe. MTP off ate o ik suportar overrides no draft ou o Distill V2 sair. Bug upstream de repeticao em geracoes longas (Distill V2 a caminho)."
