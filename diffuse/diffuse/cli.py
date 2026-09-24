@@ -1134,7 +1134,7 @@ def _run_qwen21_sd_cpp_image(
                     for line in _tw.wrap(enhanced, width=78):
                         print(f"     {line}")
                     print(f"     ────────────────────────────")
-                    prompt = enhanced
+                    prompt = _reapply_lora_tags(enhanced, lora_tags)
                 else:
                     print(f"     ⚠️  Vision+edit enhancement falhou — usando instrução original")
                     if raw_response and raw_response != prompt:
