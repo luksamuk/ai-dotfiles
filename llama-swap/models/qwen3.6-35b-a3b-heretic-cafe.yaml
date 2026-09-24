@@ -22,8 +22,8 @@
   description: "Assistente de código sem censura, com visão e 262K de contexto — o maior da frota. Ideal para sessões longas de programação, refatoração de arquivos grandes e agentes que precisam de contexto inteiro. Roda em 6 GB de VRAM com cache Turbo KV."
   cmd: |
     env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
-    --model ${models_dir}/qwen3.6-35b-a3b-heretic/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-I-Compact.gguf
-    --mmproj ${models_dir}/qwen3.6-35b-a3b-heretic/mmproj_qwen36_F16.gguf
+    --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
+    --mmproj ${models_dir}/qwen36-heretic-apex-mini/mmproj.gguf
     --ctx-size 262144
     --jinja
     --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja

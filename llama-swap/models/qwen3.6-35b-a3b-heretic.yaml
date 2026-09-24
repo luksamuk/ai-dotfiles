@@ -1,26 +1,25 @@
 # -------------------------------------------
-# QWEN3.6-35B-A3B-HERETIC - DROP-IN UNCENSORED DO Q36 (SC117 APEX-I-Compact)
-# Base: llmfan46/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved
-#   (heretic sobre o Qwen3.6-35B-A3B OFICIAL — nao e merge de terceiros)
-#   88% menos recusas c/ KL divergence 0.0015 vs original (metodo heretic,
-#   mais suave que abliterated). Quant: SC117 APEX-I-Compact, APEX-MTP com
-#   nextn=1 preservado (753 tensors, verificado por header-dump Sep 2026 —
-#   o heretic-APEX do mudler e do heretic PLAIN: 733 tensors, SEM nextn,
-#   --spec-type mtp vira no-op silencioso nele. NAO USAR.)
-# Drop-in do qwen3.6-35b-a3b: mesmas flags, mesmo mmproj (vision tower do
-#   base, intocada pelo heretic), ctx 131K, MTP, hadamard, fit-margin 1024.
+# QWEN3.6-35B-A3B HERETIC (mudler APEX-I-Mini) — EXPERIMENTAL
+# O MESMO heretic TPE do prod (KL 0.0015), quant APEX-I-Mini do mudler.
+# 14,32 GB — o heretic em quant leve que o usuário procurava.
+# 733 tensors, SEM MTP nextn tail (speculative off no ik, igual ao KAT).
+# Visão via mmproj.gguf (903 MB).
+#
+# vs PROD (SC117 APEX-I-Compact 17,02 GB): -2,7 GB, quant mais agressiva
+# ("Smallest viable, fastest inference" no README do mudler). EXPERIMENTAL:
+# dependendo do andar da carruagem, substitui o prod.
 # -------------------------------------------
 "qwen3.6-35b-a3b-heretic":
   name: "Qwen 3.6 35B Heretic"
-  description: "Uncensored drop-in do qwen3.6-35b-a3b (heretic, KL 0.0015, 88% menos recusas). Mesma estrutura: APEX-MTP nextn=1, vision via mmproj compartilhado, 131K ctx, q4_0+attn_rot+hadamard."
+  description: "Assistente de código sem censura (heretic TPE) com visão, em 14 GB — a quant mais compacta da família. Ideal para teste de velocidade e comparação com o prod."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/qwen3.6-35b-a3b-heretic/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-I-Compact.gguf
-    --mmproj ${models_dir}/qwen3.6-35b-a3b-heretic/mmproj_qwen36_F16.gguf
+    --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
+    --mmproj ${models_dir}/qwen36-heretic-apex-mini/mmproj.gguf
     --no-mmproj-offload
     --no-graph-reuse
-    --fit
-    --fit-margin 1536
+    -ngl 99
+    --n-cpu-moe 35
     --ctx-size 102400
     --temp ${code_temp}
     --top-p ${code_top_p}
@@ -39,7 +38,6 @@
     --flash-attn auto
     --defer-experts
     --prefetch-experts
-    --spec-type mtp:n_max=1,p_min=0.0
     --metrics
   filters:
     stripParams: "temperature, top_p"
@@ -48,7 +46,7 @@
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.6
-        top_p: 0.95
+        top_p: 0.85
       "${MODEL_ID}:think":
         chat_template_kwargs:
           enable_thinking: true
@@ -61,12 +59,12 @@
     out: ['text']
     tools: true
     reranker: false
-    context: 102400
+    context: 131072
   metadata:
-    size: "~15.85 GB (APEX-I-Compact, heretic) + 899 MB mmproj F16 (compartilhado do q36)"
-    context: "1K-100K (vision ON, RAM limpa; fallback 32K sob pressão de RAM)"
-    vram_usage: "~5.6 GB VRAM estimado + ~14GB pinned RAM (MTP ~+414MiB, padrao q36)"
-    source: "SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth F16 (compartilhado do qwen3.6-35b-a3b)"
+    size: "~14.32 GB (APEX-I-Mini, heretic) + 903 MB mmproj"
+    context: "1K-131K"
+    vram_usage: "~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34)"
+    source: "mudler/Qwen3.6-35B-A3B-uncensored-heretic-APEX-GGUF (APEX-I-Mini, base llmfan46 heretic TPE)"
     kv_cache: "q4_0/q4_0 + hadamard"
     features:
       completion: true
@@ -81,5 +79,5 @@
     parameters: 34660000000
     context_length: 262144
     embedding_length: 2048
-    quantization: APEX I-Compact
-    note: "Sep 21: drop-in uncensored do q36. Heretic do llmfan46 (KL 0.0015 vs base) quantizado pelo SC117 com nextn=1 preservado (753 tensors = bit-compatible com APEX-MTP original; header verificado). mmproj e o MESMO arquivo do q36 (vision tower do base, heretic nao toca). MTP: --spec-type mtp:n_max=1,p_min=0.0 (receita ornith/q36)."
+    quantization: APEX I-Mini (mudler, heretic TPE)
+    note: "Sep 24: experimental. O mesmo heretic TPE do prod em quant APEX-I-Mini do mudler (14.32 GB, -2.7 GB vs prod). MTP off (sem nextn tail). Se andar bem, substitui o prod."
