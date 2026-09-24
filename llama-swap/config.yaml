@@ -1833,7 +1833,7 @@ models:
       env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
       --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
       --mmproj ${models_dir}/occamy-1.0/mmproj-Accio-Lab_occamy-1.0-Q8_0.gguf
-      --ctx-size 262144
+      --ctx-size 131072
       --jinja
       --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
       --parallel 2
@@ -1873,10 +1873,10 @@ models:
         - 'text'
       tools: true
       reranker: false
-      context: 262144
+      context: 131072
     metadata:
       size: "~14.66 GB (APEX-I-Compact, heretic) + 614 MB mmproj Q8"
-      context: "262K nativo"
+      context: "131K (2 slots de 64K)"
       vram_usage: "~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe)"
       source: "SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth Q8"
       kv_cache: "turbo4 (WHT-rotated, FA-fused)"
