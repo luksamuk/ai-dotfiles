@@ -265,7 +265,7 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--nsfw", action="store_true",
-        help="Bypass content filter: remove uncond model, apply LoRA, disable safety word rules in enhance prompts.",
+        help="qwen-image-2.1: attach lora_nsfw/ LoRAs (strength via DIFFUSE_NSFW_STRENGTH, default 0.7); skipped when the prompt has a manual <lora:...> tag. Other models: NSFW enhance prompts.",
     )
     return p.parse_args()
 
@@ -1150,6 +1150,19 @@ def _run_qwen21_sd_cpp_image(
             prompt = enhanced
         if lora_tags:
             prompt = _reapply_lora_tags(prompt, lora_tags)
+
+    # --nsfw: attach the lora_nsfw/ pack as subdir tags (strength via
+    # DIFFUSE_NSFW_STRENGTH, default 0.7). Skipped when the prompt already has a
+    # manual <lora:...> tag — same rule as the auto-inject.
+    if getattr(args, "nsfw", False):
+        import os as _os_i
+        from diffuse.paths import MODELS_DIR
+        nsfw_dir = MODELS_DIR / model_info["dir"] / "lora" / "lora_nsfw"
+        nsfw_files = sorted(f for f in nsfw_dir.glob("*.safetensors")) if nsfw_dir.exists() else []
+        if nsfw_files and "<lora:" not in prompt:
+            strength = _os_i.environ.get("DIFFUSE_NSFW_STRENGTH", "0.7")
+            tags = " ".join(f"<lora:lora_nsfw/{f.stem}:{strength}>" for f in nsfw_files)
+            prompt = f"{tags} {prompt}"
 
     # Evict LLMs before loading (the text encoder runs on CPU, but the DiT needs VRAM)
     running = llama_swap_running_models()
