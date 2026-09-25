@@ -139,8 +139,11 @@ def load_pipeline_sd_cpp_qwen21(model_name: str, model_root: Path, sd_cli: str) 
     turbo = model_name.endswith("-turbo")
     dit_gguf = model_root / ("qwen_image_2.1_turbo_Q6_K.gguf" if turbo else "qwen-image-2.1-Q4_K_M.gguf")
     vae_path = model_root / "vae" / "qwen_image_2.1_vae_bf16.safetensors"
-    llm_gguf = model_root / "text_encoder" / "Qwen3VL-8B-Instruct-Q4_K_M.gguf"
-    mmproj_gguf = model_root / "text_encoder" / "mmproj-Qwen3VL-8B-Instruct-F16.gguf"
+    # Text encoder: Heretic (pottokao, abliterated via directional ablation, KL 0.022)
+    # is the official TE since 25/set — A/B won over the RLHF'd original (attenuated
+    # sensitive prompts). mmproj heretic too (vision encoder for --edit).
+    llm_gguf = model_root / "text_encoder_heretic" / "qwen3vl_8b_heretic-Q4_K_M.gguf"
+    mmproj_gguf = model_root / "text_encoder_heretic" / "mmproj-qwen3vl_8b_heretic-f16.gguf"
 
     for label, path in [("DiT", dit_gguf), ("VAE", vae_path), ("LLM", llm_gguf)]:
         if not path.exists():
@@ -226,13 +229,11 @@ def generate_image_qwen21_sd_cpp(
     # LoRA: aplica qualquer safetensors/gguf/pt em models/qwen-image-2.1/lora/
     # tag <lora:nome_sem_ext:0.6> injetada no prompt se o usuário não colocou nenhuma
     # Turbo destilado: SEM auto-injeção (Pruna/Fix/Detailer treinados na base 40-step
-    # bagunçam a receita few-step); tags manuais continuam funcionando — com
-    # --lora-model-dir apontando pro model_root, tags podem usar caminho relativo
-    # (ex.: <lora:lora_nsfw/nome:0.7> ou <lora:lora/nome:1.0>).
+    # bagunçam a receita few-step); tags manuais continuam funcionando — o dir é o
+    # MESMO lora/ do base, e tags aceitam subdiretório (<lora:lora_nsfw/nome:0.7>).
     if config.get("is_turbo"):
-        root = Path(config["diffusion_model"]).parent
-        if root.exists():
-            cmd += ["--lora-model-dir", str(root)]
+        if config.get("lora_dir"):
+            cmd += ["--lora-model-dir", config["lora_dir"]]
     elif lora_dir := config.get("lora_dir"):
         import os as _os
         loras = [f for f in _os.listdir(lora_dir) if f.endswith((".safetensors", ".gguf", ".pt"))]
