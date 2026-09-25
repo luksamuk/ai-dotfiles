@@ -267,6 +267,10 @@ def parse_args() -> argparse.Namespace:
         "--nsfw", action="store_true",
         help="qwen-image-2.1: attach lora_nsfw/ LoRAs (strength via DIFFUSE_NSFW_STRENGTH, default 0.7); skipped when the prompt has a manual <lora:...> tag. Other models: NSFW enhance prompts.",
     )
+    p.add_argument(
+        "--pruna", action="store_true",
+        help="qwen-image-2.1 (base only): attach the Pruna 8-step distillation LoRA at strength 1.0 and default to 8 steps / cfg 1.0. Incompatible with -turbo (mixed distillation families).",
+    )
     return p.parse_args()
 
 
@@ -1096,6 +1100,23 @@ def _run_qwen21_sd_cpp_image(
     # a 2.01x ratio. cfg 1.0 at 40 steps is both FASTER and better-looking
     # than cfg 4.0 at 28 steps. Do not raise this without an A/B.
     guidance = args.cfg if args.cfg is not None else 1.0
+
+    # --pruna: Pruna 8-step distillation LoRA on the BASE model only. Mixing a
+    # Pruna adapter with the Viggle-turbo DiT stacks two independent distillation
+    # lines — the catalog explicitly says the families are not interchangeable.
+    if getattr(args, "pruna", False):
+        if model_name.endswith("-turbo"):
+            raise SystemExit(
+                "  ✗ --pruna is for the base model only (-m qwen-image-2.1). "
+                "The turbo is already distilled (Viggle); stacking a Pruna LoRA on "
+                "it mixes distillation families and corrupts the sampling recipe."
+            )
+        if "<lora:" not in prompt:
+            prompt = f"<lora:p_qwen_image_2.1_8step_v0.1:1.0> {prompt}"
+        # main() already materialized the per-backend default into args.steps
+        # (40/6), so check against those, not None.
+        if not args.steps or args.steps in (40, 6):
+            steps = 8
 
     if is_edit:
         print(f"  \U0001f3a8 Qwen-Image 2.1 editing: {Path(ref_image_paths[0]).name}")
