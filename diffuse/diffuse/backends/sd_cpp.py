@@ -226,8 +226,14 @@ def generate_image_qwen21_sd_cpp(
     # LoRA: aplica qualquer safetensors/gguf/pt em models/qwen-image-2.1/lora/
     # tag <lora:nome_sem_ext:0.6> injetada no prompt se o usuário não colocou nenhuma
     # Turbo destilado: SEM auto-injeção (Pruna/Fix/Detailer treinados na base 40-step
-    # bagunçam a receita few-step); tags manuais continuam funcionando.
-    if lora_dir := config.get("lora_dir") if not config.get("is_turbo") else None:
+    # bagunçam a receita few-step); tags manuais continuam funcionando — com
+    # --lora-model-dir apontando pro model_root, tags podem usar caminho relativo
+    # (ex.: <lora:lora_nsfw/nome:0.7> ou <lora:lora/nome:1.0>).
+    if config.get("is_turbo"):
+        root = Path(config["diffusion_model"]).parent
+        if root.exists():
+            cmd += ["--lora-model-dir", str(root)]
+    elif lora_dir := config.get("lora_dir"):
         import os as _os
         loras = [f for f in _os.listdir(lora_dir) if f.endswith((".safetensors", ".gguf", ".pt"))]
         if loras:
