@@ -48,6 +48,8 @@ matrix:
     spc: portal-core-space
     fct: portal-core-fact
     adv: portal-core-adventure
+    # Manacá 1B Instruct — PT-BR do zero (LNCC × NII/LLM-jp), pesquisa experimental
+    man1: manaca-1b-instruct
     # inst: instella-moe-16b  # disabled
     # Vision
     ocr: glm-ocr
@@ -101,7 +103,7 @@ matrix:
     small_embed: "(q4 | lfm26 | spc | fct | adv) & (nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | lfm26 | spc | fct | adv | gpt2xl"
+    small_only: "q4 | lfm26 | spc | fct | adv | gpt2xl | man1"
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"
