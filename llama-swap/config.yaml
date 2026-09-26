@@ -1557,6 +1557,83 @@ models:
       quantization: F16
       note: "GPT-2 flagship from Feb 2019 (withheld by OpenAI until Nov 2019 — the unicorn-story model). Use /v1/completions (text completion) — no chat template exists. Context physically limited to 1024 by the WPE position table."
 # -------------------------------------------
+# MANACA-1B-INSTRUCT — LNCC (Instituto de IA) × NII/LLM-jp — CC BY-NC 4.0
+# Primeiro LLM decoder-only treinado DO ZERO para PT-BR (~1.72B params).
+# Release de pesquisa experimental v0.1 — NÃO é assistente de produção:
+#   MT-Bench-PT 2.90/10, ENEM/OAB no nível do acaso (~20-23%),
+#   recall de segurança ~75%, over-refusal ~8.8%.
+# Propósito: pesquisa/auditoria/reprodutibilidade + apoiar a ciência
+# nacional com feedback (discussions HF / issues GitHub). Papel no fleet:
+# referência de PT-BR nativo e cobaia de avaliação comparativa.
+
+# Fonte GGUF: sulfierry/manaca-1b-instruct-GGUF (F16, conversão UGM com
+# precompiled_charsmap oficial — normalizador nmt_nfkc_cf embutido).
+# Quant local: Q4_K_M (1011 MiB, 4.92 BPW) a partir do F16, template
+# Alpaca-PT multi-turn (manaca_alpaca.jinja do autor do GGUF) embutido
+# no KV tokenizer.chat_template via gguf_new_metadata.py.
+# ROLLBACK: F16 original mantido ao lado (manaca-1b-instruct-F16-UGM.gguf).
+
+# ARQUITETURA: llama-like (24 layers, dim 2048, FFN 8192 SwiGLU, GQA 32/8,
+# head_dim 64, RoPE theta 500k, RMSNorm, ctx nativo 4096, BF16 na origem).
+# Tokenizador: SentencePiece unigram 64k, pre 'default' (t5-style, charsmap UGM).
+# EOS: </s> id 2 — o template fecha cada resposta com </s>.
+
+# TEMPLATE: Alpaca-PT ("### Instrução: / ### Resposta:") OBRIGATÓRIO — o
+# modelo foi treinado só nesse formato, single-turn + </s> por turno.
+# Sem template embutido a saída emenda turnos; o GGUF já carrega o jinja.
+# System vira parágrafo de contexto (desvio deliberado do autor do GGUF).
+
+# VENDOR PARAMS: o card não recomenda sampling; card do autor usa
+# do_sample=False (greedy). Deixado default do llama-server (temp 0.8),
+# greedy é o caminho fiel ao card.
+
+# Contexto: 4096 nativo (não inventar mais). Q4_K_M + KV f16 @ 4k ~ 90MB KV.
+# Sem tools, sem thinking, sem vision — text-only Alpaca.
+# -------------------------------------------
+  "manaca-1b-instruct":
+    name: "Manacá 1B Instruct"
+    description: "LNCC Manacá-1B-Instruct (PT-BR do zero, CC BY-NC). Release de PESQUISA experimental v0.1: MT-Bench-PT 2.9/10, exames no acaso, segurança ~75%. Alpaca-PT embutido. Não usar como assistente real."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/manaca-1b-instruct/manaca-1b-instruct-Q4_K_M-tpl.gguf
+      --jinja
+      --parallel 1
+      --ctx-size 4096
+      --no-webui
+      --metrics
+    ttl: 300
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: false
+      reranker: false
+      context: 4096
+    metadata:
+      size: "~1.04 GB (Q4_K_M, 4.92 BPW, template embutido)"
+      context: "4K (nativo)"
+      vram_usage: "~1.3 GB (modelo + KV f16 @ 4k + buffers)"
+      source: "sulfierry/manaca-1b-instruct-GGUF (F16-UGM) -> Q4_K_M local"
+      license: "CC BY-NC 4.0 (pesquisa/não-comercial)"
+      kv_cache: "f16"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: llama
+      parameters: 1722951680
+      context_length: 4096
+      embedding_length: 2048
+      quantization: Q4_K_M
+      note: "1B PT-BR do zero (LNCC × NII/LLM-jp). Alpaca-PT OBRIGATÓRIO (template embutido no GGUF, EOS </s> fecha turno). Pesquisa experimental v0.1: MT-Bench-PT 2.9, exames no acaso, safety recall ~75%, over-refusal ~8.8%. Papel: pesquisa/auditoria/feedback pro LNCC, não produção. Rollback F16 ao lado."
+# -------------------------------------------
 # MINICPM5-2B — OpenBMB (Apache-2.0) — quant POLLARD IQ4_XS
 # Dense 2B, LlamaForCausalLM PURO (arch llama) — roda no upstream e no ik
 # sem fork/patch. 42 layers, GQA 16/2, head_dim 128, ctx 131K nativo
@@ -2094,6 +2171,8 @@ matrix:
     spc: portal-core-space
     fct: portal-core-fact
     adv: portal-core-adventure
+    # Manacá 1B Instruct — PT-BR do zero (LNCC × NII/LLM-jp), pesquisa experimental
+    man1: manaca-1b-instruct
     # inst: instella-moe-16b  # disabled
     # Vision
     ocr: glm-ocr
@@ -2147,7 +2226,7 @@ matrix:
     small_embed: "(q4 | lfm26 | spc | fct | adv) & (nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | lfm26 | spc | fct | adv | gpt2xl"
+    small_only: "q4 | lfm26 | spc | fct | adv | gpt2xl | man1"
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"
