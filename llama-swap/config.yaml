@@ -505,12 +505,12 @@ models:
       note: 'Sep 24: experimental. O mesmo heretic TPE do prod em quant APEX-I-Mini do mudler (14.32 GB, -2.7 GB vs prod). MTP off (sem nextn tail). Se andar bem, substitui o prod.'
   ornith-1.5-35b:
     name: Ornith 1.5 35B
-    description: Ornith-1.5 is a family of open-source LLMs trained with end-to-end self-improvement — the model proposes new tasks, generates task-specific scaffolds, and produces solution rollouts for RL, continuously creating new learning experiences. ONYX quantization (el4, APEX evolution) with MTP speculative decoding and vision support.
+    description: 'Drop-in replacement do ONYX (27/09): mesma receita ik, quant APEX-I-NanoPlus (12.55 GB, -5.1 GB vs ONYX), SEM MTP head (nextn=0). Bench agentic da régua: 143.6±2.8 N=5 é do ONYX (GGUF removido 27/09, re-download el4/Ornith-1.5-35B-A3B-ONYX-GGUF). Smoke: prefill 81.5 / decode 29.2 tok/s.'
     cmd: '${ik_llama_server} --port ${PORT}
 
-      --model ${models_dir}/ornith-1.5-35b/Ornith-1.5-35B-A3B-ONYX-compact.gguf
+      --model ${models_dir}/ornith-1.5-35b-nano/Ornith-1.5-35B-A3B.APEX-I-NanoPlus.gguf
 
-      --mmproj ${models_dir}/ornith-1.5-35b/mmproj.gguf
+      --mmproj ${models_dir}/ornith-1.5-35b-nano/mmproj-Q8_0.gguf
 
       --no-mmproj-offload
 
@@ -558,8 +558,6 @@ models:
 
       --prefetch-experts
 
-      --spec-type mtp:n_max=1,p_min=0.0
-
       --metrics
 
       '
@@ -588,10 +586,10 @@ models:
       reranker: false
       context: 131072
     metadata:
-      size: ~16.4 GB (ONYX compact) + 899 MB mmproj
+      size: ~12.55 GB (APEX-I-NanoPlus) + 858 MB mmproj Q8
       context: 1K-131K (safe max, model supports 262K)
-      vram_usage: ~4.6GB VRAM measured + ~16GB pinned RAM (45 tok/s with MTP, accept 85-93%)
-      source: el4/Ornith-1.5-35B-A3B-ONYX-GGUF (compact tier)
+      vram_usage: a medir no smoke (expect <4GB VRAM com --fit)
+      source: IsValorum/Ornith-1.5-35B-A3B-APEX-I-NanoPlus-GGUF
       kv_cache: q4_0 + attn_rot + hadamard
       features:
         completion: true
@@ -606,8 +604,8 @@ models:
       parameters: 35000000000
       context_length: 262144
       embedding_length: 2048
-      quantization: ONYX compact
-      note: 'Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF deleted Sep 2026 (re-download from mudler repo if reverting).'
+      quantization: APEX-I-NanoPlus (routers F32, head Q6_K)
+      note: 'Deploy 27/09 como Cenário B (economia RAM/VRAM). SEM MTP head — sem speculative decoding. Avaliação: smoke tests + snake; sem benchmark agentic ainda.'
   laguna-xs-2.1:
     name: Laguna XS 2.1
     description: Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. Served by cafe-llama.cpp with pinned-RAM expert offload (-hmoe) — the only backend that loads it on 6GB VRAM. 131K context with clean quality.
@@ -1492,109 +1490,6 @@ models:
       context_length: 131072
       quantization: Q4_K_M
       note: 'Pollard IQ4_XS testado 07-08/09 e REVERTIDO 08/09: loop infinito em tarefa de código simples (Adler32) no uso real — dados do A/B permanecem válidos (empate decode GPU, TTFT -23%, -148MB, CPU -30%), mas o comportamento agêntico pesa mais. Tool call: Q4_K_M clean nos DOIS modos (IQ4_XS só no :think). REMOVIDOS 08/09: Q8_0 oficial, Pollard Q5_K_M (GGUFs deletados). Pollard IQ4_XS GGUF MANTIDO no dir como opção A/B futura. Fallback docs no header.'
-  ornith-1.5-35b-nano:
-    name: Ornith 1.5 35B Nano
-    description: Ornith-1.5 em quant APEX-I-NanoPlus (12.55 GB) — o mesmo modelo líder do benchmark agentic em modo econômico. -5 GB de RAM/VRAM vs ONYX compact, tier Q4_K_M/L com routers F32 (zero drift). Ideal como driver diário deixando folga de RAM pro resto do sistema.
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/ornith-1.5-35b-nano/Ornith-1.5-35B-A3B.APEX-I-NanoPlus.gguf
-
-      --mmproj ${models_dir}/ornith-1.5-35b-nano/mmproj-Q8_0.gguf
-
-      --no-mmproj-offload
-
-      --fit
-
-      --fit-margin 1024
-
-      --ctx-size 131072
-
-      --temp 0.6
-
-      --top-p 0.95
-
-      --top-k 20
-
-      --min-p ${code_min_p}
-
-      --repeat-penalty ${code_repeat_penalty}
-
-      --reasoning on
-
-      --reasoning-budget 8192
-
-      --reasoning-budget-message "Let me conclude my reasoning and provide the answer."
-
-      --jinja
-
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-
-      --parallel 1
-
-      --parallel-tool-calls
-
-      --cache-type-k ${large_cache_k}
-
-      --cache-type-v ${large_cache_v}
-
-      --k-cache-hadamard
-
-      --v-cache-hadamard
-
-      --flash-attn auto
-
-      --defer-experts
-
-      --prefetch-experts
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.95
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      - image
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~12.55 GB (APEX-I-NanoPlus) + 858 MB mmproj Q8
-      context: 1K-131K (safe max, model supports 262K)
-      vram_usage: a medir no smoke (expect <4GB VRAM com --fit)
-      source: IsValorum/Ornith-1.5-35B-A3B-APEX-I-NanoPlus-GGUF
-      kv_cache: q4_0 + attn_rot + hadamard
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 35000000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: APEX-I-NanoPlus (routers F32, head Q6_K)
-      note: 'Deploy 27/09 como Cenário B (economia RAM/VRAM). SEM MTP head — sem speculative decoding. Avaliação: smoke tests + snake; sem benchmark agentic ainda.'
   qwen3-tts:
     name: Qwen3-TTS 0.6B
     description: Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible /v1/audio/speech endpoint with voice profiles from voiceclone-tui.

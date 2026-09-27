@@ -1,52 +1,27 @@
 # -------------------------------------------
-# ORNITH-1.5-35B-A3B - MoE AGENTIC CODING + VISION (ONYX compact + MTP, DEFAULT)
-# MoE 35B params, ~3B ativo por token. 256 experts, 8+1 active.
-# Self-improving RL: extends Ornith-1.0 self-scaffolding into full self-improvement loop
-# (task generation + scaffold construction + solution rollouts).
-# Same qwen35moe architecture as Ornith-1.0 and Qwen3.6-35B-A3B.
+# ORNITH-1.5-35B-A3B NANO (APEX-I-NanoPlus) — MODE ECONÔMICO
+# O MESMO Ornith-1.5 (MoE 35B, 256 experts, 8+1 active) em quant
+# APEX-I-NanoPlus do IsValorum: 12.55 GB / 11.69 GiB (vs ONYX 17.7GB).
+# Router F32 não-comprimido + head Q6_K = zero router drift.
+# PPL 8.09 vs 7.64 ONYX (+6.75%), ARC-Challenge ~95.71%. Tier Q4_K_M/L.
+# SEM MTP companion (head omitido na receita NanoPlus) → sem --spec-type.
 #
-# PROMOTED 2026-09-02 after A/B vs APEX Compact (N=3, same prompt/samplers):
-#   ONYX compact + MTP:  45.1 tok/s mean (46.1/44.8/44.5), VRAM 4646 MiB (75.6%)
-#   APEX Compact + ngram: 40.6 tok/s mean (40.2/40.7/40.9), VRAM 4232 MiB (68.9%)
-#   MTP acceptance 85-93% (head well calibrated on this base).
-#   +11.1% throughput for +414 MiB VRAM. User decision: speed wins.
+# Deploy 27/09: cópia do fragmento ONYX. Avaliação: smoke + snake.
+# Bench agentic da régua (141.6) é do ONYX — NanoPlus NÃO tem score ainda.
 #
-# ONYX (el4) = APEX evolution: dynamic layer sensitivity + router-weighted
-# imatrix (crushes cold MoE experts, protects hot ones in-tensor).
-# ONYX PRESERVES MTP head (blk.40.nextn.* Q8_0, verified via GGUFReader:
-# nextn_predict_layers=1, 4 nextn tensors). --spec-type mtp is SAFE here.
-# (OOM pitfall applies only to GGUFs with 0 nextn layers — see
-# references/mtp-speculative-decoding.md)
+# Vision: mmproj-Q8_0.gguf do mesmo repo (mesmo encoder CLIP da linha).
+# --fit: ik_llama streaming pra RAM; fit-margin 1024 como no ONYX.
 #
-# Vision: mmproj.gguf (899MB, CLIP-based, shared with APEX — same encoder).
-#   --no-mmproj-offload keeps it in RAM to preserve VRAM for weights.
-# ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
-# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx
-#
-# Samplers (from model card):
-#   General tasks: temp=0.6, top_p=0.95, top_k=20
-#   Benchmarks: temp=1.0
-#
-# --ctx-size 131072: same safe ceiling (model supports 262K, YaRN extends to 1M)
-# Dual mode: base (chat, no think) and :think (reasoning)
-# --reasoning-budget 8192: caps thinking tokens at 8192 when :think is active.
-#   Base mode is unaffected (template injects closed think block, budget never triggers).
-# --reasoning-budget-message: smooth transition when budget is exhausted.
-# Uses qwen-fixed-chat-template.jinja — embedded GGUF template lacks
-# tool-call format instructions, causing leakage without the fixed template.
-#
-# Benchmark (Sep 2026 A/B, RTX 3050 6GB, N=3 same prompt):
-#   ONYX compact + MTP: 45.1 tok/s, VRAM 4646 MiB, accept 85-93% — DEFAULT
-#   APEX Compact + ngram-mod: 40.6 tok/s, VRAM 4232 MiB (_disabled, GGUF deleted
-#   2026-09-02 — re-download from mudler/Ornith-1.5-35B-A3B-APEX-GGUF to revert)
+# Samplers (model card): temp=0.6, top_p=0.95, top_k=20.
+# Dual mode: base (chat) e :think (reasoning-budget 8192).
 # -------------------------------------------
 "ornith-1.5-35b":
   name: "Ornith 1.5 35B"
-  description: "Ornith-1.5 is a family of open-source LLMs trained with end-to-end self-improvement — the model proposes new tasks, generates task-specific scaffolds, and produces solution rollouts for RL, continuously creating new learning experiences. ONYX quantization (el4, APEX evolution) with MTP speculative decoding and vision support."
+  description: "Drop-in replacement do ONYX (27/09): mesma receita ik, quant APEX-I-NanoPlus (12.55 GB, -5.1 GB vs ONYX), SEM MTP head (nextn=0). Bench agentic da régua: 143.6±2.8 N=5 é do ONYX (GGUF removido 27/09, re-download el4/Ornith-1.5-35B-A3B-ONYX-GGUF). Smoke: prefill 81.5 / decode 29.2 tok/s."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/ornith-1.5-35b/Ornith-1.5-35B-A3B-ONYX-compact.gguf
-    --mmproj ${models_dir}/ornith-1.5-35b/mmproj.gguf
+    --model ${models_dir}/ornith-1.5-35b-nano/Ornith-1.5-35B-A3B.APEX-I-NanoPlus.gguf
+    --mmproj ${models_dir}/ornith-1.5-35b-nano/mmproj-Q8_0.gguf
     --no-mmproj-offload
     --fit
     --fit-margin 1024
@@ -70,7 +45,6 @@
     --flash-attn auto
     --defer-experts
     --prefetch-experts
-    --spec-type mtp:n_max=1,p_min=0.0
     --metrics
   filters:
     stripParams: "temperature, top_p"
@@ -94,10 +68,10 @@
     reranker: false
     context: 131072
   metadata:
-    size: "~16.4 GB (ONYX compact) + 899 MB mmproj"
+    size: "~12.55 GB (APEX-I-NanoPlus) + 858 MB mmproj Q8"
     context: "1K-131K (safe max, model supports 262K)"
-    vram_usage: "~4.6GB VRAM measured + ~16GB pinned RAM (45 tok/s with MTP, accept 85-93%)"
-    source: "el4/Ornith-1.5-35B-A3B-ONYX-GGUF (compact tier)"
+    vram_usage: "a medir no smoke (expect <4GB VRAM com --fit)"
+    source: "IsValorum/Ornith-1.5-35B-A3B-APEX-I-NanoPlus-GGUF"
     kv_cache: "q4_0 + attn_rot + hadamard"
     features:
       completion: true
@@ -112,5 +86,5 @@
     parameters: 35000000000
     context_length: 262144
     embedding_length: 2048
-    quantization: ONYX compact
-    note: "Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF deleted Sep 2026 (re-download from mudler repo if reverting)."
+    quantization: APEX-I-NanoPlus (routers F32, head Q6_K)
+    note: "Deploy 27/09 como Cenário B (economia RAM/VRAM). SEM MTP head — sem speculative decoding. Avaliação: smoke tests + snake; sem benchmark agentic ainda."
