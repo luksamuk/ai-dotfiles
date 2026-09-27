@@ -1,0 +1,90 @@
+# -------------------------------------------
+# ORNITH-1.5-35B-A3B NANO (APEX-I-NanoPlus) — MODE ECONÔMICO
+# O MESMO Ornith-1.5 (MoE 35B, 256 experts, 8+1 active) em quant
+# APEX-I-NanoPlus do IsValorum: 12.55 GB / 11.69 GiB (vs ONYX 17.7GB).
+# Router F32 não-comprimido + head Q6_K = zero router drift.
+# PPL 8.09 vs 7.64 ONYX (+6.75%), ARC-Challenge ~95.71%. Tier Q4_K_M/L.
+# SEM MTP companion (head omitido na receita NanoPlus) → sem --spec-type.
+#
+# Deploy 27/09: cópia do fragmento ONYX. Avaliação: smoke + snake.
+# Bench agentic da régua (141.6) é do ONYX — NanoPlus NÃO tem score ainda.
+#
+# Vision: mmproj-Q8_0.gguf do mesmo repo (mesmo encoder CLIP da linha).
+# --fit: ik_llama streaming pra RAM; fit-margin 1024 como no ONYX.
+#
+# Samplers (model card): temp=0.6, top_p=0.95, top_k=20.
+# Dual mode: base (chat) e :think (reasoning-budget 8192).
+# -------------------------------------------
+"ornith-1.5-35b-nano":
+  name: "Ornith 1.5 35B Nano"
+  description: "Ornith-1.5 em quant APEX-I-NanoPlus (12.55 GB) — o mesmo modelo líder do benchmark agentic em modo econômico. -5 GB de RAM/VRAM vs ONYX compact, tier Q4_K_M/L com routers F32 (zero drift). Ideal como driver diário deixando folga de RAM pro resto do sistema."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/ornith-1.5-35b-nano/Ornith-1.5-35B-A3B.APEX-I-NanoPlus.gguf
+    --mmproj ${models_dir}/ornith-1.5-35b-nano/mmproj-Q8_0.gguf
+    --no-mmproj-offload
+    --fit
+    --fit-margin 1024
+    --ctx-size 131072
+    --temp 0.6
+    --top-p 0.95
+    --top-k 20
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --reasoning on
+    --reasoning-budget 8192
+    --reasoning-budget-message "Let me conclude my reasoning and provide the answer."
+    --jinja
+    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --prefetch-experts
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~12.55 GB (APEX-I-NanoPlus) + 858 MB mmproj Q8"
+    context: "1K-131K (safe max, model supports 262K)"
+    vram_usage: "a medir no smoke (expect <4GB VRAM com --fit)"
+    source: "IsValorum/Ornith-1.5-35B-A3B-APEX-I-NanoPlus-GGUF"
+    kv_cache: "q4_0 + attn_rot + hadamard"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 35000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: APEX-I-NanoPlus (routers F32, head Q6_K)
+    note: "Deploy 27/09 como Cenário B (economia RAM/VRAM). SEM MTP head — sem speculative decoding. Avaliação: smoke tests + snake; sem benchmark agentic ainda."
