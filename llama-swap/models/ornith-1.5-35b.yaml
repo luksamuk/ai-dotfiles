@@ -17,10 +17,10 @@
 # -------------------------------------------
 "ornith-1.5-35b":
   name: "Ornith 1.5 35B"
-  description: "Drop-in replacement do ONYX (27/09): mesma receita ik, quant APEX-I-NanoPlus (12.55 GB, -5.1 GB vs ONYX), SEM MTP head (nextn=0). Bench agentic da régua: 143.6±2.8 N=5 é do ONYX (GGUF removido 27/09, re-download el4/Ornith-1.5-35B-A3B-ONYX-GGUF). Smoke: prefill 81.5 / decode 29.2 tok/s."
+  description: "Drop-in replacement do ONYX (27/09): mesma receita ik, quant APEX-I-MiniPlus V2.1 (15.23 GB, -2.5 GB vs ONYX), MTP embutido (nextn=1, verificado). Bench agentic da régua: 143.6±2.8 N=5 é do ONYX (GGUF removido 27/09, re-download el4/Ornith-1.5-35B-A3B-ONYX-GGUF). Smoke: prefill 81.5 / decode 29.2 tok/s."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/ornith-1.5-35b-nano/Ornith-1.5-35B-A3B.APEX-I-NanoPlus.gguf
+    --model ${models_dir}/ornith-1.5-35b-nano/Ornith-1.5-35B-A3B.APEX-I-MiniPlus-V2.1.gguf
     --mmproj ${models_dir}/ornith-1.5-35b-nano/mmproj-Q8_0.gguf
     --no-mmproj-offload
     --fit
@@ -45,6 +45,7 @@
     --flash-attn auto
     --defer-experts
     --prefetch-experts
+    --spec-type mtp:n_max=1,p_min=0.0
     --metrics
   filters:
     stripParams: "temperature, top_p"
@@ -68,7 +69,7 @@
     reranker: false
     context: 131072
   metadata:
-    size: "~12.55 GB (APEX-I-NanoPlus) + 858 MB mmproj Q8"
+    size: "~15.23 GB (APEX-I-MiniPlus V2.1) + 610 MB mmproj Q8"
     context: "1K-131K (safe max, model supports 262K)"
     vram_usage: "a medir no smoke (expect <4GB VRAM com --fit)"
     source: "IsValorum/Ornith-1.5-35B-A3B-APEX-I-NanoPlus-GGUF"
@@ -86,5 +87,5 @@
     parameters: 35000000000
     context_length: 262144
     embedding_length: 2048
-    quantization: APEX-I-NanoPlus (routers F32, head Q6_K)
-    note: "Deploy 27/09 como Cenário B (economia RAM/VRAM). SEM MTP head — sem speculative decoding. Avaliação: smoke tests + snake; sem benchmark agentic ainda."
+    quantization: APEX-I-MiniPlus V2.1 (routers F32, head Q6_K, MTP embutido)
+    note: "Deploy 27/09 como Cenário B (economia RAM/VRAM). MTP embutido: --spec-type mtp restaurado (27/09). PPL 7.637 (+0.75% vs BF16). Avaliação: smoke tests + snake; sem benchmark agentic ainda."
