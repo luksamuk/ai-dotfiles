@@ -12,6 +12,7 @@ from diffuse.prompts import (
     get_ideogram_enhance_prompt,
     get_vision_enhance_prompt,
     get_qwen21_enhance_prompt,
+    get_agate_enhance_prompt,
     get_vision_analysis_prompt,
     get_edit_enhance_prompt,
     get_edit_vision_prompt,
@@ -358,6 +359,79 @@ def enhance_vision_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
         log.warning("Empty vision-enhancement response — using raw prompt")
         return prompt, enhanced
 
+    return enhanced, enhanced
+
+
+def enhance_agate_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
+    """Use an LLM via llama-swap to rewrite a prompt for Agate (260M, fixed 256px).
+
+    Agate-specific rewriting: explicit spatial relations, colour-to-object binding,
+    1-3 subject scenes, no negation, no exact counts >2, no text in image.
+    Returns (enhanced_prompt, raw_response). On failure, enhanced_prompt is the original.
+    """
+    import urllib.request
+    import urllib.error
+
+    system = get_agate_enhance_prompt(nsfw=nsfw)
+
+    log.info("Agate-enhancing prompt via %s", model)
+    t0 = time.perf_counter()
+
+    # Same reasoning as the other enhance modes: thinking models need a large budget
+    max_tokens_val = 16384
+
+    _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
+    payload = json.dumps({
+        "model": _enhance_model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.7,
+        "max_tokens": max_tokens_val,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        f"{_enhance_url}/v1/chat/completions",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    # Retry loop: llama-swap may return 400 while the model is loading
+    max_retries = 12  # up to ~2 minutes
+    enhanced = ""
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=None) as resp:
+                data = json.loads(resp.read())
+                msg = data["choices"][0]["message"]
+                enhanced = msg.get("content", "").strip()
+                reasoning = msg.get("reasoning_content", "")
+                if not enhanced and reasoning:
+                    log.warning("Agate-enhancement model returned empty content with %d chars of reasoning", len(reasoning))
+                    return prompt, reasoning
+                break
+        except urllib.error.HTTPError as e:
+            if e.code == 400 and attempt < max_retries - 1:
+                log.info("Model loading (attempt %d/%d), retrying in 10s...", attempt + 1, max_retries)
+                time.sleep(10)
+                continue
+            log.error("Agate-enhancement failed: %s — using raw prompt", e)
+            return prompt, str(e)
+        except (urllib.error.URLError, OSError, KeyError, json.JSONDecodeError) as e:
+            log.error("Agate-enhancement failed: %s — using raw prompt", e)
+            return prompt, str(e)
+
+    elapsed = time.perf_counter() - t0
+    log.info("Agate-enhancement completed in %.1fs", elapsed)
+
+    if not enhanced:
+        log.warning("Empty agate-enhancement response — using raw prompt")
+        return prompt, enhanced
+
+    # Collapse the YAML block scalar's hard-wrapped lines into one paragraph
+    enhanced = " ".join(enhanced.split())
     return enhanced, enhanced
 
 

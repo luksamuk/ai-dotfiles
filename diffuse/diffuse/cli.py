@@ -17,12 +17,14 @@ from diffuse.backends import load_pipeline, unload_pipeline, require_model_dir
 from diffuse.backends.gemlite import generate_image_gemlite
 from diffuse.backends.sd_cpp import generate_image_sd_cpp
 from diffuse.backends.hidream import generate_image_hidream
+from diffuse.backends.agate import generate_image_agate
 from diffuse.backends.framepack import generate_video_framepack
 from diffuse.llm import evict_llm, llama_swap_running_models
 from diffuse.enhance import (
     enhance_prompt,
     enhance_vision_prompt,
     enhance_qwen21_prompt,
+    enhance_agate_prompt,
     enhance_edit_prompt,
     analyze_image,
     analyze_and_enhance_edit,
@@ -194,10 +196,10 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("-p", "--prompt", help="Text prompt. If omitted, prompted interactively.")
     p.add_argument("--seed", type=int, default=None, help="Random seed (random if not set).")
-    p.add_argument("--steps", type=int, default=None, help="Denoising steps (default: 4 for bonsai, 20 for ideogram4, 28 for hidream).")
+    p.add_argument("--steps", type=int, default=None, help="Denoising steps (default: 4 for bonsai, 20 for ideogram4, 28 for hidream, 50 for agate).")
     p.add_argument(
         "--size", type=parse_size, default=None,
-        help="Image size as WxH (default: 512x512 for bonsai, 480x480 for ideogram4, 1024x1024 for hidream).",
+        help="Image size as WxH (default: 512x512 for bonsai, 480x480 for ideogram4, 1024x1024 for hidream; agate is fixed 256x256).",
     )
     p.add_argument("--output", type=Path, default=None, help="Output PNG path (auto-generated in cwd if not set).")
     p.add_argument("--open", action="store_true", help="Open the generated image with feh after saving.")
@@ -307,7 +309,7 @@ def main() -> None:
     backend_type = model_info.get("backend_type", "gemlite")
 
     # ── Defaults per backend ──
-    # Steps: bonsai=4, ideogram4=20, hidream=28, z-image=9 (8 NFE), qwen21=28
+    # Steps: bonsai=4, ideogram4=20, hidream=28, z-image=9 (8 NFE), qwen21=28, agate=50
     if args.steps is None:
         if backend_type == "hidream":
             args.steps = 28
@@ -317,6 +319,8 @@ def main() -> None:
             args.steps = 9
         elif backend_type == "qwen21_sd_cpp":
             args.steps = 6 if model_name.endswith("-turbo") else 40
+        elif backend_type == "agate":
+            args.steps = 50
         else:
             args.steps = 4
 
@@ -326,6 +330,12 @@ def main() -> None:
         width, height = default_size
     else:
         width, height = args.size
+
+    # Agate is fixed-resolution (trained at 256×256 only) — snap/reject other sizes
+    if backend_type == "agate" and (width, height) != (256, 256):
+        print(f"  ⚠️  Agate is a fixed 256×256 model (trained resolution) — ignoring --size {width}x{height}")
+        print(f"     For larger output, upscale the result with Real-ESRGAN.")
+        width, height = (256, 256)
 
     prompt = args.prompt or get_prompt_interactive()
 
@@ -499,7 +509,25 @@ def main() -> None:
         # ── Normal enhancement (no edit, or ideogram type, or vision edit failed) ──
         if not ref_image_paths or enhance_type != "vision" or (ref_image_paths and enhance_type == "vision" and not enhanced_prompt):
             enhanced_result = prompt  # default: no change
-            if enhance_type == "vision":
+            if enhance_type == "agate":
+                print(f"  ✨ Enhancing prompt via {enhance_model} (agate mode)...")
+                enhanced_result, raw_response = enhance_agate_prompt(prompt, enhance_model, nsfw=args.nsfw)
+                if enhanced_result != prompt:
+                    enhanced_prompt = enhanced_result
+                    print(f"     Rewritten for Agate ({len(enhanced_result)} chars)")
+                    print(f"     ─── Enhanced prompt ───")
+                    import textwrap
+                    for line in textwrap.wrap(enhanced_result, width=78):
+                        print(f"     {line}")
+                    print(f"     ────────────────────────")
+                else:
+                    print(f"     ⚠️ Enhancement failed — using raw prompt")
+                    if raw_response and raw_response != prompt:
+                        print(f"     ─── LLM response ───")
+                        display = raw_response[:500] + ("..." if len(raw_response) > 500 else "")
+                        print(f"     {display}")
+                        print(f"     ────────────────────")
+            elif enhance_type == "vision":
                 print(f"  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
                 enhanced_result, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
                 if enhanced_result != prompt:
@@ -546,7 +574,7 @@ def main() -> None:
             # Apply enhanced prompt
             if backend_type == "sd_cpp" and enhanced_result != prompt:
                 prompt = enhanced_result
-            elif enhance_type == "vision" and enhanced_result != prompt:
+            elif enhance_type in ("vision", "agate") and enhanced_result != prompt:
                 prompt = enhanced_result
 
     # Show warm/cold estimate
@@ -561,6 +589,10 @@ def main() -> None:
         if backend_type == "hidream":
             print(f"  ⏳ First run at {width}×{height}")
             print(f"     Expected: ~3-4min (model load + CPU offload + 28 denoising steps)")
+        elif backend_type == "agate":
+            print(f"  ⏳ First run at {width}×{height}")
+            print(f"     Expected: ~15s (imports + model load + CUDA graph warmup)")
+            print(f"     Subsequent runs: ~2-4s")
         else:
             print(f"  ⏳ First run at {width}×{height}")
             print(f"     Cold start: ~30-60s (imports + model load + kernel JIT)")
@@ -619,6 +651,13 @@ def main() -> None:
         orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
         output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
         output_path.write_bytes(png_bytes)
+    elif backend_type == "agate":
+        png_bytes, diffusion_time, peak_hbm = generate_image_agate(
+            pipeline, prompt, seed, args.steps, width, height,
+        )
+        orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+        output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+        output_path.write_bytes(png_bytes)
     elif backend_type == "sd_cpp":
         # For sd_cpp, we need an output path upfront
         orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
@@ -650,7 +689,7 @@ def main() -> None:
         enhanced_prompt=enhanced_prompt,
     )
 
-    if backend_type in ("gemlite", "hidream"):
+    if backend_type in ("gemlite", "hidream", "agate"):
         unload_pipeline()
 
     # ── Debrief ──

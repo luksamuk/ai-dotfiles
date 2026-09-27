@@ -87,7 +87,14 @@ def print_debrief(
     print(f"  Model:       {model_name} ({model_info['bits']})")
     if original_prompt and original_prompt != prompt:
         print(f"  Prompt:      \"{original_prompt}\"")
-        print(f"  Enhanced:    Yes → Ideogram 4 JSON")
+        if enhanced_prompt:
+            try:
+                json.loads(enhanced_prompt)
+                print(f"  Enhanced:    Yes → Ideogram 4 JSON")
+            except (json.JSONDecodeError, TypeError):
+                print(f"  Enhanced:    Yes")
+        else:
+            print(f"  Enhanced:    Yes")
     else:
         print(f"  Prompt:      \"{prompt}\"")
     print(f"  Seed:        {seed}")

@@ -145,6 +145,39 @@ MODELS: dict[str, dict] = {
              "files": ["qwen_image_2.1_turbo_Q6_K.gguf"]},
         ],
     },
+    # Agate preview 001 (Logolabs) — 260M thinker-steered FCDM, pure PyTorch backend.
+    # Fixed 256×256 output (architecture limit), 50 steps cfg 3.0. Fast: ~8s first run
+    # (CUDA graph warmup), ~2-4s after. Niche: flat logos/icons, spatial composition drafts.
+    # Pipeline code ships in the repo (agate/*.py, imported via sys.path from the model dir).
+    "agate-preview-001": {
+        "backend_id": "agate-preview-001",
+        "dir": "agate-preview-001",
+        "backend_type": "agate",
+        "category": "image",
+        "bits": "BF16 (native, no quant)",
+        "description": "Agate 001 — 260M FCDM, fixed 256×256, GenEval 0.550, flat logos/icons + spatial drafts in seconds",
+        "default_size": (256, 256),
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_type": "agate",
+        "hf_files": [
+            {"repo": "Logolabs/agate-preview-001",
+             "files": ["config.json", "generator.safetensors",
+                        "text_encoder/model.safetensors", "text_encoder/tokenizer.json",
+                        "text_encoder/tokenizer_config.json", "text_encoder/config.json",
+                        "text_encoder/special_tokens_map.json",
+                        "agate/__init__.py", "agate/pipeline.py", "agate/text_encoder.py",
+                        "agate/fcdm_t2i.py", "agate/fcdm_thinker2.py", "agate/fcdm_planner.py"]},
+            {"repo": "stabilityai/sd-vae-ft-mse",
+             "files": ["config.json", "diffusion_pytorch_model.safetensors"],
+             "subdir": "vae"},
+        ],
+        "components": [
+            {"name": "generator.safetensors (FCDM-T2 thinker+UNet)", "path": "agate-preview-001/generator.safetensors", "size_gb": 0.76},
+            {"name": "Ettin-68M text encoder (ModernBERT)", "path": "agate-preview-001/text_encoder/model.safetensors", "size_gb": 0.27},
+            {"name": "SD-VAE-ft-MSE decoder", "path": "agate-preview-001/vae/diffusion_pytorch_model.safetensors", "size_gb": 0.33},
+            {"name": "agate/ pipeline code (imported from model dir)", "path": "agate-preview-001/agate", "size_gb": 0.0},
+        ],
+    },
     # Mage-Flow-Edit-Turbo (sd-cli / stable-diffusion.cpp — instruction-based image editing)
     # 4B NR-MMDiT, 4 steps, cfg=1.0 (Turbo). Uses Qwen3-VL-4B as text+vision encoder.
     # GGUF from gguf-org, VAE included. Only edit-turbo variant (no T2I GGUF yet).
