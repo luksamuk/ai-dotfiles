@@ -12,20 +12,18 @@
   ],
   "providers": {
     "empero": {
-      "npm": "@ai-sdk/openai-compatible",
+      "package": "aisdk:@ai-sdk/openai-compatible",
       "name": "Empero",
-      "options": {
-        "baseURL": "https://free.empero.org/v1",
-        "timeout": 3600000
+      "settings": {
+        "baseURL": "https://free.empero.org/v1"
       },
       "models": {}
     },
     "ollama": {
-      "npm": "@ai-sdk/openai-compatible",
+      "package": "aisdk:@ai-sdk/openai-compatible",
       "name": "Ollama",
-      "options": {
-        "baseURL": "http://127.0.0.1:11434/v1",
-        "timeout": 3600000
+      "settings": {
+        "baseURL": "http://127.0.0.1:11434/v1"
       },
       "models": {
         "glm-5.3:cloud": {
@@ -276,13 +274,10 @@
       }
     },
     "local": {
-      "npm": "@ai-sdk/openai-compatible",
+      "package": "aisdk:@ai-sdk/openai-compatible",
       "name": "llama-swap",
-      "options": {
-        "baseURL": "http://127.0.0.1:12434/v1",
-        "timeout": 900000,
-        "headerTimeout": 900000,
-        "chunkTimeout": 900000
+      "settings": {
+        "baseURL": "http://127.0.0.1:12434/v1"
       },
       "models": {
         "lfm2.5-2.6b": {
@@ -573,42 +568,6 @@
           "modalities": {
             "input": [
               "text"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "limit": {
-            "context": 131072,
-            "output": 32768
-          }
-        },
-        "occamy-1.0": {
-          "name": "Occamy 1.0",
-          "reasoning": true,
-          "tool_call": true,
-          "modalities": {
-            "input": [
-              "text",
-              "image"
-            ],
-            "output": [
-              "text"
-            ]
-          },
-          "limit": {
-            "context": 131072,
-            "output": 32768
-          }
-        },
-        "occamy-1.0:think": {
-          "name": "Occamy 1.0 Think",
-          "reasoning": true,
-          "tool_call": true,
-          "modalities": {
-            "input": [
-              "text",
-              "image"
             ],
             "output": [
               "text"
