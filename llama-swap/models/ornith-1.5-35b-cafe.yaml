@@ -7,8 +7,8 @@
 #
 # 262K nativo com parallel 1: a arquitetura hibrida SSM+atencao so tem KV
 # nas 10 layers de atencao full (full_attention_interval=4); as 31 gdn usam
-# estado constante. ~1.5 GB q4_0 @262K. MTP mantido @262K (o heretic-cafe
-# perdeu MTP @262K por parallel 2 — draft KV x 2 slots; com 1 slot cabe).
+# estado constante. ~1.5 GB q4_0 @262K. MTP mantido @262K via --spec-type draft-mtp (sintaxe cafe; o
+# heretic-cafe perdeu MTP @262K por parallel 2 — draft KV x 2 slots).
 #
 # Fallback ik: ornith-1.5-35b (131K). Cenário alvo: agentic coding @262K.
 # Binario: cafe f8982d690 (fix CUDA MoE top-k 1a679828f, preserve_reasoning).
@@ -38,7 +38,7 @@
     --repeat-penalty ${code_repeat_penalty}
     --reasoning on
     --reasoning-budget 8192
-    --spec-type mtp:n_max=1,p_min=0.0
+    --spec-type draft-mtp
     --metrics
   filters:
     stripParams: "temperature, top_p"
