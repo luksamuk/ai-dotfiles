@@ -1,6 +1,8 @@
 # -------------------------------------------
-# ORNITH-1.5-35B-CAFE — qwen35moe hibrida no cafe-llama.cpp
-# O MESMO Ornith-1.5 (MoE 35B, 256 experts, 8+1 active, nextn=1) no motor cafe.
+# ORNITH-1.5-35B-CAFE (ONYX) — qwen35moe hibrida no cafe-llama.cpp
+# O MESMO Ornith-1.5 (MoE 35B, 256 experts, 8+1 active, nextn=1) no motor cafe,
+# quant ONYX compact (el4). A variante MiniPlus V2.1 foi reprovada (loops agentic)
+# e removida do disco em 28/09 — o ONYX e a quant oficial do handle ornith.
 # Deploy espelhado no heretic-cafe (irmão arquitetural): -hmoe, template
 # embutido --jinja, KV q4_0. Sem hadamard (exclusivo do ik), sem --fit
 # (o cafe valida no load).
@@ -15,11 +17,11 @@
 # -------------------------------------------
 "ornith-1.5-35b-cafe":
   name: "Ornith 1.5 35B Cafe"
-  description: "Ornith 1.5 35B (APEX-I-MiniPlus V2.1, qwen35moe hibrida SSM+atencao) no cafe-llama.cpp f8982d690. Deploy espelhado no heretic-cafe: -hmoe, template embutido, MTP mantido. 262K nativo com parallel 1 (KV so nas 10 layers full: ~1.5 GB q4_0). Fallback ik: ornith-1.5-35b."
+  description: "Ornith 1.5 35B ONYX compact (qwen35moe hibrida SSM+atencao) no cafe-llama.cpp f8982d690. Deploy espelhado no heretic-cafe: -hmoe, template embutido, MTP mantido (ONYX preserva o head nextn). 262K nativo com parallel 1 (KV so nas 10 layers full: ~1.5 GB q4_0). Fallback ik: ornith-1.5-35b."
   cmd: |
     env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
-    --model ${models_dir}/ornith-1.5-35b-nano/Ornith-1.5-35B-A3B.APEX-I-MiniPlus-V2.1.gguf
-    --mmproj ${models_dir}/ornith-1.5-35b-nano/mmproj-Q8_0.gguf
+    --model ${models_dir}/ornith-1.5-35b/Ornith-1.5-35B-A3B-ONYX-compact.gguf
+    --mmproj ${models_dir}/ornith-1.5-35b/mmproj.gguf
     --no-mmproj-offload
     --ctx-size 262144
     --jinja
@@ -62,10 +64,10 @@
     reranker: false
     context: 262144
   metadata:
-    size: "~15.23 GB (APEX-I-MiniPlus V2.1) + 610 MB mmproj Q8"
+    size: "~17.69 GB (ONYX compact) + 899 MB mmproj"
     context: "1K-262K (nativo, parallel 1)"
     vram_usage: "a medir no smoke (esperado ~6-8 GB VRAM + ~15 GB RAM pinned -hmoe)"
-    source: "IsValorum/Ornith-1.5-35B-A3B-APEX-I-NanoPlus-GGUF (APEX-I-MiniPlus V2.1)"
+    source: "el4/Ornith-1.5-35B-A3B-ONYX-GGUF (compact tier)"
     kv_cache: "q4_0 nas 10 layers full-attention (~1.5 GB @262K); 31 layers gdn = estado constante"
     features:
       completion: true
@@ -80,5 +82,5 @@
     parameters: 35000000000
     context_length: 262144
     embedding_length: 2048
-    quantization: "APEX-I-MiniPlus V2.1 (routers F32, head Q6_K, MTP embutido)"
-    note: "Deploy planejado Sep 28 (aguardando GPU livre — usuario no laguna). MTP @262K com parallel 1. Sem --fit no cafe: loader valida no load."
+    quantization: "ONYX compact (MTP head Q8_0 preservado)"
+    note: "ONYX swap Sep 28: MiniPlus V2.1 reprovado (loops agentic), GGUF deletado. MTP @262K com parallel 1. Sem --fit no cafe: loader valida no load."
