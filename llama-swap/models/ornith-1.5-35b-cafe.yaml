@@ -7,9 +7,9 @@
 # embutido --jinja, KV q4_0. Sem hadamard (exclusivo do ik), sem --fit
 # (o cafe valida no load).
 #
-# 262K nativo com parallel 1: a arquitetura hibrida SSM+atencao so tem KV
+# 200K cap (degradacao ~213K) com parallel 1: a arquitetura hibrida SSM+atencao so tem KV
 # nas 10 layers de atencao full (full_attention_interval=4); as 31 gdn usam
-# estado constante. ~1.5 GB q4_0 @262K. MTP mantido @262K via --spec-type draft-mtp (sintaxe cafe; o
+# estado constante. ~1.2 GB q4_0 @200K. MTP mantido @200K via --spec-type draft-mtp (sintaxe cafe; o
 # heretic-cafe perdeu MTP @262K por parallel 2 — draft KV x 2 slots).
 #
 # Fallback ik: ornith-1.5-35b (131K). Cenário alvo: agentic coding @262K.
@@ -17,13 +17,13 @@
 # -------------------------------------------
 "ornith-1.5-35b-cafe":
   name: "Ornith 1.5 35B Cafe"
-  description: "Ornith 1.5 35B ONYX compact (qwen35moe hibrida SSM+atencao) no cafe-llama.cpp f8982d690. Deploy espelhado no heretic-cafe: -hmoe, template embutido, MTP mantido (ONYX preserva o head nextn). 262K nativo com parallel 1 (KV so nas 10 layers full: ~1.5 GB q4_0). Fallback ik: ornith-1.5-35b."
+  description: "Ornith 1.5 35B ONYX compact (qwen35moe hibrida SSM+atencao) no cafe-llama.cpp f8982d690. Deploy espelhado no heretic-cafe: -hmoe, template embutido, MTP mantido (ONYX preserva o head nextn). 200K cap (degradacao ~213K) com parallel 1 (KV so nas 10 layers full: ~1.2 GB q4_0). Fallback ik: ornith-1.5-35b."
   cmd: |
     env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
     --model ${models_dir}/ornith-1.5-35b/Ornith-1.5-35B-A3B-ONYX-compact.gguf
     --mmproj ${models_dir}/ornith-1.5-35b/mmproj.gguf
     --no-mmproj-offload
-    --ctx-size 262144
+    --ctx-size 200000
     --jinja
     --parallel 1
     --cache-type-k q4_0
@@ -62,10 +62,10 @@
     out: ['text']
     tools: true
     reranker: false
-    context: 262144
+    context: 200000
   metadata:
     size: "~17.69 GB (ONYX compact) + 899 MB mmproj"
-    context: "1K-262K (nativo, parallel 1)"
+    context: "1K-200K (cap de degradacao: loops de tool-call a partir de ~213K)"
     vram_usage: "a medir no smoke (esperado ~6-8 GB VRAM + ~15 GB RAM pinned -hmoe)"
     source: "el4/Ornith-1.5-35B-A3B-ONYX-GGUF (compact tier)"
     kv_cache: "q4_0 nas 10 layers full-attention (~1.5 GB @262K); 31 layers gdn = estado constante"
@@ -83,4 +83,4 @@
     context_length: 262144
     embedding_length: 2048
     quantization: "ONYX compact (MTP head Q8_0 preservado)"
-    note: "ONYX swap Sep 28: MiniPlus V2.1 reprovado (loops agentic), GGUF deletado. MTP @262K com parallel 1. Sem --fit no cafe: loader valida no load."
+    note: "ONYX swap Sep 28: MiniPlus V2.1 reprovado (loops agentic), GGUF deletado. MTP @200K com parallel 1. Sem --fit no cafe: loader valida no load."
