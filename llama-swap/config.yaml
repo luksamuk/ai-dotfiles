@@ -1688,7 +1688,7 @@ models:
     description: Especialista em logica formal da webAI (3.66B denso sobre Granite 4.2-3B). Entailment, FOL, semantic parse, Lean formalize/critique, MCQ de logica. Passa Qwen3-8B em strict-7 no dominio. Nao e assistente geral; sem tools. Licenca nao-comercial.
     cmd: '${llama_server} --port ${PORT}
 
-      --model ${models_dir}/twil-lm3-pro/TwIL-LM3-Pro-Q8_0.gguf
+      --model ${models_dir}/twil-lm3-pro/TwIL-LM3-Pro-Q6_K.gguf
 
       --fit on
 
@@ -1744,10 +1744,10 @@ models:
       reranker: false
       context: 131072
     metadata:
-      size: ~3.63 GB (Q8_0)
+      size: ~2.80 GB (Q6_K)
       context: 32K-128K (dynamic fit)
-      vram_usage: ~5.3GB VRAM @32K no 6GB (modelo 3.63GB + KV q4_0 + compute); fit derruba ctx se apertar
-      source: webAI-Official/TwIL-LM3-Pro (Q8_0)
+      vram_usage: ~4.5GB VRAM @131K no 6GB (modelo 2.80GB + KV q4_0 + compute); fit derruba ctx se apertar
+      source: webAI-Official/TwIL-LM3-Pro (Q6_K)
       kv_cache: q4_0/q4_0
       features:
         completion: true
@@ -1762,8 +1762,8 @@ models:
       parameters: 3659737600
       context_length: 131072
       embedding_length: 2560
-      quantization: Q8_0
-      note: 'Track A greedy temp 0 (inject no :think); card pede max_tokens >=2048 senao trunca think. Track B avaliado SEM thinking (empata com base Granite no macro 10 datasets: 0.790 vs 0.794). BBH-logic 95.4, MATH-500 74.7, MuSR 64.1. Tool calling: probe local 01/10 OK (tool_calls + JSON valido, heranca Granite) apesar do card nao reivindicar. Q8_0 escolhido sobre Q4_K_M: card alerta degradacao em K-quant e skill prefere Q8_0 p/ denso; se VRAM apertar, Q6_K (2.80GB) e o fallback. Deploy 30/09/2026.'
+      quantization: Q6_K
+      note: 'Track A greedy temp 0 (inject no :think); card pede max_tokens >=2048 senao trunca think. Track B avaliado SEM thinking (empata com base Granite no macro 10 datasets: 0.790 vs 0.794). BBH-logic 95.4, MATH-500 74.7, MuSR 64.1. Tool calling: probe local 01/10 OK (tool_calls + JSON valido, heranca Granite) apesar do card nao reivindicar. Quant A/B 01/10: Q6_K 28 t/s vs Q8_0 21 t/s no FOL hard (+33%), entailment probe OK nos dois -> Q6_K em prod, Q8_0 removido do disco (re-download via hf). Spec decoding: MTP impossivel (GGUF sem nextn, familia Granite 4.x MTP-free, verificado nos configs 4.0/4.2); ngram-mod/ngram-simple +5% apenas (think formal-logic sem repeticao n-gram suficiente). Deploy 30/09/2026.'
 hooks:
   on_startup:
     preload: []
