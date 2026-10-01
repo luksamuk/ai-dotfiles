@@ -204,6 +204,40 @@
       },
       "models": [
         {
+          "id": "glm-ocr",
+          "name": "GLM-OCR",
+          "description": "OCR nativo (glm4 940M).",
+          "reasoning": false,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "laguna-xs-2.1",
+          "name": "Laguna XS 2.1",
+          "description": "Poolside 33B MoE, codigo.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "laguna-xs-2.1:think",
+          "name": "Laguna XS 2.1 Thinking",
+          "description": "Poolside 33B MoE, codigo.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
           "id": "lfm2.5-2.6b",
           "name": "LFM 2.5 2.6B",
           "description": "Liquid AI 2.6B hybrid model — fast reasoning and tool calling, 131K context in 3.5 GB.",
@@ -218,6 +252,103 @@
           "id": "lfm2.5-2.6b:think",
           "name": "LFM 2.5 2.6B (Thinking)",
           "description": "Liquid AI 2.6B hybrid model — fast reasoning and tool calling, 131K context in 3.5 GB.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "lfm2.5-vl-3b",
+          "name": "LFM2.5-VL 3B",
+          "description": "LFM2.5 VL 3B — visao texto+imagem.",
+          "reasoning": false,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 32768,
+          "maxTokens": 32768
+        },
+        {
+          "id": "manaca-1b-instruct",
+          "name": "Manacá 1B Instruct",
+          "description": "LNCC Manacá-1B-Instruct: PT-BR do zero (LNCC × NII/LLM-jp), release de PESQUISA v0.1, CC BY-NC. MT-Bench-PT 2.9/10, exames no acaso, safety ~75%. Alpaca-PT. Não usar como assistente real.",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 4096,
+          "maxTokens": 2048
+        },
+        {
+          "id": "minicpm5-2b",
+          "name": "MiniCPM5 2B",
+          "description": "OpenBMB MiniCPM5-2B: dense 2B (arch llama), 131K ctx nativo, tool calling limpo em ambos os modos, decode 78-84 t/s. Vendor SOTA 2B (AA Intelligence 15, acima de Granite 8B). Text-only, sem MTP.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "minicpm5-2b:think",
+          "name": "MiniCPM5 2B (Thinking)",
+          "description": "OpenBMB MiniCPM5-2B com thinking. Tool calling limpo nos dois modos. Fleet-best decode estavel (78 t/s CV 2.3%), needle @131K correta. Melhor disciplina de tool call do A/B (0 falso positivo).",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "nanbeige4.2-3b",
+          "name": "Nanbeige 4.2 3B",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 65536,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "top_k": 20
+          }
+        },
+        {
+          "id": "nanbeige4.2-3b:think",
+          "name": "Nanbeige 4.2 3B (Thinking)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 65536,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "top_k": 20
+          }
+        },
+        {
+          "id": "neohorse-1-4b",
+          "name": "NeoHorse 1 4B",
+          "description": "Qwen3.5-4B fine-tune comunitaria, 128K.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "neohorse-1-4b:think",
+          "name": "NeoHorse 1 4B Thinking",
+          "description": "Qwen3.5-4B fine-tune comunitaria, 128K.",
           "reasoning": true,
           "input": [
             "text"
@@ -242,6 +373,30 @@
           }
         },
         {
+          "id": "ornith-1.5-35b-cafe",
+          "name": "Ornith 1.5 35B Cafe",
+          "description": "Ornith 1.5 ONYX compact @200K — producao cafe.",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 200000,
+          "maxTokens": 32768
+        },
+        {
+          "id": "ornith-1.5-35b-cafe:think",
+          "name": "Ornith 1.5 35B Cafe Thinking",
+          "description": "Ornith 1.5 ONYX compact @200K — producao cafe.",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 200000,
+          "maxTokens": 32768
+        },
+        {
           "id": "ornith-1.5-35b:think",
           "name": "Ornith 1.5 35B (Thinking)",
           "description": "Ornith-1.5 — self-improving RL MoE. Extends Ornith-1.0 self-scaffolding into full self-improvement loop (task generation + scaffold + rollouts). 35B MoE, ~3B active/token.",
@@ -256,26 +411,6 @@
             "top_p": 0.95,
             "top_k": 20
           }
-        },
-        {
-          "id": "bonsai-27b",
-          "name": "Bonsai 27B 1-bit",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 262144,
-          "maxTokens": 16384
-        },
-        {
-          "id": "bonsai-27b:think",
-          "name": "Bonsai 27B 1-bit (Thinking)",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 262144,
-          "maxTokens": 16384
         },
         {
           "id": "qwen3.5-4b",
@@ -300,28 +435,6 @@
           "maxTokens": 32768
         },
         {
-          "id": "minicpm5-2b",
-          "name": "MiniCPM5 2B",
-          "description": "OpenBMB MiniCPM5-2B: dense 2B (arch llama), 131K ctx nativo, tool calling limpo em ambos os modos, decode 78-84 t/s. Vendor SOTA 2B (AA Intelligence 15, acima de Granite 8B). Text-only, sem MTP.",
-          "reasoning": false,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "minicpm5-2b:think",
-          "name": "MiniCPM5 2B (Thinking)",
-          "description": "OpenBMB MiniCPM5-2B com thinking. Tool calling limpo nos dois modos. Fleet-best decode estavel (78 t/s CV 2.3%), needle @131K correta. Melhor disciplina de tool call do A/B (0 falso positivo).",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
           "id": "qwen3.6-35b-a3b-heretic",
           "name": "Qwen 3.6 35B Heretic (262K)",
           "description": "Qwen3.6 35B MoE A3B, APEX-MTP I-Compact, 42.6 tok/s com MTP. enable_thinking: false no base.",
@@ -330,13 +443,37 @@
             "text",
             "image"
           ],
-          "contextWindow": 131072,
+          "contextWindow": 102400,
           "maxTokens": 32768,
           "samplingParams": {
             "temperature": 0.6,
             "top_p": 0.85,
             "top_k": 20
           }
+        },
+        {
+          "id": "qwen3.6-35b-a3b-heretic-cafe",
+          "name": "Qwen 3.6 35B Heretic Long",
+          "description": "Qwen3.6 35B MoE I-Compact @131K — producao cafe.",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "qwen3.6-35b-a3b-heretic-cafe:think",
+          "name": "Qwen 3.6 35B Heretic Long Thinking",
+          "description": "Qwen3.6 35B MoE I-Compact @131K — producao cafe.",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
         },
         {
           "id": "qwen3.6-35b-a3b-heretic:think",
@@ -347,7 +484,7 @@
             "text",
             "image"
           ],
-          "contextWindow": 131072,
+          "contextWindow": 102400,
           "maxTokens": 32768,
           "samplingParams": {
             "temperature": 0.6,
@@ -356,171 +493,59 @@
           }
         },
         {
-          "id": "qwen3.6-35b-a3b-heretic",
-          "name": "Qwen 3.6 35B A3B Heretic (APEX-MTP)",
-          "description": "Uncensored oficial (heretic KL 0.0015, 88% menos recusas) via cafe-llama.cpp, 262K ctx, visão. enable_thinking: false no base.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.85,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "qwen3.6-35b-a3b-heretic:think",
-          "name": "Qwen 3.6 35B A3B Heretic (Thinking)",
-          "description": "Uncensored oficial (heretic) com enable_thinking: true. 262K ctx, visão.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.9,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "qwen3.8-35b-a3b",
-          "name": "Qwen 3.8 35B Distill",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.95,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "qwen3.8-35b-a3b:think",
-          "name": "Qwen 3.8 35B Distill (Thinking)",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.95,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "bonsai2-27b",
-          "name": "Bonsai 2 27B",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 32768,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.7,
-            "top_p": 0.8,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "bonsai2-27b:think",
-          "name": "Bonsai 2 27B (Thinking)",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 32768,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 1.0,
-            "top_p": 0.95,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "occamy-1.0",
-          "name": "Occamy 1.0 (Qwen3.8 35B MoE APEX)",
+          "id": "qwen3.8-4b-heretic",
+          "name": "Qwen3.8 4B Heretic",
+          "description": "Distill Qwen3.8 destilado na arq qwen35, uncensored (Heretic).",
           "reasoning": true,
           "input": [
             "text"
           ],
           "contextWindow": 131072,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.85,
-            "top_k": 40
-          }
+          "maxTokens": 32768
         },
         {
-          "id": "occamy-1.0:think",
-          "name": "Occamy 1.0 (Thinking)",
+          "id": "qwen3.8-4b-heretic:think",
+          "name": "Qwen3.8 4B Heretic Thinking",
+          "description": "Distill Qwen3.8 destilado na arq qwen35, uncensored (Heretic).",
           "reasoning": true,
           "input": [
             "text"
           ],
           "contextWindow": 131072,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.85,
-            "top_k": 40
-          }
+          "maxTokens": 32768
         },
         {
-          "id": "nanbeige4.2-3b",
-          "name": "Nanbeige 4.2 3B",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.7,
-            "top_p": 0.9,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "nanbeige4.2-3b:think",
-          "name": "Nanbeige 4.2 3B (Thinking)",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.7,
-            "top_p": 0.9,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "manaca-1b-instruct",
-          "name": "Manacá 1B Instruct",
-          "description": "LNCC Manacá-1B-Instruct: PT-BR do zero (LNCC × NII/LLM-jp), release de PESQUISA v0.1, CC BY-NC. MT-Bench-PT 2.9/10, exames no acaso, safety ~75%. Alpaca-PT. Não usar como assistente real.",
+          "id": "translategemma-4b",
+          "name": "TranslateGemma 4B",
+          "description": "Traducao dedicada (Gemma3).",
           "reasoning": false,
           "input": [
             "text"
           ],
-          "contextWindow": 4096,
-          "maxTokens": 2048
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "twil-lm3-pro",
+          "name": "TwIL-LM3-Pro",
+          "description": "Especialista formal-logic da webAI (3.66B denso, Granite 4.2-3B). Entailment, FOL, Lean. Tool calling ok.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "twil-lm3-pro:think",
+          "name": "TwIL-LM3-Pro Thinking",
+          "description": "Especialista formal-logic da webAI (3.66B denso, Granite 4.2-3B). Entailment, FOL, Lean. Tool calling ok.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
         }
       ]
     }

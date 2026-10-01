@@ -11,8 +11,11 @@
 # :think = temp 0 (protocolo de avaliacao do card); base = gen config deles
 # (do_sample true, temp 1.0, top_p 0.95). repeat-penalty 1.0 LOAD-BEARING
 # (card: penalty 1.1 produziu swings de 20 pontos - protocolo hashado).
-# Sem tool calling, sem tuning de chat/seguranca; NAO e assistente geral
-# (card: "not a general assistant"). Nao roda codigo (HumanEval/BFCL nao rodados).
+# Tool calling: card NAO reivindica (BFCL nao rodado) MAS o template Granite traz macro de
+# tools e o probe local (01/10) confirmou: finish_reason tool_calls com JSON valido.
+# tools: true liberado pelo usuario. Sem tuning agentic - nao use como agente pesado.
+# Sem tuning de chat/seguranca; NAO e assistente geral (card: "not a general assistant").
+# Nao roda codigo (HumanEval/BFCL nao rodados).
 # Benchmarks medidos em bf16/vLLM; Q8_0 e o quant mais fiel disponivel (card
 # adverte degradacao "most likely at Q4_K_M"; skill: prefira Q8_0 em denso).
 # Deploy 30/09/2026: lane nova no fleet (logica formal), nao substitui modelo.
@@ -57,7 +60,7 @@
   capabilities:
     in: ['text']
     out: ['text']
-    tools: false
+    tools: true
     reranker: false
     context: 131072
   metadata:
@@ -68,7 +71,7 @@
     kv_cache: "q4_0/q4_0"
     features:
       completion: true
-      tools: false
+      tools: true
       thinking: true
       vision: false
       embedding: false
@@ -80,4 +83,4 @@
     context_length: 131072
     embedding_length: 2560
     quantization: Q8_0
-    note: "Track A greedy temp 0 (inject no :think); card pede max_tokens >=2048 senao trunca think. Track B avaliado SEM thinking (empata com base Granite no macro 10 datasets: 0.790 vs 0.794). BBH-logic 95.4, MATH-500 74.7, MuSR 64.1. Q8_0 escolhido sobre Q4_K_M: card alerta degradacao em K-quant e skill prefere Q8_0 p/ denso; se VRAM apertar, Q6_K (2.80GB) e o fallback. Deploy 30/09/2026."
+    note: "Track A greedy temp 0 (inject no :think); card pede max_tokens >=2048 senao trunca think. Track B avaliado SEM thinking (empata com base Granite no macro 10 datasets: 0.790 vs 0.794). BBH-logic 95.4, MATH-500 74.7, MuSR 64.1. Tool calling: probe local 01/10 OK (tool_calls + JSON valido, heranca Granite) apesar do card nao reivindicar. Q8_0 escolhido sobre Q4_K_M: card alerta degradacao em K-quant e skill prefere Q8_0 p/ denso; se VRAM apertar, Q6_K (2.80GB) e o fallback. Deploy 30/09/2026."
