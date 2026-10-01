@@ -46,10 +46,6 @@ matrix:
     # GPT-2 124M — museum piece (2019 original, completion-only, ctx 1024)
     # gpt2: gpt-2-124m  # desativado 17/09 (disk; restore: _disabled)
     gpt2xl: gpt-2-xl
-    # Portal 2 personality cores (conversational, Q8_0, LFM2.5-350M)
-    spc: portal-core-space
-    fct: portal-core-fact
-    adv: portal-core-adventure
     # Manacá 1B Instruct — PT-BR do zero (LNCC × NII/LLM-jp), pesquisa experimental
     man1: manaca-1b-instruct
     # inst: instella-moe-16b  # disabled
@@ -99,13 +95,13 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(q4 | lfm26 | twp | spc | fct | adv) & (nemb | lfmcol)"
+    small_vision: "(q4 | lfm26 | twp) & (nemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | lfm26 | twp | spc | fct | adv) & (nemb | lfmcol)"
+    small_embed: "(q4 | lfm26 | twp) & (nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | lfm26 | twp | spc | fct | adv | gpt2xl | man1"
+    small_only: "q4 | lfm26 | twp | gpt2xl | man1"
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"
@@ -174,9 +170,6 @@ matrix:
     g12p: 3
     # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
     gpt2xl: 3
-    spc: 1
-    fct: 2
-    adv: 2
     # nomic: 1  # REMOVED Sep 10 2026
     lfmemb: 1
     nemb: 1

@@ -68,7 +68,8 @@
     context: "1K-200K (cap de degradacao: loops de tool-call a partir de ~213K)"
     vram_usage: "a medir no smoke (esperado ~6-8 GB VRAM + ~15 GB RAM pinned -hmoe)"
     source: "el4/Ornith-1.5-35B-A3B-ONYX-GGUF (compact tier)"
-    kv_cache: "q4_0 nas 10 layers full-attention (~1.5 GB @262K); 31 layers gdn = estado constante"
+    kv_cache: "q4_0 (attn) + gdn (estado constante)"
+    note: "ONYX swap Sep 28: MiniPlus V2.1 reprovado (loops agentic), GGUF deletado. MTP @200K com parallel 1. Sem --fit no cafe: loader valida no load. MTP head Q8_0 preservado no quant. KV: q4_0 nas 10 layers full-attention (~1.5 GB @262K); 31 layers gdn = estado constante."
     features:
       completion: true
       tools: true
@@ -82,5 +83,4 @@
     parameters: 35000000000
     context_length: 262144
     embedding_length: 2048
-    quantization: "ONYX compact (MTP head Q8_0 preservado)"
-    note: "ONYX swap Sep 28: MiniPlus V2.1 reprovado (loops agentic), GGUF deletado. MTP @200K com parallel 1. Sem --fit no cafe: loader valida no load."
+    quantization: "ONYX compact"

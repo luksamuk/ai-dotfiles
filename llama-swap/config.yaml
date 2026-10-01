@@ -501,8 +501,8 @@ models:
       parameters: 34660000000
       context_length: 262144
       embedding_length: 2048
-      quantization: APEX I-Mini (mudler, heretic TPE)
-      note: 'Sep 24: experimental. O mesmo heretic TPE do prod em quant APEX-I-Mini do mudler (14.32 GB, -2.7 GB vs prod). MTP off (sem nextn tail). Se andar bem, substitui o prod.'
+      quantization: APEX I-Mini
+      note: 'APEX I-Mini quant do mudler (base llmfan46 heretic TPE, -2.7 GB vs prod). Sep 24: experimental. O mesmo heretic TPE do prod em quant APEX-I-Mini (14.32 GB). MTP off (sem nextn tail). Se andar bem, substitui o prod.'
   ornith-1.5-35b:
     name: Ornith 1.5 35B
     description: Ornith-1.5 is a family of open-source LLMs trained with end-to-end self-improvement — the model proposes new tasks, generates task-specific scaffolds, and produces solution rollouts for RL, continuously creating new learning experiences. ONYX quantization (el4, APEX evolution) with MTP speculative decoding and vision support.
@@ -1056,216 +1056,6 @@ models:
         audio: false
         image: false
       note: 'Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with ''query: '' for queries and ''passage: '' for documents. 34 languages. 2048-dim L2-normalized vectors. Supports dimension slicing (1024/512) with re-normalization. SOTA at 1B scale on MMTEB.'
-  portal-core-space:
-    name: 'Portal Core: Space'
-    description: Portal 2 Space Core personality construct. Obsessed with going to space. Bilingual PT/EN.
-    tags:
-    - chat
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/portal-core-space/portal-core-space-Q8_0.gguf
-
-      --jinja
-
-      --fit on
-
-      --fit-target ${vram_margin}
-
-      --ctx-size 16384
-
-      --parallel 1
-
-      --cont-batching
-
-      --temp 1.0
-
-      --top-p 0.9
-
-      --top-k 40
-
-      --repeat-penalty 1.1
-
-      --cache-type-k q8_0
-
-      --cache-type-v q8_0
-
-      --flash-attn on
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          temperature: 1.0
-          top_p: 0.9
-    health_check_timeout: 300
-    ttl: 60
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: false
-      reranker: false
-      context: 16384
-    metadata:
-      size: ~362 MB (Q8_0)
-      context: 16K
-      vram_usage: ~0.5GB (model + cache)
-      source: LiquidAI/LFM2.5-350M + LoRA fine-tune
-      kv_cache: q8_0 + q8_0
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-      architecture: lfm2
-      parameters: 362000000
-      context_length: 16384
-      quantization: Q8_0
-  portal-core-fact:
-    name: 'Portal Core: Fact'
-    description: Portal 2 Fact Core personality construct. States absurd fabricated facts with absolute confidence. Bilingual PT/EN.
-    tags:
-    - chat
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/portal-core-fact/portal-core-fact-Q8_0.gguf
-
-      --jinja
-
-      --fit on
-
-      --fit-target ${vram_margin}
-
-      --ctx-size 16384
-
-      --parallel 1
-
-      --cont-batching
-
-      --temp 1.0
-
-      --top-p 0.9
-
-      --top-k 40
-
-      --repeat-penalty 1.1
-
-      --cache-type-k q8_0
-
-      --cache-type-v q8_0
-
-      --flash-attn on
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          temperature: 1.0
-          top_p: 0.9
-    health_check_timeout: 300
-    ttl: 60
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: false
-      reranker: false
-      context: 16384
-    metadata:
-      size: ~1.2 GB (Q8_0)
-      context: 16K
-      vram_usage: ~1.7GB (model + cache)
-      source: LiquidAI/LFM2.5-1.2B-Instruct + LoRA fine-tune
-      kv_cache: q8_0 + q8_0
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-      architecture: lfm2
-      parameters: 1200000000
-      context_length: 16384
-      quantization: Q8_0
-  portal-core-adventure:
-    name: 'Portal Core: Adventure'
-    description: Portal 2 Adventure Core (Rick). Overconfident macho adventurer. Bilingual PT/EN.
-    tags:
-    - chat
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/portal-core-adventure/portal-core-adventure-Q8_0.gguf
-
-      --jinja
-
-      --fit on
-
-      --fit-target ${vram_margin}
-
-      --ctx-size 16384
-
-      --parallel 1
-
-      --cont-batching
-
-      --temp 1.0
-
-      --top-p 0.9
-
-      --top-k 40
-
-      --repeat-penalty 1.1
-
-      --cache-type-k q8_0
-
-      --cache-type-v q8_0
-
-      --flash-attn on
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          temperature: 1.0
-          top_p: 0.9
-    health_check_timeout: 300
-    ttl: 60
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: false
-      reranker: false
-      context: 16384
-    metadata:
-      size: ~1.2 GB (Q8_0)
-      context: 16K
-      vram_usage: ~1.7GB (model + cache)
-      source: LiquidAI/LFM2.5-1.2B-Instruct + LoRA fine-tune
-      kv_cache: q8_0 + q8_0
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-      architecture: lfm2
-      parameters: 1200000000
-      context_length: 16384
-      quantization: Q8_0
   glm-ocr:
     name: GLM-OCR
     description: Multimodal OCR model for complex document understanding, built on the GLM-V encoder-decoder architecture integrating CogViT visual encoder with a GLM-0.5B language decoder.
@@ -1489,6 +1279,7 @@ models:
         image: false
       architecture: llama
       parameters: 2000000000
+      embedding_length: 2048
       context_length: 131072
       quantization: Q4_K_M
       note: 'Pollard IQ4_XS testado 07-08/09 e REVERTIDO 08/09: loop infinito em tarefa de código simples (Adler32) no uso real — dados do A/B permanecem válidos (empate decode GPU, TTFT -23%, -148MB, CPU -30%), mas o comportamento agêntico pesa mais. Tool call: Q4_K_M clean nos DOIS modos (IQ4_XS só no :think). REMOVIDOS 08/09: Q8_0 oficial, Pollard Q5_K_M (GGUFs deletados). Pollard IQ4_XS GGUF MANTIDO no dir como opção A/B futura. Fallback docs no header.'
@@ -1571,7 +1362,8 @@ models:
       context: '1K-200K (cap de degradacao: loops de tool-call a partir de ~213K)'
       vram_usage: a medir no smoke (esperado ~6-8 GB VRAM + ~15 GB RAM pinned -hmoe)
       source: el4/Ornith-1.5-35B-A3B-ONYX-GGUF (compact tier)
-      kv_cache: q4_0 nas 10 layers full-attention (~1.5 GB @262K); 31 layers gdn = estado constante
+      kv_cache: q4_0 (attn) + gdn (estado constante)
+      note: 'ONYX swap Sep 28: MiniPlus V2.1 reprovado (loops agentic), GGUF deletado. MTP @200K com parallel 1. Sem --fit no cafe: loader valida no load. MTP head Q8_0 preservado no quant. KV: q4_0 nas 10 layers full-attention (~1.5 GB @262K); 31 layers gdn = estado constante.'
       features:
         completion: true
         tools: true
@@ -1585,8 +1377,7 @@ models:
       parameters: 35000000000
       context_length: 262144
       embedding_length: 2048
-      quantization: ONYX compact (MTP head Q8_0 preservado)
-      note: 'ONYX swap Sep 28: MiniPlus V2.1 reprovado (loops agentic), GGUF deletado. MTP @200K com parallel 1. Sem --fit no cafe: loader valida no load.'
+      quantization: ONYX compact
   qwen3-tts:
     name: Qwen3-TTS 0.6B
     description: Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible /v1/audio/speech endpoint with voice profiles from voiceclone-tui.
@@ -1708,7 +1499,7 @@ models:
       context: 131K (2 slots de 64K)
       vram_usage: ~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe)
       source: SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth Q8
-      kv_cache: turbo4 (WHT-rotated, FA-fused)
+      kv_cache: turbo4
       features:
         completion: true
         tools: true
@@ -1723,7 +1514,7 @@ models:
       context_length: 262144
       embedding_length: 2048
       quantization: APEX I-Compact
-      note: 'Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s).'
+      note: 'Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused (IK TurboQuant); source do mmproj: unsloth Q8.'
   qwen3.8-4b-heretic:
     name: Qwen3.8 4B Heretic
     description: 'Qwen3.8-4B: destilacao full-param do Qwen3.8 2.4T na arquitetura qwen35, descensurada com Heretic v1.4.0 (refusals 6/100 vs 99/100, KL 0.0167). Mesmas flags do qwen3.5-4b; roda lado a lado.'
@@ -1987,9 +1778,6 @@ matrix:
     qpoll: qwen2.5-coder-1.5b-pollard
     g12p: gemma4-12b-pollard
     gpt2xl: gpt-2-xl
-    spc: portal-core-space
-    fct: portal-core-fact
-    adv: portal-core-adventure
     man1: manaca-1b-instruct
     ocr: glm-ocr
     lfmvl3: lfm2.5-vl-3b
@@ -2004,9 +1792,9 @@ matrix:
     nemb: nemotron-3-embed-1b
     lfmcol: lfm2.5-colbert-350m
   sets:
-    small_vision: (q4 | lfm26 | twp | spc | fct | adv) & (nemb | lfmcol)
-    small_embed: (q4 | lfm26 | twp | spc | fct | adv) & (nemb | lfmcol)
-    small_only: q4 | lfm26 | twp | spc | fct | adv | gpt2xl | man1
+    small_vision: (q4 | lfm26 | twp) & (nemb | lfmcol)
+    small_embed: (q4 | lfm26 | twp) & (nemb | lfmcol)
+    small_only: q4 | lfm26 | twp | gpt2xl | man1
     gpt2xl_embed: gpt2xl & (nemb | lfmcol)
     vision_only: ocr | lfmvl3
     vision_embed: (ocr | lfmvl3) & (nemb | lfmcol)
@@ -2032,9 +1820,6 @@ matrix:
     qpoll: 1
     g12p: 3
     gpt2xl: 3
-    spc: 1
-    fct: 2
-    adv: 2
     lfmemb: 1
     nemb: 1
     lfmcol: 1

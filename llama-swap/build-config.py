@@ -104,9 +104,6 @@ ORIGINAL_ORDER = [
     "lfm2.5-embedding-350m",    # ✅ Embedding (CPU-only, Q8_0)
     "lfm2.5-colbert-350m",      # ✅ Reranker (CPU-only, Q8_0)
     "nemotron-3-embed-1b",      # ✅ Embedding (CPU-only, Q8_0, converted from BF16)
-    "portal-core-space",       # ✅ Portal 2 Space Core v7 degenerate (Q8_0, LFM2.5-350M)
-    "portal-core-fact",        # ✅ Portal 2 Fact Core v8 degenerate (Q8_0, LFM2.5-1.2B)
-    "portal-core-adventure",   # ✅ Portal 2 Adventure Core v8 degenerate (Q8_0, LFM2.5-1.2B)
 ]
 
 
