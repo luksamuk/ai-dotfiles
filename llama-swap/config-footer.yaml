@@ -41,8 +41,7 @@ matrix:
     # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
     qpoll: qwen2.5-coder-1.5b-pollard
-    # Pollard Gemma4 12B IQ4_XS (dense 12B multimodal visao+audio, 6.78GB; Sep 20)
-    g12p: gemma4-12b-pollard
+    # g12p: gemma4-12b-pollard  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%); restore: mv _disabled/ → models/
     # GPT-2 124M — museum piece (2019 original, completion-only, ctx 1024)
     # gpt2: gpt-2-124m  # desativado 17/09 (disk; restore: _disabled)
     gpt2xl: gpt-2-xl
@@ -112,7 +111,7 @@ matrix:
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
-    medium: "(q36 | g12p) & (nemb | lfmcol)"
+    medium: "q36 & (nemb | lfmcol)" # g12p REMOVED Oct 1 2026 — disk; era o único par do q36 aqui
 
     # Modelos pesados (offload) + Embedding/Reranker + CPU completion
     # qw38 removed Aug 2026 — model disabled
@@ -167,7 +166,7 @@ matrix:
     # eq2: 2  # REMOVED Sep 10 2026
     # eq4: 3  # REMOVED Sep 10 2026
     qpoll: 1
-    g12p: 3
+    # g12p: 3  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%)
     # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
     gpt2xl: 3
     # nomic: 1  # REMOVED Sep 10 2026
