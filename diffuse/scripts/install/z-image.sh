@@ -25,7 +25,7 @@ if [ ! -f "$MODELS_DIR/z_image_turbo-Q3_K_S.gguf" ]; then
     echo "  Baixando z_image_turbo-Q3_K_S.gguf (3.6 GB)..."
     hf download \
         --local-dir "$MODELS_DIR" \
-        Tongyi-MAI/Z-Image-Turbo-GGUF \
+        unsloth/Z-Image-Turbo-GGUF \
         z_image_turbo-Q3_K_S.gguf
 else
     echo "  z_image_turbo-Q3_K_S.gguf já existe, pulando."

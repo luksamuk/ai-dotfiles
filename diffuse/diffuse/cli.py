@@ -258,6 +258,13 @@ def parse_args() -> argparse.Namespace:
         help="CFG scale (default: 1.0 for FramePack, 7.0 for other image gen).",
     )
     p.add_argument(
+        "--agate-autoguide", type=float, default=None,
+        help="Agate autoguidance strength (001 only; 003 has no autoguidance). "
+             "Card recipe for sharper faces: 1.0 with cfg 4.0 (~1.5x time). "
+             "ON by default for agate-preview-001 (pass --agate-autoguide 0 to disable); "
+             "0 = off.",
+    )
+    p.add_argument(
         "--gs", type=float, default=4.5,
         help="Distilled guidance scale for FramePack I2V (default: 4.5).",
     )
@@ -331,11 +338,18 @@ def main() -> None:
     else:
         width, height = args.size
 
-    # Agate is fixed-resolution (trained at 256×256 only) — snap/reject other sizes
-    if backend_type == "agate" and (width, height) != (256, 256):
-        print(f"  ⚠️  Agate is a fixed 256×256 model (trained resolution) — ignoring --size {width}x{height}")
-        print(f"     For larger output, upscale the result with Real-ESRGAN.")
-        width, height = (256, 256)
+    # Agate: 001 is fixed 256×256; 003 is multi-res (256 or 512 native). Snap only for 001.
+    if backend_type == "agate" and "agate-preview-001" in (args.model or model or ""):
+        if (width, height) != (256, 256):
+            print(f"  ⚠️  Agate 001 is a fixed 256×256 model (trained resolution) — ignoring --size {width}x{height}")
+            print(f"     For larger output, upscale the result with Real-ESRGAN.")
+            width, height = (256, 256)
+    elif backend_type == "agate":
+        # 003: multi-res (256/512). Other sizes → snap to nearest supported
+        if (width, height) not in ((256, 256), (512, 512)):
+            snapped = (256, 256) if max(width, height) < 384 else (512, 512)
+            print(f"  ⚠️  Agate 003 supports 256×256 and 512×512 — snapping --size {width}x{height} to {snapped[0]}x{snapped[1]}")
+            width, height = snapped
 
     prompt = args.prompt or get_prompt_interactive()
 
@@ -652,8 +666,13 @@ def main() -> None:
         output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
         output_path.write_bytes(png_bytes)
     elif backend_type == "agate":
+        # Default "sharper faces" do card 001: autoguide 1.0 (cfg continua em 3.0 a menos que --cfg passe 4.0 junto)
+        agate_autoguide = args.agate_autoguide
+        if agate_autoguide is None:
+            agate_autoguide = 1.0 if (model_name or "").startswith("agate-preview-001") else 0.0
         png_bytes, diffusion_time, peak_hbm = generate_image_agate(
             pipeline, prompt, seed, args.steps, width, height,
+            cfg=args.cfg, autoguide=agate_autoguide,
         )
         orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
         output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)

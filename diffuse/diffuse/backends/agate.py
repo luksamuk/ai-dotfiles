@@ -24,7 +24,9 @@ from diffuse.paths import MODELS_DIR
 
 log = logging.getLogger("diffuse")
 
-# Fixed resolution — the model was trained at 256×256 only (latent 4×32×32).
+# Resolution support per preview: 001 is fixed 256×256 (latent 4×32×32);
+# 003 is multi-res (256 and 512, SD3 shift 2 at 512). model_name decides.
+_AGGATE_MODEL_SIZE = {}
 AGATE_SIZE = (256, 256)
 # Defaults from the model card: Euler 50 steps, CFG 3.0 (trained against empty prompt).
 AGATE_STEPS = 50
@@ -63,7 +65,8 @@ def load_pipeline_agate(model_name: str, editing: bool = False) -> tuple:
 
     pipe = AgatePipeline.from_pretrained(str(model_root), device="cuda", fast_vae=False)
     load_time = time.perf_counter() - t0
-    print(f"  Pipeline ready in {load_time:.1f}s (~0.5 GB VRAM, CUDA graphs on)")
+    is_multi_res = hasattr(pipe, "prepare")  # 003+ expõe a pipeline de prompt com normalize
+    print(f"  Pipeline ready in {load_time:.1f}s (~0.5-1.5 GB VRAM, CUDA graphs on, multi-res={is_multi_res})")
 
     return {"pipe": pipe, "model_root": model_root}, load_time
 
@@ -76,21 +79,40 @@ def generate_image_agate(
     width: int,
     height: int,
     cfg: float = AGATE_CFG,
+    autoguide: float = 0.0,
 ) -> tuple:
-    """Generate a 256×256 image with Agate. Returns (png_bytes, diffusion_time, peak_hbm).
+    """Generate one image with Agate. Returns (png_bytes, diffusion_time, peak_hbm).
 
-    width/height must be 256×256 (the architecture is fixed-resolution); the CLI snaps
-    or rejects other sizes before calling this.
+    001 is fixed 256×256 (the CLI snaps before calling); 003 is multi-res and the
+    requested resolution goes through via the `resolution` kwarg.
     """
     import io
 
     pipe = pipeline_dict["pipe"]
     steps = steps or AGATE_STEPS
+    cfg = AGATE_CFG if cfg is None else float(cfg)  # None = deixar o default do card (3.0)
 
-    log.info("Agate T2I: prompt=%r seed=%d steps=%d cfg=%.1f", prompt[:80], seed, steps, cfg)
+    log.info("Agate T2I: prompt=%r seed=%d steps=%d cfg=%.1f size=%dx%d", prompt[:80], seed, steps, cfg, width, height)
 
     t0 = time.perf_counter()
-    images = pipe(prompt, seed=int(seed), steps=int(steps), cfg=float(cfg))
+    # 003: resolution= (512/256) + watermark=False. 001: autoguide= (0 = off).
+    # Tentar cada kwarg com fallback ordenado (001 não conhece resolution; 003 não conhece autoguide)
+    kwargs = {"seed": int(seed), "steps": int(steps), "cfg": float(cfg), "watermark": False}
+    if width != 256 or autoguide > 0:
+        pass  # tenta o superset primeiro (abaixo)
+    try:
+        # 003: resolution + watermark; sem autoguide
+        images = pipe(prompt, resolution=int(width), **kwargs)
+    except TypeError:
+        try:
+            # 001: autoguide; sem resolution/watermark
+            args_001 = {"seed": int(seed), "steps": int(steps), "cfg": float(cfg)}
+            if float(autoguide) > 0:
+                args_001["autoguide"] = float(autoguide)
+            images = pipe(prompt, **args_001)
+        except TypeError:
+            # fallback base (qualquer variante)
+            images = pipe(prompt, seed=int(seed), steps=int(steps), cfg=float(cfg))
     diffusion_time = time.perf_counter() - t0
     peak_hbm = 0.0  # sub-GB model; not worth querying
 

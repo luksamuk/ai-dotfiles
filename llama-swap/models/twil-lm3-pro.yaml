@@ -1,0 +1,84 @@
+# -------------------------------------------
+# TWIL-LM3-PRO - upstream llama.cpp BACKEND
+# 3.66B denso (Granite 4.2 3B da IBM + post-training webAI: LoRA SFT,
+# checkpoint fusion, WiSE-FT, MGPO/GRPO). Especialista em logica formal:
+# FOL translation, entailment, semantic parse, Lean formalize/critique.
+# Card: https://huggingface.co/webAI-Official/TwIL-LM3-Pro
+# Licenca: webai-non-commercial v1.0 (NAO comercial).
+# Modelo RACIOCINA por padrao (template abre think block); protocolo do card:
+# greedy (temp 0) e budget longo (>=2048) - budget curto trunca o think e
+# derruba o score (media de 1902 tokens/resposta no Track A, 24% estoura cap).
+# :think = temp 0 (protocolo de avaliacao do card); base = gen config deles
+# (do_sample true, temp 1.0, top_p 0.95). repeat-penalty 1.0 LOAD-BEARING
+# (card: penalty 1.1 produziu swings de 20 pontos - protocolo hashado).
+# Sem tool calling, sem tuning de chat/seguranca; NAO e assistente geral
+# (card: "not a general assistant"). Nao roda codigo (HumanEval/BFCL nao rodados).
+# Benchmarks medidos em bf16/vLLM; Q8_0 e o quant mais fiel disponivel (card
+# adverte degradacao "most likely at Q4_K_M"; skill: prefira Q8_0 em denso).
+# Deploy 30/09/2026: lane nova no fleet (logica formal), nao substitui modelo.
+# Analise: track A macro gate 0.554 > qwen3-8b 0.534; strict-7 0.288 > 0.209;
+# mcq strict 0.41 vs 0.00-0.17 de todos os densos. Track B held-out 0.790.
+# -------------------------------------------
+"twil-lm3-pro":
+  name: "TwIL-LM3-Pro"
+  description: "Especialista em logica formal da webAI (3.66B denso sobre Granite 4.2-3B). Entailment, FOL, semantic parse, Lean formalize/critique, MCQ de logica. Passa Qwen3-8B em strict-7 no dominio. Nao e assistente geral; sem tools. Licenca nao-comercial."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/twil-lm3-pro/TwIL-LM3-Pro-Q8_0.gguf
+    -ngl 99
+    --fit on
+    --fit-target ${vram_margin}
+    --fit-ctx 131072
+    --ctx-size 131072
+    --parallel 1
+    --jinja
+    --temp ${default_temp}
+    --top-p ${default_top_p}
+    --top-k ${default_top_k}
+    --min-p ${default_min_p}
+    --repeat-penalty 1.0
+    --cache-type-k q4_0
+    --cache-type-v q4_0
+    --flash-attn on
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 1.0
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.0
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~3.63 GB (Q8_0)"
+    context: "32K-128K (dynamic fit)"
+    vram_usage: "~5.3GB VRAM @32K no 6GB (modelo 3.63GB + KV q4_0 + compute); fit derruba ctx se apertar"
+    source: "webAI-Official/TwIL-LM3-Pro (Q8_0)"
+    kv_cache: "q4_0/q4_0"
+    features:
+      completion: true
+      tools: false
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: granite
+    parameters: 3659737600
+    context_length: 131072
+    embedding_length: 2560
+    quantization: Q8_0
+    note: "Track A greedy temp 0 (inject no :think); card pede max_tokens >=2048 senao trunca think. Track B avaliado SEM thinking (empata com base Granite no macro 10 datasets: 0.790 vs 0.794). BBH-logic 95.4, MATH-500 74.7, MuSR 64.1. Q8_0 escolhido sobre Q4_K_M: card alerta degradacao em K-quant e skill prefere Q8_0 p/ denso; se VRAM apertar, Q6_K (2.80GB) e o fallback. Deploy 30/09/2026."

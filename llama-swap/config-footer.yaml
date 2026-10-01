@@ -36,6 +36,8 @@ matrix:
     # lfm8: lfm2.5-8b-a1b  # REMOVED Sep 10 2026 — GGUF deleted (bench 16/105, user confia no 2.6b); fragment em _removed/
     lfm26: lfm2.5-2.6b
     nb42: nanbeige4.2-3b
+    # Especialista logica formal (webAI, base Granite 4.2-3B da IBM) — lane nova, nao substitui
+    twp: twil-lm3-pro
     # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
     qpoll: qwen2.5-coder-1.5b-pollard
@@ -97,13 +99,13 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(q4 | lfm26 | spc | fct | adv) & (nemb | lfmcol)"
+    small_vision: "(q4 | lfm26 | twp | spc | fct | adv) & (nemb | lfmcol)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | lfm26 | spc | fct | adv) & (nemb | lfmcol)"
+    small_embed: "(q4 | lfm26 | twp | spc | fct | adv) & (nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | lfm26 | spc | fct | adv | gpt2xl | man1"
+    small_only: "q4 | lfm26 | twp | spc | fct | adv | gpt2xl | man1"
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"
@@ -165,6 +167,7 @@ matrix:
     # q4x: 2  # disabled Sep 20 2026
     # lfm8: 2  # REMOVED Sep 10 2026
     lfm26: 2
+    twp: 2
     # eq2: 2  # REMOVED Sep 10 2026
     # eq4: 3  # REMOVED Sep 10 2026
     qpoll: 1
