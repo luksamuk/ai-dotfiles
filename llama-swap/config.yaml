@@ -1305,7 +1305,7 @@ models:
 
       --n-cpu-moe 48
 
-      --ctx-size 102400
+      --ctx-size 131072
 
       --jinja
 
@@ -1356,10 +1356,10 @@ models:
       - text
       tools: true
       reranker: false
-      context: 102400
+      context: 131072
     metadata:
       size: ~13.8 GB (APEX I-Compact) — text-only, sem mmproj
-      context: 1K-102400 (nativo 262K)
+      context: 1K-131072 (nativo 262K)
       vram_usage: ~4-5 GB VRAM (attention+KV+bufs) + ~13.8 GB RAM pinned (n-cpu-moe 48)
       source: mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)
       kv_cache: q4_0/q4_0 + hadamard
@@ -1388,8 +1388,6 @@ models:
       --ctx-size 131072
 
       --jinja
-
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
 
       --parallel 2
 

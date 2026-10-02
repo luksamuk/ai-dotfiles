@@ -9,6 +9,11 @@
 #   - sampling do fabricante: 0.7/0.8/20
 # Café NÃO aceita: --parallel-tool-calls, --no-graph-reuse, --defer-experts,
 #   --prefetch-experts, --k/v-cache-hadamard, --fit-margin.
+# NÃO usar --chat-template-file do heretic aqui: o Qwen3-Coder-30B (qwen3_moe)
+#   NÃO compartilha o template do 3.6/35B — com o template herdado o modelo
+#   emite EOG no 1º token (content vazio, predicted_n 1). --jinja embutido
+#   resolve (fix Oct 2, smoke content correto). Pitfall registrado no
+#   cafe-llama-cpp-eval.md.
 # -------------------------------------------
 "qwen3-coder-30b-cafe":
   name: "Qwen 3 Coder 30B Cafe"
@@ -18,7 +23,6 @@
     --model ${models_dir}/qwen3-coder-30b/Qwen3-Coder-30B-APEX-I-Compact.gguf
     --ctx-size 131072
     --jinja
-    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
     --parallel 2
     --cache-type-k q4_0
     --cache-type-v q4_0
