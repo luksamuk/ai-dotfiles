@@ -1,0 +1,82 @@
+# -------------------------------------------
+# QWEN3-CODER-30B-A3B (mudler APEX I-Compact) — baseline limpo de código (ik)
+# Arch qwen3_moe (Apr/25, suporte maduro ik/cafe/upstream). SEM MTP nextn
+# (a arch qwen3_moe nao tem nextn — spec decode N/A), SEM visao (text-only,
+# sem mmproj), SEM modo thinking (Instruct puro — sem enable_thinking).
+# 13,8 GB — mesmas PPL do UD-Q4_K_XL da Unsloth com 16% menos tamanho
+# (tabela do mudler: PPL 9.667 / KL 0.0418, DGX Spark).
+#
+# Papel na frota: baseline APEX-sem-heretic-sem-MTP. Radar: a linhagem
+# Coder-NEXT (qwen3_next, COM MTP) so existe em 80B+ (mudler I-Mini 29.2 GiB
+# nao cabe na Navi); se sair shape A3B-35B dessa linhagem, substitui este.
+#
+# Params: modelo de fabrica da Qwen recomenda temp 0.7 / top_p 0.8 / top_k 20
+# (card Qwen3-Coder-30B-A3B-Instruct) — setParamsByID fixa isso, acima dos
+# macros ${code_*} da frota.
+#
+# --n-cpu-moe 48: experts 100% em RAM (GGUF 13.8 GB ~90% experts). VRAM fica
+# so attention + KV + buffers (~5 GB no smoke). Reduzir N se sobrar VRAM no
+# teste (mas com 6 GB, 48 e o config seguro de partida).
+# -------------------------------------------
+"qwen3-coder-30b":
+  name: "Qwen 3 Coder 30B"
+  description: "Qwen3-Coder-30B-A3B-Instruct em APEX I-Compact (13.8 GB), text-only, sem MTP (arch qwen3_moe nao tem nextn) e sem thinking. Baseline limpo de codigo APEX-sem-heretic."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/qwen3-coder-30b/Qwen3-Coder-30B-APEX-I-Compact.gguf
+    --no-graph-reuse
+    -ngl 99
+    --n-cpu-moe 48
+    --ctx-size 102400
+    --jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --prefetch-experts
+    --temp ${code_temp}
+    --top-p ${code_top_p}
+    --top-k ${code_top_k}
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 0.7
+        top_p: 0.8
+        top_k: 20
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 102400
+  metadata:
+    size: "~13.8 GB (APEX I-Compact) — text-only, sem mmproj"
+    context: "1K-102400 (nativo 262K)"
+    vram_usage: "~4-5 GB VRAM (attention+KV+bufs) + ~13.8 GB RAM pinned (n-cpu-moe 48)"
+    source: "mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)"
+    kv_cache: "q4_0/q4_0 + hadamard"
+    note: "Deploy Oct 1 2026. Arch qwen3_moe: sem nextn (MTP N/A), sem mmproj (text-only), nao-thinking (Instruct puro; sem enable_thinking nos filters). APEX I-Compact = PPL do UD-Q4_K_XL com -16% tamanho (tabela mudler, DGX Spark). Manufacturer sampling: 0.7/0.8/20. ONYX de el4: nao existe pra esse modelo (catalogado Oct 1)."
+    features:
+      completion: true
+      tools: true
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen3_moe
+    parameters: 30500000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: "APEX I-Compact"
