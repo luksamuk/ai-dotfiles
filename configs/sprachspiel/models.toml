@@ -115,6 +115,18 @@ top_k = 20
 thinking = true
 tools = true
 
+[models."qwen3-coder-30b"]
+provider = "llama-swap"
+model_id = "qwen3-coder-30b"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.8
+top_k = 20
+min_p = 0.0
+repeat_penalty = 1.0
+thinking = false
+tools = true
+
 [models."lfm2.5-2.6b"]
 provider = "llama-swap"
 model_id = "lfm2.5-2.6b"
