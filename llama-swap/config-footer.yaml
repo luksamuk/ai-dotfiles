@@ -44,9 +44,9 @@ matrix:
     # g12p: gemma4-12b-pollard  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%); restore: mv _disabled/ → models/
     # GPT-2 124M — museum piece (2019 original, completion-only, ctx 1024)
     # gpt2: gpt-2-124m  # desativado 17/09 (disk; restore: _disabled)
-    gpt2xl: gpt-2-xl
+    # gpt2xl: gpt-2-xl  # DISABLED Oct 3 2026 - GGUF deleted (pedido user); fragment em _disabled/; restore: descomentar + mv fragment
     # Manacá 1B Instruct — PT-BR do zero (LNCC × NII/LLM-jp), pesquisa experimental
-    man1: manaca-1b-instruct
+    # man1: manaca-1b-instruct  # DISABLED Oct 3 2026 - GGUF deleted (pedido user); fragment em _disabled/; restore: descomentar + mv fragment
     # inst: instella-moe-16b  # disabled
     # Vision
     ocr: glm-ocr
@@ -107,10 +107,10 @@ matrix:
     small_embed: "(q4 | lfm26 | twp) & (nemb | lfmcol)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | lfm26 | twp | gpt2xl | man1"
+    small_only: "q4 | lfm26 | twp"  # gpt2xl+man1 REMOVED Oct 3 2026 (disk)
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
-    gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"
+    # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "ocr | lfmvl3"
@@ -177,7 +177,7 @@ matrix:
     qpoll: 1
     # g12p: 3  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%)
     # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
-    gpt2xl: 3
+    # gpt2xl: 3  # DISABLED Oct 3 2026 - gpt2xl removido
     # nomic: 1  # REMOVED Sep 10 2026
     lfmemb: 1
     nemb: 1

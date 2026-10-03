@@ -104,3 +104,7 @@ systemctl --user restart llama-swap
   for fragments whose GGUF still lives in `~/.llama-models/`)
 - `models/_removed/*.yaml`  — dead code, reference only (excluded; used when
   the GGUF has been moved away or the model is unlikely to come back)
+## Disabled Oct 3 2026 (GGUFs DELETED — disk sweep)
+- gpt-2-xl (3.0G): museu OpenAI 2019 F16. Restore: mv fragment p/ models/, descomentar vars/sets/evict (gpt2xl: 3, small_only, gpt2xl_embed) + re-download de openai-community/gpt2-xl + conversão local (ver gpt-2-124m.yaml / gpt2-museum-models).
+- manaca-1b-instruct (4.3G: F16+Q4): LNCC PT-BR pesquisa v0.1. Restore: mv fragment + descomentar man1/small_only + hf download sulfierry/manaca-1b-instruct-GGUF (F16) + requant Q4_K_M-tpl (gguf_new_metadata, manaca_alpaca.jinja).
+- qwen3.8-4b-heretic (2.6G): distill heretic (refusals 6/100). Restore: mv fragment + hf download insraq/Qwen3.5-4B-EmperoAI-Qwen3.8-Distill-Heretic-Abliterated-MTP-GGUF (Q4_K_M). Sem alias no footer (nunca teve) — só fragment+GGUF + clients (opencode configs, pi models.json).
