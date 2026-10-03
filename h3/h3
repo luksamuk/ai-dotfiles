@@ -52,7 +52,10 @@ MAX_IMAGE_MP="1.0"  # Max megapixels per image (ref2va ref images + fl2va start/
 NSFW=false
 NSFW_LORAS=()                       # lista de LoRAs NSFW (repeatable)
 # Defaults: genitália feminina + penetração + movimento rítmico
-# 29/09: pilha antiga removida; defaults AGORA = fallback do catálogo novo (~/v/nsfw_catalog_h3.json).
+# 02/out: --nsfw é PURO (zero LoRA automatica, decreto do user) — o catálogo+rerank
+# escolhe via enhance, ou o user força com --force-nsfw-loras / --nsfw-lora / --lora.
+# Motivo: runs reais empilharam 3 LoRAs do MESMO nicho (derretimento de rosto medido)
+# e a pilha fixa violava a régua de empilhamento (2-3, nunca mesmo nicho).
 # A resolução NSFW completa (IDs→stems→mults→triggers) passa pelo nsfw_lora_resolve.py.
 NSFW_DEFAULT_LORAS=()
 declare -A NSFW_LORA_STRENGTHS=()   # strengths agora vêm do catálogo (strength_autor)
@@ -129,19 +132,40 @@ resolve_lora() {
   case "$key" in
     nafasp|nafasp_v1|natural-face-speech|natural_face_speech) echo "natural_face_speech_h3_lora_v1_500"; return 0 ;;
     facial|facial-realism|facial_realism|cp2000) echo "minimax-h3-facial-realism-closeup-cp2000"; return 0 ;;
-    grindtime) echo "Grindtime"; return 0 ;;
-    aio|hmnsfw) echo "HMNSFW_AIO_V2"; return 0 ;;
-    hmpussy) echo "hmpussy_v6"; return 0 ;;
-    penetration|hmotion) echo "HMPenetration_I2V"; return 0 ;;
     turbo-fl2v|turbo8) echo "minimax_h3_fl2v_lightx2v_turbo_8step_v1.0_resized_avg_rank_24_bf16"; return 0 ;;
     turbo-ref|turbo4) echo "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_resized_avg_rank_21_bf16"; return 0 ;;
     pdd-fl2v) echo "minimax_h3_fl2va_pdd_8step_lora_bf16"; return 0 ;;
     pdd-ref) echo "minimax_h3_ref2va_pdd_8step_lora_bf16"; return 0 ;;
   esac
-  # 3) busca parcial case-insensitive (1 hit = resolve)
+  # 3) busca parcial case-insensitive (1 hit = resolve; key única do nome serve:
+  #    hmpussy, penetration, grindtime, deepthroat, "handjob helper", innie, masturbating...)
+  #    NOTA 02/out: apelidos de stems mortos da era int8 foram REMOVIDOS — eles
+  #    sombreavam a busca parcial que resolve pelo nome vivo do disco
   hits=$(ls -1 "$WAN2GP_DIR/loras/minimax_h3/" 2>/dev/null | grep -i "$key" | grep '\.safetensors$' || true)
-  if [[ "$(echo "$hits" | grep -c .)" == "1" ]]; then
+  nhits=$(echo "$hits" | grep -c . || true)
+  if [[ "$nhits" == "1" ]]; then
     echo "${hits%.safetensors}"; return 0
+  elif [[ "$nhits" -gt 1 ]]; then
+    # Ambíguo: prioriza stem que COMEÇA com a key (é o nome do LoRA, não a trigger
+    # embutida no nome de outra — ex. "hmpussy" casa HMPussy v1.0 E o trigger dentro
+    # do nome do HMMasturbation; o prefixo desambigua)
+    pref=""
+    while IFS= read -r h; do
+      [[ -z "$h" ]] && continue
+      b="${h%.safetensors}"
+      low="${b,,}"
+      [[ "$low" == "$key"* ]] && pref="${pref:-}${pref:+$'\n'}$b"
+    done <<< "$hits"
+    n_pref=$(echo "$pref" | grep -c .)
+    if [[ "$n_pref" == "1" ]]; then echo "$pref"; return 0; fi
+    if [[ "$n_pref" -gt 1 ]]; then
+      echo "Ambíguo: '$input' casa $n_pref no prefixo:"
+      echo "$pref" | sed 's/^/  /'
+      return 1
+    fi
+    echo "Ambíguo: '$input' casa $nhits LoRAs, seja mais específico:"
+    echo "$hits" | sed 's/^/  /' | cut -c1-80
+    return 1
   fi
   return 1
 }
@@ -150,10 +174,10 @@ lora_desc() {
   case "$1" in
     natural_face_speech_h3_lora_v1_500) echo "NAFASP: fala natural + dinâmica facial [OFF por padrão; --nafasp liga @0.6]" ;;
     minimax-h3-facial-realism-closeup-cp2000) echo "Facial Realism cp2000: poros/textura de pele em close-up humano [use --facial]" ;;
-    Grindtime) echo "NSFW: movimento rítmico de quadril [rec 0.5]" ;;
-    HMNSFW_AIO_V2) echo "NSFW: AIO posições variadas [rec 0.5]" ;;
-    hmpussy_v6) echo "NSFW: genitália feminina [rec 0.5]" ;;
-    HMPenetration_I2V) echo "NSFW I2V: penetração, trigger 'hmotion' [rec 0.5]" ;;
+    Grindtime) echo "NSFW: movimento rítmico de quadril [1.0str]" ;;
+    "HMPussy v1.0"*) echo "NSFW: genitália feminina [0.9str]" ;;
+    "HMPenetration I2V"*) echo "NSFW: penetração, trigger 'hmotion' [1.0str]" ;;
+    "Penis Lora v1.1"*) echo "NSFW: anatomia masculina PENISLORA [1.0str]" ;;
     minimax_h3_fl2v_lightx2v_turbo_8step_v1.0_resized_avg_rank_24_bf16) echo "TURBO FL2VA 8-step [prefira --turbo]" ;;
     minimax_h3_ref2v_turbo_4step_v0.1_comfyui_resized_avg_rank_21_bf16) echo "TURBO Ref2VA 4-step [prefira --turbo]" ;;
     minimax_h3_fl2va_pdd_8step_lora_bf16) echo "PDD FL2VA 8-step [prefira --pdd]" ;;
@@ -192,7 +216,14 @@ while [[ $# -gt 0 ]]; do
     --use-soundtrack) USE_SOUNDTRACK=true; shift ;;
     --nsfw) NSFW=true; shift ;;
     --force-nsfw-loras) FORCE_NSFW_LORA_IDS="$2"; shift 2 ;;
-    --nsfw-lora) NSFW=true; NSFW_LORAS+=("$2"); shift 2 ;;
+    --nsfw-lora)
+      NSFW=true
+      RESOLVED=$(resolve_lora "$2" || true)
+      if [[ -z "$RESOLVED" ]]; then
+        echo "Erro: LoRA não resolvível: '$2'. Use palavra-chave única do nome (h3 --list-loras)."
+        exit 1
+      fi
+      NSFW_LORAS+=("$RESOLVED"); shift 2 ;;
     --nsfw-strength) NSFW=true; NSFW_OVERRIDE_STRENGTH="$2"; shift 2 ;;  # sobrescreve todas
     --turbo) TURBO=true; shift ;;
     --turbo-strength) TURBO=true; TURBO_STRENGTH="$2"; shift 2 ;;
@@ -272,18 +303,18 @@ Opções gerais:
   --max-image-mp N    Max megapixels por imagem (default: 1.0). Imagens maiores
                      são redimensionadas para /tmp mantendo aspect ratio.
   --dry-run          Mostra as configurações e encerra sem gerar
-  --nsfw              Carrega LoRAs NSFW (default: hmpussy_v6@0.5 + HMPenetration_I2V@0.5 + Grindtime@0.5)
-                     Usa os três por padrão: genitália feminina + penetração + movimento rítmico
-  --nsfw-lora NAME    Especifica um LoRA NSFW (repeatable, empilha múltiplos):
-                     HMNSFW_AIO_V2   (AIO: posições variadas, 0.5)
-                     hmpussy_v6     (genitália feminina, 0.5)
-                     minimax_vag    (genitália feminina leve, 0.6)
-                     vagassist_e40  (assistência vaginal, 0.5)
-                     HMInnie_v1_e50 (innie vagina, 0.5)
-                     HMPenetration_I2V (penetração I2V: missionary/cowgirl/doggy, 0.5)
-                     Grindtime      (movimento rítmico de quadril durante sexo, 0.5)
-                     PenisV2M3_000002750 (genitália masculina, 0.5)
-                     PornMaster_penis_side_view_I2V_V1 (genitália masculina I2V, 0.5)
+  --nsfw              Modo NSFW PURO (decreto 02/out): ZERO LoRA automatica — com
+                     --enhance o LLM escolhe pelo catálogo ranked; sem enhance,
+                     use --nsfw-lora/--force-nsfw-loras/--lora, senão roda base
+                     (sem genitália; avisado no log)
+  --nsfw-lora PALAVRA  Força UMA LoRA pelo nome (repeatable; palavra-chave ÚNICA do
+                     nome resolve via busca parcial):
+                     hmpussy     (genitália fem, 0.9)
+                     penetration (penetração, trigger hmotion)
+                     grindtime   (mov. rítmico de quadril)
+                     deepthroat  (Daring FL2VA)
+                     handjob helper / innie / masturbating / fingering / penis lora
+                     Catálogo completo com IDs e forças: h3 --list-loras
   --nsfw-strength N   Sobrescreve força de TODOS os LoRAs NSFW (default: força
                      recomendada de cada um; sem catálogo = 0.8, range 0.1-1.0)
   --turbo             Ativa LoRA Turbo (destilação: ~10x mais rápido)
@@ -727,6 +758,7 @@ You are choosing action LoRAs from the catalog below to match the scene the user
 CATALOG_PLACEHOLDER
 
 Selection rules:
+- STACKING LIMIT is 2-3 LoRAs total, NEVER two from the same niche (two female-genitalia LoRAs together, or three anatomy LoRAs, melt the render — face and skin degrade). Pick the ONE best for each needed function: one position/action + one anatomy if needed, at most 3.
 - Read the user's request as INTENT. If the request mentions an outcome (gozada, ejaculação, facial, oral
 - MODALIDADE: se o bloco de modalidade abaixo indicar ref2va (refs ativas), PREFIRA LoRAs marcados com o tag [REF2VA] na descrição — eles são treinados com referências e preservam identidade. LoRAs marcados [REF2VA] em run SEM refs tendem a falhar. Em run com refs, LoRAs de ação genérica (sem tag) ainda funcionam, mas o tag indica treino especializado pra esse caso.
 - Multi-LoRA is normal in complex scenes (typically 2-3: one for the position/action, one for anatomy rei
@@ -1325,50 +1357,16 @@ if [[ "$NSFW" == true ]]; then
     done
     echo "=== Force NSFW LoRAs (${#NSFW_LORAS[@]}): ==="
     for n in "${NSFW_LORAS[@]}"; do echo "  → $n"; done
-  elif [[ ${#NSFW_LORAS[@]} -eq 0 && -f "$NSFW_CATALOG_JSON" ]]; then
-    if [[ "$ENHANCE" != true ]]; then
-      echo "=== --nsfw sem enhance: usando fallback do catalogo ==="
-      NSFW_FALLBACK_IDS="$(python3 -c "import json; print(','.join(map(str, json.load(open('$NSFW_CATALOG_JSON'))['fallback_pilha'])))")"
-      NSFW_FORCE_OUT=$(python3 "$NSFW_RESOLVER" --ids "$NSFW_FALLBACK_IDS" 2>/dev/null)
-      NSFW_RESOLVED_NAMES="$(python3 -c "import json,sys; print(' '.join(json.load(sys.stdin)['names']))" <<<"$NSFW_FORCE_OUT")"
-      NSFW_RESOLVED_STRENGTHS="$(python3 -c "import json,sys; print(' '.join(map(str, json.load(sys.stdin)['mults'])))" <<<"$NSFW_FORCE_OUT")"
-      NSFW_RESOLVED_TRIGGERS="$(python3 -c "import json,sys; print(' '.join(t for t in json.load(sys.stdin)['triggers'] if t))" <<<"$NSFW_FORCE_OUT")"
-      NSFW_LORAS=$(echo "$NSFW_RESOLVE_RAW_OUT" | head -n1)
-      NSFW_LORAS_ARRAY=()
-      while IFS= read -r n; do
-        [ -n "$n" ] && NSFW_LORAS_ARRAY+=("$n")
-      done < <(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --ids "$NSFW_FALLBACK_IDS" 2>/dev/null | awk '/^---$/{exit} {print}')
-      NSFW_STRENGTHS_ARRAY=()
-      while IFS= read -r s; do
-        [ -n "$s" ] && NSFW_STRENGTHS_ARRAY+=("$s")
-      done < <(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --ids "$NSFW_FALLBACK_IDS" 2>/dev/null | awk '/^---$/{c++;next} c==1{print}')
-      for idx in "${!NSFW_LORAS_ARRAY[@]}"; do
-        NSFW_LORA_STRENGTHS["${NSFW_LORAS_ARRAY[$idx]}"]="${NSFW_STRENGTHS_ARRAY[$idx]:-1.0}"
-      done
-      NSFW_LORAS=("${NSFW_LORAS_ARRAY[@]}")
-    fi
+  elif [[ ${#NSFW_LORAS[@]} -eq 0 ]]; then
+    echo "=== --nsfw sem LoRA selecionada (sem enhance): rodando base, SEM LoRA (decr.—nenhuma pilha automatica) ==="
   fi
 fi
 
 # ── Validar LoRAs NSFW (nomes → arquivos no disco) ─────────────────────────
 if [[ "$NSFW" == true ]]; then
-  # Array vazio agora = fallback do catálogo (cobrir enhance-falhou/sem-linha também)
-  if [[ ${#NSFW_LORAS[@]} -eq 0 ]]; then
-    NSFW_FALLBACK_IDS="$(python3 -c "import json; print(','.join(map(str, json.load(open('$NSFW_CATALOG_JSON'))['fallback_pilha'])))")"
-    NSFW_LORAS_ARRAY=()
-    while IFS= read -r n; do
-      [ -n "$n" ] && NSFW_LORAS_ARRAY+=("$n")
-    done < <(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --ids "$NSFW_FALLBACK_IDS" 2>/dev/null | awk '/^---$/{exit} {print}')
-    NSFW_STRENGTHS_ARRAY=()
-    while IFS= read -r s; do
-      [ -n "$s" ] && NSFW_STRENGTHS_ARRAY+=("$s")
-    done < <(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --ids "$NSFW_FALLBACK_IDS" 2>/dev/null | awk '/^---$/{c++;next} c==1{print}')
-    for idx in "${!NSFW_LORAS_ARRAY[@]}"; do
-      NSFW_LORA_STRENGTHS["${NSFW_LORAS_ARRAY[$idx]}"]="${NSFW_STRENGTHS_ARRAY[$idx]:-1.0}"
-    done
-    NSFW_LORAS=("${NSFW_LORAS_ARRAY[@]}")
-    echo "=== NSFW: fallback do catalogo aplicado (${#NSFW_LORAS[@]} LoRAs) ==="
-  fi
+  # Array vazio = SEM LoRA NSFW (decreto 02/out: nenhuma pilha automatica —
+  # escolha vem do catálogo via enhance, ou do user na mão)
+  # (bloco de fallback do catálogo REMOVIDO)
   # Limpar elementos vazios do array (LLM path pode gerar slots vazios)
   local_array=()
   for x in "${NSFW_LORAS[@]}"; do
