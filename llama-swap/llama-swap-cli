@@ -48,6 +48,7 @@ fi
 feat_tag() {
   # Ollama-style capabilities: completion, tools, insert, vision, embedding, thinking, image, audio
   local feats="$1" tags=""
+  echo "$feats" | grep -qiP '"decision"\s*:\s*true'       && tags="${tags}+dec"
   echo "$feats" | grep -qiP '"embedding"\s*:\s*true'    && tags="${tags}+emb"
   echo "$feats" | grep -qiP '"vision"\s*:\s*true'       && tags="${tags}+vis"
   echo "$feats" | grep -qiP '"thinking"\s*:\s*true'    && tags="${tags}+think"
@@ -64,6 +65,7 @@ feat_tag() {
 feat_emoji() {
   # Ollama-style capabilities → emoji tags
   local feats="$1" emojis=""
+  echo "$feats" | grep -qiP '"decision"\s*:\s*true'       && emojis="${emojis}⚖"
   echo "$feats" | grep -qiP '"embedding"\s*:\s*true'    && emojis="${emojis}🔢"
   echo "$feats" | grep -qiP '"vision"\s*:\s*true'       && emojis="${emojis}👁"
   echo "$feats" | grep -qiP '"thinking"\s*:\s*true'    && emojis="${emojis}🤔"
