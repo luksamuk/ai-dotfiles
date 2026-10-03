@@ -28,6 +28,7 @@ OLLAMA_URL="http://localhost:11434/v1/chat/completions"
 # H3 defaults (do handler: 20 steps, guidance 1.0, flow_shift 12, euler, 24fps)
 PROMPT=""
 FRAMES=107        # ~4.5s a 24fps (mínimo do H3)
+SECONDS_WANT=""   # --seconds N: conversão pra frames (round half up, 24fps)
 STEPS=50
 SEED=""             # vazio = seed aleatório por geração (0-999999999, range do Wan2GP)
 GUIDANCE=1.0
@@ -75,11 +76,12 @@ FACIAL=false
 FACIAL_STRENGTH="1.0"
 FACIAL_FILE_OVERRIDE=""
 
-# NAFASP — Natural Face & Speech LoRA (vpakarinen): DEFAULT ON @0.6 (2026-09-08).
-# Fala natural + dinâmica facial. A/B mesmo seed/prompt: turbo+nafasp venceu pra
-# cartoon. Card: peso 0.4-0.8. Não empilhar com --facial (mesmos módulos-alvo) —
-# se --facial for passado, o nafasp se auto-desativa. Desligar: --no-nafasp.
-NAFASP=true
+# NAFASP — Natural Face & Speech LoRA (vpakarinen): DEFAULT OFF (02/out, pedido do
+# user — suspeita de interferência nos renders). Fala natural + dinâmica facial.
+# A/B mesmo seed/prompt (08/09): turbo+nafasp venceu pra cartoon. Card: peso 0.4-0.8.
+# Não empilhar com --facial (mesmos módulos-alvo) — se ambos passados, nafasp sai.
+# Ligar: --nafasp (ou --nafasp-strength). --no-nafasp continua aceito (vira no-op).
+NAFASP=false
 NAFASP_STRENGTH="0.6"
 NAFASP_FILE_OVERRIDE=""
 NAFASP_FILE=""
@@ -146,7 +148,7 @@ resolve_lora() {
 
 lora_desc() {
   case "$1" in
-    natural_face_speech_h3_lora_v1_500) echo "NAFASP: fala natural + dinâmica facial [DEFAULT ON @0.6, --no-nafasp desliga]" ;;
+    natural_face_speech_h3_lora_v1_500) echo "NAFASP: fala natural + dinâmica facial [OFF por padrão; --nafasp liga @0.6]" ;;
     minimax-h3-facial-realism-closeup-cp2000) echo "Facial Realism cp2000: poros/textura de pele em close-up humano [use --facial]" ;;
     Grindtime) echo "NSFW: movimento rítmico de quadril [rec 0.5]" ;;
     HMNSFW_AIO_V2) echo "NSFW: AIO posições variadas [rec 0.5]" ;;
@@ -163,6 +165,7 @@ lora_desc() {
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --frames) FRAMES="$2"; shift 2 ;;
+    --seconds) SECONDS_WANT="$2"; shift 2 ;;
     --steps)  STEPS="$2"; shift 2 ;;
     --seed)   SEED="$2"; shift 2 ;;
     --guidance) GUIDANCE="$2"; shift 2 ;;
@@ -235,7 +238,16 @@ Modos:
   --use-soundtrack              Ref2VA: usar soundtrack do vídeo de referência
 
 Opções gerais:
-  --frames N         Número de frames (default: 107, ~4.5s). 107=min, 481=~20s
+  --frames N         Duração em FRAMES a 24fps (default 107 ≈ 4,5s; mínimo 107,
+                     teto pratico ~481 ≈ 20s). O H3 quantiza o pedido (alinhamento
+                     de janela de difusão) — o valor real aparece no sumário do run.
+                     Referencia rapida: 48f=2s | 96f=4s | 121f=5s | 241f=10s
+                     | 362f=15s | 481f=20s. OU use --seconds S (abaixo) e esqueça
+                     a matemática.
+  --seconds S        Duração em SEGUNDOS de relógio — convertida pra frames
+                     (ceil, 24fps) e passada pelo mesmo caminho do --frames.
+                     Ex.: --seconds 8 ≈ 192 frames. --seconds vence se os
+                     dois forem passados.
   --steps N          Steps de denoising (default: 50)
   --seed N           Seed (default: aleatório, 0-999999999; passe N pra fixar)
   --guidance N       Guidance scale (default: 1.0)
@@ -284,7 +296,8 @@ Opções gerais:
                      "Facial Realism" é injetada no prompt automaticamente
   --facial-strength N Força do LoRA Facial (default: 1.0, range 0.1-1.0)
   --facial-file NOME  Override do arquivo do LoRA Facial
-  --no-nafasp         Desativa o LoRA NAFASP (natural face & speech, DEFAULT ON @0.6)
+  --nafasp            ATIVA o LoRA NAFASP (fala natural + dinâmica facial, @0.6).
+                      OFF por padrão (02/out — suspeita de interferência nos renders)
   --nafasp-strength N Força do NAFASP (default: 0.6, card recomenda 0.4-0.8)
   --nafasp-file NOME  Override do arquivo do LoRA NAFASP
   --lora NOME[@FORÇA] Carrega qualquer LoRA (repeatable; aceita apelidos didáticos,
@@ -334,6 +347,16 @@ HELPEOF
   esac
 done
 
+# ── --seconds → frames (24 fps, arredondamento comum; clamp no validador) ──
+if [[ -n "$SECONDS_WANT" ]]; then
+  case "$SECONDS_WANT" in
+    ''|*[!0-9.]*|.[0-9]*) echo "Erro: --seconds espera um número (ex.: 4, 4.5, 6). Recebi: '$SECONDS_WANT'"; exit 1 ;;
+  esac
+  FRAMES=$(python3 -c "import math; print(math.ceil(float('$SECONDS_WANT')*24))" 2>/dev/null)
+  [[ -z "$FRAMES" || "$FRAMES" == *[^0-9]* ]] && { echo "Erro: falha na conversão de --seconds '$SECONDS_WANT'"; exit 1; }
+  echo "=== --seconds $SECONDS_WANT → $FRAMES frames (24fps, ceil) ==="
+fi
+
 # ── --list-loras: catálogo didático ───────────────────────────────────────
 if [[ "$LIST_LORAS" == true ]]; then
   echo "=== LoRAs em loras/minimax_h3/ ==="
@@ -351,7 +374,7 @@ if [[ "$LIST_LORAS" == true ]]; then
   echo "Uso: --lora NOME[@FORÇA]  (repeatable; aceita apelidos: nafasp, facial, grindtime,"
   echo "     aio, hmpussy, penetration, turbo-fl2v...)"
   echo "Ex.: h3 \"...\" --lora nafasp@0.6 --lora grindtime@0.5"
-  echo "Nota: nafasp já é padrão (@0.6). Turbo e PDD têm flags próprias (--turbo/--pdd)."
+  echo "Nota: nafasp tá OFF por padrão (--nafasp liga, @0.6). Turbo e PDD têm flags próprias (--turbo/--pdd)."
   exit 0
 fi
 
