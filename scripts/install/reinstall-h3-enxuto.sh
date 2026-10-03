@@ -34,6 +34,12 @@
 #   7. Qwen3-VL-32B-Instruct full (14GB, só se usar --enhance-with-vision H3-native)
 #   8. Quality check Q4_K vs int8_convrot antigo: user julga com sheets conhecidos; degradou → Q5_K
 #      (FL2VA Q5 13,1GB + Ref2VA Q5 13,1GB = +4,9GB, ainda -12GB vs original)
+#   9. Wrapper + helpers versionados: cp ai-dotfiles/h3/h3 ~/.local/bin/h3 (chmod 711)
+#      e de ai-dotfiles/h3/scripts/ → rerank_catalog.py, nsfw_lora_resolve.py,
+#      build_catalog_prompt.py → ~/.local/share/h3/; h3-output-filter.py,
+#      relay_vision_common.py → ~/.local/bin/ (o catálogo nsfw_catalog_h3.json NÃO
+#      está versionado — se não existir backup local, o rodam inteiro de catalogo
+#      fica morto; regenerar manualmente)
 #
 # MANIFEST de LoRAs antigos (perdidos, re-baixáveis de Sentinel7/h3 — NOMES para grep):
 #  HMNSFW_AIO_V2, hmpussy_v6, minimax_vag, vagassist_e40, HMInnie_v1_e50,
