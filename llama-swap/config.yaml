@@ -1138,7 +1138,7 @@ models:
 # ROLE: juiz /v1/systemone pro laya-snake (~/projects/ai/laya). Wrapper de
 # embedding (ModernBERT) com decision head. NAO e chat model: sem template,
 # sem thinking, sem tools, sem embeddings endpoint.
-# NOTE: llama-swap NAO roteia /v1/systemone ainda (issue #1195 upstream) -
+# NOTE: llama-swap v262 (03/Out/2026) roteia /v1/systemone nativamente -
 # modelo declarado agora, utilidade quando o roteamento entrar.
 # NOTE: fora de qualquer set do matrix - exclusive com o LLM que estiver
 # rodando; solver evicta um lado no first-use (fine: juiz e de gameplay).
@@ -1174,6 +1174,7 @@ models:
       source: "ggml-org/Laya-GGUF (BF16, official #29818 conversion)"
       kv_cache: "n/a (decision head, no KV cache)"
       features:
+        decision: true
         completion: false
         tools: false
         thinking: false
@@ -1187,7 +1188,7 @@ models:
       context_length: 8192
       embedding_length: 1024
       quantization: "BF16"
-      note: 'Decision model (/v1/systemone: noul/choice/score). llama-swap routing PENDING (issue #1195). Judge for laya-snake: noul risk questions, frame-relative state, answers.noul >= 0.15 margin gates the verdict.'
+      note: 'Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Judge for laya-snake: noul risk questions, frame-relative state, answers.noul >= 0.15 margin gates the verdict.'
 # -------------------------------------------
 # JULIA-1 - decision model (System One scorer)
 # Upstream llama.cpp #29818: /v1/systemone endpoint, nativo no server (merged
@@ -1197,7 +1198,7 @@ models:
 # ROLE: juiz /v1/systemone pro laya-snake (~/projects/ai/laya) e candidato a
 # router rapido fora do jogo. Wrapper de embedding (ModernBERT 144M).
 # NAO e chat model: sem template, sem thinking, sem tools, sem embeddings.
-# NOTE: llama-swap NAO roteia /v1/systemone ainda (issue #1195 upstream) -
+# NOTE: llama-swap v262 (03/Out/2026) roteia /v1/systemone nativamente -
 # modelo declarado agora, utilidade quando o roteamento entrar.
 # NOTE: fora de qualquer set do matrix - exclusive com o LLM que estiver
 # rodando; solver evicta um lado no first-use.
@@ -1233,6 +1234,7 @@ models:
       source: "ggml-org/Julia-1-GGUF (BF16, official #29818 conversion)"
       kv_cache: "n/a (decision head, no KV cache)"
       features:
+        decision: true
         completion: false
         tools: false
         thinking: false
@@ -1245,7 +1247,8 @@ models:
       parameters: 144000000
       context_length: 8192
       embedding_length: 384
-      note: 'Decision model (/v1/systemone: noul/choice/score). llama-swap routing PENDING (issue #1195). Lightest judge: 144M, sub-5ms per question expected on GPU.'
+      quantization: "BF16"
+      note: 'Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Lightest judge: 144M, sub-5ms per question expected on GPU.'
 # -------------------------------------------
 # GLM-OCR - UPSTREAM BACKEND (mmproj required)
 # GLM-4V-based OCR/Vision specialist — #1 on OmniDocBench V1.5 (94.62 score)
