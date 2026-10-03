@@ -132,17 +132,17 @@ MODELS: dict[str, dict] = {
         "dir": "qwen-image-2.1",
         "backend_type": "qwen21_sd_cpp",
         "category": "image",
-        "bits": "Q6_K GGUF (Viggle Turbo distill)",
+        "bits": "Q6_K GGUF (Viggle Turbo v0.3 distill, merged fp32→quant)",
         "description": "Qwen-Image 2.1 Viggle Turbo — 6 steps, cfg=1.0, pinned sigmas; T2I + editing",
         "enhance_model": "qwen3.6-35b-a3b",
         "enhance_type": "qwen21",
         "default_size": (1024, 1024),
         "components": [
-            {"name": "qwen_image_2.1_turbo_Q6_K.gguf (DiT, Viggle Turbo v0.2.1)", "path": "qwen-image-2.1/qwen_image_2.1_turbo_Q6_K.gguf", "size_gb": 5.9},
+            {"name": "qwen_image_2.1_turbo_Q6_K.gguf (DiT, Viggle Turbo v0.3 6-step)", "path": "qwen-image-2.1/qwen_image_2.1_turbo_Q6_K.gguf", "size_gb": 5.6},
         ],
         "hf_files": [
-            {"repo": "Abiray/Qwen-Image-2.1-viggle-4-steps-turbo-GGUF",
-             "files": ["qwen_image_2.1_turbo_Q6_K.gguf"]},
+            {"repo": "Viggle/Qwen-Image-2.1-viggle-turbo",
+             "files": ["Qwen-Image-2.1-viggle-turbo-v0.3-6step-Q6_K.gguf"]},
         ],
     },
     # Agate preview 001 (Logolabs) — 260M thinker-steered FCDM, pure PyTorch backend.
