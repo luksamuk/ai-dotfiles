@@ -37,13 +37,26 @@ def cosine(a, b):
     return dot / (na * nb) if na and nb else 0.0
 
 
+MAX_EMBED_CHARS = 1200  # bissectado 02/out: 1200 ok, 1600 = HTTP 400 (ctx 512 tokens do endpoint)
+MAX_EMBED_BATCH = 32
+
+def _truncate(t):
+    return t if len(t) <= MAX_EMBED_CHARS else (t[:MAX_EMBED_CHARS - 3] + "...")
+
 def embed_all(texts):
-    body = json.dumps({"model": COLBERT_MODEL, "input": texts}).encode("utf-8")
-    req = urllib.request.Request(COLBERT_URL, body, {"Content-Type": "application/json"})
-    d = json.loads(urllib.request.urlopen(req, timeout=90).read())
-    out = [e["embedding"] for e in d["data"]]
-    if len(out) != len(texts):
-        raise RuntimeError(f"esperava {len(texts)} embeddings, veio {len(out)}")
+    # Cada input truncado (prompt do user gigante derruba o endpoint — batch de 43 descs curts passa)
+    # + envio chunkado. Prompt do user é o elemento [0] do batch.
+    texts = [_truncate(t) for t in texts]
+    out = []
+    for i in range(0, len(texts), MAX_EMBED_BATCH):
+        chunk = texts[i:i + MAX_EMBED_BATCH]
+        body = json.dumps({"model": COLBERT_MODEL, "input": chunk}).encode("utf-8")
+        req = urllib.request.Request(COLBERT_URL, body, {"Content-Type": "application/json"})
+        d = json.loads(urllib.request.urlopen(req, timeout=90).read())
+        part = [e["embedding"] for e in d["data"]]
+        if len(part) != len(chunk):
+            raise RuntimeError(f"esperava {len(chunk)} embeddings, veio {len(part)}")
+        out.extend(part)
     return out
 
 
