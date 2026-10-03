@@ -51,23 +51,23 @@ MAX_IMAGE_MP="1.0"  # Max megapixels per image (ref2va ref images + fl2va start/
 NSFW=false
 NSFW_LORAS=()                       # lista de LoRAs NSFW (repeatable)
 # Defaults: genitália feminina + penetração + movimento rítmico
-NSFW_DEFAULT_LORAS=("hmpussy_v6" "HMPenetration_I2V" "Grindtime")
-# Forças recomendadas por LoRA (empírico)
-declare -A NSFW_LORA_STRENGTHS=(
-  ["HMNSFW_AIO_V2"]="0.5"
-  ["hmpussy_v6"]="0.5"
-  ["HMPenetration_I2V"]="0.5"
-  ["Grindtime"]="0.5"
-)
-NSFW_AVAILABLE_LORAS="HMNSFW_AIO_V2 hmpussy_v6 HMPenetration_I2V Grindtime"
+# 29/09: pilha antiga removida; defaults AGORA = fallback do catálogo novo (~/v/nsfw_catalog_h3.json).
+# A resolução NSFW completa (IDs→stems→mults→triggers) passa pelo nsfw_lora_resolve.py.
+NSFW_DEFAULT_LORAS=()
+declare -A NSFW_LORA_STRENGTHS=()   # strengths agora vêm do catálogo (strength_autor)
+NSFW_AVAILABLE_LORAS=""   # populado do catálogo
+NSFW_CATALOG_JSON="${NSFW_CATALOG_JSON:-$HOME/.local/share/h3/nsfw_catalog_h3.json}"
+NSFW_RESOLVER="${NSFW_RESOLVER:-$HOME/.local/share/h3/nsfw_lora_resolve.py}"
+FORCE_NSFW_LORA_IDS=""   # --force-nsfw-loras "1,2,3"
 
 # Turbo LoRA (destilação — reduz 80 steps pra 4-8)
 # Usar versão ComfyUI-pruned (compatível com Wan2GP). A versão diffusers original
 # tem keys diferentes (transformer_blocks/token_refiner) que o Wan2GP não reconhece.
 TURBO=false
-TURBO_STEPS=8                       # steps fixado (4-8, 8 = melhor qualidade)
+TURBO_STEPS=4                       # 4 (o rank-21 resized é treinado pra 4)
 TURBO_STRENGTH="1.0"                # lightx2v recomenda 1.0
-TURBO_FILE="minimax_h3_ref2v_turbo_4step_v0.1_comfyui_resized_avg_rank_21_bf16.safetensors"
+# Único turbo compatível com o pruned Q4 (full-rank = MOSAICO — doutrina 30/09):
+TURBO_FILE="minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors"
 
 # Facial Realism LoRA (close-up de rosto — textura de pele, micro-expressões)
 # prithivMLmods/MiniMax-H3-Facial-Realism-CloseUp, cp2000, rank 16, trigger "Facial Realism"
@@ -188,11 +188,18 @@ while [[ $# -gt 0 ]]; do
     --ref-audio2) REF_AUDIO2="$2"; shift 2 ;;
     --use-soundtrack) USE_SOUNDTRACK=true; shift ;;
     --nsfw) NSFW=true; shift ;;
+    --force-nsfw-loras) FORCE_NSFW_LORA_IDS="$2"; shift 2 ;;
     --nsfw-lora) NSFW=true; NSFW_LORAS+=("$2"); shift 2 ;;
     --nsfw-strength) NSFW=true; NSFW_OVERRIDE_STRENGTH="$2"; shift 2 ;;  # sobrescreve todas
     --turbo) TURBO=true; shift ;;
     --turbo-strength) TURBO=true; TURBO_STRENGTH="$2"; shift 2 ;;
     --turbo-file) TURBO=true; TURBO_FILE_OVERRIDE="$2"; shift 2 ;;
+    --output|-o|--output-dir)
+      case "$2" in
+        /*) OUTPUT_DIR="$(readlink -m "$2")" ;;
+        *)  OUTPUT_DIR="$(readlink -m "$PWD/$2")" ;;
+      esac
+      shift 2 ;;
     --facial) FACIAL=true; shift ;;
     --facial-strength) FACIAL=true; FACIAL_STRENGTH="$2"; shift 2 ;;
     --facial-file) FACIAL=true; FACIAL_FILE_OVERRIDE="$2"; shift 2 ;;
@@ -205,6 +212,10 @@ while [[ $# -gt 0 ]]; do
     --pdd) PDD=true; shift ;;
     --2p|--two-phase) TWO_PHASE=true; shift ;;
     --w4a8) W4A8=true; shift ;;
+    --*)
+      echo "Erro: flag desconhecida: $1"
+      echo "(flags de valor: --flag VAL; booleanas: --flag; -h pra ajuda)"
+      exit 1 ;;
     -h|--help)
       cat << 'HELPEOF'
 h3 — gerar vídeo+áudio via MiniMax H3
@@ -262,12 +273,12 @@ Opções gerais:
                      PenisV2M3_000002750 (genitália masculina, 0.5)
                      PornMaster_penis_side_view_I2V_V1 (genitália masculina I2V, 0.5)
   --nsfw-strength N   Sobrescreve força de TODOS os LoRAs NSFW (default: força
-                     recomendada de cada um, range 0.1-1.0)
+                     recomendada de cada um; sem catálogo = 0.8, range 0.1-1.0)
   --turbo             Ativa LoRA Turbo (destilação: ~10x mais rápido)
-                     Use com --steps 8 (default com turbo) ou --steps 4-6
-                     Mais que 8 steps não melhora e pode gerar artifacts
+                     Default: rank-21 resized @4 steps (único compatível com o
+                     pruned Q4 — full-rank 768p = MOSAICO; ver doutrina 30/09)
   --turbo-strength N  Força do LoRA Turbo (default: 1.0, lightx2v recomenda 1.0)
-  --turbo-file NOME   Override do LoRA Turbo (auto: Ref2VA=4step v0.1, FL2VA/T2V=8step v1.0)
+  --turbo-file NOME   Override do LoRA Turbo (default: fl2v rank-21 resized)
   --facial            Ativa LoRA Facial Realism (close-up de rosto: poros, textura
                      de pele, micro-expressões). Empilha com --turbo. Trigger word
                      "Facial Realism" é injetada no prompt automaticamente
@@ -417,6 +428,12 @@ cleanup_temp_images() {
   for f in "${H3_TEMP_IMAGES[@]}"; do
     [[ -n "$f" && -f "$f" ]] && rm -f "$f"
   done
+  # catálogo NSFW (mktemp h3_catalog_*): usado pelo enhance via env H3_CATALOG_FILE;
+  # no EXIT o wgp já terminou — seguro apagar (antes ficava acumulado em /tmp)
+  [[ -n "$CATALOG_FILE" && -f "$CATALOG_FILE" ]] && rm -f "$CATALOG_FILE"
+  # settings JSON idem (02/out): dry-run interrompido por SIGPIPE (reader fecha o
+  # pipe antes do rm) ou validação que morre c/ exit 1 não deixavam resíduo atrás
+  [[ -n "${SETTINGS_FILE:-}" && -f "$SETTINGS_FILE" ]] && rm -f "$SETTINGS_FILE"
 }
 trap cleanup_temp_images EXIT
 
@@ -546,14 +563,23 @@ if [[ "$W4A8" == true ]]; then
     echo "Erro: --w4a8 hoje só cobre Ref2VA (FL2VA w4a8 existe no Kijai mas não baixado)."
     exit 1
   fi
+elif [[ "${H3_GGUF:-1}" == "1" ]]; then
+  # Stack GGUF enxuta (29/09): Q4_K unsloth + TE Q3 abliterated + VAEs Abiray
+  MODEL_FILE="$CKPTS_DIR/minimax_h3_ref2va_pruned-Q4_K.gguf"
+  [[ "$REF2VA_MODE" != true ]] && MODEL_FILE="$CKPTS_DIR/minimax_h3_fl2va_pruned-Q4_K.gguf"
+  TEXT_ENCODER="$CKPTS_DIR/Qwen3-VL-32B-Instruct/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf"
+  VIDEO_VAE="$CKPTS_DIR/MiniMax-H3-video_vae_fp16.safetensors"
+  AUDIO_VAE="$CKPTS_DIR/MiniMax-H3-audio_vae_fp32.safetensors"
 elif [[ "$REF2VA_MODE" == true ]]; then
   MODEL_FILE="$CKPTS_DIR/MiniMax-H3-Ref2VA-pruned_int8_convrot.safetensors"
 else
   MODEL_FILE="$CKPTS_DIR/MiniMax-H3-FL2VA-pruned_int8_convrot.safetensors"
+  TEXT_ENCODER="$CKPTS_DIR/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf"
+  VIDEO_VAE="$CKPTS_DIR/MiniMax-H3-video_vae_fp16.safetensors"
+  AUDIO_VAE="$CKPTS_DIR/MiniMax-H3-audio_vae_fp32.safetensors"
 fi
-TEXT_ENCODER="$CKPTS_DIR/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf"
-VIDEO_VAE="$CKPTS_DIR/MiniMax-H3-video_vae_fp16.safetensors"
-AUDIO_VAE="$CKPTS_DIR/MiniMax-H3-audio_vae_fp32.safetensors"
+if [[ "${H3_GGUF:-1}" == "1" ]]; then :; fi
+# (GGUF branch seta TEXT_ENCODER/VAEs completos; int8 legacy path idem)
 
 for f in "$MODEL_FILE" "$TEXT_ENCODER" "$VIDEO_VAE" "$AUDIO_VAE"; do
   if [[ ! -e "$f" ]]; then
@@ -567,6 +593,7 @@ done
 # ── Construir prompt types e model_type ──────────────────────────────────
 if [[ "$REF2VA_MODE" == true ]]; then
   MODEL_TYPE="minimax_h3_ref2va_pruned"
+[[ "${H3_GGUF:-1}" == "1" ]] && MODEL_TYPE="minimax_h3_ref2va_gguf"   # default: stack GGUF enxuta (H3_GGUF=0 volta pro int8)
   TASK_TYPE="ref2va"
   VIDEO_PROMPT_TYPE=""
   [[ ${#REF_IMAGES[@]} -gt 0 ]] && VIDEO_PROMPT_TYPE+="I"
@@ -586,6 +613,7 @@ if [[ "$REF2VA_MODE" == true ]]; then
   IMAGE_PROMPT_TYPE=""
 elif [[ "$FL2VA_MODE" == true ]]; then
   MODEL_TYPE="minimax_h3_fl2va_pruned"
+  [[ "${H3_GGUF:-1}" == "1" ]] && MODEL_TYPE="minimax_h3_fl2va_gguf"
   TASK_TYPE="i2v"
   IMAGE_PROMPT_TYPE=""
   [[ -n "$IMAGE_START" ]] && IMAGE_PROMPT_TYPE+="S"
@@ -594,6 +622,7 @@ elif [[ "$FL2VA_MODE" == true ]]; then
   AUDIO_PROMPT_TYPE=""
 else
   MODEL_TYPE="minimax_h3_fl2va_pruned"
+  [[ "${H3_GGUF:-1}" == "1" ]] && MODEL_TYPE="minimax_h3_fl2va_gguf"
   TASK_TYPE="t2v"
   IMAGE_PROMPT_TYPE=""
   VIDEO_PROMPT_TYPE=""
@@ -657,6 +686,48 @@ if [[ "$ENHANCE" == true ]]; then
     echo "=== Enhance via Ollama: $ENHANCE_MODEL (porta 11434) ==="
   fi
 
+  # ── NSFW nova rota (29/09): catálogo com IDs no system + linha LORAS: exigida ──
+  # force-nsfw-loras presente = LLM NEM VÊ o catálogo (lista do user é lei)
+  # 30/09: catálogo PRÉ-RANKED pelo ColBERT hibrído (rerank_catalog.py) — colbert morto = catálogo completo (fail-open)
+  CATALOG_SYSTEM=""
+  if [[ "$NSFW" == true && -z "$FORCE_NSFW_LORA_IDS" && -f "$NSFW_CATALOG_JSON" ]]; then
+    CATALOG_TEXT=$(python3 "$HOME/.local/share/h3/rerank_catalog.py" --prompt "$PROMPT" --n 12 --mode both 2>>"$HOME/.local/share/h3/.colbert_shadow.log")
+    # both: stdout = catálogo reordenado; stderr = linha de auditoria .colbert_shadow.log
+    if [[ -z "$CATALOG_TEXT" ]]; then
+      CATALOG_TEXT=$(python3 "$HOME/.local/share/h3/build_catalog_prompt.py" 2>/dev/null)
+    fi
+    CATALOG_SYSTEM=$(cat <<'CATBLOCK'
+
+--- LoRA selection ---
+You are choosing action LoRAs from the catalog below to match the scene the user requested. The catalog lists ALL available LoRAs: a ranked section first (most relevant to this request, with relevance scores) and every remaining LoRA after it — scan BOTH sections before deciding. Catalog:
+
+CATALOG_PLACEHOLDER
+
+Selection rules:
+- Read the user's request as INTENT. If the request mentions an outcome (gozada, ejaculação, facial, oral
+- MODALIDADE: se o bloco de modalidade abaixo indicar ref2va (refs ativas), PREFIRA LoRAs marcados com o tag [REF2VA] na descrição — eles são treinados com referências e preservam identidade. LoRAs marcados [REF2VA] em run SEM refs tendem a falhar. Em run com refs, LoRAs de ação genérica (sem tag) ainda funcionam, mas o tag indica treino especializado pra esse caso.
+- Multi-LoRA is normal in complex scenes (typically 2-3: one for the position/action, one for anatomy rei
+- Trigger words from chosen LoRAs are injected automatically by the system — never write them in the para
+
+After the enhanced paragraph, on the LAST line, output exactly: LORAS: <comma-separated IDs>
+If genuinely nothing fits the request, output: LORAS: none
+Never mention catalog trigger words in the paragraph itself.
+MODALITY_NOTICE
+CATBLOCK
+)
+    # injeção do catálogo real (placeholder → texto)
+    CATALOG_SYSTEM="${CATALOG_SYSTEM//CATALOG_PLACEHOLDER/$CATALOG_TEXT}"
+    # Aviso de modalidade (o enhance vê refs ativas e prefere LoRAs [REF2VA] no catálogo)
+    if [[ "${REF2VA_MODE:-}" == true ]]; then
+      MODALITY_TEXT="Current generation modality: ref2va (reference frames/videos ACTIVE: identity comes from the provided refs). Prefer LoRAs tagged [REF2VA] in the catalog — they are trained for reference runs and preserve identity."
+    else
+      MODALITY_TEXT="Current generation modality: fl2va (text-to-video, NO reference images/videos). Do NOT pick LoRAs tagged [REF2VA] — they are trained for reference runs and underperform without refs."
+    fi
+    CATALOG_SYSTEM="${CATALOG_SYSTEM//MODALITY_NOTICE/$MODALITY_TEXT}"
+    CATALOG_FILE=$(mktemp /tmp/h3_catalog_XXXX.txt)
+    printf '%s\n' "$CATALOG_SYSTEM" > "$CATALOG_FILE"
+    echo "=== Catalogo NSFW salvo: $CATALOG_FILE (${#CATALOG_SYSTEM} chars) ==="
+  fi
   # Escolher system prompt: NSFW simplificado quando --nsfw, completo caso contrário
   if [[ "$NSFW" == true ]]; then
     if [[ "$REF2VA_MODE" == true ]]; then
@@ -776,8 +847,33 @@ if [[ "$ENHANCE" == true ]]; then
   # --enhance-with-vision (coringa): o próprio LLM de enhance tem vision
   # (mmproj) e recebe as imagens inline — pula o describe separado.
   VISION_DESCRIPTIONS=""
+  H3_VISION_DESCRIBE_WANT="${VISION_DESCRIBE}"
+# dry-run zera VISION_DESCRIBE (side-effect) mas o auto-despacho é só um check de capability
+if [[ "$DRY_RUN" == "1" ]]; then H3_VISION_DESCRIBE_WANT=true; fi
+if [[ "$ENHANCE" == true && "$ENHANCE_WITH_VISION" != true && "$H3_VISION_DESCRIBE_WANT" == true ]]; then
+    # AUTO-DESPACHO (29/09): se o enhance LLM vê imagens, inline direto (sem especialista).
+    H3_HAS_IMAGES=false
+    [[ -n "$IMAGE_START" || -n "$IMAGE_END" || ${#REF_IMAGES[@]} -gt 0 ]] && H3_HAS_IMAGES=true
+    if [[ "$H3_HAS_IMAGES" == true ]]; then
+      H3_URL_FOR_CHECK="$LLAMA_SWAP_URL"
+      export H3_MODEL_FOR_CHECK="$ENHANCE_MODEL"
+      [[ "$ENHANCE_MODEL" == ollama:* ]] && H3_URL_FOR_CHECK="$OLLAMA_URL" && export H3_MODEL_FOR_CHECK="${ENHANCE_MODEL#ollama:}"
+      H3_VISION_CHECK=$(H3_CHECK_VISION=1 python3 -c '
+import sys, os
+sys.path.insert(0, "/home/alchemist/.local/bin")
+from relay_vision_common import check_vision
+has, where = check_vision(os.environ.get("H3_MODEL_FOR_CHECK", ""))
+print(("YES " + where) if has else "NO")' 2>/dev/null) || H3_VISION_CHECK="NO"
+      if [[ "$H3_VISION_CHECK" == YES* ]]; then
+        ENHANCE_WITH_VISION=true
+        echo "=== $ENHANCE_MODEL enxerga ($H3_VISION_CHECK): imagens inline no enhance (despachado, sem especialista) ==="
+      else
+        echo "=== $ENHANCE_MODEL não vê imagens: vision describe separado permanece ==="
+      fi
+    fi
+  fi
   if [[ "$ENHANCE_WITH_VISION" == true ]]; then
-    echo "=== --enhance-with-vision: imagens vao inline no enhance (sem vision describe separado) ==="
+    echo "=== imagens vao inline no enhance (sem vision describe separado) ==="
   elif [[ "$VISION_DESCRIBE" == true ]]; then
     VLM_URL="$LLAMA_SWAP_URL"
     if [[ -n "$VLM_MODEL_OVERRIDE" ]]; then
@@ -942,8 +1038,15 @@ print('\n'.join(descriptions))
     fi
     ENHANCE_IMAGES_JSON=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1:]))" "${ENHANCE_IMAGES[@]}" 2>/dev/null || echo "[]")
   fi
+  # catálogo via ARQUIVO (env era frágil c/ multiline)
+  if [[ -z "$CATALOG_FILE" && -n "$CATALOG_SYSTEM" ]]; then
+    CATALOG_FILE=$(mktemp /tmp/h3_catalog_XXXX.txt)
+    printf '%s\n' "$CATALOG_SYSTEM" > "$CATALOG_FILE"
+  fi
+  export H3_CATALOG_FILE="$CATALOG_FILE"
   python3 -c "
 import json
+import os
 media_ctx = '''$MEDIA_CONTEXT'''.strip()
 prompt = '''$PROMPT'''
 user_msg = media_ctx + '\n\n--- User prompt ---\n' + prompt
@@ -984,6 +1087,13 @@ ns = {}
 with open(os.path.join('$WAN2GP_DIR', 'models', 'minimax_h3', 'prompt_enhancer.py')) as f:
     exec(f.read(), ns)
 SYSTEM_PROMPT = ns[SYSTEM_PROMPT_VAR]
+CATALOG_FILE_PATH = os.environ.get('H3_CATALOG_FILE', '')
+if CATALOG_FILE_PATH and os.path.exists(CATALOG_FILE_PATH):
+    with open(CATALOG_FILE_PATH) as _cf:
+        _cat_text = _cf.read().strip()
+    if _cat_text:
+        SYSTEM_PROMPT = SYSTEM_PROMPT + chr(10) + _cat_text
+        print(f'[INFO] catalogo LoRAs anexado ao system ({len(_cat_text)} chars)', file=sys.stderr)
 
 # --enhance-with-vision: imagens inline como content multimodal
 ENHANCE_IMAGES_FILE = '$ENHANCE_IMAGES_FILE'
@@ -1055,6 +1165,62 @@ for attempt in range(max_retries):
   rm -f "$ENHANCE_USER_FILE"
   [[ -n "$ENHANCE_IMAGES_FILE" ]] && rm -f "$ENHANCE_IMAGES_FILE"
 
+  # ── NSFW via seleção LLM (nova rota 29/09): extrair LORAS: do output ──────
+  if [[ "$NSFW" == true ]]; then
+    ENH_OUT_FILE=$(mktemp /tmp/h3_nsfw_out_XXXX.txt)
+    printf '%s\n' "$ENHANCED_PROMPT" > "$ENH_OUT_FILE"
+    if [[ -n "$FORCE_NSFW_LORA_IDS" ]]; then
+      echo "=== Force NSFW LoRAs: $FORCE_NSFW_LORA_IDS (LLM ignorada) ==="
+      NSFW_RAW_RESOLVED=""
+      NSFW_LORAS_ARRAY=()
+      NSFW_STRENGTHS_ARRAY=()
+      if NSFW_RAW_RESOLVED=$(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --ids "$FORCE_NSFW_LORA_IDS" 2>/dev/null); then
+        while IFS= read -r n; do
+          [ -n "$n" ] && NSFW_LORAS_ARRAY+=("$n")
+        done < <(echo "$NSFW_RAW_RESOLVED" | awk '/^---$/{exit} {print}')
+        NSFW_STRENGTHS_ARRAY=()
+        while IFS= read -r s; do
+          [ -n "$s" ] && NSFW_STRENGTHS_ARRAY+=("$s")
+        done < <(echo "$NSFW_RAW_RESOLVED" | awk '/^---$/{c++;next} c==1{print}')
+        for idx in "${!NSFW_LORAS_ARRAY[@]}"; do
+          NSFW_LORA_STRENGTHS["${NSFW_LORAS_ARRAY[$idx]}"]="${NSFW_STRENGTHS_ARRAY[$idx]:-1.0}"
+        done
+      fi
+      NSFW_LORAS=()
+      for idx in "${!NSFW_LORAS_ARRAY[@]}"; do NSFW_LORAS+=("${NSFW_LORAS_ARRAY[$idx]}"); done
+    else
+      # LLM path: extrair linha LORAS: do output do enhance e resolver
+      NSFW_RAW_RESOLVED=""
+      NSFW_LORAS_ARRAY=()
+      NSFW_STRENGTHS_ARRAY=()
+      NSFW_RESOLVED_TRIGGERS=""
+      if NSFW_RAW_RESOLVED=$(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --out "$ENH_OUT_FILE" 2>/dev/null); then
+        while IFS= read -r n; do
+          [ -n "$n" ] && NSFW_LORAS_ARRAY+=("$n")
+        done < <(echo "$NSFW_RAW_RESOLVED" | awk '/^---$/{exit} {print}')
+        NSFW_STRENGTHS_ARRAY=()
+        while IFS= read -r s; do
+          [ -n "$s" ] && NSFW_STRENGTHS_ARRAY+=("$s")
+        done < <(echo "$NSFW_RAW_RESOLVED" | awk '/^---$/{c++;next} c==1{print}')
+        for idx in "${!NSFW_LORAS_ARRAY[@]}"; do
+          NSFW_LORA_STRENGTHS["${NSFW_LORAS_ARRAY[$idx]}"]="${NSFW_STRENGTHS_ARRAY[$idx]:-1.0}"
+        done
+        NSFW_TRIGGERS_ARRAY=()
+        while IFS= read -r t; do
+          [ -n "$t" ] && NSFW_TRIGGERS_ARRAY+=("$t")
+        done < <(echo "$NSFW_RAW_RESOLVED" | awk '/^---$/{c++;next} c==2{print}')
+        NSFW_RESOLVED_TRIGGERS="${NSFW_TRIGGERS_ARRAY[*]:-}"
+        NSFW_LORAS=()
+        for idx in "${!NSFW_LORAS_ARRAY[@]}"; do NSFW_LORAS+=("${NSFW_LORAS_ARRAY[$idx]}"); done
+        echo "=== LLM selecionou ${#NSFW_LORAS[@]} LoRAs: ${NSFW_LORAS[*]:-nenhuma} ==="
+      else
+        echo "=== LLM não entregou linha LORAS: fallback virá do validador ==="
+        NSFW_LORAS=()
+      fi
+    fi
+    rm -f "$ENH_OUT_FILE"
+  fi
+
   # Detectar se o enhance falhou (marcador __ENHANCE_FAILED__ na primeira linha)
   if [[ "$ENHANCED_PROMPT" == __ENHANCE_FAILED__* ]]; then
     # Remove marcador e usa prompt original
@@ -1063,28 +1229,23 @@ for attempt in range(max_retries):
     echo "=== Enhance falhou, usando prompt original ==="
   elif [[ -n "$ENHANCED_PROMPT" ]]; then
     PROMPT="$ENHANCED_PROMPT"
+    # 02/out: stripar linha(s) LORAS: do output do enhance — o resolver já consumiu
+    # via --out; a sintaxe interna do catálogo vira ruído pro text encoder na geração
+    if [[ "$NSFW" == true ]]; then
+      CLEAN_PROMPT=$(python3 -c "
+import sys, re
+text = sys.stdin.read()
+lines = [l for l in text.split(chr(10)) if not re.match(r'^\s*LORAS\s*:', l, re.IGNORECASE)]
+sys.stdout.write(chr(10).join(lines).strip())
+" <<<"$PROMPT")
+      [[ -n "$CLEAN_PROMPT" ]] && PROMPT="$CLEAN_PROMPT"
+    fi
     echo "Prompt expandido (${#PROMPT} chars)"
     if [[ "$SHOW_ENHANCED" == true ]]; then
       echo "---"
       echo "$PROMPT"
       echo "---"
     fi
-  fi
-
-  # NSFW: injetar trigger words no início do prompt (LLM não deve colocá-las)
-  if [[ "$NSFW" == true ]]; then
-    # Remover qualquer hmotion/grindtime que o LLM tenha colocado
-    PROMPT="${PROMPT//hmotion/}"
-    PROMPT="${PROMPT//grindtime/}"
-    # Limpar backticks, vírgulas soltas, espaços extras no início
-    PROMPT="$(echo "$PROMPT" | sed 's/`//g; s/^[\t ,.]*//; s/  */ /g')"
-    # Determinar quais triggers injetar
-    NSFW_PREFIX="hmotion,"
-    if echo "$PROMPT" | grep -qi "grind\|riding\|rhythmic\|cowgirl\|bounc"; then
-      NSFW_PREFIX="hmotion, grindtime,"
-    fi
-    PROMPT="$NSFW_PREFIX $PROMPT"
-    echo "=== Trigger words injetadas: $NSFW_PREFIX ==="
   fi
 
   echo ""
@@ -1113,15 +1274,90 @@ fi
 SETTINGS_FILE=$(mktemp /tmp/h3_settings_XXXX.json)
 
 # ── Validar LoRAs NSFW se ativado ──────────────────────────────────────────
+# NOVA ROTA (29/09): --force-nsfw-loras "1,2,9" resolve aqui mesmo (fora do enhance);
+# sem force e com --enhance, o catálogo foi pro LLM e a seleção vem de LORAS: (setada no bloco enhance)
+# sem enhance e sem force → fallback do catálogo
 if [[ "$NSFW" == true ]]; then
-  # Se nenhuma LoRA especificada, usar defaults (feminina + masculina)
-  if [[ ${#NSFW_LORAS[@]} -eq 0 ]]; then
-    NSFW_LORAS=("${NSFW_DEFAULT_LORAS[@]}")
+  if [[ -n "$FORCE_NSFW_LORA_IDS" ]]; then
+    NSFW_RESOLVE_RAW_OUT=$(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --ids "$FORCE_NSFW_LORA_IDS" 2>/dev/null)
+    NSFW_LORAS=$(echo "$NSFW_RESOLVE_RAW_OUT" | awk '/^---$/{c++; next} c==0{print} c==1{m=m" "$_} c==2{t=t" "$_} END{print m}' 2>/dev/null)
+    NSFW_LORAS_ARRAY=()
+    while IFS= read -r n; do
+      [ -n "$n" ] && NSFW_LORAS_ARRAY+=("$n")
+    done < <(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --ids "$FORCE_NSFW_LORA_IDS" 2>/dev/null | awk '/^---$/{exit} {print}')
+    NSFW_STRENGTHS_ARRAY=()
+    while IFS= read -r s; do
+      [ -n "$s" ] && NSFW_STRENGTHS_ARRAY+=("$s")
+    done < <(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --ids "$FORCE_NSFW_LORA_IDS" 2>/dev/null | awk '/^---$/{c++;next} c==1{print}')
+    NSFW_RESOLVED_STRENGTHS="${NSFW_STRENGTHS_ARRAY[*]:-}"
+    NSFW_TRIGGERS_ARRAY=()
+    while IFS= read -r t; do
+      [ -n "$t" ] && NSFW_TRIGGERS_ARRAY+=("$t")
+    done < <(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --ids "$FORCE_NSFW_LORA_IDS" 2>/dev/null | awk '/^---$/{c++;next} c==2{print}')
+    NSFW_RESOLVED_TRIGGERS="${NSFW_TRIGGERS_ARRAY[*]:-}"
+    NSFW_LORAS=("${NSFW_LORAS_ARRAY[@]}")
+    # forças do catálogo: popular o mapa dinâmico usado no validador
+    for idx in "${!NSFW_LORAS_ARRAY[@]}"; do
+      NSFW_LORA_STRENGTHS["${NSFW_LORAS_ARRAY[$idx]}"]="${NSFW_STRENGTHS_ARRAY[$idx]:-1.0}"
+    done
+    echo "=== Force NSFW LoRAs (${#NSFW_LORAS[@]}): ==="
+    for n in "${NSFW_LORAS[@]}"; do echo "  → $n"; done
+  elif [[ ${#NSFW_LORAS[@]} -eq 0 && -f "$NSFW_CATALOG_JSON" ]]; then
+    if [[ "$ENHANCE" != true ]]; then
+      echo "=== --nsfw sem enhance: usando fallback do catalogo ==="
+      NSFW_FALLBACK_IDS="$(python3 -c "import json; print(','.join(map(str, json.load(open('$NSFW_CATALOG_JSON'))['fallback_pilha'])))")"
+      NSFW_FORCE_OUT=$(python3 "$NSFW_RESOLVER" --ids "$NSFW_FALLBACK_IDS" 2>/dev/null)
+      NSFW_RESOLVED_NAMES="$(python3 -c "import json,sys; print(' '.join(json.load(sys.stdin)['names']))" <<<"$NSFW_FORCE_OUT")"
+      NSFW_RESOLVED_STRENGTHS="$(python3 -c "import json,sys; print(' '.join(map(str, json.load(sys.stdin)['mults'])))" <<<"$NSFW_FORCE_OUT")"
+      NSFW_RESOLVED_TRIGGERS="$(python3 -c "import json,sys; print(' '.join(t for t in json.load(sys.stdin)['triggers'] if t))" <<<"$NSFW_FORCE_OUT")"
+      NSFW_LORAS=$(echo "$NSFW_RESOLVE_RAW_OUT" | head -n1)
+      NSFW_LORAS_ARRAY=()
+      while IFS= read -r n; do
+        [ -n "$n" ] && NSFW_LORAS_ARRAY+=("$n")
+      done < <(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --ids "$NSFW_FALLBACK_IDS" 2>/dev/null | awk '/^---$/{exit} {print}')
+      NSFW_STRENGTHS_ARRAY=()
+      while IFS= read -r s; do
+        [ -n "$s" ] && NSFW_STRENGTHS_ARRAY+=("$s")
+      done < <(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --ids "$NSFW_FALLBACK_IDS" 2>/dev/null | awk '/^---$/{c++;next} c==1{print}')
+      for idx in "${!NSFW_LORAS_ARRAY[@]}"; do
+        NSFW_LORA_STRENGTHS["${NSFW_LORAS_ARRAY[$idx]}"]="${NSFW_STRENGTHS_ARRAY[$idx]:-1.0}"
+      done
+      NSFW_LORAS=("${NSFW_LORAS_ARRAY[@]}")
+    fi
   fi
+fi
+
+# ── Validar LoRAs NSFW (nomes → arquivos no disco) ─────────────────────────
+if [[ "$NSFW" == true ]]; then
+  # Array vazio agora = fallback do catálogo (cobrir enhance-falhou/sem-linha também)
+  if [[ ${#NSFW_LORAS[@]} -eq 0 ]]; then
+    NSFW_FALLBACK_IDS="$(python3 -c "import json; print(','.join(map(str, json.load(open('$NSFW_CATALOG_JSON'))['fallback_pilha'])))")"
+    NSFW_LORAS_ARRAY=()
+    while IFS= read -r n; do
+      [ -n "$n" ] && NSFW_LORAS_ARRAY+=("$n")
+    done < <(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --ids "$NSFW_FALLBACK_IDS" 2>/dev/null | awk '/^---$/{exit} {print}')
+    NSFW_STRENGTHS_ARRAY=()
+    while IFS= read -r s; do
+      [ -n "$s" ] && NSFW_STRENGTHS_ARRAY+=("$s")
+    done < <(NSFW_RESOLVE_RAW=1 python3 "$NSFW_RESOLVER" --ids "$NSFW_FALLBACK_IDS" 2>/dev/null | awk '/^---$/{c++;next} c==1{print}')
+    for idx in "${!NSFW_LORAS_ARRAY[@]}"; do
+      NSFW_LORA_STRENGTHS["${NSFW_LORAS_ARRAY[$idx]}"]="${NSFW_STRENGTHS_ARRAY[$idx]:-1.0}"
+    done
+    NSFW_LORAS=("${NSFW_LORAS_ARRAY[@]}")
+    echo "=== NSFW: fallback do catalogo aplicado (${#NSFW_LORAS[@]} LoRAs) ==="
+  fi
+  # Limpar elementos vazios do array (LLM path pode gerar slots vazios)
+  local_array=()
+  for x in "${NSFW_LORAS[@]}"; do
+    [[ -n "$x" ]] && local_array+=("$x")
+  done
+  NSFW_LORAS=("${local_array[@]}")
   # Validar cada LoRA e pegar força recomendada
   NSFW_LORA_NAMES=()
   NSFW_LORA_MULTS=()
+  NSFW_RESOLVED_TRIGGERS="${NSFW_RESOLVED_TRIGGERS:-}"
   for lora_name in "${NSFW_LORAS[@]}"; do
+    [[ -z "$lora_name" ]] && continue
     LORA_FILE="$WAN2GP_DIR/loras/minimax_h3/${lora_name}.safetensors"
     if [[ ! -f "$LORA_FILE" ]]; then
       echo "Erro: LoRA NSFW não encontrado: $LORA_FILE"
@@ -1130,11 +1366,11 @@ if [[ "$NSFW" == true ]]; then
       exit 1
     fi
     NSFW_LORA_NAMES+=("$lora_name")
-    # Se --nsfw-strength foi passado, sobrescreve; senão usa força recomendada
+    # Se --nsfw-strength foi passado, sobrescreve; senão strength do catálogo/autor
     if [[ -n "${NSFW_OVERRIDE_STRENGTH:-}" ]]; then
       NSFW_LORA_MULTS+=("$NSFW_OVERRIDE_STRENGTH")
     else
-      NSFW_LORA_MULTS+=("${NSFW_LORA_STRENGTHS[$lora_name]:-0.5}")
+      NSFW_LORA_MULTS+=("${NSFW_LORA_STRENGTHS[$lora_name]:-0.8}")   # default 0.8 (doutrina 30/09)
     fi
   done
   # Mostrar LoRAs ativas com forças
@@ -1143,6 +1379,34 @@ if [[ "$NSFW" == true ]]; then
     NSFW_DISPLAY+="$((${i}+1)). ${NSFW_LORA_NAMES[$i]}@${NSFW_LORA_MULTS[$i]}  "
   done
   echo "=== NSFW LoRAs: $NSFW_DISPLAY==="
+fi
+
+# ── NSFW: injetar trigger words no início do prompt (30/09) ───────────────
+# Feito FORA do bloco enhance (mesma razão do facial) pra cobrir com e sem --enhance.
+# Triggers AGORA vêm das LoRAs efetivamente resolvidas (resolve raw, 3ª seção),
+# não de heurística. Antes: "hmotion," ia SEMPRE (mesmo sem HMPenetration carregada —
+# token solto que puxava a base p/ sexo em cena que o LLM direcionou de outra forma)
+# e o trigger das LoRAs escolhidas (cmst, bl0w_j0b...) nunca entrava (LoRA carrega, sem ativação).
+if [[ "$NSFW" == true ]]; then
+  # Limpar backticks, vírgulas soltas, espaços extras no início
+  PROMPT="$(echo "$PROMPT" | sed 's/`//g; s/^[\t ,.]*//; s/  */ /g')"
+  # Remover triggers que o LLM tenha colocado (sistema injeta — idempotente)
+  for tw in hmotion grindtime cmst bl0w_j0b penislora hmpussy inniepussy hmcumshot cumsh0t sensual_fingering squirting hmasturbation; do
+    PROMPT="${PROMPT//${tw},/}"
+    PROMPT="${PROMPT//${tw}/}"
+  done
+  # Determinar triggers: os das LoRAs resolvidas (LLM/force/fallback) — minúscula, vírgula-sep
+  NSFW_PREFIX=""
+  if [[ -n "$NSFW_RESOLVED_TRIGGERS" ]]; then
+    NSFW_PREFIX="$(echo "$NSFW_RESOLVED_TRIGGERS" | tr '[:upper:]' '[:lower:]' | sed 's/  */, /g; s/^ *, *//; s/ *, *$//')"
+    NSFW_PREFIX="${NSFW_PREFIX},"
+  fi
+  if [[ -n "$NSFW_PREFIX" ]]; then
+    PROMPT="$NSFW_PREFIX $PROMPT"
+    echo "=== Trigger words injetadas: ${NSFW_PREFIX%,} ==="
+  else
+    echo "=== Trigger words: nenhuma LoRA resolvida com trigger hard-token ==="
+  fi
 fi
 
 # ── NAFASP (default ON): validar LoRA ─────────────────────────────────────
@@ -1212,11 +1476,8 @@ if [[ "$TURBO" == true ]]; then
   # da família); FL2VA/T2V usam o FL2V 8-step v1.0 (lightx2v, treinado p/ 8 steps,
   # melhor que esticar o 4-step). Override manual: --turbo-file NOME
   if [[ -z "$TURBO_FILE_OVERRIDE" ]]; then
-    if [[ "$TASK_TYPE" == "ref2va" ]]; then
-      TURBO_FILE="minimax_h3_ref2v_turbo_4step_v0.1_comfyui_resized_avg_rank_21_bf16.safetensors"
-    else
-      TURBO_FILE="minimax_h3_fl2v_lightx2v_turbo_8step_v1.0_resized_avg_rank_24_bf16.safetensors"
-    fi
+    # 30/09: full-rank (768p/8step) = MOSAICO no pruned Q4 — rank21 resized é o único compatível
+    TURBO_FILE="minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors"
   else
     TURBO_FILE="$TURBO_FILE_OVERRIDE"
   fi
@@ -1226,9 +1487,9 @@ if [[ "$TURBO" == true ]]; then
     echo "Baixe com: hf download lightx2v/Minimax-h3-Turbo minimax_h3_ref2v_turbo_4step_v0.1_bf16.safetensors --local-dir ~/git/Wan2GP/loras/minimax_h3/"
     exit 1
   fi
-  # Turbo requer 4-8 steps — forçar 8 se usuário não setou --steps explicitamente
+  # Turbo requer 4-8 steps — default TURBO_STEPS (4, rank-21) se usuário não setou --steps
   if [[ "$STEPS" == "50" ]]; then
-    STEPS=8
+    STEPS="$TURBO_STEPS"
   fi
   # Warn se user passou --steps > 8
   if [[ "$STEPS" -gt 8 ]]; then
@@ -1358,18 +1619,6 @@ import json, os
 
 settings = {
     'model_type': os.environ['H3_MODEL_TYPE'],
-    'task_type': os.environ['H3_TASK_TYPE'],
-    'model': {
-        'name': 'MiniMax H3 FL2VA Q4_0',
-        'architecture': os.environ['H3_MODEL_TYPE'],
-        'settings_dir': [''],
-        'group': 'minimax_h3',
-        'URLs': [os.environ.get('H3_MODEL_FILE_NAME', 'MiniMax-H3-FL2VA-pruned_int8_convrot.safetensors')],
-        'text_encoder_variant': 'gguf_q4_k_m',
-        'text_encoder_URLs': ['qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf'],
-        'video_vae_file': 'MiniMax-H3-video_vae_fp16.safetensors',
-        'audio_vae_file': 'MiniMax-H3-audio_vae_fp32.safetensors'
-    },
     'prompt': os.environ['H3_PROMPT'],
     'resolution': os.environ['H3_RESOLUTION'],
     'video_length': int(os.environ['H3_FRAMES']),
@@ -1537,7 +1786,9 @@ fi
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))
 echo ""
-echo "=== Tempo total: ${ELAPSED}s ($((ELAPSED / 60))m$((ELAPSED % 60))s) ==="
+if [[ "${ELAPSED:-0}" =~ ^[0-9]+$ ]]; then
+  echo "=== Tempo total: ${ELAPSED}s ($((ELAPSED / 60))m$((ELAPSED % 60))s) ==="
+fi
 echo "=== Log completo (sem filtro): $DEBUG_LOG ==="
 rm -f "$SETTINGS_FILE"
 exit $RC
