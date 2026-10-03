@@ -59,7 +59,7 @@ for i in ids:
     trig = (e.get("trigger_instr_arquivo") or "").strip()
     if trig and "," in trig:
         trig = trig.split(",")[0].strip()
-    hard = bool(re.search(r'\b(hmotion|grindtime|hmpussy|inniepussy|hmcumshot|penislora|bl0w_j0b|cmst|cumsh0t|sensual_fingering|rjvideo|squirting|hmasturbation|oralmove1|oraldetail1|deepthroat|blowjob_wearing_thong|0\.5-1str|use10erosmax)\b', (trig or "").lower()))
+    hard = bool(re.search(r'\b(hmotion|grindtime|hmpussy|inniepussy|hmcumshot|penislora|bl0w_j0b|cmst|cumsh0t|sensual_fingering|rjvideo|squirting|hmasturbation|oralmove1|oraldetail1|deepthroat|blowjob_wearing_thong|0\.5-1str|use10erosmax)\b|she (?:is|has) (?:a )?fl\w+ chestr?', (trig or "").lower()))
     triggers.append((trig[:64] if hard else ""))
 
 fb_names = []

@@ -1417,9 +1417,10 @@ if [[ "$NSFW" == true ]]; then
     PROMPT="${PROMPT//${tw}/}"
   done
   # Determinar triggers: os das LoRAs resolvidas (LLM/force/fallback) — minúscula, vírgula-sep
+  # Frases (ex.: "she is flat chested.") preservam espaços internos; só collapse múltiplos.
   NSFW_PREFIX=""
   if [[ -n "$NSFW_RESOLVED_TRIGGERS" ]]; then
-    NSFW_PREFIX="$(echo "$NSFW_RESOLVED_TRIGGERS" | tr '[:upper:]' '[:lower:]' | sed 's/  */, /g; s/^ *, *//; s/ *, *$//')"
+    NSFW_PREFIX="$(echo "$NSFW_RESOLVED_TRIGGERS" | tr '[:upper:]' '[:lower:]' | sed 's/  */ /g; s/^ *, *//; s/ *, *$//')"
     NSFW_PREFIX="${NSFW_PREFIX},"
   fi
   if [[ -n "$NSFW_PREFIX" ]]; then
