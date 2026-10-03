@@ -1230,18 +1230,79 @@ def _run_qwen21_sd_cpp_image(
         if lora_tags:
             prompt = _reapply_lora_tags(prompt, lora_tags)
 
-    # --nsfw: attach the lora_nsfw/ pack as subdir tags (strength via
-    # DIFFUSE_NSFW_STRENGTH, default 0.7). Skipped when the prompt already has a
-    # manual <lora:...> tag — same rule as the auto-inject.
+    # --nsfw: seletor inteligente de LoRAs (mirror do H3, 03/out — decreto do
+    # user: --nsfw PURO, o auto-attach ALL saiu). Fluxo:
+    #   1. rerank ColBERT pré-ordena o catálogo (~/.local/share/diffuse/nsfw_catalog_qwen21.json)
+    #   2. catálogo ranked + instrução "LORAS: <ids>" entram no system do enhance
+    #   3. o output do enhance traz a linha LORAS: no fim → parse → resolve (paths
+    #      relativos + strengths do catálogo + triggers-frase)
+    #   4. tags <lora:...:str> re-aplicadas ao prompt enhanced
+    # Fail-open na CADEIA inteira: sem enhance/sem resposta/sem linha LORAS:/IDs
+    # inválidos → roda BASE sem tags (avisado), nunca bloqueia a geração.
     if getattr(args, "nsfw", False):
         import os as _os_i
+        import re as _re_i
+        import subprocess as _sp_i
         from diffuse.paths import MODELS_DIR
-        nsfw_dir = MODELS_DIR / model_info["dir"] / "lora" / "lora_nsfw"
-        nsfw_files = sorted(f for f in nsfw_dir.glob("*.safetensors")) if nsfw_dir.exists() else []
-        if nsfw_files and "<lora:" not in prompt:
-            strength = _os_i.environ.get("DIFFUSE_NSFW_STRENGTH", "0.7")
-            tags = " ".join(f"<lora:lora_nsfw/{f.stem}:{strength}>" for f in nsfw_files)
-            prompt = f"{tags} {prompt}"
+        # tags manuais do user vencem (o enhance preserva e re-aplica as delas depois)
+        if "<lora:" not in prompt:
+            if args.enhance or args.enhance_with:
+                _cat_json = _os_i.environ.get("NSFW_CATALOG_JSON") or str(
+                    Path.home() / ".local/share/diffuse/nsfw_catalog_qwen21.json")
+                _rerank = str(Path.home() / ".local/share/diffuse/rerank_catalog_qwen21.py")
+                _resolver = str(Path.home() / ".local/share/diffuse/nsfw_lora_resolve_qwen21.py")
+                _catalog_block = None
+                if Path(_rerank).exists() and Path(_cat_json).exists():
+                    try:
+                        _ranked = _sp_i.run(
+                            ["python3", _rerank, "--prompt", prompt, "--n", "10", "--mode", "rank"],
+                            capture_output=True, text=True, timeout=180)
+                        if _ranked.returncode == 0 and _ranked.stdout.strip():
+                            _catalog_block = _ranked.stdout.strip()
+                    except Exception as e:  # fail-open: sem ranking, catálogo cru
+                        print(f"  ⚠️  rerank indisponível ({e}); catálogo completo")
+                elif not Path(_cat_json).exists():
+                    print("  ⚠️  catálogo NSFW não encontrado; pulando seleção (roda base)")
+                if _catalog_block:
+                    _lora_rule = (
+                        "LoRA SELECTION: at the very END of your output, on the LAST line, "
+                        "output exactly: LORAS: <comma-separated numeric IDs>\n"
+                        "- Choose the IDs best fit to the request (0 to 2 LoRAs, avoid stacking two "
+                        "that target the same feature/body aspect).\n"
+                        "- If genuinely nothing fits, output: LORAS: none\n"
+                        "- Never mention catalog trigger phrases in the paragraph itself.\n\n"
+                        + _catalog_block)
+                    enhanced, raw_response = enhance_qwen21_prompt(
+                        prompt, enhance_model, nsfw=True, extra_system=_lora_rule)
+                    # (o bloco de exibição/logging abaixo, comum a todos os caminhos,
+                    #  já mostra o prompt expandido — nada extra aqui)
+                    _lora_ids = None
+                    m = _re_i.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "")
+                    if m and m.group(1).strip():
+                        _lora_ids = [int(x) for x in _re_i.findall(r"\d+", m.group(1))]
+                    # strip da linha LORAS: do prompt (sintaxe interna, não é cena)
+                    enhanced = _re_i.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_i.M).strip()
+                    if _lora_ids:
+                        _res = _sp_i.run(["python3", _resolver, "--ids", ",".join(map(str, _lora_ids))],
+                                         capture_output=True, text=True, timeout=30)
+                        import json as _j
+                        _sel = _j.loads(_res.stdout) if _res.returncode in (0, 3) and _res.stdout.strip() else {}
+                        if _sel.get("names"):
+                            _tags = " ".join(
+                                f"<lora:{n}:{m_}>" for n, m_ in zip(_sel["names"], _sel["mults"]))
+                            _trigs = [t for t in (_sel.get("triggers") or []) if t]
+                            enhanced = f"{_tags} {enhanced}"
+                            if _trigs:
+                                enhanced = f"{', '.join(_trigs)} {enhanced}"
+                            print(f"  🎯 LLM escolheu {len(_sel['names'])} LoRA(s): "
+                                  f"{', '.join(Path(n).name for n in _sel['names'])}")
+                        else:
+                            print("  ⚠️  LLM respondeu LORAS: mas nada resolveu; rodando base (sem tags)")
+                    elif enhanced:
+                        print("  ℹ️  LLM não escolheu LoRA (LORAS: none ou linha ausente); rodando base")
+                    prompt = enhanced
+            else:
+                print("  ⚠️  --nsfw sem --enhance: sem seleção inteligente; rodando base")
 
     # Evict LLMs before loading (the text encoder runs on CPU, but the DiT needs VRAM)
     running = llama_swap_running_models()

@@ -213,7 +213,7 @@ def enhance_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
 
 
 # ── Vision (natural-language) enhancement ──────────────────────────────────
-def enhance_qwen21_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
+def enhance_qwen21_prompt(prompt: str, model: str, nsfw: bool = False, extra_system: str = "") -> tuple:
     """Use an LLM via llama-swap to expand a prompt for Qwen-Image 2.1.
 
     Dedicated sibling of enhance_vision_prompt: same natural-language output
@@ -222,6 +222,9 @@ def enhance_qwen21_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     the Ideogram safety-avoidance rules (2.1 has no content filter, and those
     rules push the output toward "illustration" when 2.1 excels at photography).
 
+    extra_system: apenso depois do base system (ex. catálogo ranked de LoRAs
+    com a instrução de output LORAS: — mirror do wiring NSFW do H3).
+
     Returns (enhanced_prompt, raw_response).
     On failure, enhanced_prompt is the original prompt.
     """
@@ -229,6 +232,8 @@ def enhance_qwen21_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     import urllib.error
 
     system = get_qwen21_enhance_prompt(nsfw=nsfw)
+    if extra_system:
+        system = f"{system}\n\n{extra_system}"
 
     log.info("Qwen-Image 2.1 enhancing prompt via %s", model)
     t0 = time.perf_counter()
