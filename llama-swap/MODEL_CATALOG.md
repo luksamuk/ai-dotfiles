@@ -464,6 +464,7 @@ Key macros from `config-base.yaml`:
 |------|--------|
 | 2026-05-25 | Initial catalog created — 15 active models, 2 inference engines, benchmark data |
 | 2026-09-10 | 10 modelos removidos da frota (ver "Removed Models"); `qwen3.6-35b-a3b` reinstalado com APEX-MTP + vision a 131K ctx; `nex-n2.5-mini` movido p/ `_removed/` após régua |
+| 2026-10-02 | Decision models `/v1/systemone` (llama.cpp #29818): `laya` (421M BF16) + `julia-1` (144M BF16) como juízes do laya-snake; routing no llama-swap pendente (issue #1195) |
 
 > Nota: as seções acima estão defasadas — vários modelos listados em "Active Models"
 > já foram removidos em migrações anteriores. Usar `llama-swap/models/*.yaml` como

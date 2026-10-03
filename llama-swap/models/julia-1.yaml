@@ -1,0 +1,56 @@
+# -------------------------------------------
+# JULIA-1 - decision model (System One scorer)
+# Upstream llama.cpp #29818: /v1/systemone endpoint, nativo no server (merged
+# 02/Oct/2026). modern-bert 144M, decision.type = laya (auto-detected do GGUF,
+# server DecisionContext liga /v1/systemone sozinho - sem flag extra).
+# BF16 oficial ggml-org/Julia-1-GGUF. VRAM ~0.3GB total, load < 2s.
+# ROLE: juiz /v1/systemone pro laya-snake (~/projects/ai/laya) e candidato a
+# router rapido fora do jogo. Wrapper de embedding (ModernBERT 144M).
+# NAO e chat model: sem template, sem thinking, sem tools, sem embeddings.
+# NOTE: llama-swap NAO roteia /v1/systemone ainda (issue #1195 upstream) -
+# modelo declarado agora, utilidade quando o roteamento entrar.
+# NOTE: fora de qualquer set do matrix - exclusive com o LLM que estiver
+# rodando; solver evicta um lado no first-use.
+# -------------------------------------------
+"julia-1":
+  name: "Julia-1 (decision)"
+  description: "System One decision model (ModernBERT 144M BF16). Serves POST /v1/systemone for laya-snake judge. Not a chat model."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/decision-models/Julia-1-GGUF/Julia-1-BF16.gguf
+    --ctx-size 8192
+    --batch-size 512
+    --ubatch-size 512
+    --parallel 1
+    --no-webui
+    --metrics
+  filters:
+    stripParams: "temperature, top_p, top_k, min_p, repeat_penalty"
+  ttl: 3600
+  health_check_timeout: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 8192
+  metadata:
+    size: "~303 MB (BF16)"
+    context: "8K"
+    vram_usage: "~0.3 GB VRAM (model 303MB + compute)"
+    source: "ggml-org/Julia-1-GGUF (BF16, official #29818 conversion)"
+    kv_cache: "n/a (decision head, no KV cache)"
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      image: false
+      embedding: false
+      insert: false
+      audio: false
+    architecture: modern-bert
+    parameters: 144000000
+    context_length: 8192
+    embedding_length: 384
+    note: 'Decision model (/v1/systemone: noul/choice/score). llama-swap routing PENDING (issue #1195). Lightest judge: 144M, sub-5ms per question expected on GPU.'

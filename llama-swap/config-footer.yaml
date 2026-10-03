@@ -94,6 +94,10 @@ matrix:
     nemb: nemotron-3-embed-1b
     # Reranker (late-interaction, CPU-only)
     lfmcol: lfm2.5-colbert-350m
+    # Decision models (System One scorers, /v1/systemone) — exclusive no
+    # matrix (fora de sets); judge do laya-snake; routing #1195 pending
+    laya: laya
+    julia: julia-1
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
@@ -179,3 +183,6 @@ matrix:
     nemb: 1
     lfmcol: 1
     tg: 2
+    # Decision models (juizes /v1/systemone) - recarregam em ~2s, evictam primeiro
+    laya: 1
+    julia: 1

@@ -248,6 +248,10 @@ declare -A MODELS=(
   # Instruct model, 32K context, qwen35 arch — ik_llama compatible
   # Q4_K_M ~5.63 GB — fits in VRAM with --fit
   ["athenas-symbiote-9b"]="Kodjaoglanian/Athenas-Symbiote-9B-GGUF Athenas-Symbiote-9B-Q4_K_M.gguf"
+  # Decision models (System One, /v1/systemone #29818) — judges for laya-snake
+  # Official ggml-org conversions (BF16); routing pending llama-swap #1195
+  ["laya"]="ggml-org/Laya-GGUF Laya-BF16.gguf decision-models/Laya-GGUF/Laya-BF16.gguf"
+  ["julia-1"]="ggml-org/Julia-1-GGUF Julia-1-BF16.gguf decision-models/Julia-1-GGUF/Julia-1-BF16.gguf"
 )
 
 # Multimodal projector files (downloaded alongside their vision models)
@@ -305,7 +309,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, all"
+    echo "Available: qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
     return 1
   fi
   
