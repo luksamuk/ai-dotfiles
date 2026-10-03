@@ -687,6 +687,10 @@ fi
 [[ "$PDD" == true ]] && MODEL_TYPE="${MODEL_TYPE}_pdd"
 
 # ── Validar Ref2VA: pelo menos 1 referência ──────────────────────────────
+# Modalidade do run pro aparato NSFW (resolver dropa variantes da outra modalidade;
+# rerank oculta as exclusivas do menu do LLM)
+NSFW_RUN_MODALITY="$([[ "$REF2VA_MODE" == true ]] && echo ref2va || echo fl2va)"
+export NSFW_RUN_MODALITY
 if [[ "$REF2VA_MODE" == true ]]; then
   VISUAL_COUNT=${#REF_IMAGES[@]}
   [[ -n "$REF_VIDEO" ]] && ((VISUAL_COUNT++))
@@ -743,9 +747,10 @@ if [[ "$ENHANCE" == true ]]; then
   # ── NSFW nova rota (29/09): catálogo com IDs no system + linha LORAS: exigida ──
   # force-nsfw-loras presente = LLM NEM VÊ o catálogo (lista do user é lei)
   # 30/09: catálogo PRÉ-RANKED pelo ColBERT hibrído (rerank_catalog.py) — colbert morto = catálogo completo (fail-open)
+  # 03/out: --modality oculta variantes EXCLUSIVAS da outra modalidade do menu (ref2va em voo não vê fl2va-only e vice-versa)
   CATALOG_SYSTEM=""
   if [[ "$NSFW" == true && -z "$FORCE_NSFW_LORA_IDS" && -f "$NSFW_CATALOG_JSON" ]]; then
-    CATALOG_TEXT=$(python3 "$HOME/.local/share/h3/rerank_catalog.py" --prompt "$PROMPT" --n 12 --mode both 2>>"$HOME/.local/share/h3/.colbert_shadow.log")
+    CATALOG_TEXT=$(python3 "$HOME/.local/share/h3/rerank_catalog.py" --prompt "$PROMPT" --n 12 --mode both --modality "$NSFW_RUN_MODALITY" 2>>"$HOME/.local/share/h3/.colbert_shadow.log")
     # both: stdout = catálogo reordenado; stderr = linha de auditoria .colbert_shadow.log
     if [[ -z "$CATALOG_TEXT" ]]; then
       CATALOG_TEXT=$(python3 "$HOME/.local/share/h3/build_catalog_prompt.py" 2>/dev/null)

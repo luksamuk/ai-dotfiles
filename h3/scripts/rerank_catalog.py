@@ -79,6 +79,8 @@ SYN = {
     "tanga": ["thong", "tanga"],
     "cowgirl": ["cowgirl", "monta", "cavalg", "straddl", "riding"],
     "sentar": ["monta", "sitting on"],
+    "anal-sex": ["anal", "anally", "in her ass", "grega", "backside"],
+    "prompt-sequencia": ["transição", "depois", "em seguida", "timeline", "timestamps", "sequência de ações"],
 }
 
 
@@ -158,9 +160,30 @@ def main():
     ap.add_argument("--prompt", required=True)
     ap.add_argument("--n", type=int, default=DEFAULT_N)
     ap.add_argument("--mode", choices=["rank", "ids", "shadow", "both"], default="rank")
+    ap.add_argument(
+        "--modality", choices=["fl2va", "ref2va", ""], default="",
+        help="modalidade do run: variantes EXCLUSIVAS da outra modalidade são "
+             "OCULTADAS do catálogo (multi-modalidade e universais sempre visíveis)")
     args = ap.parse_args()
 
     loras = load_catalog()
+    # Filtro de modalidade (03/out): quando o run é de uma modalidade bem-definida,
+    # LoRAs que só servem à OUTRA modalidade nem entram no menu do LLM — a escolha
+    # impossível não deve existir. Universais (sem campo modalidade) e variantes
+    # multi ficam sempre visíveis. MAPA DE FAMÍLIA (o H3 tem 2 famílias: FL2VA e
+    # REF2VA; i2v é FL2VA c/ start-frame, t2v é FL2VA puro — um run fl2va aceita
+    # LoRAs t2v/i2v/fl2va; um run ref2va aceita ref2va+multi, e i2v-EXCLUSIVA
+    # (['i2v'] sozinha) num run ref2va é lixo de run FL2VA → oculta).
+    FAMILY = {"fl2va": {"fl2va", "t2v", "i2v"}, "ref2va": {"ref2va"}}
+    if args.modality in ("fl2va", "ref2va"):
+        ok = FAMILY[args.modality]
+        _hidden = [it for it in loras
+                   if (it.get("modalidade") or []) and not (set(it["modalidade"]) & ok)]
+        if _hidden:
+            loras = [it for it in loras if it not in _hidden]
+            print(f"[rerank] modalidade={args.modality}: {len(_hidden)} LoRA(s) de outra "
+                  f"família ocultada(s): " + ", ".join(f"{it['id']}" for it in _hidden),
+                  file=sys.stderr)
     desc_by_id = {it["id"]: (it.get("desc_llm") or it["safetensors"]) for it in loras}
     cat_by_orig = sorted(loras, key=lambda x: x["id"])
 
