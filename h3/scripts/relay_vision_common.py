@@ -50,7 +50,7 @@ def check_vision(model: str):
                 if "image" in (arch.get("input_modalities") or []):
                     return True, "input_modalities"
         name = base_model.lower()
-        return any(t in name for t in ("vl", "vision", "llava", "gemma4", "minicpm-v")), "name-heuristic"
+        return any(t in name for t in ("vl", "vision", "llava", "gemma4", "minicpm-v", "ornith")), "name-heuristic"
     except Exception as e:
         print(f"[WARN] capability check falhou: {e}", file=sys.stderr)
         return False, "check-failed"
