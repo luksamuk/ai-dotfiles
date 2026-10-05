@@ -403,7 +403,7 @@ models:
 #   - env LD_LIBRARY_PATH OBRIGATORIA (RUNPATH morto), sintaxe spec 0.74: draft-mtp
 # -------------------------------------------
   "qwen3.6-35b-a3b-heretic":
-    name: "Qwen 3.6 35B Heretic Long"
+    name: "Qwen 3.6 35B Heretic"
     description: "Assistente de código sem censura com visão e o maior contexto da frota (262K, dividido em até 4 sessões de 64K). Ideal para múltiplos agentes em paralelo, análise de documentos longos e refatorações extensas."
     cmd: |
       env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
