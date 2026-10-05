@@ -1,0 +1,101 @@
+# -------------------------------------------
+# ORNITH-1.5-35B-HERETIC — SC117 Heretic-MTP-APEX + template Sharp (o "Tiel da casa")
+# Substituto planejado de ornith-1.5-35b (ONYX) + qwen3.6-35b-a3b-heretic-cafe numa tacada.
+#
+# GENEALOGIA (Oct 4, verificado nos cards HF):
+#   Base: ornith-ai/Ornith-1.5-35B-A3B (MIT) — mesmo modelo do orn15 atual da frota.
+#   Heretic: trial 62/80 (p-e-w/heretic 1.4.0, MPOA rank-3, o_proj+down_proj).
+#     KL first-token 0.0105-0.0107 (vs 0.0015 do heretic qwen3.6 da casa — 7x maior,
+#     regime MODERADO; card avisa "evaluate before deployment"; 89 refusals/100 removidas).
+#   MTP: head nativo do ornith-1.5 nasce UNTRAINED (random init) → SC117 trocou pelo
+#     graft shisa-ai (19 tensors fused, Q8_0) — por isso --spec-type mtp PERMANECE
+#     (o APEX preservou nextn=1 VERIFICADO no gguf-dump; accept a validar no smoke).
+#   Vision: mmproj BF16 0.9GB do mesmo repo (mesmo encoder CLIP do orn15, -no-mmproj-offload).
+#   Quant: APEX I-Compact 17.33GB (metodo mudler, recorde da frota) — mas imatrix é
+#     do trunk do ORNITH original (não do heresia) = quant neutra por construção.
+#
+# TEMPLATE SHARP (peculiar-ragdoll/Qwen-Sharp-Chat-Templates, v22.5.0 froggeric):
+#   - O ganho do Tiel/CyberTiel vem ~90% do template (controle do card: quant deles
+#     + template do Ornith = score do Ornith exato). Respostas curtas, mais ação.
+#   - INTEGRADO AO GGUF embutido? NAO — o I-Compact do SC117 vem com template
+#     generico (7.7KB, sem sharp). O --chat-template-file apontando pro jinja
+#     baixado em ~/Downloads/tiel-heretic/ é OBRIGATORIO pra replicar o Tiel.
+#   - Template tem think block (enable_thinking true por default!) + tools xml.
+#
+# PLANO (sessão home Oct 4): smoke (server carrega + 1 prompt + metrics) e depois
+# régua de sanidade (01 + 04 + "391") antes de qualquer swap de handle.
+# -------------------------------------------
+"ornith-1.5-35b-heretic":
+  name: "Ornith 1.5 35B Heretic"
+  description: "Ornith-1.5-35B com heretic (SC117 trial 62, KL 0.0105) + MTP graft shisa + template Sharp v22.5.0 (o Tiel da casa). Substituto de orn15+q36hc. Visão via mmproj BF16. APEX I-Compact 17.3GB."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/ornith-heretic/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-I-Compact.gguf
+    --mmproj ${models_dir}/ornith-heretic/mmproj-Ornith-1.5-35B-A3B-Heretic-MTP-BF16.gguf
+    --no-mmproj-offload
+    --fit
+    --fit-margin 2048
+    --ctx-size 131072
+    --temp 0.6
+    --top-p 0.95
+    --top-k 20
+    --min-p ${code_min_p}
+    --repeat-penalty ${code_repeat_penalty}
+    --reasoning on
+    --reasoning-budget 8192
+    --reasoning-budget-message "Let me conclude my reasoning and provide the answer."
+    --jinja
+    --chat-template-file ${templates_dir}/sharp_chat_template.jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --k-cache-hadamard
+    --v-cache-hadamard
+    --flash-attn auto
+    --defer-experts
+    --prefetch-experts
+    --spec-type mtp:n_max=1,p_min=0.0
+    --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in: ['text', 'image']
+    out: ['text']
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~17.33 GB (APEX I-Compact) + 0.9 GB mmproj BF16"
+    context: "1K-131K (safe max, model supports 262K, YaRN 1M)"
+    vram_usage: "~4.6-5GB VRAM estimado (mesma arch do orn15; medir no smoke)"
+    source: "SC117/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-GGUF (I-Compact, sha256 37f67861...e0e7)"
+    kv_cache: "q4_0 + attn_rot + hadamard (herdado do orn15; validar)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 35000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: APEX I-Compact
+    note: "Heretic KL 0.0105 (moderado, sem eval público) + Sharp v22.5.0 externo (GGUF embutido NAO é sharp) + MTP graft shisa (nextn=1 verificado). Handle 'ornith-1.5-35b-heretic' é TEMPORÁRIO de teste: se a régua de sanidade passar, vira o substituto de orn15+q36hc; se falhar, fragmento vai pra _disabled/ sem drama."

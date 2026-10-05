@@ -242,7 +242,7 @@ def parse_args() -> argparse.Namespace:
         help="If CUDA generation fails, automatically retry on CPU (very slow: ~30+ min).",
     )
     p.add_argument(
-        "--edit", metavar="IMAGE", type=Path, default=None,
+        "--edit", metavar="IMAGE", type=Path, default=None, nargs="+",
         help="Reference image for editing (hidream or mageflow-edit-turbo). Pass an image path to use instruction-based editing.",
     )
     p.add_argument(
@@ -375,13 +375,14 @@ def main() -> None:
             print(f"      or: diffuse -m mageflow-edit-turbo --edit {args.edit} -p 'instruction'")
             print(f"      or: diffuse -m qwen-image-2.1 --edit {args.edit} -p 'instruction'")
             sys.exit(1)
-        if not args.edit.exists():
+        missing = [x for x in args.edit if not x.exists()]
+        if missing:
             # If not found as-is, try resolving relative to original CWD
             # (the shell wrapper cds to SCRIPT_DIR before running generate.py)
             orig_cwd = os.environ.get("DIFFUSE_ORIG_CWD", "")
             if orig_cwd:
-                resolved = Path(orig_cwd) / args.edit
-                if resolved.exists():
+                resolved = [Path(orig_cwd) / x for x in args.edit]
+                if all(x.exists() for x in resolved):
                     args.edit = resolved
                 else:
                     print(f"  ✗ Edit image not found: {args.edit} (also tried {resolved})")
@@ -389,8 +390,8 @@ def main() -> None:
             else:
                 print(f"  ✗ Edit image not found: {args.edit}")
                 sys.exit(1)
-        ref_image_paths = [str(args.edit.resolve())]
-        print(f"  🖼️  Edit mode: {args.edit.name} → prompt as instruction")
+        ref_image_paths = [str(x.resolve()) for x in args.edit]
+        print(f"  🖼️  Edit mode: {len(ref_image_paths)} ref image(s) → prompt as instruction")
 
     # ── FramePack I2V early path ──────────────────────────────────────────────
     if backend_type == "framepack":

@@ -35,7 +35,7 @@
 # Samplers laguna: temp 0.3 / top_p 0.85 / rep 1.1 (over-gen de tools mitigada).
 "laguna-xs-2.1":
   name: "Laguna XS 2.1"
-  description: "Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. Served by cafe-llama.cpp with pinned-RAM expert offload (-hmoe) — the only backend that loads it on 6GB VRAM. 131K context with clean quality."
+  description: "Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. Served by cafe-llama.cpp com -cmoe (0.74): decode 34.6-35.1 t/s (top do dia 05/10, com desktop ativo) + RAM evictável (~5GB used; experts em page cache file-backed). 131K context with clean quality."
   cmd: |
     env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
     --model ${models_dir}/laguna-xs-2.1/Laguna-XS-2.1-Q4_K_M.gguf
@@ -45,7 +45,7 @@
     --cache-type-k q4_0
     --cache-type-v q4_0
     --flash-attn on
-    -hmoe
+    -cmoe
     -ngl 99
     --temp 0.3
     --top-p 0.85
@@ -79,7 +79,7 @@
   metadata:
     size: "~20.3 GB (Q4_K_M official)"
     context: "131K"
-    vram_usage: "~3.5GB VRAM (dense+attn na GPU) + ~12-14GB RAM pinned (experts via -hmoe)"
+    vram_usage: "MEDIDO 05/10 0.74 (c/ desktop ativo): -cmoe 3.9GB VRAM + ~5GB RAM used (18GB em page cache file-backed evictável), decode 34.6-35.1 t/s | -hmoe: 4.7GB VRAM + ~21GB used pinado, 28.5-32.0 | -ssd+predict: empata mas PERDEU no uso live (user verbatim 'lento'), rejeitado"
     source: "poolside/Laguna-XS-2.1-GGUF (Q4_K_M official)"
     kv_cache: "q4_0/q4_0"
     features:

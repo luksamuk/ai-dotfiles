@@ -123,6 +123,45 @@ else:
     LLAMA_SWAP_PORT = int(os.environ.get("LLAMA_SWAP_PORT", "12434"))
 BASE_URL = f"http://{LLAMA_SWAP_HOST}:{LLAMA_SWAP_PORT}/v1"
 
+
+def _lookup_hct(model_info: dict) -> int:
+    """Resolve o health_check_timeout REAL de um modelo.
+
+    O /v1/models do llama-swap não expõe health_check_timeout (fica top-level
+    no config.yaml compilado, nunca no metadata dos fragments). Lê direto do
+    config live do llama-swap (~/.config/llama-swap/config.yaml). Na ausência,
+    900 default (pior caso MoE streaming: load 2-3min + prefill frio).
+    FIX Oct 3 2026 (qwen3-next-80b: cold start 3-4min estourava o piso de 120s).
+    """
+    hct = (model_info or {}).get("health_check_timeout", 0)
+    if isinstance(hct, str):
+        hct = int(''.join(c for c in hct if c.isdigit()) or '0')
+    if hct:
+        return int(hct)
+    try:
+        # Parse minimalista sem PyYAML (o venv do testchat não o tem): varre os
+        # blocos 'model_id:' do config compiled e acha o health_check_timeout.
+        cfg_path = os.path.expanduser("~/.config/llama-swap/config.yaml")
+        with open(cfg_path) as f:
+            text = f.read()
+        mid = (model_info or {}).get("id", "").split(":think")[0]
+        key = f'  "{mid}":'
+        start = text.find(key)
+        if start < 0:
+            # fragmentos sem aspas no id (ex:  "qwen3.5-4b" tem aspas; mas ids simples podem não ter)
+            start = text.find("\n" + mid + ":")
+            if start >= 0:
+                start += 1
+        if start >= 0:
+            chunk = text[start:start + 4000]
+            m = re.search(r"health_check_timeout:\s*(\d+)", chunk)
+            if m:
+                return int(m.group(1))
+        return 900
+    except Exception:
+        return 900
+
+
 # Extensões de imagem suportadas pelo llama.cpp
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.webp', '.tiff', '.tif'}
 
@@ -1193,9 +1232,11 @@ class StreamingChat:
             
             # Timeout dinâmico: usa health_check_timeout do modelo (cold start) + 30s buffer
             # Modelos como SGLang precisam de ~2-5 min pra carregar na primeira request
-            hct = (self._selected_model_info or {}).get("health_check_timeout", 0)
-            if isinstance(hct, str):
-                hct = int(''.join(c for c in hct if c.isdigit()) or '0')
+            # FIX Oct 3 2026: /v1/models do llama-swap NUNCA entrega health_check_timeout
+            # (verificado 0/34; hct vive top-level do config.yaml, não no metadata).
+            # Lê do config compiled direto; fallback: meta (futuro) ou 900s pro caso
+            # MoE -ssd (modelos gigantes: load 2-3min + prefill frio).
+            hct = _lookup_hct(self._selected_model_info or {})
             # Tupla (connect_timeout, read_timeout): conecta rápido, mas espera o response
             connect_timeout = 15  # 15s pra conectar
             read_timeout = max(hct + 30, 120)  # Mínimo 120s, ou health_check + 30s buffer
@@ -1369,7 +1410,7 @@ class StreamingChat:
             
         except (requests.exceptions.ConnectTimeout, requests.exceptions.ReadTimeout) as e:
             # Timeout específico — mensagem clara sobre cold start
-            hct = (self._selected_model_info or {}).get("health_check_timeout", 0)
+            hct = _lookup_hct(self._selected_model_info or {})
             model_name = self.selected_model_name or self.selected_model
             if hct > 0:
                 self.last_error = f"Timeout após {read_timeout}s. Modelo {model_name!r} pode estar em cold start (healthCheckTimeout={hct}s). Tente novamente — o modelo já deve estar carregado."

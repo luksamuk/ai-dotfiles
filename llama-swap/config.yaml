@@ -589,6 +589,91 @@ models:
       embedding_length: 2048
       quantization: ONYX compact
       note: "Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF deleted Sep 2026 (re-download from mudler repo if reverting)."
+# [REACTIVATED 03/10/2026 noite — next80 removido; GGUF APEX re-download iniciado.]
+# -------------------------------------------
+# QWEN3-CODER-30B-A3B (mudler APEX I-Compact) — baseline limpo de código (ik)
+# Arch qwen3_moe (Apr/25, suporte maduro ik/cafe/upstream). SEM MTP nextn
+# (a arch qwen3_moe nao tem nextn — spec decode N/A), SEM visao (text-only,
+# sem mmproj), SEM modo thinking (Instruct puro — sem enable_thinking).
+# 13,8 GB — mesmas PPL do UD-Q4_K_XL da Unsloth com 16% menos tamanho
+# (tabela do mudler: PPL 9.667 / KL 0.0418, DGX Spark).
+
+# Papel na frota: baseline APEX-sem-heretic-sem-MTP. Radar: a linhagem
+# Coder-NEXT (qwen3_next, COM MTP) so existe em 80B+ (mudler I-Mini 29.2 GiB
+# nao cabe na Navi); se sair shape A3B-35B dessa linhagem, substitui este.
+
+# Params: modelo de fabrica da Qwen recomenda temp 0.7 / top_p 0.8 / top_k 20
+# (card Qwen3-Coder-30B-A3B-Instruct) — setParamsByID fixa isso, acima dos
+# macros ${code_*} da frota.
+
+# --n-cpu-moe 48: experts 100% em RAM (GGUF 13.8 GB ~90% experts). VRAM fica
+# so attention + KV + buffers (~5 GB no smoke). Reduzir N se sobrar VRAM no
+# teste (mas com 6 GB, 48 e o config seguro de partida).
+# -------------------------------------------
+  "qwen3-coder-30b":
+    name: "Qwen 3 Coder 30B"
+    description: "Qwen3-Coder-30B-A3B-Instruct em APEX I-Compact (13.8 GB), text-only, sem MTP (arch qwen3_moe nao tem nextn) e sem thinking. Baseline limpo de codigo APEX-sem-heretic."
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/qwen3-coder-30b/Qwen3-Coder-30B-APEX-I-Compact.gguf
+      --no-graph-reuse
+      -ngl 99
+      --n-cpu-moe 48
+      --ctx-size 131072
+      --jinja
+      --parallel 1
+      --parallel-tool-calls
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --defer-experts
+      --prefetch-experts
+      --temp ${code_temp}
+      --top-p ${code_top_p}
+      --top-k ${code_top_k}
+      --min-p ${code_min_p}
+      --repeat-penalty ${code_repeat_penalty}
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 0.7
+          top_p: 0.8
+          top_k: 20
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: "~13.8 GB (APEX I-Compact) — text-only, sem mmproj"
+      context: "1K-131072 (nativo 262K)"
+      vram_usage: "~4-5 GB VRAM (attention+KV+bufs) + ~13.8 GB RAM pinned (n-cpu-moe 48)"
+      source: "mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)"
+      kv_cache: "q4_0/q4_0 + hadamard"
+      note: "Deploy Oct 1 2026. Arch qwen3_moe: sem nextn (MTP N/A), sem mmproj (text-only), nao-thinking (Instruct puro; sem enable_thinking nos filters). APEX I-Compact = PPL do UD-Q4_K_XL com -16% tamanho (tabela mudler, DGX Spark). Manufacturer sampling: 0.7/0.8/20. ONYX de el4: nao existe pra esse modelo (catalogado Oct 1)."
+      features:
+        completion: true
+        tools: true
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen3_moe
+      parameters: 30500000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: "APEX I-Compact"
 # Laguna XS 2.1 — Poolside's 33B/3B MoE agentic coding model (REVANCHE Sep/2026)
 # Fragmento REESCRITO pro cafe-llama.cpp (o ik morria no OOM de RAM: 257 experts
 # → 29GB RSS durante load). Validado 20/set/2026:
@@ -626,7 +711,7 @@ models:
 # Samplers laguna: temp 0.3 / top_p 0.85 / rep 1.1 (over-gen de tools mitigada).
   "laguna-xs-2.1":
     name: "Laguna XS 2.1"
-    description: "Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. Served by cafe-llama.cpp with pinned-RAM expert offload (-hmoe) — the only backend that loads it on 6GB VRAM. 131K context with clean quality."
+    description: "Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. Served by cafe-llama.cpp com -cmoe (0.74): decode 34.6-35.1 t/s (top do dia 05/10, com desktop ativo) + RAM evictável (~5GB used; experts em page cache file-backed). 131K context with clean quality."
     cmd: |
       env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
       --model ${models_dir}/laguna-xs-2.1/Laguna-XS-2.1-Q4_K_M.gguf
@@ -636,7 +721,7 @@ models:
       --cache-type-k q4_0
       --cache-type-v q4_0
       --flash-attn on
-      -hmoe
+      -cmoe
       -ngl 99
       --temp 0.3
       --top-p 0.85
@@ -673,7 +758,7 @@ models:
     metadata:
       size: "~20.3 GB (Q4_K_M official)"
       context: "131K"
-      vram_usage: "~3.5GB VRAM (dense+attn na GPU) + ~12-14GB RAM pinned (experts via -hmoe)"
+      vram_usage: "MEDIDO 05/10 0.74 (c/ desktop ativo): -cmoe 3.9GB VRAM + ~5GB RAM used (18GB em page cache file-backed evictável), decode 34.6-35.1 t/s | -hmoe: 4.7GB VRAM + ~21GB used pinado, 28.5-32.0 | -ssd+predict: empata mas PERDEU no uso live (user verbatim 'lento'), rejeitado"
       source: "poolside/Laguna-XS-2.1-GGUF (Q4_K_M official)"
       kv_cache: "q4_0/q4_0"
       features:
@@ -1418,48 +1503,63 @@ models:
       quantization: "Q4_K_M"
       note: "Pollard IQ4_XS testado 07-08/09 e REVERTIDO 08/09: loop infinito em tarefa de código simples (Adler32) no uso real — dados do A/B permanecem válidos (empate decode GPU, TTFT -23%, -148MB, CPU -30%), mas o comportamento agêntico pesa mais. Tool call: Q4_K_M clean nos DOIS modos (IQ4_XS só no :think). REMOVIDOS 08/09: Q8_0 oficial, Pollard Q5_K_M (GGUFs deletados). Pollard IQ4_XS GGUF MANTIDO no dir como opção A/B futura. Fallback docs no header."
 # -------------------------------------------
-# ORNITH-1.5-35B-CAFE (ONYX) — qwen35moe hibrida no cafe-llama.cpp
-# O MESMO Ornith-1.5 (MoE 35B, 256 experts, 8+1 active, nextn=1) no motor cafe,
-# quant ONYX compact (el4). A variante MiniPlus V2.1 foi reprovada (loops agentic)
-# e removida do disco em 28/09 — o ONYX e a quant oficial do handle ornith.
-# Deploy espelhado no heretic-cafe (irmão arquitetural): -hmoe, template
-# embutido --jinja, KV q4_0. Sem hadamard (exclusivo do ik), sem --fit
-# (o cafe valida no load).
+# ORNITH-1.5-35B-HERETIC — SC117 Heretic-MTP-APEX + template Sharp (o "Tiel da casa")
+# Substituto planejado de ornith-1.5-35b (ONYX) + qwen3.6-35b-a3b-heretic-cafe numa tacada.
 
-# 200K cap (degradacao ~213K) com parallel 1: a arquitetura hibrida SSM+atencao so tem KV
-# nas 10 layers de atencao full (full_attention_interval=4); as 31 gdn usam
-# estado constante. ~1.2 GB q4_0 @200K. MTP mantido @200K via --spec-type draft-mtp (sintaxe cafe; o
-# heretic-cafe perdeu MTP @262K por parallel 2 — draft KV x 2 slots).
+# GENEALOGIA (Oct 4, verificado nos cards HF):
+#   Base: ornith-ai/Ornith-1.5-35B-A3B (MIT) — mesmo modelo do orn15 atual da frota.
+#   Heretic: trial 62/80 (p-e-w/heretic 1.4.0, MPOA rank-3, o_proj+down_proj).
+#     KL first-token 0.0105-0.0107 (vs 0.0015 do heretic qwen3.6 da casa — 7x maior,
+#     regime MODERADO; card avisa "evaluate before deployment"; 89 refusals/100 removidas).
+#   MTP: head nativo do ornith-1.5 nasce UNTRAINED (random init) → SC117 trocou pelo
+#     graft shisa-ai (19 tensors fused, Q8_0) — por isso --spec-type mtp PERMANECE
+#     (o APEX preservou nextn=1 VERIFICADO no gguf-dump; accept a validar no smoke).
+#   Vision: mmproj BF16 0.9GB do mesmo repo (mesmo encoder CLIP do orn15, -no-mmproj-offload).
+#   Quant: APEX I-Compact 17.33GB (metodo mudler, recorde da frota) — mas imatrix é
+#     do trunk do ORNITH original (não do heresia) = quant neutra por construção.
 
-# Fallback ik: ornith-1.5-35b (131K). Cenário alvo: agentic coding @262K.
-# Binario: cafe f8982d690 (fix CUDA MoE top-k 1a679828f, preserve_reasoning).
+# TEMPLATE SHARP (peculiar-ragdoll/Qwen-Sharp-Chat-Templates, v22.5.0 froggeric):
+#   - O ganho do Tiel/CyberTiel vem ~90% do template (controle do card: quant deles
+#     + template do Ornith = score do Ornith exato). Respostas curtas, mais ação.
+#   - INTEGRADO AO GGUF embutido? NAO — o I-Compact do SC117 vem com template
+#     generico (7.7KB, sem sharp). O --chat-template-file apontando pro jinja
+#     baixado em ~/Downloads/tiel-heretic/ é OBRIGATORIO pra replicar o Tiel.
+#   - Template tem think block (enable_thinking true por default!) + tools xml.
+
+# PLANO (sessão home Oct 4): smoke (server carrega + 1 prompt + metrics) e depois
+# régua de sanidade (01 + 04 + "391") antes de qualquer swap de handle.
 # -------------------------------------------
-  "ornith-1.5-35b-cafe":
-    name: "Ornith 1.5 35B Cafe"
-    description: "Ornith 1.5 35B ONYX compact (qwen35moe hibrida SSM+atencao) no cafe-llama.cpp f8982d690. Deploy espelhado no heretic-cafe: -hmoe, template embutido, MTP mantido (ONYX preserva o head nextn). 200K cap (degradacao ~213K) com parallel 1 (KV so nas 10 layers full: ~1.2 GB q4_0). Fallback ik: ornith-1.5-35b."
+  "ornith-1.5-35b-heretic":
+    name: "Ornith 1.5 35B Heretic"
+    description: "Ornith-1.5-35B com heretic (SC117 trial 62, KL 0.0105) + MTP graft shisa + template Sharp v22.5.0 (o Tiel da casa). Substituto de orn15+q36hc. Visão via mmproj BF16. APEX I-Compact 17.3GB."
     cmd: |
-      env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
-      --model ${models_dir}/ornith-1.5-35b/Ornith-1.5-35B-A3B-ONYX-compact.gguf
-      --mmproj ${models_dir}/ornith-1.5-35b/mmproj.gguf
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/ornith-heretic/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-I-Compact.gguf
+      --mmproj ${models_dir}/ornith-heretic/mmproj-Ornith-1.5-35B-A3B-Heretic-MTP-BF16.gguf
       --no-mmproj-offload
-      --ctx-size 200000
-      --jinja
-      --parallel 1
-      --cache-type-k q4_0
-      --cache-type-v q4_0
-      --flash-attn on
-      -hmoe
-      -ngl 99
-      -b 512
-      -ub 128
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
+      --fit
+      --fit-margin 2048
+      --ctx-size 131072
+      --temp 0.6
+      --top-p 0.95
+      --top-k 20
       --min-p ${code_min_p}
       --repeat-penalty ${code_repeat_penalty}
       --reasoning on
       --reasoning-budget 8192
-      --spec-type draft-mtp
+      --reasoning-budget-message "Let me conclude my reasoning and provide the answer."
+      --jinja
+      --chat-template-file ${templates_dir}/sharp_chat_template.jinja
+      --parallel 1
+      --parallel-tool-calls
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --defer-experts
+      --prefetch-experts
+      --spec-type mtp:n_max=1,p_min=0.0
       --metrics
     filters:
       stripParams: "temperature, top_p"
@@ -1484,14 +1584,13 @@ models:
         - 'text'
       tools: true
       reranker: false
-      context: 200000
+      context: 131072
     metadata:
-      size: "~17.69 GB (ONYX compact) + 899 MB mmproj"
-      context: "1K-200K (cap de degradacao: loops de tool-call a partir de ~213K)"
-      vram_usage: "a medir no smoke (esperado ~6-8 GB VRAM + ~15 GB RAM pinned -hmoe)"
-      source: "el4/Ornith-1.5-35B-A3B-ONYX-GGUF (compact tier)"
-      kv_cache: "q4_0 (attn) + gdn (estado constante)"
-      note: "ONYX swap Sep 28: MiniPlus V2.1 reprovado (loops agentic), GGUF deletado. MTP @200K com parallel 1. Sem --fit no cafe: loader valida no load. MTP head Q8_0 preservado no quant. KV: q4_0 nas 10 layers full-attention (~1.5 GB @262K); 31 layers gdn = estado constante."
+      size: "~17.33 GB (APEX I-Compact) + 0.9 GB mmproj BF16"
+      context: "1K-131K (safe max, model supports 262K, YaRN 1M)"
+      vram_usage: "~4.6-5GB VRAM estimado (mesma arch do orn15; medir no smoke)"
+      source: "SC117/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-GGUF (I-Compact, sha256 37f67861...e0e7)"
+      kv_cache: "q4_0 + attn_rot + hadamard (herdado do orn15; validar)"
       features:
         completion: true
         tools: true
@@ -1505,91 +1604,93 @@ models:
       parameters: 35000000000
       context_length: 262144
       embedding_length: 2048
-      quantization: "ONYX compact"
+      quantization: APEX I-Compact
+      note: "Heretic KL 0.0105 (moderado, sem eval público) + Sharp v22.5.0 externo (GGUF embutido NAO é sharp) + MTP graft shisa (nextn=1 verificado). Handle 'ornith-1.5-35b-heretic' é TEMPORÁRIO de teste: se a régua de sanidade passar, vira o substituto de orn15+q36hc; se falhar, fragmento vai pra _disabled/ sem drama."
 # -------------------------------------------
-# QWEN3-CODER-30B-A3B (mudler APEX I-Compact) — baseline limpo de código (ik)
-# Arch qwen3_moe (Apr/25, suporte maduro ik/cafe/upstream). SEM MTP nextn
-# (a arch qwen3_moe nao tem nextn — spec decode N/A), SEM visao (text-only,
-# sem mmproj), SEM modo thinking (Instruct puro — sem enable_thinking).
-# 13,8 GB — mesmas PPL do UD-Q4_K_XL da Unsloth com 16% menos tamanho
-# (tabela do mudler: PPL 9.667 / KL 0.0418, DGX Spark).
-
-# Papel na frota: baseline APEX-sem-heretic-sem-MTP. Radar: a linhagem
-# Coder-NEXT (qwen3_next, COM MTP) so existe em 80B+ (mudler I-Mini 29.2 GiB
-# nao cabe na Navi); se sair shape A3B-35B dessa linhagem, substitui este.
-
-# Params: modelo de fabrica da Qwen recomenda temp 0.7 / top_p 0.8 / top_k 20
-# (card Qwen3-Coder-30B-A3B-Instruct) — setParamsByID fixa isso, acima dos
-# macros ${code_*} da frota.
-
-# --n-cpu-moe 48: experts 100% em RAM (GGUF 13.8 GB ~90% experts). VRAM fica
-# so attention + KV + buffers (~5 GB no smoke). Reduzir N se sobrar VRAM no
-# teste (mas com 6 GB, 48 e o config seguro de partida).
+# ORNITH-1.5-35B-HERETIC-CAFE (Sharp) — esboço Oct 4, NÃO instalado (aguarda decisão de RAM)
+# O heretic Tiel (SC117 I-Compact + template Sharp) no motor cafe-llama.cpp:
+# valor = Turbo KV turbo4 + -hmoe (mesma receita do qwen3.6-heretic-cafe),
+# herdando o contexto 262K NATIVO na RTX 3050 6GB (~131K a mais que o ik).
+# Herdando do cafe-orn15-ONYX: --parallel 1 + MTP @200K (draft-mtp: o cafe
+# preserva o head nextn graft shisa do APEX, mas @262K + parallel 2 o draft KV não cabe).
+# ARMADILHAS cafe (iguais às do irmão qwen36-heretic-cafe):
+#   - NUNCA --pipeline-parallel com ctx >=131K (buffer DMA 48GB → OOM duplo)
+#   - turbo4 limpo na hibrida; turbo2 CRASHA
+#   - cafe NÃO tem: --parallel-tool-calls, --defer-experts, --prefetch-experts,
+#     --k/v-cache-hadamard (hadamard é ik-only!), --fit-margin (usar --fit-target)
+#   - env LD_LIBRARY_PATH OBRIGATORIA (RUNPATH morto)
+# TEMPLATE: Sharp v22.5.0 (o GGUF heretic vem com template genérico — o
+#   --chat-template-file sharp é OBRIGATORIO pro efeito Tiel).
 # -------------------------------------------
-  "qwen3-coder-30b":
-    name: "Qwen 3 Coder 30B"
-    description: "Qwen3-Coder-30B-A3B-Instruct em APEX I-Compact (13.8 GB), text-only, sem MTP (arch qwen3_moe nao tem nextn) e sem thinking. Baseline limpo de codigo APEX-sem-heretic."
+  "ornith-1.5-35b-heretic-cafe":
+    name: "Ornith 1.5 Heretic Cafe"
+    description: "Heretic Tiel (SC117 + Sharp v22.5.0) no cafe-llama.cpp: Turbo KV turbo4, contexto nativo 262K na RTX 3050. MTP @200K com parallel 1. Visão via mmproj BF16."
     cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/qwen3-coder-30b/Qwen3-Coder-30B-APEX-I-Compact.gguf
-      --no-graph-reuse
-      -ngl 99
-      --n-cpu-moe 48
-      --ctx-size 131072
+      env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+      --model ${models_dir}/ornith-heretic/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-I-Compact.gguf
+      --mmproj ${models_dir}/ornith-heretic/mmproj-Ornith-1.5-35B-A3B-Heretic-MTP-BF16.gguf
+      --no-mmproj-offload
+      --ctx-size 200000
       --jinja
+      --chat-template-file ${templates_dir}/sharp_chat_template.jinja
       --parallel 1
-      --parallel-tool-calls
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --defer-experts
-      --prefetch-experts
-      --temp ${code_temp}
-      --top-p ${code_top_p}
-      --top-k ${code_top_k}
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --flash-attn on
+      -cmoe
+      -ngl 99
+      -b 512
+      -ub 128
+      --temp 0.6
+      --top-p 0.95
+      --top-k 20
       --min-p ${code_min_p}
       --repeat-penalty ${code_repeat_penalty}
+      --reasoning-budget 8192
+      --spec-type draft-mtp
       --metrics
     filters:
       stripParams: "temperature, top_p"
       setParamsByID:
         "${MODEL_ID}":
-          temperature: 0.7
-          top_p: 0.8
-          top_k: 20
+          chat_template_kwargs:
+            enable_thinking: false
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
     ttl: 900
     health_check_timeout: 900
     capabilities:
       in:
         - 'text'
+        - 'image'
       out:
         - 'text'
       tools: true
       reranker: false
-      context: 131072
+      context: 200000
     metadata:
-      size: "~13.8 GB (APEX I-Compact) — text-only, sem mmproj"
-      context: "1K-131072 (nativo 262K)"
-      vram_usage: "~4-5 GB VRAM (attention+KV+bufs) + ~13.8 GB RAM pinned (n-cpu-moe 48)"
-      source: "mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)"
-      kv_cache: "q4_0/q4_0 + hadamard"
-      note: "Deploy Oct 1 2026. Arch qwen3_moe: sem nextn (MTP N/A), sem mmproj (text-only), nao-thinking (Instruct puro; sem enable_thinking nos filters). APEX I-Compact = PPL do UD-Q4_K_XL com -16% tamanho (tabela mudler, DGX Spark). Manufacturer sampling: 0.7/0.8/20. ONYX de el4: nao existe pra esse modelo (catalogado Oct 1)."
+      size: "~17.33 GB (APEX I-Compact heretic) + 0.9 GB mmproj BF16"
+      context: "1K-200K (cap de degradação ~213K, parallel 1)"
+      vram_usage: "MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s"
+      source: "SC117/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-GGUF (I-Compact, sha 37f67861...e0e7)"
+      kv_cache: "turbo4 (attn 10 layers) + gdn (estado constante)"
       features:
         completion: true
         tools: true
-        thinking: false
-        vision: false
+        thinking: true
+        vision: true
         embedding: false
         insert: false
         audio: false
         image: false
-      architecture: qwen3_moe
-      parameters: 30500000000
+      architecture: qwen35moe
+      parameters: 35000000000
       context_length: 262144
       embedding_length: 2048
-      quantization: "APEX I-Compact"
+      quantization: "APEX I-Compact (heretic)"
+      note: "0.74 05/10/2026: -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap 24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly. Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K)."
+# [REACTIVATED 03/10/2026 noite — next80 removido; GGUF APEX re-download iniciado.]
 # -------------------------------------------
 # QWEN3-CODER-30B-A3B — baseline limpo de código no cafe-llama.cpp
 # Espelho de config do qwen3.6-35b-a3b-heretic-cafe (mesmas flags do café):
@@ -1748,7 +1849,7 @@ models:
     cmd: |
       env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
       --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
-      --mmproj ${models_dir}/occamy-1.0/mmproj-Accio-Lab_occamy-1.0-Q8_0.gguf
+      --mmproj ${models_dir}/qwen36-heretic-apex-mini/mmproj.gguf
       --ctx-size 131072
       --jinja
       --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
@@ -2027,12 +2128,11 @@ matrix:
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
     q36: qwen3.6-35b-a3b-heretic
     # Baseline de codigo APEX I-Compact (sem heretic, sem MTP) + variante cafe; Oct 1 2026
-    qc30: qwen3-coder-30b
+    qc30: qwen3-coder-30b  # reativado Oct 3 (noite) — next80 removido (verdict pos-testes)
     qc30c: qwen3-coder-30b-cafe
     q36hc: qwen3.6-35b-a3b-heretic-cafe
     # occ: occamy-1.0  # REMOVED Sep 27 2026 — bench 141.4±4.4 N=5, abaixo do ornith; GGUF deleted 15.4GB; fragment em _removed/
     lag: laguna-xs-2.1
-    # q38: qwen3.8-35b-a3b  # disabled Sep 21 2026 — liberando disco (17GB); bench 141.0±6.2 N=5, vice da classe; pode voltar
     # k2h: k2-horizon-7b  # REMOVED Sep 16 2026 — errático em chat (idioma/identidade, tool-loop instável); GGUF a decidir; fragment em _removed/
     # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
     # Bonsai 1-bit disabled Aug 2026 — user request
@@ -2084,7 +2184,7 @@ matrix:
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
-    medium: "(q36 | qc30) & (nemb | lfmcol)" # g12p REMOVED Oct 1 2026 — disk; qc30(qc30c) entra Oct/2
+    medium: "(q36 | qc30c) & (nemb | lfmcol)" # qc30c reativado Oct 3 noite (next80 removido); g12p REMOVED Oct 1 — disk
 
     # Modelos pesados (offload) + Embedding/Reranker + CPU completion
     # qw38 removed Aug 2026 — model disabled
@@ -2115,12 +2215,11 @@ matrix:
     orn15: 9
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     q36: 9
-    qc30: 7 # 13.8GB pinned RAM, reload barato mas não trivial
-    qc30c: 7 # variante cafe, mesmo GGUF
+    qc30: 7
+    qc30c: 7
     q36hc: 9
     # occ: 9  # REMOVED Sep 27 2026 — model deleted
     lag: 9
-    # q38: 9  # disabled Sep 21 2026
     # nex25: 9  # REMOVED Sep 10 2026
     # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed
     # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
