@@ -8,6 +8,7 @@ import os
 import secrets
 import sys
 import time
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -432,16 +433,55 @@ def main() -> None:
             print(f"  ✅ No LLM models loaded — VRAM already free")
         print()
 
+    # ── Fleet enhance config (~/.local/share/fleet/enhance-models.yaml) ─────
+    def _load_enhance_config() -> str:
+        """Resolve o modelo de enhance via config externa da frota.
+
+        Ordem: chave 'diffuse' em enhance-models.yaml → fallback declarado →
+        registry (enhance_model do models.py) → qwen3.5-4b. Valida os handles
+        contra /v1/models do llama-swap (evita o 404 silencioso do episódio
+        f210454). Fail-open se o swap estiver fora (aceita o primeiro).
+        """
+        cfg_path = os.path.expanduser("~/.local/share/fleet/enhance-models.yaml")
+        candidates: list[str] = []
+        try:
+            import yaml as _yaml
+            cfg = _yaml.safe_load(open(cfg_path)) or {}
+            entry = cfg.get("diffuse") or {}
+            if entry.get("model"):
+                candidates.append(entry["model"])
+            if entry.get("fallback"):
+                candidates.append(entry["fallback"])
+        except Exception:
+            pass
+        if model_info:
+            candidates.append(model_info.get("enhance_model", ""))
+        candidates.append("qwen3.5-4b")
+
+        live: set = set()
+        try:
+            from diffuse.paths import LLAMA_SWAP_URL
+            with urllib.request.urlopen(f"{LLAMA_SWAP_URL}/v1/models", timeout=3) as r:
+                live = {m["id"] for m in json.load(r).get("data", [])}
+        except Exception:
+            live = set()
+
+        for cand in candidates:
+            if cand and (not live or cand in live or (cand + ":think") in live):
+                return cand
+        return "qwen3.5-4b"
+
     # ── Prompt enhancement ──
     enhanced_prompt = None
-    enhance_model = None
+    enhance_model: str = ""
 
     if args.enhance_with:
         # --enhance-with <model> — use any llama-swap model
         enhance_model = args.enhance_with
         args.enhance = True  # implied
     elif args.enhance:
-        enhance_model = model_info.get("enhance_model", "qwen3.5-4b")
+        enhance_model = _load_enhance_config()
+        args.enhance = True  # implied
 
     if args.enhance:
         enhance_type = model_info.get("enhance_type", "ideogram")

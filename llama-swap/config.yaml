@@ -472,125 +472,6 @@ models:
       embedding_length: 2048
       quantization: "APEX I-Compact"
       note: "Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused (IK TurboQuant); source do mmproj: unsloth Q8."
-# -------------------------------------------
-# ORNITH-1.5-35B-A3B - MoE AGENTIC CODING + VISION (ONYX compact + MTP, DEFAULT)
-# MoE 35B params, ~3B ativo por token. 256 experts, 8+1 active.
-# Self-improving RL: extends Ornith-1.0 self-scaffolding into full self-improvement loop
-# (task generation + scaffold construction + solution rollouts).
-# Same qwen35moe architecture as Ornith-1.0 and Qwen3.6-35B-A3B.
-
-# PROMOTED 2026-09-02 after A/B vs APEX Compact (N=3, same prompt/samplers):
-#   ONYX compact + MTP:  45.1 tok/s mean (46.1/44.8/44.5), VRAM 4646 MiB (75.6%)
-#   APEX Compact + ngram: 40.6 tok/s mean (40.2/40.7/40.9), VRAM 4232 MiB (68.9%)
-#   MTP acceptance 85-93% (head well calibrated on this base).
-#   +11.1% throughput for +414 MiB VRAM. User decision: speed wins.
-
-# ONYX (el4) = APEX evolution: dynamic layer sensitivity + router-weighted
-# imatrix (crushes cold MoE experts, protects hot ones in-tensor).
-# ONYX PRESERVES MTP head (blk.40.nextn.* Q8_0, verified via GGUFReader:
-# nextn_predict_layers=1, 4 nextn tensors). --spec-type mtp is SAFE here.
-# (OOM pitfall applies only to GGUFs with 0 nextn layers — see
-# references/mtp-speculative-decoding.md)
-
-# Vision: mmproj.gguf (899MB, CLIP-based, shared with APEX — same encoder).
-#   --no-mmproj-offload keeps it in RAM to preserve VRAM for weights.
-# ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
-# --fit-margin 2048: moderate headroom for context-shift + KV cache near full ctx
-
-# Samplers (from model card):
-#   General tasks: temp=0.6, top_p=0.95, top_k=20
-#   Benchmarks: temp=1.0
-
-# --ctx-size 131072: same safe ceiling (model supports 262K, YaRN extends to 1M)
-# Dual mode: base (chat, no think) and :think (reasoning)
-# --reasoning-budget 8192: caps thinking tokens at 8192 when :think is active.
-#   Base mode is unaffected (template injects closed think block, budget never triggers).
-# --reasoning-budget-message: smooth transition when budget is exhausted.
-# Uses qwen-fixed-chat-template.jinja — embedded GGUF template lacks
-# tool-call format instructions, causing leakage without the fixed template.
-
-# Benchmark (Sep 2026 A/B, RTX 3050 6GB, N=3 same prompt):
-#   ONYX compact + MTP: 45.1 tok/s, VRAM 4646 MiB, accept 85-93% — DEFAULT
-#   APEX Compact + ngram-mod: 40.6 tok/s, VRAM 4232 MiB (_disabled, GGUF deleted
-#   2026-09-02 — re-download from mudler/Ornith-1.5-35B-A3B-APEX-GGUF to revert)
-# -------------------------------------------
-  "ornith-1.5-35b":
-    name: "Ornith 1.5 35B"
-    description: "Ornith-1.5 is a family of open-source LLMs trained with end-to-end self-improvement — the model proposes new tasks, generates task-specific scaffolds, and produces solution rollouts for RL, continuously creating new learning experiences. ONYX quantization (el4, APEX evolution) with MTP speculative decoding and vision support."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/ornith-1.5-35b/Ornith-1.5-35B-A3B-ONYX-compact.gguf
-      --mmproj ${models_dir}/ornith-1.5-35b/mmproj.gguf
-      --no-mmproj-offload
-      --fit
-      --fit-margin 2048
-      --ctx-size 131072
-      --temp 0.6
-      --top-p 0.95
-      --top-k 20
-      --min-p ${code_min_p}
-      --repeat-penalty ${code_repeat_penalty}
-      --reasoning on
-      --reasoning-budget 8192
-      --reasoning-budget-message "Let me conclude my reasoning and provide the answer."
-      --jinja
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-      --parallel 1
-      --parallel-tool-calls
-      --cache-type-k ${large_cache_k}
-      --cache-type-v ${large_cache_v}
-      --k-cache-hadamard
-      --v-cache-hadamard
-      --flash-attn auto
-      --defer-experts
-      --prefetch-experts
-      --spec-type mtp:n_max=1,p_min=0.0
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.95
-        "${MODEL_ID}:think":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - 'text'
-        - 'image'
-      out:
-        - 'text'
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: "~16.4 GB (ONYX compact) + 899 MB mmproj"
-      context: "1K-131K (safe max, model supports 262K)"
-      vram_usage: "~4.6GB VRAM measured + ~16GB pinned RAM (45 tok/s with MTP, accept 85-93%)"
-      source: "el4/Ornith-1.5-35B-A3B-ONYX-GGUF (compact tier)"
-      kv_cache: "q4_0/q4_0 + hadamard"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 35000000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: ONYX compact
-      note: "Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF deleted Sep 2026 (re-download from mudler repo if reverting)."
 # [REACTIVATED 03/10/2026 noite — next80 removido; GGUF APEX re-download iniciado.]
 # -------------------------------------------
 # QWEN3-CODER-30B-A3B — baseline limpo de código no cafe-llama.cpp
@@ -651,7 +532,7 @@ models:
     metadata:
       size: "~13.8 GB (APEX I-Compact) — text-only, sem mmproj"
       context: "131K (2 slots de 64K)"
-      vram_usage: "a medir no smoke 0.74 -cmoe parallel 1 (esperado ~4GB VRAM + RAM evictável page cache)"
+      vram_usage: "MEDIDO 05/10 (zen fechado): 4.64GB VRAM, decode 31.3-32.8 t/s (μ32), prefill 165 t/s, load 6.6s — ik -fast no mesmo dia: 35.2 t/s / prefill 432 t/s (ik domina prefill; cafe empata decode e evita RAM pinada)"
       source: "mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)"
       kv_cache: "q4_0/q4_0"
       features:
@@ -1649,7 +1530,7 @@ models:
     metadata:
       size: "~13.8 GB (APEX I-Compact) — text-only, sem mmproj"
       context: "1K-131072 (nativo 262K)"
-      vram_usage: "~4-5 GB VRAM (attention+KV+bufs) + ~13.8 GB RAM pinned (n-cpu-moe 48)"
+      vram_usage: "MEDIDO 05/10 (zen fechado): 4.77GB VRAM + 13.9GB RAM pinada, decode 35.0-35.4 t/s (μ35.2), prefill 432 t/s (2.6x o cafe!), load 4.8s"
       source: "mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)"
       kv_cache: "q4_0/q4_0 + hadamard"
       note: "Deploy Oct 1 2026. Arch qwen3_moe: sem nextn (MTP N/A), sem mmproj (text-only), nao-thinking (Instruct puro; sem enable_thinking nos filters). APEX I-Compact = PPL do UD-Q4_K_XL com -16% tamanho (tabela mudler, DGX Spark). Manufacturer sampling: 0.7/0.8/20. ONYX de el4: nao existe pra esse modelo (catalogado Oct 1)."
@@ -1935,7 +1816,7 @@ matrix:
     # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
     # Pesados (offload)
     # aw: agentworld-35b  # disabled Aug 2026
-    orn15: ornith-1.5-35b
+    # orn15: MERGED no heretic 05/10 (fragment em _disabled/ornith-1.5-35b-onyx-old.yaml; GGUF deletado)
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
     q36: qwen3.6-35b-a3b-heretic
     # Baseline de codigo APEX I-Compact (sem heretic, sem MTP) + variante cafe; Oct 1 2026
@@ -2003,7 +1884,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(orn15 | q36 | lag) & (nemb | lfmcol) & qpoll" # q36hc merged em q36 05/10 (cafe oficial)
+    heavy: "(q36 | lag) & (nemb | lfmcol) & qpoll" # orn15 merged no heretic 05/10; q36hc merged em q36
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -2023,7 +1904,7 @@ matrix:
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
-    orn15: 9
+    # orn15: 9  # merged no heretic 05/10
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     q36: 9
     qc30: 7

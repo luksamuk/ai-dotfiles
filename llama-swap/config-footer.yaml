@@ -57,7 +57,7 @@ matrix:
     # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
     # Pesados (offload)
     # aw: agentworld-35b  # disabled Aug 2026
-    orn15: ornith-1.5-35b
+    # orn15: MERGED no heretic 05/10 (fragment em _disabled/ornith-1.5-35b-onyx-old.yaml; GGUF deletado)
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
     q36: qwen3.6-35b-a3b-heretic
     # Baseline de codigo APEX I-Compact (sem heretic, sem MTP) + variante cafe; Oct 1 2026
@@ -125,7 +125,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(orn15 | q36 | lag) & (nemb | lfmcol) & qpoll" # q36hc merged em q36 05/10 (cafe oficial)
+    heavy: "(q36 | lag) & (nemb | lfmcol) & qpoll" # orn15 merged no heretic 05/10; q36hc merged em q36
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -145,7 +145,7 @@ matrix:
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
-    orn15: 9
+    # orn15: 9  # merged no heretic 05/10
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     q36: 9
     qc30: 7
