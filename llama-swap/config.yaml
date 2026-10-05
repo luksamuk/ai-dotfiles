@@ -455,7 +455,7 @@ models:
       context: "131K (2 slots de 64K)"
       vram_usage: "~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe)"
       source: "SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth Q8"
-      kv_cache: "turbo4"
+      kv_cache: "q4_0/q4_0"
       features:
         completion: true
         tools: true
@@ -1650,7 +1650,7 @@ models:
       context: "131K (2 slots de 64K)"
       vram_usage: "a medir no smoke (esperado < 5 GB VRAM turbo4 + ~14 GB pinned RAM -hmoe)"
       source: "mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)"
-      kv_cache: "turbo4"
+      kv_cache: "q4_0/q4_0"
       features:
         completion: true
         tools: true
@@ -1700,7 +1700,7 @@ models:
       context: "N/A (TTS generation, not LLM context)"
       vram_usage: "~2GB VRAM (torch-direct, separate GPU allocation)"
       source: "Qwen/Qwen3-TTS-12Hz-0.6B-Base (HuggingFace)"
-      kv_cache: "N/A"
+      kv_cache: "n/a"
       features:
         completion: false
         tools: false
