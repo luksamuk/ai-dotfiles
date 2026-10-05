@@ -63,7 +63,7 @@ matrix:
     # Baseline de codigo APEX I-Compact (sem heretic, sem MTP) + variante cafe; Oct 1 2026
     qc30: qwen3-coder-30b  # reativado Oct 3 (noite) — next80 removido (verdict pos-testes)
     qc30c: qwen3-coder-30b-cafe
-    q36hc: qwen3.6-35b-a3b-heretic-cafe
+    # q36hc: MERGED em q36 05/10 (o "-cafe" virou o heretic oficial; o ik é -fast em _disabled/)
     # occ: occamy-1.0  # REMOVED Sep 27 2026 — bench 141.4±4.4 N=5, abaixo do ornith; GGUF deleted 15.4GB; fragment em _removed/
     lag: laguna-xs-2.1
     # k2h: k2-horizon-7b  # REMOVED Sep 16 2026 — errático em chat (idioma/identidade, tool-loop instável); GGUF a decidir; fragment em _removed/
@@ -125,7 +125,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(orn15 | q36 | q36hc | lag) & (nemb | lfmcol) & qpoll"
+    heavy: "(orn15 | q36 | lag) & (nemb | lfmcol) & qpoll" # q36hc merged em q36 05/10 (cafe oficial)
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -150,7 +150,6 @@ matrix:
     q36: 9
     qc30: 7
     qc30c: 7
-    q36hc: 9
     # occ: 9  # REMOVED Sep 27 2026 — model deleted
     lag: 9
     # nex25: 9  # REMOVED Sep 10 2026

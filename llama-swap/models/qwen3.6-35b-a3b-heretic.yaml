@@ -1,44 +1,46 @@
 # -------------------------------------------
-# QWEN3.6-35B-A3B HERETIC (mudler APEX-I-Mini) — EXPERIMENTAL
-# O MESMO heretic TPE do prod (KL 0.0015), quant APEX-I-Mini do mudler.
-# 14,32 GB — o heretic em quant leve que o usuário procurava.
-# 733 tensors, SEM MTP nextn tail (speculative off no ik, igual ao KAT).
-# Visão via mmproj.gguf (903 MB).
+# -------------------------------------------
+# QWEN3.6-35B-A3B-HERETIC — PRODUCAO (cafe-llama.cpp 0.74, OFICIAL 05/10)
+# Uncensored oficial da frota: heretic do llmfan46 (KL 0.0015, 88% menos
+# recusas), quant SC117 APEX-I-Compact com MTP nextn=1 preservado.
+# Renamed era "-cafe"; o ik (pico > rapido) ficou em _disabled/...-fast.yaml
+# -cmoe 05/10: experts em page cache file-backed (RAM used ~5-6GB, evictavel)
+#   — mesma FISICA provada no ornith-heretic + laguna (bancada 05/10);
+#   -hmoe pinava ~15GB. Medicao -cmoe dedicada deste modelo: proximo smoke.
 #
-# vs PROD (SC117 APEX-I-Compact 17,02 GB): -2,7 GB, quant mais agressiva
-# ("Smallest viable, fastest inference" no README do mudler). EXPERIMENTAL:
-# dependendo do andar da carruagem, substitui o prod.
+# ARMADILHAS do fork (ler cafe-llama-cpp-eval.md antes de mexer):
+#   - NUNCA --pipeline-parallel com ctx >=131K (buffer DMA 48GB → OOM duplo)
+#   - turbo2 CRASHA na arch hibrida; turbo4 limpo
+#   - MTP draft @262K nao cabe (draft KV 512MiB) — sem --spec-type aqui
+#   - cafe NAO tem: --parallel-tool-calls, --no-graph-reuse, --defer-experts,
+#     --prefetch-experts, --k/v-cache-hadamard, --fit-margin (usar --fit-target)
+#   - env LD_LIBRARY_PATH OBRIGATORIA (RUNPATH morto), sintaxe spec 0.74: draft-mtp
 # -------------------------------------------
 "qwen3.6-35b-a3b-heretic":
-  name: "Qwen 3.6 35B Heretic"
-  description: "Assistente de código sem censura (heretic TPE) com visão, em 14 GB — a quant mais compacta da família. Ideal para teste de velocidade e comparação com o prod."
+  name: "Qwen 3.6 35B Heretic Long"
+  description: "Assistente de código sem censura com visão e o maior contexto da frota (262K, dividido em até 4 sessões de 64K). Ideal para múltiplos agentes em paralelo, análise de documentos longos e refatorações extensas."
   cmd: |
-    ${ik_llama_server} --port ${PORT}
+    env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
     --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
     --mmproj ${models_dir}/qwen36-heretic-apex-mini/mmproj.gguf
-    --no-mmproj-offload
-    --no-graph-reuse
+    --ctx-size 131072
+    --jinja
+    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+    --parallel 2
+    --cache-type-k q4_0
+    --cache-type-v q4_0
+    --flash-attn on
+    -cmoe
     -ngl 99
-    --n-cpu-moe 35
-    --ctx-size 102400
+    -b 512
+    -ub 128
     --temp ${code_temp}
     --top-p ${code_top_p}
     --top-k ${code_top_k}
     --min-p ${code_min_p}
     --repeat-penalty ${code_repeat_penalty}
-    --reasoning on
-    --jinja
-    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-    --parallel 1
-    --parallel-tool-calls
-    --cache-type-k ${large_cache_k}
-    --cache-type-v ${large_cache_v}
-    --k-cache-hadamard
-    --v-cache-hadamard
-    --flash-attn auto
-    --defer-experts
-    --prefetch-experts
     --metrics
+
   filters:
     stripParams: "temperature, top_p"
     setParamsByID:
@@ -46,7 +48,7 @@
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.6
-        top_p: 0.85
+        top_p: 0.95
       "${MODEL_ID}:think":
         chat_template_kwargs:
           enable_thinking: true
@@ -59,13 +61,13 @@
     out: ['text']
     tools: true
     reranker: false
-    context: 102400
+    context: 131072
   metadata:
-    size: "~14.32 GB (APEX-I-Mini, heretic) + 903 MB mmproj"
-    context: "1K-102400"
-    vram_usage: "~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34)"
-    source: "mudler/Qwen3.6-35B-A3B-uncensored-heretic-APEX-GGUF (APEX-I-Mini, base llmfan46 heretic TPE)"
-    kv_cache: "q4_0/q4_0 + hadamard"
+    size: "~14.66 GB (APEX-I-Compact, heretic) + 614 MB mmproj Q8"
+    context: "131K (2 slots de 64K)"
+    vram_usage: "~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe)"
+    source: "SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth Q8"
+    kv_cache: "turbo4"
     features:
       completion: true
       tools: true
@@ -79,5 +81,5 @@
     parameters: 34660000000
     context_length: 262144
     embedding_length: 2048
-    quantization: "APEX I-Mini"
-    note: "APEX I-Mini quant do mudler (base llmfan46 heretic TPE, -2.7 GB vs prod). Sep 24: experimental. O mesmo heretic TPE do prod em quant APEX-I-Mini (14.32 GB). MTP off (sem nextn tail). Se andar bem, substitui o prod."
+    quantization: "APEX I-Compact"
+    note: "Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused (IK TurboQuant); source do mmproj: unsloth Q8."

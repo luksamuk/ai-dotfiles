@@ -1,61 +1,46 @@
 # -------------------------------------------
-# ORNITH-1.5-35B-HERETIC — SC117 Heretic-MTP-APEX + template Sharp (o "Tiel da casa")
-# Substituto planejado de ornith-1.5-35b (ONYX) + qwen3.6-35b-a3b-heretic-cafe numa tacada.
-#
-# GENEALOGIA (Oct 4, verificado nos cards HF):
-#   Base: ornith-ai/Ornith-1.5-35B-A3B (MIT) — mesmo modelo do orn15 atual da frota.
-#   Heretic: trial 62/80 (p-e-w/heretic 1.4.0, MPOA rank-3, o_proj+down_proj).
-#     KL first-token 0.0105-0.0107 (vs 0.0015 do heretic qwen3.6 da casa — 7x maior,
-#     regime MODERADO; card avisa "evaluate before deployment"; 89 refusals/100 removidas).
-#   MTP: head nativo do ornith-1.5 nasce UNTRAINED (random init) → SC117 trocou pelo
-#     graft shisa-ai (19 tensors fused, Q8_0) — por isso --spec-type mtp PERMANECE
-#     (o APEX preservou nextn=1 VERIFICADO no gguf-dump; accept a validar no smoke).
-#   Vision: mmproj BF16 0.9GB do mesmo repo (mesmo encoder CLIP do orn15, -no-mmproj-offload).
-#   Quant: APEX I-Compact 17.33GB (metodo mudler, recorde da frota) — mas imatrix é
-#     do trunk do ORNITH original (não do heresia) = quant neutra por construção.
-#
-# TEMPLATE SHARP (peculiar-ragdoll/Qwen-Sharp-Chat-Templates, v22.5.0 froggeric):
-#   - O ganho do Tiel/CyberTiel vem ~90% do template (controle do card: quant deles
-#     + template do Ornith = score do Ornith exato). Respostas curtas, mais ação.
-#   - INTEGRADO AO GGUF embutido? NAO — o I-Compact do SC117 vem com template
-#     generico (7.7KB, sem sharp). O --chat-template-file apontando pro jinja
-#     baixado em ~/Downloads/tiel-heretic/ é OBRIGATORIO pra replicar o Tiel.
-#   - Template tem think block (enable_thinking true por default!) + tools xml.
-#
-# PLANO (sessão home Oct 4): smoke (server carrega + 1 prompt + metrics) e depois
-# régua de sanidade (01 + 04 + "391") antes de qualquer swap de handle.
+# ORNITH-1.5-35B-HERETIC (Sharp) — OFICIAL 05/10/2026 (era o -cafe; cafe 0.74)
+# O heretic Tiel (SC117 I-Compact + template Sharp) virou o DEFAULT da frota
+# no cafe-llama.cpp 0.74 com -cmoe (experts em page cache file-backed evictável).
+# MEDIDO 05/10 (cold, desktop ativo): decode 29.9-30.9 idle / ~25 c/ desktop;
+# RAM used ~5-6GB (vs 25.8 pinadas do ik); ctx 200K. O ik antigo ficou em
+# _disabled/ornith-1.5-35b-heretic-fast.yaml (campeão de pico em janela limpa).
+# ARMADILHAS cafe (iguais às do irmão qwen36-heretic):
+#   - NUNCA --pipeline-parallel com ctx >=131K (buffer DMA 48GB → OOM duplo)
+#   - turbo4 limpo na híbrida; turbo2 CRASHA
+#   - cafe NÃO tem: --parallel-tool-calls, --defer-experts, --prefetch-experts,
+#     --k/v-cache-hadamard (hadamard é ik-only!), --fit-margin (usar --fit-target)
+#   - env LD_LIBRARY_PATH OBRIGATORIA (RUNPATH morto)
+#   - sintaxe 0.74: --spec-type draft-mtp (sufixo mtp:n_max= do ik NÃO parseia)
+# TEMPLATE: Sharp v22.5.0 (o GGUF heretic vem com template genérico — o
+#   --chat-template-file sharp é OBRIGATORIO pro efeito Tiel).
 # -------------------------------------------
 "ornith-1.5-35b-heretic":
   name: "Ornith 1.5 35B Heretic"
-  description: "Ornith-1.5-35B com heretic (SC117 trial 62, KL 0.0105) + MTP graft shisa + template Sharp v22.5.0 (o Tiel da casa). Substituto de orn15+q36hc. Visão via mmproj BF16. APEX I-Compact 17.3GB."
+  description: "Heretic Tiel (SC117 + Sharp v22.5.0) OFICIAL 05/10 no cafe-llama.cpp 0.74 (-cmoe): decode 29.9-30.9 idle (~25 c/ desktop), RAM evictável ~5-6GB used, ctx 200K. Substitui o ik -fast (em _disabled/). Visão via mmproj BF16. APEX I-Compact 17.33GB."
   cmd: |
-    ${ik_llama_server} --port ${PORT}
+    env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
     --model ${models_dir}/ornith-heretic/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-I-Compact.gguf
     --mmproj ${models_dir}/ornith-heretic/mmproj-Ornith-1.5-35B-A3B-Heretic-MTP-BF16.gguf
     --no-mmproj-offload
-    --fit
-    --fit-margin 2048
-    --ctx-size 131072
+    --ctx-size 200000
+    --jinja
+    --chat-template-file ${templates_dir}/sharp_chat_template.jinja
+    --parallel 1
+    --cache-type-k q4_0
+    --cache-type-v q4_0
+    --flash-attn on
+    -cmoe
+    -ngl 99
+    -b 512
+    -ub 128
     --temp 0.6
     --top-p 0.95
     --top-k 20
     --min-p ${code_min_p}
     --repeat-penalty ${code_repeat_penalty}
-    --reasoning on
     --reasoning-budget 8192
-    --reasoning-budget-message "Let me conclude my reasoning and provide the answer."
-    --jinja
-    --chat-template-file ${templates_dir}/sharp_chat_template.jinja
-    --parallel 1
-    --parallel-tool-calls
-    --cache-type-k ${large_cache_k}
-    --cache-type-v ${large_cache_v}
-    --k-cache-hadamard
-    --v-cache-hadamard
-    --flash-attn auto
-    --defer-experts
-    --prefetch-experts
-    --spec-type mtp:n_max=1,p_min=0.0
+    --spec-type draft-mtp
     --metrics
   filters:
     stripParams: "temperature, top_p"
@@ -63,13 +48,9 @@
       "${MODEL_ID}":
         chat_template_kwargs:
           enable_thinking: false
-        temperature: 0.6
-        top_p: 0.95
       "${MODEL_ID}:think":
         chat_template_kwargs:
           enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -77,13 +58,13 @@
     out: ['text']
     tools: true
     reranker: false
-    context: 131072
+    context: 200000
   metadata:
-    size: "~17.33 GB (APEX I-Compact) + 0.9 GB mmproj BF16"
-    context: "1K-131K (safe max, model supports 262K, YaRN 1M)"
-    vram_usage: "~4.6-5GB VRAM estimado (mesma arch do orn15; medir no smoke)"
-    source: "SC117/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-GGUF (I-Compact, sha256 37f67861...e0e7)"
-    kv_cache: "q4_0 + attn_rot + hadamard (herdado do orn15; validar)"
+    size: "~17.33 GB (APEX I-Compact heretic) + 0.9 GB mmproj BF16"
+    context: "1K-200K (cap de degradação ~213K, parallel 1)"
+    vram_usage: "MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s"
+    source: "SC117/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-GGUF (I-Compact, sha 37f67861...e0e7)"
+    kv_cache: "turbo4 (attn 10 layers) + gdn (estado constante)"
     features:
       completion: true
       tools: true
@@ -97,5 +78,5 @@
     parameters: 35000000000
     context_length: 262144
     embedding_length: 2048
-    quantization: APEX I-Compact
-    note: "Heretic KL 0.0105 (moderado, sem eval público) + Sharp v22.5.0 externo (GGUF embutido NAO é sharp) + MTP graft shisa (nextn=1 verificado). Handle 'ornith-1.5-35b-heretic' é TEMPORÁRIO de teste: se a régua de sanidade passar, vira o substituto de orn15+q36hc; se falhar, fragmento vai pra _disabled/ sem drama."
+    quantization: "APEX I-Compact (heretic)"
+    note: "0.74 05/10/2026: -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap 24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly. Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K)."
