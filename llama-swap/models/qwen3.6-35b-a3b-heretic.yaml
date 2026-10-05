@@ -18,7 +18,7 @@
 # -------------------------------------------
 "qwen3.6-35b-a3b-heretic":
   name: "Qwen 3.6 35B Heretic"
-  description: "Assistente de código sem censura com visão e o maior contexto da frota (262K, dividido em até 4 sessões de 64K). Ideal para múltiplos agentes em paralelo, análise de documentos longos e refatorações extensas."
+  description: "Assistente de código sem censura com visão (heretic llmfan46). OFICIAL 05/10 no cafe-llama.cpp 0.74 (-cmoe, parallel 1 + mmproj em RAM — receita do ornith-heretic, VRAM ~4GB): ctx 131K, RAM evictável ~5-6GB used."
   cmd: |
     env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
     --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
@@ -26,7 +26,8 @@
     --ctx-size 131072
     --jinja
     --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-    --parallel 2
+    --parallel 1
+    --no-mmproj-offload
     --cache-type-k q4_0
     --cache-type-v q4_0
     --flash-attn on
