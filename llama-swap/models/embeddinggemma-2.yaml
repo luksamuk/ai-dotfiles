@@ -1,0 +1,36 @@
+embeddinggemma-2:
+  name: EmbeddingGemma 2
+  description: "Embedding model multimodal do Google DeepMind: texto (incl. código), imagem, áudio e vídeo num espaço unico de 768 dim. 740M (texto 270M + visao 170M + audio 300M), 100+linguas, ctx 8K, MRL (128/256/512/768d), Apache 2.0."
+  env:
+  - CUDA_VISIBLE_DEVICES=
+  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/embeddinggemma-2/embeddinggemma-2-Q8_0.gguf\n--mmproj ${models_dir}/embeddinggemma-2/mmproj-embeddinggemma-2-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 8192\n--cont-batching\n--parallel 1\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
+  ttl: 300
+  capabilities:
+    in:
+    - text
+    - image
+    - audio
+    out: []
+    tools: false
+    reranker: false
+    context: 8192
+  metadata:
+    architecture: gemma-embedding2
+    parameters: 740000000
+    context_length: 8192
+    embedding_length: 768
+    quantization: Q8_0
+    size: ~0.8 GB (Q8_0) + ~0.5 GB mmproj
+    vram_usage: CPU-only
+    source: ggml-org/embeddinggemma-2-GGUF (Q8_0 + mmproj Q8_0)
+    kv_cache: f16
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: true
+      embedding: true
+      insert: false
+      audio: true
+      image: false
+    note: 'vram detalhe: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only) | Text-steered: queries ''task: {tarefa} | query:'' e docs ''title: {t} | text: {conteudo}'' (title: none se sem titulo); media SEM prefixo. Multimodal via mmproj (vision 212 tensors + audio 751 tensors no mmproj). MRL: truncate + re-normalizar client-side (768/512/256 perde pouco; 128 valida antes). Smoke 06/10/2026: MRR=1.0 retrieval 8q pt-BR, STS spearman 0.94 (par-a-par com nemotron-3-embed, 23ms vs 104ms query CPU). mmproj carrega vision+audio: aceita imagem/audio como input (vision tag = input, image false = nao gera). Lançamento 06/10/2026, GGUF oficial ggml-org; build 2796+ do llama.cpp necessita (arch gemma-embedding2, PR #30054).'

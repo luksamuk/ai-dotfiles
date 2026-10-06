@@ -1,144 +1,49 @@
-# llama-swap configuration for RTX 3050 Laptop (6GB VRAM)
-# Configuração otimizada para uso com --fit automático + attn_rot (KV cache quantizado)
-# Dual binary: llama.cpp for dense models, ik_llama.cpp for MoE models (pinned memory, better expert offload)
-#
-# Repositório: ~/git/ai-dotfiles/llama-swap/
-# Modelos: ~/.llama-models/
-# Requer: llama-swap v212+ (Prometheus metrics, SIGHUP reload, reasoning UI, race fix, zstd captures)
-# Requer: llama.cpp build b9563+ (mtmd audio/TTS/video, 6 audio preprocessors: whisper/conformer/granite_speech/gemma4a/gemma4ua/qwen3a, LFM2.5 reasoning fix, Gemma4 MTP, Granite4 Vision, KV cache optimizations)
-# Requer: ik_llama.cpp v4566+ (bf16 graph reduce fix, threads-mtmd, mtmd checkpoint save/restore)
-# Requer: cafe-llama.cpp (fork quimmedes/Ark) — Turbo KV (turbo2/3/4) para contexto longo
-#   (>131K) em MoE, MoE offload (-hmoe pinned RAM / -ssd streaming do NVMe), safetensors
-#   nativo. Substituiu o beellama.cpp (removido Set/2026); upstream já tinha removido o
-#   TurboQuant/TCQ original em v0.4.0 (renomeado KVarN).
-#
-# OTIMIZAÇÕES ik_llama.cpp (modelos MoE e dense offloaded):
-#   --k-cache-hadamard / --v-cache-hadamard (-khad/-vhad): Hadamard transform no K/V cache
-#     antes da quantização → qualidade muito mais próxima do f16 com cache q4_0/q8_0.
-#     Especialmente útil em 6GB VRAM onde q4_0 é necessário para contexto longo.
-#   --flash-attn auto: desliga FA automaticamente em contextos curtos (economia em MoE offloaded)
-#   --defer-experts: defere mmap de experts no Linux → carregamento mais rápido de modelos MoE
-
-# Schema para validação (VS Code)
-
 healthCheckTimeout: 300
 logLevel: info
-logTimeFormat: "rfc3339"
-logToStdout: "proxy"
+logTimeFormat: rfc3339
+logToStdout: proxy
 captureBuffer: 15
 startPort: 10001
 sendLoadingState: false
 includeAliasesInList: true
 globalTTL: 0
-
-# Macros reutilizáveis
 macros:
-  "models_dir": "${env.HOME}/.llama-models"
-  "media_path": "${env.HOME}/testfiles/vision"
-  "templates_dir": "${env.HOME}/git/ai-dotfiles/llama-swap/templates"
-
-  # Caminho para o llama-server compilado com CUDA (--fit disponível)
-  # Build local em ~/git/llama.cpp/build/bin/llama-server
-  "llama_server": "${env.HOME}/git/llama.cpp/build/bin/llama-server"
-
-  # Caminho para ik_llama.cpp — fork otimizado para MoE (pinned memory, faster expert offload)
-  # Build local em ~/git/ik_llama.cpp/build/bin/llama-server
-  "ik_llama_server": "${env.HOME}/git/ik_llama.cpp/build/bin/llama-server"
-
-  # ik_llama.cpp fork do kassane (branch k2-horizon) — suporte a arquitetura k2-horizon
-  # Build local em ~/git/kassane-ik_llama.cpp/build/bin/llama-server
-  "ik2_llama_server": "${env.HOME}/git/kassane-ik_llama.cpp/build/bin/llama-server"
-
-  # bee_server REMOVIDO Sep 20 2026 — fork beellama.cpp deletado; cafe-llama.cpp
-  # (turbo4 KV + hmoe/ssd MoE offload) cobre esse papel daqui em diante (user decision)
-
-  # Caminho para o llama-server do fork cafe-llama.cpp (quimmedes/Ark)
-  # Turbo KV cache (turbo2/3/4, FA-fused), safetensors nativo, -hmoe/-ssd MoE offload
-  # Único backend que carrega qwen35moe @262K ctx na RTX 3050 6GB (turbo4 KV)
-  # Build local em ~/git/cafe-llama.cpp/build/bin/llama-server (commit 0fbc13f, set/2026)
-  "cafe_server": "${env.HOME}/git/cafe-llama.cpp/build/bin/llama-server"
-
-  # Caminho para o llama-server do fork PrismML (Bonsai-2 ternary, runtime Hadamard)
-  # Binário prebuilt em ~/git/prism-llama.cpp/llama-prism-b10685-7dffb15/
-  "prism_llama_server": "${env.HOME}/git/prism-llama.cpp/llama-prism-b10685-7dffb15/llama-server"
-  # Caminho para o vLLM (installed in ~/.vllm venv)
-  "vllm_bin": "${env.HOME}/.vllm/bin/vllm"
-
-  # ===========================================
-  # PARÂMETROS DE INFERÊNCIA (baseados no Unsloth)
-  # ===========================================
-  # Qwen3.5: temp 0.6-0.7, top_p 0.8-0.9, top_k 20-40
-
-  # Gemma: temp 0.7, top_p 0.9
-  # Referência: https://unsloth.ai/docs/models/qwen3.5
-  # ===========================================
-  # Parâmetros padrão (uso geral)
-  "default_temp": "0.7"
-  "default_top_p": "0.9"
-  "default_top_k": "20"
-  "default_min_p": "0.01"
-  "default_repeat_penalty": "1.05"
-
-  # Parâmetros para código/tool-calling (mais determinístico)
-  "code_temp": "0.6"
-  "code_top_p": "0.85"
-  "code_top_k": "40"
-  "code_min_p": "0.02"
-  "code_repeat_penalty": "1.05"
-
-  # Parâmetros para thinking/reasoning
-  "think_temp": "0.6"
-  "think_top_p": "0.9"
-  "think_top_k": "20"
-  "think_min_p": "0.0"
-  "think_repeat_penalty": "1.0"
-
-  # Qwen3.8-27B samplers removed Aug 2026 — model disabled
-  # Contexto para modelos pequenos (cabem inteiros na VRAM)
-  # fit-ctx: mínimo garantido, ctx-size: máximo teto
-  "small_model_min_ctx": "65536"   # 64K mínimo (tool-calling/agentes)
-  "small_model_max_ctx": "131072"  # 128K máximo
-  # Contexto para completion models (sem agente, sem tool-calling)
-  "completion_ctx": "32768"      # 32K — code completion não precisa de mais
-  # Contexto para modelos grandes (requerem offload)
-  "large_model_min_ctx": "65536"   # 64K mínimo (tool-calling/agentes)
-  "large_model_max_ctx": "131072"  # 128K máximo
-  # Margem de segurança para VRAM (MiB) - usada pelo --fit-target
-  "vram_margin": "512"
-
-  # ===========================================
-  # KV CACHE QUANTIZADO + ATTN_ROT
-  # ===========================================
-  # attn_rot é ativado AUTOMATICAMENTE quando o cache é quantizado
-  # (q4_0/q8_0) e n_embd_head % 64 == 0
-  # Reduz degradação de velocidade em contextos longos (~37% → ~10%)
-  # NOTA: Gemma4 iSWA attn_rot bug FIXED (commit 4eb19514d, b8815+). q4_0 cache works now!
-  # ===========================================
-  #
-  # Compatibilidade attn_rot por modelo:
-  #   Qwen3.5-4B/9B   ✅ head_k=256 (256%64==0)
-  #   Qwen3-14B        ✅ head_k=128 (128%64==0)
-  #   Qwen3.6-35B-A3B  ✅ head_k=128
-    #   Nemotron-3-Nano  ✅ head_k=128 (REMOVED — poor quality)
-  #   Nemotron-Omni-30B ✅ head_k=128 (NOT added — ik_llama lacks nemotron_h_moe arch, NOT i-quants. ik_llama supports IQ2_XXS/IQ3_XXS/IQ4_XS natively)
-  #   Gemma-4 E2B/E4B  ✅ head_k=256, iSWA attn_rot fixed (b8815+)
-  #   Gemma-4 26B-MoE  ✅ head_k=256, iSWA attn_rot fixed (b8815+)
-  #   LFM2.5-1.2B       ✅ head_k=64 (64%64==0) — dense hybrid
-  #   LFM2-24B-A2B     ✅ head_k=128 (128%64==0) — MoE hybrid
-  #   LFM2.5-VL-450M   ❌ vision model, manter f16
-  #
-  # Tipos de cache:
-  #   q8_0: ~47% economia vs f16, perda mínima
-  #   q4_0: ~72% economia vs f16, mais compressão
-  #
-  # Escolha: modelos pequenos (fit VRAM) usam q8_0 (saldo perf/mem)
-  #          modelos grandes (offload) usam q4_0 (maximizar contexto)
-  "small_cache_k": "q8_0"
-  "small_cache_v": "q8_0"
-  "large_cache_k": "q4_0"
-  "large_cache_v": "q4_0"
-  "gemma_cache_k": "q4_0"
-  "gemma_cache_v": "q4_0"
+  models_dir: ${env.HOME}/.llama-models
+  media_path: ${env.HOME}/testfiles/vision
+  templates_dir: ${env.HOME}/git/ai-dotfiles/llama-swap/templates
+  llama_server: ${env.HOME}/git/llama.cpp/build/bin/llama-server
+  ik_llama_server: ${env.HOME}/git/ik_llama.cpp/build/bin/llama-server
+  ik2_llama_server: ${env.HOME}/git/kassane-ik_llama.cpp/build/bin/llama-server
+  cafe_server: ${env.HOME}/git/cafe-llama.cpp/build/bin/llama-server
+  prism_llama_server: ${env.HOME}/git/prism-llama.cpp/llama-prism-b10685-7dffb15/llama-server
+  vllm_bin: ${env.HOME}/.vllm/bin/vllm
+  default_temp: '0.7'
+  default_top_p: '0.9'
+  default_top_k: '20'
+  default_min_p: '0.01'
+  default_repeat_penalty: '1.05'
+  code_temp: '0.6'
+  code_top_p: '0.85'
+  code_top_k: '40'
+  code_min_p: '0.02'
+  code_repeat_penalty: '1.05'
+  think_temp: '0.6'
+  think_top_p: '0.9'
+  think_top_k: '20'
+  think_min_p: '0.0'
+  think_repeat_penalty: '1.0'
+  small_model_min_ctx: '65536'
+  small_model_max_ctx: '131072'
+  completion_ctx: '32768'
+  large_model_min_ctx: '65536'
+  large_model_max_ctx: '131072'
+  vram_margin: '512'
+  small_cache_k: q8_0
+  small_cache_v: q8_0
+  large_cache_k: q4_0
+  large_cache_v: q4_0
+  gemma_cache_k: q4_0
+  gemma_cache_v: q4_0
 models:
   qwen3.5-4b:
     name: Qwen3.5 4B
@@ -213,9 +118,9 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: true
       reranker: false
       context: 131072
@@ -307,9 +212,9 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: true
       reranker: false
       context: 131072
@@ -379,16 +284,16 @@ models:
 
       '
     env:
-      - CUDA_VISIBLE_DEVICES=
+    - CUDA_VISIBLE_DEVICES=
     filters:
       stripParams: temperature, top_p
     ttl: 60
     health_check_timeout: 300
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: false
       reranker: false
       context: 32768
@@ -476,10 +381,10 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-        - text
-        - image
+      - text
+      - image
       out:
-        - text
+      - text
       tools: true
       reranker: false
       context: 131072
@@ -555,9 +460,9 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: true
       reranker: false
       context: 131072
@@ -622,7 +527,7 @@ models:
       stripParams: temperature, top_p
       setParams:
         stop:
-          - </assistant>
+        - </assistant>
       setParamsByID:
         ${MODEL_ID}:
           chat_template_kwargs:
@@ -638,9 +543,9 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: true
       reranker: false
       context: 131072
@@ -742,9 +647,9 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: true
       reranker: false
       context: 131072
@@ -773,7 +678,7 @@ models:
     name: LFM2.5-VL 3B
     description: Liquid AI VLM with native grounding, OCR with layout annotation, and SigLIP2 NaFlex vision. 3B params, 32K context, 16 languages.
     tags:
-      - vision
+    - vision
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/lfm2.5-vl-3b/LFM2.5-VL-3B-Q6_K.gguf
@@ -817,10 +722,10 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - text
-        - image
+      - text
+      - image
       out:
-        - text
+      - text
       tools: false
       reranker: false
       context: 32768
@@ -901,9 +806,9 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: true
       reranker: false
       context: 65536
@@ -932,12 +837,12 @@ models:
     name: LFM2.5 Embed 350M
     description: Liquid AI embedding model (350M) for RAG and semantic search. CPU-only serving.
     env:
-      - CUDA_VISIBLE_DEVICES=
+    - CUDA_VISIBLE_DEVICES=
     cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-Embedding-350M-Q8_0.gguf\n--embeddings\n--pooling cls\n--ctx-size 512\n--cont-batching\n--parallel 4\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
     ttl: 300
     capabilities:
       in:
-        - text
+      - text
       out: []
       tools: false
       reranker: false
@@ -966,12 +871,12 @@ models:
     name: LFM2.5 ColBERT 350M
     description: Liquid AI ColBERT reranker for RAG retrieval pipelines. CPU-only serving.
     env:
-      - CUDA_VISIBLE_DEVICES=
+    - CUDA_VISIBLE_DEVICES=
     cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-ColBERT-350M-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 512\n--cont-batching\n--parallel 4\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
     ttl: 300
     capabilities:
       in:
-        - text
+      - text
       out: []
       tools: false
       reranker: true
@@ -1000,12 +905,12 @@ models:
     name: Nemotron 3 Embed 1B
     description: NVIDIA multilingual text embedding model optimized for retrieval and semantic similarity. 2048-dim mean-pooled vectors. SOTA at 1B scale across 34 languages.
     env:
-      - CUDA_VISIBLE_DEVICES=
+    - CUDA_VISIBLE_DEVICES=
     cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/nemotron-3-embed-1b/nemotron-3-embed-1b-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 4096\n--cont-batching\n--parallel 2\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
     ttl: 300
     capabilities:
       in:
-        - text
+      - text
       out: []
       tools: false
       reranker: false
@@ -1030,6 +935,42 @@ models:
         audio: false
         image: false
       note: 'vram detalhe: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only) | -ngl 0, ~0.1GB CUDA ctx overhead apenas Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with ''query: '' for queries and ''passage: '' for documents. 34 languages. 2048-dim L2-normalized vectors. Supports dimension slicing (1024/512) with re-normalization. SOTA at 1B scale on MMTEB.'
+  embeddinggemma-2:
+    name: EmbeddingGemma 2
+    description: 'Embedding model multimodal do Google DeepMind: texto (incl. código), imagem, áudio e vídeo num espaço unico de 768 dim. 740M (texto 270M + visao 170M + audio 300M), 100+linguas, ctx 8K, MRL (128/256/512/768d), Apache 2.0.'
+    env:
+    - CUDA_VISIBLE_DEVICES=
+    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/embeddinggemma-2/embeddinggemma-2-Q8_0.gguf\n--mmproj ${models_dir}/embeddinggemma-2/mmproj-embeddinggemma-2-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 8192\n--cont-batching\n--parallel 1\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
+    ttl: 300
+    capabilities:
+      in:
+      - text
+      - image
+      - audio
+      out: []
+      tools: false
+      reranker: false
+      context: 8192
+    metadata:
+      architecture: gemma-embedding2
+      parameters: 740000000
+      context_length: 8192
+      embedding_length: 768
+      quantization: Q8_0
+      size: ~0.8 GB (Q8_0) + ~0.5 GB mmproj
+      vram_usage: CPU-only
+      source: ggml-org/embeddinggemma-2-GGUF (Q8_0 + mmproj Q8_0)
+      kv_cache: f16
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: true
+        embedding: true
+        insert: false
+        audio: true
+        image: false
+      note: 'vram detalhe: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only) | Text-steered: queries ''task: {tarefa} | query:'' e docs ''title: {t} | text: {conteudo}'' (title: none se sem titulo); media SEM prefixo. Multimodal via mmproj (vision 212 tensors + audio 751 tensors no mmproj). MRL: truncate + re-normalizar client-side (768/512/256 perde pouco; 128 valida antes). Smoke 06/10/2026: MRR=1.0 retrieval 8q pt-BR, STS spearman 0.94 (par-a-par com nemotron-3-embed, 23ms vs 104ms query CPU). mmproj carrega vision+audio: aceita imagem/audio como input (vision tag = input, image false = nao gera). Lançamento 06/10/2026, GGUF oficial ggml-org; build 2796+ do llama.cpp necessita (arch gemma-embedding2, PR #30054).'
   laya:
     name: Laya (decision)
     description: System One decision model (ModernBERT 421M BF16). Serves POST /v1/systemone for laya-snake judge. Not a chat model.
@@ -1056,9 +997,9 @@ models:
     health_check_timeout: 60
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: false
       reranker: false
       context: 8192
@@ -1110,9 +1051,9 @@ models:
     health_check_timeout: 60
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: false
       reranker: false
       context: 8192
@@ -1145,10 +1086,10 @@ models:
     ttl: 60
     capabilities:
       in:
-        - text
-        - image
+      - text
+      - image
       out:
-        - text
+      - text
       tools: false
       reranker: false
       context: 131072
@@ -1219,7 +1160,7 @@ models:
 
       '
     env:
-      - GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
+    - GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
     filters:
       stripParams: temperature, top_p
       setParamsByID:
@@ -1237,9 +1178,9 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: true
       reranker: false
       context: 131072
@@ -1301,9 +1242,9 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: true
       reranker: false
       context: 131072
@@ -1391,10 +1332,10 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-        - text
-        - image
+      - text
+      - image
       out:
-        - text
+      - text
       tools: true
       reranker: false
       context: 200000
@@ -1478,9 +1419,9 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: true
       reranker: false
       context: 131072
@@ -1509,7 +1450,7 @@ models:
     name: Qwen3-TTS 0.6B
     description: Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible /v1/audio/speech endpoint with voice profiles from voiceclone-tui.
     tags:
-      - tts
+    - tts
     proxy: http://127.0.0.1:8880
     checkEndpoint: /v1/audio/voices
     cmd: '${env.HOME}/projects/ai/tts-api/.venv/bin/python ${env.HOME}/projects/ai/tts-api/tts_server.py --port 8880 --host 127.0.0.1
@@ -1520,9 +1461,9 @@ models:
     ttl: 300
     capabilities:
       in:
-        - text
+      - text
       out:
-        - audio
+      - audio
       tools: false
       reranker: false
       context: 0
@@ -1548,11 +1489,11 @@ models:
       quantization: torch-direct
       note: 'vram detalhe: ~2GB VRAM (torch-direct, separate GPU allocation) | torch-direct (separate GPU allocation, fora do padrão llama-server) context detalhe: N/A (TTS generation, not LLM context) Backend torch-direct (sem GGUF). Nenhum KV cache — decodificação de áudio sequencial, sem cache de atenção exposto.'
       caveats:
-        - External FastAPI server on port 8880 (not llama.cpp)
-        - Must install qwen_tts and dependencies in ~/projects/ai/tts-api/.venv
-        - Voice profiles loaded from ~/.config/voiceclone-tui/voices.json
-        - Supports voice cloning with reference audio samples
-        - Portuguese (pt-BR) voices with accent control
+      - External FastAPI server on port 8880 (not llama.cpp)
+      - Must install qwen_tts and dependencies in ~/projects/ai/tts-api/.venv
+      - Voice profiles loaded from ~/.config/voiceclone-tui/voices.json
+      - Supports voice cloning with reference audio samples
+      - Portuguese (pt-BR) voices with accent control
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
@@ -1591,9 +1532,9 @@ models:
     ttl: 60
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: false
       reranker: false
       context: 131072
@@ -1618,8 +1559,8 @@ models:
       embedding_length: 2560
       quantization: Q4_K_M
       caveats:
-        - Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma
-        - Needs explicit translation prompt (Sprachspiel format works)
+      - Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma
+      - Needs explicit translation prompt (Sprachspiel format works)
       note: 'vram detalhe: ~3.5GB (model + cache) | model 2.4GB Q4_K_M + cache + compute Translation model. Sprachspiel translate mode default. 55 languages.'
   twil-lm3-pro:
     name: TwIL-LM3-Pro
@@ -1675,9 +1616,9 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - text
+      - text
       out:
-        - text
+      - text
       tools: true
       reranker: false
       context: 131072
@@ -1702,189 +1643,61 @@ models:
       embedding_length: 2560
       quantization: Q6_K
       note: 'vram detalhe: ~4.5 GB VRAM | model 2.80GB Q6_K + q4_0 KV @131K + compute; fit derruba ctx se apertar vram detalhe: ~4.5GB VRAM @131K no 6GB (modelo 2.80GB + KV q4_0 + compute); fit derruba ctx se apertar Track A greedy temp 0 (inject no :think); card pede max_tokens >=2048 senao trunca think. Track B avaliado SEM thinking (empata com base Granite no macro 10 datasets: 0.790 vs 0.794). BBH-logic 95.4, MATH-500 74.7, MuSR 64.1. Tool calling: probe local 01/10 OK (tool_calls + JSON valido, heranca Granite) apesar do card nao reivindicar. Quant A/B 01/10: Q6_K 28 t/s vs Q8_0 21 t/s no FOL hard (+33%), entailment probe OK nos dois -> Q6_K em prod, Q8_0 removido do disco (re-download via hf). Spec decoding: MTP impossivel (GGUF sem nextn, familia Granite 4.x MTP-free, verificado nos configs 4.0/4.2); ngram-mod/ngram-simple +5% apenas (think formal-logic sem repeticao n-gram suficiente). Deploy 30/09/2026.'
-# Hooks: ações na inicialização do llama-swap
-# preload: carrega modelos síncronamente antes de aceitar requests
-# Ideal para vLLM (startup lento = 30-90s sem warm-up)
-# NOTA: preloads desabilitados temporariamente — ocupam GPU e bloqueiam swap pra SGLang
-# Para reabilitar: descomente as linhas preload abaixo
 hooks:
   on_startup:
     preload: []
-      # - "qwen3.5-0.8b-vllm"
-      # - "lfm2.5-1.2b-vllm"
-
-# ============================================
-# SWAP MATRIX (v202+)
-# ============================================
-# O solver determina automaticamente qual combinação de modelos
-# pode rodar simultaneamente e quais descarregar quando necessário.
-#
-# ⚠️ REGRA CRÍTICA DE COEXISTÊNCIA:
-# Embedding e reranker (nomic, lfmemb, lfmcol) são CPU-only (~0.5GB total)
-# e NÃO consomem VRAM. Devem coexistir com QUALQUER LLM — leve ou pesado.
-# Todos os sets que agrupam LLMs DEVEM incluir as vars de embedding/reranker
-# no & (AND). Se uma var de embedding falta de um set, o solver trata
-# o embedding e o LLM como mutuamente exclusivos, causando ping-pong
-# de eviction (embedding evicta LLM cost 9+, LLM evicta embedding cost 1).
-#
-# Exemplo: heavy: "(qw36 | orn35) & (nomic | lfmemb | lfmcol)"
-# Veja references/new-model-workflow.md §6 para detalhes completos.
-# ============================================
-
 matrix:
   vars:
-    # Modelos pequenos
     q4: qwen3.5-4b
-    # q4x: qwen3.5-4b-262k  # disabled Sep 20 2026 — user: cafe fica pros MoEs, 4B segue no prod upstream/ik; ctx alto não importa nesse modelo
-    # m5a: minicpm5-1b-agentic  # disabled
-    # lfm8: lfm2.5-8b-a1b  # REMOVED Sep 10 2026 — GGUF deleted (bench 16/105, user confia no 2.6b); fragment em _removed/
     lfm26: lfm2.5-2.6b
     nb42: nanbeige4.2-3b
-    # Especialista logica formal (webAI, base Granite 4.2-3B da IBM) — lane nova, nao substitui
     twp: twil-lm3-pro
-    # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
-    # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
     qpoll: qwen2.5-coder-1.5b-pollard
-    # g12p: gemma4-12b-pollard  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%); restore: mv _disabled/ → models/
-    # GPT-2 124M — museum piece (2019 original, completion-only, ctx 1024)
-    # gpt2: gpt-2-124m  # desativado 17/09 (disk; restore: _disabled)
-    # gpt2xl: gpt-2-xl  # DISABLED Oct 3 2026 - GGUF deleted (pedido user); fragment em _disabled/; restore: descomentar + mv fragment
-    # Manacá 1B Instruct — PT-BR do zero (LNCC × NII/LLM-jp), pesquisa experimental
-    # man1: manaca-1b-instruct  # DISABLED Oct 3 2026 - GGUF deleted (pedido user); fragment em _disabled/; restore: descomentar + mv fragment
-    # inst: instella-moe-16b  # disabled
-    # Vision
     ocr: glm-ocr
-    # uocr: unlimited-ocr  # disabled Aug 2026 — unused
-    # qwvl: qwen3-vl-4b  # REMOVED Sep 10 2026 — GGUF deleted (A/B lfm2.5-vl-3b pendente pro enhance do H3); fragment em _removed/
     lfmvl3: lfm2.5-vl-3b
-    # g4: gemma4-e2b  # REMOVED Sep 10 2026 — GGUF QAT deleted (maturidade em outros modelos); fragment em _removed/
-    # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
-    # Pesados (offload)
-    # aw: agentworld-35b  # disabled Aug 2026
-    # orn15: MERGED no heretic 05/10 (fragment em _disabled/ornith-1.5-35b-onyx-old.yaml; GGUF deletado)
-    # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
     q36: qwen3.6-35b-a3b-heretic
-    # Baseline de codigo APEX I-Compact (sem heretic, sem MTP) + variante cafe; Oct 1 2026
     qc30: qwen3-coder-30b
-    # qc30f: qwen3-coder-30b-fast  # ik, ATIVO (bench N=5 planejado); ativar a var qdo colher no heavy/evict
-    # q36hc: MERGED em q36 05/10 (o "-cafe" virou o heretic oficial; o ik é -fast em _disabled/)
-    # occ: occamy-1.0  # REMOVED Sep 27 2026 — bench 141.4±4.4 N=5, abaixo do ornith; GGUF deleted 15.4GB; fragment em _removed/
     lag: laguna-xs-2.1
-    k2: k2-horizon-36b  # REATIVADO Oct 5 2026 — APEX-Mini 14.74GB, ik-only (cafe sem arch)
-    # k2h: k2-horizon-7b  # REMOVED Sep 16 2026 — errático em chat (idioma/identidade, tool-loop instável); GGUF a decidir; fragment em _removed/
-    # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
-    # Bonsai 1-bit disabled Aug 2026 — user request
-    # bonsai1: bonsai-27b-1bit
-    # Bonsai 2 removed Sep 20 2026 — decepcionou a comunidade; GGUF deleted; fragment em _disabled/
-    # bonsai2: bonsai2-27b
+    k2: k2-horizon-36b
     neo4: neohorse-1-4b
-    # Qwen3.8-27B dense 1-bit disabled Aug 2026 — too slow, user never uses
-    # qw38: qwen3.8-27b
-    # qw38p: qwen3.8-27b-pollard  # removed Aug 30 2026 — 2.75 tok/s, superseded by bonsai-27b (10x faster, same class)
-    # Qwen3.8-27B GSQ-RCO IQ2_S-mtp removed Sep 20 2026 — 3.6 t/s ainda lento demais pro uso; GGUF deleted; fragment em _disabled/
-    # q38g: qwen3.8-27b-gsq
-    # Bonsai removed Sep 20 2026 — user nunca usa; GGUF deleted; fragment em _disabled/
-    # bonsai: bonsai-27b
-    # Tradução
     tg: translategemma-4b
-    # Português jurídico (Qwen3.5-9B LoRA, instruct)
-    # athenas: athenas-symbiote-9b  # disabled
-    # Audio
-    # asr: qwen3-asr-0.6b  # disabled
     ttsext: qwen3-tts
-    # Embedding
-    # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
     lfmemb: lfm2.5-embedding-350m
     nemb: nemotron-3-embed-1b
-    # Reranker (late-interaction, CPU-only)
+    eg2: embeddinggemma-2
     lfmcol: lfm2.5-colbert-350m
-    # Decision models (System One scorers, /v1/systemone) — exclusive no
-    # matrix (fora de sets); judge do laya-snake; routing #1195 pending
     laya: laya
     julia: julia-1
-
   sets:
-    # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(q4 | lfm26 | twp) & (nemb | lfmcol)"
-
-    # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | lfm26 | twp) & (nemb | lfmcol)"
-
-    # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "q4 | lfm26 | twp"  # gpt2xl+man1 REMOVED Oct 3 2026 (disk)
-
-    # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
-    # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
-
-    # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr | lfmvl3"
-    vision_embed: "(ocr | lfmvl3) & (nemb | lfmcol)"
-
-    # Modelos médios + Embedding/Reranker
-    # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
-    medium: "(q36 | qc30) & (nemb | lfmcol)" # qc30c virou qc30 (cafe oficial 05/10); g12p REMOVED Oct 1 — disk
-
-    # Modelos pesados (offload) + Embedding/Reranker + CPU completion
-    # qw38 removed Aug 2026 — model disabled
-    # bonsai1 removed Aug 2026 — user request (reactivated as bonsai, Sep 2026)
-    # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
-    # glm removed Sep 09 2026 — see vars note
-    # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(q36 | k2 | lag) & (nemb | lfmcol) & qpoll" # k2 reativado 05/10 APEX-Mini; orn15 merged no heretic; q36hc merged em q36
-
-    # Tradução (leve, cabe com embedding/reranker)
-    # translate_embed removed (hmt uninstalled)
-    translate_only: "tg"
-
-    # External TTS (separate process, same GPU)
-    tts_external: "ttsext"
-
-    # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
-    embed_only: "lfmemb & nemb & lfmcol"
-
-    # Reranker sozinho (late-interaction reranking, CPU-only)
-    rerank_only: "lfmcol"
-
-    # Reranker + Embedding (two-stage retrieval: dense → rerank)
-    rerank_embed: "lfmcol & (lfmemb | nemb)"
-
-  # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
+    small_vision: (q4 | lfm26 | twp) & (nemb | lfmcol | eg2)
+    small_embed: (q4 | lfm26 | twp) & (nemb | lfmcol | eg2)
+    small_only: q4 | lfm26 | twp
+    vision_only: ocr | lfmvl3
+    vision_embed: (ocr | lfmvl3) & (nemb | lfmcol | eg2)
+    medium: (q36 | qc30) & (nemb | lfmcol | eg2)
+    heavy: (q36 | k2 | lag) & (nemb | lfmcol | eg2) & qpoll
+    translate_only: tg
+    tts_external: ttsext
+    embed_only: lfmemb & nemb & lfmcol & eg2
+    rerank_only: lfmcol
+    rerank_embed: lfmcol & (lfmemb | nemb | eg2)
   evict_costs:
-    # orn15: 9  # merged no heretic 05/10
-    # glm: 9  # REMOVED Sep 09 2026 — model deleted
     q36: 9
     k2: 9
     qc30: 7
-    # occ: 9  # REMOVED Sep 27 2026 — model deleted
     lag: 9
-    # nex25: 9  # REMOVED Sep 10 2026
-    # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed
-    # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
-    # q38g: 8  # removed Sep 20 2026
-    # bonsai: 8  # removed Sep 20 2026
-    # bonsai2: 9  # removed Sep 20 2026
     neo4: 2
-    # g4: 3  # REMOVED Sep 10 2026 — model deleted
     ttsext: 4
     ocr: 3
-    # qwvl: 3  # REMOVED Sep 10 2026
     lfmvl3: 3
     q4: 2
-    # q4x: 2  # disabled Sep 20 2026
-    # lfm8: 2  # REMOVED Sep 10 2026
     lfm26: 2
     twp: 2
-    # eq2: 2  # REMOVED Sep 10 2026
-    # eq4: 3  # REMOVED Sep 10 2026
     qpoll: 1
-    # g12p: 3  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%)
-    # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
-    # gpt2xl: 3  # DISABLED Oct 3 2026 - gpt2xl removido
-    # nomic: 1  # REMOVED Sep 10 2026
     lfmemb: 1
     nemb: 1
+    eg2: 1
     lfmcol: 1
     tg: 2
-    # Decision models (juizes /v1/systemone) - recarregam em ~2s, evictam primeiro
     laya: 1
     julia: 1

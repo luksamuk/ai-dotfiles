@@ -38,6 +38,7 @@
 #   glm-ocr               - GLM-OCR Q8_0 (~0.95 GB + 0.48 GB mmproj) - OCR/document specialist
 #   nomic-embed-text-v2-moe - Nomic Embed v2 MoE Q4_K_M (~0.33 GB) - embedding, RAG/search
 #   nemotron-3-embed-1b - Nemotron 3 Embed 1B Q8_0 (~1.2 GB) - embedding, RAG/search (MANUAL CONVERSION)
+#   embeddinggemma-2    - EmbeddingGemma 2 Q8_0 (~0.31 GB + 0.55 GB mmproj) - embedding multimodal (texto+img+audio), RAG/search
 #   [REMOVED] littlelamb-0.3b-tc — removed from fleet Jun 2026 (tool-calling broken, too small to be useful)
 #   webworld-8b          - WebWorld-8B i1-Q5_K_M (~5.9 GB) - web world model, predicts next page state
 #   qwen3.6-35b-a3b      - Qwen3.6-35B-A3B APEX I-Compact (~17.3 GB) - MoE coding + tools
@@ -209,6 +210,11 @@ declare -A MODELS=(
   # Steps: 1) hf download nvidia/Nemotron-3-Embed-1B-BF16 2) Patch config.json architectures to Ministral3ForCausalLM
   # 3) python3 convert_hf_to_gguf.py --outtype f16 4) llama-quantize Q8_0 5) Clean up safetensors + F16
   ["nemotron-3-embed-1b"]="LOCAL nemotron-3-embed-1b/nemotron-3-embed-1b-Q8_0.gguf"
+  # EmbeddingGemma 2 — Google multimodal embedding (texto+img+audio+video, 768d MRL, Apache 2.0)
+  # 740M (texto 270M + vision 170M + audio 300M), ctx 8K — lançado 06/10/2026
+  # Q8_0 texto (~310 MB) + mmproj Q8_0 vision+audio (~555 MB) — ggml-org oficial
+  ["embeddinggemma-2"]="ggml-org/embeddinggemma-2-GGUF embeddinggemma-2-Q8_0.gguf embeddinggemma-2/embeddinggemma-2-Q8_0.gguf"
+  ["embeddinggemma-2-mmproj"]="ggml-org/embeddinggemma-2-GGUF mmproj-embeddinggemma-2-Q8_0.gguf embeddinggemma-2/mmproj-embeddinggemma-2-Q8_0.gguf"
   # Nanbeige4.1-3B — BOSS Zhipin dense 3B reasoning + agentic coding model
   # Architecture: LlamaForCausalLM (llama) — supported in ALL backends
   # Q4_K_M ~1.8 GB — fits entirely in 6GB VRAM with room to spare

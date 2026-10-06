@@ -92,6 +92,8 @@ matrix:
     # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
     lfmemb: lfm2.5-embedding-350m
     nemb: nemotron-3-embed-1b
+    # Multimodal embedding (Google, 740M, texto+img+audio+video, 768d MRL, Apache 2.0)
+    eg2: embeddinggemma-2
     # Reranker (late-interaction, CPU-only)
     lfmcol: lfm2.5-colbert-350m
     # Decision models (System One scorers, /v1/systemone) — exclusive no
@@ -101,10 +103,10 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(q4 | lfm26 | twp) & (nemb | lfmcol)"
+    small_vision: "(q4 | lfm26 | twp) & (nemb | lfmcol | eg2)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | lfm26 | twp) & (nemb | lfmcol)"
+    small_embed: "(q4 | lfm26 | twp) & (nemb | lfmcol | eg2)"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
     small_only: "q4 | lfm26 | twp"  # gpt2xl+man1 REMOVED Oct 3 2026 (disk)
@@ -114,11 +116,11 @@ matrix:
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "ocr | lfmvl3"
-    vision_embed: "(ocr | lfmvl3) & (nemb | lfmcol)"
+    vision_embed: "(ocr | lfmvl3) & (nemb | lfmcol | eg2)"
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
-    medium: "(q36 | qc30) & (nemb | lfmcol)" # qc30c virou qc30 (cafe oficial 05/10); g12p REMOVED Oct 1 — disk
+    medium: "(q36 | qc30) & (nemb | lfmcol | eg2)" # qc30c virou qc30 (cafe oficial 05/10); g12p REMOVED Oct 1 — disk
 
     # Modelos pesados (offload) + Embedding/Reranker + CPU completion
     # qw38 removed Aug 2026 — model disabled
@@ -126,7 +128,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(q36 | k2 | lag) & (nemb | lfmcol) & qpoll" # k2 reativado 05/10 APEX-Mini; orn15 merged no heretic; q36hc merged em q36
+    heavy: "(q36 | k2 | lag) & (nemb | lfmcol | eg2) & qpoll" # k2 reativado 05/10 APEX-Mini; orn15 merged no heretic; q36hc merged em q36
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -136,13 +138,14 @@ matrix:
     tts_external: "ttsext"
 
     # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
-    embed_only: "lfmemb & nemb & lfmcol"
+    # AND entre todos os CPU-only: coexistem (zero VRAM) — OR evitaria em ping-pong
+    embed_only: "lfmemb & nemb & lfmcol & eg2"
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
 
     # Reranker + Embedding (two-stage retrieval: dense → rerank)
-    rerank_embed: "lfmcol & (lfmemb | nemb)"
+    rerank_embed: "lfmcol & (lfmemb | nemb | eg2)"
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
@@ -179,6 +182,7 @@ matrix:
     # nomic: 1  # REMOVED Sep 10 2026
     lfmemb: 1
     nemb: 1
+    eg2: 1
     lfmcol: 1
     tg: 2
     # Decision models (juizes /v1/systemone) - recarregam em ~2s, evictam primeiro
