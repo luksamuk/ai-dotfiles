@@ -409,84 +409,6 @@ models:
       embedding_length: 2048
       quantization: APEX I-Compact
       note: 'vram detalhe: ~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe) | turbo4 KV; hmoe experts pinned Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused (IK TurboQuant); source do mmproj: unsloth Q8.'
-  qwen3-coder-30b:
-    name: Qwen 3 Coder 30B
-    description: Qwen's 30B-A3B MoE coding model (heretic, text-only). Agentic-first tool calling at 131K context.
-    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
-
-      --model ${models_dir}/qwen3-coder-30b/Qwen3-Coder-30B-APEX-I-Compact.gguf
-
-      --ctx-size 131072
-
-      --jinja
-
-      --parallel 1
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --flash-attn on
-
-      -cmoe
-
-      -ngl 99
-
-      -b 512
-
-      -ub 128
-
-      --temp ${code_temp}
-
-      --top-p ${code_top_p}
-
-      --top-k ${code_top_k}
-
-      --min-p ${code_min_p}
-
-      --repeat-penalty ${code_repeat_penalty}
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          temperature: 0.7
-          top_p: 0.8
-          top_k: 20
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~13.8 GB (APEX I-Compact)
-      context: 131072
-      vram_usage: ~4.6 GB VRAM
-      source: mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: false
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen3_moe
-      parameters: 30500000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: APEX I-Compact
-      note: 'vram detalhe: ~4.6 GB VRAM (experts CPU) | experts CPU (-cmoe); zen fechado 05/10: decode 31.3-32.8 t/s, prefill 165 t/s, load 6.6s; ik -fast: 35.2 t/s vram detalhe: MEDIDO 05/10 (zen fechado): 4.64GB VRAM, decode 31.3-32.8 t/s (μ32), prefill 165 t/s, load 6.6s — ik -fast no mesmo dia: 35.2 t/s / prefill 432 t/s (ik domina prefill; cafe empata decode e evita RAM pinada) Deploy Oct 2 2026: variante café do qwen3-coder-30b (ik), espelho do heretic-cafe. Sem MTP (arch sem nextn), text-only, sampling do fabricante 0.7/0.8/20. Turbo4 KV limpo na arch (crasha só em hibrida SSM). ONYX de el4: não existe pra esse modelo (catalogado Oct 1).'
   laguna-xs-2.1:
     name: Laguna XS 2.1
     description: Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. 131K context, -cmoe expert offload.
@@ -1360,92 +1282,6 @@ models:
       embedding_length: 2048
       quantization: APEX I-Compact
       note: 'vram detalhe: ~4.9 GB VRAM + ~4.7 GB RAM used | experts em page cache file-backed evictável via -cmoe (a RAM usada é cache — evictável quando o sistema pede) vram detalhe: MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s 0.74 05/10/2026: -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap 24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly. Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K).'
-  qwen3-coder-30b-fast:
-    name: Qwen 3 Coder 30B Fast
-    description: Qwen's 30B-A3B MoE coding model on ik_llama.cpp — 2.6x prefill speed of the cafe build. 131K context, text-only.
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/qwen3-coder-30b/Qwen3-Coder-30B-APEX-I-Compact.gguf
-
-      --no-graph-reuse
-
-      -ngl 99
-
-      --n-cpu-moe 48
-
-      --ctx-size 131072
-
-      --jinja
-
-      --parallel 1
-
-      --parallel-tool-calls
-
-      --cache-type-k ${large_cache_k}
-
-      --cache-type-v ${large_cache_v}
-
-      --k-cache-hadamard
-
-      --v-cache-hadamard
-
-      --flash-attn auto
-
-      --defer-experts
-
-      --prefetch-experts
-
-      --temp ${code_temp}
-
-      --top-p ${code_top_p}
-
-      --top-k ${code_top_k}
-
-      --min-p ${code_min_p}
-
-      --repeat-penalty ${code_repeat_penalty}
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          temperature: 0.7
-          top_p: 0.8
-          top_k: 20
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~13.8 GB (APEX I-Compact)
-      context: 131072
-      vram_usage: ~4.8 GB VRAM + ~13.9 GB RAM pinned
-      source: mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)
-      kv_cache: q4_0/q4_0 + hadamard
-      note: 'vram detalhe: ~4.8 GB VRAM + ~13.9 GB RAM pinned | ik: zen fechado 05/10, decode 35.0-35.4 t/s (μ35.2), prefill 432 t/s (2.6x o café), load 4.8s vram detalhe: MEDIDO 05/10 (zen fechado): 4.77GB VRAM + 13.9GB RAM pinada, decode 35.0-35.4 t/s (μ35.2), prefill 432 t/s (2.6x o cafe!), load 4.8s Deploy Oct 1 2026. Arch qwen3_moe: sem nextn (MTP N/A), sem mmproj (text-only), nao-thinking (Instruct puro; sem enable_thinking nos filters). APEX I-Compact = PPL do UD-Q4_K_XL com -16% tamanho (tabela mudler, DGX Spark). Manufacturer sampling: 0.7/0.8/20. ONYX de el4: nao existe pra esse modelo (catalogado Oct 1).'
-      features:
-        completion: true
-        tools: true
-        thinking: false
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen3_moe
-      parameters: 30500000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: APEX I-Compact
   qwen3-tts:
     name: Qwen3-TTS 0.6B
     description: Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible /v1/audio/speech endpoint with voice profiles from voiceclone-tui.
@@ -1656,7 +1492,6 @@ matrix:
     ocr: glm-ocr
     lfmvl3: lfm2.5-vl-3b
     q36: qwen3.6-35b-a3b-heretic
-    qc30: qwen3-coder-30b
     lag: laguna-xs-2.1
     k2: k2-horizon-36b
     neo4: neohorse-1-4b
@@ -1674,7 +1509,7 @@ matrix:
     small_only: q4 | lfm26 | twp
     vision_only: ocr | lfmvl3
     vision_embed: (ocr | lfmvl3) & (nemb | lfmcol | eg2)
-    medium: (q36 | qc30) & (nemb | lfmcol | eg2)
+    medium: q36 & (nemb | lfmcol | eg2)
     heavy: (q36 | k2 | lag) & (nemb | lfmcol | eg2) & qpoll
     translate_only: tg
     tts_external: ttsext
@@ -1684,7 +1519,6 @@ matrix:
   evict_costs:
     q36: 9
     k2: 9
-    qc30: 7
     lag: 9
     neo4: 2
     ttsext: 4

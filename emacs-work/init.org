@@ -392,8 +392,6 @@ the live view:
   APEX I-Compact, 200K ctx — flagship)
 - =qwen3.6-35b-a3b-heretic= (34.7B MoE A3B, vision + thinking + tools,
   131K ctx)
-- =qwen3-coder-30b= / =qwen3-coder-30b-fast= (30B MoE coder, tools, no
-  thinking, 131K ctx)
 - =laguna-xs-2.1= (33B dense, thinking + tools, 131K ctx)
 - =k2-horizon-36b= (36B, thinking + tools, 131K ctx)
 - =neohorse-1-4b= (4.2B, thinking + tools, 128K ctx)
@@ -455,12 +453,6 @@ fail: use a local one instead.
    :capabilities '(tool-use reasoning json-response)
    :context-length 131072
    :regex "qwen3.6-35b-a3b-heretic")
-  (llm-models-add
-   :name "qwen3-coder-30b"
-   :symbol 'qwen3-coder-30b
-   :capabilities '(tool-use json-response)
-   :context-length 131072
-   :regex "qwen3-coder-30b")
   (llm-models-add
    :name "laguna-xs-2.1"
    :symbol 'laguna-xs-2.1
@@ -526,9 +518,6 @@ fail: use a local one instead.
             ("Qwen 3.6 35B A3B Heretic" (make-llm-openai-compatible
                                          :chat-model "qwen3.6-35b-a3b-heretic:think"
                                          :url my-llama-swap-endpoint))
-            ("Qwen 3 Coder 30B" (make-llm-openai-compatible
-                                 :chat-model "qwen3-coder-30b"
-                                 :url my-llama-swap-endpoint))
             ("Laguna XS 2.1" (make-llm-openai-compatible
                               :chat-model "laguna-xs-2.1:think"
                               :url my-llama-swap-endpoint))

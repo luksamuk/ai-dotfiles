@@ -61,8 +61,8 @@ matrix:
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
     q36: qwen3.6-35b-a3b-heretic
     # Baseline de codigo APEX I-Compact (sem heretic, sem MTP) + variante cafe; Oct 1 2026
-    qc30: qwen3-coder-30b
-    # qc30f: qwen3-coder-30b-fast  # ik, ATIVO (bench N=5 planejado); ativar a var qdo colher no heavy/evict
+    # qc30/qc30f: REMOVED Oct 06 2026 — qwen3-coder aposentado (cafe + fast; GGUF 14.7GB deleted).
+    # N=5 canônico: 118.0/155 (piso 106). Fragments em _removed/
     # q36hc: MERGED em q36 05/10 (o "-cafe" virou o heretic oficial; o ik é -fast em _disabled/)
     # occ: occamy-1.0  # REMOVED Sep 27 2026 — bench 141.4±4.4 N=5, abaixo do ornith; GGUF deleted 15.4GB; fragment em _removed/
     lag: laguna-xs-2.1
@@ -120,7 +120,7 @@ matrix:
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
-    medium: "(q36 | qc30) & (nemb | lfmcol | eg2)" # qc30c virou qc30 (cafe oficial 05/10); g12p REMOVED Oct 1 — disk
+    medium: "q36 & (nemb | lfmcol | eg2)" # qc30 REMOVED Oct 6 2026 — coder aposentado; g12p REMOVED Oct 1 — disk
 
     # Modelos pesados (offload) + Embedding/Reranker + CPU completion
     # qw38 removed Aug 2026 — model disabled
@@ -153,7 +153,7 @@ matrix:
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     q36: 9
     k2: 9
-    qc30: 7
+    # qc30: 7  # REMOVED Oct 06 2026
     # occ: 9  # REMOVED Sep 27 2026 — model deleted
     lag: 9
     # nex25: 9  # REMOVED Sep 10 2026
