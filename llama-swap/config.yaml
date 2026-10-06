@@ -1650,7 +1650,7 @@ models:
       note: Translation model. Sprachspiel translate mode default. 55 languages.
   twil-lm3-pro:
     name: TwIL-LM3-Pro
-    description: Especialista em logica formal da webAI (3.66B denso sobre Granite 4.2-3B). Entailment, FOL, semantic parse, Lean formalize/critique, MCQ de logica. Passa Qwen3-8B em strict-7 no dominio. Nao e assistente geral; sem tools. Licenca nao-comercial.
+    description: webAI's 3.66B dense formal-logic reasoning specialist (on Granite 4.2-3B). 131K context.
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/twil-lm3-pro/TwIL-LM3-Pro-Q6_K.gguf
