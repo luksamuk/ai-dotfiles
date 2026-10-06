@@ -49,7 +49,7 @@ gemma4-12b:
     health_check_timeout: 1800
     size: ~6.7 GB (Q4_0) + mmproj F16 168MB
     context: 8192
-    vram_usage: ~6.9GB com kvarn4
+    vram_usage: ~6.9 GB VRAM
     source: google/gemma-4-12b-it (Q4_0 + mmproj F16)
     kv_cache: kvarn4
     features:
@@ -65,9 +65,9 @@ gemma4-12b:
     parameters: 12000000000
     context_length: 8192
     quantization: Q4_0
-    note: 'REVERT 31/08: modelo original Google Q4_0 (par validado do bee). Experimentos
-      abliterated (Heretic IQ4_XS, Huihui Q4_K) rejeitados em produção — vision describe
-      instável no fit do Bee. tools=false: validar antes de habilitar. ctx 131072
-      proibido p/ áudio (crash mtmd). KVarN so em Qwen3.6/Gemma 4. kvarn4: PPL ~ fp16
-      a ~4 bits. GGUFs experimentais ainda em ~/.llama-models/gemma-4-12b/ (limpar
-      quando confirmado).'
+    note: 'vram detalhe: ~6.9GB com kvarn4 REVERT 31/08: modelo original Google Q4_0
+      (par validado do bee). Experimentos abliterated (Heretic IQ4_XS, Huihui Q4_K)
+      rejeitados em produção — vision describe instável no fit do Bee. tools=false:
+      validar antes de habilitar. ctx 131072 proibido p/ áudio (crash mtmd). KVarN
+      so em Qwen3.6/Gemma 4. kvarn4: PPL ~ fp16 a ~4 bits. GGUFs experimentais ainda
+      em ~/.llama-models/gemma-4-12b/ (limpar quando confirmado).'

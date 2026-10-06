@@ -71,7 +71,7 @@ smolllm3-3b:
   metadata:
     size: ~2.1 GB (UD-Q5_K_XL)
     context: 65536
-    vram_usage: ~3GB (model + cache)
+    vram_usage: ~3 GB VRAM
     source: unsloth/SmolLM3-3B-GGUF (UD-Q5_K_XL)
     kv_cache: q8_0 + attn_rot + hadamard (ik -khad/-vhad)
     features:
@@ -88,3 +88,4 @@ smolllm3-3b:
     context_length: 65536
     embedding_length: 2048
     quantization: Q5_K_XL
+    note: 'vram detalhe: ~3GB (model + cache) '

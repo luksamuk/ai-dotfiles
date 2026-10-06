@@ -63,7 +63,7 @@ lfm2-audio-1.5b:
   metadata:
     size: ~1.82 GB (Q8_0 model 1.2GB + mmproj 318MB + audiodecoder 358MB)
     context: 131072
-    vram_usage: ~2.5GB (model + mmproj + audiodecoder + cache)
+    vram_usage: ~2.5 GB VRAM
     source: LiquidAI/LFM2-Audio-1.5B-GGUF (Q8_0)
     kv_cache: q8_0 + attn_rot + hadamard
     features:
@@ -84,3 +84,4 @@ lfm2-audio-1.5b:
     - English-only audio understanding and generation
     - TTS/speech-to-speech requires --model-vocoder for audiodecoder
     - ASR works via /v1/audio/transcriptions or chat completions with audio input
+    note: 'vram detalhe: ~2.5GB (model + mmproj + audiodecoder + cache) '

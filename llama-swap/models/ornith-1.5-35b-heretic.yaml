@@ -73,7 +73,7 @@ ornith-1.5-35b-heretic:
   metadata:
     size: ~17.33 GB (APEX I-Compact heretic)
     context: 200000
-    vram_usage: ~4.9 GB VRAM + ~4.7 GB RAM used
+    vram_usage: ~4.9 GB VRAM + ~4.7 GB RAM
     source: SC117/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-GGUF (I-Compact, sha 37f67861...e0e7)
     kv_cache: q4_0/q4_0
     features:
@@ -90,9 +90,11 @@ ornith-1.5-35b-heretic:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX I-Compact
-    note: 'vram detalhe: MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema
-      (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU
-      via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s 0.74 05/10/2026:
+    note: 'vram detalhe: ~4.9 GB VRAM + ~4.7 GB RAM used | experts em page cache file-backed
+      evictável via -cmoe (a RAM usada é cache — evictável quando o sistema pede)
+      vram detalhe: MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts
+      em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe)
+      era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s 0.74 05/10/2026:
       -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute
       em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap
       24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe

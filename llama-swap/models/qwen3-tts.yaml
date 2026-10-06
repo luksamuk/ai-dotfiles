@@ -24,7 +24,7 @@ qwen3-tts:
   metadata:
     size: ~600MB (Qwen3-TTS-12Hz-0.6B-Base, torch-direct)
     context: 0
-    vram_usage: ~2GB VRAM (torch-direct, separate GPU allocation)
+    vram_usage: ~2.0 GB VRAM
     source: Qwen/Qwen3-TTS-12Hz-0.6B-Base (HuggingFace)
     kv_cache: n/a
     features:
@@ -41,9 +41,10 @@ qwen3-tts:
     context_length: 0
     embedding_length: 0
     quantization: torch-direct
-    note: 'context detalhe: N/A (TTS generation, not LLM context) Backend torch-direct
-      (sem GGUF). Nenhum KV cache — decodificação de áudio sequencial, sem cache de
-      atenção exposto.'
+    note: 'vram detalhe: ~2GB VRAM (torch-direct, separate GPU allocation) | torch-direct
+      (separate GPU allocation, fora do padrão llama-server) context detalhe: N/A
+      (TTS generation, not LLM context) Backend torch-direct (sem GGUF). Nenhum KV
+      cache — decodificação de áudio sequencial, sem cache de atenção exposto.'
     caveats:
     - External FastAPI server on port 8880 (not llama.cpp)
     - Must install qwen_tts and dependencies in ~/projects/ai/tts-api/.venv

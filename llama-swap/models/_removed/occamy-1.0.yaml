@@ -83,7 +83,7 @@ occamy-1.0:
   metadata:
     size: ~13.62 GiB (APEX-I-MiniPlus-V2 3.38 BPW) + 585 MiB mmproj Q8_0
     context: 131072
-    vram_usage: ~4-5 GB estimado (i-quant dequant + fit) — medir no smoke
+    vram_usage: ~5 GB VRAM
     source: IsValorum/Occamy-1.0-APEX-I-MiniPlus-V2-GGUF + mmproj-Accio-Lab (Q8_0),
       base Accio-Lab/occamy-1.0 (Qwen3.6-35B-A3B)
     kv_cache: q4_0 + attn_rot + hadamard
@@ -100,3 +100,4 @@ occamy-1.0:
     parameters: 35000000000
     context_length: 262144
     embedding_length: 2048
+    note: 'vram detalhe: ~4-5 GB estimado (i-quant dequant + fit) — medir no smoke '

@@ -31,10 +31,10 @@ lfm2.5-sgl:
     backend: sglang
     size: ~2.5 GB (BF16 safetensors, cached from HF)
     context: 128000
-    vram_usage: ~3.2 GB (model + KV cache)
+    vram_usage: ~3.2 GB VRAM
     source: LiquidAI/LFM2.5-1.2B-Instruct (HuggingFace safetensors)
-    note: SGLang backend for Sprachspiel compat testing — RadixAttention cache, slower
-      startup (~2 min JIT compile).
+    note: 'vram detalhe: ~3.2 GB (model + KV cache) SGLang backend for Sprachspiel
+      compat testing — RadixAttention cache, slower startup (~2 min JIT compile).'
     health_check_timeout: 300
     features:
       completion: true

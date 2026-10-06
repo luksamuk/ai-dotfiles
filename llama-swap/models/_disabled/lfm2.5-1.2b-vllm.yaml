@@ -36,9 +36,10 @@ lfm2.5-1.2b-vllm:
     backend: vllm
     size: ~2.4 GB (BF16 safetensors, auto-download from HF)
     context: 128000
-    vram_usage: ~3GB (model + cache)
+    vram_usage: ~3 GB VRAM
     source: LiquidAI/LFM2.5-1.2B-Instruct (HuggingFace safetensors)
-    note: vLLM backend with native lfm2 tool parser — no --jinja workaround needed
+    note: 'vram detalhe: ~3GB (model + cache) vLLM backend with native lfm2 tool parser
+      — no --jinja workaround needed'
     features:
       completion: true
       tools: false

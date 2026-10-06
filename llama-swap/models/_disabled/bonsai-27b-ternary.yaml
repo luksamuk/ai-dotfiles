@@ -70,7 +70,7 @@ bonsai-27b-ternary:
   metadata:
     size: ~7.2 GB (Q2_0_g128 ternary) + 0.63 GB mmproj
     context: 65536
-    vram_usage: ~7.2 GB weights (partial GPU offload) + ~0.5-1 GB KV cache
+    vram_usage: ~7.2 GB VRAM
     source: prism-ml/Ternary-Bonsai-27B-gguf (Q2_0 + mmproj Q8_0)
     kv_cache: q4_0
     features:
@@ -87,3 +87,4 @@ bonsai-27b-ternary:
     context_length: 262144
     embedding_length: 3584
     quantization: Q2_0_g128 (ternary 1.71 bpw)
+    note: 'vram detalhe: ~7.2 GB weights (partial GPU offload) + ~0.5-1 GB KV cache '

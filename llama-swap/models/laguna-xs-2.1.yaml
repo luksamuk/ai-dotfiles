@@ -65,7 +65,7 @@ laguna-xs-2.1:
   metadata:
     size: ~20.3 GB (Q4_K_M official)
     context: 131072
-    vram_usage: ~4.0 GB VRAM + ~5 GB RAM (page cache evictável)
+    vram_usage: ~4.0 GB VRAM + ~5 GB RAM
     source: poolside/Laguna-XS-2.1-GGUF (Q4_K_M official)
     kv_cache: q4_0/q4_0
     features:
@@ -82,15 +82,18 @@ laguna-xs-2.1:
     context_length: 131072
     embedding_length: 2048
     quantization: Q4_K_M
-    note: 'vram detalhe: MEDIDO 05/10 0.74 (c/ desktop ativo): -cmoe 3.9GB VRAM +
-      ~5GB RAM used (18GB em page cache file-backed evictável), decode 34.6-35.1 t/s
-      | -hmoe: 4.7GB VRAM + ~21GB used pinado, 28.5-32.0 | -ssd+predict: empata mas
-      PERDEU no uso live (user verbatim ''lento''), rejeitado Revanche Sep 2026: cafe-llama.cpp
-      carrega o que o ik nao conseguia (o ik morria com 29GB RSS no load). MoE offload
-      via -hmoe (experts pinned em RAM, ~12-14GB, sem warmup por dominio; o -ssd era
-      a alternativa com warmup). Q4_K_M oficial obrigatorio — APEX I-Compact trava
-      com system prompt (deletado). Template EMBUTIDO via --jinja (externo v5 nao
-      renderiza no cafe). turbo4/turbo2 corrompem a arch SWA hibrida — teto de ctx
-      com qualidade: 131K q4_0. Decode 31.8 t/s @131K. Tool calling: com tools no
-      request a grammar do cafe limita a 1 call/round e suprime o thinking (bug do
-      fork, ver skill). GGUF em ~/.llama-models/laguna-xs-2.1/.'
+    note: 'vram detalhe: ~4.0 GB VRAM + ~5 GB RAM (page cache evictável) | -cmoe:
+      3.9GB VRAM c/ desktop ativo; ~18GB em page cache file-backed EVICTÁVEL (não
+      é pinned — o kernel pode reclaim); decode 34.6-35.1 t/s. -hmoe: 4.7GB VRAM +
+      ~12-14GB pinned vram detalhe: MEDIDO 05/10 0.74 (c/ desktop ativo): -cmoe 3.9GB
+      VRAM + ~5GB RAM used (18GB em page cache file-backed evictável), decode 34.6-35.1
+      t/s | -hmoe: 4.7GB VRAM + ~21GB used pinado, 28.5-32.0 | -ssd+predict: empata
+      mas PERDEU no uso live (user verbatim ''lento''), rejeitado Revanche Sep 2026:
+      cafe-llama.cpp carrega o que o ik nao conseguia (o ik morria com 29GB RSS no
+      load). MoE offload via -hmoe (experts pinned em RAM, ~12-14GB, sem warmup por
+      dominio; o -ssd era a alternativa com warmup). Q4_K_M oficial obrigatorio —
+      APEX I-Compact trava com system prompt (deletado). Template EMBUTIDO via --jinja
+      (externo v5 nao renderiza no cafe). turbo4/turbo2 corrompem a arch SWA hibrida
+      — teto de ctx com qualidade: 131K q4_0. Decode 31.8 t/s @131K. Tool calling:
+      com tools no request a grammar do cafe limita a 1 call/round e suprime o thinking
+      (bug do fork, ver skill). GGUF em ~/.llama-models/laguna-xs-2.1/.'

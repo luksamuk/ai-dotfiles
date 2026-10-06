@@ -84,7 +84,7 @@ neohorse-1-4b:
   metadata:
     size: ~2.71 GB (Q4_K_M)
     context: 131072
-    vram_usage: ~4.4 GB (model 2.7GB + q4_0 hadamard cache + compute)
+    vram_usage: ~4.4 GB VRAM
     source: TokenRhythm/NeoHorse-1-4B-GGUF (Q4_K_M oficial)
     kv_cache: q4_0/q4_0 + hadamard
     features:
@@ -101,8 +101,10 @@ neohorse-1-4b:
     context_length: 262144
     embedding_length: 2560
     quantization: Q4_K_M
-    note: 'Copy-YAML do qwen3.5-4b (18/09). Samplers do card TokenRhythm (protocolo
-      SGLang: temp 1.0/top_p 0.95/presence 1.5 thinking; instruct 0.7/0.80/presence
-      1.5). SEM tensors nextn (o repack stripou o MTP do base — o base mantém, experimento
-      MTP separado). Comparar na régua 155 vs qwen3.5-4b (66/75 histórico). Deploy:
-      pending smoke (fila empero em curso 18/09).'
+    note: 'vram detalhe: ~4.4 GB (model 2.7GB + q4_0 hadamard cache + compute) | model
+      2.7GB Q4_K_M + q4_0 hadamard cache + compute Copy-YAML do qwen3.5-4b (18/09).
+      Samplers do card TokenRhythm (protocolo SGLang: temp 1.0/top_p 0.95/presence
+      1.5 thinking; instruct 0.7/0.80/presence 1.5). SEM tensors nextn (o repack stripou
+      o MTP do base — o base mantém, experimento MTP separado). Comparar na régua
+      155 vs qwen3.5-4b (66/75 histórico). Deploy: pending smoke (fila empero em curso
+      18/09).'

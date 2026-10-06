@@ -65,10 +65,11 @@ mellum2-12b-a2.5b:
   metadata:
     size: ~7.6 GB (Q4_K_M)
     context: 131072
-    vram_usage: ~4.5GB VRAM + ~3GB RAM (partial expert offload)
+    vram_usage: ~4.5 GB VRAM + ~3 GB RAM
     source: RJ000/Mellum2-12B-A2.5B-Thinking-GGUF (Q4_K_M)
-    note: 'Community quant (RJ000). ik-pinned since #1919 (Mellum2 arch + split mode).
-      MoE offload optimized.'
+    note: 'vram detalhe: ~4.5GB VRAM + ~3GB RAM (partial expert offload) Community
+      quant (RJ000). ik-pinned since #1919 (Mellum2 arch + split mode). MoE offload
+      optimized.'
     caveat: 'GGUF Thinking always produces reasoning. Base variant (enable_thinking:
       false) leaks inline text — use :think for clean separation (reasoning_content).
       Parallel tool calls work with --parallel-tool-calls. Occasional content leakage

@@ -40,10 +40,10 @@ granite-4.0-h-1b-vllm:
     backend: vllm
     size: ~2.8 GB (BF16 safetensors, auto-download from HF)
     context: 131072
-    vram_usage: ~3-3.5GB (BF16 model + KV cache)
+    vram_usage: ~3.5 GB VRAM
     source: ibm-granite/granite-4.0-h-1b (HuggingFace safetensors)
-    note: Granite 4.0 Nano — Mamba-2 hybrid. Fits VRAM comfortably. granite4 tool
-      parser. Slow startup (~30-90s).
+    note: 'vram detalhe: ~3-3.5GB (BF16 model + KV cache) Granite 4.0 Nano — Mamba-2
+      hybrid. Fits VRAM comfortably. granite4 tool parser. Slow startup (~30-90s).'
     features:
       completion: true
       tools: false

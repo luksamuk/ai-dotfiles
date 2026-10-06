@@ -42,10 +42,11 @@ granite-3.3-8b-vllm:
     backend: vllm
     size: ~16 GB (BF16 safetensors, auto-download from HF)
     context: 131072
-    vram_usage: ~5.5GB (enforce-eager, no CUDA graphs)
+    vram_usage: ~5.5 GB VRAM
     source: ibm-granite/granite-3.3-8b-instruct (HuggingFace safetensors)
-    note: OOM on 6GB VRAM — vLLM has no CPU offload. Granite reasoning with <thinking>/<response>.
-      granite4 tool parser. Slow startup.
+    note: 'vram detalhe: ~5.5GB (enforce-eager, no CUDA graphs) OOM on 6GB VRAM —
+      vLLM has no CPU offload. Granite reasoning with <thinking>/<response>. granite4
+      tool parser. Slow startup.'
     features:
       completion: true
       tools: true

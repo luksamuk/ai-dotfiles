@@ -70,9 +70,11 @@ qwen3-coder-30b-fast:
     vram_usage: ~4.8 GB VRAM + ~13.9 GB RAM pinned
     source: mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)
     kv_cache: q4_0/q4_0 + hadamard
-    note: 'vram detalhe: MEDIDO 05/10 (zen fechado): 4.77GB VRAM + 13.9GB RAM pinada,
-      decode 35.0-35.4 t/s (μ35.2), prefill 432 t/s (2.6x o cafe!), load 4.8s Deploy
-      Oct 1 2026. Arch qwen3_moe: sem nextn (MTP N/A), sem mmproj (text-only), nao-thinking
+    note: 'vram detalhe: ~4.8 GB VRAM + ~13.9 GB RAM pinned | ik: zen fechado 05/10,
+      decode 35.0-35.4 t/s (μ35.2), prefill 432 t/s (2.6x o café), load 4.8s vram
+      detalhe: MEDIDO 05/10 (zen fechado): 4.77GB VRAM + 13.9GB RAM pinada, decode
+      35.0-35.4 t/s (μ35.2), prefill 432 t/s (2.6x o cafe!), load 4.8s Deploy Oct
+      1 2026. Arch qwen3_moe: sem nextn (MTP N/A), sem mmproj (text-only), nao-thinking
       (Instruct puro; sem enable_thinking nos filters). APEX I-Compact = PPL do UD-Q4_K_XL
       com -16% tamanho (tabela mudler, DGX Spark). Manufacturer sampling: 0.7/0.8/20.
       ONYX de el4: nao existe pra esse modelo (catalogado Oct 1).'

@@ -79,13 +79,15 @@ twil-lm3-pro:
     context_length: 131072
     embedding_length: 2560
     quantization: Q6_K
-    note: 'vram detalhe: ~4.5GB VRAM @131K no 6GB (modelo 2.80GB + KV q4_0 + compute);
-      fit derruba ctx se apertar Track A greedy temp 0 (inject no :think); card pede
-      max_tokens >=2048 senao trunca think. Track B avaliado SEM thinking (empata
-      com base Granite no macro 10 datasets: 0.790 vs 0.794). BBH-logic 95.4, MATH-500
-      74.7, MuSR 64.1. Tool calling: probe local 01/10 OK (tool_calls + JSON valido,
-      heranca Granite) apesar do card nao reivindicar. Quant A/B 01/10: Q6_K 28 t/s
-      vs Q8_0 21 t/s no FOL hard (+33%), entailment probe OK nos dois -> Q6_K em prod,
-      Q8_0 removido do disco (re-download via hf). Spec decoding: MTP impossivel (GGUF
-      sem nextn, familia Granite 4.x MTP-free, verificado nos configs 4.0/4.2); ngram-mod/ngram-simple
-      +5% apenas (think formal-logic sem repeticao n-gram suficiente). Deploy 30/09/2026.'
+    note: 'vram detalhe: ~4.5 GB VRAM | model 2.80GB Q6_K + q4_0 KV @131K + compute;
+      fit derruba ctx se apertar vram detalhe: ~4.5GB VRAM @131K no 6GB (modelo 2.80GB
+      + KV q4_0 + compute); fit derruba ctx se apertar Track A greedy temp 0 (inject
+      no :think); card pede max_tokens >=2048 senao trunca think. Track B avaliado
+      SEM thinking (empata com base Granite no macro 10 datasets: 0.790 vs 0.794).
+      BBH-logic 95.4, MATH-500 74.7, MuSR 64.1. Tool calling: probe local 01/10 OK
+      (tool_calls + JSON valido, heranca Granite) apesar do card nao reivindicar.
+      Quant A/B 01/10: Q6_K 28 t/s vs Q8_0 21 t/s no FOL hard (+33%), entailment probe
+      OK nos dois -> Q6_K em prod, Q8_0 removido do disco (re-download via hf). Spec
+      decoding: MTP impossivel (GGUF sem nextn, familia Granite 4.x MTP-free, verificado
+      nos configs 4.0/4.2); ngram-mod/ngram-simple +5% apenas (think formal-logic
+      sem repeticao n-gram suficiente). Deploy 30/09/2026.'

@@ -64,7 +64,7 @@ gpt-oss-20b:
   metadata:
     size: ~10.8 GB (Q4_K_M)
     context: 131072
-    vram_usage: ~5GB VRAM + ~6GB RAM (heavy offload, MoE)
+    vram_usage: ~5 GB VRAM + ~6 GB RAM
     source: unsloth/gpt-oss-20b-GGUF
     kv_cache: q4_0 + hadamard + attn_rot
     features:
@@ -83,3 +83,4 @@ gpt-oss-20b:
     quantization: Q4_K_M
     warning: Always reasons internally (not optional). MoE offload to RAM — slower
       than pure GPU models.
+    note: 'vram detalhe: ~5GB VRAM + ~6GB RAM (heavy offload, MoE) '

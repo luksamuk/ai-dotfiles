@@ -62,7 +62,7 @@ gemma4-e4b-bee:
   metadata:
     size: ~4.63 GB (Q4_K_M)
     context: 131072
-    vram_usage: ~5.3GB VRAM (model + turbo3_tcq cache)
+    vram_usage: ~5.3 GB VRAM
     source: unsloth/gemma-4-E4B-it-GGUF (Q4_K_M)
     kv_cache: turbo3_tcq (BeeLlama.cpp — ~5x compression)
     features:
@@ -79,5 +79,5 @@ gemma4-e4b-bee:
     context_length: 131072
     embedding_length: 2560
     quantization: Q4_K_M
-    note: BeeLlama backend with TurboQuant. Was on ik for -khad/-vhad; Bee has TurboQuant
-      instead.
+    note: 'vram detalhe: ~5.3GB VRAM (model + turbo3_tcq cache) BeeLlama backend with
+      TurboQuant. Was on ik for -khad/-vhad; Bee has TurboQuant instead.'

@@ -52,7 +52,7 @@ lfm2-24b:
   metadata:
     size: ~14.4 GB (Q4_K_M)
     context: 131072
-    vram_usage: ~5GB VRAM + ~9GB RAM (MoE offload, upstream llama.cpp)
+    vram_usage: ~5 GB VRAM + ~9 GB RAM
     source: LiquidAI/LFM2-24B-A2B-GGUF (Q4_K_M)
     kv_cache: q4_0 + attn_rot
     features:
@@ -71,3 +71,4 @@ lfm2-24b:
     quantization: Q4_K_M
     warning: ik_llama.cpp does NOT support lfm2moe arch — running on upstream llama_server
       without pinned memory. 32K context ceiling (model limitation).
+    note: 'vram detalhe: ~5GB VRAM + ~9GB RAM (MoE offload, upstream llama.cpp) '

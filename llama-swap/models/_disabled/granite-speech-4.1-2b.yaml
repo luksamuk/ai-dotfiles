@@ -57,7 +57,7 @@ granite-speech-4.1-2b:
   metadata:
     size: ~2.2 GB (Q4_K_M model 1.1GB + mmproj-f16 1.1GB)
     context: 131072
-    vram_usage: ~3GB (model + mmproj + cache)
+    vram_usage: ~3 GB VRAM
     source: ibm-granite/granite-speech-4.1-2b-GGUF (Q4_K_M)
     kv_cache: q8_0 + attn_rot
     features:
@@ -80,3 +80,4 @@ granite-speech-4.1-2b:
     - Keyword biasing for names, acronyms, and technical jargon
     - Do NOT use --model-vocoder — this model has no speech decoder
     - Uses granite_speech preprocessor in mtmd audio pipeline
+    note: 'vram detalhe: ~3GB (model + mmproj + cache) '

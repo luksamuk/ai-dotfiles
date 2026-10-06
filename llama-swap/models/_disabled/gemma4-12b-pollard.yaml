@@ -67,7 +67,7 @@ gemma4-12b-pollard:
   metadata:
     size: ~6.95 GB (IQ4_XS 6.78 + mmproj 175MB)
     context: 8192
-    vram_usage: ~4.37GB
+    vram_usage: ~4.37 GB VRAM
     source: PollardWeights/gemma-4-12B-it-Pollard (IQ4_XS + mmproj qat-q4_0)
     kv_cache: q8_0
     features:
@@ -84,15 +84,15 @@ gemma4-12b-pollard:
     context_length: 8192
     embedding_length: 3840
     quantization: Pollard IQ4_XS
-    note: 'Ladder Pollard (measured-allocation + imatrix Calib 3.0), f16 ref PPL 23.04.
-      IQ2_XXS (4.64GB, PPL 56.88): APOSENTADO Sep 19 — vision INSERVIVEL (foto real
-      eu.jpg: alucinava multiplas faces, genero errado); GGUF remanescente no disco
-      (documentacao do ladder, nao serve). IQ4_XS (6.78GB, PPL 29.80): VEREDICTO Sep
-      19 — vision CORRETA no eu.jpg (masculino, oculos de grau armacao grossa, mao
-      no rosto; zero alucinacao). MM: encoder-free, mmproj qat-q4_0 175MB (gem4uv+gem4ua),
-      audio experimental. Performance @ 8K fit livre: 4370MiB VRAM, TTFT 1.5-3s, decode
-      10.3 t/s c/ VRAM compartilhada / 20-25 t/s limpa, prefill 209-585 t/s; nativo
-      256K. TTL 900 contra cold-start (leitura 6.78GB). UMA (drop-in uma-ggml.conf)
-      removida do daemon em Sep 20 — era a causa do 0.7 t/s (decode em CPU sob cudaMallocManaged).
-      Trade-off: qualidade > velocidade (regra user). Historico: prefill lento @ 32K
-      era TTFT 51.7s; @ 8K caiu pra 1.5-3s.'
+    note: 'vram detalhe: ~4.37GB Ladder Pollard (measured-allocation + imatrix Calib
+      3.0), f16 ref PPL 23.04. IQ2_XXS (4.64GB, PPL 56.88): APOSENTADO Sep 19 — vision
+      INSERVIVEL (foto real eu.jpg: alucinava multiplas faces, genero errado); GGUF
+      remanescente no disco (documentacao do ladder, nao serve). IQ4_XS (6.78GB, PPL
+      29.80): VEREDICTO Sep 19 — vision CORRETA no eu.jpg (masculino, oculos de grau
+      armacao grossa, mao no rosto; zero alucinacao). MM: encoder-free, mmproj qat-q4_0
+      175MB (gem4uv+gem4ua), audio experimental. Performance @ 8K fit livre: 4370MiB
+      VRAM, TTFT 1.5-3s, decode 10.3 t/s c/ VRAM compartilhada / 20-25 t/s limpa,
+      prefill 209-585 t/s; nativo 256K. TTL 900 contra cold-start (leitura 6.78GB).
+      UMA (drop-in uma-ggml.conf) removida do daemon em Sep 20 — era a causa do 0.7
+      t/s (decode em CPU sob cudaMallocManaged). Trade-off: qualidade > velocidade
+      (regra user). Historico: prefill lento @ 32K era TTFT 51.7s; @ 8K caiu pra 1.5-3s.'

@@ -86,7 +86,7 @@ qwen3.6-35b-a3b-nano:
   metadata:
     size: ~13.03 GB (APEX-I-NanoPlus)
     context: 131072
-    vram_usage: a medir no smoke (expect <4GB VRAM com --fit)
+    vram_usage: ~4 GB VRAM
     source: IsValorum/Qwen3.6-35B-A3B-MTP-APEX-I-NanoPlus-GGUF
     kv_cache: q4_0 + attn_rot + hadamard
     features:
@@ -103,6 +103,7 @@ qwen3.6-35b-a3b-nano:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX-I-NanoPlus (routers F32, head Q6_K)
-    note: 'Deploy 27/09 como Cenário B (economia RAM/VRAM). MTP companion Q8_0 baixado
-      mas spec-decoding OFF no smoke (draft KV @131K não cabe na 3050 — mesma decisão
-      do heretic-cafe). Avaliação: smoke tests + snake; sem benchmark agentic ainda.'
+    note: 'vram detalhe: a medir no smoke (expect <4GB VRAM com --fit) Deploy 27/09
+      como Cenário B (economia RAM/VRAM). MTP companion Q8_0 baixado mas spec-decoding
+      OFF no smoke (draft KV @131K não cabe na 3050 — mesma decisão do heretic-cafe).
+      Avaliação: smoke tests + snake; sem benchmark agentic ainda.'

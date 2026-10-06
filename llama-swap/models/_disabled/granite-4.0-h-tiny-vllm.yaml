@@ -42,10 +42,10 @@ granite-4.0-h-tiny-vllm:
     backend: vllm
     size: ~14 GB (BF16 safetensors, auto-download from HF)
     context: 131072
-    vram_usage: ~5.5GB (enforce-eager, MoE 1B active per token)
+    vram_usage: ~5.5 GB VRAM
     source: ibm-granite/granite-4.0-h-tiny (HuggingFace safetensors)
-    note: OOM on 6GB VRAM — vLLM loads all 7B params before MoE routing. Mamba-2 hybrid.
-      Slow startup.
+    note: 'vram detalhe: ~5.5GB (enforce-eager, MoE 1B active per token) OOM on 6GB
+      VRAM — vLLM loads all 7B params before MoE routing. Mamba-2 hybrid. Slow startup.'
     features:
       completion: true
       tools: false

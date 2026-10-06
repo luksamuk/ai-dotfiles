@@ -58,7 +58,7 @@ rio-mini-4b:
   metadata:
     size: ~2.5 GB (Q4_K_M)
     context: 262144
-    vram_usage: ~3.5GB VRAM (model + hadamard cache)
+    vram_usage: ~3.5 GB VRAM
     source: mradermacher/Rio-3.0-Open-Mini-GGUF (Q4_K_M)
     kv_cache: q8_0 + q4_0 hadamard
     features:
@@ -75,5 +75,6 @@ rio-mini-4b:
     context_length: 262144
     embedding_length: 2560
     quantization: Q4_K_M
-    note: IplanRIO distilled Qwen3-4B-Thinking with Rio 3.0 reasoning traces. Thinking-only
-      model — enable_thinking=false has no effect.
+    note: 'vram detalhe: ~3.5GB VRAM (model + hadamard cache) IplanRIO distilled Qwen3-4B-Thinking
+      with Rio 3.0 reasoning traces. Thinking-only model — enable_thinking=false has
+      no effect.'

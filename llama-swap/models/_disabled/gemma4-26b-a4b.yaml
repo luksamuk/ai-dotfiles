@@ -64,7 +64,7 @@ gemma4-26b-a4b:
   metadata:
     size: ~14.4 GB (Q4_0 QAT)
     context: 262144
-    vram_usage: ~5GB VRAM + ~9GB RAM (upstream --fit on auto-offload)
+    vram_usage: ~5 GB VRAM + ~9 GB RAM
     source: google/gemma-4-26B-A4B-it-qat-q4_0-gguf
     kv_cache: q4_0 + attn_rot
     features:
@@ -82,3 +82,4 @@ gemma4-26b-a4b:
     embedding_length: 2816
     quantization: Q4_0_QAT
     warning: Vision disabled — Gemma 4 mmproj crash on CUDA. Text-only.
+    note: 'vram detalhe: ~5GB VRAM + ~9GB RAM (upstream --fit on auto-offload) '

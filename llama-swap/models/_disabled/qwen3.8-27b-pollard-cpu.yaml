@@ -72,7 +72,7 @@ qwen3.8-27b-pollard-cpu:
   metadata:
     size: ~12.08 GB (Pollard IQ3_S)
     context: 131072
-    vram_usage: 0 (CPU-only)
+    vram_usage: CPU-only
     source: PollardWeights/Qwen3.8-27B-Pollard (IQ3_S + mmproj bf16), CPU-only variant
     kv_cache: q8_0 (CPU, no hadamard)
     features:
@@ -89,7 +89,7 @@ qwen3.8-27b-pollard-cpu:
     context_length: 262144
     embedding_length: 5120
     quantization: Pollard IQ3_S (imatrix Qwen3.8-27B, from Q8_0)
-    note: 'vram_usage detalhe: 0 MiB VRAM (CUDA_VISIBLE_DEVICES=). All in RAM, ~14
-      GB RSS. Verify with nvidia-smi --query-compute-apps. CPU-only A/B variant of
-      qwen3.8-27b-pollard. Same samplers. MTP spec decode (Pollard GGUF HAS NextN
-      head blk.64, verified). APEX CPU-only reference: 3.40 tok/s.'
+    note: 'vram detalhe: 0 (CPU-only) vram_usage detalhe: 0 MiB VRAM (CUDA_VISIBLE_DEVICES=).
+      All in RAM, ~14 GB RSS. Verify with nvidia-smi --query-compute-apps. CPU-only
+      A/B variant of qwen3.8-27b-pollard. Same samplers. MTP spec decode (Pollard
+      GGUF HAS NextN head blk.64, verified). APEX CPU-only reference: 3.40 tok/s.'

@@ -32,7 +32,7 @@ lfm2.5-8b-a1b:
   metadata:
     size: ~4.2 GB (APEX I-Compact)
     context: 131072
-    vram_usage: ~5.2GB VRAM (4.2 GB model + KV)
+    vram_usage: ~5.2 GB VRAM
     source: mudler/LFM2.5-8B-A1B-APEX-GGUF
     kv_cache: q8_0 + q4_0 + hadamard
     features:
@@ -49,7 +49,7 @@ lfm2.5-8b-a1b:
     context_length: 128000
     embedding_length: 2048
     quantization: APEX I-Compact
-    note: 'MoE 1.5B active, hybrid conv+GQA. Reasoning + tool calling. APEX I-Compact:
-      13% smaller than Q4_0, imatrix v1.3 calibrated. Uses upstream (BeeLlama segfaults
-      on LFM2.5). GGUF has empty chat_template — requires --chat-template-file + --reasoning-format
-      deepseek.'
+    note: 'vram detalhe: ~5.2GB VRAM (4.2 GB model + KV) MoE 1.5B active, hybrid conv+GQA.
+      Reasoning + tool calling. APEX I-Compact: 13% smaller than Q4_0, imatrix v1.3
+      calibrated. Uses upstream (BeeLlama segfaults on LFM2.5). GGUF has empty chat_template
+      — requires --chat-template-file + --reasoning-format deepseek.'

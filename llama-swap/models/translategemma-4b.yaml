@@ -46,7 +46,7 @@ translategemma-4b:
   metadata:
     size: ~2.4 GB (Q4_K_M)
     context: 131072
-    vram_usage: ~3.5GB (model + cache)
+    vram_usage: ~3.5 GB VRAM
     source: mradermacher/translategemma-4b-it-GGUF (Q4_K_M, from google/translategemma-4b-it)
     kv_cache: q8_0 + attn_rot
     features:
@@ -67,4 +67,5 @@ translategemma-4b:
     - Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template
       gemma
     - Needs explicit translation prompt (Sprachspiel format works)
-    note: Translation model. Sprachspiel translate mode default. 55 languages.
+    note: 'vram detalhe: ~3.5GB (model + cache) | model 2.4GB Q4_K_M + cache + compute
+      Translation model. Sprachspiel translate mode default. 55 languages.'

@@ -73,7 +73,7 @@ qwen3.6-35b-cafe:
   metadata:
     size: ~17.3 GB (APEX-MTP I-Compact)
     context: 262144
-    vram_usage: ~5.1 GB VRAM (turbo4 KV) + ~15GB pinned RAM (hmoe)
+    vram_usage: ~5.1 GB VRAM + ~15 GB RAM pinned
     source: mudler/Qwen3.6-35B-A3B-APEX-MTP-GGUF (I-Compact) + mmproj unsloth (F16)
     kv_cache: turbo4 (WHT-rotated, FA-fused)
     features:
@@ -90,10 +90,11 @@ qwen3.6-35b-cafe:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX-MTP I-Compact
-    note: 'Backend cafe-llama.cpp (quimmedes/Ark fork) com Turbo KV turbo4 — unico
-      que carrega 262K nativo na 3050 6GB (ik q4_0 KV @262K OOM). Validado 20/set:
-      needle+QG limpos @30K fill, 16.6 t/s decode @30K, vision OK @262K full (5.1GB).
-      Tradeoff: decode -52% vs ik-prod — batch/long-doc, não agentic interativo. Dual-mode
-      padrão: base sem thinking, :think liga. Sem MTP (draft KV 512MiB não cabe),
-      sem pipeline-parallel (48GB DMA @ctx longo), turbo2 crasha na arch hibrida.
-      Tool calling nativo do cafe (smoke OK).'
+    note: 'vram detalhe: ~5.1 GB VRAM (turbo4 KV) + ~15GB pinned RAM (hmoe) Backend
+      cafe-llama.cpp (quimmedes/Ark fork) com Turbo KV turbo4 — unico que carrega
+      262K nativo na 3050 6GB (ik q4_0 KV @262K OOM). Validado 20/set: needle+QG limpos
+      @30K fill, 16.6 t/s decode @30K, vision OK @262K full (5.1GB). Tradeoff: decode
+      -52% vs ik-prod — batch/long-doc, não agentic interativo. Dual-mode padrão:
+      base sem thinking, :think liga. Sem MTP (draft KV 512MiB não cabe), sem pipeline-parallel
+      (48GB DMA @ctx longo), turbo2 crasha na arch hibrida. Tool calling nativo do
+      cafe (smoke OK).'

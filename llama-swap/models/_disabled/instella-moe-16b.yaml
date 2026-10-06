@@ -51,7 +51,7 @@ instella-moe-16b:
   metadata:
     size: ~8.2 GB (Q3_K_M)
     context: 32768
-    vram_usage: ~4.7GB VRAM + ~3.5GB RAM (18/27 layers on GPU)
+    vram_usage: ~4.7 GB VRAM + ~3.5 GB RAM
     source: DevQuasar/amd.Instella-MoE-16B-A3B-Think-GGUF
     kv_cache: q8_0 (MLA compressed — negligible)
     features:
@@ -72,6 +72,7 @@ instella-moe-16b:
     license: Research RAIL
     paper: arxiv 2511.10628
     backend: llama-instella fork (temporary, not in upstream/ik_llama)
-    note: AMD's first fully open MoE. Gated MLA + FarSkip-Collective. SOTA among fully
-      open at 2.8B active. RL-refined IF (IFEval 83.70). Not agentic — chat/instruction-following
-      model. English only. Research RAIL license — non-commercial.
+    note: 'vram detalhe: ~4.7GB VRAM + ~3.5GB RAM (18/27 layers on GPU) AMD''s first
+      fully open MoE. Gated MLA + FarSkip-Collective. SOTA among fully open at 2.8B
+      active. RL-refined IF (IFEval 83.70). Not agentic — chat/instruction-following
+      model. English only. Research RAIL license — non-commercial.'

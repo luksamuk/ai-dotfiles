@@ -21,7 +21,7 @@ hy-mt2-1.8b:
   metadata:
     size: ~1.1 GB (Q4_K_M)
     context: 131072
-    vram_usage: ~2GB (model + cache)
+    vram_usage: ~2 GB VRAM
     source: tencent/Hy-MT2-1.8B-GGUF (Q4_K_M)
     kv_cache: q8_0 + attn_rot
     features:
@@ -38,9 +38,10 @@ hy-mt2-1.8b:
     context_length: 262144
     embedding_length: 2048
     quantization: Q4_K_M
-    note: 'Translation-only model. No system prompt needed (per Hy-MT2 docs). Official
-      prompt: ''Translate the following text into {target_lang}. Note that you should
-      only output the translated result without any additional explanation:
+    note: 'vram detalhe: ~2GB (model + cache) Translation-only model. No system prompt
+      needed (per Hy-MT2 docs). Official prompt: ''Translate the following text into
+      {target_lang}. Note that you should only output the translated result without
+      any additional explanation:
 
 
       {source_text}''. Supports terminology, style, personalization, delimiter preservation,

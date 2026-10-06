@@ -25,10 +25,10 @@ qwen3-vl-4b:
   metadata:
     size: 2.5 GB (Q4_K_M) + 454 MB mmproj
     context: 32768
-    vram_usage: ~4 GB (model + mmproj + cache)
+    vram_usage: ~4 GB VRAM
     source: Qwen/Qwen3-VL-4B-Instruct-GGUF (Q4_K_M + mmproj Q8_0)
-    note: 'Native grounding: bbox_2d [x1,y1,x2,y2] in 0-1000 scale. repeat_penalty
-      1.0 mandatory.'
+    note: 'vram detalhe: ~4 GB (model + mmproj + cache) Native grounding: bbox_2d
+      [x1,y1,x2,y2] in 0-1000 scale. repeat_penalty 1.0 mandatory.'
     kv_cache: q8_0
     features:
       completion: true

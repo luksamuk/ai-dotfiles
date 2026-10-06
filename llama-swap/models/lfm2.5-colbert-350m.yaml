@@ -21,7 +21,7 @@ lfm2.5-colbert-350m:
     embedding_length: 128
     quantization: Q8_0
     size: ~378 MB (Q8_0)
-    vram_usage: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)
+    vram_usage: CPU-only
     source: LiquidAI/LFM2.5-ColBERT-350M-GGUF (Q8_0)
     kv_cache: f16
     features:
@@ -33,8 +33,9 @@ lfm2.5-colbert-350m:
       insert: false
       audio: false
       image: false
-    note: Late-interaction model. OAI-compatible /v1/embeddings uses mean-pooled 128-dim
-      vectors. For true MaxSim reranking, use raw /embedding endpoint for per-token
-      vectors and compute MaxSim client-side. Asymmetric prompts from config_sentence_transformers.json.
-      11 languages. Higher accuracy than dense (0.605 vs 0.577 NDCG@10) but larger
-      index (per-token vectors).
+    note: 'vram detalhe: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only) | -ngl
+      0, ~0.1GB CUDA ctx overhead apenas Late-interaction model. OAI-compatible /v1/embeddings
+      uses mean-pooled 128-dim vectors. For true MaxSim reranking, use raw /embedding
+      endpoint for per-token vectors and compute MaxSim client-side. Asymmetric prompts
+      from config_sentence_transformers.json. 11 languages. Higher accuracy than dense
+      (0.605 vs 0.577 NDCG@10) but larger index (per-token vectors).'

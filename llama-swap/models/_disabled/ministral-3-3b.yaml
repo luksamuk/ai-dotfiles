@@ -42,7 +42,7 @@ ministral-3-3b:
   metadata:
     size: 2.31 GB (UD-Q5_K_XL)
     context: 131072
-    vram_usage: ~3 GB VRAM with --fit on
+    vram_usage: ~3 GB VRAM
     source: unsloth/Ministral-3-3B-Instruct-2512-GGUF
     kv_cache: q4_0 + attn_rot
     features:
@@ -62,3 +62,4 @@ ministral-3-3b:
     warning: 'Uses mistral3 arch — ONLY runs on llama.cpp upstream, NOT ik_llama.cpp.
       Vision disabled: mmproj crashes with CUDA OOM on mistral3. --n-gpu-layers 99
       causes OOM with 131K ctx, use --fit on instead.'
+    note: 'vram detalhe: ~3 GB VRAM with --fit on '

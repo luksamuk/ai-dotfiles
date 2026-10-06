@@ -98,7 +98,8 @@ qwen3.5-4b:
     context_length: 262144
     embedding_length: 2560
     quantization: UD-Q4_K_XL
-    note: 'vram detalhe: ~4.5GB VRAM (model 2.8GB + q8_0/q4_0 hadamard cache + compute)
-      ik_llama.cpp with hadamard KV cache + --fit for dynamic context. Ngram spec
-      decode via ik syntax. Uses qwen-fixed-chat-template.jinja for tool-call instructions.
-      Formerly qwen3.5-4b-mtp, consolidated Jul 2026.'
+    note: 'vram detalhe: ~4.5 GB VRAM | model 2.8GB UD-Q4_K_XL + q8_0/q4_0 hadamard
+      cache + compute vram detalhe: ~4.5GB VRAM (model 2.8GB + q8_0/q4_0 hadamard
+      cache + compute) ik_llama.cpp with hadamard KV cache + --fit for dynamic context.
+      Ngram spec decode via ik syntax. Uses qwen-fixed-chat-template.jinja for tool-call
+      instructions. Formerly qwen3.5-4b-mtp, consolidated Jul 2026.'

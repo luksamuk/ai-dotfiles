@@ -26,7 +26,7 @@ qwen2.5-omni:
   metadata:
     size: ~5.5 GB (UD-Q5_K_XL) + mmproj F16 2.64GB
     context: 8192
-    vram_usage: ~3.6GB total (medido, modelo+mmproj+ctx 8K)
+    vram_usage: ~3.6 GB VRAM
     source: unsloth/Qwen2.5-Omni-7B-GGUF (UD-Q5_K_XL)
     kv_cache: f16
     features:
@@ -42,9 +42,10 @@ qwen2.5-omni:
     parameters: 8000000000
     context_length: 8192
     quantization: UD-Q5_K_XL
-    note: 'A/B 31/08 vs gemma4-12b e music-flamingo: melhor equilíbrio velocidade/profundidade
-      p/ audio-forense (93s vs 330s do gemma; descrição com glitch+bpm+key que o flamingo
-      não entregou). Versão 3B (UD-Q5_K_XL 2.44GB) testada antes: rápida (21s) mas
-      rasa e repetitiva — descartada. Wedge de áudio NÃO se aplica a este modelo (3
-      requests de áudio seguidos OK). Cartão: 256k ctx nativo, truncado a 8K pro fit
-      da 3050. KV f16: quant de cache não testada com path de áudio.'
+    note: 'vram detalhe: ~3.6GB total (medido, modelo+mmproj+ctx 8K) A/B 31/08 vs
+      gemma4-12b e music-flamingo: melhor equilíbrio velocidade/profundidade p/ audio-forense
+      (93s vs 330s do gemma; descrição com glitch+bpm+key que o flamingo não entregou).
+      Versão 3B (UD-Q5_K_XL 2.44GB) testada antes: rápida (21s) mas rasa e repetitiva
+      — descartada. Wedge de áudio NÃO se aplica a este modelo (3 requests de áudio
+      seguidos OK). Cartão: 256k ctx nativo, truncado a 8K pro fit da 3050. KV f16:
+      quant de cache não testada com path de áudio.'

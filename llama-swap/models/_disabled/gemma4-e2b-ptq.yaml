@@ -64,7 +64,7 @@ gemma4-e2b-ptq:
   metadata:
     size: ~2.89 GB (Q4_K_M)
     context: 131072
-    vram_usage: ~3.2GB
+    vram_usage: ~3.2 GB VRAM
     source: unsloth/gemma-4-E2B-it-GGUF (Q4_K_M)
     kv_cache: q4_0 + attn_rot
     features:
@@ -81,4 +81,5 @@ gemma4-e2b-ptq:
     context_length: 131072
     embedding_length: 1536
     quantization: Q4_K_M
-    note: Upgraded from UD-Q3_K_XL → Q4_K_M. ~3% PPL improvement at +0.17GB cost.
+    note: 'vram detalhe: ~3.2GB Upgraded from UD-Q3_K_XL → Q4_K_M. ~3% PPL improvement
+      at +0.17GB cost.'

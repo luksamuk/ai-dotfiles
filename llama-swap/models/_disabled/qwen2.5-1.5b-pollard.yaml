@@ -61,7 +61,7 @@ qwen2.5-1.5b-pollard:
   metadata:
     size: ~834 MB (Pollard fit1GB)
     context: 32768
-    vram_usage: 0 (CPU-only)
+    vram_usage: CPU-only
     source: PollardWeights/Qwen2.5-1.5B-Instruct-Pollard (fit1GB / Q4_K_S)
     kv_cache: q8_0
     features:
@@ -78,7 +78,7 @@ qwen2.5-1.5b-pollard:
     context_length: 32768
     embedding_length: 1536
     quantization: Pollard fit1GB (q4_K sensitive + Q4_K_M bulk)
-    note: CPU-only variant for coexistence with GPU MoE models. CUDA_VISIBLE_DEVICES=''
-      forces CPU. 42.5 tok/s on i7-13650HX. Zero VRAM cost — runs alongside Ornith
-      35B or other heavy GPU models without competition. ngram-mod enabled (helps
-      on CPU where compute is bottleneck).
+    note: 'vram detalhe: 0 (CPU-only) CPU-only variant for coexistence with GPU MoE
+      models. CUDA_VISIBLE_DEVICES='''' forces CPU. 42.5 tok/s on i7-13650HX. Zero
+      VRAM cost — runs alongside Ornith 35B or other heavy GPU models without competition.
+      ngram-mod enabled (helps on CPU where compute is bottleneck).'

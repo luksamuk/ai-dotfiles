@@ -72,7 +72,7 @@ maple-preview:
   metadata:
     size: ~5.5 GB (TQ2_0 ternary 2-bit + Q4_K head)
     context: 131072
-    vram_usage: ~5.5 GB model + KV cache (fits in 6GB with reduced context)
+    vram_usage: ~5.5 GB VRAM
     source: deepgrove/maple-preview-GGUF (TQ2_0-head-Q4_K)
     kv_cache: q4_0 + attn_rot
     features:
@@ -89,3 +89,4 @@ maple-preview:
     context_length: 131072
     embedding_length: 2560
     quantization: TQ2_0 (ternary 2-bit, native-trained)
+    note: 'vram detalhe: ~5.5 GB model + KV cache (fits in 6GB with reduced context) '

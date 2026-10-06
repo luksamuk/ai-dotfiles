@@ -74,7 +74,7 @@ bonsai-27b-1bit:
   metadata:
     size: ~3.9 GB (Q1_0 binary 1.125 bpw)
     context: 32768
-    vram_usage: ~4.8 GB (model + KV cache q4_0, fits entirely in GPU)
+    vram_usage: ~4.8 GB VRAM
     source: prism-ml/Bonsai-27B-gguf (Q1_0)
     kv_cache: q4_0 + attn_rot
     features:
@@ -91,6 +91,7 @@ bonsai-27b-1bit:
     context_length: 262144
     embedding_length: 3584
     quantization: Q1_0 (binary 1.125 bpw)
-    note: Reativado Jul 2026 — Q1_0 CUDA kernels merged upstream (b9867+), sem fork.
-      ngram-mod speculative decoding para ~20-31 tok/s em RTX 3050 6GB. 48K ctx é
-      o sweet spot de full-GPU offload.
+    note: 'vram detalhe: ~4.8 GB (model + KV cache q4_0, fits entirely in GPU) Reativado
+      Jul 2026 — Q1_0 CUDA kernels merged upstream (b9867+), sem fork. ngram-mod speculative
+      decoding para ~20-31 tok/s em RTX 3050 6GB. 48K ctx é o sweet spot de full-GPU
+      offload.'

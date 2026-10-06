@@ -82,7 +82,7 @@ qwen3.5-9b:
   metadata:
     size: ~3.75 GB (MoQ-3.6)
     context: 131072
-    vram_usage: ~4.8GB VRAM (text-only, ik with hadamard cache)
+    vram_usage: ~4.8 GB VRAM
     source: w-ahmad/Qwen3.5-9B-GGUF-MoQ (MoQ-3.6)
     kv_cache: q4_0/q4_0 + hadamard
     features:
@@ -99,8 +99,9 @@ qwen3.5-9b:
     context_length: 262144
     embedding_length: 4096
     quantization: MoQ-3.6
-    note: 'MoQ-3.6 replaces UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25
-      vs 20/25 Snake), 32% smaller (3.75 vs 5.55 GB). MTP OOM on 6GB VRAM. OOM fix:
-      q4_0 K cache (was q8_0), ctx-checkpoints=0, batch-size=512, ubatch=128 — prevents
-      CUDA OOM at ~92K tokens on RTX 3050 6GB. --spec-type ngram-mod removed (spec
-      decode buffers compete for VRAM with context checkpoints, aggravating OOM).'
+    note: 'vram detalhe: ~4.8GB VRAM (text-only, ik with hadamard cache) MoQ-3.6 replaces
+      UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25 vs 20/25 Snake),
+      32% smaller (3.75 vs 5.55 GB). MTP OOM on 6GB VRAM. OOM fix: q4_0 K cache (was
+      q8_0), ctx-checkpoints=0, batch-size=512, ubatch=128 — prevents CUDA OOM at
+      ~92K tokens on RTX 3050 6GB. --spec-type ngram-mod removed (spec decode buffers
+      compete for VRAM with context checkpoints, aggravating OOM).'

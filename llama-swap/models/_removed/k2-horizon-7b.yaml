@@ -70,7 +70,7 @@ k2-horizon-7b:
   metadata:
     size: ~5.59 GB (Q4_K_M abenzerps) — BF16 oficial 18 GB
     context: 131072
-    vram_usage: 5.28 GB medido @8K ctx com --fit (smoke 16/09)
+    vram_usage: ~5.28 GB VRAM
     source: abenzerps/K2-Horizon-7B-GGUF (Q4_K_M), base IFM/K2-Horizon-7B
     kv_cache: q4_0 + hadamard K/V (v-cache ok; k-cache-hadamard teve glitches reportados
       pelo kassane no fork dele — monitorar)
@@ -88,6 +88,7 @@ k2-horizon-7b:
     context_length: 524288
     embedding_length: 4096
     quantization: Q4_K_M
-    note: 'Thinking voraz: vendor recomenda 32K+ output tokens com reasoning_effort=high.
-      Smoke de codigo reprovado com budgets <= 8K (4 runs: 3x content=0, 1x codigo
-      com bug). USO EXPERIMENTAL — testchat com budget generoso.'
+    note: 'vram detalhe: 5.28 GB medido @8K ctx com --fit (smoke 16/09) Thinking voraz:
+      vendor recomenda 32K+ output tokens com reasoning_effort=high. Smoke de codigo
+      reprovado com budgets <= 8K (4 runs: 3x content=0, 1x codigo com bug). USO EXPERIMENTAL
+      — testchat com budget generoso.'

@@ -54,7 +54,7 @@ gpt-2-xl:
   metadata:
     size: ~3.12 GB (F16)
     context: 1024
-    vram_usage: ~3.75GB (model + KV)
+    vram_usage: ~3.75 GB VRAM
     source: openai-community/gpt2-xl (safetensors, converted locally with convert_hf_to_gguf.py)
     kv_cache: f16
     features:
@@ -71,6 +71,7 @@ gpt-2-xl:
     context_length: 1024
     embedding_length: 1600
     quantization: F16
-    note: GPT-2 flagship from Feb 2019 (withheld by OpenAI until Nov 2019 — the unicorn-story
-      model). Use /v1/completions (text completion) — no chat template exists. Context
-      physically limited to 1024 by the WPE position table.
+    note: 'vram detalhe: ~3.75GB (model + KV) GPT-2 flagship from Feb 2019 (withheld
+      by OpenAI until Nov 2019 — the unicorn-story model). Use /v1/completions (text
+      completion) — no chat template exists. Context physically limited to 1024 by
+      the WPE position table.'

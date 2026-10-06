@@ -31,7 +31,7 @@ manaca-1b-instruct:
   metadata:
     size: ~1.04 GB (Q4_K_M, 4.92 BPW, template embutido)
     context: 4096
-    vram_usage: ~1.3 GB (modelo + KV f16 @ 4k + buffers)
+    vram_usage: ~1.3 GB VRAM
     source: sulfierry/manaca-1b-instruct-GGUF (F16-UGM) -> Q4_K_M local
     license: CC BY-NC 4.0 (pesquisa/não-comercial)
     kv_cache: f16
@@ -49,7 +49,8 @@ manaca-1b-instruct:
     context_length: 4096
     embedding_length: 2048
     quantization: Q4_K_M
-    note: '1B PT-BR do zero (LNCC × NII/LLM-jp). Alpaca-PT OBRIGATÓRIO (template embutido
-      no GGUF, EOS </s> fecha turno). Pesquisa experimental v0.1: MT-Bench-PT 2.9,
-      exames no acaso, safety recall ~75%, over-refusal ~8.8%. Papel: pesquisa/auditoria/feedback
-      pro LNCC, não produção. Rollback F16 ao lado.'
+    note: 'vram detalhe: ~1.3 GB (modelo + KV f16 @ 4k + buffers) 1B PT-BR do zero
+      (LNCC × NII/LLM-jp). Alpaca-PT OBRIGATÓRIO (template embutido no GGUF, EOS </s>
+      fecha turno). Pesquisa experimental v0.1: MT-Bench-PT 2.9, exames no acaso,
+      safety recall ~75%, over-refusal ~8.8%. Papel: pesquisa/auditoria/feedback pro
+      LNCC, não produção. Rollback F16 ao lado.'

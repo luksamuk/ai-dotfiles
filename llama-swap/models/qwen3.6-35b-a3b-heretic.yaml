@@ -73,7 +73,7 @@ qwen3.6-35b-a3b-heretic:
   metadata:
     size: ~14.66 GB (APEX-I-Compact, heretic)
     context: 131072
-    vram_usage: ~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe)
+    vram_usage: ~5.1 GB VRAM + ~15 GB RAM pinned
     source: SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF
       (I-Compact) + mmproj unsloth Q8
     kv_cache: q4_0/q4_0
@@ -91,7 +91,8 @@ qwen3.6-35b-a3b-heretic:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX I-Compact
-    note: 'Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM,
-      262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV
-      não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused (IK TurboQuant);
-      source do mmproj: unsloth Q8.'
+    note: 'vram detalhe: ~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe) | turbo4
+      KV; hmoe experts pinned Produção Sep 24: café herdou o posto do ik-131K (menor
+      pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem
+      MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused
+      (IK TurboQuant); source do mmproj: unsloth Q8.'

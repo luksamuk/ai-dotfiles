@@ -65,7 +65,7 @@ qwen2.5-1.5b-pollard-fit1gb:
   metadata:
     size: ~834 MB (Pollard fit1GB)
     context: 32768
-    vram_usage: ~1.5GB VRAM (model 834MB + q8_0 KV 32K + compute)
+    vram_usage: ~1.5 GB VRAM
     source: PollardWeights/Qwen2.5-1.5B-Instruct-Pollard (fit1GB / Q4_K_S)
     kv_cache: q8_0
     features:
@@ -82,7 +82,8 @@ qwen2.5-1.5b-pollard-fit1gb:
     context_length: 32768
     embedding_length: 1536
     quantization: Pollard fit1GB (q4_K sensitive + Q4_K_M bulk)
-    note: Pollard role/depth-aware memory-fit quantization, ultra-light tier. Sensitive
-      tensors (embeddings, attention q/k/v/o, norms, output head) at q4_K, FFN bulk
-      at Q4_K_M. 93.1 tok/s on M4 Mac (vendor). qwen2 arch (28 layers, dense 1.54B).
-      ChatML format. Instruct model — no FIM, no thinking mode.
+    note: 'vram detalhe: ~1.5GB VRAM (model 834MB + q8_0 KV 32K + compute) Pollard
+      role/depth-aware memory-fit quantization, ultra-light tier. Sensitive tensors
+      (embeddings, attention q/k/v/o, norms, output head) at q4_K, FFN bulk at Q4_K_M.
+      93.1 tok/s on M4 Mac (vendor). qwen2 arch (28 layers, dense 1.54B). ChatML format.
+      Instruct model — no FIM, no thinking mode.'

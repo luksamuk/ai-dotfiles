@@ -63,7 +63,7 @@ nanbeige4.2-3b:
   metadata:
     size: ~2.4 GB (Q4_K_M)
     context: 65536
-    vram_usage: ~2.4 GB model + ~2.9 GB q4_0 KV @ 65K + compute
+    vram_usage: ~5.3 GB VRAM
     source: owao/Nanbeige4.2-3B-GGUF (Q4_K_M)
     kv_cache: q4_0/q4_0
     features:
@@ -80,6 +80,7 @@ nanbeige4.2-3b:
     context_length: 262144
     embedding_length: 3072
     quantization: Q4_K_M
-    note: 'Looped Transformer (22 layers x2 loops = 44 effective). Upstream llama.cpp
-      (PR #25994). Multi-turn tool calling FIXED vs 4.1 (#22684). Thinking toggle
-      via enable_thinking.'
+    note: 'vram detalhe: ~2.4 GB model + ~2.9 GB q4_0 KV @ 65K + compute | model 2.4GB
+      Q4_K_M + q4_0 KV ~2.9GB @65K + compute Looped Transformer (22 layers x2 loops
+      = 44 effective). Upstream llama.cpp (PR #25994). Multi-turn tool calling FIXED
+      vs 4.1 (#22684). Thinking toggle via enable_thinking.'

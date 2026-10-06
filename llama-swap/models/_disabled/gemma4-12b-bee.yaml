@@ -48,7 +48,7 @@ gemma4-12b-bee:
   metadata:
     size: ~6.7 GB (Q4_0) + mmproj F16 168MB
     context: 8192
-    vram_usage: ~6.9GB com kvarn4
+    vram_usage: ~6.9 GB VRAM
     source: google/gemma-4-12b-it (Q4_0 + mmproj F16)
     kv_cache: kvarn4 (PPL ~ fp16 a ~4 bits)
     features:
@@ -64,6 +64,6 @@ gemma4-12b-bee:
     parameters: 12000000000
     context_length: 8192
     quantization: Q4_0
-    note: 'BeeLlama.cpp v0.4.4 com KVarN kvarn4 (suportado so em Qwen3.6/Gemma 4).
-      mmproj unificado vision+audio (gemma4a preprocessor). ctx 131072 proibido p/
-      audio (crash mtmd). tools=false: validar antes de habilitar.'
+    note: 'vram detalhe: ~6.9GB com kvarn4 BeeLlama.cpp v0.4.4 com KVarN kvarn4 (suportado
+      so em Qwen3.6/Gemma 4). mmproj unificado vision+audio (gemma4a preprocessor).
+      ctx 131072 proibido p/ audio (crash mtmd). tools=false: validar antes de habilitar.'

@@ -63,7 +63,7 @@ qwen3.5-9b-upstream:
   metadata:
     size: ~5.05 GB (UD-Q3_K_XL Dynamic 2.0)
     context: 262144
-    vram_usage: ~5GB VRAM (text-only, mmproj offload needs fix)
+    vram_usage: ~5 GB VRAM
     source: unsloth/Qwen3.5-9B-GGUF
     kv_cache: q8_0 + attn_rot
     features:
@@ -81,3 +81,4 @@ qwen3.5-9b-upstream:
     embedding_length: 4096
     quantization: UD-Q3_K_XL
     warning: Vision disabled temporarily — mmproj offload with --fit causes OOM
+    note: 'vram detalhe: ~5GB VRAM (text-only, mmproj offload needs fix) '

@@ -65,7 +65,7 @@ gemma4-e2b:
   metadata:
     size: ~2.5 GB (UD-Q4_K_XL)
     context: 131072
-    vram_usage: ~2.5GB
+    vram_usage: ~2.5 GB VRAM
     source: unsloth/gemma-4-E2B-it-qat-GGUF
     kv_cache: q4_0 + attn_rot
     features:
@@ -82,5 +82,6 @@ gemma4-e2b:
     context_length: 131072
     embedding_length: 1536
     quantization: UD-Q4_K_XL
-    note: Unsloth Dynamic 2.0 QAT. Better accuracy than Google Q4_0 (Top-1 98.16%
-      vs 89.29%), 22% smaller. Upstream only — NOT compatible with ik_llama.
+    note: 'vram detalhe: ~2.5GB Unsloth Dynamic 2.0 QAT. Better accuracy than Google
+      Q4_0 (Top-1 98.16% vs 89.29%), 22% smaller. Upstream only — NOT compatible with
+      ik_llama.'

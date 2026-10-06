@@ -66,7 +66,7 @@ qwen3-8b:
   metadata:
     size: ~4.31 GB (UD-Q3_K_XL Dynamic 2.0)
     context: 40960
-    vram_usage: ~4.3GB model + KV cache, ~80-83% VRAM with --fit
+    vram_usage: ~4.3 GB VRAM
     source: unsloth/Qwen3-8B-GGUF (UD-Q3_K_XL)
     kv_cache: q8_0 (K) + q4_0 (V) + hadamard (ik -khad/-vhad)
     features:
@@ -83,3 +83,4 @@ qwen3-8b:
     context_length: 40960
     embedding_length: 4096
     quantization: Q4_K_M
+    note: 'vram detalhe: ~4.3GB model + KV cache, ~80-83% VRAM with --fit '

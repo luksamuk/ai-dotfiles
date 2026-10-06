@@ -65,7 +65,7 @@ lfm2.5-1.2b:
   metadata:
     size: ~696 MB (QAD Q4_0) + 567 MB DSpark draft
     context: 131072
-    vram_usage: ~1.5GB VRAM (model + draft + KV)
+    vram_usage: ~1.5 GB VRAM
     source: LiquidAI/LFM2.5-1.2B-Instruct-GGUF (QAD Q4_0)
     kv_cache: q4_0
     features:
@@ -82,7 +82,8 @@ lfm2.5-1.2b:
     context_length: 131072
     embedding_length: 2048
     quantization: QAD Q4_0
-    note: Smallest LFM2.5. Dense hybrid (22 conv + 8 GQA). Instruct variant (no reasoning
-      tag). 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja.
-      QAD Q4_0 recovers ~97% of BF16 quality. DSpark F16 draft sidecar (567MB) adds
-      up to 2.87x speedup on-device. Ideal for edge/embedded or as lightweight agent.
+    note: 'vram detalhe: ~1.5GB VRAM (model + draft + KV) Smallest LFM2.5. Dense hybrid
+      (22 conv + 8 GQA). Instruct variant (no reasoning tag). 16 languages incl Portuguese.
+      GGUF has no chat_template - uses lfm2.5-chat-template.jinja. QAD Q4_0 recovers
+      ~97% of BF16 quality. DSpark F16 draft sidecar (567MB) adds up to 2.87x speedup
+      on-device. Ideal for edge/embedded or as lightweight agent.'

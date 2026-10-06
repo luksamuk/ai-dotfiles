@@ -51,7 +51,7 @@ lfm2.5-1.2b-think:
   metadata:
     size: ~1.25 GB (Q8_0)
     context: 128000
-    vram_usage: ~2GB (model + cache)
+    vram_usage: ~2 GB VRAM
     source: LiquidAI/LFM2.5-1.2B-Thinking-GGUF (Q8_0)
     kv_cache: q8_0 + attn_rot
     features:
@@ -70,3 +70,4 @@ lfm2.5-1.2b-think:
     quantization: Q8_0
     warning: SEMPRE gera CoT internamente (como gpt-oss-20b). Pior pra tool-calling
       — use lfm2.5-1.2b (Instruct) para tarefas agenticas.
+    note: 'vram detalhe: ~2GB (model + cache) '

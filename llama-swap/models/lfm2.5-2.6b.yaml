@@ -76,7 +76,7 @@ lfm2.5-2.6b:
   metadata:
     size: ~1.55 GB (QAD Q4_0)
     context: 131072
-    vram_usage: ~3.9GB VRAM (model 1.55GB + q4_0 KV 131K + compute)
+    vram_usage: ~3.9 GB VRAM
     source: LiquidAI/LFM2.5-2.6B-GGUF (QAD Q4_0)
     kv_cache: q4_0
     features:
@@ -93,10 +93,11 @@ lfm2.5-2.6b:
     context_length: 131072
     embedding_length: 2048
     quantization: QAD Q4_0
-    note: Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL
-      trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template
-      - uses lfm2.5-chat-template.jinja. Only 8/30 layers are attention (GQA), KV
-      cache is tiny - q4_0 fits 131K full VRAM in 6GB. QAD (Quantization-Aware Distillation)
-      recovers ~97% of BF16 quality vs native Q4_0. DSpark speculative decoding via
-      F16 draft sidecar (633MB) — up to 2.27x speedup on-device, 57% latency reduction
-      for function calling.
+    note: 'vram detalhe: ~3.9GB VRAM (model 1.55GB + q4_0 KV 131K + compute) | model
+      1.55GB QAD-Q4_0 + q4_0 KV @131K + compute Dense hybrid (22 conv + 8 GQA). Reasoning
+      model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl
+      Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only
+      8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM
+      in 6GB. QAD (Quantization-Aware Distillation) recovers ~97% of BF16 quality
+      vs native Q4_0. DSpark speculative decoding via F16 draft sidecar (633MB) —
+      up to 2.27x speedup on-device, 57% latency reduction for function calling.'

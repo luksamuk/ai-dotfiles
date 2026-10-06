@@ -86,7 +86,7 @@ ling-3.0-tiny:
   metadata:
     size: ~3.99 GB (APEX I-Compact)
     context: 131072
-    vram_usage: ~4.5GB VRAM (model 3.99GB + q4_0 hadamard KV + compute)
+    vram_usage: ~4.5 GB VRAM
     source: SC117/Ling-3.0-tiny-abliterated-APEX-GGUF (APEX I-Compact)
     kv_cache: q4_0/q4_0 + hadamard (KDA linear attn = minimal KV, only 6/24 layers
       use MLA)
@@ -104,6 +104,7 @@ ling-3.0-tiny:
     context_length: 262144
     embedding_length: 2560
     quantization: APEX I-Compact (4.10 bpw)
-    note: 'BailingMoE3 hybrid KDA+MLA MoE. 7.9B/1.3B active, 128 experts (8+1). APEX
-      I-Compact beats Q8_0 at half size. Abliterated (85% fewer refusals, KL 0.0677).
-      KDA = linear attention, KV cache quasi-constant. ik_llama.cpp PR #2295 backend.'
+    note: 'vram detalhe: ~4.5GB VRAM (model 3.99GB + q4_0 hadamard KV + compute) BailingMoE3
+      hybrid KDA+MLA MoE. 7.9B/1.3B active, 128 experts (8+1). APEX I-Compact beats
+      Q8_0 at half size. Abliterated (85% fewer refusals, KL 0.0677). KDA = linear
+      attention, KV cache quasi-constant. ik_llama.cpp PR #2295 backend.'
