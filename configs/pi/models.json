@@ -271,27 +271,6 @@
           "contextWindow": 32768,
           "maxTokens": 32768
         },
-        // DISABLED Oct 3 2026: GGUF removido (pedido user); fragment em _disabled/
-        // {
-        // "id": "manaca-1b-instruct",
-        // "name": "Manacá 1B Instruct",
-        // "description": "LNCC Manacá-1B-Instruct: PT-BR do zero (LNCC × NII/LLM-jp), release de PESQUISA v0.1, CC BY-NC. MT-Bench-PT 2.9/10, exames no acaso, safety ~75%. Alpaca-PT. Não usar como assistente real.",
-        // "reasoning": false,
-        // "input": [
-        // "text"
-        // ],
-        // "contextWindow": 4096,
-        // "maxTokens": 2048
-        // },
-          "name": "Manacá 1B Instruct",
-          "description": "LNCC Manacá-1B-Instruct: PT-BR do zero (LNCC × NII/LLM-jp), release de PESQUISA v0.1, CC BY-NC. MT-Bench-PT 2.9/10, exames no acaso, safety ~75%. Alpaca-PT. Não usar como assistente real.",
-          "reasoning": false,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 4096,
-          "maxTokens": 2048
-        },
         {
           "id": "minicpm5-2b",
           "name": "MiniCPM5 2B",
@@ -367,62 +346,6 @@
           "maxTokens": 32768
         },
         {
-          "id": "ornith-1.5-35b",
-          "name": "Ornith 1.5 35B",
-          "description": "Ornith-1.5 — self-improving RL MoE. Extends Ornith-1.0 self-scaffolding into full self-improvement loop (task generation + scaffold + rollouts). 35B MoE, ~3B active/token.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.95,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "ornith-1.5-35b-cafe",
-          "name": "Ornith 1.5 35B Cafe",
-          "description": "Ornith 1.5 ONYX compact @200K — producao cafe.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 200000,
-          "maxTokens": 32768
-        },
-        {
-          "id": "ornith-1.5-35b-cafe:think",
-          "name": "Ornith 1.5 35B Cafe Thinking",
-          "description": "Ornith 1.5 ONYX compact @200K — producao cafe.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 200000,
-          "maxTokens": 32768
-        },
-        {
-          "id": "ornith-1.5-35b:think",
-          "name": "Ornith 1.5 35B (Thinking)",
-          "description": "Ornith-1.5 — self-improving RL MoE. Extends Ornith-1.0 self-scaffolding into full self-improvement loop (task generation + scaffold + rollouts). 35B MoE, ~3B active/token.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.95,
-            "top_k": 20
-          }
-        },
-        {
           "id": "qwen3-coder-30b",
           "name": "Qwen 3 Coder 30B",
           "description": "Qwen3-Coder-30B-A3B-Instruct (APEX I-Compact, 13.8 GB), text-only, sem thinking. Baseline de codigo da frota. Sampling de fabrica 0.7/0.8/20.",
@@ -448,106 +371,6 @@
           "id": "qwen3.5-4b:think",
           "name": "Qwen3.5 4B (Thinking)",
           "description": "Qwen 3.5 open-source multimodal model — exceptional utility and performance, integrating broad agentic capabilities.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "qwen3.6-35b-a3b-heretic",
-          "name": "Qwen 3.6 35B Heretic (262K)",
-          "description": "Qwen3.6 35B MoE A3B, APEX-MTP I-Compact, 42.6 tok/s com MTP. enable_thinking: false no base.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 102400,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.85,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "qwen3.6-35b-a3b-heretic-cafe",
-          "name": "Qwen 3.6 35B Heretic Long",
-          "description": "Qwen3.6 35B MoE I-Compact @131K — producao cafe.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "qwen3.6-35b-a3b-heretic-cafe:think",
-          "name": "Qwen 3.6 35B Heretic Long Thinking",
-          "description": "Qwen3.6 35B MoE I-Compact @131K — producao cafe.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "qwen3.6-35b-a3b-heretic:think",
-          "name": "Qwen 3.6 35B A3B (Thinking)",
-          "description": "Qwen3.6-35B-A3B com enable_thinking: true.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 102400,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.9,
-            "top_k": 20
-          }
-        },
-        // DISABLED Oct 3 2026: GGUF removido (pedido user); fragment em _disabled/
-        // {
-        // "id": "qwen3.8-4b-heretic",
-        // "name": "Qwen3.8 4B Heretic",
-        // "description": "Distill Qwen3.8 destilado na arq qwen35, uncensored (Heretic).",
-        // "reasoning": true,
-        // "input": [
-        // "text"
-        // ],
-        // "contextWindow": 131072,
-        // "maxTokens": 32768
-        // },
-          "name": "Qwen3.8 4B Heretic",
-          "description": "Distill Qwen3.8 destilado na arq qwen35, uncensored (Heretic).",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        // DISABLED Oct 3 2026: GGUF removido (pedido user); fragment em _disabled/
-        // {
-        // "id": "qwen3.8-4b-heretic:think",
-        // "name": "Qwen3.8 4B Heretic Thinking",
-        // "description": "Distill Qwen3.8 destilado na arq qwen35, uncensored (Heretic).",
-        // "reasoning": true,
-        // "input": [
-        // "text"
-        // ],
-        // "contextWindow": 131072,
-        // "maxTokens": 32768
-        // },
-          "name": "Qwen3.8 4B Heretic Thinking",
-          "description": "Distill Qwen3.8 destilado na arq qwen35, uncensored (Heretic).",
           "reasoning": true,
           "input": [
             "text"
@@ -587,6 +410,115 @@
           ],
           "contextWindow": 131072,
           "maxTokens": 32768
+        },
+        {
+          "id": "ornith-1.5-35b-heretic",
+          "name": "Ornith 1.5 35B Heretic",
+          "description": "Heretic Tiel (SC117 KL 0.0105 + Sharp v22.5.0) OFICIAL no cafe-llama.cpp 0.74 (-cmoe): ~30 t/s, RAM evictável, ctx 200K. Visão via mmproj BF16.",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 200000,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20
+          }
+        },
+        {
+          "id": "ornith-1.5-35b-heretic:think",
+          "name": "Ornith 1.5 35B Heretic (Thinking)",
+          "description": "Heretic Tiel (SC117 KL 0.0105 + Sharp v22.5.0) OFICIAL no cafe-llama.cpp 0.74 (-cmoe): ~30 t/s, RAM evictável, ctx 200K. Visão via mmproj BF16.",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 200000,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20
+          }
+        },
+        {
+          "id": "qwen3.6-35b-a3b-heretic",
+          "name": "Qwen 3.6 35B Heretic",
+          "description": "Heretic qwen3.6 (llmfan46 KL 0.0015) OFICIAL no cafe-llama.cpp 0.74 (-cmoe, Turbo KV): ctx 131K, RAM evictável. Visão via mmproj Q8.",
+          "reasoning": false,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20
+          }
+        },
+        {
+          "id": "qwen3.6-35b-a3b-heretic:think",
+          "name": "Qwen 3.6 35B Heretic (Thinking)",
+          "description": "Heretic qwen3.6 (llmfan46 KL 0.0015) OFICIAL no cafe-llama.cpp 0.74 (-cmoe, Turbo KV): ctx 131K, RAM evictável. Visão via mmproj Q8.",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20
+          }
+        },
+        {
+          "id": "qwen3-coder-30b-fast",
+          "name": "Qwen 3 Coder 30B Fast",
+          "description": "Qwen3-Coder-30B no ik_llama (-fast, -n-cpu-moe 48): baseline APEX ik, pico maior. Bench N=5 planejado.",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "k2-horizon-36b",
+          "name": "K2-Horizon MoVA 36B",
+          "description": "IFM K2-Horizon-MoVA-36B (APEX-Mini 14.74GB) no ik_llama — MoVA value-experts, arch k2-horizon (ik-only). Reasoning model.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.7,
+            "top_p": 0.95
+          }
+        },
+        {
+          "id": "k2-horizon-36b:think",
+          "name": "K2-Horizon MoVA 36B Thinking",
+          "description": "IFM K2-Horizon-MoVA-36B (APEX-Mini 14.74GB) no ik_llama — MoVA value-experts, arch k2-horizon (ik-only). Reasoning model.",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.7,
+            "top_p": 0.95
+          }
         }
       ]
     }

@@ -374,13 +374,14 @@ AI assistant using local llama-swap models. The endpoint points to
 the local llama-swap fleet.
 
 Models available:
-- =ornith-1.5-35b= (35B MoE A3B, agentic coding, flagship)
-- =qwen3.8-27b= (27B dense 1-bit, DeltaNet linear attention, VLM)
-- =qwen3.6-35b-a3b= (35B MoE A3B, coding + vision, tools)
-- =qwen3.5-9b= / =qwen3.5-4b= (light, multimodal)
+- =ornith-1.5-35b-heretic= (35B MoE A3B, abliterated, agentic coding, flagship, 200K)
+- =qwen3.6-35b-a3b-heretic= (35B MoE A3B, abliterated, coding + vision, tools)
+- =k2-horizon-36b= (36B-A4B MoVA, heavy reasoning seat, ik-only)
+- =qwen3-coder-30b= / =qwen3-coder-30b-fast= (coding)
+- =qwen3.5-4b= (light, multimodal)
 - =lfm2.5-2.6b= (lightweight, fast)
 
-All models support =:think= variants for reasoning mode.
+All general models support =:think= variants for reasoning mode.
 
 #+begin_src emacs-lisp
 ;; --- Configuration: adjust this IP as needed ---
@@ -402,69 +403,69 @@ All models support =:think= variants for reasoning mode.
 
   ;; Register local models in llm-models to avoid warnings.
   (llm-models-add
-   :name "ornith-1.5-35b"
-   :symbol 'ornith-1.5-35b
+   :name "ornith-1.5-35b-heretic"
+   :symbol 'ornith-1-5-35b-heretic
+   :capabilities '(tool-use reasoning json-response)
+   :context-length 200000
+   :regex "ornith-1.5-35b-heretic")
+  (llm-models-add
+   :name "qwen3.6-35b-a3b-heretic"
+   :symbol 'qwen36-35b-a3b-heretic
    :capabilities '(tool-use reasoning json-response)
    :context-length 131072
-   :regex "ornith-1.5-35b")
+   :regex "qwen3.6-35b-a3b-heretic")
   (llm-models-add
-   :name "qwen3.8-27b"
-   :symbol 'qwen3.8-27b
-   :capabilities '(tool-use reasoning json-response)
-   :context-length 65536
-   :regex "qwen3.8-27b")
-  (llm-models-add
-   :name "qwen3.6-35b-a3b"
-   :symbol 'qwen3.6-35b-a3b
+   :name "k2-horizon-36b"
+   :symbol 'k2-horizon-36b
    :capabilities '(tool-use reasoning json-response)
    :context-length 131072
-   :regex "qwen3.6-35b-a3b")
+   :regex "k2-horizon-36b")
   (llm-models-add
-   :name "qwen3.5-9b"
-   :symbol 'qwen3.5-9b
-   :capabilities '(tool-use reasoning json-response)
+   :name "qwen3-coder-30b-fast"
+   :symbol 'qwen3-coder-30b-fast
+   :capabilities '(tool-use json-response)
    :context-length 131072
-   :regex "qwen3.5-9b")
+   :regex "qwen3-coder-30b-fast")
   (llm-models-add
    :name "qwen3.5-4b"
-   :symbol 'qwen3.5-4b
+   :symbol 'qwen3-5-4b
    :capabilities '(tool-use reasoning json-response)
    :context-length 131072
    :regex "qwen3.5-4b")
   (llm-models-add
    :name "lfm2.5-2.6b"
-   :symbol 'lfm2.5-2.6b
+   :symbol 'lfm2-5-2-6b
    :capabilities '(tool-use reasoning json-response)
    :context-length 131072
    :regex "lfm2.5-2.6b")
 
   (setopt ellama-naming-scheme 'ellama-generate-name-by-llm)
 
-  ;; Main provider: Ornith 1.5 (flagship, local llama-swap)
+  ;; Main provider: Ornith 1.5 Heretic (flagship, local llama-swap)
   (setopt ellama-provider
           (make-llm-openai-compatible
-           :chat-model "ornith-1.5-35b:think"
+           :chat-model "ornith-1.5-35b-heretic:think"
            :url my-llama-swap-endpoint))
 
   ;; Coding provider: same as main
   (setopt ellama-coding-provider
           (make-llm-openai-compatible
-           :chat-model "ornith-1.5-35b:think"
+           :chat-model "ornith-1.5-35b-heretic:think"
            :url my-llama-swap-endpoint))
 
   ;; Selectable providers (all local, via llama-swap)
   (setopt ellama-providers
-	  '(("Ornith 1.5 35B" (make-llm-openai-compatible
-		              :chat-model "ornith-1.5-35b:think"
+	  '(("Ornith 1.5 35B Heretic" (make-llm-openai-compatible
+		              :chat-model "ornith-1.5-35b-heretic:think"
 		              :url my-llama-swap-endpoint))
-	    ("Qwen 3.8 27B" (make-llm-openai-compatible
-		             :chat-model "qwen3.8-27b:think"
+	    ("K2-Horizon 36B" (make-llm-openai-compatible
+		             :chat-model "k2-horizon-36b:think"
 		             :url my-llama-swap-endpoint))
-	    ("Qwen 3.6 35B" (make-llm-openai-compatible
-		            :chat-model "qwen3.6-35b-a3b:think"
+	    ("Qwen 3.6 35B Heretic" (make-llm-openai-compatible
+		            :chat-model "qwen3.6-35b-a3b-heretic:think"
 		            :url my-llama-swap-endpoint))
-	    ("Qwen 3.5 9B" (make-llm-openai-compatible
-		            :chat-model "qwen3.5-9b:think"
+	    ("Qwen 3 Coder 30B Fast" (make-llm-openai-compatible
+		            :chat-model "qwen3-coder-30b-fast"
 		            :url my-llama-swap-endpoint))
 	    ("Qwen 3.5 4B" (make-llm-openai-compatible
 		            :chat-model "qwen3.5-4b:think"

@@ -98,7 +98,7 @@ tools = true
 [models."qwen3.6-35b-a3b-heretic"]
 provider = "llama-swap"
 model_id = "qwen3.6-35b-a3b-heretic"
-num_ctx = 102400
+num_ctx = 131072
 temperature = 0.6
 top_p = 0.85
 top_k = 20
@@ -108,7 +108,7 @@ tools = true
 [models."qwen3.6-35b-a3b-heretic:think"]
 provider = "llama-swap"
 model_id = "qwen3.6-35b-a3b-heretic:think"
-num_ctx = 102400
+num_ctx = 131072
 temperature = 0.6
 top_p = 0.9
 top_k = 20
@@ -382,8 +382,8 @@ num_ctx = 1048576
 thinking = true
 [models."ornith-1.5-35b"]
 provider = "llama-swap"
-model_id = "ornith-1.5-35b:think"
-num_ctx = 131072
+model_id = "ornith-1.5-35b-heretic:think"
+num_ctx = 200192
 temperature = 0.6
 top_p = 0.95
 top_k = 20
@@ -462,5 +462,16 @@ tools = true
 provider = "llama-swap"
 model_id = "twil-lm3-pro:think"
 num_ctx = 131072
+thinking = true
+tools = true
+
+# --- K2-HORIZON 36B (ik, MoVA; raciocinio pesado; 17.5 t/s decode @8K) ---
+
+[models."k2-horizon-36b"]
+provider = "llama-swap"
+model_id = "k2-horizon-36b:think"
+num_ctx = 131072
+temperature = 0.7
+top_p = 0.95
 thinking = true
 tools = true
