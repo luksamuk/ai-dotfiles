@@ -85,6 +85,8 @@ FORCE_NSFW_LORA_IDS=""   # --force-nsfw-loras "1,2,3"
 TURBO=false
 TURBO_STEPS=8                       # 8 (o ref2v lightx2v v1.0 é treinado p/ 8 steps, shift 6)
 H3_PROFILE=5                        # Profile Wan2GP (5=VeryLowRAM_LowVRAM block-by-block; 4=grupos maiores, 2=RAM cache)
+SIDNEY=false
+SIDNEY_FILE="MM-H3 - Sydney Sweeney.safetensors"  # easter egg: ator de referência
 TURBO_STRENGTH="1.0"                # lightx2v recomenda 1.0
 # Único turbo compatível com o pruned Q4 (full-rank = MOSAICO — doutrina 30/09):
 TURBO_FILE="minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
@@ -254,6 +256,7 @@ while [[ $# -gt 0 ]]; do
     --facial) FACIAL=true; shift ;;
     --facial-strength) FACIAL=true; FACIAL_STRENGTH="$2"; shift 2 ;;
     --facial-file) FACIAL=true; FACIAL_FILE_OVERRIDE="$2"; shift 2 ;;
+    --sidney) SIDNEY=true; shift ;;  # easter egg: ator de referência (MM-H3 Sydney Sweeney)
     --no-nafasp) NAFASP=false; shift ;;
     --nafasp) NAFASP=true; shift ;;
     --nafasp-strength) NAFASP=true; NAFASP_STRENGTH="$2"; shift 2 ;;
@@ -339,6 +342,7 @@ Opções gerais:
                      pruned Q4 — full-rank 768p = MOSAICO; ver doutrina 30/09)
   --turbo-strength N  Força do LoRA Turbo (default: 1.0, lightx2v recomenda 1.0)
   --turbo-file NOME   Override do LoRA Turbo (default: fl2v rank-21 resized)
+  --sidney            Sidney Sweeney.
   --facial            Ativa LoRA Facial Realism (close-up de rosto: poros, textura
                      de pele, micro-expressões). Empilha com --turbo. Trigger word
                      "Facial Realism" é injetada no prompt automaticamente
@@ -1501,6 +1505,24 @@ if [[ ${#LORA_RAW[@]} -gt 0 ]]; then
   LORA_DISPLAY=""
   for i in "${!LORA_NAMES[@]}"; do LORA_DISPLAY+="${LORA_NAMES[$i]}@${LORA_MULTS[$i]}  "; done
   echo "=== LoRas explícitas: $LORA_DISPLAY ==="
+fi
+
+# ── Easter egg: --sidney (ator de referência; fora do catálogo NSFW) ──────
+SIDNEY_DISPLAY=""
+if [[ "$SIDNEY" == true ]]; then
+  SIDNEY_PATH="$WAN2GP_DIR/loras/minimax_h3/$SIDNEY_FILE"
+  if [[ ! -f "$SIDNEY_PATH" ]]; then
+    echo "Aviso: easter egg indisponível — $SIDNEY_FILE ausente no catálogo. Run segue sem."
+    SIDNEY=false
+  else
+    LORA_NAMES+=("MM-H3 - Sydney Sweeney")
+    LORA_MULTS+=("0.8")
+    LORAS_JSON=$(printf '%s\n' "${LORA_NAMES[@]}" | python3 -c "import json,sys; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))")
+    LORAS_MULTS_JSON=$(printf '%s\n' "${LORA_MULTS[@]}" | python3 -c "import json,sys; print(json.dumps([m.strip() for m in sys.stdin if m.strip()]))")
+    LORA_DISPLAY="${LORA_DISPLAY}MM-H3 - Sydney Sweeney@0.8  "
+    SIDNEY_DISPLAY="=== Sidney Sweeney: LoRA de ator injetado @0.8 ==="
+    echo "$SIDNEY_DISPLAY"
+  fi
 fi
 
 if [[ "$NAFASP" == true && "$FACIAL" == true ]]; then
