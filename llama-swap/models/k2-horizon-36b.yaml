@@ -1,0 +1,83 @@
+# -------------------------------------------
+# K2-HORIZON-MOVA-36B-A4B — RTX 3050 6GB (APEX-Mini, ik_llama) — REATIVAÇÃO 05/10
+# IK-ONLY: cafe-llama.cpp NÃO tem arch k2-horizon (sem suporte no horizonte —
+#   nem arch, nem port em andamento). Handle limpo (sem sufixo: não há coexistência).
+# Mudanças vs fragment antigo (16/09):
+#   - Quant: Q3_K_M abenzerps (17GB) -> APEX-Mini VladHong (14.74GB, SHA256
+#     A0B4FEBE2745AF83434B99672288C7B20E7BC47F950ACDB5DC250E7C74D233C4) — perfil
+#     K2-shaped (Q3_K edges, IQ2_S middle, shared/attn precisos), imatrix multilingual.
+#   - Backend: kassane-ik fork (obsoleto, PR #2435 era novo) -> ik_llama.cpp UPSTREAM
+#     com 18 commits de K2 opt (full support #2466, tool grammar #2479, bugfix #2490,
+#     graph opt #2496, CPU opt #2504). Clone local dad2cb3e (24/09) já tem tudo.
+#   - Hadamard K/V: seguia REJEITADO (glitches deterministicos no smoke 16/09, com o
+#     build NOVO de 4 dias de vida). Teste A/B na reativação: primeiro SEM hadamard
+#     (fragile), re-testar hadamard após validar baseline sadio.
+#   - MoVA: value-experts residentes na GPU (attn_v_exps ~3.2GB @Q3 profile; Mini
+#     pode ser menor — CONFERIR no primeiro load via nvidia-smi).
+# Manual mapping (--fit FAIL nesta arch): FFN experts + tok_embd CPU pinned;
+#   MoVA + output na GPU; KV q4_0 em RAM (~49KB/token, 48 layers).
+# GGML_CUDA_ENABLE_UNIFIED_MEMORY=1 = OOM insurance ONLY (UMA como path primario
+#   roda 8-10x mais lento em MoE: page migration vs pinned copies).
+# Samplers: 0.7/0.95; model-card temp 1.0 quebrou leitura agentic em Sep (London->Tokyo).
+# Reasoning: thinking -> reasoning_content (--reasoning-format deepseek), budget
+#   16384 ceiling; vendor pede effort high mas 32K+ output queima wall clock.
+# Claims vendor (AA): TB2.1 58.6, tau3 26.8, GPQA-D 80.8, HLE 25.2 — régua local dirá.
+# -------------------------------------------
+"k2-horizon-36b":
+  name: "K2-Horizon MoVA 36B"
+  description: "IFM K2-Horizon-MoVA-36B-A4B (linhagem LLM360/MBZUAI, NAO Kimi K2) em APEX-Mini 14.74GB. MoE 36B (100 experts top-8) + MoVA (value-experts no caminho de V). Arch k2-horizon — ik-only (cafe não tem suporte). Reasoning model, effort high, budget 16384."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-APEX-Mini.gguf
+    -ngl 99
+    --override-tensor "ffn_gate_exps=CPU,ffn_down_exps=CPU,ffn_up_exps=CPU,tok_embd=CPU"
+    --no-kv-offload
+    --ctx-size 131072
+    --temp 0.7
+    --top-p 0.95
+    --reasoning on
+    --reasoning-format deepseek
+    --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
+    --jinja
+    --parallel 1
+    --parallel-tool-calls
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --flash-attn auto
+    --ubatch-size 256
+    --reasoning-budget 16384
+    --reasoning-budget-message "Now answer directly."
+    --metrics
+  env:
+    - "GGML_CUDA_ENABLE_UNIFIED_MEMORY=1"
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.95
+      "${MODEL_ID}:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.7
+        top_p: 0.95
+  ttl: 1200
+  health_check_timeout: 900
+  capabilities:
+    in:
+      - 'text'
+    out:
+      - 'text'
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "14.74 GB (APEX-Mini, imatrix K2-shaped)"
+    context: "1K-131K (modelo suporta 524K nativo; teto da frota; KV q4_0 ~6.4GB em RAM)"
+    vram_usage: "medido 05/10 bench: 5.0GB VRAM (MoVA+attn na GPU, experts CPU) + ~14GB RAM pinned; decode 17.5 t/s @8K SEM desktop; NO_PINNED quebra sampling (fatal), UMA inútil; override attn_v_exps=CUDA0: 0 ganho + fatal llama-sampling.cpp:745 Failed to sample token (pos kv-cache rollback, logits mortos) — config final é esta"
+    source: "VladHong/K2-Horizon-MoVA-36B-A4B-APEX-Mini-GGUF (SHA256 A0B4FEBE...C74D233C4)"
+    kv_cache: "q4_0/q4_0"
+    features:
+      completion: true

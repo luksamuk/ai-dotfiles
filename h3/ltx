@@ -1,0 +1,246 @@
+#!/usr/bin/env bash
+# ltx CLI — atalho pra geração de vídeo LTX-2.3 22B (build ChrisColeTech v1.4 uncensored)
+# Espelho do h3, adaptado ao pipeline LTX (3 fases, 8 steps, audio nativo 48kHz).
+# h3 fica PRESERVADO (historicon) — este é o script novo do motor padrão.
+set -uo pipefail
+
+export PATH="$HOME/.local/bin:$PATH"
+WAN2GP_DIR="$HOME/git/Wan2GP"
+VENV="$WAN2GP_DIR/.venv"
+OUTPUT_DIR="$PWD"   # vídeo nasce no pwd do comando (fallback /tmp/wan2gp_output se não gravável)
+MODEL_TYPE="ltx2_22B_uncensored_v14"
+MODE="i2av"          # i2av=I2AV LTX (v14) | ref=MSR (ltx2_22B_msr_local) | t2v
+PROFILE=5
+# Fallback de output: se o pwd não for gravável, cai pra /tmp/wan2gp_output
+if ! mkdir -p "$PWD" 2>/dev/null || ! touch "$PWD/.ltx_write_test" 2>/dev/null; then
+  OUTPUT_DIR="/tmp/wan2gp_output"
+else
+  rm -f "$PWD/.ltx_write_test"
+fi
+
+# ── Defaults ──────────────────────────────────────────────────────────────
+STEPS=8            # v1.4 distilled: 8=padrão, 4=rapido, 16=max
+FRAMES=121         # ~5s @24fps
+GUIDANCE=3.5       # 1.0 sensual / 3.5 geral / 3.8 cinema (card oficial)
+RESOLUTION="832x448"
+SEED=$((RANDOM % 1000000000))
+ENHANCE=false
+# Fleet config: default de enhance vem de ~/.local/share/fleet/enhance-models.yaml
+# (chave ltx). Parser awk puro (sem yq); sem o arquivo, fallback inline.
+LTX_FLEET_CFG="$HOME/.local/share/fleet/enhance-models.yaml"
+LLAMA_SWAP_URL="http://localhost:12434/v1/chat/completions"
+read_fleet_ltx() { # $1=campo → imprime valor
+  awk -v field="$1" '
+    /^ltx:/ {ins=1; next}
+    ins && $0 ~ "^  "field":" {sub("^[[:space:]]*"field":[[:space:]]*", ""); sub(/[[:space:]]*#.*$/, ""); print; exit}
+    ins && /^[^ #]/ && !/^  / {ins=0}
+  ' "$LTX_FLEET_CFG" 2>/dev/null
+}
+ENHANCE_WITH="$(read_fleet_ltx model)"
+[[ -z "$ENHANCE_WITH" ]] && ENHANCE_WITH="qwen3.6-35b-a3b-heretic"
+LTX_ENHANCE_FALLBACK="$(read_fleet_ltx fallback)"
+[[ -z "$LTX_ENHANCE_FALLBACK" ]] && LTX_ENHANCE_FALLBACK="qwen3.6-35b-a3b-heretic"
+SHOW_ENHANCED=""
+REF_IMAGES=()
+IMAGE_START=""
+IMAGE_END=""
+IMAGE_PROMPT_TYPE="S"
+NSFW=false
+NSFW_STRENGTH=1.0
+DEFAULT_NSFW_LORAS=("LTX2.3-Rogue-Missionary-Cowgirl-v3" "LTX2-i2v-SexThrust" "LTX2.3-NSFWMOTION_00750" "LTX2.3_Crisp_Enhance")
+NSFW_LORAS=()
+LORAS=()
+DRY_RUN=0
+
+usage() {
+  cat <<EOF
+ltx — LTX-2.3 22B (v1.4 uncensored DMD) no Wan2GP
+
+  ltx "prompt"                           # T2V com audio nativo
+  ltx "prompt" --image-start frame.png   # I2AV: imagem trava composição
+  ltx "prompt" --image-end frame.png     # termina o vídeo naquela imagem
+  ltx "prompt" --nsfw                    # pilha NSFW: Rogue-Cowgirl + SexThrust + NSFWMotion @1.0
+  ltx "prompt" --lora NOME@0.8           # LoRA extra empilhada
+
+  --frames N            Frames (default 121 ~=5s @24fps; 241~=10s)
+  --steps N             Steps (default 8; 4=rapido; NÃO passar de 16 no distilled)
+  --seed N              Seeda fixa
+  --guidance N          CFG (default 3.5; 1.0 sensual / 3.8 cinema)
+  --resolution WxH      default 832x448
+  --enhance             Prompt via heretic (llama-swap; SÓ com GPU livre!)
+  --show-enhanced       Mostra o prompt expandido
+  --nsfw                Pilha NSFW (default as 3 LoRAs da sessão 29/09)
+  --nsfw-lora NOME@N    Sobrescreve a pilha NSFW (repeatable)
+  --lora NOME@N         LoRA explícita (repeatable)
+  --image-start P       Primeiro frame (I2AV)
+  --image-end P         Último frame (TEV)
+  --dry-run             Valida sem gerar
+EOF
+  exit 1
+}
+
+resolve_lora() { # basename do argumento -> arquivo existente em loras/ltx2
+  local input="$1"
+  for cand in "$WAN2GP_DIR/loras/ltx2/${input}.safetensors" "$WAN2GP_DIR/loras/ltx2/${input}"; do
+    [[ -f "$cand" ]] && { echo "$cand"; return 0; }
+  done
+  echo ""
+}
+
+# ── Arg parsing ───────────────────────────────────────────────────────────
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --) shift; PROMPT="${PROMPT:-} $*"; break ;;
+    -h|--help) usage ;;
+    --image-start) IMAGE_START="$(readlink -m "$PWD/$2")"; shift 2 ;;
+    --image-end) IMAGE_END="$(readlink -m "$PWD/$2")"; shift 2 ;;
+    --frames) FRAMES="$2"; shift 2 ;;
+    --steps) STEPS="$2"; shift 2 ;;
+    --seed) SEED="$2"; shift 2 ;;
+    --guidance) GUIDANCE="$2"; shift 2 ;;
+    --resolution) RESOLUTION="$2"; shift 2 ;;
+    --enhance) ENHANCE=true; shift ;;
+    --enhance-with) ENHANCE_WITH="$2"; shift 2 ;;
+    --show-enhanced) SHOW_ENHANCED=true; shift ;;
+    --nsfw) NSFW=true; shift ;;
+    --nsfw-lora) NSFW_LORAS+=("$2"); shift 2 ;;
+    --nsfw-strength) NSFW_STRENGTH="$2"; shift 2 ;;
+    --lora) LORAS+=("$2"); shift 2 ;;
+    --output|-o|--output-dir)
+      case "$2" in
+        /*) OUTPUT_DIR="$(readlink -m "$2")" ;;
+        *)  OUTPUT_DIR="$(readlink -m "$PWD/$2")" ;;
+      esac
+      shift 2 ;;
+    --dry-run) DRY_RUN=1; shift ;;
+    -*) echo "flag desconhecida: $1"; usage ;;
+    *) PROMPT="$1"; shift ;;
+  esac
+done
+[[ -z "$PROMPT" ]] && { echo "prompt obrigatório"; usage; }
+
+# ── NSFW pilha (mesma da sessão v9b validada) ─────────────────────────────
+declare -a ACTIVATED_LORAS=()
+declare -a LORA_MULTS=()
+if [[ "$NSFW" == true ]]; then
+  [[ ${#NSFW_LORAS[@]} -eq 0 ]] && NSFW_LORAS=("${DEFAULT_NSFW_LORAS[@]}")
+  for key in "${NSFW_LORAS[@]}"; do
+    file=$(resolve_lora "$key")
+    if [[ -n "$file" ]]; then
+      ACTIVATED_LORAS+=("$(basename "$file")")
+      LORA_MULTS+=("$NSFW_STRENGTH")
+    else
+      echo "LoRA NSFW '$key' não encontrada em loras/ltx2/ — skipping" >&2
+    fi
+  done
+fi
+# LoRAs explícitas --lora NOME@F
+for spec in "${LORAS[@]}"; do
+  name="$spec"; mult="1.0"
+  if [[ "$spec" == *@* ]]; then name="${spec%%@*}"; mult="${spec##*@}"; fi
+  file=$(resolve_lora "$name")
+  if [[ -n "$file" ]]; then
+    ACTIVATED_LORAS+=("$(basename "$file")")
+    LORA_MULTS+=("$mult")
+  else
+    echo "LoRA '$name' não encontrada — skipping" >&2
+  fi
+done
+
+LORAS_JSON=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1:]))" "${ACTIVATED_LORAS[@]}" 2>/dev/null || echo '[]')
+MULTS_JSON=$(python3 -c "import json,sys; print(json.dumps([float(x) for x in sys.argv[1:]]))" "${LORA_MULTS[@]}" 2>/dev/null || echo '[]')
+
+export LTX_PROMPT="$PROMPT"
+export LTX_RESOLUTION="$RESOLUTION"
+export LTX_FRAMES="$FRAMES"
+export LTX_STEPS="$STEPS"
+export LTX_SEED="$SEED"
+export LTX_GUIDANCE="$GUIDANCE"
+export LTX_MODEL_TYPE="$MODEL_TYPE"
+export LTX_IMAGE_START="$IMAGE_START"
+export LTX_IMAGE_END="$IMAGE_END"
+export LTX_IMAGE_PROMPT_TYPE="$IMAGE_PROMPT_TYPE"
+export LTX_LORAS_JSON="$LORAS_JSON"
+export LTX_MULTS_JSON="$MULTS_JSON"
+export LTX_SETTINGS_FILE="$(mktemp /tmp/ltx_settings_XXXX.json)"
+
+# ── Enhance com VISION automática (relay) ─────────────────────────────────
+# Se --enhance: checa capability do modelo; tem vision → imagens inline;
+# sem vision → lfm2.5-vl-3b descreve → descrição no media context. Nunca ciego.
+if [[ "$ENHANCE" == true ]]; then
+  # ── Fleet resolve: valida contra /v1/models; fallback automático (o relay nunca
+  # passa cegamente, então só preciso trocar o handle antes do relay) ──
+  LIVE_MODELS=$(curl -s --max-time 5 "${LLAMA_SWAP_URL%/v1/chat/completions}/v1/models" 2>/dev/null)
+  if ! echo "$LIVE_MODELS" | grep -q "\"$ENHANCE_WITH\"\|\"${ENHANCE_WITH}:think\""; then
+    echo "=== Fleet: '$ENHANCE_WITH' indisponível — fallback '$LTX_ENHANCE_FALLBACK' ==="
+    ENHANCE_WITH="$LTX_ENHANCE_FALLBACK"
+  fi
+  RELAY_IMAGES=()
+  [[ -n "$IMAGE_START" ]] && RELAY_IMAGES+=("$IMAGE_START")
+  [[ -n "$IMAGE_END" ]] && RELAY_IMAGES+=("$IMAGE_END")
+  RELAY_OUT=$(python3 ~/.local/bin/ltx_prompt_relay.py \
+    --model "$ENHANCE_WITH" \
+    --system "$(grep -Po "(?<=LTX_I2AV_SYSTEM_PROMPT = \"\"\")[^&]+" /home/alchemist/git/Wan2GP/models/minimax_h3/prompt_enhancer.py 2>/dev/null || echo 'You are a professional prompt writer for LTX-2.3 I2AV with synchronized stereo audio. Continue from the first frame with motion doctrine: one strong physical verb per beat, direction+speed, physical adjectives for intensity. Explicit blunt vocabulary. No gap between bodies. End with Audio: sentence.')" \
+    --prompt "$PROMPT" \
+    $(printf -- '--image %s ' "${RELAY_IMAGES[@]}") \
+    $([[ "$NSFW" == true ]] && echo --nsfw) \
+    $([[ -n "$SHOW_ENHANCED" ]] && echo --show-enhanced) 2>/tmp/ltx_relay.err)
+  cat /tmp/ltx_relay.err >&2
+  if [[ -n "$RELAY_OUT" ]]; then
+    echo "=== Prompt enhanced via $ENHANCE_WITH (vision: $(head -1 /tmp/ltx_relay.err)) ==="
+    PROMPT="$RELAY_OUT"
+  fi
+fi
+
+SETTINGS_FILE="$LTX_SETTINGS_FILE"
+python3 -c "
+import json, os
+s = {
+    'model_type': os.environ['LTX_MODEL_TYPE'],
+    'prompt': os.environ['LTX_PROMPT'],
+    'resolution': os.environ['LTX_RESOLUTION'],
+    'video_length': int(os.environ['LTX_FRAMES']),
+    'num_inference_steps': int(os.environ['LTX_STEPS']),
+    'seed': int(os.environ['LTX_SEED']),
+    'guidance_scale': float(os.environ['LTX_GUIDANCE']),
+    'output_filename': '{date(YYYYMMDD_HHmmss)}_ltx_{seed}',
+}
+if os.environ.get('LTX_IMAGE_START'): s['image_start'] = os.environ['LTX_IMAGE_START']
+if os.environ.get('LTX_IMAGE_END'): s['image_end'] = os.environ['LTX_IMAGE_END']
+if s.get('image_start') or s.get('image_end'): s['image_prompt_type'] = os.environ['LTX_IMAGE_PROMPT_TYPE']
+loras = json.loads(os.environ.get('LTX_LORAS_JSON','[]'))
+mults = json.loads(os.environ.get('LTX_MULTS_JSON','[]'))
+if loras:
+    s['activated_loras'] = loras
+    s['loras_multipliers'] = [mults[i] if i < len(mults) else 1.0 for i in range(len(loras))]
+json.dump(s, open(os.environ.get('LTX_SETTINGS_FILE',''), 'w'), indent=2, ensure_ascii=False)
+"
+mkdir -p "$OUTPUT_DIR" 2>/dev/null
+echo "=== ltx ==="
+echo "Prompt: $PROMPT"
+echo "Modo: $([[ -n "$IMAGE_START" ]] && echo I2AV || echo T2V) | $FRAMES frames | $STEPS steps | $RESOLUTION | CFG $GUIDANCE | seed $SEED"
+echo "LoRAs: ${ACTIVATED_LORAS[*]:-nenhuma}"
+echo "Output: $OUTPUT_DIR"
+if [[ "$DRY_RUN" == "1" ]]; then
+  echo "=== DRY RUN — settings ==="
+  cat "$SETTINGS_FILE"
+  echo ""
+  exit 0
+fi
+
+# ── Retry loop (resiliente a restarts do gateway/SIGTERM) ────────────────
+cd "$WAN2GP_DIR"
+for i in 1 2 3; do
+  .venv/bin/python wgp.py --process "$SETTINGS_FILE" --profile $PROFILE --output-dir "$OUTPUT_DIR" --verbose 2 >> "$OUTPUT_DIR/.ltx_run.log" 2>&1
+  c=$?
+  echo "attempt $i EXIT $c" >> "$OUTPUT_DIR/.ltx_run.log"
+  [ $c -eq 0 ] && break
+  sleep 30
+done
+
+# Copiar o mais recente pra audio_cache (entrega via Hermes)
+latest=$(ls -t "$OUTPUT_DIR"/*.mp4 2>/dev/null | head -1)
+[[ -n "$latest" && "$OUTPUT_DIR" != "$HOME/.hermes/audio_cache" ]] && cp "$latest" "$HOME/.hermes/audio_cache/ltx_$(date +%Y%m%d_%H%M%S).mp4" && echo "Copia Hermes: $HOME/.hermes/audio_cache"
+[[ -n "$latest" ]] && echo "Video em: $latest"
+rm -f "$SETTINGS_FILE"
+exit $c

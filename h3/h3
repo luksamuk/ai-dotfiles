@@ -757,8 +757,8 @@ fi
 if [[ "$ENHANCE" == true ]]; then
   # ── Fleet resolve: valida o default contra a frota viva; fallback se ausente ──
   if [[ -z "$ENHANCE_MODEL" ]]; then
-    if curl -s --max-time 5 "$LLAMA_SWAP_URL/v1/models" 2>/dev/null | grep -q "\"$ENHANCE_DEFAULT\"" \
-       || curl -s --max-time 5 "$LLAMA_SWAP_URL/v1/models" 2>/dev/null | grep -q "\"${ENHANCE_DEFAULT}:think\""; then
+    if curl -s --max-time 5 "${LLAMA_SWAP_URL%/v1/chat/completions}/v1/models" 2>/dev/null | grep -q "\"$ENHANCE_DEFAULT\"" \
+       || curl -s --max-time 5 "${LLAMA_SWAP_URL%/v1/chat/completions}/v1/models" 2>/dev/null | grep -q "\"${ENHANCE_DEFAULT}:think\""; then
       ENHANCE_MODEL="$ENHANCE_DEFAULT"
     else
       ENHANCE_MODEL="$H3_ENHANCE_FALLBACK"
