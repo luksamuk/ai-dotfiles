@@ -17,10 +17,11 @@ lfm2.5-2.6b:
   name: "LFM 2.5 2.6B"
   description: "Liquid AI on-device agentic model. 2.6B dense hybrid with 128K context. Trained with agentic RL inside Hermes Agent. Best-in-class tool use for its size."
   cmd: |
-    ${llama_server} --port ${PORT}
+    env LD_LIBRARY_PATH=${env.HOME}/git/llama.cpp/build/bin ${llama_server} --port ${PORT}
     --model ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-QAD-Q4_0.gguf
     --fit on
     --fit-target ${vram_margin}
+    # server: vanilla 0.6.0 (d81235049, 05/10) — build na mesma pasta que o cafe 0.74
     --fit-ctx 131072
     --ctx-size 131072
     --parallel 2
