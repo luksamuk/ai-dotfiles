@@ -1534,12 +1534,12 @@ if [[ "$TURBO" == true ]]; then
   # da família); FL2VA/T2V usam o FL2V 8-step v1.0 (lightx2v, treinado p/ 8 steps,
   # melhor que esticar o 4-step). Override manual: --turbo-file NOME
   if [[ -z "$TURBO_FILE_OVERRIDE" ]]; then
-    # 05/10: auto por modalidade — o MAIS NOVO de cada linha (user: "coloca fl2v e ref2va no mais novo")
-    # Ref2VA → ref2v 8step v1.0 (mais novo dedicado Ref2VA); FL2VA/T2V/I2V → fl2v 4step v1.2 (mais novo FL2V)
+    # 05/10: PDMD-DMAD assume o slot FL2VA (A/B user: PDMD-4 e PDMD-8 vencem v1.2-4;
+    # v1.2 é steps-locked — @8 steps alucina "sonic peludo"); Ref2VA segue ref2v 8step v1.0
     if [[ "$REF2VA_MODE" == true ]]; then
       TURBO_FILE="minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
     else
-      TURBO_FILE="minimax_h3_fl2v_turbo_4step_v1.2_768p_comfyui_bf16.safetensors"
+      TURBO_FILE="minimax_h3_PDMD_DMAD_4step_r256_add_fro1_turbo_lora.safetensors"
     fi
   else
     TURBO_FILE="$TURBO_FILE_OVERRIDE"
@@ -1550,7 +1550,8 @@ if [[ "$TURBO" == true ]]; then
     echo "Baixe com: hf download lightx2v/Minimax-h3-Turbo minimax_h3_ref2v_turbo_4step_v0.1_bf16.safetensors --local-dir ~/git/Wan2GP/loras/minimax_h3/"
     exit 1
   fi
-  # Turbo requer 4-8 steps — auto por modalidade (ref2v8=8/shift6, fl2v 1.2=4/shift12) se não setado
+  # Turbo requer 4-8 steps — auto por modalidade (ref2v8=8/shift6, PDMD fl2v=4/shift12;
+  # PDMD suporta 6-8 com margem — "possibly more" —, v1.2 era steps-locked e saiu) se não setado
   if [[ "$STEPS" == "50" ]]; then
     if [[ "$REF2VA_MODE" == true ]]; then STEPS=8; else STEPS=4; fi
   fi
