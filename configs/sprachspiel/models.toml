@@ -264,12 +264,6 @@ dimensions = 2048
 # thinking = true
 # REMOVIDO 10/09: glm-5:cloud não existe mais no ollama (substituído por glm-5.1/5.2/5.3)
 
-[models."glm-5.1"]
-provider = "ollama"
-model_id = "glm-5.1:cloud"
-num_ctx = 202752
-thinking = true
-
 [models."glm-5.2"]
 provider = "ollama"
 model_id = "glm-5.2:cloud"
@@ -304,13 +298,7 @@ model_id = "minimax-m3:cloud"
 num_ctx = 524288
 thinking = true
 
-[models."qwen3.5-cloud"]
-provider = "ollama"
-model_id = "qwen3.5:cloud"
-num_ctx = 262144
-thinking = true
-vision = true
-
+# REMOVIDO 06/10: qwen3.5:cloud saiu do ollama
 # [models."qwen3-coder-next"]
 # provider = "ollama"
 # model_id = "qwen3-coder-next:cloud"
@@ -335,9 +323,9 @@ model_id = "nemotron-3-nano:30b-cloud"
 num_ctx = 1048576
 thinking = true
 
-[models."deepseek-v4-flash"]
+[models."deepseek-v4.1-flash"]
 provider = "ollama"
-model_id = "deepseek-v4-flash:0731-cloud"
+model_id = "deepseek-v4.1-flash:cloud"
 num_ctx = 1048576
 thinking = true
 
@@ -363,11 +351,7 @@ num_ctx = 1048576
 thinking = true
 vision = true
 
-[models."deepseek-v4-flash-latest"]
-provider = "ollama"
-model_id = "deepseek-v4-flash:cloud"
-num_ctx = 1048576
-thinking = true
+# REMOVIDO 06/10: deepseek-v4-flash:cloud saiu do ollama (v4.1-flash cobre)
 
 [models."nemotron-3-ultra"]
 provider = "ollama"
