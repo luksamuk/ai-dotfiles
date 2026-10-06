@@ -74,12 +74,13 @@
     reranker: false
     context: 131072
   metadata:
-    size: "14.74 GB (APEX-Mini, imatrix K2-shaped)"
-    context: "1K-131K (modelo suporta 524K nativo; teto da frota; KV q4_0 ~6.4GB em RAM)"
-    vram_usage: "medido 05/10 bench: 5.0GB VRAM (MoVA+attn na GPU, experts CPU) + ~14GB RAM pinned; decode 17.5 t/s @8K SEM desktop; NO_PINNED quebra sampling (fatal), UMA inútil; override attn_v_exps=CUDA0: 0 ganho + fatal llama-sampling.cpp:745 Failed to sample token (pos kv-cache rollback, logits mortos) — config final é esta"
+    size: "~14.7 GB (APEX-Mini)"
+    context: 131072
+    vram_usage: "~5.0 GB VRAM + ~14 GB RAM pinned"
     source: "VladHong/K2-Horizon-MoVA-36B-A4B-APEX-Mini-GGUF (SHA256 A0B4FEBE...C74D233C4)"
     kv_cache: "q4_0/q4_0"
     features:
       completion: true
       tools: true
       thinking: true
+    note: "Reativado 05/10: Q3_K_M abenzerps (17GB) -> APEX-Mini VladHong (imatrix K2-shaped: Q3_K edges, IQ2_S middle, shared/attn precisos). Backend: kassane fork -> ik upstream (18 commits K2 opt: #2466 tools grammar, #2479, #2490, #2496, #2504). Hadamard K/V REJEITADO (glitches determinísticos no smoke; re-testar quando baseline sadio). Manual mapping (--fit FAIL nesta arch): ffn_gate/down/up_exps + tok_embd CPU pinned; MoVA + output na GPU. KV q4_0 ~49KB/token. UMA=OOM insurance ONLY — como path primário roda 8-10x mais lento em MoE. Medido 05/10: decode 17.5 t/s @8K sem desktop / 15.9 com; user re-registro: 92% VRAM + 74% RAM com browser. VENENOS: NO_PINNED quebra sampling (fatal, llama-sampling.cpp:745), override attn_v_exps=CUDA0 = 0 ganho + fatal (MoVA já residente GPU no baseline), UMA primário lento. Samplers 0.7/0.95 (model-card temp 1.0 quebrou leitura agentic em Sep). Reasoning budget 16384 (vendor pede effort high, 32K+ queima wall clock). Quirk tool_choice auto: pode planejar calls em texto e não emitir <ifm|tool_calls> (re-run ou required resolve). Tool parsing: parser PEG dedicado no ik (COMMON_CHAT_FORMAT_PEG_K2_HORIZON) — validado E2E 4/4 calls 05/10. PR ggml-org/llama.cpp#29535 (MoVA no mainline) em revisão — quando mergear, café herda; tracker monitorando."

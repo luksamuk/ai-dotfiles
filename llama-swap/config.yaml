@@ -245,10 +245,11 @@ models:
     name: "LFM 2.5 2.6B"
     description: "Liquid AI on-device agentic model. 2.6B dense hybrid with 128K context. Trained with agentic RL inside Hermes Agent. Best-in-class tool use for its size."
     cmd: |
-      ${llama_server} --port ${PORT}
+      env LD_LIBRARY_PATH=${env.HOME}/git/llama.cpp/build/bin ${llama_server} --port ${PORT}
       --model ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-QAD-Q4_0.gguf
       --fit on
       --fit-target ${vram_margin}
+      # server: vanilla 0.6.0 (d81235049, 05/10) — build na mesma pasta que o cafe 0.74
       --fit-ctx 131072
       --ctx-size 131072
       --parallel 2
@@ -1279,6 +1280,92 @@ models:
         image: false
       note: "Specialized OCR model — use prompts like 'OCR', 'OCR markdown', 'Table Recognition:'. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction."
 # -------------------------------------------
+# K2-HORIZON-MOVA-36B-A4B — RTX 3050 6GB (APEX-Mini, ik_llama) — REATIVAÇÃO 05/10
+# IK-ONLY: cafe-llama.cpp NÃO tem arch k2-horizon (sem suporte no horizonte —
+#   nem arch, nem port em andamento). Handle limpo (sem sufixo: não há coexistência).
+# Mudanças vs fragment antigo (16/09):
+#   - Quant: Q3_K_M abenzerps (17GB) -> APEX-Mini VladHong (14.74GB, SHA256
+#     A0B4FEBE2745AF83434B99672288C7B20E7BC47F950ACDB5DC250E7C74D233C4) — perfil
+#     K2-shaped (Q3_K edges, IQ2_S middle, shared/attn precisos), imatrix multilingual.
+#   - Backend: kassane-ik fork (obsoleto, PR #2435 era novo) -> ik_llama.cpp UPSTREAM
+#     com 18 commits de K2 opt (full support #2466, tool grammar #2479, bugfix #2490,
+#     graph opt #2496, CPU opt #2504). Clone local dad2cb3e (24/09) já tem tudo.
+#   - Hadamard K/V: seguia REJEITADO (glitches deterministicos no smoke 16/09, com o
+#     build NOVO de 4 dias de vida). Teste A/B na reativação: primeiro SEM hadamard
+#     (fragile), re-testar hadamard após validar baseline sadio.
+#   - MoVA: value-experts residentes na GPU (attn_v_exps ~3.2GB @Q3 profile; Mini
+#     pode ser menor — CONFERIR no primeiro load via nvidia-smi).
+# Manual mapping (--fit FAIL nesta arch): FFN experts + tok_embd CPU pinned;
+#   MoVA + output na GPU; KV q4_0 em RAM (~49KB/token, 48 layers).
+# GGML_CUDA_ENABLE_UNIFIED_MEMORY=1 = OOM insurance ONLY (UMA como path primario
+#   roda 8-10x mais lento em MoE: page migration vs pinned copies).
+# Samplers: 0.7/0.95; model-card temp 1.0 quebrou leitura agentic em Sep (London->Tokyo).
+# Reasoning: thinking -> reasoning_content (--reasoning-format deepseek), budget
+#   16384 ceiling; vendor pede effort high mas 32K+ output queima wall clock.
+# Claims vendor (AA): TB2.1 58.6, tau3 26.8, GPQA-D 80.8, HLE 25.2 — régua local dirá.
+# -------------------------------------------
+  "k2-horizon-36b":
+    name: "K2-Horizon MoVA 36B"
+    description: "IFM K2-Horizon-MoVA-36B-A4B (linhagem LLM360/MBZUAI, NAO Kimi K2) em APEX-Mini 14.74GB. MoE 36B (100 experts top-8) + MoVA (value-experts no caminho de V). Arch k2-horizon — ik-only (cafe não tem suporte). Reasoning model, effort high, budget 16384."
+    cmd: |
+      ${ik_llama_server} --port ${PORT}
+      --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-APEX-Mini.gguf
+      -ngl 99
+      --override-tensor "ffn_gate_exps=CPU,ffn_down_exps=CPU,ffn_up_exps=CPU,tok_embd=CPU"
+      --no-kv-offload
+      --ctx-size 131072
+      --temp 0.7
+      --top-p 0.95
+      --reasoning on
+      --reasoning-format deepseek
+      --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
+      --jinja
+      --parallel 1
+      --parallel-tool-calls
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --flash-attn auto
+      --ubatch-size 256
+      --reasoning-budget 16384
+      --reasoning-budget-message "Now answer directly."
+      --metrics
+    env:
+      - "GGML_CUDA_ENABLE_UNIFIED_MEMORY=1"
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.95
+        "${MODEL_ID}:think":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.7
+          top_p: 0.95
+    ttl: 1200
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: "~14.7 GB (APEX-Mini)"
+      context: 131072
+      vram_usage: "~5.0 GB VRAM + ~14 GB RAM pinned"
+      source: "VladHong/K2-Horizon-MoVA-36B-A4B-APEX-Mini-GGUF (SHA256 A0B4FEBE...C74D233C4)"
+      kv_cache: "q4_0/q4_0"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+      note: "Reativado 05/10: Q3_K_M abenzerps (17GB) -> APEX-Mini VladHong (imatrix K2-shaped: Q3_K edges, IQ2_S middle, shared/attn precisos). Backend: kassane fork -> ik upstream (18 commits K2 opt: #2466 tools grammar, #2479, #2490, #2496, #2504). Hadamard K/V REJEITADO (glitches determinísticos no smoke; re-testar quando baseline sadio). Manual mapping (--fit FAIL nesta arch): ffn_gate/down/up_exps + tok_embd CPU pinned; MoVA + output na GPU. KV q4_0 ~49KB/token. UMA=OOM insurance ONLY — como path primário roda 8-10x mais lento em MoE. Medido 05/10: decode 17.5 t/s @8K sem desktop / 15.9 com; user re-registro: 92% VRAM + 74% RAM com browser. VENENOS: NO_PINNED quebra sampling (fatal, llama-sampling.cpp:745), override attn_v_exps=CUDA0 = 0 ganho + fatal (MoVA já residente GPU no baseline), UMA primário lento. Samplers 0.7/0.95 (model-card temp 1.0 quebrou leitura agentic em Sep). Reasoning budget 16384 (vendor pede effort high, 32K+ queima wall clock). Quirk tool_choice auto: pode planejar calls em texto e não emitir <ifm|tool_calls> (re-run ou required resolve). Tool parsing: parser PEG dedicado no ik (COMMON_CHAT_FORMAT_PEG_K2_HORIZON) — validado E2E 4/4 calls 05/10. PR ggml-org/llama.cpp#29535 (MoVA no mainline) em revisão — quando mergear, café herda; tracker monitorando."
+# -------------------------------------------
 # MINICPM5-2B — OpenBMB (Apache-2.0) — quant POLLARD IQ4_XS
 # Dense 2B, LlamaForCausalLM PURO (arch llama) — roda no upstream e no ik
 # sem fork/patch. 42 layers, GQA 16/2, head_dim 128, ctx 131K nativo
@@ -1825,6 +1912,7 @@ matrix:
     # q36hc: MERGED em q36 05/10 (o "-cafe" virou o heretic oficial; o ik é -fast em _disabled/)
     # occ: occamy-1.0  # REMOVED Sep 27 2026 — bench 141.4±4.4 N=5, abaixo do ornith; GGUF deleted 15.4GB; fragment em _removed/
     lag: laguna-xs-2.1
+    k2: k2-horizon-36b  # REATIVADO Oct 5 2026 — APEX-Mini 14.74GB, ik-only (cafe sem arch)
     # k2h: k2-horizon-7b  # REMOVED Sep 16 2026 — errático em chat (idioma/identidade, tool-loop instável); GGUF a decidir; fragment em _removed/
     # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
     # Bonsai 1-bit disabled Aug 2026 — user request
@@ -1884,7 +1972,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(q36 | lag) & (nemb | lfmcol) & qpoll" # orn15 merged no heretic 05/10; q36hc merged em q36
+    heavy: "(q36 | k2 | lag) & (nemb | lfmcol) & qpoll" # k2 reativado 05/10 APEX-Mini; orn15 merged no heretic; q36hc merged em q36
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -1907,6 +1995,7 @@ matrix:
     # orn15: 9  # merged no heretic 05/10
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     q36: 9
+    k2: 9
     qc30: 7
     # occ: 9  # REMOVED Sep 27 2026 — model deleted
     lag: 9
