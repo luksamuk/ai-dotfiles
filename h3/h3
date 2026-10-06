@@ -32,12 +32,27 @@ SECONDS_WANT=""   # --seconds N: conversão pra frames (round half up, 24fps)
 STEPS=50
 SEED=""             # vazio = seed aleatório por geração (0-999999999, range do Wan2GP)
 GUIDANCE=1.0
-FLOW_SHIFT=12.0
+FLOW_SHIFT=6.0
+FLOW_SHIFT_SET=false
 DRY_RUN=""
 WEB=false
 ENHANCE=false
 ENHANCE_MODEL=""
-ENHANCE_DEFAULT="qwen3.6-35b-a3b-heretic"
+# Fleet config: default de enhance vem de ~/.local/share/fleet/enhance-models.yaml
+# (chave h3: model + fallback; vira ornith-1.5-35b-heretic). Parser awk puro
+# (sem yq); sem o arquivo, cai pro fallback inline (qwen3.6-35b-a3b-heretic).
+H3_FLEET_CFG="$HOME/.local/share/fleet/enhance-models.yaml"
+read_fleet_h3() { # $1=campo → imprime valor
+  awk -v field="$1" '
+    /^h3:/ {ins=1; next}
+    ins && $0 ~ "^  "field":" {sub("^[[:space:]]*"field":[[:space:]]*", ""); sub(/[[:space:]]*#.*$/, ""); print; exit}
+    ins && /^[^ #]/ && !/^  / {ins=0}
+  ' "$H3_FLEET_CFG" 2>/dev/null
+}
+ENHANCE_DEFAULT="$(read_fleet_h3 model)"
+[[ -z "$ENHANCE_DEFAULT" ]] && ENHANCE_DEFAULT="qwen3.6-35b-a3b-heretic"
+H3_ENHANCE_FALLBACK="$(read_fleet_h3 fallback)"
+[[ -z "$H3_ENHANCE_FALLBACK" ]] && H3_ENHANCE_FALLBACK="qwen3.6-35b-a3b-heretic"
 ENHANCE_WITH_VISION=false  # --enhance-with-vision: imagens vao inline no pedido de enhance
 RESOLUTION="832x480"
 SHOW_ENHANCED=false
@@ -68,10 +83,11 @@ FORCE_NSFW_LORA_IDS=""   # --force-nsfw-loras "1,2,3"
 # Usar versão ComfyUI-pruned (compatível com Wan2GP). A versão diffusers original
 # tem keys diferentes (transformer_blocks/token_refiner) que o Wan2GP não reconhece.
 TURBO=false
-TURBO_STEPS=4                       # 4 (o rank-21 resized é treinado pra 4)
+TURBO_STEPS=8                       # 8 (o ref2v lightx2v v1.0 é treinado p/ 8 steps, shift 6)
+H3_PROFILE=5                        # Profile Wan2GP (5=VeryLowRAM_LowVRAM block-by-block; 4=grupos maiores, 2=RAM cache)
 TURBO_STRENGTH="1.0"                # lightx2v recomenda 1.0
 # Único turbo compatível com o pruned Q4 (full-rank = MOSAICO — doutrina 30/09):
-TURBO_FILE="minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors"
+TURBO_FILE="minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
 
 # Facial Realism LoRA (close-up de rosto — textura de pele, micro-expressões)
 # prithivMLmods/MiniMax-H3-Facial-Realism-CloseUp, cp2000, rank 16, trigger "Facial Realism"
@@ -193,7 +209,7 @@ while [[ $# -gt 0 ]]; do
     --steps)  STEPS="$2"; shift 2 ;;
     --seed)   SEED="$2"; shift 2 ;;
     --guidance) GUIDANCE="$2"; shift 2 ;;
-    --flow-shift) FLOW_SHIFT="$2"; shift 2 ;;
+    --flow-shift) FLOW_SHIFT="$2"; FLOW_SHIFT_SET=true; shift 2 ;;
     --dry-run) DRY_RUN="1"; shift ;;
     --web)     WEB=true; shift ;;
     --enhance) ENHANCE=true; shift ;;
@@ -226,6 +242,7 @@ while [[ $# -gt 0 ]]; do
       NSFW_LORAS+=("$RESOLVED"); shift 2 ;;
     --nsfw-strength) NSFW=true; NSFW_OVERRIDE_STRENGTH="$2"; shift 2 ;;  # sobrescreve todas
     --turbo) TURBO=true; shift ;;
+    --profile) H3_PROFILE="$2"; shift 2 ;;
     --turbo-strength) TURBO=true; TURBO_STRENGTH="$2"; shift 2 ;;
     --turbo-file) TURBO=true; TURBO_FILE_OVERRIDE="$2"; shift 2 ;;
     --output|-o|--output-dir)
@@ -387,6 +404,12 @@ if [[ -n "$SECONDS_WANT" ]]; then
   [[ -z "$FRAMES" || "$FRAMES" == *[^0-9]* ]] && { echo "Erro: falha na conversão de --seconds '$SECONDS_WANT'"; exit 1; }
   echo "=== --seconds $SECONDS_WANT → $FRAMES frames (24fps, ceil) ==="
 fi
+
+# ── --profile: validação ──────────────────────────────────────────────────
+case "$H3_PROFILE" in
+  1|2|3|4|5) ;;
+  *) echo "Erro: --profile espera 1-5 (Wan2GP). Recebi: '$H3_PROFILE'. Dica: 5=block-by-block (default), 4=grupos maiores (menos tráfego de shuttle), 2=cache em RAM (pede ~22GB+)."; exit 1 ;;
+esac
 
 # ── --list-loras: catálogo didático ───────────────────────────────────────
 if [[ "$LIST_LORAS" == true ]]; then
@@ -732,8 +755,16 @@ if [[ "$ENHANCE_WITH_VISION" == true ]]; then
   [[ "$VISION_DESCRIBE" == false ]] && echo "Aviso: --no-vision-describe redundante com --enhance-with-vision (describe já é pulado)."
 fi
 if [[ "$ENHANCE" == true ]]; then
+  # ── Fleet resolve: valida o default contra a frota viva; fallback se ausente ──
   if [[ -z "$ENHANCE_MODEL" ]]; then
-    ENHANCE_MODEL="$ENHANCE_DEFAULT"
+    if curl -s --max-time 5 "$LLAMA_SWAP_URL/v1/models" 2>/dev/null | grep -q "\"$ENHANCE_DEFAULT\"" \
+       || curl -s --max-time 5 "$LLAMA_SWAP_URL/v1/models" 2>/dev/null | grep -q "\"${ENHANCE_DEFAULT}:think\""; then
+      ENHANCE_MODEL="$ENHANCE_DEFAULT"
+    else
+      ENHANCE_MODEL="$H3_ENHANCE_FALLBACK"
+      echo "=== Fleet: '$ENHANCE_DEFAULT' indisponível — fallback '$H3_ENHANCE_FALLBACK' ==="
+    fi
+    [[ -z "$ENHANCE_MODEL" ]] && ENHANCE_MODEL="qwen3.6-35b-a3b-heretic"
   fi
 
   # Detectar prefixo ollama: e trocar endpoint
@@ -1503,8 +1534,13 @@ if [[ "$TURBO" == true ]]; then
   # da família); FL2VA/T2V usam o FL2V 8-step v1.0 (lightx2v, treinado p/ 8 steps,
   # melhor que esticar o 4-step). Override manual: --turbo-file NOME
   if [[ -z "$TURBO_FILE_OVERRIDE" ]]; then
-    # 30/09: full-rank (768p/8step) = MOSAICO no pruned Q4 — rank21 resized é o único compatível
-    TURBO_FILE="minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors"
+    # 05/10: auto por modalidade — o MAIS NOVO de cada linha (user: "coloca fl2v e ref2va no mais novo")
+    # Ref2VA → ref2v 8step v1.0 (mais novo dedicado Ref2VA); FL2VA/T2V/I2V → fl2v 4step v1.2 (mais novo FL2V)
+    if [[ "$REF2VA_MODE" == true ]]; then
+      TURBO_FILE="minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
+    else
+      TURBO_FILE="minimax_h3_fl2v_turbo_4step_v1.2_768p_comfyui_bf16.safetensors"
+    fi
   else
     TURBO_FILE="$TURBO_FILE_OVERRIDE"
   fi
@@ -1514,9 +1550,12 @@ if [[ "$TURBO" == true ]]; then
     echo "Baixe com: hf download lightx2v/Minimax-h3-Turbo minimax_h3_ref2v_turbo_4step_v0.1_bf16.safetensors --local-dir ~/git/Wan2GP/loras/minimax_h3/"
     exit 1
   fi
-  # Turbo requer 4-8 steps — default TURBO_STEPS (4, rank-21) se usuário não setou --steps
+  # Turbo requer 4-8 steps — auto por modalidade (ref2v8=8/shift6, fl2v 1.2=4/shift12) se não setado
   if [[ "$STEPS" == "50" ]]; then
-    STEPS="$TURBO_STEPS"
+    if [[ "$REF2VA_MODE" == true ]]; then STEPS=8; else STEPS=4; fi
+  fi
+  if [[ "$FLOW_SHIFT_SET" != "true" ]]; then
+    if [[ "$REF2VA_MODE" == true ]]; then FLOW_SHIFT=6.0; else FLOW_SHIFT=12.0; fi
   fi
   # Warn se user passou --steps > 8
   if [[ "$STEPS" -gt 8 ]]; then
@@ -1800,12 +1839,12 @@ START_TIME=$(date +%s)
 # Escape: H3_RAW_OUTPUT=1 h3 ... rodeia o filtro e mostra tudo cru.
 DEBUG_LOG=/tmp/h3_debug.log
 if [[ "$H3_RAW_OUTPUT" == "1" ]]; then
-  python wgp.py --process "$SETTINGS_FILE" --profile 5 --output-dir "$OUTPUT_DIR" --verbose 2
+  python wgp.py --process "$SETTINGS_FILE" --profile "$H3_PROFILE" --output-dir "$OUTPUT_DIR" --verbose 2
   RC=$?
 else
   rm -f "$DEBUG_LOG"
   set -o pipefail
-  python wgp.py --process "$SETTINGS_FILE" --profile 5 --output-dir "$OUTPUT_DIR" --verbose 2 2>&1 |
+  python wgp.py --process "$SETTINGS_FILE" --profile "$H3_PROFILE" --output-dir "$OUTPUT_DIR" --verbose 2 2>&1 |
     python3 "$HOME/.local/bin/h3-output-filter.py" "$DEBUG_LOG"
   RC=$?
   set +o pipefail
