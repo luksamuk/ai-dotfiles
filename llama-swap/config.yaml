@@ -1306,7 +1306,7 @@ models:
 # -------------------------------------------
   "k2-horizon-36b":
     name: "K2-Horizon MoVA 36B"
-    description: "IFM K2-Horizon-MoVA-36B-A4B (linhagem LLM360/MBZUAI, NAO Kimi K2) em APEX-Mini 14.74GB. MoE 36B (100 experts top-8) + MoVA (value-experts no caminho de V). Arch k2-horizon — ik-only (cafe não tem suporte). Reasoning model, effort high, budget 16384."
+    description: "IFM's sparse reasoning model — MoE with Mixture-of-Values attention. 4B active params, strong agentic/coding benchmarks, 524K native context."
     cmd: |
       ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-APEX-Mini.gguf
