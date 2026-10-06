@@ -1,48 +1,35 @@
-# LFM2.5-VL-450M-Extract hand-tracking — Q8_0 quant
-"lfm2.5-vl-450m-hand-tracking":
-  name: "LFM2.5-VL 450M Hand Tracking"
-  description: "Hand detection VLM fine-tuned from LFM2.5-VL-450M-Extract on HaGRID+COCO. Q8_0 quant (379MB)."
-  tags: ["vision"]
-  cmd: |
-    ${llama_server} --port ${PORT}
-    --model ${models_dir}/LFM2.5-VL-450M-hand-tracking-Q8_0.gguf
-    --mmproj ${models_dir}/mmproj-LFM2.5-VL-450M-hand-tracking-F16.gguf
-    --media-path ${media_path}
-    --jinja
-    --fit on
-    --fit-target ${vram_margin}
-    --fit-ctx 4096
-    --ctx-size 8192
-    --parallel 1
-    --cont-batching
-    --temp 0.1
-    --top-p 0.1
-    --top-k 50
-    --min-p 0.0
-    --repeat-penalty 1.05
-    --cache-type-k f16
-    --cache-type-v f16
-    --flash-attn on
-    --spec-type ngram-mod
-      --spec-ngram-mod-n-match 24
-      --spec-ngram-mod-n-min 48
-      --spec-ngram-mod-n-max 64
-      --metrics
+lfm2.5-vl-450m-hand-tracking:
+  name: LFM2.5-VL 450M Hand Tracking
+  description: Hand detection VLM fine-tuned from LFM2.5-VL-450M-Extract on HaGRID+COCO.
+    Q8_0 quant (379MB).
+  tags:
+  - vision
+  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-VL-450M-hand-tracking-Q8_0.gguf\n\
+    --mmproj ${models_dir}/mmproj-LFM2.5-VL-450M-hand-tracking-F16.gguf\n--media-path\
+    \ ${media_path}\n--jinja\n--fit on\n--fit-target ${vram_margin}\n--fit-ctx 4096\n\
+    --ctx-size 8192\n--parallel 1\n--cont-batching\n--temp 0.1\n--top-p 0.1\n--top-k\
+    \ 50\n--min-p 0.0\n--repeat-penalty 1.05\n--cache-type-k f16\n--cache-type-v f16\n\
+    --flash-attn on\n--spec-type ngram-mod\n  --spec-ngram-mod-n-match 24\n  --spec-ngram-mod-n-min\
+    \ 48\n  --spec-ngram-mod-n-max 64\n  --metrics\n"
   ttl: 60
   health_check_timeout: 300
   capabilities:
-    in: ['text', 'image']
-    out: ['text']
+    in:
+    - text
+    - image
+    out:
+    - text
     tools: false
     reranker: false
     context: 8192
   metadata:
-    size: "379 MB + 190 MB mmproj"
-    context: "8K (grounding-optimized)"
-    vram_usage: "~0.8 GB"
-    source: "Fine-tuned from LiquidAI/LFM2.5-VL-450M-Extract on HaRID+COCO"
-    note: "Hand detection. Format: [{label:hand, bbox:[x1,y1,x2,y2]}] 0-1 floats, [] if none."
-    kv_cache: "f16"
+    size: 379 MB + 190 MB mmproj
+    context: 8192
+    vram_usage: ~0.8 GB
+    source: Fine-tuned from LiquidAI/LFM2.5-VL-450M-Extract on HaRID+COCO
+    note: 'Hand detection. Format: [{label:hand, bbox:[x1,y1,x2,y2]}] 0-1 floats,
+      [] if none.'
+    kv_cache: f16
     features:
       completion: true
       tools: false

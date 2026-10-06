@@ -1,52 +1,65 @@
-# -------------------------------------------
-# AGENTS-A1-35B - MoE AGENTIC (text-only, no vision)
-# MoE 35B params, ~3B ativo por token. 256 routed + 1 shared expert, 8 active.
-# Built on Qwen3.5 35B-A3B MoE base. Same qwen35moe architecture as Qwen3.6/Ornith.
-# Focused on: long-horizon search, engineering, scientific research, tool calling.
-# APEX I-Compact ~16.5GB — imatrix v1.3 calibrated (chat, code, reasoning, tool-calling, agentic traces).
-# ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
-# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx
+agents-a1-35b:
+  name: Agents-A1 35B
+  description: Agents-A1 is a 35B Mixture-of-Experts agentic model built to scale
+    heterogeneous agentic abilities across long-horizon search, engineering, scientific
+    research, instruction following, and tool calling.
+  cmd: '${ik_llama_server} --port ${PORT}
 
-# --ctx-size 131072: same safe ceiling as Qwen 3.6
-# Dual mode: base (chat, no think) and :think (reasoning)
-# License: Apache-2.0 (base model by InternScience)
-# -------------------------------------------
-"agents-a1-35b":
-  name: "Agents-A1 35B"
-  description: "Agents-A1 is a 35B Mixture-of-Experts agentic model built to scale heterogeneous agentic abilities across long-horizon search, engineering, scientific research, instruction following, and tool calling."
-  cmd: |
-    ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/agents-a1-35b/Agents-A1-APEX-I-Compact.gguf
-    # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only = stable.
+
+    # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only
+    = stable.
+
     --fit
+
     --fit-margin 1024
+
     --ctx-size 131072
+
     --temp 0.85
+
     --top-p 0.95
+
     --top-k 20
+
     --min-p 0.0
+
     --repeat-penalty 1.0
+
     --presence-penalty 1.1
+
     --reasoning on
+
     --jinja
+
     --parallel 1
+
     --parallel-tool-calls
+
     --cache-type-k ${large_cache_k}
+
     --cache-type-v ${large_cache_v}
+
     --k-cache-hadamard
+
     --v-cache-hadamard
+
     --flash-attn auto
+
     --defer-experts
+
     --metrics
+
+    '
   filters:
-    stripParams: "temperature, top_p"
+    stripParams: temperature, top_p
     setParamsByID:
-      "${MODEL_ID}":
+      ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.85
         top_p: 0.95
-      "${MODEL_ID}:think":
+      ${MODEL_ID}:think:
         chat_template_kwargs:
           enable_thinking: true
         temperature: 0.85
@@ -54,17 +67,19 @@
   ttl: 900
   health_check_timeout: 900
   capabilities:
-    in: ['text']
-    out: ['text']
+    in:
+    - text
+    out:
+    - text
     tools: true
     reranker: false
     context: 131072
   metadata:
-    size: "~16.5 GB (APEX I-Compact)"
-    context: "1K-131K (safe max)"
-    vram_usage: "~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s)"
-    source: "mudler/Agents-A1-APEX-GGUF"
-    kv_cache: "q4_0 + attn_rot + hadamard"
+    size: ~16.5 GB (APEX I-Compact)
+    context: 131072
+    vram_usage: ~5.4 GB VRAM
+    source: mudler/Agents-A1-APEX-GGUF
+    kv_cache: q4_0 + attn_rot + hadamard
     features:
       completion: true
       tools: true
@@ -79,4 +94,8 @@
     context_length: 262144
     embedding_length: 2048
     quantization: I-Compact
-    note: "35B MoE agentic model. Qwen3.5 35B-A3B base. Focused on long-horizon search, engineering, scientific research, tool calling. APEX I-Compact: imatrix v1.3 calibrated. Same arch/size as Qwen3.6/Ornith APEX — expects 33-34 t/s. Vision blocked on 6GB RTX 3050."
+    note: 'vram detalhe: ~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated
+      33-34 t/s) 35B MoE agentic model. Qwen3.5 35B-A3B base. Focused on long-horizon
+      search, engineering, scientific research, tool calling. APEX I-Compact: imatrix
+      v1.3 calibrated. Same arch/size as Qwen3.6/Ornith APEX — expects 33-34 t/s.
+      Vision blocked on 6GB RTX 3050.'

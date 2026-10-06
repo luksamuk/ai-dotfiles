@@ -1,36 +1,44 @@
-# -------------------------------------------
-# LFM2.5-1.2B-INSTRUCT - vLLM BACKEND (PAUSADO — venv + HF models deletados)
-# Restaurar: pip install vllm em ~/.vllm, HF models re-downloaded no primeiro serve
-# UNLISTED: pausado até Sprachspiel suportar multi-provider via OpenAI API
-# -------------------------------------------
-"lfm2.5-1.2b-vllm":
-  name: "LFM2.5 1.2B Instruct (vLLM)"
-  description: "LFM2.5-1.2B with vLLM backend for Sprachspiel compatibility and proper tool calling."
-  cmd: |
-    ${vllm_bin} serve LiquidAI/LFM2.5-1.2B-Instruct
+lfm2.5-1.2b-vllm:
+  name: LFM2.5 1.2B Instruct (vLLM)
+  description: LFM2.5-1.2B with vLLM backend for Sprachspiel compatibility and proper
+    tool calling.
+  cmd: '${vllm_bin} serve LiquidAI/LFM2.5-1.2B-Instruct
+
     --port ${PORT}
+
     --served-model-name lfm2.5-1.2b-vllm
+
     --gpu-memory-utilization 0.70
+
     --max-model-len 8192
+
     --max-num-seqs 2
+
     --dtype half
+
     --trust-remote-code
+
     --enable-auto-tool-choice
+
     --tool-call-parser lfm2
+
+    '
   ttl: 900
   capabilities:
-    in: ['text']
-    out: ['text']
+    in:
+    - text
+    out:
+    - text
     tools: false
     reranker: false
     context: 128000
   metadata:
     backend: vllm
-    size: "~2.4 GB (BF16 safetensors, auto-download from HF)"
-    context: "8K (vLLM optimized for 6GB VRAM)"
-    vram_usage: "~3GB (model + cache)"
-    source: "LiquidAI/LFM2.5-1.2B-Instruct (HuggingFace safetensors)"
-    note: "vLLM backend with native lfm2 tool parser — no --jinja workaround needed"
+    size: ~2.4 GB (BF16 safetensors, auto-download from HF)
+    context: 128000
+    vram_usage: ~3GB (model + cache)
+    source: LiquidAI/LFM2.5-1.2B-Instruct (HuggingFace safetensors)
+    note: vLLM backend with native lfm2 tool parser — no --jinja workaround needed
     features:
       completion: true
       tools: false

@@ -1,70 +1,81 @@
-# -------------------------------------------
-# ORNITH-1.5-35B-HERETIC (Sharp) — OFICIAL 05/10/2026 (era o -cafe; cafe 0.74)
-# O heretic Tiel (SC117 I-Compact + template Sharp) virou o DEFAULT da frota
-# no cafe-llama.cpp 0.74 com -cmoe (experts em page cache file-backed evictável).
-# MEDIDO 05/10 (cold, desktop ativo): decode 29.9-30.9 idle / ~25 c/ desktop;
-# RAM used ~5-6GB (vs 25.8 pinadas do ik); ctx 200K. O ik antigo ficou em
-# _disabled/ornith-1.5-35b-heretic-fast.yaml (campeão de pico em janela limpa).
-# ARMADILHAS cafe (iguais às do irmão qwen36-heretic):
-#   - NUNCA --pipeline-parallel com ctx >=131K (buffer DMA 48GB → OOM duplo)
-#   - turbo4 limpo na híbrida; turbo2 CRASHA
-#   - cafe NÃO tem: --parallel-tool-calls, --defer-experts, --prefetch-experts,
-#     --k/v-cache-hadamard (hadamard é ik-only!), --fit-margin (usar --fit-target)
-#   - env LD_LIBRARY_PATH OBRIGATORIA (RUNPATH morto)
-#   - sintaxe 0.74: --spec-type draft-mtp (sufixo mtp:n_max= do ik NÃO parseia)
-# TEMPLATE: Sharp v22.5.0 (o GGUF heretic vem com template genérico — o
-#   --chat-template-file sharp é OBRIGATORIO pro efeito Tiel).
-# -------------------------------------------
-"ornith-1.5-35b-heretic":
-  name: "Ornith 1.5 35B Heretic"
-  description: "Heretic Tiel (SC117 + Sharp v22.5.0) OFICIAL 05/10 no cafe-llama.cpp 0.74 (-cmoe): decode 29.9-30.9 idle (~25 c/ desktop), RAM evictável ~5-6GB used, ctx 200K. Substitui o ik -fast (em _disabled/). Visão via mmproj BF16. APEX I-Compact 17.33GB."
-  cmd: |
-    env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+ornith-1.5-35b-heretic:
+  name: Ornith 1.5 35B Heretic
+  description: '35B-A3B MoE generalist assistant, abliterated (heretic TPE). Fleet
+    daily driver: 200K context, strong agentic/tool calling.'
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
+    --port ${PORT}
+
     --model ${models_dir}/ornith-heretic/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-I-Compact.gguf
+
     --mmproj ${models_dir}/ornith-heretic/mmproj-Ornith-1.5-35B-A3B-Heretic-MTP-BF16.gguf
+
     --no-mmproj-offload
+
     --ctx-size 200000
+
     --jinja
+
     --chat-template-file ${templates_dir}/sharp_chat_template.jinja
+
     --parallel 1
+
     --cache-type-k q4_0
+
     --cache-type-v q4_0
+
     --flash-attn on
+
     -cmoe
+
     -ngl 99
+
     -b 512
+
     -ub 128
+
     --temp 0.6
+
     --top-p 0.95
+
     --top-k 20
+
     --min-p ${code_min_p}
+
     --repeat-penalty ${code_repeat_penalty}
+
     --reasoning-budget 8192
+
     --spec-type draft-mtp
+
     --metrics
+
+    '
   filters:
-    stripParams: "temperature, top_p"
+    stripParams: temperature, top_p
     setParamsByID:
-      "${MODEL_ID}":
+      ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
-      "${MODEL_ID}:think":
+      ${MODEL_ID}:think:
         chat_template_kwargs:
           enable_thinking: true
   ttl: 900
   health_check_timeout: 900
   capabilities:
-    in: ['text', 'image']
-    out: ['text']
+    in:
+    - text
+    - image
+    out:
+    - text
     tools: true
     reranker: false
     context: 200000
   metadata:
-    size: "~17.33 GB (APEX I-Compact heretic) + 0.9 GB mmproj BF16"
-    context: "1K-200K (cap de degradação ~213K, parallel 1)"
-    vram_usage: "MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s"
-    source: "SC117/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-GGUF (I-Compact, sha 37f67861...e0e7)"
-    kv_cache: "q4_0/q4_0"
+    size: ~17.33 GB (APEX I-Compact heretic)
+    context: 200000
+    vram_usage: ~4.9 GB VRAM + ~4.7 GB RAM used
+    source: SC117/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-GGUF (I-Compact, sha 37f67861...e0e7)
+    kv_cache: q4_0/q4_0
     features:
       completion: true
       tools: true
@@ -78,5 +89,13 @@
     parameters: 35000000000
     context_length: 262144
     embedding_length: 2048
-    quantization: "APEX I-Compact"
-    note: "0.74 05/10/2026: -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap 24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly. Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K)."
+    quantization: APEX I-Compact
+    note: 'vram detalhe: MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema
+      (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU
+      via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s 0.74 05/10/2026:
+      -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute
+      em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap
+      24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe
+      = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly.
+      Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida
+      a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K).'

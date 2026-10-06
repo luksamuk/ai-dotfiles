@@ -1,45 +1,53 @@
-# -------------------------------------------
-# MELLUM2-12B-A2.5B — JETBRAINS MoE CODING + REASONING
-# MoE 12B params, 2.5B ativo por token. 64 experts, top-8 routing.
-# GQA 32Q/4KV, sliding window 1024, vocab 98K
-# Apache 2.0 license
-# Variantes via setParamsByID: instruct (chat), :think (reasoning)
-# ik_llama.cpp required — Mellum2 arch added in ik #1919, split mode in #1920
-# Upstream llama.cpp also supports Mellum (added b9484 PR #23966)
-# MoE offload much faster on ik — pin to ik_llama_server
-# RTX 3050 6GB: --fit on with partial offload
-# -------------------------------------------
-"mellum2-12b-a2.5b":
-  name: "Mellum 2 12B"
-  description: "JetBrains coding MoE — 12B total, 2.5B active. Excels at tool use, agentic workflows, code generation and reasoning."
-  cmd: |
-    ${ik_llama_server} --port ${PORT}
+mellum2-12b-a2.5b:
+  name: Mellum 2 12B
+  description: JetBrains coding MoE — 12B total, 2.5B active. Excels at tool use,
+    agentic workflows, code generation and reasoning.
+  cmd: '${ik_llama_server} --port ${PORT}
+
     --model ${models_dir}/Mellum2-12B-A2.5B-Thinking-Q4_K_M.gguf
+
     --jinja
+
     --parallel 2
+
     --fit
+
     --fit-margin 512
+
     --ctx-size 131072
+
     --temp 0.6
+
     --top-p 0.95
+
     --top-k 20
+
     --min-p 0.1
+
     --repeat-penalty 1.05
+
     --reasoning on
+
     --parallel-tool-calls
+
     --cache-type-k q8_0
+
     --cache-type-v q4_0
+
     --flash-attn on
+
     --metrics
+
+    '
   filters:
-    stripParams: "temperature, top_p, top_k"
+    stripParams: temperature, top_p, top_k
     setParamsByID:
-      "${MODEL_ID}":
+      ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.95
-      "${MODEL_ID}:think":
+      ${MODEL_ID}:think:
         chat_template_kwargs:
           enable_thinking: true
         temperature: 0.6
@@ -47,19 +55,25 @@
   ttl: 300
   health_check_timeout: 300
   capabilities:
-    in: ['text']
-    out: ['text']
+    in:
+    - text
+    out:
+    - text
     tools: true
     reranker: false
     context: 131072
   metadata:
-    size: "~7.6 GB (Q4_K_M)"
-    context: "16K-131K (dynamic)"
-    vram_usage: "~4.5GB VRAM + ~3GB RAM (partial expert offload)"
-    source: "RJ000/Mellum2-12B-A2.5B-Thinking-GGUF (Q4_K_M)"
-    note: "Community quant (RJ000). ik-pinned since #1919 (Mellum2 arch + split mode). MoE offload optimized."
-    caveat: "GGUF Thinking always produces reasoning. Base variant (enable_thinking: false) leaks inline text — use :think for clean separation (reasoning_content). Parallel tool calls work with --parallel-tool-calls. Occasional content leakage before tool calls on ambiguous prompts."
-    kv_cache: "q8_0 + q4_0"
+    size: ~7.6 GB (Q4_K_M)
+    context: 131072
+    vram_usage: ~4.5GB VRAM + ~3GB RAM (partial expert offload)
+    source: RJ000/Mellum2-12B-A2.5B-Thinking-GGUF (Q4_K_M)
+    note: 'Community quant (RJ000). ik-pinned since #1919 (Mellum2 arch + split mode).
+      MoE offload optimized.'
+    caveat: 'GGUF Thinking always produces reasoning. Base variant (enable_thinking:
+      false) leaks inline text — use :think for clean separation (reasoning_content).
+      Parallel tool calls work with --parallel-tool-calls. Occasional content leakage
+      before tool calls on ambiguous prompts.'
+    kv_cache: q8_0 + q4_0
     features:
       completion: true
       tools: true

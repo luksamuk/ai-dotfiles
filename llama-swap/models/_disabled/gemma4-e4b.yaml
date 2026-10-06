@@ -1,44 +1,24 @@
-# -------------------------------------------
-# GEMMA-4-E4B - ik BACKEND (Hadamard KV cache)
-# Upstream config with q4_0 cache. Bee/TurboQuant was slower (36 vs 40 tok/s).
-# Switched from upstream to ik for -khad/-vhad quality improvement.
-# Upgraded from UD-Q3_K_XL (3.5 bpw) → Q4_K_M (4.5 bpw): +0.36GB for ~3% PPL improvement
-# -------------------------------------------
-"gemma4-e4b":
-  name: "Gemma 4 E4B"
-  description: "Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding."
-  cmd: |
-    ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
-    # No --no-mmproj: ik doesn't support this flag (upstream-only)
-    --fit
-    --fit-margin 512
-    --jinja
-    --parallel 1
-    --parallel-tool-calls
-    --ctx-size ${small_model_max_ctx}
-    --temp 0.7
-    --top-p 0.9
-    --top-k 40
-    --min-p 0.01
-    --repeat-penalty 1.0
-    --reasoning on
-    --cache-type-k q8_0
-    --cache-type-v q4_0
-    --k-cache-hadamard
-    --v-cache-hadamard
-    --flash-attn auto
-    --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
-      --metrics
+gemma4-e4b:
+  name: Gemma 4 E4B
+  description: Gemma 4 models are designed to deliver frontier-level performance at
+    each size. They are well-suited for reasoning, agentic workflows, coding, and
+    multimodal understanding.
+  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf\n\
+    # No --no-mmproj: ik doesn't support this flag (upstream-only)\n--fit\n--fit-margin\
+    \ 512\n--jinja\n--parallel 1\n--parallel-tool-calls\n--ctx-size ${small_model_max_ctx}\n\
+    --temp 0.7\n--top-p 0.9\n--top-k 40\n--min-p 0.01\n--repeat-penalty 1.0\n--reasoning\
+    \ on\n--cache-type-k q8_0\n--cache-type-v q4_0\n--k-cache-hadamard\n--v-cache-hadamard\n\
+    --flash-attn auto\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n \
+    \ --metrics\n"
   filters:
-    stripParams: "temperature, top_p"
+    stripParams: temperature, top_p
     setParamsByID:
-      "${MODEL_ID}":
+      ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.9
-      "${MODEL_ID}:think":
+      ${MODEL_ID}:think:
         chat_template_kwargs:
           enable_thinking: true
         temperature: 0.6
@@ -46,17 +26,19 @@
   ttl: 60
   health_check_timeout: 300
   capabilities:
-    in: ['text']
-    out: ['text']
+    in:
+    - text
+    out:
+    - text
     tools: true
     reranker: false
     context: 131072
   metadata:
-    size: "~4.63 GB (Q4_K_M)"
-    context: "64K-128K (dynamic)"
-    vram_usage: "~5.3GB VRAM (fits with mmproj)"
-    source: "unsloth/gemma-4-E4B-it-GGUF (Q4_K_M)"
-    kv_cache: "q8_0 + q4_0 hadamard"
+    size: ~4.63 GB (Q4_K_M)
+    context: 131072
+    vram_usage: ~5.3GB VRAM (fits with mmproj)
+    source: unsloth/gemma-4-E4B-it-GGUF (Q4_K_M)
+    kv_cache: q8_0 + q4_0 hadamard
     features:
       completion: true
       tools: true
@@ -71,5 +53,5 @@
     context_length: 131072
     embedding_length: 2560
     quantization: Q4_K_M
-      # vision: disabled — no mmproj loaded (text-only). mmproj available on HF (~980 MB F16) but not downloaded.
-    note: "Upgraded from UD-Q3_K_XL → Q4_K_M. Text-only (no mmproj). Tightest VRAM model — adding mmproj reduces ctx."
+    note: Upgraded from UD-Q3_K_XL → Q4_K_M. Text-only (no mmproj). Tightest VRAM
+      model — adding mmproj reduces ctx.

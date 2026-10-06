@@ -1,80 +1,66 @@
-# [TEMP-DISABLED 03/10/2026 (noite) — REMOVIDO p/ voltar qwen3-coder-30b (user verdict
-# pos-testes: inteligencia OK, mas TTFT 99-423s + prefill 0.7-0.9 t/s + decode 1.3-2.6 t/s
-# = inviavel p/ agentic e conversa com contexto; sobrevive so em /v1/completions curto).
-# Re-download se quiser voltar: mradermacher/Qwen3-Next-80B-A3B-Instruct-GGUF Q4_K_M
-# (48410988864 bytes, sha256 31cd9bce2e069d9263bca74507864bba1879c318aa6ad22fb89c39890bbe3ba0),
-# baixar para ~/.llama-models/qwen3-next-80b/ + mover este yaml de volta pra models/
-# + refs no footer (next80 var, evict 9, heavy set) + ORIGINAL_ORDER do build-config.py.]
-# -------------------------------------------
-# -------------------------------------------
-# QWEN3-NEXT-80B-A3B-INSTRUCT — cafe-llama.cpp -ssd (o primeiro 80B da frota)
-# 177G?? NAO: 80B total / ~3B ativos. MoE 512 experts top-10 FF 512, hidden 2048,
-# 48 layers, hibrida: gated DeltaNet (linear attention, GDN) nas 36 layers
-# + full attention a cada 4 (interval=4, 12 layers full? cfg: full_attention_interval=4).
-# KV 2 heads x 256 dim nos layers full → KV barata igual laguna.
-# ctx nativo 262144. Sem MTP no GGUF do mradermacher (sem pasta MTP; draft seria
-# fase 2 com unsloth MTP/. Ornith usa nextn=1 — aqui NAO no primeiro deploy).
-#
-# BACKEND: cafe-llama.cpp (qwen3next.cpp na build prod desde Sep 10, binario ok).
-# MoE streaming via -ssd (experts por mmap/paging) — mesmo regime validado no
-# laguna Q4_K_M (28-31 t/s). Trafego estimado ~0.85GB/token (48 experts-full
-# x 10 exps x 3 matrizes x 512x2048) → quente ~15-25 t/s, primeiro uso por
-# dominio lento (page cache frio) — custo design, nao regressão.
-#
-# KV: q8_0/q8_0 (12 layers full x 2 kv-heads x 256 → ~0.3KB/token/layer; 131K
-# ~350MB; q8_0 por headroom). Turbo KV PROIBIDO (heredado: turbo em arch hibrida
-# corrompe — laguna/ik lições; se tentar, QG smoke obrigatorio antes).
-# Teto seguro primeiro deploy: 131072 (igual laguna). 262K depois de validar
-# compute buffer -ub/-b; com FA on e -b 512 -ub 128 deve caber q8_0 @131K folgado.
-#
-# SAMPLERS: generation_config oficial (temp 0.7 / top_p 0.8 / top_k 20) no base.
-# Dual-mode igual frota: base=temp 0.7 top_p 0.8 top_k 20 | think=temp 0.7 (idem
-# cfg oficial; Next think via enable_thinking true).
-#
-# STATUS: DEPLOY OUT 3 2026 — smoke pendente apos download completo + sha256
-# (31cd9bce2e069d9263bca74507864bba1879c318aa6ad22fb89c39890bbe3ba0).
-# PENDENTE user: heavy set + evict + matrix var + ORIGINAL_ORDER.
-"qwen3-next-80b":
-  name: "Qwen3-Next 80B"
-  description: "O primeiro 80B da frota: MoE 512 experts top-10 com DeltaNet nativo (linear attention), 3B ativos. Serve via cafe -ssd — streaming de experts, quente rapido, frio lento (warmup por dominio)."
-  cmd: |
-    env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+qwen3-next-80b:
+  name: Qwen3-Next 80B
+  description: 'O primeiro 80B da frota: MoE 512 experts top-10 com DeltaNet nativo
+    (linear attention), 3B ativos. Serve via cafe -ssd — streaming de experts, quente
+    rapido, frio lento (warmup por dominio).'
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
+    --port ${PORT}
+
     --model ${models_dir}/qwen3-next-80b/Qwen3-Next-80B-A3B-Instruct.Q4_K_M.gguf
+
     --jinja
+
     --parallel 1
+
     --ctx-size 131072
+
     --cache-type-k q8_0
+
     --cache-type-v q8_0
+
     --flash-attn on
+
     -ssd
+
     --ssd-io-threads 4
+
     -ngl 99
+
     -b 512
+
     -ub 128
+
     --temp 0.7
+
     --top-p 0.8
+
     --top-k 20
+
     --metrics
+
+    '
   filters:
-    stripParams: "temperature, top_p"
+    stripParams: temperature, top_p
     setParamsByID:
-      "${MODEL_ID}":
+      ${MODEL_ID}:
         temperature: 0.7
         top_p: 0.8
   ttl: 3600
   health_check_timeout: 600
   capabilities:
-    in: ['text']
-    out: ['text']
+    in:
+    - text
+    out:
+    - text
     tools: true
     reranker: false
     context: 131072
   metadata:
-    size: "~48.4 GB (Q4_K_M mradermacher)"
-    context: "131K (nativo 262K, a validar)"
-    vram_usage: "~3-4GB VRAM (dense+attn) + experts via -ssd (page cache)"
-    source: "mradermacher/Qwen3-Next-80B-A3B-Instruct-GGUF (Q4_K_M)"
-    kv_cache: "q8_0/q8_0"
+    size: ~48.4 GB (Q4_K_M mradermacher)
+    context: 131072
+    vram_usage: ~4 GB VRAM
+    source: mradermacher/Qwen3-Next-80B-A3B-Instruct-GGUF (Q4_K_M)
+    kv_cache: q8_0/q8_0
     features:
       completion: true
       tools: true
@@ -92,4 +78,8 @@
     experts: 512
     active_experts: 10
     quantization: Q4_K_M
-    note: "Primeiro 80B da frota. Hibrida gated DeltaNet (linear) + full@4. GGUF mradermacher SEM MTP (draft = fase 2, unsloth MTP/). -ssd regime igual laguna: quente rapido / warmup por dominio. INSTRUCT sem thinking: chat template do GGUF nao tem bloco think (verificado no dump) — alias :think removido no deploy (Oct 3), features.thinking=false."
+    note: 'vram detalhe: ~3-4GB VRAM (dense+attn) + experts via -ssd (page cache)
+      Primeiro 80B da frota. Hibrida gated DeltaNet (linear) + full@4. GGUF mradermacher
+      SEM MTP (draft = fase 2, unsloth MTP/). -ssd regime igual laguna: quente rapido
+      / warmup por dominio. INSTRUCT sem thinking: chat template do GGUF nao tem bloco
+      think (verificado no dump) — alias :think removido no deploy (Oct 3), features.thinking=false.'

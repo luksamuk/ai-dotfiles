@@ -1,54 +1,70 @@
-# -------------------------------------------
-# QWEN3.5-9B - ik BACKEND (Hadamard KV cache)
-# Dense 9B params, MoQ-3.6 ~3.75GB.
-# MoQ-3.6: replaced UD-Q4_K_XL (~5.55GB) — same speed (12.2 tok/s),
-# equal+ quality (21/25 Snake vs 20/25), 32% smaller.
-# ik with hadamard cache gives near-fp16 quality at smaller memory footprint.
-# --flash-attn auto: disables FA on short contexts for MoE/offload savings
-# --parallel-tool-calls: enables multiple tool calls in single response
-# Dual mode: base (chat, no think) and :think (reasoning)
-# MTP tested but OOM on RTX 3050 6GB with --multi-token-prediction
-# Bee backup: _disabled/qwen3.5-9b-bee.yaml (seg fault with turbo3_tcq)
-# -------------------------------------------
-"qwen3.5-9b":
-  name: "Qwen3.5 9B"
-  description: "Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement learning."
-  cmd: |
-    ${ik_llama_server} --port ${PORT}
+qwen3.5-9b:
+  name: Qwen3.5 9B
+  description: Qwen 3.5 is a family of open-source multimodal models that delivers
+    exceptional utility and performance, integrating breakthroughs in multimodal learning,
+    architectural efficiency, and reinforcement learning.
+  cmd: '${ik_llama_server} --port ${PORT}
+
     --model ${models_dir}/Qwen3.5-9B-MoQ-3.6.gguf
+
     --fit
+
     --fit-margin 512
+
     --jinja
+
     --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+
     --parallel 1
+
     --parallel-tool-calls
+
     --ctx-size ${small_model_max_ctx}
+
     --temp ${default_temp}
+
     --top-p ${default_top_p}
+
     --top-k ${default_top_k}
+
     --min-p ${default_min_p}
+
     --repeat-penalty ${default_repeat_penalty}
+
     --reasoning on
+
     --cache-type-k q4_0
+
     --cache-type-v q4_0
+
     --k-cache-hadamard
+
     --v-cache-hadamard
+
     --flash-attn auto
+
     --no-graph-reuse
+
     --ctx-checkpoints 0
+
     --ctx-checkpoints-interval 0
+
     --batch-size 512
+
     --ubatch-size 128
+
     --metrics
+
+    '
   filters:
-    stripParams: "temperature, top_p"
+    stripParams: temperature, top_p
     setParamsByID:
-      "${MODEL_ID}":
+      ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.9
-      "${MODEL_ID}:think":
+      ${MODEL_ID}:think:
         chat_template_kwargs:
           enable_thinking: true
         temperature: 0.6
@@ -56,17 +72,19 @@
   ttl: 60
   health_check_timeout: 300
   capabilities:
-    in: ['text']
-    out: ['text']
+    in:
+    - text
+    out:
+    - text
     tools: true
     reranker: false
     context: 131072
   metadata:
-    size: "~3.75 GB (MoQ-3.6)"
-    context: "64K-128K (dynamic)"
-    vram_usage: "~4.8GB VRAM (text-only, ik with hadamard cache)"
-    source: "w-ahmad/Qwen3.5-9B-GGUF-MoQ (MoQ-3.6)"
-    kv_cache: "q4_0/q4_0 + hadamard"
+    size: ~3.75 GB (MoQ-3.6)
+    context: 131072
+    vram_usage: ~4.8GB VRAM (text-only, ik with hadamard cache)
+    source: w-ahmad/Qwen3.5-9B-GGUF-MoQ (MoQ-3.6)
+    kv_cache: q4_0/q4_0 + hadamard
     features:
       completion: true
       tools: true
@@ -81,4 +99,8 @@
     context_length: 262144
     embedding_length: 4096
     quantization: MoQ-3.6
-    note: "MoQ-3.6 replaces UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25 vs 20/25 Snake), 32% smaller (3.75 vs 5.55 GB). MTP OOM on 6GB VRAM. OOM fix: q4_0 K cache (was q8_0), ctx-checkpoints=0, batch-size=512, ubatch=128 — prevents CUDA OOM at ~92K tokens on RTX 3050 6GB. --spec-type ngram-mod removed (spec decode buffers compete for VRAM with context checkpoints, aggravating OOM)."
+    note: 'MoQ-3.6 replaces UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25
+      vs 20/25 Snake), 32% smaller (3.75 vs 5.55 GB). MTP OOM on 6GB VRAM. OOM fix:
+      q4_0 K cache (was q8_0), ctx-checkpoints=0, batch-size=512, ubatch=128 — prevents
+      CUDA OOM at ~92K tokens on RTX 3050 6GB. --spec-type ngram-mod removed (spec
+      decode buffers compete for VRAM with context checkpoints, aggravating OOM).'

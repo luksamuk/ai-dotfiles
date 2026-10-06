@@ -1,53 +1,25 @@
-# -------------------------------------------
-# ORNITH-1.0-35B - MoE AGENTIC CODING (text-only)
-# MoE 35B params, ~3B ativo por token. 256 experts, 8+1 active.
-# Post-trained Qwen 3.5 35B MoE (self-scaffolding agentic coding RL).
-# Same qwen35moe architecture as Qwen3.6-35B-A3B.
-# APEX I-Compact ~16.5GB — 22% smaller than Q4_K_M (21.2GB), imatrix v1.3 calibrated.
-# ik_llama backend: --fit, --defer-experts, hadamard KV, pinned memory.
-# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx
-
-# --ctx-size 131072: same safe ceiling as Qwen 3.6
-# Dual mode: base (chat, no think) and :think (reasoning)
-# Identity: base Qwen 3.5 — should identify as Qwen, not Google (unlike 9B Gemma 4 base)
-# -------------------------------------------
-"ornith-1.0-35b":
-  name: "Ornith 1.0 35B"
-  description: "Ornith-1.0 is a family of open-source LLMs specialized for agentic coding, trained with a novel self-scaffolding reinforcement learning approach that jointly optimizes the scaffold and the solution."
-  cmd: |
-    ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/ornith-1.0-35b/Ornith-1.0-35B-APEX-I-Compact.gguf
-    --fit
-    --fit-margin 1024
-    --ctx-size 131072
-    --temp 1.0
-    --top-p 1.0
-    --top-k ${code_top_k}
-    --min-p ${code_min_p}
-    --repeat-penalty ${code_repeat_penalty}
-    --reasoning on
-    --jinja
-    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-    --parallel 1
-    --parallel-tool-calls
-    --cache-type-k ${large_cache_k}
-    --cache-type-v ${large_cache_v}
-    --k-cache-hadamard
-    --v-cache-hadamard
-    --flash-attn auto
-    --defer-experts
-    --prefetch-experts
-    --spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24
-      --metrics
+ornith-1.0-35b:
+  name: Ornith 1.0 35B
+  description: Ornith-1.0 is a family of open-source LLMs specialized for agentic
+    coding, trained with a novel self-scaffolding reinforcement learning approach
+    that jointly optimizes the scaffold and the solution.
+  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/ornith-1.0-35b/Ornith-1.0-35B-APEX-I-Compact.gguf\n\
+    --fit\n--fit-margin 1024\n--ctx-size 131072\n--temp 1.0\n--top-p 1.0\n--top-k\
+    \ ${code_top_k}\n--min-p ${code_min_p}\n--repeat-penalty ${code_repeat_penalty}\n\
+    --reasoning on\n--jinja\n--chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja\n\
+    --parallel 1\n--parallel-tool-calls\n--cache-type-k ${large_cache_k}\n--cache-type-v\
+    \ ${large_cache_v}\n--k-cache-hadamard\n--v-cache-hadamard\n--flash-attn auto\n\
+    --defer-experts\n--prefetch-experts\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n\
+    \  --metrics\n"
   filters:
-    stripParams: "temperature, top_p"
+    stripParams: temperature, top_p
     setParamsByID:
-      "${MODEL_ID}":
+      ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
         temperature: 1.0
         top_p: 1.0
-      "${MODEL_ID}:think":
+      ${MODEL_ID}:think:
         chat_template_kwargs:
           enable_thinking: true
         temperature: 1.0
@@ -55,17 +27,19 @@
   ttl: 900
   health_check_timeout: 900
   capabilities:
-    in: ['text']
-    out: ['text']
+    in:
+    - text
+    out:
+    - text
     tools: true
     reranker: false
     context: 131072
   metadata:
-    size: "~16.5 GB (APEX I-Compact)"
-    context: "1K-131K (safe max)"
-    vram_usage: "~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s)"
-    source: "mudler/Ornith-1.0-35B-APEX-GGUF"
-    kv_cache: "q4_0 + attn_rot + hadamard"
+    size: ~16.5 GB (APEX I-Compact)
+    context: 131072
+    vram_usage: ~5.4 GB VRAM
+    source: mudler/Ornith-1.0-35B-APEX-GGUF
+    kv_cache: q4_0 + attn_rot + hadamard
     features:
       completion: true
       tools: true
@@ -80,4 +54,9 @@
     context_length: 262144
     embedding_length: 2048
     quantization: I-Compact
-    note: "Post-trained Qwen 3.5 35B MoE. Self-scaffolding RL for agentic coding. 256 experts, 8+1 active, ~3B active/token. APEX I-Compact: 22% smaller than Q4_K_M, imatrix v1.3 calibrated. Expected 33-34 t/s matching Qwen 3.6 APEX. Uses qwen-fixed-chat-template.jinja — embedded GGUF template lacks tool-call format instructions, causing <|mask_start|>/<tool_code> leakage."
+    note: 'vram detalhe: ~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated
+      33-34 t/s) Post-trained Qwen 3.5 35B MoE. Self-scaffolding RL for agentic coding.
+      256 experts, 8+1 active, ~3B active/token. APEX I-Compact: 22% smaller than
+      Q4_K_M, imatrix v1.3 calibrated. Expected 33-34 t/s matching Qwen 3.6 APEX.
+      Uses qwen-fixed-chat-template.jinja — embedded GGUF template lacks tool-call
+      format instructions, causing <|mask_start|>/<tool_code> leakage.'

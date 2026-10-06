@@ -1,49 +1,22 @@
-# -------------------------------------------
-# GLM-4.7-FLASH - MoE CONVERSATIONAL (text-only, MLA)
-# MoE ~30B params, ~2B ativo por token. 64 routed + 1 shared expert, 4 active.
-# Glm4MoeLite architecture (deepseek2 family) with Multi-head Latent Attention (MLA).
-# MLA compresses KV cache internally — no hadamard transform needed.
-# ik_llama needs 5120+ MiB MLA compute buffer — doesn't fit RTX 3050 6GB above 8K ctx.
-# Upstream llama.cpp works with full 131K ctx (MLA KV is tiny). --fit on, --flash-attn on.
-# APEX I-Compact ~14.6GB — smallest 35B-class model in fleet.
-# --ctx-size 131072: MLA enables full context with minimal KV cache overhead
-# Smoke: 30 t/s @ 128K (q4_0+FA), 29 t/s @ 65K, 50 t/s @ 4K (upstream)
-# Dual mode: base (chat, no think) and :think (reasoning)
-# License: Apache-2.0 (base model by zai-org)
-# -------------------------------------------
-"glm-4.7-flash":
-  name: "GLM 4.7 Flash"
-  description: "GLM-4.7-Flash is a 30B Mixture-of-Experts model with Multi-head Latent Attention (MLA), 64 experts with 4 active per token. Built for fast, efficient conversational AI and tool calling."
-  cmd: |
-    ${llama_server} --port ${PORT}
-    --model ${models_dir}/glm-4.7-flash/GLM-4.7-Flash-APEX-I-Compact.gguf
-    --fit on
-    --fit-target 128
-    --ctx-size 131072
-    --temp 0.7
-    --top-p 1.0
-    --top-k -1
-    --min-p 0.01
-    --repeat-penalty 1.0
-    --jinja
-    --parallel 1
-    --cache-type-k q4_0
-    --cache-type-v q4_0
-    --flash-attn on
-    --spec-type ngram-mod
-      --spec-ngram-mod-n-match 24
-      --spec-ngram-mod-n-min 48
-      --spec-ngram-mod-n-max 64
-      --metrics
+glm-4.7-flash:
+  name: GLM 4.7 Flash
+  description: GLM-4.7-Flash is a 30B Mixture-of-Experts model with Multi-head Latent
+    Attention (MLA), 64 experts with 4 active per token. Built for fast, efficient
+    conversational AI and tool calling.
+  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/glm-4.7-flash/GLM-4.7-Flash-APEX-I-Compact.gguf\n\
+    --fit on\n--fit-target 128\n--ctx-size 131072\n--temp 0.7\n--top-p 1.0\n--top-k\
+    \ -1\n--min-p 0.01\n--repeat-penalty 1.0\n--jinja\n--parallel 1\n--cache-type-k\
+    \ q4_0\n--cache-type-v q4_0\n--flash-attn on\n--spec-type ngram-mod\n  --spec-ngram-mod-n-match\
+    \ 24\n  --spec-ngram-mod-n-min 48\n  --spec-ngram-mod-n-max 64\n  --metrics\n"
   filters:
-    stripParams: "temperature, top_p"
+    stripParams: temperature, top_p
     setParamsByID:
-      "${MODEL_ID}":
+      ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
         temperature: 1.0
         top_p: 0.95
-      "${MODEL_ID}:think":
+      ${MODEL_ID}:think:
         chat_template_kwargs:
           enable_thinking: true
         temperature: 0.7
@@ -51,17 +24,19 @@
   ttl: 300
   health_check_timeout: 300
   capabilities:
-    in: ['text']
-    out: ['text']
+    in:
+    - text
+    out:
+    - text
     tools: true
     reranker: false
     context: 131072
   metadata:
-    size: "~14.6 GB (APEX I-Compact)"
-    context: "1K-131K (MLA enables full context, 24 t/s at 131K)"
-    vram_usage: "~5GB VRAM + ~10GB pinned RAM (upstream llama.cpp, 30 tok/s at 128K with q4_0+FA)"
-    source: "mudler/GLM-4.7-Flash-APEX-GGUF"
-    kv_cache: "q4_0"
+    size: ~14.6 GB (APEX I-Compact)
+    context: 131072
+    vram_usage: ~5 GB VRAM
+    source: mudler/GLM-4.7-Flash-APEX-GGUF
+    kv_cache: q4_0
     features:
       completion: true
       tools: true
@@ -76,4 +51,8 @@
     context_length: 131072
     embedding_length: 2048
     quantization: I-Compact
-    note: "30B MoE with MLA (Multi-head Latent Attention, DeepSeek-V2 style). 64 experts, 4 active, ~2B active/token. Smallest 35B-class in fleet (14.6GB). MLA compresses KV cache internally — no hadamard transform needed. Apache-2.0."
+    note: 'vram detalhe: ~5GB VRAM + ~10GB pinned RAM (upstream llama.cpp, 30 tok/s
+      at 128K with q4_0+FA) 30B MoE with MLA (Multi-head Latent Attention, DeepSeek-V2
+      style). 64 experts, 4 active, ~2B active/token. Smallest 35B-class in fleet
+      (14.6GB). MLA compresses KV cache internally — no hadamard transform needed.
+      Apache-2.0.'

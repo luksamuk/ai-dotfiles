@@ -140,57 +140,71 @@ macros:
   "gemma_cache_k": "q4_0"
   "gemma_cache_v": "q4_0"
 models:
-# -------------------------------------------
-# QWEN3.5-4B - ik_llama.cpp BACKEND
-# Dense 4B params, UD-Q4_K_XL ~2.8GB.
-# ik_llama.cpp with hadamard KV cache + --fit for dynamic context.
-# Ngram speculative decoding via ik syntax.
-# qwen-fixed-chat-template.jinja for tool-call instructions.
-# Tool calling: --parallel-tool-calls.
-# Thinking: reasoning_content field, separate from content.
-# Dual mode: base (chat, no think) and :think (reasoning)
-# NOTE: Formerly "qwen3.5-4b-mtp" — consolidated as canonical qwen3.5-4b (Jul 2026)
-#   Old upstream+Q4_K_M variant moved to _disabled/qwen3.5-4b-upstream.yaml
-# -------------------------------------------
-  "qwen3.5-4b":
-    name: "Qwen3.5 4B"
-    description: "Qwen 3.5 4B with UD-Q4_K_XL quantization and ik_llama.cpp. Uses hadamard KV cache for maximum context efficiency and ngram speculative decoding."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
+  qwen3.5-4b:
+    name: Qwen3.5 4B
+    description: Qwen 3.5 4B with UD-Q4_K_XL quantization and ik_llama.cpp. Uses hadamard KV cache for maximum context efficiency and ngram speculative decoding.
+    cmd: '${ik_llama_server} --port ${PORT}
+
       --model ${models_dir}/qwen3.5-4b-mtp/Qwen3.5-4B-UD-Q4_K_XL.gguf
+
       --fit
+
       --fit-margin 512
+
       --jinja
+
       --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+
       --parallel 1
+
       --parallel-tool-calls
+
       --ctx-size ${small_model_max_ctx}
+
       --temp ${default_temp}
+
       --top-p ${default_top_p}
+
       --top-k ${default_top_k}
+
       --min-p ${default_min_p}
+
       --repeat-penalty ${default_repeat_penalty}
+
       --reasoning on
+
       --cache-type-k q4_0
+
       --cache-type-v q4_0
+
       --k-cache-hadamard
+
       --v-cache-hadamard
+
       --flash-attn auto
+
       --no-graph-reuse
+
       --ctx-checkpoints 0
+
       --ctx-checkpoints-interval 0
+
       --batch-size 512
+
       --ubatch-size 128
+
       --metrics
+
+      '
     filters:
-      stripParams: "temperature, top_p"
+      stripParams: temperature, top_p
       setParamsByID:
-        "${MODEL_ID}":
+        ${MODEL_ID}:
           chat_template_kwargs:
             enable_thinking: false
           temperature: 0.7
           top_p: 0.9
-        "${MODEL_ID}:think":
+        ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
@@ -199,18 +213,18 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'text'
+        - text
       tools: true
       reranker: false
       context: 131072
     metadata:
-      size: "~2.8 GB (UD-Q4_K_XL)"
-      context: "64K-128K (dynamic)"
-      vram_usage: "~4.5GB VRAM (model 2.8GB + q8_0/q4_0 hadamard cache + compute)"
-      source: "unsloth/Qwen3.5-4B-GGUF (UD-Q4_K_XL)"
-      kv_cache: "q4_0/q4_0 + hadamard"
+      size: ~2.8 GB (UD-Q4_K_XL)
+      context: 131072
+      vram_usage: ~4.5 GB VRAM
+      source: unsloth/Qwen3.5-4B-GGUF (UD-Q4_K_XL)
+      kv_cache: q4_0/q4_0 + hadamard
       features:
         completion: true
         tools: true
@@ -225,57 +239,66 @@ models:
       context_length: 262144
       embedding_length: 2560
       quantization: UD-Q4_K_XL
-      note: "ik_llama.cpp with hadamard KV cache + --fit for dynamic context. Ngram spec decode via ik syntax. Uses qwen-fixed-chat-template.jinja for tool-call instructions. Formerly qwen3.5-4b-mtp, consolidated Jul 2026."
-# -------------------------------------------
-# LFM2.5-2.6B - Liquid AI agentic on-device model (dense hybrid, text-only)
-# 2.69B params, 30 layers (22 double-gated short conv + 8 GQA)
-# Pre-trained on ~34T tokens, 128K context, 128K vocab
-# 16 languages including Portuguese
-# Reasoning model: always thinks before answering (tag 205)
-# ChatML-like format, same as LFM2.5-8B-A1B
-# GGUF has NO chat_template - requires --chat-template-file
-# Backend: upstream llama.cpp (lfm2 arch supported, dense model)
-# Model card params: temp=0.1, top_k=50, repeat_penalty=1.1
-# Agentic RL post-training: trained inside Hermes Agent, OpenClaw, Pi
-# Strong tool calling (ToolSandbox 77.83, ahead of Qwen3.5-9B at 76.44)
-# Q8_0 = 2.87 GB - fits entirely in VRAM with room for context
-# Only 8/30 layers are attention (GQA), KV cache is tiny - keep f16 (q8_0 is pure dequant overhead)
-# -------------------------------------------
+      note: 'vram detalhe: ~4.5GB VRAM (model 2.8GB + q8_0/q4_0 hadamard cache + compute) ik_llama.cpp with hadamard KV cache + --fit for dynamic context. Ngram spec decode via ik syntax. Uses qwen-fixed-chat-template.jinja for tool-call instructions. Formerly qwen3.5-4b-mtp, consolidated Jul 2026.'
   lfm2.5-2.6b:
-    name: "LFM 2.5 2.6B"
-    description: "Liquid AI on-device agentic model. 2.6B dense hybrid with 128K context. Trained with agentic RL inside Hermes Agent. Best-in-class tool use for its size."
-    cmd: |
-      env LD_LIBRARY_PATH=${env.HOME}/git/llama.cpp/build/bin ${llama_server} --port ${PORT}
+    name: LFM 2.5 2.6B
+    description: Liquid AI on-device agentic model. 2.6B dense hybrid with 128K context. Trained with agentic RL inside Hermes Agent. Best-in-class tool use for its size.
+    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/llama.cpp/build/bin ${llama_server} --port ${PORT}
+
       --model ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-QAD-Q4_0.gguf
+
       --fit on
+
       --fit-target ${vram_margin}
+
       # server: vanilla 0.6.0 (d81235049, 05/10) — build na mesma pasta que o cafe 0.74
+
       --fit-ctx 131072
+
       --ctx-size 131072
+
       --parallel 2
+
       --reasoning on
+
       --chat-template-file ${templates_dir}/lfm2.5-chat-template.jinja
+
       --temp 0.1
+
       --top-p 0.9
+
       --top-k 50
+
       --min-p 0.0
+
       --repeat-penalty 1.1
+
       --cache-type-k q4_0
+
       --cache-type-v q4_0
+
       --flash-attn on
+
       --jinja
+
       -md ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-DSpark-Draft-v1-F16.gguf
+
       --spec-type draft-dspark
+
       --spec-draft-n-max 10
+
       --spec-draft-n-min 0
+
       --metrics
+
+      '
     filters:
-      stripParams: "temperature, top_p"
+      stripParams: temperature, top_p
       setParamsByID:
-        "${MODEL_ID}":
+        ${MODEL_ID}:
           temperature: 0.1
           top_p: 0.9
-        "${MODEL_ID}:think":
+        ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.1
@@ -284,18 +307,18 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'text'
+        - text
       tools: true
       reranker: false
       context: 131072
     metadata:
-      size: "~1.55 GB (QAD Q4_0)"
-      context: "64K-128K (dynamic)"
-      vram_usage: "~3.9GB VRAM (model 1.55GB + q4_0 KV 131K + compute)"
-      source: "LiquidAI/LFM2.5-2.6B-GGUF (QAD Q4_0)"
-      kv_cache: "q4_0"
+      size: ~1.55 GB (QAD Q4_0)
+      context: 131072
+      vram_usage: ~3.9GB VRAM (model 1.55GB + q4_0 KV 131K + compute)
+      source: LiquidAI/LFM2.5-2.6B-GGUF (QAD Q4_0)
+      kv_cache: q4_0
       features:
         completion: true
         tools: true
@@ -310,66 +333,71 @@ models:
       context_length: 131072
       embedding_length: 2048
       quantization: QAD Q4_0
-      note: "Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only 8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM in 6GB. QAD (Quantization-Aware Distillation) recovers ~97% of BF16 quality vs native Q4_0. DSpark speculative decoding via F16 draft sidecar (633MB) — up to 2.27x speedup on-device, 57% latency reduction for function calling."
-# -------------------------------------------
-# QWEN2.5-CODER-1.5B-INSTRUCT-POLLARD - CPU-ONLY (coexist with GPU MoE)
-# Pollard memory-fit quantization with imatrix guidance.
-# Role/depth-aware precision: sensitive tensors high precision, FFN bulk compressed.
-# Pollard v2 self-quant (2026-08-31): attn q/k/v/o -> q5_K (protected), ffn -> iq4_xs.
-# 825.90 MiB, 4.49 BPW. Bench N=5 (maple 8ce8ca6, ngl 0): pp512 +7.6% (60.88 -> 65.48),
-# tg128 empate (CIs overlap), FIM cold -6%, warm tpot equivalente.
-# v2 wired 2026-09-16 via FRAGMENT edit + rebuild (v1 de 23/ago mantido em rollback).
-# Architecture: qwen2 (28 layers, dense 1.54B params).
-# Qwen2.5-Coder FIM tokens: <|fim_prefix|>, <|fim_suffix|>, <|fim_middle|>
-# Also supports repo-level completion via <|repo_name|> and <|file_sep|>
-# Backend: upstream llama.cpp, CPU-ONLY (CUDA_VISIBLE_DEVICES="").
-# Purpose: code completion on CPU while GPU runs heavy MoE (Ornith 35B etc).
-# ~44 tok/s on i7-13650HX CPU-only (estimated, same arch as Instruct variant).
-# -------------------------------------------
-  "qwen2.5-coder-1.5b-pollard":
-    name: "Qwen2.5 Coder 1.5B Pollard"
-    description: "Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct, CPU-only. IQ4_XS with imatrix. FIM native. Code completion on CPU, zero VRAM, coexists with GPU MoE."
-    cmd: |
-      ${llama_server} --port ${PORT}
+      note: Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only 8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM in 6GB. QAD (Quantization-Aware Distillation) recovers ~97% of BF16 quality vs native Q4_0. DSpark speculative decoding via F16 draft sidecar (633MB) — up to 2.27x speedup on-device, 57% latency reduction for function calling.
+  qwen2.5-coder-1.5b-pollard:
+    name: Qwen2.5 Coder 1.5B Pollard
+    description: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct, CPU-only. IQ4_XS with imatrix. FIM native. Code completion on CPU, zero VRAM, coexists with GPU MoE.
+    cmd: '${llama_server} --port ${PORT}
+
       --model ${models_dir}/qwen2.5-coder-1.5b-pollard-new/Qwen2.5-Coder-1.5B-Pollard-v2-IQ4XS-class.gguf
+
       --jinja
+
       --parallel 1
+
       --ctx-size ${completion_ctx}
+
       --temp 0.7
+
       --top-p 0.8
+
       --top-k 20
+
       --min-p 0.0
+
       --repeat-penalty 1.1
+
       --cache-type-k ${small_cache_k}
+
       --cache-type-v ${small_cache_v}
+
       --batch-size 512
+
       --ubatch-size 128
+
       --spec-type ngram-mod
+
       --spec-ngram-mod-n-match 24
+
       --spec-ngram-mod-n-min 48
+
       --spec-ngram-mod-n-max 64
+
       --no-webui
+
       --metrics
+
+      '
     env:
-      - "CUDA_VISIBLE_DEVICES="
+      - CUDA_VISIBLE_DEVICES=
     filters:
-      stripParams: "temperature, top_p"
+      stripParams: temperature, top_p
     ttl: 60
     health_check_timeout: 300
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'text'
+        - text
       tools: false
       reranker: false
       context: 32768
     metadata:
-      size: "~824 MB (Pollard IQ4_XS + imatrix)"
-      context: "32K (completion)"
-      vram_usage: "0 (CPU-only)"
-      source: "PollardWeights/Qwen2.5-Coder-1.5B-Instruct-Pollard (IQ4_XS)"
-      kv_cache: "q8_0"
+      size: ~824 MB (Pollard IQ4_XS + imatrix)
+      context: 32768
+      vram_usage: 0 (CPU-only)
+      source: PollardWeights/Qwen2.5-Coder-1.5B-Instruct-Pollard (IQ4_XS)
+      kv_cache: q8_0
       features:
         completion: true
         tools: false
@@ -384,59 +412,62 @@ models:
       context_length: 32768
       embedding_length: 1536
       quantization: Pollard IQ4_XS
-      note: "Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE. ngram-mod enabled."
-# -------------------------------------------
-# -------------------------------------------
-# QWEN3.6-35B-A3B-HERETIC — PRODUCAO (cafe-llama.cpp 0.74, OFICIAL 05/10)
-# Uncensored oficial da frota: heretic do llmfan46 (KL 0.0015, 88% menos
-# recusas), quant SC117 APEX-I-Compact com MTP nextn=1 preservado.
-# Renamed era "-cafe"; o ik (pico > rapido) ficou em _disabled/...-fast.yaml
-# -cmoe 05/10: experts em page cache file-backed (RAM used ~5-6GB, evictavel)
-#   — mesma FISICA provada no ornith-heretic + laguna (bancada 05/10);
-#   -hmoe pinava ~15GB. Medicao -cmoe dedicada deste modelo: proximo smoke.
+      note: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE. ngram-mod enabled.
+  qwen3.6-35b-a3b-heretic:
+    name: Qwen 3.6 35B Heretic
+    description: Qwen's 35B-A3B MoE generalist, abliterated (heretic TPE). 131K context, 2x64K slots.
+    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
-# ARMADILHAS do fork (ler cafe-llama-cpp-eval.md antes de mexer):
-#   - NUNCA --pipeline-parallel com ctx >=131K (buffer DMA 48GB → OOM duplo)
-#   - turbo2 CRASHA na arch hibrida; turbo4 limpo
-#   - MTP draft @262K nao cabe (draft KV 512MiB) — sem --spec-type aqui
-#   - cafe NAO tem: --parallel-tool-calls, --no-graph-reuse, --defer-experts,
-#     --prefetch-experts, --k/v-cache-hadamard, --fit-margin (usar --fit-target)
-#   - env LD_LIBRARY_PATH OBRIGATORIA (RUNPATH morto), sintaxe spec 0.74: draft-mtp
-# -------------------------------------------
-  "qwen3.6-35b-a3b-heretic":
-    name: "Qwen 3.6 35B Heretic"
-    description: "Assistente de código sem censura com visão (heretic llmfan46). OFICIAL 05/10 no cafe-llama.cpp 0.74 (-cmoe, parallel 1 + mmproj em RAM — receita do ornith-heretic, VRAM ~4GB): ctx 131K, RAM evictável ~5-6GB used."
-    cmd: |
-      env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
       --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
+
       --mmproj ${models_dir}/qwen36-heretic-apex-mini/mmproj.gguf
+
       --ctx-size 131072
+
       --jinja
+
       --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+
       --parallel 1
+
       --no-mmproj-offload
+
       --cache-type-k q4_0
+
       --cache-type-v q4_0
+
       --flash-attn on
+
       -cmoe
+
       -ngl 99
+
       -b 512
+
       -ub 128
+
       --temp ${code_temp}
+
       --top-p ${code_top_p}
+
       --top-k ${code_top_k}
+
       --min-p ${code_min_p}
+
       --repeat-penalty ${code_repeat_penalty}
+
       --metrics
+
+      '
     filters:
-      stripParams: "temperature, top_p"
+      stripParams: temperature, top_p
       setParamsByID:
-        "${MODEL_ID}":
+        ${MODEL_ID}:
           chat_template_kwargs:
             enable_thinking: false
           temperature: 0.6
           top_p: 0.95
-        "${MODEL_ID}:think":
+        ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
@@ -445,19 +476,19 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-        - 'text'
-        - 'image'
+        - text
+        - image
       out:
-        - 'text'
+        - text
       tools: true
       reranker: false
       context: 131072
     metadata:
-      size: "~14.66 GB (APEX-I-Compact, heretic) + 614 MB mmproj Q8"
-      context: "131K (2 slots de 64K)"
-      vram_usage: "~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe)"
-      source: "SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth Q8"
-      kv_cache: "q4_0/q4_0"
+      size: ~14.66 GB (APEX-I-Compact, heretic)
+      context: 131072
+      vram_usage: ~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe)
+      source: SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth Q8
+      kv_cache: q4_0/q4_0
       features:
         completion: true
         tools: true
@@ -471,52 +502,52 @@ models:
       parameters: 34660000000
       context_length: 262144
       embedding_length: 2048
-      quantization: "APEX I-Compact"
-      note: "Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused (IK TurboQuant); source do mmproj: unsloth Q8."
-# [REACTIVATED 03/10/2026 noite — next80 removido; GGUF APEX re-download iniciado.]
-# -------------------------------------------
-# QWEN3-CODER-30B-A3B — baseline limpo de código no cafe-llama.cpp
-# Espelho de config do qwen3.6-35b-a3b-heretic-cafe (mesmas flags do café):
-# LD_LIBRARY_PATH obrigatória (RUNPATH morto), turbo4 KV, -hmoe, template
-# embutido --jinja. Diferenças de família (LERCER que o irmão):
-#   - text-only (sem mmproj)
-#   - SEM --spec-type draft-mtp (arch qwen3_moe não tem nextn)
-#   - SEM thinking (Instruct puro — sem enable_thinking nos filters)
-#   - sampling do fabricante: 0.7/0.8/20
-# Café NÃO aceita: --parallel-tool-calls, --no-graph-reuse, --defer-experts,
-#   --prefetch-experts, --k/v-cache-hadamard, --fit-margin.
-# NÃO usar --chat-template-file do heretic aqui: o Qwen3-Coder-30B (qwen3_moe)
-#   NÃO compartilha o template do 3.6/35B — com o template herdado o modelo
-#   emite EOG no 1º token (content vazio, predicted_n 1). --jinja embutido
-#   resolve (fix Oct 2, smoke content correto). Pitfall registrado no
-#   cafe-llama-cpp-eval.md.
-# -------------------------------------------
-  "qwen3-coder-30b":
-    name: "Qwen 3 Coder 30B"
-    description: "Qwen3-Coder-30B-A3B-Instruct em APEX I-Compact no cafe-llama.cpp 0.74 (OFICIAL 05/10, -cmoe + parallel 1): text-only, sem MTP (qwen3_moe sem nextn), sem thinking. Sampling 0.7/0.8/20. Baseline de código sem heretic. VRAM ~4GB esperado (medir no smoke) + RAM evictável."
-    cmd: |
-      env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+      quantization: APEX I-Compact
+      note: 'Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused (IK TurboQuant); source do mmproj: unsloth Q8.'
+  qwen3-coder-30b:
+    name: Qwen 3 Coder 30B
+    description: Qwen's 30B-A3B MoE coding model (heretic, text-only). Agentic-first tool calling at 131K context.
+    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
       --model ${models_dir}/qwen3-coder-30b/Qwen3-Coder-30B-APEX-I-Compact.gguf
+
       --ctx-size 131072
+
       --jinja
+
       --parallel 1
+
       --cache-type-k q4_0
+
       --cache-type-v q4_0
+
       --flash-attn on
+
       -cmoe
+
       -ngl 99
+
       -b 512
+
       -ub 128
+
       --temp ${code_temp}
+
       --top-p ${code_top_p}
+
       --top-k ${code_top_k}
+
       --min-p ${code_min_p}
+
       --repeat-penalty ${code_repeat_penalty}
+
       --metrics
+
+      '
     filters:
-      stripParams: "temperature, top_p"
+      stripParams: temperature, top_p
       setParamsByID:
-        "${MODEL_ID}":
+        ${MODEL_ID}:
           temperature: 0.7
           top_p: 0.8
           top_k: 20
@@ -524,18 +555,18 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'text'
+        - text
       tools: true
       reranker: false
       context: 131072
     metadata:
-      size: "~13.8 GB (APEX I-Compact) — text-only, sem mmproj"
-      context: "131K (2 slots de 64K)"
-      vram_usage: "MEDIDO 05/10 (zen fechado): 4.64GB VRAM, decode 31.3-32.8 t/s (μ32), prefill 165 t/s, load 6.6s — ik -fast no mesmo dia: 35.2 t/s / prefill 432 t/s (ik domina prefill; cafe empata decode e evita RAM pinada)"
-      source: "mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)"
-      kv_cache: "q4_0/q4_0"
+      size: ~13.8 GB (APEX I-Compact)
+      context: 131072
+      vram_usage: ~4.6 GB VRAM (experts CPU)
+      source: mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)
+      kv_cache: q4_0/q4_0
       features:
         completion: true
         tools: true
@@ -549,75 +580,56 @@ models:
       parameters: 30500000000
       context_length: 262144
       embedding_length: 2048
-      quantization: "APEX I-Compact"
-      note: "Deploy Oct 2 2026: variante café do qwen3-coder-30b (ik), espelho do heretic-cafe. Sem MTP (arch sem nextn), text-only, sampling do fabricante 0.7/0.8/20. Turbo4 KV limpo na arch (crasha só em hibrida SSM). ONYX de el4: não existe pra esse modelo (catalogado Oct 1)."
-# Laguna XS 2.1 — Poolside's 33B/3B MoE agentic coding model (REVANCHE Sep/2026)
-# Fragmento REESCRITO pro cafe-llama.cpp (o ik morria no OOM de RAM: 257 experts
-# → 29GB RSS durante load). Validado 20/set/2026:
-#   Backend: cafe-llama.cpp. MoE offload por -hmoe (experts pinned em RAM):
-#   sem warmup por domínio (o -ssd tinha esse custo; user trocou p/ -hmoe e validou).
-#   VRAM 3.5GB (dense+attn na GPU) | RSS ~12-14GB pinned (fechar apps pesados)
+      quantization: APEX I-Compact
+      note: 'vram detalhe: MEDIDO 05/10 (zen fechado): 4.64GB VRAM, decode 31.3-32.8 t/s (μ32), prefill 165 t/s, load 6.6s — ik -fast no mesmo dia: 35.2 t/s / prefill 432 t/s (ik domina prefill; cafe empata decode e evita RAM pinada) Deploy Oct 2 2026: variante café do qwen3-coder-30b (ik), espelho do heretic-cafe. Sem MTP (arch sem nextn), text-only, sampling do fabricante 0.7/0.8/20. Turbo4 KV limpo na arch (crasha só em hibrida SSM). ONYX de el4: não existe pra esse modelo (catalogado Oct 1).'
+  laguna-xs-2.1:
+    name: Laguna XS 2.1
+    description: Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. 131K context, -cmoe expert offload.
+    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
-# GGUF: Q4_K_M OFICIAL Poolside (20.27GB, 4.6bpw) — byte-exato LFS.
-#   NÃO usar APEX I-Compact (3.9bpw): trava com QUALQUER system prompt
-#   (gera só invisíveis) — degradation do quant no instruction-following
-#   do 33B/257-experts. APEX deletado do disco (user decision).
-#   E o Q4_K_M é MAIS RÁPIDO que o APEX (kernels K-quant maduros vs pedágio
-#   de dequant i-quant em experts paginados do SSD).
-
-# TEMPLATE: EMBUTIDO no GGUF (mudler/poolside v5+, sem {% generation %} blocks)
-#   via --jinja puro. NÃO usar --chat-template-file laguna-chat-template.jinja
-#   (v5 externo não renderiza generation prompt no cafe — chat vazio).
-#   Dual-mode via chat_template_kwargs.enable_thinking funciona nativo.
-
-# KV CACHE: q4_0/q4_0 — o TETO de contexto com qualidade limpa é 131K.
-#   NÃO usar turbo4/turbo2 nesta arch: turbo4 CORROMPE o comportamento em
-#   ctx longo E curto (QG quebra, chat off-topic — SWA layers sem de-transform
-#   no caminho FA do cafe; mesmo padrão do hadamard-K do ik documentado).
-#   262K q4_0 não carrega (compute buffer 1.34GB OOM); 262K turbo4 carrega
-#   mas corrompe. Teto: 131K q4_0 (KV ~1.6GB, 10 full-attn layers × 8 kv-heads
-#   × 128 dim; as 30 layers SWA-512 têm custo fixo e não crescem).
-
-# STATUS: _disabled/ por decisão do user (20/set) — re-deploy quando quiser:
-#   mover p/ models/, var lag + heavy set + evict 9 no config-footer,
-#   ORIGINAL_ORDER no build-config, build-config.py, smoke testchat.
-
-# Performance validada (RTX 3050 6GB, ctx 131072):
-#   decode 31.8 t/s | QG 50/50 perfeito | thinking 2647c separado OK |
-#   tool calling nativo OK (get_weather) | chat endpoint limpo
-# Samplers laguna: temp 0.3 / top_p 0.85 / rep 1.1 (over-gen de tools mitigada).
-  "laguna-xs-2.1":
-    name: "Laguna XS 2.1"
-    description: "Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. Served by cafe-llama.cpp com -cmoe (0.74): decode 34.6-35.1 t/s (top do dia 05/10, com desktop ativo) + RAM evictável (~5GB used; experts em page cache file-backed). 131K context with clean quality."
-    cmd: |
-      env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
       --model ${models_dir}/laguna-xs-2.1/Laguna-XS-2.1-Q4_K_M.gguf
+
       --jinja
+
       --parallel 1
+
       --ctx-size 131072
+
       --cache-type-k q4_0
+
       --cache-type-v q4_0
+
       --flash-attn on
+
       -cmoe
+
       -ngl 99
+
       --temp 0.3
+
       --top-p 0.85
+
       --top-k 40
+
       --min-p 0.02
+
       --repeat-penalty 1.12
+
       --metrics
+
+      '
     filters:
-      stripParams: "temperature, top_p"
+      stripParams: temperature, top_p
       setParams:
         stop:
-          - "</assistant>"
+          - </assistant>
       setParamsByID:
-        "${MODEL_ID}":
+        ${MODEL_ID}:
           chat_template_kwargs:
             enable_thinking: false
           temperature: 0.3
           top_p: 0.85
-        "${MODEL_ID}:think":
+        ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.7
@@ -626,18 +638,18 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'text'
+        - text
       tools: true
       reranker: false
       context: 131072
     metadata:
-      size: "~20.3 GB (Q4_K_M official)"
-      context: "131K"
-      vram_usage: "MEDIDO 05/10 0.74 (c/ desktop ativo): -cmoe 3.9GB VRAM + ~5GB RAM used (18GB em page cache file-backed evictável), decode 34.6-35.1 t/s | -hmoe: 4.7GB VRAM + ~21GB used pinado, 28.5-32.0 | -ssd+predict: empata mas PERDEU no uso live (user verbatim 'lento'), rejeitado"
-      source: "poolside/Laguna-XS-2.1-GGUF (Q4_K_M official)"
-      kv_cache: "q4_0/q4_0"
+      size: ~20.3 GB (Q4_K_M official)
+      context: 131072
+      vram_usage: ~4.0 GB VRAM + ~5 GB RAM (page cache evictável)
+      source: poolside/Laguna-XS-2.1-GGUF (Q4_K_M official)
+      kv_cache: q4_0/q4_0
       features:
         completion: true
         tools: true
@@ -652,62 +664,74 @@ models:
       context_length: 131072
       embedding_length: 2048
       quantization: Q4_K_M
-      note: "Revanche Sep 2026: cafe-llama.cpp carrega o que o ik nao conseguia (o ik morria com 29GB RSS no load). MoE offload via -hmoe (experts pinned em RAM, ~12-14GB, sem warmup por dominio; o -ssd era a alternativa com warmup). Q4_K_M oficial obrigatorio — APEX I-Compact trava com system prompt (deletado). Template EMBUTIDO via --jinja (externo v5 nao renderiza no cafe). turbo4/turbo2 corrompem a arch SWA hibrida — teto de ctx com qualidade: 131K q4_0. Decode 31.8 t/s @131K. Tool calling: com tools no request a grammar do cafe limita a 1 call/round e suprime o thinking (bug do fork, ver skill). GGUF em ~/.llama-models/laguna-xs-2.1/."
-# -------------------------------------------
-# NEOHORSE-1-4B — TokenRhythm (RSI routing harness gen-1)
-# TokenRhythm/NeoHorse-1-4B-GGUF (oficial, 08/09) — Q4_K_M 2.71 GB.
-# Fine-tune agentic do Qwen3.5-4B (mesmo base do qwen3.5-4b da frota).
-# Arch qwen35 CONFIRMADA no header (igual base) — ik_llama direto.
-#   ZERO tensors nextn (repack text-only stripou o MTP do base!) — sem spec
-#   decode por enquanto; o base tem os 4 tensors nextn (experimento separado).
-# Template GGUF: dual-mode REAL (enable_thinking x2, tools x40) — mesmo padrão.
-# Samplers do card (protocolo SGLang): temp 1.0 / top_p 0.95 / top_k 20 /
-#   min_p 0 / presence_penalty 1.5 / repetition 1.0 (thinking ON).
-# Card: 64.87 avg (10 benches) vs qwen3.5-4b 58.94 (+5.93). Fraco: BFCL v4
-#   61.79, VitaBench 32.0. Protocolo deles: 3 runs nos agentic, decontaminado.
-# Copy-YAML do qwen3.5-4b (same-arch) — só path + samplers + metadados mudam.
-# -------------------------------------------
-  "neohorse-1-4b":
-    name: "NeoHorse 1 4B"
-    description: "TokenRhythm NeoHorse-1 — fine-tune agentic do Qwen3.5-4B (RSI routing harness gen-1). +5.93 avg sobre o base no card (64.87 vs 58.94). Text-only repack, sem MTP head. ik_llama + hadamard KV."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
+      note: 'vram detalhe: MEDIDO 05/10 0.74 (c/ desktop ativo): -cmoe 3.9GB VRAM + ~5GB RAM used (18GB em page cache file-backed evictável), decode 34.6-35.1 t/s | -hmoe: 4.7GB VRAM + ~21GB used pinado, 28.5-32.0 | -ssd+predict: empata mas PERDEU no uso live (user verbatim ''lento''), rejeitado Revanche Sep 2026: cafe-llama.cpp carrega o que o ik nao conseguia (o ik morria com 29GB RSS no load). MoE offload via -hmoe (experts pinned em RAM, ~12-14GB, sem warmup por dominio; o -ssd era a alternativa com warmup). Q4_K_M oficial obrigatorio — APEX I-Compact trava com system prompt (deletado). Template EMBUTIDO via --jinja (externo v5 nao renderiza no cafe). turbo4/turbo2 corrompem a arch SWA hibrida — teto de ctx com qualidade: 131K q4_0. Decode 31.8 t/s @131K. Tool calling: com tools no request a grammar do cafe limita a 1 call/round e suprime o thinking (bug do fork, ver skill). GGUF em ~/.llama-models/laguna-xs-2.1/.'
+  neohorse-1-4b:
+    name: NeoHorse 1 4B
+    description: NeoHorse community 4B model. 131K context with --fit.
+    cmd: '${ik_llama_server} --port ${PORT}
+
       --model ${models_dir}/neohorse-1-4b/NeoHorse-1-4B-Q4_K_M.gguf
+
       --fit
+
       --fit-margin 512
+
       --jinja
+
       --parallel 1
+
       --parallel-tool-calls
+
       --ctx-size ${small_model_max_ctx}
+
       --temp 1.0
+
       --top-p 0.95
+
       --top-k 20
+
       --min-p 0
+
       --presence-penalty 1.5
+
       --repeat-penalty 1.0
+
       --reasoning on
+
       --cache-type-k q4_0
+
       --cache-type-v q4_0
+
       --k-cache-hadamard
+
       --v-cache-hadamard
+
       --flash-attn auto
+
       --no-graph-reuse
+
       --ctx-checkpoints 0
+
       --ctx-checkpoints-interval 0
+
       --batch-size 512
+
       --ubatch-size 128
+
       --metrics
+
+      '
     filters:
-      stripParams: "temperature, top_p, presence_penalty"
+      stripParams: temperature, top_p, presence_penalty
       setParamsByID:
-        "${MODEL_ID}":
+        ${MODEL_ID}:
           chat_template_kwargs:
             enable_thinking: false
           temperature: 0.7
-          top_p: 0.80
+          top_p: 0.8
           top_k: 20
           presence_penalty: 1.5
-        "${MODEL_ID}:think":
+        ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
           temperature: 1.0
@@ -718,18 +742,18 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'text'
+        - text
       tools: true
       reranker: false
       context: 131072
     metadata:
-      size: "~2.71 GB (Q4_K_M)"
-      context: "64K-128K (dynamic via --fit); 262144 nativo"
-      vram_usage: "~4.4 GB (model 2.7GB + q4_0 hadamard cache + compute)"
-      source: "TokenRhythm/NeoHorse-1-4B-GGUF (Q4_K_M oficial)"
-      kv_cache: "q4_0/q4_0 + hadamard"
+      size: ~2.71 GB (Q4_K_M)
+      context: 131072
+      vram_usage: ~4.4 GB (model 2.7GB + q4_0 hadamard cache + compute)
+      source: TokenRhythm/NeoHorse-1-4B-GGUF (Q4_K_M oficial)
+      kv_cache: q4_0/q4_0 + hadamard
       features:
         completion: true
         tools: true
@@ -744,60 +768,68 @@ models:
       context_length: 262144
       embedding_length: 2560
       quantization: Q4_K_M
-      note: "Copy-YAML do qwen3.5-4b (18/09). Samplers do card TokenRhythm (protocolo SGLang: temp 1.0/top_p 0.95/presence 1.5 thinking; instruct 0.7/0.80/presence 1.5). SEM tensors nextn (o repack stripou o MTP do base — o base mantém, experimento MTP separado). Comparar na régua 155 vs qwen3.5-4b (66/75 histórico). Deploy: pending smoke (fila empero em curso 18/09)."
-# -------------------------------------------
-# LFM2.5-VL-3B — Liquid AI VLM with grounding + OCR
-# 3B params (2.6B LFM2.5 backbone + SigLIP2 NaFlex 400M vision)
-# lfm2_vl arch — supported in upstream llama.cpp
-# Better grounding than 1.6B, full-page OCR with layout annotation
-# 32K context, 16 languages (incl Portuguese)
-# SigLIP2 NaFlex: native resolution, 512x512 patch splitting + thumbnail
-# Recommended for single-turn high-throughput: object detection, OCR, translation
-# NOT recommended for long-context reasoning-intensive tasks
-# Backend: upstream llama.cpp (lfm2_vl arch supported)
-# -------------------------------------------
-  "lfm2.5-vl-3b":
-    name: "LFM2.5-VL 3B"
-    description: "Liquid AI VLM with native grounding, OCR with layout annotation, and SigLIP2 NaFlex vision. 3B params, 32K context, 16 languages."
+      note: 'Copy-YAML do qwen3.5-4b (18/09). Samplers do card TokenRhythm (protocolo SGLang: temp 1.0/top_p 0.95/presence 1.5 thinking; instruct 0.7/0.80/presence 1.5). SEM tensors nextn (o repack stripou o MTP do base — o base mantém, experimento MTP separado). Comparar na régua 155 vs qwen3.5-4b (66/75 histórico). Deploy: pending smoke (fila empero em curso 18/09).'
+  lfm2.5-vl-3b:
+    name: LFM2.5-VL 3B
+    description: Liquid AI VLM with native grounding, OCR with layout annotation, and SigLIP2 NaFlex vision. 3B params, 32K context, 16 languages.
     tags:
-      - "vision"
-    cmd: |
-      ${llama_server} --port ${PORT}
+      - vision
+    cmd: '${llama_server} --port ${PORT}
+
       --model ${models_dir}/lfm2.5-vl-3b/LFM2.5-VL-3B-Q6_K.gguf
+
       --mmproj ${models_dir}/lfm2.5-vl-3b/mmproj-LFM2.5-VL-3B-Q8_0.gguf
+
       --media-path ${media_path}
+
       --jinja
+
       --fit on
+
       --fit-target ${vram_margin}
+
       --fit-ctx 8192
+
       --ctx-size 32768
+
       --parallel 1
+
       --temp 0.3
+
       --top-p 0.9
+
       --top-k 40
+
       --min-p 0.0
+
       --repeat-penalty 1.1
+
       --cache-type-k ${small_cache_k}
+
       --cache-type-v ${small_cache_v}
+
       --flash-attn on
+
       --metrics
+
+      '
     ttl: 60
     health_check_timeout: 300
     capabilities:
       in:
-        - 'text'
-        - 'image'
+        - text
+        - image
       out:
-        - 'text'
+        - text
       tools: false
       reranker: false
       context: 32768
     metadata:
-      size: "~2.22 GB (Q6_K) + 583 MB mmproj (Q8_0)"
-      context: "8K-32K (dynamic)"
-      vram_usage: "~3.5 GB (model 2.22GB + mmproj 583MB + cache + compute)"
-      source: "LiquidAI/LFM2.5-VL-3B-GGUF (Q6_K + mmproj Q8_0)"
-      kv_cache: "q8_0"
+      size: ~2.22 GB (Q6_K) + 583 MB mmproj (Q8_0)
+      context: 32768
+      vram_usage: ~3.5 GB (model 2.22GB + mmproj 583MB + cache + compute)
+      source: LiquidAI/LFM2.5-VL-3B-GGUF (Q6_K + mmproj Q8_0)
+      kv_cache: q8_0
       features:
         completion: true
         tools: false
@@ -812,66 +844,53 @@ models:
       context_length: 32768
       embedding_length: 2048
       quantization: Q6_K
-      note: "VLM with SigLIP2 NaFlex (native resolution, 512x512 patches + thumbnail). Better grounding + OCR with layout than 1.6B. Single-turn high-throughput: object detection, OCR, translation. 16 languages incl Portuguese."
-# -------------------------------------------
-# NANBEIGE4.2-3B — UPSTREAM BACKEND (PR #25994 merged)
-# Looped Transformer: 22 layers reused 2x (num_loops=2) = 44 effective layers
-# LoopSplit + mHC with depth attention + concatenated n-gram embeddings
-# 4B total params (3B non-embedding), Q4_K_M ~2.4 GB
-# Architecture: nanbeige — now in upstream llama.cpp (commit b77d64675)
-# Vocab: 166,144. Context: 262K. head_dim=128.
+      note: 'VLM with SigLIP2 NaFlex (native resolution, 512x512 patches + thumbnail). Better grounding + OCR with layout than 1.6B. Single-turn high-throughput: object detection, OCR, translation. 16 languages incl Portuguese.'
+  nanbeige4.2-3b:
+    name: Nanbeige 4.2 3B
+    description: Nanbeige's 3B generalist chat model. 65K practical context (262K nominal).
+    cmd: '${llama_server} --port ${PORT}
 
-# Tool calling: XML format (tool_call_format="xml" in chat template)
-#   --jinja parses correctly, tested single + multi-turn (bug #22684 from 4.1 FIXED)
-#   2026-09-02 re-enable: tool args only parse CLEAN on :think variant @ temp 1.0.
-#   Base variant (thinking off, temp 0.6) mangles tool call arguments — use :think for agentic.
-# Thinking: enable_thinking toggle in chat template (dual mode: base + :think)
-#   preserve_thinking recommended for multi-turn tool use
-
-# Backend: upstream llama.cpp (PR #25994 merged 2026-07-27)
-#   Inherits: --fit on, --flash-attn auto, --parallel-tool-calls, MMQ/MMVQ
-#   --reasoning on for thinking extraction
-
-# KV cache budget (RTX 3050 6GB):
-#   Model: ~2.4 GB (Q4_K_M)
-#   44 effective layers, 8 KV heads, head_dim 128
-#   q4_0 KV: 44 KiB/token -> ~70K tokens fit in ~3GB remaining VRAM
-#   ctx-size 65536 with q4_0 is safe (leaves ~1GB headroom)
-
-# Inference params per model card:
-#   Reasoning/chat: temp=0.6, top_p=0.95, top_k=20
-#   Agentic/tool-use: temp=1.0
-# -------------------------------------------
-  "nanbeige4.2-3b":
-    name: "Nanbeige 4.2 3B"
-    description: "Compact agentic model with Looped Transformer architecture. 3B non-embedding params delivering solid performance on general-agent and code-agent tasks, outperforming larger models like Qwen3.5-9B and Gemma4-12B on agentic benchmarks."
-    cmd: |
-      ${llama_server} --port ${PORT}
       --model ${models_dir}/nanbeige4.2-3b/nanbeige4.2-3b-Q4_K_M.gguf
+
       --jinja
+
       --fit on
+
       --parallel 1
+
       --ctx-size 65536
+
       --temp 0.6
+
       --top-p 0.95
+
       --top-k 20
+
       --min-p 0.0
+
       --repeat-penalty 1.05
+
       --reasoning on
+
       --cache-type-k q4_0
+
       --cache-type-v q4_0
+
       --flash-attn auto
+
       --metrics
+
+      '
     filters:
-      stripParams: "temperature, top_p, top_k"
+      stripParams: temperature, top_p, top_k
       setParamsByID:
-        "${MODEL_ID}":
+        ${MODEL_ID}:
           chat_template_kwargs:
             enable_thinking: false
           temperature: 0.6
           top_p: 0.95
           top_k: 20
-        "${MODEL_ID}:think":
+        ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
             preserve_thinking: true
@@ -882,18 +901,18 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'text'
+        - text
       tools: true
       reranker: false
       context: 65536
     metadata:
-      size: "~2.4 GB (Q4_K_M)"
-      context: "65K (262K max, but 44 effective layers double KV cache — 65K sweet spot on 6GB with q4_0)"
-      vram_usage: "~2.4 GB model + ~2.9 GB q4_0 KV @ 65K + compute"
-      source: "owao/Nanbeige4.2-3B-GGUF (Q4_K_M)"
-      kv_cache: "q4_0/q4_0"
+      size: ~2.4 GB (Q4_K_M)
+      context: 65536
+      vram_usage: ~2.4 GB model + ~2.9 GB q4_0 KV @ 65K + compute
+      source: owao/Nanbeige4.2-3B-GGUF (Q4_K_M)
+      kv_cache: q4_0/q4_0
       features:
         completion: true
         tools: true
@@ -908,42 +927,17 @@ models:
       context_length: 262144
       embedding_length: 3072
       quantization: Q4_K_M
-      note: "Looped Transformer (22 layers x2 loops = 44 effective). Upstream llama.cpp (PR #25994). Multi-turn tool calling FIXED vs 4.1 (#22684). Thinking toggle via enable_thinking."
-# -------------------------------------------
-# LFM2.5-EMBED-350M - UPSTREAM BACKEND (embedding model, CPU-only)
-# 354M params, 1024-dim CLS vector, dense bi-encoder
-# Architecture: lfm2-bidir — first bidirectional LFM, built on LFM2.5-350M-Base
-# Embedding model — use via /v1/embeddings endpoint for RAG, semantic search, similarity
-# NOT a chat model — --embeddings flag required, --pooling cls for proper embeddings
-# Asymmetric prompts: "query: " for queries, "document: " for passages (auto-applied via prompt_name)
-# 512 max context — short but sufficient for most embedding tasks
-# 11 language support: en, es, de, fr, it, pt, ar, sv, no, ja, ko
-# Best-in-class dense embedder at 350M scale (NanoBEIR avg 0.577 NDCG@10)
-# --cont-batching: safe for embedding (no generation, just encoding)
-# KV cache: f16 — embedding models benefit from precision, not compression
-# CPU-ONLY (-ngl 0): frees VRAM for LLMs. ~7ms p50 on M4 Max, negligible on CPU
-# -------------------------------------------
-  "lfm2.5-embedding-350m":
-    name: "LFM2.5 Embed 350M"
-    description: "Liquid AI dense bi-encoder for fast multilingual retrieval. Single 1024-dim vector per document. Best-in-class dense embedder at 350M scale across 11 languages."
+      note: 'Looped Transformer (22 layers x2 loops = 44 effective). Upstream llama.cpp (PR #25994). Multi-turn tool calling FIXED vs 4.1 (#22684). Thinking toggle via enable_thinking.'
+  lfm2.5-embedding-350m:
+    name: LFM2.5 Embed 350M
+    description: Liquid AI embedding model (350M) for RAG and semantic search. CPU-only serving.
     env:
-      - "CUDA_VISIBLE_DEVICES="
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/LFM2.5-Embedding-350M-Q8_0.gguf
-      --embeddings
-      --pooling cls
-      --ctx-size 512
-      --cont-batching
-      --parallel 4
-      --cache-type-k f16
-      --cache-type-v f16
-      -ngl 0
-        --metrics
+      - CUDA_VISIBLE_DEVICES=
+    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-Embedding-350M-Q8_0.gguf\n--embeddings\n--pooling cls\n--ctx-size 512\n--cont-batching\n--parallel 4\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
     ttl: 300
     capabilities:
       in:
-        - 'text'
+        - text
       out: []
       tools: false
       reranker: false
@@ -954,10 +948,10 @@ models:
       context_length: 512
       embedding_length: 1024
       quantization: Q8_0
-      size: "~379 MB (Q8_0)"
-      vram_usage: "~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)"
-      source: "LiquidAI/LFM2.5-Embedding-350M-GGUF (Q8_0)"
-      kv_cache: "f16"
+      size: ~379 MB (Q8_0)
+      vram_usage: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)
+      source: LiquidAI/LFM2.5-Embedding-350M-GGUF (Q8_0)
+      kv_cache: f16
       features:
         completion: false
         tools: false
@@ -967,45 +961,17 @@ models:
         insert: false
         audio: false
         image: false
-      note: "Embedding-only model. Use /v1/embeddings endpoint. Asymmetric prompts: 'query: ' for queries, 'document: ' for passages. 11 languages. Dense bi-encoder — one 1024-dim vector per document."
-# -------------------------------------------
-# LFM2.5-COLBERT-350M - UPSTREAM BACKEND (reranker/late-interaction model, CPU-only)
-# 353M params, 128-dim per-token vectors, late interaction via MaxSim
-# Architecture: lfm2-bidir — first bidirectional LFM, built on LFM2.5-350M-Base
-# Reranker model — use via /v1/embeddings (mean-pooled, OAI-compatible) or raw /embedding (per-token, MaxSim)
-# NOT a chat model — --embeddings flag required, --pooling mean for OAI compat
-# For true MaxSim reranking: use raw /embedding endpoint (per-token vectors), compute MaxSim client-side
-# Asymmetric prompts: query_prefix / document_prefix (from config_sentence_transformers.json)
-# 512 max context — short but sufficient for most retrieval/reranking tasks
-# 11 language support: en, es, de, fr, it, pt, ar, sv, no, ja, ko
-# Best-in-class late retriever at 350M scale (NanoBEIR avg 0.605 NDCG@10)
-# Late interaction: one vector per token, matched via MaxSim (max dot product per query token)
-# Higher accuracy than dense embedder at cost of larger index (per-token vs per-document)
-# --cont-batching: safe for embedding (no generation, just encoding)
-# KV cache: f16 — reranking models benefit from precision, not compression
-# CPU-ONLY (-ngl 0): frees VRAM for LLMs. ~8ms p50 query embed, ~34ms full pipeline on M4 Max
-# -------------------------------------------
-  "lfm2.5-colbert-350m":
-    name: "LFM2.5 ColBERT 350M"
-    description: "Liquid AI late-interaction reranker with best-in-class multilingual performance. Per-token 128-dim vectors matched via MaxSim. Higher accuracy than dense embedders across 11 languages."
+      note: 'Embedding-only model. Use /v1/embeddings endpoint. Asymmetric prompts: ''query: '' for queries, ''document: '' for passages. 11 languages. Dense bi-encoder — one 1024-dim vector per document.'
+  lfm2.5-colbert-350m:
+    name: LFM2.5 ColBERT 350M
+    description: Liquid AI ColBERT reranker for RAG retrieval pipelines. CPU-only serving.
     env:
-      - "CUDA_VISIBLE_DEVICES="
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/LFM2.5-ColBERT-350M-Q8_0.gguf
-      --embeddings
-      --pooling mean
-      --ctx-size 512
-      --cont-batching
-      --parallel 4
-      --cache-type-k f16
-      --cache-type-v f16
-      -ngl 0
-        --metrics
+      - CUDA_VISIBLE_DEVICES=
+    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-ColBERT-350M-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 512\n--cont-batching\n--parallel 4\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
     ttl: 300
     capabilities:
       in:
-        - 'text'
+        - text
       out: []
       tools: false
       reranker: true
@@ -1016,10 +982,10 @@ models:
       context_length: 512
       embedding_length: 128
       quantization: Q8_0
-      size: "~378 MB (Q8_0)"
-      vram_usage: "~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)"
-      source: "LiquidAI/LFM2.5-ColBERT-350M-GGUF (Q8_0)"
-      kv_cache: "f16"
+      size: ~378 MB (Q8_0)
+      vram_usage: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only)
+      source: LiquidAI/LFM2.5-ColBERT-350M-GGUF (Q8_0)
+      kv_cache: f16
       features:
         completion: false
         tools: false
@@ -1029,7 +995,7 @@ models:
         insert: false
         audio: false
         image: false
-      note: "Late-interaction model. OAI-compatible /v1/embeddings uses mean-pooled 128-dim vectors. For true MaxSim reranking, use raw /embedding endpoint for per-token vectors and compute MaxSim client-side. Asymmetric prompts from config_sentence_transformers.json. 11 languages. Higher accuracy than dense (0.605 vs 0.577 NDCG@10) but larger index (per-token vectors)."
+      note: Late-interaction model. OAI-compatible /v1/embeddings uses mean-pooled 128-dim vectors. For true MaxSim reranking, use raw /embedding endpoint for per-token vectors and compute MaxSim client-side. Asymmetric prompts from config_sentence_transformers.json. 11 languages. Higher accuracy than dense (0.605 vs 0.577 NDCG@10) but larger index (per-token vectors).
 # -------------------------------------------
 # NEMOTRON-3-EMBED-1B - UPSTREAM BACKEND (embedding model, CPU-only)
 # 1.14B params (pruned from Ministral-3-3B), 2048-dim mean-pooled embeddings
@@ -1091,50 +1057,44 @@ models:
         audio: false
         image: false
       note: "Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with 'query: ' for queries and 'passage: ' for documents. 34 languages. 2048-dim L2-normalized vectors. Supports dimension slicing (1024/512) with re-normalization. SOTA at 1B scale on MMTEB."
-# -------------------------------------------
-# LAYA - decision model (System One scorer)
-# Upstream llama.cpp #29818: /v1/systemone endpoint, nativo no server (merged
-# 02/Oct/2026). modern-bert 421M, decision.type = laya (auto-detected do GGUF,
-# server DecisionContext liga /v1/systemone sozinho - sem flag extra).
-# BF16 oficial ggml-org/Laya-GGUF. VRAM ~0.9GB total, load ~2s.
-# ROLE: juiz /v1/systemone pro laya-snake (~/projects/ai/laya). Wrapper de
-# embedding (ModernBERT) com decision head. NAO e chat model: sem template,
-# sem thinking, sem tools, sem embeddings endpoint.
-# NOTE: llama-swap v262 (03/Out/2026) roteia /v1/systemone nativamente -
-# modelo declarado agora, utilidade quando o roteamento entrar.
-# NOTE: fora de qualquer set do matrix - exclusive com o LLM que estiver
-# rodando; solver evicta um lado no first-use (fine: juiz e de gameplay).
-# -------------------------------------------
-  "laya":
-    name: "Laya (decision)"
-    description: "System One decision model (ModernBERT 421M BF16). Serves POST /v1/systemone for laya-snake judge. Not a chat model."
-    cmd: |
-      ${llama_server} --port ${PORT}
+  laya:
+    name: Laya (decision)
+    description: System One decision model (ModernBERT 421M BF16). Serves POST /v1/systemone for laya-snake judge. Not a chat model.
+    cmd: '${llama_server} --port ${PORT}
+
       --model ${models_dir}/decision-models/Laya-GGUF/Laya-BF16.gguf
+
       --ctx-size 8192
+
       --batch-size 512
+
       --ubatch-size 512
+
       --parallel 1
+
       --no-webui
+
       --metrics
+
+      '
     filters:
-      stripParams: "temperature, top_p, top_k, min_p, repeat_penalty"
+      stripParams: temperature, top_p, top_k, min_p, repeat_penalty
     ttl: 3600
     health_check_timeout: 60
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'text'
+        - text
       tools: false
       reranker: false
       context: 8192
     metadata:
-      size: "~844 MB (BF16)"
-      context: "8K"
-      vram_usage: "~0.9 GB VRAM (model 0.8GB + compute)"
-      source: "ggml-org/Laya-GGUF (BF16, official #29818 conversion)"
-      kv_cache: "n/a"
+      size: ~844 MB (BF16)
+      context: 8192
+      vram_usage: ~0.9 GB VRAM (model 0.8GB + compute)
+      source: 'ggml-org/Laya-GGUF (BF16, official #29818 conversion)'
+      kv_cache: n/a
       features:
         decision: true
         completion: false
@@ -1149,52 +1109,46 @@ models:
       parameters: 421000000
       context_length: 8192
       embedding_length: 1024
-      quantization: "BF16"
+      quantization: BF16
       note: 'Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Judge for laya-snake: noul risk questions, frame-relative state, answers.noul >= 0.15 margin gates the verdict.'
-# -------------------------------------------
-# JULIA-1 - decision model (System One scorer)
-# Upstream llama.cpp #29818: /v1/systemone endpoint, nativo no server (merged
-# 02/Oct/2026). modern-bert 144M, decision.type = laya (auto-detected do GGUF,
-# server DecisionContext liga /v1/systemone sozinho - sem flag extra).
-# BF16 oficial ggml-org/Julia-1-GGUF. VRAM ~0.3GB total, load < 2s.
-# ROLE: juiz /v1/systemone pro laya-snake (~/projects/ai/laya) e candidato a
-# router rapido fora do jogo. Wrapper de embedding (ModernBERT 144M).
-# NAO e chat model: sem template, sem thinking, sem tools, sem embeddings.
-# NOTE: llama-swap v262 (03/Out/2026) roteia /v1/systemone nativamente -
-# modelo declarado agora, utilidade quando o roteamento entrar.
-# NOTE: fora de qualquer set do matrix - exclusive com o LLM que estiver
-# rodando; solver evicta um lado no first-use.
-# -------------------------------------------
-  "julia-1":
-    name: "Julia-1 (decision)"
-    description: "System One decision model (ModernBERT 144M BF16). Serves POST /v1/systemone for laya-snake judge. Not a chat model."
-    cmd: |
-      ${llama_server} --port ${PORT}
+  julia-1:
+    name: Julia-1 (decision)
+    description: System One decision model (ModernBERT 144M BF16). Serves POST /v1/systemone for laya-snake judge. Not a chat model.
+    cmd: '${llama_server} --port ${PORT}
+
       --model ${models_dir}/decision-models/Julia-1-GGUF/Julia-1-BF16.gguf
+
       --ctx-size 8192
+
       --batch-size 512
+
       --ubatch-size 512
+
       --parallel 1
+
       --no-webui
+
       --metrics
+
+      '
     filters:
-      stripParams: "temperature, top_p, top_k, min_p, repeat_penalty"
+      stripParams: temperature, top_p, top_k, min_p, repeat_penalty
     ttl: 3600
     health_check_timeout: 60
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'text'
+        - text
       tools: false
       reranker: false
       context: 8192
     metadata:
-      size: "~303 MB (BF16)"
-      context: "8K"
-      vram_usage: "~0.3 GB VRAM (model 303MB + compute)"
-      source: "ggml-org/Julia-1-GGUF (BF16, official #29818 conversion)"
-      kv_cache: "n/a"
+      size: ~303 MB (BF16)
+      context: 8192
+      vram_usage: ~0.3 GB VRAM (model 303MB + compute)
+      source: 'ggml-org/Julia-1-GGUF (BF16, official #29818 conversion)'
+      kv_cache: n/a
       features:
         decision: true
         completion: false
@@ -1209,53 +1163,19 @@ models:
       parameters: 144000000
       context_length: 8192
       embedding_length: 384
-      quantization: "BF16"
+      quantization: BF16
       note: 'Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Lightest judge: 144M, sub-5ms per question expected on GPU.'
-# -------------------------------------------
-# GLM-OCR - UPSTREAM BACKEND (mmproj required)
-# GLM-4V-based OCR/Vision specialist — #1 on OmniDocBench V1.5 (94.62 score)
-# Architecture: glm4 — supported in upstream llama.cpp b766+ and ik_llama.cpp v4547+
-# mmproj required: CogViT vision encoder + cross-modal connector
-# Complements LFM2.5-VL-450M (general VLM) — this is OCR/table/formula specialist
-# Prompt must be "OCR", "OCR markdown", or "Table Recognition:" for best results
-# NOT a general chat model — use for document extraction tasks only
-# Temperature 0.1 for OCR precision, no reasoning (vision model)
-# KV cache: f16 (vision models need precision, not compression)
-# --jinja: required for chat template auto-detection (glm4 template)
-# -------------------------------------------
-  "glm-ocr":
-    name: "GLM-OCR"
-    description: "Multimodal OCR model for complex document understanding, built on the GLM-V encoder-decoder architecture integrating CogViT visual encoder with a GLM-0.5B language decoder."
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/GLM-OCR-Q8_0.gguf
-      --mmproj ${models_dir}/mmproj-GLM-OCR-Q8_0.gguf
-      --jinja
-      --media-path ${media_path}
-      --fit on
-      --fit-target ${vram_margin}
-      --fit-ctx ${small_model_min_ctx}
-      --ctx-size ${small_model_max_ctx}
-      --temp 0.1
-      --top-p 0.9
-      --top-k 40
-      --repeat-penalty 1.0
-      --reasoning off
-      --cache-type-k f16
-      --cache-type-v f16
-      --flash-attn on
-      --spec-type ngram-mod
-        --spec-ngram-mod-n-match 24
-        --spec-ngram-mod-n-min 48
-        --spec-ngram-mod-n-max 64
-        --metrics
+  glm-ocr:
+    name: GLM-OCR
+    description: GLM's vision-language OCR model for complex document understanding and text extraction.
+    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/GLM-OCR-Q8_0.gguf\n--mmproj ${models_dir}/mmproj-GLM-OCR-Q8_0.gguf\n--jinja\n--media-path ${media_path}\n--fit on\n--fit-target ${vram_margin}\n--fit-ctx ${small_model_min_ctx}\n--ctx-size ${small_model_max_ctx}\n--temp 0.1\n--top-p 0.9\n--top-k 40\n--repeat-penalty 1.0\n--reasoning off\n--cache-type-k f16\n--cache-type-v f16\n--flash-attn on\n--spec-type ngram-mod\n  --spec-ngram-mod-n-match 24\n  --spec-ngram-mod-n-min 48\n  --spec-ngram-mod-n-max 64\n  --metrics\n"
     ttl: 60
     capabilities:
       in:
-        - 'text'
-        - 'image'
+        - text
+        - image
       out:
-        - 'text'
+        - text
       tools: false
       reranker: false
       context: 131072
@@ -1265,10 +1185,10 @@ models:
       context_length: 131072
       embedding_length: 2048
       quantization: Q8_0
-      size: "~0.95 GB (Q8_0) + ~0.48 GB mmproj (Q8_0)"
-      vram_usage: "~2GB (model + mmproj + cache)"
-      source: "ggml-org/GLM-OCR-GGUF (Q8_0 + mmproj Q8_0)"
-      kv_cache: "f16"
+      size: ~0.95 GB (Q8_0) + ~0.48 GB mmproj (Q8_0)
+      vram_usage: ~2GB (model + mmproj + cache)
+      source: ggml-org/GLM-OCR-GGUF (Q8_0 + mmproj Q8_0)
+      kv_cache: f16
       features:
         completion: true
         tools: false
@@ -1278,7 +1198,7 @@ models:
         insert: false
         audio: false
         image: false
-      note: "Specialized OCR model — use prompts like 'OCR', 'OCR markdown', 'Table Recognition:'. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction."
+      note: Specialized OCR model — use prompts like 'OCR', 'OCR markdown', 'Table Recognition:'. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.
 # -------------------------------------------
 # K2-HORIZON-MOVA-36B-A4B — RTX 3050 6GB (APEX-Mini, ik_llama) — REATIVAÇÃO 05/10
 # IK-ONLY: cafe-llama.cpp NÃO tem arch k2-horizon (sem suporte no horizonte —
@@ -1365,71 +1285,41 @@ models:
         tools: true
         thinking: true
       note: "Reativado 05/10: Q3_K_M abenzerps (17GB) -> APEX-Mini VladHong (imatrix K2-shaped: Q3_K edges, IQ2_S middle, shared/attn precisos). Backend: kassane fork -> ik upstream (18 commits K2 opt: #2466 tools grammar, #2479, #2490, #2496, #2504). Hadamard K/V REJEITADO (glitches determinísticos no smoke; re-testar quando baseline sadio). Manual mapping (--fit FAIL nesta arch): ffn_gate/down/up_exps + tok_embd CPU pinned; MoVA + output na GPU. KV q4_0 ~49KB/token. UMA=OOM insurance ONLY — como path primário roda 8-10x mais lento em MoE. Medido 05/10: decode 17.5 t/s @8K sem desktop / 15.9 com; user re-registro: 92% VRAM + 74% RAM com browser. VENENOS: NO_PINNED quebra sampling (fatal, llama-sampling.cpp:745), override attn_v_exps=CUDA0 = 0 ganho + fatal (MoVA já residente GPU no baseline), UMA primário lento. Samplers 0.7/0.95 (model-card temp 1.0 quebrou leitura agentic em Sep). Reasoning budget 16384 (vendor pede effort high, 32K+ queima wall clock). Quirk tool_choice auto: pode planejar calls em texto e não emitir <ifm|tool_calls> (re-run ou required resolve). Tool parsing: parser PEG dedicado no ik (COMMON_CHAT_FORMAT_PEG_K2_HORIZON) — validado E2E 4/4 calls 05/10. PR ggml-org/llama.cpp#29535 (MoVA no mainline) em revisão — quando mergear, café herda; tracker monitorando."
-# -------------------------------------------
-# MINICPM5-2B — OpenBMB (Apache-2.0) — quant POLLARD IQ4_XS
-# Dense 2B, LlamaForCausalLM PURO (arch llama) — roda no upstream e no ik
-# sem fork/patch. 42 layers, GQA 16/2, head_dim 128, ctx 131K nativo
-# (rope_theta 5M). Text-only, sem vision, sem MTP/NextN.
+  minicpm5-2b:
+    name: MiniCPM5 2B
+    description: 'OpenBMB MiniCPM5-2B (Q4_K_M oficial): dense 2B, 131K ctx nativo, tool calling limpo em ambos os modos. Text-only, sem MTP.'
+    cmd: '${llama_server} --port ${PORT}
 
-# PROMOVIDO 2026-09-08 (user decision): PollardWeights IQ4_XS "PollardMix"
-# (measured-allocation: bits por sensibilidade de camada) no lugar do
-# Q4_K_M oficial. Comparação completa nos 3 ambientes (testchat ReAct,
-# :think, N=1; bench direto greedy N=3):
-#   GPU decode:   Pollard 86.5 t/s vs Q4_K_M 82.1 (empate técnico, ±5)
-#   CPU decode:   Pollard 19.5     vs Q4_K_M 27.6 (Q4_K_M vence, -30% IQ dequant)
-#   GPU prefill:  Pollard 3039     vs Q4_K_M 2870 tok/s
-#   GPU TTFT:     Pollard 1.43s    vs Q4_K_M 1.85s (-23%)
-#   Disco:        1341 MB vs 1489 MB (-148MB, ~10%)
-#   Verdict: GPU -> Pollard (mesmo decode, arranque mais rápido, menor).
-#            CPU -> Q4_K_M (mas user usa GPU aqui).
-
-# TOOL CALL: no modo BASE o IQ4_XS falha (responde texto plano onde deveria
-# chamar <function ...>); na variante :think funciona BEM — 4 parallel calls
-# corretas no testchat, parse limpo. 3º caso do padrão "tools só no :think"
-# (nanbeige4.2-3b, spark-x2.5-4b). Agentes: usar sempre :think.
-
-# KV budget (RTX 3050 6GB): 42 layers x 2 KV heads x 128 dim.
-# q4_0 KV = ~10.6 KiB/token -> 131K ~1.35GB. Modelo 1.41GB + KV + buffers ~3.8GB.
-
-# Tool calling: XML-style <function name=...><param name=...>...</param></function>
-# (SGLang usa parser dedicado 'minicpm5'). GGUF Pollard carrega metadata de
-# tool-call + template EMBUTIDOS (byte-idênticos ao oficial — strings grep).
-# Thinking: template dual-mode (enable_thinking), blocos think.
-# Vendor: temp 1.0 / top_p 0.95. Grafia PT perfeita no IQ4_XS
-# (luksamuk/Diamantina/Navi/Itaipava — smoke 07-08/09).
-
-# REMOVIDOS 2026-09-08: Q4_K_M oficial, Q8_0 oficial, Pollard Q5_K_M (GGUFs
-# deletados; Pollard Q5_K_M era o rung aprovado de mais-bits — re-download:
-#   hf download PollardWeights/MiniCPM5-2B-Pollard MiniCPM5-2B-Pollard-Q5_K_M.gguf
-# fallback Q4_K_M oficial (p/ CPU ou tools-no-base):
-#   hf download openbmb/MiniCPM5-2B-GGUF MiniCPM5-2B-Q4_K_M.gguf
-# PENDENTE: descrições no Pi models.json (configs/pi) ainda citam Q4_K_M —
-# atualizar na próxima passada de harness sync.
-# -------------------------------------------
-  "minicpm5-2b":
-    name: "MiniCPM5 2B"
-    description: "OpenBMB MiniCPM5-2B (Q4_K_M oficial): dense 2B, 131K ctx nativo, tool calling limpo em ambos os modos. Text-only, sem MTP."
-    cmd: |
-      ${llama_server} --port ${PORT}
       --model ${models_dir}/minicpm5-2b/MiniCPM5-2B-Q4_K_M.gguf
+
       --jinja
+
       --fit on
+
       --parallel 1
+
       --ctx-size 131072
+
       --reasoning on
+
       --cache-type-k q4_0
+
       --cache-type-v q4_0
+
       --flash-attn auto
+
       --metrics
+
+      '
     filters:
-      stripParams: "temperature, top_p, top_k"
+      stripParams: temperature, top_p, top_k
       setParamsByID:
-        "${MODEL_ID}":
+        ${MODEL_ID}:
           chat_template_kwargs:
             enable_thinking: false
           temperature: 0.7
           top_p: 0.95
-        "${MODEL_ID}:think":
+        ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
           temperature: 1.0
@@ -1438,18 +1328,18 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'text'
+        - text
       tools: true
       reranker: false
       context: 131072
     metadata:
-      size: "~1.45 GB (Q4_K_M oficial)"
-      context: "1K-131K (nativo, sem scaling)"
-      vram_usage: "~4.1GB @131K (modelo 1.45GB + KV q4_0 ~1.35GB + buffers)"
-      source: "openbmb/MiniCPM5-2B-GGUF (oficial vendor)"
-      kv_cache: "q4_0"
+      size: ~1.45 GB (Q4_K_M oficial)
+      context: 131072
+      vram_usage: ~4.1 GB VRAM @131K
+      source: openbmb/MiniCPM5-2B-GGUF (oficial vendor)
+      kv_cache: q4_0
       features:
         completion: true
         tools: true
@@ -1463,78 +1353,84 @@ models:
       parameters: 2000000000
       embedding_length: 2048
       context_length: 131072
-      quantization: "Q4_K_M"
-      note: "Pollard IQ4_XS testado 07-08/09 e REVERTIDO 08/09: loop infinito em tarefa de código simples (Adler32) no uso real — dados do A/B permanecem válidos (empate decode GPU, TTFT -23%, -148MB, CPU -30%), mas o comportamento agêntico pesa mais. Tool call: Q4_K_M clean nos DOIS modos (IQ4_XS só no :think). REMOVIDOS 08/09: Q8_0 oficial, Pollard Q5_K_M (GGUFs deletados). Pollard IQ4_XS GGUF MANTIDO no dir como opção A/B futura. Fallback docs no header."
-# -------------------------------------------
-# ORNITH-1.5-35B-HERETIC (Sharp) — OFICIAL 05/10/2026 (era o -cafe; cafe 0.74)
-# O heretic Tiel (SC117 I-Compact + template Sharp) virou o DEFAULT da frota
-# no cafe-llama.cpp 0.74 com -cmoe (experts em page cache file-backed evictável).
-# MEDIDO 05/10 (cold, desktop ativo): decode 29.9-30.9 idle / ~25 c/ desktop;
-# RAM used ~5-6GB (vs 25.8 pinadas do ik); ctx 200K. O ik antigo ficou em
-# _disabled/ornith-1.5-35b-heretic-fast.yaml (campeão de pico em janela limpa).
-# ARMADILHAS cafe (iguais às do irmão qwen36-heretic):
-#   - NUNCA --pipeline-parallel com ctx >=131K (buffer DMA 48GB → OOM duplo)
-#   - turbo4 limpo na híbrida; turbo2 CRASHA
-#   - cafe NÃO tem: --parallel-tool-calls, --defer-experts, --prefetch-experts,
-#     --k/v-cache-hadamard (hadamard é ik-only!), --fit-margin (usar --fit-target)
-#   - env LD_LIBRARY_PATH OBRIGATORIA (RUNPATH morto)
-#   - sintaxe 0.74: --spec-type draft-mtp (sufixo mtp:n_max= do ik NÃO parseia)
-# TEMPLATE: Sharp v22.5.0 (o GGUF heretic vem com template genérico — o
-#   --chat-template-file sharp é OBRIGATORIO pro efeito Tiel).
-# -------------------------------------------
-  "ornith-1.5-35b-heretic":
-    name: "Ornith 1.5 35B Heretic"
-    description: "Heretic Tiel (SC117 + Sharp v22.5.0) OFICIAL 05/10 no cafe-llama.cpp 0.74 (-cmoe): decode 29.9-30.9 idle (~25 c/ desktop), RAM evictável ~5-6GB used, ctx 200K. Substitui o ik -fast (em _disabled/). Visão via mmproj BF16. APEX I-Compact 17.33GB."
-    cmd: |
-      env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+      quantization: Q4_K_M
+      note: 'vram detalhe: ~4.1GB @131K (modelo 1.45GB + KV q4_0 ~1.35GB + buffers) Pollard IQ4_XS testado 07-08/09 e REVERTIDO 08/09: loop infinito em tarefa de código simples (Adler32) no uso real — dados do A/B permanecem válidos (empate decode GPU, TTFT -23%, -148MB, CPU -30%), mas o comportamento agêntico pesa mais. Tool call: Q4_K_M clean nos DOIS modos (IQ4_XS só no :think). REMOVIDOS 08/09: Q8_0 oficial, Pollard Q5_K_M (GGUFs deletados). Pollard IQ4_XS GGUF MANTIDO no dir como opção A/B futura. Fallback docs no header.'
+  ornith-1.5-35b-heretic:
+    name: Ornith 1.5 35B Heretic
+    description: '35B-A3B MoE generalist assistant, abliterated (heretic TPE). Fleet daily driver: 200K context, strong agentic/tool calling.'
+    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
       --model ${models_dir}/ornith-heretic/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-I-Compact.gguf
+
       --mmproj ${models_dir}/ornith-heretic/mmproj-Ornith-1.5-35B-A3B-Heretic-MTP-BF16.gguf
+
       --no-mmproj-offload
+
       --ctx-size 200000
+
       --jinja
+
       --chat-template-file ${templates_dir}/sharp_chat_template.jinja
+
       --parallel 1
+
       --cache-type-k q4_0
+
       --cache-type-v q4_0
+
       --flash-attn on
+
       -cmoe
+
       -ngl 99
+
       -b 512
+
       -ub 128
+
       --temp 0.6
+
       --top-p 0.95
+
       --top-k 20
+
       --min-p ${code_min_p}
+
       --repeat-penalty ${code_repeat_penalty}
+
       --reasoning-budget 8192
+
       --spec-type draft-mtp
+
       --metrics
+
+      '
     filters:
-      stripParams: "temperature, top_p"
+      stripParams: temperature, top_p
       setParamsByID:
-        "${MODEL_ID}":
+        ${MODEL_ID}:
           chat_template_kwargs:
             enable_thinking: false
-        "${MODEL_ID}:think":
+        ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
     ttl: 900
     health_check_timeout: 900
     capabilities:
       in:
-        - 'text'
-        - 'image'
+        - text
+        - image
       out:
-        - 'text'
+        - text
       tools: true
       reranker: false
       context: 200000
     metadata:
-      size: "~17.33 GB (APEX I-Compact heretic) + 0.9 GB mmproj BF16"
-      context: "1K-200K (cap de degradação ~213K, parallel 1)"
-      vram_usage: "MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s"
-      source: "SC117/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-GGUF (I-Compact, sha 37f67861...e0e7)"
-      kv_cache: "q4_0/q4_0"
+      size: ~17.33 GB (APEX I-Compact heretic)
+      context: 200000
+      vram_usage: ~4.9 GB VRAM + ~4.7 GB RAM used
+      source: SC117/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-GGUF (I-Compact, sha 37f67861...e0e7)
+      kv_cache: q4_0/q4_0
       features:
         completion: true
         tools: true
@@ -1548,59 +1444,60 @@ models:
       parameters: 35000000000
       context_length: 262144
       embedding_length: 2048
-      quantization: "APEX I-Compact"
-      note: "0.74 05/10/2026: -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap 24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly. Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K)."
-# [REACTIVATED 03/10/2026 noite — next80 removido; GGUF APEX re-download iniciado.]
-# -------------------------------------------
-# QWEN3-CODER-30B-A3B (mudler APEX I-Compact) — baseline limpo de código (ik)
-# Arch qwen3_moe (Apr/25, suporte maduro ik/cafe/upstream). SEM MTP nextn
-# (a arch qwen3_moe nao tem nextn — spec decode N/A), SEM visao (text-only,
-# sem mmproj), SEM modo thinking (Instruct puro — sem enable_thinking).
-# 13,8 GB — mesmas PPL do UD-Q4_K_XL da Unsloth com 16% menos tamanho
-# (tabela do mudler: PPL 9.667 / KL 0.0418, DGX Spark).
+      quantization: APEX I-Compact
+      note: 'vram detalhe: MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s 0.74 05/10/2026: -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap 24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly. Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K).'
+  qwen3-coder-30b-fast:
+    name: Qwen 3 Coder 30B Fast
+    description: Qwen's 30B-A3B MoE coding model on ik_llama.cpp — 2.6x prefill speed of the cafe build. 131K context, text-only.
+    cmd: '${ik_llama_server} --port ${PORT}
 
-# Papel na frota: baseline APEX-sem-heretic-sem-MTP. Radar: a linhagem
-# Coder-NEXT (qwen3_next, COM MTP) so existe em 80B+ (mudler I-Mini 29.2 GiB
-# nao cabe na Navi); se sair shape A3B-35B dessa linhagem, substitui este.
-
-# Params: modelo de fabrica da Qwen recomenda temp 0.7 / top_p 0.8 / top_k 20
-# (card Qwen3-Coder-30B-A3B-Instruct) — setParamsByID fixa isso, acima dos
-# macros ${code_*} da frota.
-
-# --n-cpu-moe 48: experts 100% em RAM (GGUF 13.8 GB ~90% experts). VRAM fica
-# so attention + KV + buffers (~5 GB no smoke). Reduzir N se sobrar VRAM no
-# teste (mas com 6 GB, 48 e o config seguro de partida).
-# -------------------------------------------
-  "qwen3-coder-30b-fast":
-    name: "Qwen 3 Coder 30B Fast"
-    description: "Qwen3-Coder-30B-A3B-Instruct em APEX I-Compact (13.8 GB), text-only, sem MTP (arch qwen3_moe nao tem nextn) e sem thinking. Baseline limpo de codigo APEX-sem-heretic."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/qwen3-coder-30b/Qwen3-Coder-30B-APEX-I-Compact.gguf
+
       --no-graph-reuse
+
       -ngl 99
+
       --n-cpu-moe 48
+
       --ctx-size 131072
+
       --jinja
+
       --parallel 1
+
       --parallel-tool-calls
+
       --cache-type-k ${large_cache_k}
+
       --cache-type-v ${large_cache_v}
+
       --k-cache-hadamard
+
       --v-cache-hadamard
+
       --flash-attn auto
+
       --defer-experts
+
       --prefetch-experts
+
       --temp ${code_temp}
+
       --top-p ${code_top_p}
+
       --top-k ${code_top_k}
+
       --min-p ${code_min_p}
+
       --repeat-penalty ${code_repeat_penalty}
+
       --metrics
+
+      '
     filters:
-      stripParams: "temperature, top_p"
+      stripParams: temperature, top_p
       setParamsByID:
-        "${MODEL_ID}":
+        ${MODEL_ID}:
           temperature: 0.7
           top_p: 0.8
           top_k: 20
@@ -1608,19 +1505,19 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'text'
+        - text
       tools: true
       reranker: false
       context: 131072
     metadata:
-      size: "~13.8 GB (APEX I-Compact) — text-only, sem mmproj"
-      context: "1K-131072 (nativo 262K)"
-      vram_usage: "MEDIDO 05/10 (zen fechado): 4.77GB VRAM + 13.9GB RAM pinada, decode 35.0-35.4 t/s (μ35.2), prefill 432 t/s (2.6x o cafe!), load 4.8s"
-      source: "mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)"
-      kv_cache: "q4_0/q4_0 + hadamard"
-      note: "Deploy Oct 1 2026. Arch qwen3_moe: sem nextn (MTP N/A), sem mmproj (text-only), nao-thinking (Instruct puro; sem enable_thinking nos filters). APEX I-Compact = PPL do UD-Q4_K_XL com -16% tamanho (tabela mudler, DGX Spark). Manufacturer sampling: 0.7/0.8/20. ONYX de el4: nao existe pra esse modelo (catalogado Oct 1)."
+      size: ~13.8 GB (APEX I-Compact)
+      context: 131072
+      vram_usage: ~4.8 GB VRAM + ~13.9 GB RAM pinned
+      source: mudler/Qwen3-Coder-30B-APEX-GGUF (I-Compact; base Qwen/Qwen3-Coder-30B-A3B-Instruct)
+      kv_cache: q4_0/q4_0 + hadamard
+      note: 'vram detalhe: MEDIDO 05/10 (zen fechado): 4.77GB VRAM + 13.9GB RAM pinada, decode 35.0-35.4 t/s (μ35.2), prefill 432 t/s (2.6x o cafe!), load 4.8s Deploy Oct 1 2026. Arch qwen3_moe: sem nextn (MTP N/A), sem mmproj (text-only), nao-thinking (Instruct puro; sem enable_thinking nos filters). APEX I-Compact = PPL do UD-Q4_K_XL com -16% tamanho (tabela mudler, DGX Spark). Manufacturer sampling: 0.7/0.8/20. ONYX de el4: nao existe pra esse modelo (catalogado Oct 1).'
       features:
         completion: true
         tools: true
@@ -1634,42 +1531,34 @@ models:
       parameters: 30500000000
       context_length: 262144
       embedding_length: 2048
-      quantization: "APEX I-Compact"
-# -------------------------------------------
-# QWEN3-TTS — TTS API server (Python FastAPI, not llama.cpp)
-# Qwen3-TTS 0.6B-Base with voice cloning support (8 pt-BR voices)
-# Runs as external process on port 8880 with OpenAI-compatible /v1/audio/speech endpoint
-# NOT a GGUF model — uses torch-direct inference via qwen_tts library
-# Serves /v1/audio/speech, /v1/audio/voices, and /v1/models endpoints
-# Voice profiles: hermes, lucas, jessica, francisca, thalita, drácula, alucard, batman, bolso
-# Source: ~/projects/ai/tts-api/tts_server.py
-# -------------------------------------------
-  "qwen3-tts":
-    name: "Qwen3-TTS 0.6B"
-    description: "Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible /v1/audio/speech endpoint with voice profiles from voiceclone-tui."
+      quantization: APEX I-Compact
+  qwen3-tts:
+    name: Qwen3-TTS 0.6B
+    description: Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible /v1/audio/speech endpoint with voice profiles from voiceclone-tui.
     tags:
-      - "tts"
-    proxy: "http://127.0.0.1:8880"
-    checkEndpoint: "/v1/audio/voices"
-    cmd: |
-      ${env.HOME}/projects/ai/tts-api/.venv/bin/python ${env.HOME}/projects/ai/tts-api/tts_server.py --port 8880 --host 127.0.0.1
-    cmdStop: "pkill -f tts_server.py"
+      - tts
+    proxy: http://127.0.0.1:8880
+    checkEndpoint: /v1/audio/voices
+    cmd: '${env.HOME}/projects/ai/tts-api/.venv/bin/python ${env.HOME}/projects/ai/tts-api/tts_server.py --port 8880 --host 127.0.0.1
+
+      '
+    cmdStop: pkill -f tts_server.py
     health_check_timeout: 300
     ttl: 300
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'audio'
+        - audio
       tools: false
       reranker: false
       context: 0
     metadata:
-      size: "~600MB (Qwen3-TTS-12Hz-0.6B-Base, torch-direct)"
-      context: "N/A (TTS generation, not LLM context)"
-      vram_usage: "~2GB VRAM (torch-direct, separate GPU allocation)"
-      source: "Qwen/Qwen3-TTS-12Hz-0.6B-Base (HuggingFace)"
-      kv_cache: "n/a"
+      size: ~600MB (Qwen3-TTS-12Hz-0.6B-Base, torch-direct)
+      context: 0
+      vram_usage: ~2GB VRAM (torch-direct, separate GPU allocation)
+      source: Qwen/Qwen3-TTS-12Hz-0.6B-Base (HuggingFace)
+      kv_cache: n/a
       features:
         completion: false
         tools: false
@@ -1684,60 +1573,63 @@ models:
       context_length: 0
       embedding_length: 0
       quantization: torch-direct
-      note: "Backend torch-direct (sem GGUF). Nenhum KV cache — decodificação de áudio sequencial, sem cache de atenção exposto."
+      note: 'context detalhe: N/A (TTS generation, not LLM context) Backend torch-direct (sem GGUF). Nenhum KV cache — decodificação de áudio sequencial, sem cache de atenção exposto.'
       caveats:
-        - "External FastAPI server on port 8880 (not llama.cpp)"
-        - "Must install qwen_tts and dependencies in ~/projects/ai/tts-api/.venv"
-        - "Voice profiles loaded from ~/.config/voiceclone-tui/voices.json"
-        - "Supports voice cloning with reference audio samples"
-        - "Portuguese (pt-BR) voices with accent control"
-# -------------------------------------------
-# TRANSLATEGEMMA 4B — Google translation model
-# Gemma 3-based, 55 languages, translation-focused
-# Arch: gemma3 — supported in upstream llama.cpp
-# Q4_K_M ~2.7GB (mradermacher/TranslateGemma-4B-GGUF)
-# NOTE: Native Jinja template uses custom content types
-#   (source_lang_code, target_lang_code) which crash
-#   llama.cpp chat template parser. Use --no-jinja
-#   with gemma template instead. Sprachspiel sends
-#   plain text prompts, so this works fine.
-# Recommended params from Ollama: temp=0.2, top_k=40, repeat_penalty=1.1
-# -------------------------------------------
-  "translategemma-4b":
-    name: "TranslateGemma 4B"
-    description: "Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices."
-    cmd: |
-      ${llama_server} --port ${PORT}
+        - External FastAPI server on port 8880 (not llama.cpp)
+        - Must install qwen_tts and dependencies in ~/projects/ai/tts-api/.venv
+        - Voice profiles loaded from ~/.config/voiceclone-tui/voices.json
+        - Supports voice cloning with reference audio samples
+        - Portuguese (pt-BR) voices with accent control
+  translategemma-4b:
+    name: TranslateGemma 4B
+    description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
+    cmd: '${llama_server} --port ${PORT}
+
       --model ${models_dir}/translategemma-4b/translategemma-4b-it.Q4_K_M.gguf
+
       --no-jinja
+
       --chat-template gemma
+
       --fit on
+
       --parallel 1
+
       --ctx-size ${small_model_max_ctx}
+
       --temp 0.2
+
       --top-p 0.9
+
       --top-k 40
+
       --repeat-penalty 1.1
+
       --cache-type-k ${small_cache_k}
+
       --cache-type-v ${small_cache_v}
+
       --flash-attn on
+
       --metrics
+
+      '
     health_check_timeout: 300
     ttl: 60
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'text'
+        - text
       tools: false
       reranker: false
       context: 131072
     metadata:
-      size: "~2.4 GB (Q4_K_M)"
-      context: "32K-128K (dynamic)"
-      vram_usage: "~3.5GB (model + cache)"
-      source: "mradermacher/translategemma-4b-it-GGUF (Q4_K_M, from google/translategemma-4b-it)"
-      kv_cache: "q8_0 + attn_rot"
+      size: ~2.4 GB (Q4_K_M)
+      context: 131072
+      vram_usage: ~3.5GB (model + cache)
+      source: mradermacher/translategemma-4b-it-GGUF (Q4_K_M, from google/translategemma-4b-it)
+      kv_cache: q8_0 + attn_rot
       features:
         completion: true
         tools: false
@@ -1753,63 +1645,56 @@ models:
       embedding_length: 2560
       quantization: Q4_K_M
       caveats:
-        - "Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma"
-        - "Needs explicit translation prompt (Sprachspiel format works)"
-      note: "Translation model. Sprachspiel translate mode default. 55 languages."
-# -------------------------------------------
-# TWIL-LM3-PRO - upstream llama.cpp BACKEND
-# 3.66B denso (Granite 4.2 3B da IBM + post-training webAI: LoRA SFT,
-# checkpoint fusion, WiSE-FT, MGPO/GRPO). Especialista em logica formal:
-# FOL translation, entailment, semantic parse, Lean formalize/critique.
-# Card: https://huggingface.co/webAI-Official/TwIL-LM3-Pro
-# Licenca: webai-non-commercial v1.0 (NAO comercial).
-# Modelo RACIOCINA por padrao (template abre think block); protocolo do card:
-# greedy (temp 0) e budget longo (>=2048) - budget curto trunca o think e
-# derruba o score (media de 1902 tokens/resposta no Track A, 24% estoura cap).
-# :think = temp 0 (protocolo de avaliacao do card); base = gen config deles
-# (do_sample true, temp 1.0, top_p 0.95). repeat-penalty 1.0 LOAD-BEARING
-# (card: penalty 1.1 produziu swings de 20 pontos - protocolo hashado).
-# Tool calling: card NAO reivindica (BFCL nao rodado) MAS o template Granite traz macro de
-# tools e o probe local (01/10) confirmou: finish_reason tool_calls com JSON valido.
-# tools: true liberado pelo usuario. Sem tuning agentic - nao use como agente pesado.
-# Sem tuning de chat/seguranca; NAO e assistente geral (card: "not a general assistant").
-# Nao roda codigo (HumanEval/BFCL nao rodados).
-# Benchmarks medidos em bf16/vLLM; Q8_0 e o quant mais fiel disponivel (card
-# adverte degradacao "most likely at Q4_K_M"; skill: prefira Q8_0 em denso).
-# Deploy 30/09/2026: lane nova no fleet (logica formal), nao substitui modelo.
-# Analise: track A macro gate 0.554 > qwen3-8b 0.534; strict-7 0.288 > 0.209;
-# mcq strict 0.41 vs 0.00-0.17 de todos os densos. Track B held-out 0.790.
-# -------------------------------------------
-  "twil-lm3-pro":
-    name: "TwIL-LM3-Pro"
-    description: "Especialista em logica formal da webAI (3.66B denso sobre Granite 4.2-3B). Entailment, FOL, semantic parse, Lean formalize/critique, MCQ de logica. Passa Qwen3-8B em strict-7 no dominio. Nao e assistente geral; sem tools. Licenca nao-comercial."
-    cmd: |
-      ${llama_server} --port ${PORT}
+        - Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma
+        - Needs explicit translation prompt (Sprachspiel format works)
+      note: Translation model. Sprachspiel translate mode default. 55 languages.
+  twil-lm3-pro:
+    name: TwIL-LM3-Pro
+    description: Especialista em logica formal da webAI (3.66B denso sobre Granite 4.2-3B). Entailment, FOL, semantic parse, Lean formalize/critique, MCQ de logica. Passa Qwen3-8B em strict-7 no dominio. Nao e assistente geral; sem tools. Licenca nao-comercial.
+    cmd: '${llama_server} --port ${PORT}
+
       --model ${models_dir}/twil-lm3-pro/TwIL-LM3-Pro-Q6_K.gguf
+
       --fit on
+
       --fit-target ${vram_margin}
+
       --fit-ctx 131072
+
       --ctx-size 131072
+
       --parallel 1
+
       --jinja
+
       --temp ${default_temp}
+
       --top-p ${default_top_p}
+
       --top-k ${default_top_k}
+
       --min-p ${default_min_p}
+
       --repeat-penalty 1.0
+
       --cache-type-k q4_0
+
       --cache-type-v q4_0
+
       --flash-attn on
+
       --metrics
+
+      '
     filters:
-      stripParams: "temperature, top_p"
+      stripParams: temperature, top_p
       setParamsByID:
-        "${MODEL_ID}":
+        ${MODEL_ID}:
           chat_template_kwargs:
             enable_thinking: false
           temperature: 1.0
           top_p: 0.95
-        "${MODEL_ID}:think":
+        ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.0
@@ -1817,18 +1702,18 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-        - 'text'
+        - text
       out:
-        - 'text'
+        - text
       tools: true
       reranker: false
       context: 131072
     metadata:
-      size: "~2.80 GB (Q6_K)"
-      context: "32K-128K (dynamic fit)"
-      vram_usage: "~4.5GB VRAM @131K no 6GB (modelo 2.80GB + KV q4_0 + compute); fit derruba ctx se apertar"
-      source: "webAI-Official/TwIL-LM3-Pro (Q6_K)"
-      kv_cache: "q4_0/q4_0"
+      size: ~2.80 GB (Q6_K)
+      context: 131072
+      vram_usage: ~4.5 GB VRAM
+      source: webAI-Official/TwIL-LM3-Pro (Q6_K)
+      kv_cache: q4_0/q4_0
       features:
         completion: true
         tools: true
@@ -1843,7 +1728,7 @@ models:
       context_length: 131072
       embedding_length: 2560
       quantization: Q6_K
-      note: "Track A greedy temp 0 (inject no :think); card pede max_tokens >=2048 senao trunca think. Track B avaliado SEM thinking (empata com base Granite no macro 10 datasets: 0.790 vs 0.794). BBH-logic 95.4, MATH-500 74.7, MuSR 64.1. Tool calling: probe local 01/10 OK (tool_calls + JSON valido, heranca Granite) apesar do card nao reivindicar. Quant A/B 01/10: Q6_K 28 t/s vs Q8_0 21 t/s no FOL hard (+33%), entailment probe OK nos dois -> Q6_K em prod, Q8_0 removido do disco (re-download via hf). Spec decoding: MTP impossivel (GGUF sem nextn, familia Granite 4.x MTP-free, verificado nos configs 4.0/4.2); ngram-mod/ngram-simple +5% apenas (think formal-logic sem repeticao n-gram suficiente). Deploy 30/09/2026."
+      note: 'vram detalhe: ~4.5GB VRAM @131K no 6GB (modelo 2.80GB + KV q4_0 + compute); fit derruba ctx se apertar Track A greedy temp 0 (inject no :think); card pede max_tokens >=2048 senao trunca think. Track B avaliado SEM thinking (empata com base Granite no macro 10 datasets: 0.790 vs 0.794). BBH-logic 95.4, MATH-500 74.7, MuSR 64.1. Tool calling: probe local 01/10 OK (tool_calls + JSON valido, heranca Granite) apesar do card nao reivindicar. Quant A/B 01/10: Q6_K 28 t/s vs Q8_0 21 t/s no FOL hard (+33%), entailment probe OK nos dois -> Q6_K em prod, Q8_0 removido do disco (re-download via hf). Spec decoding: MTP impossivel (GGUF sem nextn, familia Granite 4.x MTP-free, verificado nos configs 4.0/4.2); ngram-mod/ngram-simple +5% apenas (think formal-logic sem repeticao n-gram suficiente). Deploy 30/09/2026.'
 # Hooks: ações na inicialização do llama-swap
 # preload: carrega modelos síncronamente antes de aceitar requests
 # Ideal para vLLM (startup lento = 30-90s sem warm-up)

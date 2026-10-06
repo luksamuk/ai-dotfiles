@@ -1,45 +1,42 @@
-# -------------------------------------------
-# LAYA - decision model (System One scorer)
-# Upstream llama.cpp #29818: /v1/systemone endpoint, nativo no server (merged
-# 02/Oct/2026). modern-bert 421M, decision.type = laya (auto-detected do GGUF,
-# server DecisionContext liga /v1/systemone sozinho - sem flag extra).
-# BF16 oficial ggml-org/Laya-GGUF. VRAM ~0.9GB total, load ~2s.
-# ROLE: juiz /v1/systemone pro laya-snake (~/projects/ai/laya). Wrapper de
-# embedding (ModernBERT) com decision head. NAO e chat model: sem template,
-# sem thinking, sem tools, sem embeddings endpoint.
-# NOTE: llama-swap v262 (03/Out/2026) roteia /v1/systemone nativamente -
-# modelo declarado agora, utilidade quando o roteamento entrar.
-# NOTE: fora de qualquer set do matrix - exclusive com o LLM que estiver
-# rodando; solver evicta um lado no first-use (fine: juiz e de gameplay).
-# -------------------------------------------
-"laya":
-  name: "Laya (decision)"
-  description: "System One decision model (ModernBERT 421M BF16). Serves POST /v1/systemone for laya-snake judge. Not a chat model."
-  cmd: |
-    ${llama_server} --port ${PORT}
+laya:
+  name: Laya (decision)
+  description: System One decision model (ModernBERT 421M BF16). Serves POST /v1/systemone
+    for laya-snake judge. Not a chat model.
+  cmd: '${llama_server} --port ${PORT}
+
     --model ${models_dir}/decision-models/Laya-GGUF/Laya-BF16.gguf
+
     --ctx-size 8192
+
     --batch-size 512
+
     --ubatch-size 512
+
     --parallel 1
+
     --no-webui
+
     --metrics
+
+    '
   filters:
-    stripParams: "temperature, top_p, top_k, min_p, repeat_penalty"
+    stripParams: temperature, top_p, top_k, min_p, repeat_penalty
   ttl: 3600
   health_check_timeout: 60
   capabilities:
-    in: ['text']
-    out: ['text']
+    in:
+    - text
+    out:
+    - text
     tools: false
     reranker: false
     context: 8192
   metadata:
-    size: "~844 MB (BF16)"
-    context: "8K"
-    vram_usage: "~0.9 GB VRAM (model 0.8GB + compute)"
-    source: "ggml-org/Laya-GGUF (BF16, official #29818 conversion)"
-    kv_cache: "n/a"
+    size: ~844 MB (BF16)
+    context: 8192
+    vram_usage: ~0.9 GB VRAM (model 0.8GB + compute)
+    source: 'ggml-org/Laya-GGUF (BF16, official #29818 conversion)'
+    kv_cache: n/a
     features:
       decision: true
       completion: false
@@ -54,5 +51,7 @@
     parameters: 421000000
     context_length: 8192
     embedding_length: 1024
-    quantization: "BF16"
-    note: 'Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Judge for laya-snake: noul risk questions, frame-relative state, answers.noul >= 0.15 margin gates the verdict.'
+    quantization: BF16
+    note: 'Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia
+      /v1/systemone nativo (issue #1195 fechada). Judge for laya-snake: noul risk
+      questions, frame-relative state, answers.noul >= 0.15 margin gates the verdict.'

@@ -1,52 +1,34 @@
-# Qwen3-ASR 0.6B — Lightweight ASR (Automatic Speech Recognition) model
-# Architecture: qwen3vl (text) + clip/qwen3a (mmproj audio encoder)
-# ASR-only model — converts speech to text, no audio generation
-# Q8_0 ~768MB model + mmproj Q8_0 ~205MB = ~973MB total
-# Supports multiple languages (better multilingual than LFM2-Audio)
-# Uses ${llama_server} (upstream) — qwen3a preprocessor in mtmd
-# Supports /v1/audio/transcriptions endpoint
-"qwen3-asr-0.6b":
-  name: "Qwen3-ASR 0.6B"
-  description: "Lightweight multilingual ASR model for speech-to-text transcription. Supports multiple languages with high accuracy. Audio input via qwen3a preprocessor."
-  tags: ["audio"]
-  cmd: |
-    ${llama_server} --port ${PORT}
-    --model ${models_dir}/Qwen3-ASR-0.6B-Q8_0.gguf
-    --mmproj ${models_dir}/mmproj-Qwen3-ASR-0.6B-Q8_0.gguf
-    --jinja
-    --fit on
-    --fit-target 768
-    --fit-ctx ${small_model_min_ctx}
-    --ctx-size ${small_model_max_ctx}
-    --parallel 1
-    --cont-batching
-    --temp ${default_temp}
-    --top-p ${default_top_p}
-    --top-k ${default_top_k}
-    --min-p ${default_min_p}
-    --repeat-penalty ${default_repeat_penalty}
-    --cache-type-k ${small_cache_k}
-    --cache-type-v ${small_cache_v}
-    --flash-attn on
-    --spec-type ngram-mod
-      --spec-ngram-mod-n-match 24
-      --spec-ngram-mod-n-min 48
-      --spec-ngram-mod-n-max 64
-      --metrics
+qwen3-asr-0.6b:
+  name: Qwen3-ASR 0.6B
+  description: Lightweight multilingual ASR model for speech-to-text transcription.
+    Supports multiple languages with high accuracy. Audio input via qwen3a preprocessor.
+  tags:
+  - audio
+  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/Qwen3-ASR-0.6B-Q8_0.gguf\n\
+    --mmproj ${models_dir}/mmproj-Qwen3-ASR-0.6B-Q8_0.gguf\n--jinja\n--fit on\n--fit-target\
+    \ 768\n--fit-ctx ${small_model_min_ctx}\n--ctx-size ${small_model_max_ctx}\n--parallel\
+    \ 1\n--cont-batching\n--temp ${default_temp}\n--top-p ${default_top_p}\n--top-k\
+    \ ${default_top_k}\n--min-p ${default_min_p}\n--repeat-penalty ${default_repeat_penalty}\n\
+    --cache-type-k ${small_cache_k}\n--cache-type-v ${small_cache_v}\n--flash-attn\
+    \ on\n--spec-type ngram-mod\n  --spec-ngram-mod-n-match 24\n  --spec-ngram-mod-n-min\
+    \ 48\n  --spec-ngram-mod-n-max 64\n  --metrics\n"
   health_check_timeout: 300
   ttl: 60
   capabilities:
-    in: ['text', 'audio']
-    out: ['text']
+    in:
+    - text
+    - audio
+    out:
+    - text
     tools: false
     reranker: false
     context: 131072
   metadata:
-    size: "~1.0 GB (Q8_0 model 768MB + mmproj 205MB)"
-    context: "32K-128K (dynamic)"
-    vram_usage: "~1.5GB (model + mmproj + cache)"
-    source: "ggml-org/Qwen3-ASR-0.6B-GGUF (Q8_0)"
-    kv_cache: "q8_0 + attn_rot"
+    size: ~1.0 GB (Q8_0 model 768MB + mmproj 205MB)
+    context: 131072
+    vram_usage: ~1.5GB (model + mmproj + cache)
+    source: ggml-org/Qwen3-ASR-0.6B-GGUF (Q8_0)
+    kv_cache: q8_0 + attn_rot
     features:
       completion: true
       tools: false
@@ -62,6 +44,6 @@
     embedding_length: 896
     quantization: Q8_0
     caveats:
-      - "ASR-only model — no audio generation capability"
-      - "Multilingual ASR support (better than English-only models)"
-      - "Very lightweight, can run alongside other small models"
+    - ASR-only model — no audio generation capability
+    - Multilingual ASR support (better than English-only models)
+    - Very lightweight, can run alongside other small models

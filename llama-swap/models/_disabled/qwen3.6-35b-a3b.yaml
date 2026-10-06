@@ -1,76 +1,73 @@
-# -------------------------------------------
-# QWEN3.6-35B-A3B - MoE CODING + VISION (APEX I-Compact + mmproj)
-# MoE 35B params, 3B ativo por token. Substitui o Qwen3-Coder-30B.
-# 33 experts, top-8 routing. APEX I-Compact ~17.3GB + mmproj 858MB F16.
-#   Mixed-precision MoE quant com imatrix diversa (chat, code, reasoning, tool-calling)
-#   Perplexity comparable to Q8_0 (6.669 vs 6.533), beats UD-Q3_K_XL on real benchmarks
-#
-# VISION ENABLED 2026-07-10 (ik_llama build 4704):
-#   Previously vision crashed (CUDA graph OOM on 6GB RTX 3050).
-#   Fixed with --no-graph-reuse: prevents cudaGraphLaunch OOM from mmproj compute buffer.
-#   Trade-off: ctx 131072 → 32768 (mmproj uses ~560MB VRAM, less for KV cache).
-#   Speed: 27.6 tok/s with vision (vs 33-34 text-only — 17% slower).
-#   VRAM: 5587 MiB (tight but stable).
-#   Image processing: 209ms, encoding: 52ms, decode: 157ms.
-#
-# KV cache: q4_0 + attn_rot (head_k=128, 128%64==0 ✅)
-# Architecture: qwen35moe (Qwen3MoeForCausalLM)
-# Using ik_llama.cpp: better MoE performance via pinned memory for expert offload
-# --fit-margin 1024: moderate headroom for context-shift + KV cache near full ctx (vision mmproj uses ~560MB)
+qwen3.6-35b-a3b:
+  name: Qwen 3.6 35B
+  description: Qwen3.6 delivers substantial upgrades in agentic coding and thinking
+    preservation. Built on direct community feedback for a more intuitive, responsive,
+    and productive coding experience. Vision enabled Sep 10 at full 131K context (needs
+    ~20GB free host RAM; 32K fallback under memory pressure).
+  cmd: '${ik_llama_server} --port ${PORT}
 
-# --no-graph-reuse: CRITICAL — prevents CUDA graph OOM when mmproj is loaded
-# --k-cache-hadamard / --v-cache-hadamard: Hadamard transform before K/V cache quantization
-# --defer-experts: defers expert mmap on Linux → faster model loading
-# --flash-attn auto: disables FA on short prompts (saves overhead on MoE offloaded models)
-# -------------------------------------------
-"qwen3.6-35b-a3b":
-  name: "Qwen 3.6 35B"
-  description: "Qwen3.6 delivers substantial upgrades in agentic coding and thinking preservation. Built on direct community feedback for a more intuitive, responsive, and productive coding experience. Vision enabled Sep 10 at full 131K context (needs ~20GB free host RAM; 32K fallback under memory pressure)."
-# QWEN3.6-35B-A3B - MoE CODING + VISION (APEX-MTP I-Compact)
-# VISION REACTIVATED 10/09 c/ ctx FULL 131K: mmproj-F16.gguf (899MB, unsloth —
-# projector qwen3vl_merger, projection_dim 2048 = embedding_length do LLM ✓,
-# verificado por tensor-dump contra o mmproj do ornith — idênticos).
-# --no-graph-reuse: CRITICAL — previne CUDA graph OOM do mmproj (fix ik 4704).
-# CONDIÇÃO: RAM limpa (~20GB pinned no host; navegador fechado). VRAM 5.4/6.1GB
-# estável em smoke de visão Sep 10. Cuidado: com navegador/RAM pressionada,
-# fit-margin 1024 + ctx 32K é o fallback seguro (regra Jul 2026).
-  cmd: |
-    ${ik_llama_server} --port ${PORT}
     --model ${models_dir}/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-APEX-MTP-I-Compact.gguf
+
     --mmproj ${models_dir}/qwen3.6-35b-a3b/mmproj_qwen36_F16.gguf
+
     --no-mmproj-offload
+
     --no-graph-reuse
+
     --fit
+
     --fit-margin 1024
+
     --ctx-size 131072
+
     --temp ${code_temp}
+
     --top-p ${code_top_p}
+
     --top-k ${code_top_k}
+
     --min-p ${code_min_p}
+
     --repeat-penalty ${code_repeat_penalty}
+
     --reasoning on
+
     --jinja
+
     --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+
     --parallel 1
+
     --parallel-tool-calls
+
     --cache-type-k ${large_cache_k}
+
     --cache-type-v ${large_cache_v}
+
     --k-cache-hadamard
+
     --v-cache-hadamard
+
     --flash-attn auto
+
     --defer-experts
+
     --prefetch-experts
+
     --spec-type mtp:n_max=1,p_min=0.0
+
     --metrics
+
+    '
   filters:
-    stripParams: "temperature, top_p"
+    stripParams: temperature, top_p
     setParamsByID:
-      "${MODEL_ID}":
+      ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.95
-      "${MODEL_ID}:think":
+      ${MODEL_ID}:think:
         chat_template_kwargs:
           enable_thinking: true
         temperature: 0.6
@@ -78,17 +75,20 @@
   ttl: 900
   health_check_timeout: 900
   capabilities:
-    in: ['text', 'image']
-    out: ['text']
+    in:
+    - text
+    - image
+    out:
+    - text
     tools: true
     reranker: false
     context: 131072
   metadata:
-    size: "~17.3 GB (APEX-MTP I-Compact) + 899 MB mmproj F16"
-    context: "1K-131K (vision ON, RAM limpa; fallback 32K sob pressão de RAM)"
-    vram_usage: "~5.6 GB VRAM estimado + ~14GB pinned RAM (MTP ~+414MiB, padrão ornith Sep 2026)"
-    source: "mudler/Qwen3.6-35B-A3B-APEX-MTP-GGUF (I-Compact) + mmproj unsloth (F16)"
-    kv_cache: "q4_0 + attn_rot + hadamard"
+    size: ~17.3 GB (APEX-MTP I-Compact)
+    context: 131072
+    vram_usage: ~5.6 GB VRAM
+    source: mudler/Qwen3.6-35B-A3B-APEX-MTP-GGUF (I-Compact) + mmproj unsloth (F16)
+    kv_cache: q4_0 + attn_rot + hadamard
     features:
       completion: true
       tools: true
@@ -103,4 +103,12 @@
     context_length: 262144
     embedding_length: 2048
     quantization: APEX-MTP I-Compact
-    note: "Sep 09: reactivated com APEX-MTP I-Compact (MTP heads baked in, nextn=1; o APEX plain ignorava --multi-token-prediction silenciosamente — audit May 2026). --spec-type mtp:n_max=1,p_min=0.0 = receita ornith-1.5 (42.6 tok/s medido Sep 10, accept 85-93%). VISION re-ativada 10/09 c/ ctx FULL 131K (RAM limpa: VRAM 5.4/6.1GB estável em smokes; fallback 32K sob pressão — regra Jul 2026). mmproj unsloth F16, verificado tensor-a-tensor vs ornith (qwen3vl_merger, proj_dim 2048). Sep 10: alinhado ao ornith — --no-mmproj-offload + --prefetch-experts + top_p 0.95 nos dois modos."
+    note: 'vram detalhe: ~5.6 GB VRAM estimado + ~14GB pinned RAM (MTP ~+414MiB, padrão
+      ornith Sep 2026) Sep 09: reactivated com APEX-MTP I-Compact (MTP heads baked
+      in, nextn=1; o APEX plain ignorava --multi-token-prediction silenciosamente
+      — audit May 2026). --spec-type mtp:n_max=1,p_min=0.0 = receita ornith-1.5 (42.6
+      tok/s medido Sep 10, accept 85-93%). VISION re-ativada 10/09 c/ ctx FULL 131K
+      (RAM limpa: VRAM 5.4/6.1GB estável em smokes; fallback 32K sob pressão — regra
+      Jul 2026). mmproj unsloth F16, verificado tensor-a-tensor vs ornith (qwen3vl_merger,
+      proj_dim 2048). Sep 10: alinhado ao ornith — --no-mmproj-offload + --prefetch-experts
+      + top_p 0.95 nos dois modos.'

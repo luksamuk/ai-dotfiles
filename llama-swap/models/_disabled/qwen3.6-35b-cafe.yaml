@@ -1,69 +1,60 @@
-# -------------------------------------------
-# QWEN3.6-35B-A3B-262K - CTX NATIVO MAXIMO (cafe-llama.cpp Turbo KV)
-# Mesmo modelo/GGUF do qwen3.6-35b-a3b, backend DIFERENTE: cafe-llama.cpp
-# (fork quimmedes/Ark) com Turbo KV cache — UNICO backend que carrega
-# qwen35moe @262144 ctx na RTX 3050 6GB.
-#
-# Célula validada 20/set/2026 (bancada f3, N=3, mesmo fill 30K):
-#   decode 16.6 t/s @30K fill | prefill 65 t/s | VRAM ~5.1GB c/ mmproj
-#   needle XANTHO-7741 FOUND verbatim | contagem 1-50 perfeita (temp 0)
-#   KV turbo4 @262K ~ 1.55GB (vs q4_0 3.1GB — ik não carrega: OOM)
-#   host RAM ~15GB (hmoe pinned, comparável ao ik CUDA_Host 12.2GB)
-#
-# VISION VALIDADA 20/set @262K full (mmproj F16 + turbo4, systemd-run test):
-#   descrição de imagem correta e coerente, sem crash. VRAM 5.1GB estável.
-#   Primeira OOM do teste era o backend 262k JÁ RESIDENTE competindo
-#   (VRAM 3.8GB ocupada) — não limite do backend com mmproj.
-#
-# TRADEOFFS medidos (matriz completa em references/cafe-llama-cpp-eval.md):
-#   decode @30K fill: 16.6 vs ik-prod 34.8 (-52%) — caso de uso é batch/
-#   análise de docs longos, NÃO interativo agentic. Prefill 30K: ~7.5min.
-#
-# DUAL-MODE PADRÃO DA FLEET: base = enable_thinking FALSE, :think = TRUE
-#   (padrão q36/ornith — user 20/set: "vamos seguir o padrão")
-#
-# ARMADILHAS do fork (NÃO mexer sem ler cafe-llama-cpp-eval.md):
-#   - NUNCA --pipeline-parallel com ctx >=131K (buffer DMA 48GB → OOM duplo)
-#   - turbo2 CRASHA na arch híbrida @131K (ggml_cuda_error, repro 2x); turbo4 limpo
-#   - MTP @262K não cabe (draft KV 512MiB) — por isso sem --spec-type aqui
-#   - cafe NÃO tem: --parallel-tool-calls, --no-graph-reuse, --defer-experts,
-#     --prefetch-experts, --k/v-cache-hadamard, --fit-margin (usar --fit-target)
-#   - tool calling NATIVO do cafe funciona (smoke: get_weather OK sem
-#     --parallel-tool-calls)
-# -------------------------------------------
-"qwen3.6-35b-cafe":
-  name: "Qwen 3.6 35B (262K TurboKV, cafe)"
-  description: "Same Qwen3.6-35B-A3B served by cafe-llama.cpp fork with Turbo KV cache (turbo4). The only backend that loads the model's native 262K context on 6GB VRAM. Vision verified at full 262K. Slower decode than the 131K production entry (~17 vs ~35 tok/s at 30K fill) — use for maximum-context workloads, batch/long-doc analysis."
-  cmd: |
-    ${cafe_server} --port ${PORT}
+qwen3.6-35b-cafe:
+  name: Qwen 3.6 35B (262K TurboKV, cafe)
+  description: Same Qwen3.6-35B-A3B served by cafe-llama.cpp fork with Turbo KV cache
+    (turbo4). The only backend that loads the model's native 262K context on 6GB VRAM.
+    Vision verified at full 262K. Slower decode than the 131K production entry (~17
+    vs ~35 tok/s at 30K fill) — use for maximum-context workloads, batch/long-doc
+    analysis.
+  cmd: '${cafe_server} --port ${PORT}
+
     --model ${models_dir}/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-APEX-MTP-I-Compact.gguf
+
     --mmproj ${models_dir}/qwen3.6-35b-a3b/mmproj_qwen36_F16.gguf
+
     --ctx-size 262144
+
     --jinja
+
     --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+
     --parallel 1
+
     --cache-type-k turbo4
+
     --cache-type-v turbo4
+
     --flash-attn on
+
     -hmoe
+
     -ngl 99
+
     -b 512
+
     -ub 128
+
     --temp ${code_temp}
+
     --top-p ${code_top_p}
+
     --top-k ${code_top_k}
+
     --min-p ${code_min_p}
+
     --repeat-penalty ${code_repeat_penalty}
+
     --metrics
+
+    '
   filters:
-    stripParams: "temperature, top_p"
+    stripParams: temperature, top_p
     setParamsByID:
-      "${MODEL_ID}":
+      ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.95
-      "${MODEL_ID}:think":
+      ${MODEL_ID}:think:
         chat_template_kwargs:
           enable_thinking: true
         temperature: 0.6
@@ -71,17 +62,20 @@
   ttl: 900
   health_check_timeout: 900
   capabilities:
-    in: ['text', 'image']
-    out: ['text']
+    in:
+    - text
+    - image
+    out:
+    - text
     tools: true
     reranker: false
     context: 262144
   metadata:
-    size: "~17.3 GB (APEX-MTP I-Compact) + 899 MB mmproj F16"
-    context: "262K"
-    vram_usage: "~5.1 GB VRAM (turbo4 KV) + ~15GB pinned RAM (hmoe)"
-    source: "mudler/Qwen3.6-35B-A3B-APEX-MTP-GGUF (I-Compact) + mmproj unsloth (F16)"
-    kv_cache: "turbo4 (WHT-rotated, FA-fused)"
+    size: ~17.3 GB (APEX-MTP I-Compact)
+    context: 262144
+    vram_usage: ~5.1 GB VRAM (turbo4 KV) + ~15GB pinned RAM (hmoe)
+    source: mudler/Qwen3.6-35B-A3B-APEX-MTP-GGUF (I-Compact) + mmproj unsloth (F16)
+    kv_cache: turbo4 (WHT-rotated, FA-fused)
     features:
       completion: true
       tools: true
@@ -96,4 +90,10 @@
     context_length: 262144
     embedding_length: 2048
     quantization: APEX-MTP I-Compact
-    note: "Backend cafe-llama.cpp (quimmedes/Ark fork) com Turbo KV turbo4 — unico que carrega 262K nativo na 3050 6GB (ik q4_0 KV @262K OOM). Validado 20/set: needle+QG limpos @30K fill, 16.6 t/s decode @30K, vision OK @262K full (5.1GB). Tradeoff: decode -52% vs ik-prod — batch/long-doc, não agentic interativo. Dual-mode padrão: base sem thinking, :think liga. Sem MTP (draft KV 512MiB não cabe), sem pipeline-parallel (48GB DMA @ctx longo), turbo2 crasha na arch hibrida. Tool calling nativo do cafe (smoke OK)."
+    note: 'Backend cafe-llama.cpp (quimmedes/Ark fork) com Turbo KV turbo4 — unico
+      que carrega 262K nativo na 3050 6GB (ik q4_0 KV @262K OOM). Validado 20/set:
+      needle+QG limpos @30K fill, 16.6 t/s decode @30K, vision OK @262K full (5.1GB).
+      Tradeoff: decode -52% vs ik-prod — batch/long-doc, não agentic interativo. Dual-mode
+      padrão: base sem thinking, :think liga. Sem MTP (draft KV 512MiB não cabe),
+      sem pipeline-parallel (48GB DMA @ctx longo), turbo2 crasha na arch hibrida.
+      Tool calling nativo do cafe (smoke OK).'

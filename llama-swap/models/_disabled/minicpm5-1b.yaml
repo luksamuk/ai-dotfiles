@@ -1,59 +1,70 @@
-# -------------------------------------------
-# MINICPM5-1B — OpenBMB small dense model
-# LlamaForCausalLM (standard arch), GQA 16Q/2KV, 24 layers
-# 1.08B params, 131K context, think/no-think dual mode
-# Tool calling: XML format <function name="X"><param name="Y">val</param></function>
-# llama.cpp bug #23781: FIXED in build b9833+ (dedicated MiniCPM5 parser)
-# Parser auto-detects via --jinja, no --tool-call-parser flag needed
-# Chat template built into GGUF — ⚠️ NEVER use custom chat template
-# -------------------------------------------
-"minicpm5-1b":
-  name: "MiniCPM5 1B"
-  description: "Dense 1B Transformer built for on-device deployment, designed for local assistants, coding agents, tool-use workflows, and hybrid reasoning."
-  cmd: |
-    ${llama_server} --port ${PORT}
+minicpm5-1b:
+  name: MiniCPM5 1B
+  description: Dense 1B Transformer built for on-device deployment, designed for local
+    assistants, coding agents, tool-use workflows, and hybrid reasoning.
+  cmd: '${llama_server} --port ${PORT}
+
     --model ${models_dir}/minicpm5-1b/MiniCPM5-1B-Q8_0.gguf
+
     --jinja
+
     --fit on
+
     --fit-target ${vram_margin}
+
     --fit-ctx ${small_model_min_ctx}
+
     --ctx-size ${small_model_max_ctx}
+
     --parallel 1
+
     --temp 0.7
+
     --top-p 0.95
+
     --min-p 0.0
+
     --repeat-penalty 1.05
+
     --cache-type-k ${small_cache_k}
+
     --cache-type-v ${small_cache_v}
+
     --flash-attn on
+
     --metrics
+
+    '
   filters:
-    stripParams: "temperature, top_p"
+    stripParams: temperature, top_p
     setParamsByID:
-      "${MODEL_ID}":
+      ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.95
-      "${MODEL_ID}:think":
+      ${MODEL_ID}:think:
         chat_template_kwargs:
           enable_thinking: true
         temperature: 0.9
         top_p: 0.95
   ttl: 60
   capabilities:
-    in: ['text']
-    out: ['text']
+    in:
+    - text
+    out:
+    - text
     tools: true
     reranker: false
     context: 131072
   metadata:
-    size: "~1.15 GB (Q8_0)"
-    context: "32K-128K (dynamic)"
-    vram_usage: "~1.6GB (model + cache)"
-    source: "openbmb/MiniCPM5-1B-GGUF (Q8_0)"
-    note: "Tool calling fixed (llama.cpp b9833+). Parser auto-detects via --jinja. NEVER use custom chat template."
-    kv_cache: "q8_0"
+    size: ~1.15 GB (Q8_0)
+    context: 131072
+    vram_usage: ~1.6GB (model + cache)
+    source: openbmb/MiniCPM5-1B-GGUF (Q8_0)
+    note: Tool calling fixed (llama.cpp b9833+). Parser auto-detects via --jinja.
+      NEVER use custom chat template.
+    kv_cache: q8_0
     features:
       completion: true
       tools: true

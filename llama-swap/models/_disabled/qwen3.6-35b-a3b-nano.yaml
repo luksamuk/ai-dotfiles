@@ -1,60 +1,73 @@
-# -------------------------------------------
-# QWEN3.6-35B-A3B NANO (APEX-I-NanoPlus + MTP) — MODE ECONÔMICO
-# O MESMO Qwen3.6-35B-A3B (qwen35moe, MoE 35B) em quant APEX-I-NanoPlus
-# do IsValorum: 13.03 GB / 12.14 GiB (vs heretic-cafe MiniPlus ~15GB).
-# PPL 5.5244 (+3.84% vs BF16), ARC-Challenge ~95.75%. Tier Q4_K_M/L.
-# Routers F32 + head Q6_K = zero router drift. "The ~13GB NanoPlus pioneer".
-#
-# MTP: mtp-Qwen3.6-35B-A3B-Q8_0.gguf COMPANION (nextn draft) — mas na RTX
-# 3050 via ik_llama o draft KV @131K não cabe com folga; começar SEM
-# --spec-type (mesma decisão do heretic-cafe). Adicionar depois se sobrar VRAM.
-#
-# Deploy 27/09: cópia do fragmento ONYX (estrutura ik_llama --fit).
-# Avaliação: smoke + snake. Bench 143.0 é do MiniPlus — nano sem score.
-#
-# Vision: mmproj-Q8_0.gguf do repo NanoPlus.
-# Dual mode: base (chat) e :think (reasoning-budget 8192).
-# -------------------------------------------
-"qwen3.6-35b-a3b-nano":
-  name: "Qwen 3.6 35B Nano"
-  description: "Qwen3.6-35B-A3B em quant APEX-I-NanoPlus (13.03 GB) com visão — o segundo lugar do benchmark agentic em modo econômico. -3.5 GB vs MiniPlus, PPL 5.52 (+3.84%), routers F32 zero drift. MTP companion disponível (draft Q8_0) para speculative decoding quando a VRAM permitir."
-  cmd: |
-    ${ik_llama_server} --port ${PORT}
+qwen3.6-35b-a3b-nano:
+  name: Qwen 3.6 35B Nano
+  description: Qwen3.6-35B-A3B em quant APEX-I-NanoPlus (13.03 GB) com visão — o segundo
+    lugar do benchmark agentic em modo econômico. -3.5 GB vs MiniPlus, PPL 5.52 (+3.84%),
+    routers F32 zero drift. MTP companion disponível (draft Q8_0) para speculative
+    decoding quando a VRAM permitir.
+  cmd: '${ik_llama_server} --port ${PORT}
+
     --model ${models_dir}/qwen36-nanoplus/Qwen3.6-35B-A3B.APEX-I-NanoPlus.gguf
+
     --mmproj ${models_dir}/qwen36-nanoplus/mmproj-Q8_0.gguf
+
     --no-mmproj-offload
+
     --fit
+
     --fit-margin 1024
+
     --ctx-size 131072
+
     --temp 0.6
+
     --top-p 0.95
+
     --top-k 20
+
     --min-p ${code_min_p}
+
     --repeat-penalty ${code_repeat_penalty}
+
     --reasoning on
+
     --reasoning-budget 8192
+
     --reasoning-budget-message "Let me conclude my reasoning and provide the answer."
+
     --jinja
+
     --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+
     --parallel 1
+
     --parallel-tool-calls
+
     --cache-type-k ${large_cache_k}
+
     --cache-type-v ${large_cache_v}
+
     --k-cache-hadamard
+
     --v-cache-hadamard
+
     --flash-attn auto
+
     --defer-experts
+
     --prefetch-experts
+
     --metrics
+
+    '
   filters:
-    stripParams: "temperature, top_p"
+    stripParams: temperature, top_p
     setParamsByID:
-      "${MODEL_ID}":
+      ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.95
-      "${MODEL_ID}:think":
+      ${MODEL_ID}:think:
         chat_template_kwargs:
           enable_thinking: true
         temperature: 0.6
@@ -62,17 +75,20 @@
   ttl: 900
   health_check_timeout: 900
   capabilities:
-    in: ['text', 'image']
-    out: ['text']
+    in:
+    - text
+    - image
+    out:
+    - text
     tools: true
     reranker: false
     context: 131072
   metadata:
-    size: "~13.03 GB (APEX-I-NanoPlus) + 858 MB mmproj Q8 + 1.2GB mtp Q8 companion"
-    context: "1K-131K (safe max, model supports 262K)"
-    vram_usage: "a medir no smoke (expect <4GB VRAM com --fit)"
-    source: "IsValorum/Qwen3.6-35B-A3B-MTP-APEX-I-NanoPlus-GGUF"
-    kv_cache: "q4_0 + attn_rot + hadamard"
+    size: ~13.03 GB (APEX-I-NanoPlus)
+    context: 131072
+    vram_usage: a medir no smoke (expect <4GB VRAM com --fit)
+    source: IsValorum/Qwen3.6-35B-A3B-MTP-APEX-I-NanoPlus-GGUF
+    kv_cache: q4_0 + attn_rot + hadamard
     features:
       completion: true
       tools: true
@@ -87,4 +103,6 @@
     context_length: 262144
     embedding_length: 2048
     quantization: APEX-I-NanoPlus (routers F32, head Q6_K)
-    note: "Deploy 27/09 como Cenário B (economia RAM/VRAM). MTP companion Q8_0 baixado mas spec-decoding OFF no smoke (draft KV @131K não cabe na 3050 — mesma decisão do heretic-cafe). Avaliação: smoke tests + snake; sem benchmark agentic ainda."
+    note: 'Deploy 27/09 como Cenário B (economia RAM/VRAM). MTP companion Q8_0 baixado
+      mas spec-decoding OFF no smoke (draft KV @131K não cabe na 3050 — mesma decisão
+      do heretic-cafe). Avaliação: smoke tests + snake; sem benchmark agentic ainda.'
