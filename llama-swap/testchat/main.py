@@ -444,16 +444,19 @@ def build_message_content(prompt: str, image_paths: list[str] = None, audio_path
 
 import re
 
-def parse_context_to_tokens(ctx_str: str) -> int | None:
-    """Converte string de context como '32K-128K (dynamic)' em número máximo de tokens.
-    
+def parse_context_to_tokens(ctx) -> int | None:
+    """Converte context (int ou string tipo '32K-128K (dynamic)') em número máximo de tokens.
+
     Exemplos:
+      131072 (int do contrato novo) -> 131072
       '32K-128K (dynamic)' -> 131072
       '8K' -> 8192
       '32768' -> 32768
       '128K' -> 131072
     """
-    ctx_str = ctx_str.upper().strip()
+    if isinstance(ctx, int):
+        return ctx
+    ctx_str = ctx.upper().strip()
     max_tokens = None
     # Match números com opcional K/M suffix
     for match in re.finditer(r'(\d+(?:\.\d+)?)\s*([KM])?', ctx_str):
@@ -1938,7 +1941,7 @@ class StreamingChat:
                         # value from the fragment's capabilities), NOT the biggest
                         # number in the metadata text — "1K-131K (... 512K nativo)"
                         # parses to 524288 and shows the wrong ceiling (k2-horizon).
-                        ctx_max = model_info.get("context_length") or parse_context_to_tokens(model_info["context"].upper())
+                        ctx_max = model_info.get("context_length") or parse_context_to_tokens(model_info["context"])
                         if ctx_max:
                             pct = prompt_n_val / ctx_max * 100
                             bar_len = 20
