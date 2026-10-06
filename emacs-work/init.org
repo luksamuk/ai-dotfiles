@@ -111,7 +111,7 @@ Some packages use =straight.el= along with =use-package=.
 Font: Terminus 11.
 
 #+begin_src emacs-lisp
-(defconst my-default-font "Terminus-11")
+(defconst my-default-font "Terminus (TTF)-11")
 (defconst my-default-font-mono my-default-font)
 (defconst my-default-font-variable "Cardo")
 #+end_src
@@ -133,7 +133,7 @@ Frame alist for standalone or daemonized Emacs.
     (height               . 50)
     (width                . 90)
     (cursor-type          . box)
-    (alpha                . 90)
+    (alpha                . 98)
     (vertical-scroll-bars . nil)))
 (setq default-frame-alist my-frame-alist)
 #+end_src
@@ -367,26 +367,65 @@ Shows available keybindings.
 #+end_src
 
 * AI
+** Agent Shell
+
+#+begin_src emacs-lisp
+  (use-package agent-shell
+    :ensure t
+    :init
+    (global-set-key (kbd "C-c M-g") 'agent-shell)
+    :config
+    (setq acp-logging-enabled t))
+#+end_src
 
 ** Ellama
 
-AI assistant using local llama-swap models. The endpoint points to
-the local llama-swap fleet.
+AI assistant using the local llama-swap fleet on Navi. Cloud models
+tagged with =:cloud= are proxied through the Ollama instance on Navi,
+which must be reachable over LAN or Tailscale.
 
-Models available:
-- =ornith-1.5-35b-heretic= (35B MoE A3B, abliterated, agentic coding, flagship, 200K)
-- =qwen3.6-35b-a3b-heretic= (35B MoE A3B, abliterated, coding + vision, tools)
-- =k2-horizon-36b= (36B-A4B MoVA, heavy reasoning seat, ik-only)
-- =qwen3-coder-30b= / =qwen3-coder-30b-fast= (coding)
-- =qwen3.5-4b= (light, multimodal)
-- =lfm2.5-2.6b= (lightweight, fast)
+Fleet snapshot (October 2026). Dual-mode models expose a =:think=
+variant with reasoning enabled; run =llama-swap-cli list= on Navi for
+the live view:
 
-All general models support =:think= variants for reasoning mode.
+- =ornith-1.5-35b-heretic= (35B MoE A3B, vision + thinking + tools,
+  APEX I-Compact, 200K ctx — flagship)
+- =qwen3.6-35b-a3b-heretic= (34.7B MoE A3B, vision + thinking + tools,
+  131K ctx)
+- =qwen3-coder-30b= / =qwen3-coder-30b-fast= (30B MoE coder, tools, no
+  thinking, 131K ctx)
+- =laguna-xs-2.1= (33B dense, thinking + tools, 131K ctx)
+- =k2-horizon-36b= (36B, thinking + tools, 131K ctx)
+- =neohorse-1-4b= (4.2B, thinking + tools, 128K ctx)
+- =qwen3.5-4b= (4.2B, thinking + tools, 128K ctx)
+- =lfm2.5-2.6b= (2.7B, thinking + tools, 128K ctx)
+- =translategemma-4b= (translation specialist)
+
+Also in the fleet, but not in the picker (specialists): =glm-ocr=
+(vision/OCR), =lfm2.5-vl-3b= (vision), =minicpm5-2b=, =nanbeige4.2-3b=,
+=twil-lm3-pro= (logic-formal specialist), =laya= / =julia-1= (decision
+models), =qwen2.5-coder-1.5b-pollard= (CPU-only FIM completion),
+=qwen3-tts= (audio), embedding/reranker models
+(=lfm2.5-embedding-350m=, =lfm2.5-colbert-350m=, =nemotron-3-embed-1b=)
+and the Portal 2 personality cores.
+
+Cloud models proxied by Navi Ollama (October 2026):
+=glm-5.3-flash:cloud= (default), =glm-5.3:cloud=, =glm-5.2:cloud=,
+=deepseek-v4.1-flash:cloud=, =deepseek-v4-pro:cloud=, =kimi-k3:cloud=,
+=kimi-k2.7-code:cloud=, =kimi-k2.6:cloud=, =minimax-m3:cloud=,
+=minimax-m2.7:cloud=, =nemotron-3-ultra:cloud=,
+=nemotron-3-super:cloud=. If Navi is unreachable, these providers will
+fail: use a local one instead.
 
 #+begin_src emacs-lisp
-;; --- Configuration: adjust this IP as needed ---
-(defconst my-llama-swap-endpoint "http://localhost:12434/v1/"
+;; --- Configuration: adjust the addresses as needed ---
+;; Home LAN:  http://192.168.3.50:12434/v1/
+;; Tailscale: http://100.65.187.74:12434/v1/  (works from work too)
+(defconst my-llama-swap-endpoint "http://100.65.187.74:12434/v1/"
   "llama-swap API endpoint on the local network.")
+
+;; Ollama on Navi proxies the :cloud models.
+(defconst my-ollama-host "100.65.187.74")
 ;; ----------------------------------------------
 
 (use-package ellama
@@ -395,25 +434,39 @@ All general models support =:think= variants for reasoning mode.
   (global-set-key (kbd "C-x e") 'ellama)
   (setopt ellama-language "Portuguese")
   (setopt ellama-auto-scroll t)
+  (require 'llm-ollama)
   (require 'llm-openai)
   (require 'llm-models)
 
   ;; Silence "not free software" warnings.
   (setopt llm-warn-on-nonfree nil)
 
-  ;; Register local models in llm-models to avoid warnings.
+  ;; Register local models in llm-models to avoid warnings. The regex
+  ;; matches any string containing the model name (incl. :think variants).
   (llm-models-add
    :name "ornith-1.5-35b-heretic"
-   :symbol 'ornith-1-5-35b-heretic
+   :symbol 'ornith-1.5-35b-heretic
    :capabilities '(tool-use reasoning json-response)
    :context-length 200000
    :regex "ornith-1.5-35b-heretic")
   (llm-models-add
    :name "qwen3.6-35b-a3b-heretic"
-   :symbol 'qwen36-35b-a3b-heretic
+   :symbol 'qwen3.6-35b-a3b-heretic
    :capabilities '(tool-use reasoning json-response)
    :context-length 131072
    :regex "qwen3.6-35b-a3b-heretic")
+  (llm-models-add
+   :name "qwen3-coder-30b"
+   :symbol 'qwen3-coder-30b
+   :capabilities '(tool-use json-response)
+   :context-length 131072
+   :regex "qwen3-coder-30b")
+  (llm-models-add
+   :name "laguna-xs-2.1"
+   :symbol 'laguna-xs-2.1
+   :capabilities '(tool-use reasoning json-response)
+   :context-length 131072
+   :regex "laguna-xs-2.1")
   (llm-models-add
    :name "k2-horizon-36b"
    :symbol 'k2-horizon-36b
@@ -421,30 +474,42 @@ All general models support =:think= variants for reasoning mode.
    :context-length 131072
    :regex "k2-horizon-36b")
   (llm-models-add
-   :name "qwen3-coder-30b-fast"
-   :symbol 'qwen3-coder-30b-fast
-   :capabilities '(tool-use json-response)
+   :name "neohorse-1-4b"
+   :symbol 'neohorse-1-4b
+   :capabilities '(tool-use reasoning json-response)
    :context-length 131072
-   :regex "qwen3-coder-30b-fast")
+   :regex "neohorse-1-4b")
   (llm-models-add
    :name "qwen3.5-4b"
-   :symbol 'qwen3-5-4b
+   :symbol 'qwen3.5-4b
    :capabilities '(tool-use reasoning json-response)
    :context-length 131072
    :regex "qwen3.5-4b")
   (llm-models-add
    :name "lfm2.5-2.6b"
-   :symbol 'lfm2-5-2-6b
+   :symbol 'lfm2.5-2.6b
    :capabilities '(tool-use reasoning json-response)
    :context-length 131072
    :regex "lfm2.5-2.6b")
+  (llm-models-add
+   :name "translategemma-4b"
+   :symbol 'translategemma-4b
+   :capabilities '(generation)
+   :context-length 131072
+   :regex "translategemma-4b")
 
   (setopt ellama-naming-scheme 'ellama-generate-name-by-llm)
 
-  ;; Main provider: Ornith 1.5 Heretic (flagship, local llama-swap)
+  ;; Main provider: Ornith 1.5 35B Heretic (flagship, local llama-swap)
   (setopt ellama-provider
           (make-llm-openai-compatible
            :chat-model "ornith-1.5-35b-heretic:think"
+           :url my-llama-swap-endpoint))
+
+  ;; Translation provider: TranslateGemma 4B (local llama-swap)
+  (setopt ellama-translation-provider
+          (make-llm-openai-compatible
+           :chat-model "translategemma-4b"
            :url my-llama-swap-endpoint))
 
   ;; Coding provider: same as main
@@ -453,26 +518,68 @@ All general models support =:think= variants for reasoning mode.
            :chat-model "ornith-1.5-35b-heretic:think"
            :url my-llama-swap-endpoint))
 
-  ;; Selectable providers (all local, via llama-swap)
+  ;; Selectable providers (local fleet + cloud models via Navi Ollama)
   (setopt ellama-providers
-	  '(("Ornith 1.5 35B Heretic" (make-llm-openai-compatible
-		              :chat-model "ornith-1.5-35b-heretic:think"
-		              :url my-llama-swap-endpoint))
-	    ("K2-Horizon 36B" (make-llm-openai-compatible
-		             :chat-model "k2-horizon-36b:think"
-		             :url my-llama-swap-endpoint))
-	    ("Qwen 3.6 35B Heretic" (make-llm-openai-compatible
-		            :chat-model "qwen3.6-35b-a3b-heretic:think"
-		            :url my-llama-swap-endpoint))
-	    ("Qwen 3 Coder 30B Fast" (make-llm-openai-compatible
-		            :chat-model "qwen3-coder-30b-fast"
-		            :url my-llama-swap-endpoint))
-	    ("Qwen 3.5 4B" (make-llm-openai-compatible
-		            :chat-model "qwen3.5-4b:think"
-		            :url my-llama-swap-endpoint))
-	    ("LFM2.5 2.6B" (make-llm-openai-compatible
-		            :chat-model "lfm2.5-2.6b:think"
-		            :url my-llama-swap-endpoint))))
+          '(("Ornith 1.5 35B Heretic" (make-llm-openai-compatible
+                                       :chat-model "ornith-1.5-35b-heretic:think"
+                                       :url my-llama-swap-endpoint))
+            ("Qwen 3.6 35B A3B Heretic" (make-llm-openai-compatible
+                                         :chat-model "qwen3.6-35b-a3b-heretic:think"
+                                         :url my-llama-swap-endpoint))
+            ("Qwen 3 Coder 30B" (make-llm-openai-compatible
+                                 :chat-model "qwen3-coder-30b"
+                                 :url my-llama-swap-endpoint))
+            ("Laguna XS 2.1" (make-llm-openai-compatible
+                              :chat-model "laguna-xs-2.1:think"
+                              :url my-llama-swap-endpoint))
+            ("K2 Horizon 36B" (make-llm-openai-compatible
+                               :chat-model "k2-horizon-36b:think"
+                               :url my-llama-swap-endpoint))
+            ("Neohorse 1 4B" (make-llm-openai-compatible
+                              :chat-model "neohorse-1-4b:think"
+                              :url my-llama-swap-endpoint))
+            ("Qwen 3.5 4B" (make-llm-openai-compatible
+                            :chat-model "qwen3.5-4b:think"
+                            :url my-llama-swap-endpoint))
+            ("LFM2.5 2.6B" (make-llm-openai-compatible
+                            :chat-model "lfm2.5-2.6b:think"
+                            :url my-llama-swap-endpoint))
+            ("GLM 5.3 Flash (cloud)" (make-llm-ollama
+                                      :chat-model "glm-5.3-flash:cloud"
+                                      :host my-ollama-host))
+            ("GLM 5.3 (cloud)" (make-llm-ollama
+                                :chat-model "glm-5.3:cloud"
+                                :host my-ollama-host))
+            ("DeepSeek V4.1 Flash (cloud)" (make-llm-ollama
+                                            :chat-model "deepseek-v4.1-flash:cloud"
+                                            :host my-ollama-host))
+            ("Kimi K3 (cloud)" (make-llm-ollama
+                                :chat-model "kimi-k3:cloud"
+                                :host my-ollama-host))
+            ("Kimi K2.7 Code (cloud)" (make-llm-ollama
+                                       :chat-model "kimi-k2.7-code:cloud"
+                                       :host my-ollama-host))
+            ("Kimi K2.6 (cloud)" (make-llm-ollama
+                                  :chat-model "kimi-k2.6:cloud"
+                                  :host my-ollama-host))
+            ("MiniMax M3 (cloud)" (make-llm-ollama
+                                   :chat-model "minimax-m3:cloud"
+                                   :host my-ollama-host))
+            ("MiniMax M2.7 (cloud)" (make-llm-ollama
+                                     :chat-model "minimax-m2.7:cloud"
+                                     :host my-ollama-host))
+            ("Nemotron 3 Ultra (cloud)" (make-llm-ollama
+                                         :chat-model "nemotron-3-ultra:cloud"
+                                         :host my-ollama-host))
+            ("Nemotron 3 Super (cloud)" (make-llm-ollama
+                                         :chat-model "nemotron-3-super:cloud"
+                                         :host my-ollama-host))
+            ("DeepSeek V4 Pro (cloud)" (make-llm-ollama
+                                        :chat-model "deepseek-v4-pro:cloud"
+                                        :host my-ollama-host))
+            ("GLM 5.2 (cloud)" (make-llm-ollama
+                                :chat-model "glm-5.2:cloud"
+                                :host my-ollama-host))))
 
   (setopt ellama-chat-display-action-function #'display-buffer-full-frame)
   (setopt ellama-instant-display-action-function #'display-buffer-at-bottom)
