@@ -83,8 +83,7 @@ k2-horizon-36b:
     note: 'vram detalhe: ~5.0 GB VRAM + ~14 GB RAM pinned | MoVA+attn na GPU, experts
       CPU pinned; decode 17.5 t/s @8K Reativado 05/10: Q3_K_M abenzerps (17GB) ->
       APEX-Mini VladHong (imatrix K2-shaped: Q3_K edges, IQ2_S middle, shared/attn
-      precisos). Backend: kassane fork -> ik upstream (18 commits K2 opt: #2466 tools
-      grammar, #2479, #2490, #2496, #2504). Hadamard K/V REJEITADO (glitches determinísticos
+      precisos). Hadamard K/V REJEITADO (glitches determinísticos
       no smoke; re-testar quando baseline sadio). Manual mapping (--fit FAIL nesta
       arch): ffn_gate/down/up_exps + tok_embd CPU pinned; MoVA + output na GPU. KV
       q4_0 ~49KB/token. UMA=OOM insurance ONLY — como path primário roda 8-10x mais
@@ -98,3 +97,7 @@ k2-horizon-36b:
       parsing: parser PEG dedicado no ik (COMMON_CHAT_FORMAT_PEG_K2_HORIZON) — validado
       E2E 4/4 calls 05/10. PR ggml-org/llama.cpp#29535 (MoVA no mainline) em revisão
       — quando mergear, café herda; tracker monitorando.'
+    architecture: k2-horizon
+    parameters: 36000000000
+    embedding_length: 7168
+    quantization: APEX-Mini
