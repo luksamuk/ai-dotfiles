@@ -1068,12 +1068,12 @@ models:
         insert: false
         audio: false
         image: false
-      architecture: lfm2 (decision, via lfm2.5-vl)
+      architecture: lfm2
       parameters: 3000000000
       context_length: 32768
       embedding_length: 2048
       quantization: Q4_K_M
-      note: 'Decision model (choices/scores/noul) with temperature calibration per choice type (config.json temperatures). Base LFM2.5-VL 3B. Real-time decisions: classifier + image understanding. Candidate to judge systemone (laya-snake). mmproj 583MB gives SigLIP2 vision. NOT a chat model: structured decision output.'
+      note: 'Base LFM2.5-VL 3B (vision via SigLIP2 mmproj). Decision model (choices/scores/noul) with temperature calibration per choice type (config.json temperatures). Base LFM2.5-VL 3B. Real-time decisions: classifier + image understanding. Candidate to judge systemone (laya-snake). mmproj 583MB gives SigLIP2 vision. NOT a chat model: structured decision output.'
   d1-omni-600m:
     name: Liquid d1-omni 600M
     description: Liquid AI decision model 600M — text + image OR text + audio input, choices/scores output. 16K context.
@@ -1142,7 +1142,7 @@ models:
         insert: false
         audio: false
         image: false
-      architecture: lfm2 (decision omni, base LFM2.5-Encoder-350M)
+      architecture: lfm2
       parameters: 600000000
       context_length: 16384
       embedding_length: 1024
