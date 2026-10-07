@@ -27,7 +27,7 @@ k2-horizon-36b:
 
     -nkvo
 
-    --override-tensor "ffn_gate_exps=CPU,ffn_down_exps=CPU,ffn_up_exps=CPU,tok_embd=CPU,attn_v_exps=CPU"
+    --override-tensor "tok_embd=CPU,attn_v_exps=CPU"
 
     --cache-type-k ${large_cache_k}
 

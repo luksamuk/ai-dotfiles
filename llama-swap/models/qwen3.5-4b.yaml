@@ -1,8 +1,7 @@
 qwen3.5-4b:
   name: Qwen3.5 4B
   description: Qwen 3.5 4B with UD-Q4_K_XL quantization and ik_llama.cpp. Hadamard KV
-    cache; Alibaba-recommended sampling per mode (thinking general 1.0, coding 0.6,
-    instruct 0.7).
+    cache; Alibaba-recommended sampling per mode (thinking 1.0/0.95, instruct 0.7/0.8).
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/qwen3.5-4b-mtp/Qwen3.5-4B-UD-Q4_K_XL.gguf
@@ -75,13 +74,6 @@ qwen3.5-4b:
         top_p: 0.95
         top_k: 20
         presence_penalty: 1.5
-      ${MODEL_ID}:think-code:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
-        top_k: 20
-        presence_penalty: 0.0
   ttl: 60
   health_check_timeout: 300
   capabilities:
@@ -114,9 +106,9 @@ qwen3.5-4b:
     quantization: UD-Q4_K_XL
     note: 'vram detalhe: ~4.5 GB VRAM | model 2.8GB UD-Q4_K_XL + q8_0/q4_0 hadamard
       cache + compute ik_llama.cpp with hadamard KV cache + --fit for dynamic context.
-      Sampling = Alibaba card (thinking geral 1.0/0.95/pres 1.5; coding 0.6/pres 0
-      via :think-code; instruct 0.7/0.8/pres 1.5). repeat_penalty DESATIVADO (1.0,
-      anti-loop oficial = presence_penalty). Patches de config errada Jul-out 2026
-      (temp 0.7+rep 1.05 geravam loop no thinking) corrigidos 07/10; bench duelo vs
-      neohorse re-rodado após fix. Uses qwen-fixed-chat-template.jinja for tool-call
-      instructions. Formerly qwen3.5-4b-mtp, consolidated Jul 2026.'
+      Sampling = Alibaba card (thinking 1.0/0.95/pres 1.5; instruct 0.7/0.8/pres
+      1.5). repeat_penalty DESATIVADO (1.0, anti-loop oficial = presence_penalty).
+      Config errada Jul-out 2026 (temp 0.7+rep 1.05 geravam loop no thinking)
+      corrigida 07/10; runs anteriores removidas (estaca zero). Uses
+      qwen-fixed-chat-template.jinja for tool-call instructions. Formerly
+      qwen3.5-4b-mtp, consolidated Jul 2026.'

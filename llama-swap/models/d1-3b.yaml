@@ -2,16 +2,13 @@ d1-3b:
   name: Liquid d1-3B
   description: Liquid AI decision model (LFM2 arch) with SigLIP2 vision — choices/scores
     with calibrated per-type temperatures. 3B params, 32K context.
-  tags:
-  - vision
-  - decision
   cmd: '${llama_server} --port ${PORT}
 
     --model ${models_dir}/d1-3B/d1-3B-Q4_K_M.gguf
 
     --mmproj ${models_dir}/d1-3B/mmproj-d1-3B-Q8_0.gguf
 
-    --chat-template ${models_dir}/d1-3B/chat_template.jinja
+    --chat-template-file ${models_dir}/d1-3B/chat_template.jinja
 
     --media-path ${media_path}
 

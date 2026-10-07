@@ -47,7 +47,7 @@ macros:
 models:
   qwen3.5-4b:
     name: Qwen3.5 4B
-    description: Qwen 3.5 4B with UD-Q4_K_XL quantization and ik_llama.cpp. Hadamard KV cache; Alibaba-recommended sampling per mode (thinking general 1.0, coding 0.6, instruct 0.7).
+    description: Qwen 3.5 4B with UD-Q4_K_XL quantization and ik_llama.cpp. Hadamard KV cache; Alibaba-recommended sampling per mode (thinking 1.0/0.95, instruct 0.7/0.8).
     cmd: '${ik_llama_server} --port ${PORT}
 
       --model ${models_dir}/qwen3.5-4b-mtp/Qwen3.5-4B-UD-Q4_K_XL.gguf
@@ -120,13 +120,6 @@ models:
           top_p: 0.95
           top_k: 20
           presence_penalty: 1.5
-        ${MODEL_ID}:think-code:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-          top_k: 20
-          presence_penalty: 0.0
     ttl: 60
     health_check_timeout: 300
     capabilities:
@@ -157,7 +150,7 @@ models:
       context_length: 262144
       embedding_length: 2560
       quantization: UD-Q4_K_XL
-      note: 'vram detalhe: ~4.5 GB VRAM | model 2.8GB UD-Q4_K_XL + q8_0/q4_0 hadamard cache + compute ik_llama.cpp with hadamard KV cache + --fit for dynamic context. Sampling = Alibaba card (thinking geral 1.0/0.95/pres 1.5; coding 0.6/pres 0 via :think-code; instruct 0.7/0.8/pres 1.5). repeat_penalty DESATIVADO (1.0, anti-loop oficial = presence_penalty). Patches de config errada Jul-out 2026 (temp 0.7+rep 1.05 geravam loop no thinking) corrigidos 07/10; bench duelo vs neohorse re-rodado após fix. Uses qwen-fixed-chat-template.jinja for tool-call instructions. Formerly qwen3.5-4b-mtp, consolidated Jul 2026.'
+      note: 'vram detalhe: ~4.5 GB VRAM | model 2.8GB UD-Q4_K_XL + q8_0/q4_0 hadamard cache + compute ik_llama.cpp with hadamard KV cache + --fit for dynamic context. Sampling = Alibaba card (thinking 1.0/0.95/pres 1.5; instruct 0.7/0.8/pres 1.5). repeat_penalty DESATIVADO (1.0, anti-loop oficial = presence_penalty). Config errada Jul-out 2026 (temp 0.7+rep 1.05 geravam loop no thinking) corrigida 07/10; runs anteriores removidas (estaca zero). Uses qwen-fixed-chat-template.jinja for tool-call instructions. Formerly qwen3.5-4b-mtp, consolidated Jul 2026.'
   lfm2.5-2.6b:
     name: LFM 2.5 2.6B
     description: Liquid AI on-device agentic model. 2.6B dense hybrid with 128K context. Trained with agentic RL inside Hermes Agent. Best-in-class tool use for its size.
@@ -1009,16 +1002,13 @@ models:
   d1-3b:
     name: Liquid d1-3B
     description: Liquid AI decision model (LFM2 arch) with SigLIP2 vision — choices/scores with calibrated per-type temperatures. 3B params, 32K context.
-    tags:
-    - vision
-    - decision
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/d1-3B/d1-3B-Q4_K_M.gguf
 
       --mmproj ${models_dir}/d1-3B/mmproj-d1-3B-Q8_0.gguf
 
-      --chat-template ${models_dir}/d1-3B/chat_template.jinja
+      --chat-template-file ${models_dir}/d1-3B/chat_template.jinja
 
       --media-path ${media_path}
 
@@ -1088,10 +1078,6 @@ models:
     name: Liquid d1-omni 600M
     description: Liquid AI decision model 600M — text + image OR text + audio input, choices/scores output. 16K context.
     unlisted: true
-    tags:
-    - vision
-    - audio
-    - decision
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/d1-omni-600M/d1-omni-600M-Q8_0.gguf
@@ -1223,7 +1209,7 @@ models:
 
       -nkvo
 
-      --override-tensor "ffn_gate_exps=CPU,ffn_down_exps=CPU,ffn_up_exps=CPU,tok_embd=CPU,attn_v_exps=CPU"
+      --override-tensor "tok_embd=CPU,attn_v_exps=CPU"
 
       --cache-type-k ${large_cache_k}
 
