@@ -1,4 +1,4 @@
-d1-3B:
+d1-3b:
   name: Liquid d1-3B
   description: Liquid AI decision model (LFM2 arch) with SigLIP2 vision — choices/scores
     with calibrated per-type temperatures. 3B params, 32K context.
@@ -62,6 +62,7 @@ d1-3B:
     source: LiquidAI/d1-3B-GGUF (Q4_K_M + mmproj Q8_0)
     kv_cache: q8_0
     features:
+      decision: true
       completion: true
       tools: false
       thinking: false

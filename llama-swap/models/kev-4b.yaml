@@ -1,0 +1,57 @@
+kev-4b:
+  name: Kev-4B
+  description: Decision model (Palmer, base Qwen3.5-4B-Base). Serves POST /v1/systemone
+    — choice/score/noul judge, 32K context. Not a chat model.
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/decision-models/Kev-4B-GGUF/Kev-4B-Q8_0.gguf
+
+    --ctx-size 32768
+
+    --batch-size 512
+
+    --ubatch-size 512
+
+    --parallel 1
+
+    --no-webui
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p, top_k, min_p, repeat_penalty
+  ttl: 3600
+  health_check_timeout: 60
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: false
+    reranker: false
+    context: 32768
+  metadata:
+    size: ~4.48 GB (Q8_0)
+    context: 32768
+    vram_usage: ~4.6 GB VRAM
+    source: ggml-org/Kev-4B-GGUF (Q8_0, official decision conversion PR #29818)
+    kv_cache: n/a
+    features:
+      decision: true
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      image: false
+      embedding: false
+      insert: false
+      audio: false
+    architecture: kev
+    parameters: 4000000000
+    context_length: 32768  (max 262144)
+    embedding_length: 2560
+    quantization: Q8_0
+    note: 'vram detalhe: ~4.6 GB VRAM (model Q8_0 4.48GB + compute) | Decision model
+      (kev type: dot-product head). Judge backup p/ laya-snake: maior que Laya 421M
+      e Julia 144M — quality tier. /v1/systemone igual aos irmãos. 32K configurado (ctx max real 262K, decision models sub-utilizam).'
