@@ -72,9 +72,9 @@ k2-horizon-36b:
   metadata:
     size: ~14.7 GB (APEX-Mini)
     context: 131072
-    vram_usage: ~4.8 GB VRAM + ~14 GB RAM (experts + MoVA em RAM, KV CPU)
+    vram_usage: ~4.8 GB VRAM + ~14 GB RAM
     source: VladHong/K2-Horizon-MoVA-36B-A4B-APEX-Mini-GGUF (SHA256 A0B4FEBE...C74D233C4)
-    kv_cache: q4_0/q4_0 (KV em CPU RAM; -nkvo)
+    kv_cache: q4_0/q4_0
     features:
       completion: true
       tools: true
@@ -83,7 +83,7 @@ k2-horizon-36b:
       que cobre o MoVA (attn_v_exps=CPU — o regex do -cmoe so cobre ffn_*_exps,
       o MoVA ~3GB fica na GPU sem o override = OOM @131K). GOTCHA: --no-kv-offload
       longo NAO desliga o offload no cafe (o KV @131K = 6912MiB tenta GPU = OOM);
-      usar -nkvo curto. decode 14.3 t/s @4.8GB @131K (ub128@b512). APEX-Mini
+      usar -nkvo curto. decode 14.3 t/s @4.8GB @131K (ub128@b512). KV @131K = 6912MiB fica em CPU RAM via -nkvo (na GPU OOM). APEX-Mini
       VladHong (imatrix K2-shaped: Q3_K edges, IQ2_S middle, shared/attn precisos).
       UMA=OOM insurance ONLY. Samplers 0.7/0.95. Reasoning budget 16384. Quirk
       tool_choice auto: pode planejar calls em texto (re-run ou required resolve).
