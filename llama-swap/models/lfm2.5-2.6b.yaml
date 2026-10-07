@@ -11,7 +11,7 @@ lfm2.5-2.6b:
 
     --fit-target ${vram_margin}
 
-    # server: vanilla 0.6.0 (d81235049, 05/10) — build na mesma pasta que o cafe 0.74
+    # server: vanilla 0.6.0 (b2796 = abeada335, build 06/10) — build na mesma pasta que o cafe 0.74
 
     --fit-ctx 131072
 
@@ -41,14 +41,8 @@ lfm2.5-2.6b:
 
     --jinja
 
-    -md ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-DSpark-Draft-v1-F16.gguf
-
-    --spec-type draft-dspark
-
-    --spec-draft-n-max 10
-
-    --spec-draft-n-min 0
-
+    # spec-dspark REMOVIDO 07/10 — build pos-d81235049 (rebuild 06/10) quebra o fit com draft:
+    # fit mede sem o draft ("dflash requires ctx_other" e normal no fitting) -> pp buffer OOM -> SIGABRT -> 500
     --metrics
 
     '
@@ -99,5 +93,5 @@ lfm2.5-2.6b:
       Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only
       8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM
       in 6GB. QAD (Quantization-Aware Distillation) recovers ~97% of BF16 quality
-      vs native Q4_0. DSpark speculative decoding via F16 draft sidecar (633MB) —
-      up to 2.27x speedup on-device, 57% latency reduction for function calling.'
+      vs native Q4_0. DSpark draft REMOVIDO 07/10: fit quebra c/ draft no build 06/10
+      (mede sem o draft -> pp buffer OOM -> SIGABRT). Baseline no-draft: 88.5 t/s.'

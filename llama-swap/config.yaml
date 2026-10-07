@@ -156,7 +156,7 @@ models:
 
       --fit-target ${vram_margin}
 
-      # server: vanilla 0.6.0 (d81235049, 05/10) — build na mesma pasta que o cafe 0.74
+      # server: vanilla 0.6.0 (b2796 = abeada335, build 06/10) — build na mesma pasta que o cafe 0.74
 
       --fit-ctx 131072
 
@@ -186,15 +186,7 @@ models:
 
       --jinja
 
-      -md ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-DSpark-Draft-v1-F16.gguf
-
-      --spec-type draft-dspark
-
-      --spec-draft-n-max 10
-
-      --spec-draft-n-min 0
-
-      --metrics
+      # spec-dspark REMOVIDO 07/10 — build pos-d81235049 (rebuild 06/10) quebra o fit com draft: # fit mede sem o draft ("dflash requires ctx_other" e normal no fitting) -> pp buffer OOM -> SIGABRT -> 500 --metrics
 
       '
     filters:
@@ -238,7 +230,7 @@ models:
       context_length: 131072
       embedding_length: 2048
       quantization: QAD Q4_0
-      note: 'vram detalhe: ~3.9GB VRAM (model 1.55GB + q4_0 KV 131K + compute) | model 1.55GB QAD-Q4_0 + q4_0 KV @131K + compute Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only 8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM in 6GB. QAD (Quantization-Aware Distillation) recovers ~97% of BF16 quality vs native Q4_0. DSpark speculative decoding via F16 draft sidecar (633MB) — up to 2.27x speedup on-device, 57% latency reduction for function calling.'
+      note: 'vram detalhe: ~3.9GB VRAM (model 1.55GB + q4_0 KV 131K + compute) | model 1.55GB QAD-Q4_0 + q4_0 KV @131K + compute Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only 8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM in 6GB. QAD (Quantization-Aware Distillation) recovers ~97% of BF16 quality vs native Q4_0. DSpark draft REMOVIDO 07/10: fit quebra c/ draft no build 06/10 (mede sem o draft -> pp buffer OOM -> SIGABRT). Baseline no-draft: 88.5 t/s.'
   qwen2.5-coder-1.5b-pollard:
     name: Qwen2.5 Coder 1.5B Pollard
     description: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct, CPU-only. IQ4_XS with imatrix. FIM native. Code completion on CPU, zero VRAM, coexists with GPU MoE.

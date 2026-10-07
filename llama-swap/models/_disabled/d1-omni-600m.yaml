@@ -1,0 +1,80 @@
+d1-omni-600M:
+  name: Liquid d1-omni 600M
+  description: Liquid AI decision model 600M — text + image OR text + audio input,
+    choices/scores output. 16K context.
+  tags:
+  - vision
+  - audio
+  - decision
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/d1-omni-600M/d1-omni-600M-Q8_0.gguf
+
+    --mmproj ${models_dir}/d1-omni-600M/mmproj-d1-omni-600M-Q8_0.gguf
+
+    --media-path ${media_path}
+
+    --jinja
+
+    --fit on
+
+    --fit-target ${vram_margin}
+
+    --fit-ctx 4096
+
+    --ctx-size 16384
+
+    --parallel 1
+
+    --temp 1.0
+
+    --top-p 0.9
+
+    --top-k 40
+
+    --min-p 0.0
+
+    --cache-type-k ${small_cache_k}
+
+    --cache-type-v ${small_cache_v}
+
+    --flash-attn on
+
+    --metrics
+
+    '
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: false
+    reranker: false
+    context: 16384
+  metadata:
+    size: ~407 MB (Q8_0) + 263 MB mmproj (Q8_0)
+    context: 16384
+    vram_usage: ~1.5 GB VRAM
+    source: LiquidAI/d1-omni-600M-GGUF (Q8_0 + mmproj Q8_0)
+    kv_cache: q8_0
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: lfm2 (decision omni, base LFM2.5-Encoder-350M)
+    parameters: 600000000
+    context_length: 16384
+    embedding_length: 1024
+    quantization: Q8_0
+    note: 'Decision model 600M — text+image ou text+audio (audio via encoder LFM2.5
+      350M no mmproj). Edge/Jetson class. SEM chat_template no GGUF nem no repo fonte
+      (só via prompt.py próprio) — testar se o llama-server aplica default da família
+      lfm2. Candidate para decision audio. NOT a chat model.'

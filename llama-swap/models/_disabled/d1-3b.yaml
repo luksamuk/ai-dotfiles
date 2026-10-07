@@ -1,0 +1,81 @@
+d1-3B:
+  name: Liquid d1-3B
+  description: Liquid AI decision model (LFM2 arch) with SigLIP2 vision — choices/scores
+    with calibrated per-type temperatures. 3B params, 32K context.
+  tags:
+  - vision
+  - decision
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/d1-3B/d1-3B-Q4_K_M.gguf
+
+    --mmproj ${models_dir}/d1-3B/mmproj-d1-3B-Q8_0.gguf
+
+    --chat-template ${models_dir}/d1-3B/chat_template.jinja
+
+    --media-path ${media_path}
+
+    --jinja
+
+    --fit on
+
+    --fit-target ${vram_margin}
+
+    --fit-ctx 8192
+
+    --ctx-size 32768
+
+    --parallel 1
+
+    --temp 1.0
+
+    --top-p 0.9
+
+    --top-k 40
+
+    --min-p 0.0
+
+    --cache-type-k ${small_cache_k}
+
+    --cache-type-v ${small_cache_v}
+
+    --flash-attn on
+
+    --metrics
+
+    '
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: false
+    reranker: false
+    context: 32768
+  metadata:
+    size: ~1.67 GB (Q4_K_M) + 583 MB mmproj (Q8_0)
+    context: 32768
+    vram_usage: ~3.2 GB VRAM
+    source: LiquidAI/d1-3B-GGUF (Q4_K_M + mmproj Q8_0)
+    kv_cache: q8_0
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: lfm2 (decision, via lfm2.5-vl)
+    parameters: 3000000000
+    context_length: 32768
+    embedding_length: 2048
+    quantization: Q4_K_M
+    note: 'Decision model (choices/scores/noul) with temperature calibration per choice
+      type (config.json temperatures). Base LFM2.5-VL 3B. Real-time decisions: classifier
+      + image understanding. Candidate to judge systemone (laya-snake). mmproj 583MB
+      gives SigLIP2 vision. NOT a chat model: structured decision output.'
