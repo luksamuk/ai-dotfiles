@@ -1198,7 +1198,91 @@ models:
       note: 'vram detalhe: ~2GB (model + mmproj + cache) | GLM OCR multimodal: model 0.95GB + mmproj 0.48GB + cache; Q8_0 Specialized OCR model — use prompts like ''OCR'', ''OCR markdown'', ''Table Recognition:''. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.'
   k2-horizon-36b:
     name: K2-Horizon MoVA 36B
-    description: IFM's sparse reasoning model — MoE with Mixture-of-Values attention. 4B active params, strong agentic/coding benchmarks, 524K native context.
+    description: 'IFM''s sparse reasoning model — MoE with Mixture-of-Values attention. 4B active params, strong agentic/coding benchmarks, 524K native context. cafe-llama.cpp backend: 131K context, modest RAM/VRAM pressure.'
+    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
+      --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-APEX-Mini.gguf
+
+      --jinja
+
+      --parallel 1
+
+      --ctx-size 131072
+
+      --temp 0.7
+
+      --top-p 0.95
+
+      --reasoning on
+
+      --reasoning-format deepseek
+
+      --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
+
+      -cmoe
+
+      -nkvo
+
+      --override-tensor "ffn_gate_exps=CPU,ffn_down_exps=CPU,ffn_up_exps=CPU,tok_embd=CPU,attn_v_exps=CPU"
+
+      --cache-type-k ${large_cache_k}
+
+      --cache-type-v ${large_cache_v}
+
+      --flash-attn auto
+
+      -b 512
+
+      -ub 128
+
+      --reasoning-budget 16384
+
+      --reasoning-budget-message "Now answer directly."
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.95
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.7
+          top_p: 0.95
+    ttl: 1200
+    health_check_timeout: 900
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~14.7 GB (APEX-Mini)
+      context: 131072
+      vram_usage: ~4.8 GB VRAM + ~14 GB RAM (experts + MoVA em RAM, KV CPU)
+      source: VladHong/K2-Horizon-MoVA-36B-A4B-APEX-Mini-GGUF (SHA256 A0B4FEBE...C74D233C4)
+      kv_cache: q4_0/q4_0 (KV em CPU RAM; -nkvo)
+      features:
+        completion: true
+        tools: true
+        thinking: true
+      note: 'NORMAL (07/10, cafe 0.75 build 11816): -cmoe + -nkvo + override MANUAL que cobre o MoVA (attn_v_exps=CPU — o regex do -cmoe so cobre ffn_*_exps, o MoVA ~3GB fica na GPU sem o override = OOM @131K). GOTCHA: --no-kv-offload longo NAO desliga o offload no cafe (o KV @131K = 6912MiB tenta GPU = OOM); usar -nkvo curto. decode 14.3 t/s @4.8GB @131K (ub128@b512). APEX-Mini VladHong (imatrix K2-shaped: Q3_K edges, IQ2_S middle, shared/attn precisos). UMA=OOM insurance ONLY. Samplers 0.7/0.95. Reasoning budget 16384. Quirk tool_choice auto: pode planejar calls em texto (re-run ou required resolve). Tool parsing: o cafe usa parser PEG K2 (herdado do upstream #29535) — VALIDAR E2E (o ik tem COMMON_CHAT_FORMAT_PEG_K2_HORIZON dedicado; o cafe pode comportar diferente). FAST variant = k2-horizon-36b-fast (ik @32K, 17.5 t/s, mais pressao). O id k2-horizon-36b era ik @131K antes (17.5 t/s @8K era o medido); promocao do cafe = troca de motor do principal 07/10 (user GO: normal=cafe, fast=ik).'
+      architecture: k2-horizon
+      parameters: 36000000000
+      embedding_length: 7168
+      quantization: APEX-Mini
+  k2-horizon-36b-fast:
+    name: K2-Horizon MoVA 36B (fast)
+    description: 'IFM''s sparse reasoning model — MoE with Mixture-of-Values attention. 4B active params, strong agentic/coding benchmarks. ik_llama.cpp backend: faster decode, more RAM/VRAM pressure.'
     cmd: '${ik_llama_server} --port ${PORT}
 
       --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-APEX-Mini.gguf
@@ -1209,7 +1293,7 @@ models:
 
       --no-kv-offload
 
-      --ctx-size 131072
+      --ctx-size 32768
 
       --temp 0.7
 
@@ -1266,10 +1350,10 @@ models:
       - text
       tools: true
       reranker: false
-      context: 131072
+      context: 32768
     metadata:
       size: ~14.7 GB (APEX-Mini)
-      context: 131072
+      context: 32768
       vram_usage: ~5.0 GB VRAM + ~14 GB RAM pinned
       source: VladHong/K2-Horizon-MoVA-36B-A4B-APEX-Mini-GGUF (SHA256 A0B4FEBE...C74D233C4)
       kv_cache: q4_0/q4_0
@@ -1277,7 +1361,7 @@ models:
         completion: true
         tools: true
         thinking: true
-      note: 'vram detalhe: ~5.0 GB VRAM + ~14 GB RAM pinned | MoVA+attn na GPU, experts CPU pinned; decode 17.5 t/s @8K Reativado 05/10: Q3_K_M abenzerps (17GB) -> APEX-Mini VladHong (imatrix K2-shaped: Q3_K edges, IQ2_S middle, shared/attn precisos). Hadamard K/V REJEITADO (glitches determinísticos no smoke; re-testar quando baseline sadio). Manual mapping (--fit FAIL nesta arch): ffn_gate/down/up_exps + tok_embd CPU pinned; MoVA + output na GPU. KV q4_0 ~49KB/token. UMA=OOM insurance ONLY — como path primário roda 8-10x mais lento em MoE. Medido 05/10: decode 17.5 t/s @8K sem desktop / 15.9 com; user re-registro: 92% VRAM + 74% RAM com browser. VENENOS: NO_PINNED quebra sampling (fatal, llama-sampling.cpp:745), override attn_v_exps=CUDA0 = 0 ganho + fatal (MoVA já residente GPU no baseline), UMA primário lento. Samplers 0.7/0.95 (model-card temp 1.0 quebrou leitura agentic em Sep). Reasoning budget 16384 (vendor pede effort high, 32K+ queima wall clock). Quirk tool_choice auto: pode planejar calls em texto e não emitir <ifm|tool_calls> (re-run ou required resolve). Tool parsing: parser PEG dedicado no ik (COMMON_CHAT_FORMAT_PEG_K2_HORIZON) — validado E2E 4/4 calls 05/10. PR ggml-org/llama.cpp#29535 (MoVA no mainline) em revisão — quando mergear, café herda; tracker monitorando.'
+      note: 'FAST variant (07/10): ik backend @32K ctx, ~17.5 t/s @8K (medido 05/10), pressao maior de RAM/VRAM (user: fast pressiona RAM e VRAM). Manual mapping (--fit FAIL nesta arch): ffn_gate/down/up_exps + tok_embd CPU pinned; MoVA + output na GPU. KV q4_0 ~49KB/token. UMA=OOM insurance ONLY. APEX-Mini VladHong (imatrix K2-shaped). Hadamard K/V REJEITADO (glitches deterministicos no smoke; re-testar). VENENOS: NO_PINNED quebra sampling (fatal, llama-sampling.cpp:745), override attn_v_exps=CUDA0 = 0 ganho + fatal, UMA primario lento. Samplers 0.7/0.95 (model-card temp 1.0 quebrou leitura agentic em Sep). Reasoning budget 16384 (vendor pede effort high, 32K+ queima wall clock). Quirk tool_choice auto: pode planejar calls em texto e nao emitir <ifm|tool_calls> (re-run ou required resolve). Tool parsing: parser PEG dedicado no ik (COMMON_CHAT_FORMAT_PEG_K2_HORIZON) — validado E2E 4/4 calls 05/10. O id k2-horizon-36b @131K ik migrou pra caqui como -fast; o NORMAL @131K = cafe (-cmoe + -nkvo curto + attn_v_exps=CPU override, 14.3 t/s @4.8GB).'
       architecture: k2-horizon
       parameters: 36000000000
       embedding_length: 7168
