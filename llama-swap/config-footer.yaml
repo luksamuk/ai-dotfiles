@@ -106,7 +106,9 @@ matrix:
     small_vision: "(q4 | lfm26 | twp) & (nemb | lfmcol | eg2)"
 
     # LLM pequeno + Embedding (sem vision)
-    small_embed: "(q4 | lfm26 | twp) & (nemb | lfmcol | eg2)"
+    # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
+    # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
+    small_embed: "(q4 | lfm26 | twp) & (nemb | lfmcol | eg2) & qpoll"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
     small_only: "q4 | lfm26 | twp"  # gpt2xl+man1 REMOVED Oct 3 2026 (disk)
