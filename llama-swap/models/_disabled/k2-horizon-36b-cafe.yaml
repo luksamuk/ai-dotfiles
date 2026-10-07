@@ -1,0 +1,90 @@
+k2-horizon-36b-cafe:
+  name: K2-Horizon MoVA 36B (cafe A/B test)
+  description: A/B test fragment - K2-Horizon on cafe-llama.cpp 0.75 with upstream
+    MoE GPU expert cache (--moe-cache-mib) instead of ik_llama.cpp. Same mapping as
+    the ik deployment (experts + tok_embd host, MoVA+attn GPU).
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
+    --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-APEX-Mini.gguf
+
+    --jinja
+
+    --parallel 1
+
+    --parallel-tool-calls
+
+    --ctx-size 131072
+
+    --temp 1.0
+
+    --top-p 0.95
+
+    --top-k 20
+
+    --reasoning on
+
+    --reasoning-format deepseek
+
+    --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
+
+    --override-tensor "ffn_gate_exps=CPU,ffn_down_exps=CPU,ffn_up_exps=CPU,tok_embd=CPU"
+
+    --no-kv-offload
+
+    --moe-cache-mib 640
+
+    --cache-type-k ${large_cache_k}
+
+    --cache-type-v ${large_cache_v}
+
+    --flash-attn auto
+
+    --ubatch-size 256
+
+    --reasoning-budget 16384
+
+    --reasoning-budget-message "Now answer directly."
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.95
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.7
+        top_p: 0.95
+  ttl: 1200
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: ~14.7 GB (APEX-Mini)
+    context: 131072
+    vram_usage: ~6.0 GB VRAM (5.0 attn/mova + 0.6 moe-cache) + ~14 GB RAM pinned
+    source: VladHong/K2-Horizon-MoVA-36B-A4B-APEX-Mini-GGUF (SHA256 A0B4FEBE...C74D233C4)
+    kv_cache: q4_0/q4_0 (large_cache_k/v)
+    features:
+      completion: true
+      tools: true
+      thinking: true
+    note: 'A/B TEST fragment (05/10+): cafe 0.75 e67054048 com --moe-cache-mib 640
+      (o upstream #29887) vs ik baseline 17.5 t/s. Mapping identico ao fragment
+      ik (experts+tok_embd CPU, MoVA+attn GPU). Sampling=temp 0.7/top-p 0.95 igual
+      ao ik fragment. MoE cache 640MiB = VRAM livre do baseline (5.0/6.0GB).
+      Bench: mesmos prompts do A/B MoVA 05/10. Se ganhar, fragment principal
+      migra p/ cafe + moe-cache (user: "alterarmos no restante tambem"). Se
+      empatar, K2 fica no ik. Nao e deploy de producao ate o A/B fechar.'
