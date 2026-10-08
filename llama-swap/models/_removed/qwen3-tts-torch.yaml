@@ -1,0 +1,53 @@
+qwen3-tts:
+  name: Qwen3-TTS 0.6B
+  description: Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible
+    /v1/audio/speech endpoint with voice profiles from voiceclone-tui.
+  tags:
+  - tts
+  proxy: http://127.0.0.1:8880
+  checkEndpoint: /v1/audio/voices
+  cmd: '${env.HOME}/projects/ai/tts-api/.venv/bin/python ${env.HOME}/projects/ai/tts-api/tts_server.py
+    --port 8880 --host 127.0.0.1
+
+    '
+  cmdStop: pkill -f tts_server.py
+  health_check_timeout: 300
+  ttl: 300
+  capabilities:
+    in:
+    - text
+    out:
+    - audio
+    tools: false
+    reranker: false
+    context: 0
+  metadata:
+    size: ~600MB (Qwen3-TTS-12Hz-0.6B-Base, torch-direct)
+    context: 0
+    vram_usage: ~2.0 GB VRAM
+    source: Qwen/Qwen3-TTS-12Hz-0.6B-Base (HuggingFace)
+    kv_cache: n/a
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: true
+      image: false
+    architecture: qwen3-tts
+    parameters: 600000000
+    context_length: 0
+    embedding_length: 0
+    quantization: torch-direct
+    note: 'vram detalhe: ~2GB VRAM (torch-direct, separate GPU allocation) | torch-direct
+      (separate GPU allocation, fora do padrão llama-server) context detalhe: N/A
+      (TTS generation, not LLM context) Backend torch-direct (sem GGUF). Nenhum KV
+      cache — decodificação de áudio sequencial, sem cache de atenção exposto.'
+    caveats:
+    - External FastAPI server on port 8880 (not llama.cpp)
+    - Must install qwen_tts and dependencies in ~/projects/ai/tts-api/.venv
+    - Voice profiles loaded from ~/.config/voiceclone-tui/voices.json
+    - Supports voice cloning with reference audio samples
+    - Portuguese (pt-BR) voices with accent control

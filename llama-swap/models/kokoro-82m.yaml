@@ -1,0 +1,48 @@
+kokoro-82m:
+  name: Kokoro 82M
+  description: Native C++ TTS (audio.cpp server, GGUF Q8_0 190MB). 9 languages incl. pt-br, 54+ preset voices, eSpeak-ng G2P. OpenAI-compatible /v1/audio/speech. Cold load ~3s, warm ~0.4s on CUDA.
+  tags:
+  - tts
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: ${env.HOME}/git/audio.cpp/build/linux-cuda-release/bin/audiocpp_server
+    --config ${env.HOME}/git/audio.cpp/server-kokoro.json
+    --model-spec-override ${env.HOME}/git/audio.cpp/model_specs
+    --port ${PORT} --host 127.0.0.1
+
+  cmdStop: pkill -f server-kokoro.json
+  health_check_timeout: 120
+  ttl: 300
+  capabilities:
+    in:
+    - text
+    out:
+    - audio
+    tools: false
+    reranker: false
+    context: 0
+  metadata:
+    size: 190 MB (kokoro-82m-q8_0.gguf; eSpeak-ng data separado)
+    context: 0
+    vram_usage: ~0.4 GB VRAM (CUDA, q8_0)
+    source: hexgrad/Kokoro-82M via audio-cpp/audio.cpp-gguf
+    kv_cache: n/a
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: true
+      image: false
+    architecture: kokoro
+    parameters: 82000000
+    context_length: 0
+    embedding_length: 0
+    quantization: q8_0
+    note: '1o modelo audio.cpp da frota (server C++ nativo, sem Python). G2P eSpeak-ng 1.52. pt-br: pf_dora (fem), pm_alex, pm_santa (masc). Speed via request option. Server multi-model (server-kokoro.json: kokoro-82m + qwen3-tts-base lazy_load).'
+    caveats:
+    - Server audio.cpp embutido (não llama-server) — endpoints /v1/audio/speech + /v1/audio/transcriptions
+    - Porta 8890 fixa no fragment
+    - eSpeak-ng system lib (pacman espeak-ng) — requerido no host

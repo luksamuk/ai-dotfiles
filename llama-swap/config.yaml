@@ -1356,6 +1356,50 @@ models:
       parameters: 36000000000
       embedding_length: 7168
       quantization: APEX-Mini
+  kokoro-82m:
+    name: Kokoro 82M
+    description: Native C++ TTS (audio.cpp server, GGUF Q8_0 190MB). 9 languages incl. pt-br, 54+ preset voices, eSpeak-ng G2P. OpenAI-compatible /v1/audio/speech. Cold load ~3s, warm ~0.4s on CUDA.
+    tags:
+    - tts
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: ${env.HOME}/git/audio.cpp/build/linux-cuda-release/bin/audiocpp_server --config ${env.HOME}/git/audio.cpp/server-kokoro.json --model-spec-override ${env.HOME}/git/audio.cpp/model_specs --port ${PORT} --host 127.0.0.1
+    cmdStop: pkill -f server-kokoro.json
+    health_check_timeout: 120
+    ttl: 300
+    capabilities:
+      in:
+      - text
+      out:
+      - audio
+      tools: false
+      reranker: false
+      context: 0
+    metadata:
+      size: 190 MB (kokoro-82m-q8_0.gguf; eSpeak-ng data separado)
+      context: 0
+      vram_usage: ~0.4 GB VRAM (CUDA, q8_0)
+      source: hexgrad/Kokoro-82M via audio-cpp/audio.cpp-gguf
+      kv_cache: n/a
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: true
+        image: false
+      architecture: kokoro
+      parameters: 82000000
+      context_length: 0
+      embedding_length: 0
+      quantization: q8_0
+      note: '1o modelo audio.cpp da frota (server C++ nativo, sem Python). G2P eSpeak-ng 1.52. pt-br: pf_dora (fem), pm_alex, pm_santa (masc). Speed via request option. Server multi-model (server-kokoro.json: kokoro-82m + qwen3-tts-base lazy_load).'
+      caveats:
+      - Server audio.cpp embutido (não llama-server) — endpoints /v1/audio/speech + /v1/audio/transcriptions
+      - Porta 8890 fixa no fragment
+      - eSpeak-ng system lib (pacman espeak-ng) — requerido no host
   minicpm5-2b:
     name: MiniCPM5 2B
     description: 'OpenBMB MiniCPM5-2B (Q4_K_M oficial): dense 2B, 131K ctx nativo, tool calling limpo em ambos os modos. Text-only, sem MTP.'
@@ -1519,15 +1563,21 @@ models:
       note: 'vram detalhe: ~4.9 GB VRAM + ~4.7 GB RAM used | experts em page cache file-backed evictável via -cmoe (a RAM usada é cache — evictável quando o sistema pede) vram detalhe: MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s 0.74 05/10/2026: -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap 24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly. Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K).'
   qwen3-tts:
     name: Qwen3-TTS 0.6B
-    description: Text-to-speech with voice cloning. 8 Portuguese voices. OpenAI-compatible /v1/audio/speech endpoint with voice profiles from voiceclone-tui.
+    description: Text-to-speech native (audio.cpp server, GGUF Q8_0 1.9GB) com voice cloning - biblioteca da casa via voice_presets. Voice library da casa (Lucas, Hermes, Drácula, Alucard, Batman, Bolso, Jarvis, Francisca, Thalita, Finch) via voice_presets. OpenAI-compatible /v1/audio/speech. Language codes por nome (portuguese, english...).
     tags:
     - tts
-    proxy: http://127.0.0.1:8880
-    checkEndpoint: /v1/audio/voices
-    cmd: '${env.HOME}/projects/ai/tts-api/.venv/bin/python ${env.HOME}/projects/ai/tts-api/tts_server.py --port 8880 --host 127.0.0.1
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: '${env.HOME}/git/audio.cpp/build/linux-cuda-release/bin/audiocpp_server
+
+      --config ${env.HOME}/git/audio.cpp/server-qwen3tts.json
+
+      --model-spec-override ${env.HOME}/git/audio.cpp/model_specs
+
+      --port ${PORT} --host 127.0.0.1
 
       '
-    cmdStop: pkill -f tts_server.py
+    cmdStop: pkill -f server-qwen3tts.json
     health_check_timeout: 300
     ttl: 300
     capabilities:
@@ -1539,10 +1589,10 @@ models:
       reranker: false
       context: 0
     metadata:
-      size: ~600MB (Qwen3-TTS-12Hz-0.6B-Base, torch-direct)
+      size: 1.9 GB (qwen3-tts-12hz-0.6b-base-q8_0.gguf + config/tokenizer)
       context: 0
-      vram_usage: ~2.0 GB VRAM
-      source: Qwen/Qwen3-TTS-12Hz-0.6B-Base (HuggingFace)
+      vram_usage: ~1.1 GB VRAM (CUDA, q8_0)
+      source: Qwen/Qwen3-TTS-12Hz-0.6B-Base via audio-cpp/audio.cpp-gguf
       kv_cache: n/a
       features:
         completion: false
@@ -1557,14 +1607,12 @@ models:
       parameters: 600000000
       context_length: 0
       embedding_length: 0
-      quantization: torch-direct
-      note: 'vram detalhe: ~2GB VRAM (torch-direct, separate GPU allocation) | torch-direct (separate GPU allocation, fora do padrão llama-server) context detalhe: N/A (TTS generation, not LLM context) Backend torch-direct (sem GGUF). Nenhum KV cache — decodificação de áudio sequencial, sem cache de atenção exposto.'
+      quantization: q8_0
+      note: 'Aposentado o stack torch-direct/FastAPI (port 8880). 10 voice presets da casa (voice_ref + reference_text). Clone nativo ok via presets — o --voice-ref CLI puro travou (bug p/ reportar). Language por nome: portuguese/english/etc.'
       caveats:
-      - External FastAPI server on port 8880 (not llama.cpp)
-      - Must install qwen_tts and dependencies in ~/projects/ai/tts-api/.venv
-      - Voice profiles loaded from ~/.config/voiceclone-tui/voices.json
-      - Supports voice cloning with reference audio samples
-      - Portuguese (pt-BR) voices with accent control
+      - Language codes por nome (portuguese) — NÃO pt-br (o pt-br é do kokoro)
+      - server-fleet.json obsoleto (o multi-model num server só não roteia via swap)
+      - Voz preset não-existente = fallback do modelo (voz default) — o UI lista só os válidos agora
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
