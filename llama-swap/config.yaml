@@ -1679,9 +1679,9 @@ models:
       --cfg-scale 1.0 --listen-ip 127.0.0.1 --listen-port ${PORT}
 
       '
-    cmdStop: pkill -f "sd-server --diffusion-model"
-    health_check_timeout: 600
-    ttl: 600
+    cmdStop: pkill -f "qwen-image-2.1-Q4_K_M.gguf"
+    health_check_timeout: 3600
+    ttl: 3600
     capabilities:
       in:
         - text
@@ -1711,6 +1711,65 @@ models:
       embedding_length: 0
       quantization: q4_k_m
       note: 'Serve o MESMO stack do diffuse CLI (mesmos paths) — o CLI fica intocado (40 steps/cfg 1.0 da spec + enhance dedicado); o painel llama-swap injeta o mesmo runtime via SDAPI/OpenAI. RAM: TE 5 GB em CPU — spawn exige folga (OOM no cgroup 4 GB observado; scope 20G no smoke). Turbina: painel 512@20steps=34s; diffuse 1024@40steps=241s. Edit via img2img (SDAPI).'
+      caveats:
+        - TE Heretic 5 GB RAM em CPU — server precisa de folga de RAM no host
+        - 1 slot de geração por vez (fila de 1 no server)
+        - Sem LoRAs no fragment (decreto user 08/10) — o diffuse CLI mantém o proprio caminho de LoRA
+        - Dimensões múltiplas de 32 (não 16)
+  qwen-image-2.1-viggle-turbo:
+    name: Qwen-Image 2.1 Viggle Turbo (v0.3)
+    description: Image generation + editing nativo (sd.cpp server, Viggle Turbo v0.3 Q6_K destilado + VAE GPU + TE Heretic). 6 steps/cfg 1.0 (receita Viggle). OpenAI /v1/images/generations + A1111 /sdapi/v1/txt2img|img2img + /sdcpp/v1 async. Sem LoRAs no caminho (decreto user; máximo 2 por run se manual).
+    tags:
+      - image
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /v1/models
+    cmd: '${env.HOME}/git/stable-diffusion.cpp/build/bin/sd-server
+
+      --diffusion-model ${env.HOME}/git/ai-dotfiles/diffuse/models/qwen-image-2.1/qwen_image_2.1_turbo_Q6_K.gguf
+
+      --vae ${env.HOME}/git/ai-dotfiles/diffuse/models/qwen-image-2.1/vae/qwen_image_2.1_vae_bf16.safetensors
+
+      --llm ${env.HOME}/git/ai-dotfiles/diffuse/models/qwen-image-2.1/text_encoder_heretic/qwen3vl_8b_heretic-Q4_K_M.gguf
+
+      --diffusion-fa --offload-to-cpu --backend te=cpu,vae=gpu
+
+      --lora-model-dir ${env.HOME}/.llama-models/sd-loras-qwen-image
+
+      --steps 6 --cfg-scale 1.0 --listen-ip 127.0.0.1 --listen-port ${PORT}
+
+      '
+    cmdStop: pkill -f turbo_Q6_K
+    health_check_timeout: 3600
+    ttl: 3600
+    capabilities:
+      in:
+        - text
+      out:
+        - image
+      tools: false
+      reranker: false
+      context: 0
+    metadata:
+      size: 5.6 GB DiT (Viggle v0.3 Q6_K destilado) + 399 MB VAE + 5.0 GB TE (compartilhados)
+      context: 0
+      vram_usage: ~4.9 GB VRAM (DiT GPU, VAE GPU; TE 5 GB em CPU RAM)
+      source: Viggle/Qwen-Image-2.1-viggle-turbo (DiT destilado v0.3 6-step Q6_K) + VAE/TE idênticos à base
+      kv_cache: n/a
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: true
+      architecture: qwen-image-2.1-turbo
+      parameters: 7000000000
+      context_length: 0
+      embedding_length: 0
+      quantization: q4_k_m
+      note: 'DiT destilado Viggle v0.3 (6 steps, cfg 1.0, scheduler default — SEM sigmas custom; alias diffuse = qwen-image-2.1-turbo). Mesmos VAE/TE/lora-dir da base. Painel: 512~48s, 1024~2min. Edição complexa/multi-ref pior que a base (limitação do destilado). SEM LoRAs no painel (decreto); LoRAs de destilação nunca (mistura Viggle+Pruna = proibido no diffuse tb).'
       caveats:
         - TE Heretic 5 GB RAM em CPU — server precisa de folga de RAM no host
         - 1 slot de geração por vez (fila de 1 no server)
