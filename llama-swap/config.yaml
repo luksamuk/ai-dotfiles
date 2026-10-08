@@ -1401,6 +1401,75 @@ models:
       - Server audio.cpp embutido (não llama-server) — endpoints /v1/audio/speech + /v1/audio/transcriptions
       - Porta 8890 fixa no fragment
       - eSpeak-ng system lib (pacman espeak-ng) — requerido no host
+  mellum2.1-12b:
+    name: Mellum2.1 Thinking 12B
+    description: MoE JetBrains 12B total / 2.5B ativos focado em agentic coding e tool-calling; thinking ON por padrão (verbose), Apache 2.0.
+    tags:
+    - think
+    - tools
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: 'env GGML_CUDA_ENABLE_UNIFIED_MEMORY=1 ${ik_llama_server} --host 127.0.0.1 --port ${PORT}
+
+      -m ${models_dir}/mellum2.1/Mellum2.1-12B-A2.5B-Thinking-Q4_K_M.gguf
+
+      -ngl 99 -ot "ffn_.*_exps=CPU"
+
+      -c 32768 -fa on --jinja
+
+      --temp 0.6 --top-p 0.95 --top-k 20
+
+      '
+    cmdStop: pkill -f "Mellum2.1-12B-A2.5B-Thinking"
+    ttl: 900
+    health_check_timeout: 300
+    filters:
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.95
+          top_k: 20
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.95
+          top_k: 20
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 32768
+    metadata:
+      size: 8.1 GB (Q4_K_M)
+      context: 32768
+      vram_usage: ~5.4 GB VRAM
+      source: JetBrains/Mellum2.1-12B-A2.5B-Thinking-GGUF (base Mellum2-12B-A2.5B-Base, Apache 2.0)
+      kv_cache: f16
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+      architecture: mellum
+      parameters: 12000000000
+      context_length: 131072
+      embedding_length: 0
+      quantization: Q4_K_M
+      note: 'Smoke 08/10: ik 43.4 t/s (record da frota, supera K2-fast 17.5), cafe -cmoe 40.6, vanilla -ot 40.2; tools OK nos 3, parser hermes nativo. ik vencedor (prioridade user MoE + t/s). -ot ffn_.*_exps=CPU = receita K2-fast (64 experts na CPU); GGML_CUDA_ENABLE_UNIFIED_MEMORY=1 obrigatorio no ik. VRAM ik 5438 MiB vs cafe/vanilla 4554 MiB. KV @32K: 1792 MiB GPU (7 full layers; 21 SWA @1024 = const). Thinking default ON verbose (884-1050ch @300 max): content vazio se budget curto — max_tokens >= 600 pra tool calls (ik tool call truncou @120). Native ctx 131K; deploy @32K conservative (sobe facilmente: KV linear nas 7 full layers). Sampling receita JetBrains card: 0.6/0.95/20.'
+      caveats:
+      - Thinking ON default verbose; :think handle p/ raciocinio, plain p/ iteracao
+      - Tool calls precisam max_tokens >= 600 (reasoning consome o budget antes do call)
+      - Terminal-Bench fraco no card (17.4); agentic forte em SWE-bench V (47.0)
+      - math ponto debil relativo (AIME 83.3 vs 86.7 Qwen3.5-9B ~4x ativos)
   minicpm5-2b:
     name: MiniCPM5 2B
     description: 'OpenBMB MiniCPM5-2B (Q4_K_M oficial): dense 2B, 131K ctx nativo, tool calling limpo em ambos os modos. Text-only, sem MTP.'
