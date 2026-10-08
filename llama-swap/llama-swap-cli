@@ -46,7 +46,7 @@ fi
 # ---- Shared helpers ----
 
 feat_tag() {
-  # Ollama-style capabilities: completion, tools, insert, vision, embedding, thinking, image, audio
+  # Ollama-style capabilities: completion, tools, insert, vision, embedding, thinking, image, tts, audio
   local feats="$1" tags=""
   echo "$feats" | grep -qiP '"decision"\s*:\s*true'       && tags="${tags}+dec"
   echo "$feats" | grep -qiP '"embedding"\s*:\s*true'    && tags="${tags}+emb"
@@ -54,6 +54,7 @@ feat_tag() {
   echo "$feats" | grep -qiP '"thinking"\s*:\s*true'    && tags="${tags}+think"
   echo "$feats" | grep -qiP '"tools"\s*:\s*true'        && tags="${tags}+tools"
   echo "$feats" | grep -qiP '"insert"\s*:\s*true'       && tags="${tags}+ins"
+  echo "$feats" | grep -qiP '"tts"\s*:\s*true'          && tags="${tags}+tts"
   echo "$feats" | grep -qiP '"audio"\s*:\s*true'        && tags="${tags}+audio"
   echo "$feats" | grep -qiP '"image"\s*:\s*true'        && tags="${tags}+img"
   tags="${tags#+}"
@@ -71,6 +72,7 @@ feat_emoji() {
   echo "$feats" | grep -qiP '"thinking"\s*:\s*true'    && emojis="${emojis}🤔"
   echo "$feats" | grep -qiP '"tools"\s*:\s*true'        && emojis="${emojis}🛠"
   echo "$feats" | grep -qiP '"insert"\s*:\s*true'       && emojis="${emojis}✏️"
+  echo "$feats" | grep -qiP '"tts"\s*:\s*true'          && emojis="${emojis}🗣"
   echo "$feats" | grep -qiP '"audio"\s*:\s*true'        && emojis="${emojis}🔊"
   echo "$feats" | grep -qiP '"image"\s*:\s*true'        && emojis="${emojis}🖼"
   [[ -z "$emojis" ]] && emojis="💬"
