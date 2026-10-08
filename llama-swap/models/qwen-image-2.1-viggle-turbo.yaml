@@ -46,11 +46,11 @@ qwen-image-2.1-viggle-turbo:
       insert: false
       audio: false
       image: true
-    architecture: qwen-image-2.1-turbo
+    architecture: qwen-image-2.1
     parameters: 7000000000
     context_length: 0
     embedding_length: 0
-    quantization: q4_k_m
+    quantization: q6_k
     note: 'DiT destilado Viggle v0.3 (6 steps, cfg 1.0, scheduler default — SEM sigmas custom; alias diffuse = qwen-image-2.1-turbo). Mesmos VAE/TE/lora-dir da base. Painel: 512~48s, 1024~2min. Edição complexa/multi-ref pior que a base (limitação do destilado). SEM LoRAs no painel (decreto); LoRAs de destilação nunca (mistura Viggle+Pruna = proibido no diffuse tb).'
     caveats:
     - TE Heretic 5 GB RAM em CPU — server precisa de folga de RAM no host
