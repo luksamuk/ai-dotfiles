@@ -1,0 +1,60 @@
+saluki-27b:
+  name: Underdog Saluki 27B
+  description: Qwen3.8-27B comprimido pra 7.9 GB (IQ2-mix 2-bit), refino Underdog focado em tool-calling. Hybrid linear+full attention; thinking on/off por request; vision via mmproj na RAM (add-on, prefill ~35s/img).
+  tags:
+  - dec
+  - vis
+  proxy: http://127.0.0.1:${PORT}
+  aliases:
+  - saluki
+  checkEndpoint: /health
+  cmd: '${cafe_server} --host 127.0.0.1 --port ${PORT}
+
+    -m ${models_dir}/saluki-27b/Underdog-Saluki-27B-1.0-IQ2-mix.gguf
+
+    --mmproj ${models_dir}/saluki-27b/mmproj-Q8_0.gguf --no-mmproj-offload
+
+    -ngl 34 -c 4096 -fa on --jinja
+
+    --temp 0.6 --top-p 0.95 --top-k 20
+
+    '
+  cmdStop: pkill -f "Saluki-27B-1.0-IQ2"
+  ttl: 900
+  health_check_timeout: 180
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 4096
+  metadata:
+    size: 7.9 GB (IQ2-mix) + mmproj 629 MB (RAM, no offload)
+    context: 4K
+    vram_usage: ~5.5 GB (34/64 layers GPU; resto CPU RAM)
+    source: ConwayResearch/Underdog-Saluki-27B-1.0 (base Qwen3.8-27B, Apache 2.0)
+    kv_cache: f16
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 27000000000
+    context_length: 4096
+    embedding_length: 0
+    quantization: iq2_m
+    note: 'Smoke 08/10: cafe 4.7 t/s = vanilla 4.8 (paridade); ik ELIMINADO (degenera, template qwen3.5 quebrado + OOM sem unified memory). Tool call OK (get_weather Diamantina). Vision: mmproj CPU ~35s prefill silver.jpg (1536 vis tok), leitura correta, custo decode zero. -ngl 34 = max com rs cache do hybrid no 6GB (40 OOM). Sampling = receita Underdog (0.6/0.95/20).'
+    caveats:
+    - Dense 27B IQ2: 4.6-4.8 t/s (lento p/ cotidiano vs MoE K2 17.5)
+    - Tool calling = foco do refino Underdog; math de competicao ~82-85% do full
+    - mmproj na RAM = ViT prefill ~35s/imagem (gargalo pago so com imagem)
+    - -ngl 34 fixo (rs cache do hybrid estoura 6GB acima de 34)
+    - backend ik NAO suportado (template quebrado)
