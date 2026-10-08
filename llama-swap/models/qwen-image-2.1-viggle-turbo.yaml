@@ -15,7 +15,7 @@ qwen-image-2.1-viggle-turbo:
 
     --diffusion-fa --offload-to-cpu --backend te=cpu,vae=gpu
 
-    --lora-model-dir ${env.HOME}/.llama-models/sd-loras-qwen-image
+    --lora-model-dir ${env.HOME}/git/ai-dotfiles/diffuse/models/qwen-image-2.1/lora
 
     --steps 6 --cfg-scale 1.0 --listen-ip 127.0.0.1 --listen-port ${PORT}
 

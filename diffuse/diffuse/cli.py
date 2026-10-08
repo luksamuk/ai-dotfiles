@@ -275,7 +275,7 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--nsfw", action="store_true",
-        help="qwen-image-2.1: attach lora_nsfw/ LoRAs (strength via DIFFUSE_NSFW_STRENGTH, default 0.7); skipped when the prompt has a manual <lora:...> tag. Other models: NSFW enhance prompts.",
+        help="qwen-image-2.1: attach _nsfw/ LoRAs (strength via DIFFUSE_NSFW_STRENGTH, default 0.7); skipped when the prompt has a manual <lora:...> tag. Other models: NSFW enhance prompts.",
     )
     p.add_argument(
         "--pruna", action="store_true",

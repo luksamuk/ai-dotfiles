@@ -230,7 +230,7 @@ def generate_image_qwen21_sd_cpp(
     # tag <lora:nome_sem_ext:0.6> injetada no prompt se o usuário não colocou nenhuma
     # Turbo destilado: SEM auto-injeção (Pruna/Fix/Detailer treinados na base 40-step
     # bagunçam a receita few-step); tags manuais continuam funcionando — o dir é o
-    # MESMO lora/ do base, e tags aceitam subdiretório (<lora:lora_nsfw/nome:0.7>).
+    # MESMO lora/ do base, e tags aceitam subdiretório (<lora:_nsfw/nome:0.7>).
     if config.get("is_turbo"):
         if config.get("lora_dir"):
             cmd += ["--lora-model-dir", config["lora_dir"]]
