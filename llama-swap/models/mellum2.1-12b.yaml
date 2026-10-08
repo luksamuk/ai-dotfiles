@@ -12,7 +12,7 @@ mellum2.1-12b:
 
     -ngl 99 -ot "ffn_.*_exps=CPU"
 
-    -c 32768 -fa on --jinja
+    -c 131072 -fa on --jinja
 
     --temp 0.6 --top-p 0.95 --top-k 20
 
@@ -41,11 +41,11 @@ mellum2.1-12b:
     - text
     tools: true
     reranker: false
-    context: 32768
+    context: 131072
   metadata:
     size: 8.1 GB (Q4_K_M)
-    context: 32768
-    vram_usage: ~5.4 GB VRAM
+    context: 131072
+    vram_usage: ~5.4 GB VRAM + ~7.2 GB RAM
     source: JetBrains/Mellum2.1-12B-A2.5B-Thinking-GGUF (base Mellum2-12B-A2.5B-Base, Apache 2.0)
     kv_cache: f16
     features:
@@ -61,7 +61,7 @@ mellum2.1-12b:
     context_length: 131072
     embedding_length: 0
     quantization: Q4_K_M
-    note: 'Smoke 08/10: ik 43.4 t/s (record da frota, supera K2-fast 17.5), cafe -cmoe 40.6, vanilla -ot 40.2; tools OK nos 3, parser hermes nativo. ik vencedor (prioridade user MoE + t/s). -ot ffn_.*_exps=CPU = receita K2-fast (64 experts na CPU); GGML_CUDA_ENABLE_UNIFIED_MEMORY=1 obrigatorio no ik. VRAM ik 5438 MiB vs cafe/vanilla 4554 MiB. KV @32K: 1792 MiB GPU (7 full layers; 21 SWA @1024 = const). Thinking default ON verbose (884-1050ch @300 max): content vazio se budget curto — max_tokens >= 600 pra tool calls (ik tool call truncou @120). Native ctx 131K; deploy @32K conservative (sobe facilmente: KV linear nas 7 full layers). Sampling receita JetBrains card: 0.6/0.95/20.'
+    note: 'Smoke 08/10: ik 43.4 t/s (record da frota, supera K2-fast 17.5), cafe -cmoe 40.6, vanilla -ot 40.2; tools OK nos 3, parser hermes nativo. ik vencedor (prioridade user MoE + t/s). -ot ffn_.*_exps=CPU = receita K2-fast (64 experts na CPU); GGML_CUDA_ENABLE_UNIFIED_MEMORY=1 obrigatorio no ik. VRAM ik 5438 MiB vs cafe/vanilla 4554 MiB. KV @131K: 7168 MiB (7 full layers crescendo ~60MB/16K; 21 SWA @1024 const); ik unified mem = KV na RAM automatico. @32K era 1792 MiB. Thinking default ON verbose (884-1050ch @300 max): content vazio se budget curto — max_tokens >= 600 pra tool calls (ik tool call truncou @120). Native ctx 131K DEPLOYADO (coding = ctx longo: decreto user). decode @131K medido 41.8 t/s = paridade c/ 32K. Sampling receita JetBrains card: 0.6/0.95/20.'
     caveats:
     - Thinking ON default verbose; :think handle p/ raciocinio, plain p/ iteracao
     - Tool calls precisam max_tokens >= 600 (reasoning consome o budget antes do call)
