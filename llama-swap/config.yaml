@@ -1564,7 +1564,7 @@ models:
       note: 'vram detalhe: ~4.9 GB VRAM + ~4.7 GB RAM used | experts em page cache file-backed evictável via -cmoe (a RAM usada é cache — evictável quando o sistema pede) vram detalhe: MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s 0.74 05/10/2026: -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap 24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly. Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K).'
   qwen-image-2.1:
     name: Qwen-Image 2.1
-    description: Image generation + editing native (sd.cpp server, Q4_K_M DiT + VAE GPU + TE Heretic). OpenAI /v1/images/generations + A1111 /sdapi/v1/txt2img|img2img + /sdcpp/v1 async. Sem LoRAs no caminho (decreto user).
+    description: Geração de imagens + edição nativa (texto-para-imagem e imagem+prompt-para-imagem). Qualidade máxima em 20-40 steps; pesos uncensored Q4 do model card Qwen-Image 2.1.
     tags:
     - image
     proxy: http://127.0.0.1:${PORT}
@@ -1623,7 +1623,7 @@ models:
       - Dimensões múltiplas de 32 (não 16)
   qwen-image-2.1-viggle-turbo:
     name: Qwen-Image 2.1 Viggle Turbo (v0.3)
-    description: Image generation + editing nativo (sd.cpp server, Viggle Turbo v0.3 Q6_K destilado + VAE GPU + TE Heretic). 6 steps/cfg 1.0 (receita Viggle). OpenAI /v1/images/generations + A1111 /sdapi/v1/txt2img|img2img + /sdcpp/v1 async. Sem LoRAs no caminho (decreto user; máximo 2 por run se manual).
+    description: Qwen-Image 2.1 destilado (6 steps) — mesma geração e edição, ~10x mais rápido. Ideal pra iterar prompts e drafts; pra detalhe final e edição multi-ref, use a base.
     tags:
     - image
     proxy: http://127.0.0.1:${PORT}
