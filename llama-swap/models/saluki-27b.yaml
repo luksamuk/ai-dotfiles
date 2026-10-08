@@ -13,7 +13,7 @@ saluki-27b:
 
     --mmproj ${models_dir}/saluki-27b/mmproj-Q8_0.gguf --no-mmproj-offload
 
-    -ngl 34 -c 4096 -fa on --jinja
+    -ngl 34 -c 65536 -fa on -nkvo --jinja
 
     --temp 0.6 --top-p 0.95 --top-k 20
 
@@ -29,11 +29,11 @@ saluki-27b:
     - text
     tools: true
     reranker: false
-    context: 4096
+    context: 65536
   metadata:
     size: 7.9 GB (IQ2-mix) + 0.6 GB mmproj
-    context: 4096
-    vram_usage: ~5.5 GB VRAM + ~2.4 GB RAM
+    context: 65536
+    vram_usage: ~5.5 GB VRAM + ~4.9 GB RAM
     source: ConwayResearch/Underdog-Saluki-27B-1.0 (base Qwen3.8-27B, Apache 2.0)
     kv_cache: f16
     features:
@@ -47,10 +47,10 @@ saluki-27b:
       image: false
     architecture: qwen35
     parameters: 27000000000
-    context_length: 4096
+    context_length: 65536
     embedding_length: 0
     quantization: iq2_m
-    note: 'Smoke 08/10: cafe 4.7 t/s = vanilla 4.8 (paridade); ik ELIMINADO (degenera, template qwen3.5 quebrado + OOM sem unified memory). Tool call OK (get_weather Diamantina). mmproj 629MB na CPU RAM (--no-mmproj-offload, zero VRAM); Vision: mmproj CPU ~35s prefill silver.jpg (1536 vis tok), leitura correta, custo decode zero. -ngl 34 = max com rs cache do hybrid no 6GB (40 OOM); 34/64 layers GPU, resto+KV+mmproj na CPU RAM (~2.4GB). Sampling = receita Underdog (0.6/0.95/20).'
+    note: 'Smoke 08/10: cafe 4.7 t/s = vanilla 4.8 (paridade); ctx: 4K-64K free (-nkvo), 128K = server sobe mas requisição morre (OOM no compute do slot, -b/-ub baixos NÃO resolvem); 262K native = inviável (KV ~9GB em RAM); ik ELIMINADO (degenera, template qwen3.5 quebrado + OOM sem unified memory). Tool call OK (get_weather Diamantina). mmproj 629MB na CPU RAM (--no-mmproj-offload, zero VRAM); Vision: mmproj CPU ~35s prefill silver.jpg (1536 vis tok), leitura correta, custo decode zero. -ngl 34 = max com rs cache do hybrid no 6GB (40 OOM); 34/64 layers GPU, resto na CPU RAM; KV 64K em CPU RAM via -nkvo (+2.3GB, custo decode zero medido). Sampling = receita Underdog (0.6/0.95/20).'
     caveats:
     - Dense 27B IQ2: 4.6-4.8 t/s (lento p/ cotidiano vs MoE K2 17.5)
     - Tool calling = foco do refino Underdog; math de competicao ~82-85% do full
