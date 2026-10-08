@@ -1077,7 +1077,6 @@ models:
   d1-omni-600m:
     name: Liquid d1-omni 600M
     description: Liquid AI decision model 600M — text + image OR text + audio input, choices/scores output. 16K context.
-    unlisted: true
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/d1-omni-600M/d1-omni-600M-Q8_0.gguf
@@ -1106,6 +1105,10 @@ models:
 
       --min-p 0.0
 
+      -b 4096
+
+      -ub 4096
+
       --cache-type-k ${small_cache_k}
 
       --cache-type-v ${small_cache_v}
@@ -1121,6 +1124,7 @@ models:
       in:
       - text
       - image
+      - audio
       out:
       - text
       tools: false
@@ -1140,14 +1144,14 @@ models:
         vision: true
         embedding: false
         insert: false
-        audio: false
+        audio: true
         image: false
       architecture: lfm2
       parameters: 600000000
       context_length: 16384
       embedding_length: 1024
       quantization: Q8_0
-      note: Decision model 600M — text+image ou text+audio (audio via encoder LFM2.5 350M no mmproj). Edge/Jetson class. SEM chat_template no GGUF nem no repo fonte (só via prompt.py próprio) — testar se o llama-server aplica default da família lfm2. Candidate para decision audio. NOT a chat model.
+      note: 'FIX 08/10: -b/-ub 4096 (a imagem lain = 2584 vision tokens > batch 512/2048 default = "input too large" 500). Decision model 600M — text+image ou text+audio (audio via encoder LFM2.5 350M no mmproj). Edge/Jetson class. SEM chat_template no GGUF nem no repo fonte (só via prompt.py próprio) — testar se o llama-server aplica default da família lfm2. Candidate para decision audio. NOT a chat model.'
   glm-ocr:
     name: GLM-OCR
     description: GLM's vision-language OCR model for complex document understanding and text extraction.
