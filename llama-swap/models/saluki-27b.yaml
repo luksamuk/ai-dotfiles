@@ -21,6 +21,21 @@ saluki-27b:
   cmdStop: pkill -f "Saluki-27B-1.0-IQ2"
   ttl: 900
   health_check_timeout: 180
+  filters:
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.95
+        top_k: 20
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+        top_k: 20
+
   capabilities:
     in:
     - text
@@ -50,7 +65,7 @@ saluki-27b:
     context_length: 65536
     embedding_length: 0
     quantization: iq2_m
-    note: 'Smoke 08/10: cafe 4.7 t/s = vanilla 4.8 (paridade); ctx: 4K-64K free (-nkvo), 128K = server sobe mas requisição morre (OOM no compute do slot, -b/-ub baixos NÃO resolvem); 262K native = inviável (KV ~9GB em RAM); ik ELIMINADO (degenera, template qwen3.5 quebrado + OOM sem unified memory). Tool call OK (get_weather Diamantina). mmproj 629MB na CPU RAM (--no-mmproj-offload, zero VRAM); Vision: mmproj CPU ~35s prefill silver.jpg (1536 vis tok), leitura correta, custo decode zero. -ngl 34 = max com rs cache do hybrid no 6GB (40 OOM); 34/64 layers GPU, resto na CPU RAM; KV 64K em CPU RAM via -nkvo (+2.3GB, custo decode zero medido). Sampling = receita Underdog (0.6/0.95/20).'
+    note: 'Handles: plain = thinking OFF (temp 0.6); :think = ON (temp 0.6, Underdog receita). GOTCHA: setParamsByID tem que ficar DENTRO de filters: (root = ignorado silenciosamente, K2 precedência). Smoke 08/10: cafe 4.7 t/s = vanilla 4.8 (paridade); ctx: 4K-64K free (-nkvo), 128K = server sobe mas requisição morre (OOM no compute do slot, -b/-ub baixos NÃO resolvem); 262K native = inviável (KV ~9GB em RAM); ik ELIMINADO (degenera, template qwen3.5 quebrado + OOM sem unified memory). Tool call OK (get_weather Diamantina). mmproj 629MB na CPU RAM (--no-mmproj-offload, zero VRAM); Vision: mmproj CPU ~35s prefill silver.jpg (1536 vis tok), leitura correta, custo decode zero. -ngl 34 = max com rs cache do hybrid no 6GB (40 OOM); 34/64 layers GPU, resto na CPU RAM; KV 64K em CPU RAM via -nkvo (+2.3GB, custo decode zero medido). Sampling = receita Underdog (0.6/0.95/20).'
     caveats:
     - Dense 27B IQ2: 4.6-4.8 t/s (lento p/ cotidiano vs MoE K2 17.5)
     - Tool calling = foco do refino Underdog; math de competicao ~82-85% do full
