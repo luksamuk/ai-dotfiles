@@ -1,12 +1,11 @@
 saluki-27b:
   name: Underdog Saluki 27B
-  description: Qwen3.8-27B comprimido pra 7.9 GB (IQ2-mix 2-bit), refino Underdog focado em tool-calling. Hybrid linear+full attention; thinking on/off por request; vision via mmproj na RAM (add-on, prefill ~35s/img).
+  description: Qwen3.8-27B comprimido pra 7.9 GB (IQ2-mix 2-bit) pela Underdog, foco em tool-calling agentic; visão opcional via add-on.
   tags:
-  - dec
   - vis
+  - think
+  - tools
   proxy: http://127.0.0.1:${PORT}
-  aliases:
-  - saluki
   checkEndpoint: /health
   cmd: '${cafe_server} --host 127.0.0.1 --port ${PORT}
 
@@ -32,9 +31,9 @@ saluki-27b:
     reranker: false
     context: 4096
   metadata:
-    size: 7.9 GB (IQ2-mix) + mmproj 629 MB (RAM, no offload)
-    context: 4K
-    vram_usage: ~5.5 GB (34/64 layers GPU; resto CPU RAM)
+    size: 7.9 GB (IQ2-mix) + 0.6 GB mmproj
+    context: 4096
+    vram_usage: ~5.5 GB VRAM + ~2.4 GB RAM
     source: ConwayResearch/Underdog-Saluki-27B-1.0 (base Qwen3.8-27B, Apache 2.0)
     kv_cache: f16
     features:
@@ -51,7 +50,7 @@ saluki-27b:
     context_length: 4096
     embedding_length: 0
     quantization: iq2_m
-    note: 'Smoke 08/10: cafe 4.7 t/s = vanilla 4.8 (paridade); ik ELIMINADO (degenera, template qwen3.5 quebrado + OOM sem unified memory). Tool call OK (get_weather Diamantina). Vision: mmproj CPU ~35s prefill silver.jpg (1536 vis tok), leitura correta, custo decode zero. -ngl 34 = max com rs cache do hybrid no 6GB (40 OOM). Sampling = receita Underdog (0.6/0.95/20).'
+    note: 'Smoke 08/10: cafe 4.7 t/s = vanilla 4.8 (paridade); ik ELIMINADO (degenera, template qwen3.5 quebrado + OOM sem unified memory). Tool call OK (get_weather Diamantina). mmproj 629MB na CPU RAM (--no-mmproj-offload, zero VRAM); Vision: mmproj CPU ~35s prefill silver.jpg (1536 vis tok), leitura correta, custo decode zero. -ngl 34 = max com rs cache do hybrid no 6GB (40 OOM); 34/64 layers GPU, resto+KV+mmproj na CPU RAM (~2.4GB). Sampling = receita Underdog (0.6/0.95/20).'
     caveats:
     - Dense 27B IQ2: 4.6-4.8 t/s (lento p/ cotidiano vs MoE K2 17.5)
     - Tool calling = foco do refino Underdog; math de competicao ~82-85% do full
