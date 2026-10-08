@@ -3,7 +3,7 @@ lfm2.5-colbert-350m:
   description: Liquid AI ColBERT reranker for RAG retrieval pipelines. CPU-only serving.
   env:
   - CUDA_VISIBLE_DEVICES=
-  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-ColBERT-350M-Q8_0.gguf\n\
+  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/lfm2.5-embed/LFM2.5-ColBERT-350M-Q8_0.gguf\n\
     --embeddings\n--pooling mean\n--ctx-size 512\n--cont-batching\n--parallel 4\n\
     --cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
   ttl: 300

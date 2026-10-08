@@ -4,7 +4,7 @@ lfm2.5-embedding-350m:
     serving.
   env:
   - CUDA_VISIBLE_DEVICES=
-  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-Embedding-350M-Q8_0.gguf\n\
+  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/lfm2.5-embed/LFM2.5-Embedding-350M-Q8_0.gguf\n\
     --embeddings\n--pooling cls\n--ctx-size 512\n--cont-batching\n--parallel 4\n--cache-type-k\
     \ f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
   ttl: 300

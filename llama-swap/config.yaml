@@ -758,7 +758,7 @@ models:
     description: Liquid AI embedding model (350M) for RAG and semantic search. CPU-only serving.
     env:
     - CUDA_VISIBLE_DEVICES=
-    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-Embedding-350M-Q8_0.gguf\n--embeddings\n--pooling cls\n--ctx-size 512\n--cont-batching\n--parallel 4\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
+    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/lfm2.5-embed/LFM2.5-Embedding-350M-Q8_0.gguf\n--embeddings\n--pooling cls\n--ctx-size 512\n--cont-batching\n--parallel 4\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
     ttl: 300
     capabilities:
       in:
@@ -792,7 +792,7 @@ models:
     description: Liquid AI ColBERT reranker for RAG retrieval pipelines. CPU-only serving.
     env:
     - CUDA_VISIBLE_DEVICES=
-    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-ColBERT-350M-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 512\n--cont-batching\n--parallel 4\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
+    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/lfm2.5-embed/LFM2.5-ColBERT-350M-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 512\n--cont-batching\n--parallel 4\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
     ttl: 300
     capabilities:
       in:
@@ -1155,7 +1155,7 @@ models:
   glm-ocr:
     name: GLM-OCR
     description: GLM's vision-language OCR model for complex document understanding and text extraction.
-    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/GLM-OCR-Q8_0.gguf\n--mmproj ${models_dir}/mmproj-GLM-OCR-Q8_0.gguf\n--jinja\n--media-path ${media_path}\n--fit on\n--fit-target ${vram_margin}\n--fit-ctx ${small_model_min_ctx}\n--ctx-size ${small_model_max_ctx}\n--temp 0.1\n--top-p 0.9\n--top-k 40\n--repeat-penalty 1.0\n--reasoning off\n--cache-type-k f16\n--cache-type-v f16\n--flash-attn on\n--spec-type ngram-mod\n  --spec-ngram-mod-n-match 24\n  --spec-ngram-mod-n-min 48\n  --spec-ngram-mod-n-max 64\n  --metrics\n"
+    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/glm-ocr/GLM-OCR-Q8_0.gguf\n--mmproj ${models_dir}/glm-ocr/mmproj-GLM-OCR-Q8_0.gguf\n--jinja\n--media-path ${media_path}\n--fit on\n--fit-target ${vram_margin}\n--fit-ctx ${small_model_min_ctx}\n--ctx-size ${small_model_max_ctx}\n--temp 0.1\n--top-p 0.9\n--top-k 40\n--repeat-penalty 1.0\n--reasoning off\n--cache-type-k f16\n--cache-type-v f16\n--flash-attn on\n--spec-type ngram-mod\n  --spec-ngram-mod-n-match 24\n  --spec-ngram-mod-n-min 48\n  --spec-ngram-mod-n-max 64\n  --metrics\n"
     ttl: 60
     capabilities:
       in:
