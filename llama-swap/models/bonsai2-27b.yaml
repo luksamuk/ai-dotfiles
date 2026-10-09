@@ -70,12 +70,15 @@ bonsai2-27b:
     quantization: PTQ1_0
     note: 'Deploy 10/10 (re-teste planejado): agora no cafe-llama.cpp com kernels CUDA
       nativos PTQ1_0 (merge PrismML 19/09, tile loader #160 + batch path #164 + GB10
-      #135) — o teste anterior 17/09 (2.94 t/s @ngl 56, pp 134) foi no fork PrismML
-      ORIGINAL sem kernels CUDA; hipotese: runtime limitado, nao o modelo. Teto medido:
-      ngl 56 = 2.94 t/s decode, 57-63 OOM, full offload OOM por ~100-200MiB (6GB);
-      ngl 48 = 1.66 t/s (ping-pong); CPU-only 0.53-0.64 t/s. -nkvo: KV 64K em CPU
-      RAM (~3.5GB). PTQ1_0 = 5.54 GB; PQ2_0 = 6.71 GB (mais lento, nunca testado aqui);
-      mmproj Q8_0 0.59 GB fica de fora (vision tower off na Navi — texto+ctx > visao).
-      Handle :think = reasoning_effort xhigh (receita PrismML). Saluki (IQ2-mix 7.9GB,
-      4.7-4.8 t/s) = alvo de comparacao de velocidade; bench de codigo (bonsai_bench.py)
-      planejado pro teste. Upstream ggml-org e ik_llama NAO suportam PTQ1_0 (grep 09/10).'
+      #135) — o teste anterior 17/09 (2.94 t/s) foi no fork PrismML ORIGINAL sem kernels
+      CUDA; a +15% de decode vem dos kernels (3.4-3.5 t/s medidos). Teto medido: ngl
+      56 = 5.33 GB VRAM (nvidia-smi), full offload OOM por ~100-200MiB (6GB); ngl 48
+      = 1.66 t/s (ping-pong); CPU-only 0.53-0.64 t/s. -nkvo: KV 64K em CPU RAM (~3.5GB).
+      BENCH SNAKE 09/10 (bonsai_bench.py, vs Saluki mesmo prompt/régua): bonsai2 3.3
+      t/s, 16/16 métodos, MAS VIOLou formato (markdown leak), 977 tok/297s; saluki
+      4.1 t/s, 16/16, zero markdown, 927 tok/228s → critério user (>= Saluki) NÃO
+      atingido; handle segue comentado/inativo. PTQ1_0 = 5.54 GB; PQ2_0 = 6.71 GB;
+      mmproj Q8_0 0.59 GB fora (text-only; cafe TEM --no-mmproj-offload). Heretic/abliterated:
+      OS-Software v1 (18/09, 0/100 refusals, KL 0.0135) e v2 OT-Ridge (03/10, -0.66
+      MMLU); BoldingBuilds Abliterated; todos PTQ1_0/PQ2_0 mesmos formatos. Upstream
+      ggml-org e ik_llama NAO suportam PTQ1_0 (grep 09/10).'
