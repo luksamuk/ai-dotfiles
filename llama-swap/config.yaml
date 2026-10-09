@@ -494,9 +494,9 @@ models:
       embedding_length: 2048
       quantization: Q4_K_M
       note: 'vram detalhe: ~4.0 GB VRAM + ~5 GB RAM (page cache evictável) | -cmoe: 3.9GB VRAM c/ desktop ativo; ~18GB em page cache file-backed EVICTÁVEL (não é pinned — o kernel pode reclaim); decode 34.6-35.1 t/s. -hmoe: 4.7GB VRAM + ~12-14GB pinned vram detalhe: MEDIDO 05/10 0.74 (c/ desktop ativo): -cmoe 3.9GB VRAM + ~5GB RAM used (18GB em page cache file-backed evictável), decode 34.6-35.1 t/s | -hmoe: 4.7GB VRAM + ~21GB used pinado, 28.5-32.0 | -ssd+predict: empata mas PERDEU no uso live (user verbatim ''lento''), rejeitado Revanche Sep 2026: cafe-llama.cpp carrega o que o ik nao conseguia (o ik morria com 29GB RSS no load). MoE offload via -hmoe (experts pinned em RAM, ~12-14GB, sem warmup por dominio; o -ssd era a alternativa com warmup). Q4_K_M oficial obrigatorio — APEX I-Compact trava com system prompt (deletado). Template EMBUTIDO via --jinja (externo v5 nao renderiza no cafe). turbo4/turbo2 corrompem a arch SWA hibrida — teto de ctx com qualidade: 131K q4_0. Decode 31.8 t/s @131K. Tool calling: com tools no request a grammar do cafe limita a 1 call/round e suprime o thinking (bug do fork, ver skill). GGUF em ~/.llama-models/laguna-xs-2.1/.'
-  bonsai2-27b:
-    name: Bonsai 2 27B
-    description: Qwen3.8-27B comprimido pra 5.5 GB (ternário PTQ1_0 1.75 bpw) pela PrismML (Bonsai 2), foco em qualidade sub-2-bit; claims de 98.2% do FP16. Roda no fork cafe-llama.cpp com kernels CUDA nativos.
+  bonsai2-27b-heretic:
+    name: Bonsai 2 27B Heretic
+    description: Variante decensored (OS-Software OT-Ridge v2) do Bonsai 2 27B ternário PTQ1_0; 0/100 recusas com custo mínimo (MMLU -0.66). Mesmos 5.54 GB e mesmos kernels cafe CUDA do original.
     tags:
       - think
       - tools
@@ -504,7 +504,7 @@ models:
     checkEndpoint: /health
     cmd: '${cafe_server} --host 127.0.0.1 --port ${PORT}
 
-      -m ${models_dir}/bonsai2-27b/Ternary-Bonsai-2-27B-PTQ1_0.gguf
+      -m ${models_dir}/bonsai2-27b/Ternary-Bonsai-2-27B-Uncensored-Heretic-v2-PTQ1_0.gguf
 
       -ngl 56 -c 65536 -fa on -nkvo --jinja
 
@@ -543,10 +543,10 @@ models:
       reranker: false
       context: 65536
     metadata:
-      size: ~5.54 GB (PTQ1_0)
+      size: ~5.54 GB (PTQ1_0 heretic)
       context: 65536
       vram_usage: ~5.6 GB VRAM + ~3.5 GB RAM
-      source: prism-ml/Ternary-Bonsai-2-27B-gguf (PTQ1_0; base Qwen3.8-27B, Apache 2.0)
+      source: OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-v2-GGUF (base prism-ml Ternary-Bonsai-2-27B PTQ1_0, Apache 2.0)
       kv_cache: q4_0/q4_0
       features:
         completion: true
@@ -562,7 +562,7 @@ models:
       context_length: 262144
       embedding_length: 5120
       quantization: PTQ1_0
-      note: 'Deploy 10/10 (re-teste planejado): agora no cafe-llama.cpp com kernels CUDA nativos PTQ1_0 (merge PrismML 19/09, tile loader #160 + batch path #164 + GB10 #135) — o teste anterior 17/09 (2.94 t/s) foi no fork PrismML ORIGINAL sem kernels CUDA; a +15% de decode vem dos kernels (3.4-3.5 t/s medidos). Teto medido: ngl 56 = 5.33 GB VRAM (nvidia-smi), full offload OOM por ~100-200MiB (6GB); ngl 48 = 1.66 t/s (ping-pong); CPU-only 0.53-0.64 t/s. -nkvo: KV 64K em CPU RAM (~3.5GB). BENCH SNAKE 09/10 (bonsai_bench.py, vs Saluki mesmo prompt/régua): bonsai2 3.3 t/s, 16/16 métodos, MAS VIOLou formato (markdown leak), 977 tok/297s; saluki 4.1 t/s, 16/16, zero markdown, 927 tok/228s → critério user (>= Saluki) NÃO atingido; handle segue comentado/inativo. PTQ1_0 = 5.54 GB; PQ2_0 = 6.71 GB; mmproj Q8_0 0.59 GB fora (text-only; cafe TEM --no-mmproj-offload). Heretic/abliterated: OS-Software v1 (18/09, 0/100 refusals, KL 0.0135) e v2 OT-Ridge (03/10, -0.66 MMLU); BoldingBuilds Abliterated; todos PTQ1_0/PQ2_0 mesmos formatos. Upstream ggml-org e ik_llama NAO suportam PTQ1_0 (grep 09/10).'
+      note: 'Merge heretic APROXIMADO: LoRA OT-Ridge cozido nos codigos ternarios preservando block scales (v2 = todas as camadas attn.o_proj/mlp.down_proj; v1 mexia so 34 matrizes). Ganhos v2 vs original: refusals 95/100 -> 0/100, thinking-incompleto 22% -> 9% (16% greedy), MMLU -0.66, HumanEval -0.61 (ns). Decode esperado IGUAL ao original (scales intactos, mesmos kernels) — 3.4-3.5 t/s @ngl 56; velocidade segue regua do original (Saluki 4.1 vence na Navi). mmproj Q8_0 0.59 GB disponivel no repo (vision opt-in via --no-mmproj-offload). Handle a ativar so depois de smoke; mesmo conjunto de flags do original.'
   neohorse-1-4b:
     name: NeoHorse 1 4B
     description: NeoHorse community 4B model. 131K context with --fit.
@@ -2170,7 +2170,7 @@ matrix:
     # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
     # Bonsai 1-bit disabled Aug 2026 — user request
     # bonsai1: bonsai-27b-1bit
-    # bonsai2: bonsai2-27b  # re-instalado Oct 10 2026 — fragment ATIVO (cafe + kernels 19/09), handle comentado AGUARDANDO bench de re-teste (2.94 t/s era fork PrismML sem CUDA; re-test no cafe)
+    bonsai2: bonsai2-27b-heretic  # ATIVO Oct 10 2026 — original PTQ1_0 deletado (user); GGUF heretic em disco; handle comentado até smoke
     neo4: neohorse-1-4b
     # Qwen3.8-27B dense 1-bit disabled Aug 2026 — too slow, user never uses
     # qw38: qwen3.8-27b

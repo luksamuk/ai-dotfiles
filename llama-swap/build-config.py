@@ -87,7 +87,7 @@ ORIGINAL_ORDER = [
     # "agentworld-35b",         # DISABLED Aug 2026 — world model, not conversational, 16GB removed
     "agents-a1-35b",          # ✅ 35B MoE long-horizon search + tool calling (reactivated Jul 2026)
     "bonsai-27b-1bit",        # ✅ 27B 1-bit (Q1_0) — upstream llama.cpp, ngram-mod spec decode (reactivated Jul 2026)
-    "bonsai2-27b",            # re-instalado Oct 10 2026 — PTQ1_0 no cafe (kernels CUDA 19/09); handle comentado até bench de re-teste
+    "bonsai2-27b-heretic",    # ATIVO Oct 10 2026 — troca definitiva: original PTQ1_0 deletado; Heretic v2 (OS-Software) mesmo formato/kernels, uncensored
     "neohorse-1-4b",          # ✅ NeoHorse-1 4B (TokenRhythm RSI gen-1) — Q4_K_M, ik, agentic FT de Qwen3.5-4B
     # "qwen3.8-27b-gsq",        # REMOVED Sep 20 2026 — 3.6 t/s, denso 27B não vence o PCIe; GGUF deleted; fragment em _disabled/
     "qwopus-coder-9b",       # ✅

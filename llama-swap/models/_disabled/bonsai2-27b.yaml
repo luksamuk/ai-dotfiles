@@ -1,45 +1,25 @@
 bonsai2-27b:
   name: Bonsai 2 27B
-  description: PrismML Bonsai 2 — ternário real 1.75 bpw sobre Qwen3.8-27B (híbrido
-    ~75% atenção linear). 98.2% do FP16 (84.78 avg) em 5.95 GB. Tools nativas, thinking
-    xhigh/medium. Text-only na Navi (mmproj em disco). Requer fork PrismML.
-  cmd: '${prism_llama_server} --port ${PORT}
+  description: Qwen3.8-27B comprimido pra 5.5 GB (ternário PTQ1_0 1.75 bpw) pela PrismML
+    (Bonsai 2), foco em qualidade sub-2-bit; claims de 98.2% do FP16. Roda no fork cafe-llama.cpp
+    com kernels CUDA nativos.
+  tags:
+  - think
+  - tools
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: '${cafe_server} --host 127.0.0.1 --port ${PORT}
 
-    --model ${models_dir}/bonsai2-27b/Ternary-Bonsai-2-27B-PTQ1_0.gguf
+    -m ${models_dir}/bonsai2-27b/Ternary-Bonsai-2-27B-PTQ1_0.gguf
 
-    --jinja
+    -ngl 56 -c 65536 -fa on -nkvo --jinja
 
-    -ngl 56
-
-    --ctx-size 32768
-
-    --no-kv-offload
-
-    --temp 1.0
-
-    --top-p 0.95
-
-    --top-k 20
-
-    --min-p 0
-
-    --presence-penalty 0.0
-
-    --repeat-penalty 1.0
-
-    --parallel 1
-
-    --cache-type-k ${large_cache_k}
-
-    --cache-type-v ${large_cache_v}
-
-    --flash-attn on
-
-    --metrics
+    --temp 0.7 --top-p 0.8 --top-k 20 --min-p 0 --presence-penalty 1.5 --repeat-penalty 1.0
 
     '
+  ttl: 900
+  health_check_timeout: 900
   filters:
-    stripParams: temperature, top_p, top_k, min_p, presence_penalty
     setParamsByID:
       ${MODEL_ID}:
         chat_template_kwargs:
@@ -49,6 +29,7 @@ bonsai2-27b:
         top_k: 20
         min_p: 0
         presence_penalty: 1.5
+        repeat_penalty: 1.0
       ${MODEL_ID}:think:
         chat_template_kwargs:
           enable_thinking: true
@@ -58,8 +39,7 @@ bonsai2-27b:
         top_k: 20
         min_p: 0
         presence_penalty: 0.0
-  ttl: 900
-  health_check_timeout: 900
+        repeat_penalty: 1.0
   capabilities:
     in:
     - text
@@ -67,13 +47,13 @@ bonsai2-27b:
     - text
     tools: true
     reranker: false
-    context: 32768
+    context: 65536
   metadata:
-    size: ~5.95 GB (PTQ1_0 ternário 1.75 bpw)
-    context: 32768
-    vram_usage: ~5.6 GB VRAM
-    source: prism-ml/Ternary-Bonsai-2-27B-gguf (PTQ1_0 + mmproj Q8_0)
-    kv_cache: q4_0 (host RAM)
+    size: ~5.54 GB (PTQ1_0)
+    context: 65536
+    vram_usage: ~5.6 GB VRAM + ~3.5 GB RAM
+    source: prism-ml/Ternary-Bonsai-2-27B-gguf (PTQ1_0; base Qwen3.8-27B, Apache 2.0)
+    kv_cache: q4_0/q4_0
     features:
       completion: true
       tools: true
@@ -88,12 +68,17 @@ bonsai2-27b:
     context_length: 262144
     embedding_length: 5120
     quantization: PTQ1_0
-    note: 'vram_usage detalhe: ~5.64 GB (ngl 56 + compute) — 5635MiB medido em serve,
-      desktop limpa Deploy QUALIDADE (17/09): user pediu pra testar qualidade do output.
-      Teto Navi: ngl 56 (2.94 t/s decode, pp 134 c/ desktop limpa); 57-63 OOM; ngl
-      48 = 1.66 t/s (ping-pong); CPU-only decode 0.53-0.64 t/s. Full offload OOM por
-      ~100-200MiB. Velocidade NÃO é o objetivo aqui — 98.2% FP16 é. Vision Tower desligada
-      por VRAM (regra: texto+ctx cheio > visão c/ ctx estrangulado); reativar mmproj
-      = re-adicionar --mmproj + --no-mmproj-offload (custa ~0.63GB RAM). Re-teste
-      em GPU 8GB+ ou fork otimizando unpack AVX2. Gen-1 1-bit (bonsai-27b) segue sendo
-      o Bonsai rápido da casa.'
+    note: 'Deploy 10/10 (re-teste planejado): agora no cafe-llama.cpp com kernels CUDA
+      nativos PTQ1_0 (merge PrismML 19/09, tile loader #160 + batch path #164 + GB10
+      #135) — o teste anterior 17/09 (2.94 t/s) foi no fork PrismML ORIGINAL sem kernels
+      CUDA; a +15% de decode vem dos kernels (3.4-3.5 t/s medidos). Teto medido: ngl
+      56 = 5.33 GB VRAM (nvidia-smi), full offload OOM por ~100-200MiB (6GB); ngl 48
+      = 1.66 t/s (ping-pong); CPU-only 0.53-0.64 t/s. -nkvo: KV 64K em CPU RAM (~3.5GB).
+      BENCH SNAKE 09/10 (bonsai_bench.py, vs Saluki mesmo prompt/régua): bonsai2 3.3
+      t/s, 16/16 métodos, MAS VIOLou formato (markdown leak), 977 tok/297s; saluki
+      4.1 t/s, 16/16, zero markdown, 927 tok/228s → critério user (>= Saluki) NÃO
+      atingido; handle segue comentado/inativo. PTQ1_0 = 5.54 GB; PQ2_0 = 6.71 GB;
+      mmproj Q8_0 0.59 GB fora (text-only; cafe TEM --no-mmproj-offload). Heretic/abliterated:
+      OS-Software v1 (18/09, 0/100 refusals, KL 0.0135) e v2 OT-Ridge (03/10, -0.66
+      MMLU); BoldingBuilds Abliterated; todos PTQ1_0/PQ2_0 mesmos formatos. Upstream
+      ggml-org e ik_llama NAO suportam PTQ1_0 (grep 09/10).'
