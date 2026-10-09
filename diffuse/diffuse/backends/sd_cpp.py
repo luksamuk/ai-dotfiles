@@ -136,8 +136,13 @@ def load_pipeline_sd_cpp_qwen21(model_name: str, model_root: Path, sd_cli: str) 
     """
     # Viggle turbo variant: model_name ending in "-turbo" swaps the DiT for the
     # distilled Viggle Turbo GGUF (6 steps, cfg=1.0, custom sigmas) when present.
-    turbo = model_name.endswith("-turbo")
-    dit_gguf = model_root / ("qwen_image_2.1_turbo_Q6_K.gguf" if turbo else "qwen-image-2.1-Q4_K_M.gguf")
+    turbo = model_name.endswith("-viggle-turbo")
+    turbo21 = model_name.endswith("-turbo") and not turbo  # official Alibaba turbo
+    dit_gguf = model_root / (
+        "qwen_image_2.1_turbo_Q6_K.gguf" if turbo
+        else "qwen-image-2.1-turbo-Q4_K_M.gguf" if turbo21
+        else "qwen-image-2.1-Q4_K_M.gguf"
+    )
     vae_path = model_root / "vae" / "qwen_image_2.1_vae_bf16.safetensors"
     # Text encoder: Heretic (pottokao, abliterated via directional ablation, KL 0.022)
     # is the official TE since 25/set — A/B won over the RLHF'd original (attenuated
@@ -157,11 +162,12 @@ def load_pipeline_sd_cpp_qwen21(model_name: str, model_root: Path, sd_cli: str) 
         "vae_model": str(vae_path),
         "is_qwen21": True,
     }
-    if turbo:
-        # NOTE: the Viggle README's sigma list is for the diffusers pipeline; sd-cli's
-        # custom-sigma path produces green/magenta noise with them (measured 24/set).
-        # Default scheduler at 6 steps + cfg 1.0 yields clean images — no custom sigmas.
+    if turbo21:
+        # Official Alibaba turbo (8-step distill): custom sigmas from the AtomicChat
+        # GGUF card, built and CHECKED with stable-diffusion.cpp (the Viggle diffusers
+        # sigmas produced green/magenta noise on 24/set — these differ and are sd-cli-native).
         config["is_turbo"] = True
+        config["sigmas"] = "1.0,0.978453,0.95418,0.926626,0.89508,0.845148,0.704534,0.414568,0.0"
 
     # LoRA: aplica qualquer safetensors/gguf/pt em models/qwen-image-2.1/lora/
     lora_dir = model_root / "lora"
@@ -247,6 +253,11 @@ def generate_image_qwen21_sd_cpp(
     # there against 105.6s on CPU (7x), and pixel-identical output (99.7% of
     # pixels within 2/255, purely backend float noise). The text encoder stays
     # on CPU because its 4.7 GB does not fit beside the 4.3 GB DiT.
+    # NOTE 2026-10-09: at 1280x720 the Qwen VAE auto-tiles (>1MP) and the tile
+    # boundary printed a hard horizontal seam mid-image (user: "poster fold").
+    # Until sd-cli grows a seam-free tile mode, sizes above 1024x1024 are
+    # NOT RECOMMENDED on this backend — stay at/below 1024 native, upscale
+    # with Real-ESRGAN instead (see references/real-esrgan-upscale.md).
     if not cpu_fallback:
         cmd += ["--backend", "te=cpu", "--max-vram", "5.1"]
 

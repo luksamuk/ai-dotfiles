@@ -25,7 +25,7 @@ MODELS: dict[str, dict] = {
         "bits": "1.58-bit",
         "description": "Bonsai Image 4B Ternary — 1.58-bit gemlite, 95% of FP16 quality, fast T2I",
         "default_size": (512, 512),
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "vision",
         "components": [
             {"name": "Bonsai 4B Ternary transformer (gemlite int2)", "path": "bonsai-image-4B-ternary-gemlite/transformer-gemlite-int2", "size_gb": 1.5},
@@ -42,7 +42,7 @@ MODELS: dict[str, dict] = {
         "bits": "Q3_K GGUF (auto-selected for 6GB VRAM)",
         "description": "Z-Image-Turbo — 6B S3-DiT, 8 NFE, sub-second on H800, uncensored, bilingual text",
         "default_size": (1024, 1024),
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "vision",
         "components": [
             {"name": "z_image_turbo GGUF (DiT)", "path": "z-image-turbo-q4/z_image_turbo-Q3_K.gguf", "size_gb": 3.0},
@@ -59,7 +59,7 @@ MODELS: dict[str, dict] = {
         "description": "HiDream-O1-Image-Dev SDNQ — 8B unified (T2I + editing + IP), ~3min/2048² on 6GB VRAM",
         "default_size": (1024, 1024),
         "hidream_repo": "~/git/HiDream-O1-Image",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "vision",
         "components": [
             {"name": "Qwen3-VL 8B SDNQ (unified DiT + text encoder)", "path": "~/.llama-models/HiDream-O1-Image-Dev-SDNQ-last8", "size_gb": 7.3},
@@ -74,7 +74,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "4-bit",
         "description": "Ideogram 4 Q4_0 — 9.3B DiT, structured JSON prompts, best-in-class text rendering",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "ideogram",
         "default_size": (1024, 1024),
         "hf_files": [
@@ -104,7 +104,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "Q4_K_M GGUF",
         "description": "Qwen-Image 2.1 — 7B DiT (Uncensored), T2I + native editing + RGBA, Heretic Qwen3-VL-8B TE (abliterated)",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "qwen21",
         "default_size": (1024, 1024),
         "hf_files": [
@@ -126,15 +126,17 @@ MODELS: dict[str, dict] = {
     },
     # Qwen-Image 2.1 Viggle Turbo (distilled DiT, 6 steps, cfg=1.0, custom sigmas).
     # Same dir/VAE/encoder as qwen-image-2.1; DiT swapped by the loader (model_name
-    # ends in "-turbo" -> qwen_image_2.1_turbo_Q6_K.gguf). Source: Abiray GGUF quants.
-    "qwen-image-2.1-turbo": {
+    # ends in "-viggle-turbo" -> qwen_image_2.1_turbo_Q6_K.gguf). Source: Abiray GGUF quants.
+    # RENAMED 09/10: "-turbo" now belongs to the OFFICIAL Alibaba turbo; Viggle keeps
+    # "-viggle-turbo" (user decision — official wins the canonical short name).
+    "qwen-image-2.1-viggle-turbo": {
         "backend_id": "qwen-image-2.1-sd-cpp",
         "dir": "qwen-image-2.1",
         "backend_type": "qwen21_sd_cpp",
         "category": "image",
         "bits": "Q6_K GGUF (Viggle Turbo v0.3 distill, merged fp32→quant)",
         "description": "Qwen-Image 2.1 Viggle Turbo — 6 steps, cfg=1.0, pinned sigmas; T2I + editing",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "qwen21",
         "default_size": (1024, 1024),
         "components": [
@@ -143,6 +145,31 @@ MODELS: dict[str, dict] = {
         "hf_files": [
             {"repo": "Viggle/Qwen-Image-2.1-viggle-turbo",
              "files": ["Qwen-Image-2.1-viggle-turbo-v0.3-6step-Q6_K.gguf"]},
+        ],
+    },
+    # Qwen-Image 2.1 TURBO OFICIAL (Alibaba distill, 09/10) — 8 steps, cfg=1.0,
+    # sd-cli-native custom sigmas (AtomicChat card, built/checked w/ stable-diffusion.cpp).
+    # Same dir/VAE/TE heretic as qwen-image-2.1; DiT swapped by the loader (model_name
+    # ends in "-turbo" but NOT "-viggle-turbo" -> qwen-image-2.1-turbo-Q4_K_M.gguf).
+    # Architecture note: official turbo MLP is SPLIT (gate_layer+proj, 297 tensors)
+    # vs base/viggle fused gate_up (265) — sd-cli recognizes both layouts.
+    # User plan 09/10: this replaces qwen-image-2.1 (base) after A/B; viggle stays.
+    "qwen-image-2.1-turbo": {
+        "backend_id": "qwen-image-2.1-sd-cpp",
+        "dir": "qwen-image-2.1",
+        "backend_type": "qwen21_sd_cpp",
+        "category": "image",
+        "bits": "Q4_K_M GGUF (official Alibaba turbo distill, abenzerps quant)",
+        "description": "Qwen-Image 2.1 Turbo OFICIAL — 8 steps, cfg=1.0, custom sigmas; T2I + editing",
+        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_type": "qwen21",
+        "default_size": (1024, 1024),
+        "components": [
+            {"name": "qwen-image-2.1-turbo-Q4_K_M.gguf (DiT, official turbo, abenzerps quant)", "path": "qwen-image-2.1/qwen-image-2.1-turbo-Q4_K_M.gguf", "size_gb": 4.1},
+        ],
+        "hf_files": [
+            {"repo": "abenzerps/Qwen-Image-2.1-Turbo-Quantized",
+             "files": ["qwen-image-2.1-turbo-Q4_K_M.gguf"]},
         ],
     },
     # Agate preview 001 (Logolabs) — 260M thinker-steered FCDM, pure PyTorch backend.
@@ -157,7 +184,7 @@ MODELS: dict[str, dict] = {
         "bits": "BF16 (native, no quant)",
         "description": "Agate 001 — 260M FCDM, fixed 256×256, GenEval 0.550, flat logos/icons + spatial drafts in seconds",
         "default_size": (256, 256),
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "agate",
         "hf_files": [
             {"repo": "Logolabs/agate-preview-001",
@@ -189,7 +216,7 @@ MODELS: dict[str, dict] = {
         "bits": "BF16 (native, no quant)",
         "description": "Agate 003 — 261M FCDM multi-res 512/256, QIB 32.6, flat logos/icons + spatial drafts",
         "default_size": (512, 512),
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "agate",
         "hf_files": [
             {"repo": "Logolabs/agate-preview-003",
@@ -221,7 +248,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "NVFP4 GGUF",
         "description": "Mage-Flow-Edit-Turbo — 4B NR-MMDiT, 4-step instruction-based image editing, no masks needed",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "vision",
         "hf_files": [
             {"repo": "gguf-org/mageflow-gguf",
