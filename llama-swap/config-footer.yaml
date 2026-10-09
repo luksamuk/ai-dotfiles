@@ -59,7 +59,7 @@ matrix:
     # aw: agentworld-35b  # disabled Aug 2026
     # orn15: MERGED no heretic 05/10 (fragment em _disabled/ornith-1.5-35b-onyx-old.yaml; GGUF deletado)
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
-    q36: qwen3.6-35b-a3b-heretic
+    # q36: qwen3.6-35b-a3b-heretic  # DISABLED Oct 8 2026 — user out; GGUF movido p/ _disabled (re-downloadável de SC117); ornith heretic assumiu os enhance da casa
     # Baseline de codigo APEX I-Compact (sem heretic, sem MTP) + variante cafe; Oct 1 2026
     # qc30/qc30f: REMOVED Oct 06 2026 — qwen3-coder aposentado (cafe + fast; GGUF 14.7GB deleted).
     # N=5 canônico: 118.0/155 (piso 106). Fragments em _removed/
@@ -71,8 +71,7 @@ matrix:
     # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
     # Bonsai 1-bit disabled Aug 2026 — user request
     # bonsai1: bonsai-27b-1bit
-    # Bonsai 2 removed Sep 20 2026 — decepcionou a comunidade; GGUF deleted; fragment em _disabled/
-    # bonsai2: bonsai2-27b
+    # bonsai2: bonsai2-27b  # re-instalado Oct 10 2026 — fragment ATIVO (cafe + kernels 19/09), handle comentado AGUARDANDO bench de re-teste (2.94 t/s era fork PrismML sem CUDA; re-test no cafe)
     neo4: neohorse-1-4b
     # Qwen3.8-27B dense 1-bit disabled Aug 2026 — too slow, user never uses
     # qw38: qwen3.8-27b
@@ -122,7 +121,7 @@ matrix:
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
-    medium: "q36 & (nemb | lfmcol | eg2)" # qc30 REMOVED Oct 6 2026 — coder aposentado; g12p REMOVED Oct 1 — disk
+    medium: "(k2 | lag) & (nemb | lfmcol | eg2)" # q36 REMOVED Oct 8 2026 — aposentado (user decision); qc30 REMOVED Oct 6 2026 — coder aposentado; g12p REMOVED Oct 1 — disk
 
     # Modelos pesados (offload) + Embedding/Reranker + CPU completion
     # qw38 removed Aug 2026 — model disabled
@@ -130,7 +129,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(q36 | k2 | lag) & (nemb | lfmcol | eg2) & qpoll" # k2 reativado 05/10 APEX-Mini; orn15 merged no heretic; q36hc merged em q36
+    heavy: "(k2 | lag) & (nemb | lfmcol | eg2) & qpoll" # q36 REMOVED Oct 8 2026 — aposentado; k2 reativado 05/10 APEX-Mini; orn15 merged no heretic; q36hc merged em q36
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -153,7 +152,7 @@ matrix:
   evict_costs:
     # orn15: 9  # merged no heretic 05/10
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
-    q36: 9
+    # q36: 9  # REMOVED Oct 8 2026 — model disabled
     k2: 9
     # qc30: 7  # REMOVED Oct 06 2026
     # occ: 9  # REMOVED Sep 27 2026 — model deleted
@@ -163,7 +162,7 @@ matrix:
     # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
     # q38g: 8  # removed Sep 20 2026
     # bonsai: 8  # removed Sep 20 2026
-    # bonsai2: 9  # removed Sep 20 2026
+    # bonsai2: 9  # re-instalado Oct 10 2026 — handle inativo até bench; 27B denso denso = caro de recarregar
     neo4: 2
     # g4: 3  # REMOVED Sep 10 2026 — model deleted
     ttsext: 4

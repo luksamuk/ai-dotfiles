@@ -100,6 +100,10 @@ declare -A MODELS=(
   # ["qwen3.8-27b-pollard"]="PollardWeights/Qwen3.8-27B-Pollard Qwen3.8-27B-Pollard-IQ3_S.gguf"
   # PrismML Bonsai 27B 1-bit — Qwen3.6-27B binary weights, Q1_0 upstream CUDA (3.8 GB)
   ["bonsai-27b"]="prism-ml/Bonsai-27B-gguf Bonsai-27B-Q1_0.gguf"
+  # PrismML Bonsai 2 27B — Qwen3.8-27B ternary PTQ1_0 (1.75 bpw), cafe CUDA kernels (5.54 GB)
+  # re-instalado Oct 10 2026 — re-teste vel. no cafe (2.94 t/s de 17/09 era fork PrismML sem CUDA)
+  # ["bonsai2-27b"] removed Sep 20 2026 — reativado; ver fragment models/bonsai2-27b.yaml
+  ["bonsai2-27b"]="prism-ml/Ternary-Bonsai-2-27B-gguf Ternary-Bonsai-2-27B-PTQ1_0.gguf"
   # Ling-3.0-tiny - inclusionAI BailingMoE3 hybrid KDA+MLA, 7.9B/1.3B active, 128 experts
   # APEX I-Compact = 3.99 GB, abliterated. ik_llama.cpp backend (PR #2295).
   ["ling-3.0-tiny"]="SC117/Ling-3.0-tiny-abliterated-APEX-GGUF Ling-3.0-tiny-abliterated-APEX-I-Compact.gguf"
@@ -382,6 +386,7 @@ show_sizes() {
   echo "  lfm2.5-2.6b          ~2.22 GB  (Q6_K) - Dense hybrid, agentic RL, on-device, 128K ctx, 16 langs"
   echo "  qwen2.5-coder-1.5b-pollard ~824 MB (Pollard IQ4_XS) - FIM, imatrix, CPU-only"
   echo "  bonsai-27b           ~3.80 GB (Q1_0 1-bit binary) + 0.63 GB mmproj - PrismML reasoning 27B, full GPU offload, ~4.6 GB VRAM"
+  echo "  bonsai2-27b          ~5.54 GB (PTQ1_0 ternary 1.75 bpw) - PrismML Bonsai 2 (Qwen3.8-27B), cafe CUDA kernels, text-only, ~5.6 GB VRAM + ~3.5 GB RAM"
   # [REMOVED] lfm2.5-1.2b — superseded by LFM2.5-8B-A1B
   # [REMOVED] lfm2.5-1.2b-think — superseded by LFM2.5-8B-A1B
   echo "  lfm2-24b            ~14.40 GB  (Q4_K_M) - Heavy offload, MoE hybrid"

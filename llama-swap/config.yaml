@@ -411,97 +411,6 @@ models:
       embedding_length: 1536
       quantization: Pollard IQ4_XS
       note: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE. ngram-mod enabled.
-  qwen3.6-35b-a3b-heretic:
-    name: Qwen 3.6 35B Heretic
-    description: Qwen's 35B-A3B MoE generalist, abliterated (heretic TPE). 131K context, single slot.
-    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
-
-      --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
-
-      --mmproj ${models_dir}/qwen36-heretic-apex-mini/mmproj.gguf
-
-      --ctx-size 131072
-
-      --jinja
-
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-
-      --parallel 1
-
-      --no-mmproj-offload
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --flash-attn on
-
-      -cmoe
-
-      -ngl 99
-
-      -b 512
-
-      -ub 128
-
-      --temp ${code_temp}
-
-      --top-p ${code_top_p}
-
-      --top-k ${code_top_k}
-
-      --min-p ${code_min_p}
-
-      --repeat-penalty ${code_repeat_penalty}
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.95
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - text
-        - image
-      out:
-        - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~14.66 GB (APEX-I-Compact, heretic)
-      context: 131072
-      vram_usage: ~5.1 GB VRAM + ~15 GB RAM pinned
-      source: SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth Q8
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 34660000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: APEX I-Compact
-      note: 'vram detalhe: ~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe) | turbo4 KV; hmoe experts pinned Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused (IK TurboQuant); source do mmproj: unsloth Q8.'
   laguna-xs-2.1:
     name: Laguna XS 2.1
     description: Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. 131K context, -cmoe expert offload.
@@ -585,6 +494,75 @@ models:
       embedding_length: 2048
       quantization: Q4_K_M
       note: 'vram detalhe: ~4.0 GB VRAM + ~5 GB RAM (page cache evictável) | -cmoe: 3.9GB VRAM c/ desktop ativo; ~18GB em page cache file-backed EVICTÁVEL (não é pinned — o kernel pode reclaim); decode 34.6-35.1 t/s. -hmoe: 4.7GB VRAM + ~12-14GB pinned vram detalhe: MEDIDO 05/10 0.74 (c/ desktop ativo): -cmoe 3.9GB VRAM + ~5GB RAM used (18GB em page cache file-backed evictável), decode 34.6-35.1 t/s | -hmoe: 4.7GB VRAM + ~21GB used pinado, 28.5-32.0 | -ssd+predict: empata mas PERDEU no uso live (user verbatim ''lento''), rejeitado Revanche Sep 2026: cafe-llama.cpp carrega o que o ik nao conseguia (o ik morria com 29GB RSS no load). MoE offload via -hmoe (experts pinned em RAM, ~12-14GB, sem warmup por dominio; o -ssd era a alternativa com warmup). Q4_K_M oficial obrigatorio — APEX I-Compact trava com system prompt (deletado). Template EMBUTIDO via --jinja (externo v5 nao renderiza no cafe). turbo4/turbo2 corrompem a arch SWA hibrida — teto de ctx com qualidade: 131K q4_0. Decode 31.8 t/s @131K. Tool calling: com tools no request a grammar do cafe limita a 1 call/round e suprime o thinking (bug do fork, ver skill). GGUF em ~/.llama-models/laguna-xs-2.1/.'
+  bonsai2-27b:
+    name: Bonsai 2 27B
+    description: Qwen3.8-27B comprimido pra 5.5 GB (ternário PTQ1_0 1.75 bpw) pela PrismML (Bonsai 2), foco em qualidade sub-2-bit; claims de 98.2% do FP16. Roda no fork cafe-llama.cpp com kernels CUDA nativos.
+    tags:
+      - think
+      - tools
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: '${cafe_server} --host 127.0.0.1 --port ${PORT}
+
+      -m ${models_dir}/bonsai2-27b/Ternary-Bonsai-2-27B-PTQ1_0.gguf
+
+      -ngl 56 -c 65536 -fa on -nkvo --jinja
+
+      --temp 0.7 --top-p 0.8 --top-k 20 --min-p 0 --presence-penalty 1.5 --repeat-penalty 1.0
+
+      '
+    ttl: 900
+    health_check_timeout: 900
+    filters:
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.8
+          top_k: 20
+          min_p: 0
+          presence_penalty: 1.5
+          repeat_penalty: 1.0
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+            reasoning_effort: xhigh
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 20
+          min_p: 0
+          presence_penalty: 0.0
+          repeat_penalty: 1.0
+    capabilities:
+      in:
+        - text
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 65536
+    metadata:
+      size: ~5.54 GB (PTQ1_0)
+      context: 65536
+      vram_usage: ~5.6 GB VRAM + ~3.5 GB RAM
+      source: prism-ml/Ternary-Bonsai-2-27B-gguf (PTQ1_0; base Qwen3.8-27B, Apache 2.0)
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 27360000000
+      context_length: 262144
+      embedding_length: 5120
+      quantization: PTQ1_0
+      note: 'Deploy 10/10 (re-teste planejado): agora no cafe-llama.cpp com kernels CUDA nativos PTQ1_0 (merge PrismML 19/09, tile loader #160 + batch path #164 + GB10 #135) — o teste anterior 17/09 (2.94 t/s @ngl 56, pp 134) foi no fork PrismML ORIGINAL sem kernels CUDA; hipotese: runtime limitado, nao o modelo. Teto medido: ngl 56 = 2.94 t/s decode, 57-63 OOM, full offload OOM por ~100-200MiB (6GB); ngl 48 = 1.66 t/s (ping-pong); CPU-only 0.53-0.64 t/s. -nkvo: KV 64K em CPU RAM (~3.5GB). PTQ1_0 = 5.54 GB; PQ2_0 = 6.71 GB (mais lento, nunca testado aqui); mmproj Q8_0 0.59 GB fica de fora (vision tower off na Navi — texto+ctx > visao). Handle :think = reasoning_effort xhigh (receita PrismML). Saluki (IQ2-mix 7.9GB, 4.7-4.8 t/s) = alvo de comparacao de velocidade; bench de codigo (bonsai_bench.py) planejado pro teste. Upstream ggml-org e ik_llama NAO suportam PTQ1_0 (grep 09/10).'
   neohorse-1-4b:
     name: NeoHorse 1 4B
     description: NeoHorse community 4B model. 131K context with --fit.
@@ -2180,7 +2158,7 @@ matrix:
     # aw: agentworld-35b  # disabled Aug 2026
     # orn15: MERGED no heretic 05/10 (fragment em _disabled/ornith-1.5-35b-onyx-old.yaml; GGUF deletado)
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
-    q36: qwen3.6-35b-a3b-heretic
+    # q36: qwen3.6-35b-a3b-heretic  # DISABLED Oct 8 2026 — user out; GGUF movido p/ _disabled (re-downloadável de SC117); ornith heretic assumiu os enhance da casa
     # Baseline de codigo APEX I-Compact (sem heretic, sem MTP) + variante cafe; Oct 1 2026
     # qc30/qc30f: REMOVED Oct 06 2026 — qwen3-coder aposentado (cafe + fast; GGUF 14.7GB deleted).
     # N=5 canônico: 118.0/155 (piso 106). Fragments em _removed/
@@ -2192,8 +2170,7 @@ matrix:
     # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
     # Bonsai 1-bit disabled Aug 2026 — user request
     # bonsai1: bonsai-27b-1bit
-    # Bonsai 2 removed Sep 20 2026 — decepcionou a comunidade; GGUF deleted; fragment em _disabled/
-    # bonsai2: bonsai2-27b
+    # bonsai2: bonsai2-27b  # re-instalado Oct 10 2026 — fragment ATIVO (cafe + kernels 19/09), handle comentado AGUARDANDO bench de re-teste (2.94 t/s era fork PrismML sem CUDA; re-test no cafe)
     neo4: neohorse-1-4b
     # Qwen3.8-27B dense 1-bit disabled Aug 2026 — too slow, user never uses
     # qw38: qwen3.8-27b
@@ -2243,7 +2220,7 @@ matrix:
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
-    medium: "q36 & (nemb | lfmcol | eg2)" # qc30 REMOVED Oct 6 2026 — coder aposentado; g12p REMOVED Oct 1 — disk
+    medium: "(k2 | lag) & (nemb | lfmcol | eg2)" # q36 REMOVED Oct 8 2026 — aposentado (user decision); qc30 REMOVED Oct 6 2026 — coder aposentado; g12p REMOVED Oct 1 — disk
 
     # Modelos pesados (offload) + Embedding/Reranker + CPU completion
     # qw38 removed Aug 2026 — model disabled
@@ -2251,7 +2228,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(q36 | k2 | lag) & (nemb | lfmcol | eg2) & qpoll" # k2 reativado 05/10 APEX-Mini; orn15 merged no heretic; q36hc merged em q36
+    heavy: "(k2 | lag) & (nemb | lfmcol | eg2) & qpoll" # q36 REMOVED Oct 8 2026 — aposentado; k2 reativado 05/10 APEX-Mini; orn15 merged no heretic; q36hc merged em q36
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -2274,7 +2251,7 @@ matrix:
   evict_costs:
     # orn15: 9  # merged no heretic 05/10
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
-    q36: 9
+    # q36: 9  # REMOVED Oct 8 2026 — model disabled
     k2: 9
     # qc30: 7  # REMOVED Oct 06 2026
     # occ: 9  # REMOVED Sep 27 2026 — model deleted
@@ -2284,7 +2261,7 @@ matrix:
     # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
     # q38g: 8  # removed Sep 20 2026
     # bonsai: 8  # removed Sep 20 2026
-    # bonsai2: 9  # removed Sep 20 2026
+    # bonsai2: 9  # re-instalado Oct 10 2026 — handle inativo até bench; 27B denso denso = caro de recarregar
     neo4: 2
     # g4: 3  # REMOVED Sep 10 2026 — model deleted
     ttsext: 4

@@ -1,0 +1,81 @@
+bonsai2-27b:
+  name: Bonsai 2 27B
+  description: Qwen3.8-27B comprimido pra 5.5 GB (ternário PTQ1_0 1.75 bpw) pela PrismML
+    (Bonsai 2), foco em qualidade sub-2-bit; claims de 98.2% do FP16. Roda no fork cafe-llama.cpp
+    com kernels CUDA nativos.
+  tags:
+  - think
+  - tools
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: '${cafe_server} --host 127.0.0.1 --port ${PORT}
+
+    -m ${models_dir}/bonsai2-27b/Ternary-Bonsai-2-27B-PTQ1_0.gguf
+
+    -ngl 56 -c 65536 -fa on -nkvo --jinja
+
+    --temp 0.7 --top-p 0.8 --top-k 20 --min-p 0 --presence-penalty 1.5 --repeat-penalty 1.0
+
+    '
+  ttl: 900
+  health_check_timeout: 900
+  filters:
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.8
+        top_k: 20
+        min_p: 0
+        presence_penalty: 1.5
+        repeat_penalty: 1.0
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+          reasoning_effort: xhigh
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 20
+        min_p: 0
+        presence_penalty: 0.0
+        repeat_penalty: 1.0
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 65536
+  metadata:
+    size: ~5.54 GB (PTQ1_0)
+    context: 65536
+    vram_usage: ~5.6 GB VRAM + ~3.5 GB RAM
+    source: prism-ml/Ternary-Bonsai-2-27B-gguf (PTQ1_0; base Qwen3.8-27B, Apache 2.0)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 27360000000
+    context_length: 262144
+    embedding_length: 5120
+    quantization: PTQ1_0
+    note: 'Deploy 10/10 (re-teste planejado): agora no cafe-llama.cpp com kernels CUDA
+      nativos PTQ1_0 (merge PrismML 19/09, tile loader #160 + batch path #164 + GB10
+      #135) — o teste anterior 17/09 (2.94 t/s @ngl 56, pp 134) foi no fork PrismML
+      ORIGINAL sem kernels CUDA; hipotese: runtime limitado, nao o modelo. Teto medido:
+      ngl 56 = 2.94 t/s decode, 57-63 OOM, full offload OOM por ~100-200MiB (6GB);
+      ngl 48 = 1.66 t/s (ping-pong); CPU-only 0.53-0.64 t/s. -nkvo: KV 64K em CPU
+      RAM (~3.5GB). PTQ1_0 = 5.54 GB; PQ2_0 = 6.71 GB (mais lento, nunca testado aqui);
+      mmproj Q8_0 0.59 GB fica de fora (vision tower off na Navi — texto+ctx > visao).
+      Handle :think = reasoning_effort xhigh (receita PrismML). Saluki (IQ2-mix 7.9GB,
+      4.7-4.8 t/s) = alvo de comparacao de velocidade; bench de codigo (bonsai_bench.py)
+      planejado pro teste. Upstream ggml-org e ik_llama NAO suportam PTQ1_0 (grep 09/10).'
