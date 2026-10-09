@@ -4,6 +4,7 @@ bonsai2-27b-heretic:
     PTQ1_0; 0/100 recusas com custo mínimo (MMLU -0.66). Mesmos 5.54 GB e mesmos kernels
     cafe CUDA do original.
   tags:
+  - vis
   - think
   - tools
   proxy: http://127.0.0.1:${PORT}
@@ -11,6 +12,8 @@ bonsai2-27b-heretic:
   cmd: '${cafe_server} --host 127.0.0.1 --port ${PORT}
 
     -m ${models_dir}/bonsai2-27b/Ternary-Bonsai-2-27B-Uncensored-Heretic-v2-PTQ1_0.gguf
+
+    --mmproj ${models_dir}/bonsai2-27b/mmproj-Q8_0.gguf --no-mmproj-offload
 
     -ngl 56 -c 65536 -fa on -nkvo --jinja
 
@@ -43,13 +46,14 @@ bonsai2-27b-heretic:
   capabilities:
     in:
     - text
+    - image
     out:
     - text
     tools: true
     reranker: false
     context: 65536
   metadata:
-    size: ~5.54 GB (PTQ1_0 heretic)
+    size: ~5.54 GB (PTQ1_0 heretic) + 0.59 GB mmproj
     context: 65536
     vram_usage: ~5.6 GB VRAM + ~3.5 GB RAM
     source: OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-v2-GGUF (base prism-ml Ternary-Bonsai-2-27B PTQ1_0, Apache 2.0)
@@ -58,7 +62,7 @@ bonsai2-27b-heretic:
       completion: true
       tools: true
       thinking: true
-      vision: false
+      vision: true
       embedding: false
       insert: false
       audio: false
@@ -73,6 +77,7 @@ bonsai2-27b-heretic:
       matrizes). Ganhos v2 vs original: refusals 95/100 -> 0/100, thinking-incompleto
       22% -> 9% (16% greedy), MMLU -0.66, HumanEval -0.61 (ns). Decode esperado IGUAL
       ao original (scales intactos, mesmos kernels) — 3.4-3.5 t/s @ngl 56; velocidade
-      segue regua do original (Saluki 4.1 vence na Navi). mmproj Q8_0 0.59 GB disponivel
-      no repo (vision opt-in via --no-mmproj-offload). Handle a ativar so depois de
-      smoke; mesmo conjunto de flags do original.'
+      segue regua do original (Saluki 4.1 vence na Navi). Vision ATIVADA 10/10 — mmproj
+      Q8_0 0.59 GB em CPU RAM (--no-mmproj-offload), ViT prefill ~35s/imagem pago so
+      no request com imagem, decode zero custo. Handle a ativar so depois de smoke;
+      mesmo conjunto de flags do original.'
