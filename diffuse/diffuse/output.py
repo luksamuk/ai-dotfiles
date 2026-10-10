@@ -105,6 +105,9 @@ def print_debrief(
         print("  Enhanced prompt (JSON):")
         try:
             parsed = json.loads(enhanced_prompt)
+        except json.JSONDecodeError:
+            parsed = enhanced_prompt
+        if isinstance(parsed, dict):
             for key, val in parsed.items():
                 if isinstance(val, dict):
                     print(f"    {key}:")
@@ -117,8 +120,11 @@ def print_debrief(
                             print(f"      {k}: {v}")
                 else:
                     print(f"    {key}: {val}")
-        except json.JSONDecodeError:
-            for line in enhanced_prompt.split("\n"):
+        else:
+            # qwen21/vision enhancement returns natural language (or, rare, a JSON
+            # list) — print verbatim instead of assuming a dict-shaped payload
+            text = json.dumps(parsed, indent=2, ensure_ascii=False) if isinstance(parsed, (list,)) else parsed
+            for line in str(text).split("\n"):
                 print(f"    {line[:120]}")
     print()
     print("  Timings:")

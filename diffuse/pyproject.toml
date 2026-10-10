@@ -13,14 +13,14 @@ dependencies = [
     "gemlite",
     "hqq",
     # HiDream backend: transformers + accelerate + sdnq
-    # FramePack also needs these (tested with transformers 4.47.x, accelerate 1.6.x)
-    "transformers>=4.46.2,<4.48",
-    "accelerate>=1.6.0,<1.7",
+    "transformers>=4.45,<5",
+    "accelerate>=1.0",
     "sdnq",
     "einops",
     "torchvision",
-    # FramePack I2V backend
-    "diffusers>=0.33.1,<0.34",
+    # FramePack I2V backend REMOVED 2026-10-08 (weights deleted) — diffusers pin <0.34 was FramePack-only;
+    # Bonsai/prism needs >=0.38 (see uv.lock resolution)
+    "diffusers>=0.38",
     "av",
     "torchsde",
     "scipy",
