@@ -4,7 +4,7 @@ lfm2.5-colbert-350m:
   env:
   - CUDA_VISIBLE_DEVICES=
   cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/lfm2.5-embed/LFM2.5-ColBERT-350M-Q8_0.gguf\n\
-    --embeddings\n--pooling mean\n--ctx-size 512\n--cont-batching\n--parallel 4\n\
+    --embeddings\n--pooling mean\n--ctx-size 4096\n--cont-batching\n--parallel 1\n\
     --cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
   ttl: 300
   capabilities:
@@ -13,11 +13,11 @@ lfm2.5-colbert-350m:
     out: []
     tools: false
     reranker: true
-    context: 512
+    context: 4096
   metadata:
     architecture: lfm2-bidir
     parameters: 353000000
-    context_length: 512
+    context_length: 4096
     embedding_length: 128
     quantization: Q8_0
     size: ~378 MB (Q8_0)
