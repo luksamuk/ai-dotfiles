@@ -164,7 +164,7 @@ MODELS: dict[str, dict] = {
         "dir": "qwen-image-2.1",
         "backend_type": "qwen21_sd_cpp",
         "category": "image",
-        "bits": "Q4_K_M GGUF (official Alibaba turbo distill, abenzerps quant)",
+        "bits": "Q4_K_M GGUF — official Alibaba turbo checkpoint (abenzerps quant)",
         "description": "Qwen-Image 2.1 Turbo OFICIAL — 8 steps, cfg=1.0, custom sigmas; T2I + editing",
         "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "qwen21",
