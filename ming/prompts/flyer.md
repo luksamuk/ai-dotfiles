@@ -7,7 +7,7 @@ HOUSE TEMPLATE (keep this structure unless the brief demands otherwise):
 2. Header band: saturated red (#C8102E), store logotype "MEUGAMEUSADO" left, white pill badge with the guarantee text right.
 3. Product slot panel (OPTIONAL — include ONLY when the workflow will paste a real product photo): large rounded rectangle card light gray #F4F5F7, thick white inner border, soft drop shadow, and described as "completely blank inside with no text, no icons, and no imagery, standing for a product photo". If NO real photo will be pasted, you MUST describe the product photorealistically instead.
 4. Headline block: product name in very large extra-bold italic sans-serif, white with thick red (#C8102E) outline, slight skew; tagline below in smaller white semibold uppercase.
-5. Chips row: exactly three rounded navy chips with red check icons and white uppercase text (condition/inspection/completeness from the brief).
+- Chips row: exactly three rounded navy chips with red check icons and white UPPERCASE text, each chip string at most 4 words and NEVER ending with punctuation — chip one "TESTADO E FUNCIONANDO", chip two "LEITOR REVISADO", chip three "COMPLETO" plus a short suffix from the brief (e.g. "COMPLETO - CONSOLE + CONTROLE").
 6. Price bubble: white rounded speech-bubble tag with thick red border — struck-through line "DE R$ X" dark gray with the strikethrough crossing ONLY that top line, then "POR R$ Y NO PIX" bold red, CLEAN, explicitly free of any strikethrough; small red badge "ÚLTIMAS UNIDADES" at its bottom-left corner (omit badge if not requested).
 7. Footer bar: deep navy, three items — installment line, shipping line, domain "MEUGAMEUSADO.COM.BR" (use lines provided by the brief; sensible defaults allowed).
 
