@@ -236,7 +236,8 @@ def generate_image_qwen21_sd_cpp(
     # tag <lora:nome_sem_ext:0.6> injetada no prompt se o usuário não colocou nenhuma
     # Turbo destilado: SEM auto-injeção (Pruna/Fix/Detailer treinados na base 40-step
     # bagunçam a receita few-step); tags manuais continuam funcionando — o dir é o
-    # MESMO lora/ do base, e tags aceitam subdiretório (<lora:_nsfw/nome:0.7>).
+    # MESMO lora/ do base, e tags aceitam subdiretório arbitrário. Auto-inject no
+    # base: apenas fix-1.0 (o resto é tag-manual).
     # AUTO-INJECT (09/10, user: detailer "não-fixo"): apenas o fix-1.0 é always-on
     # @0.6 no base. Detailer e os demais add-ons exigem tag <lora:...> manual —
     # injetar tudo cegamente empilhava 5 adapters toda run.
