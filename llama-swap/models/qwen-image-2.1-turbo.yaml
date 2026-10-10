@@ -1,0 +1,59 @@
+qwen-image-2.1-turbo:
+  name: Qwen-Image 2.1 Turbo (Oficial)
+  description: Turbo OFICIAL da Alibaba (distill 8 steps) — mesmo DiT 7B destilado + TE Sakura 8-bit uncensored. Geração e edição nativa; ~5x mais rápido que a base 40-step.
+  tags:
+  - image
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /v1/models
+  cmd: '${env.HOME}/git/stable-diffusion.cpp/build/bin/sd-server
+
+    --diffusion-model ${env.HOME}/git/ai-dotfiles/diffuse/models/qwen-image-2.1/qwen-image-2.1-turbo-Q4_K_M.gguf
+
+    --vae ${env.HOME}/git/ai-dotfiles/diffuse/models/qwen-image-2.1/vae/qwen_image_2.1_vae_bf16.safetensors
+
+    --llm ${env.HOME}/git/ai-dotfiles/diffuse/models/qwen-image-2.1/text_encoder_sakura8/Sakura-TextEncoder-Qwen3VL-8B-Uncensored-8bit-8.11GiB.gguf
+
+    --diffusion-fa --offload-to-cpu --backend te=cpu,vae=gpu
+
+    --lora-model-dir ${env.HOME}/git/ai-dotfiles/diffuse/models/qwen-image-2.1/lora
+
+    --steps 8 --cfg-scale 1.0 --sigmas 1.0,0.978453,0.95418,0.926626,0.89508,0.845148,0.704534,0.414568,0.0 --listen-ip 127.0.0.1 --listen-port ${PORT}
+
+    '
+  cmdStop: pkill -f turbo-Q4_K_M
+  health_check_timeout: 3600
+  ttl: 3600
+  capabilities:
+    in:
+    - text
+    out:
+    - image
+    tools: false
+    reranker: false
+    context: 0
+  metadata:
+    size: 4.05 GB DiT (turbo oficial abenzerps Q4_K_M) + 399 MB VAE + 8.71 GB TE Sakura 8-bit (compartilhados com o diffuse CLI)
+    context: 0
+    vram_usage: ~4.9 GB VRAM (DiT GPU, VAE GPU; TE 8.1 GB em CPU RAM)
+    source: Qwen/Qwen-Image-2.1-Turbo via abenzerps quant (DiT) + webmp3/Sakura-Qwen-Image-2.1-Turbo-Uncensored-GGUF (TE Q8_0, PSNR 25.59 vs oficial)
+    kv_cache: n/a
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: true
+    architecture: qwen-image-2.1
+    parameters: 7000000000
+    context_length: 0
+    embedding_length: 0
+    quantization: q4_k_m (DiT) / q8_0 (TE)
+    note: 'Turbo OFICIAL (tweet Alibaba 09/10) — SIGMAS CUSTOM do card AtomicChat (1.0,0.978453,0.95418,0.926626,0.89508,0.845148,0.704534,0.414568,0.0) são OBRIGATÓRIOS no pipeline diffusers, o sd-server roda o schedule default @8 steps/cfg 1.0 (o default do sd-server é fiel no GGUF). RAM: TE 8.1 GB em CPU — scope/memory folga maior que o heretic antigo. LoRAs no mesmo dir do diffuse (9 adapters visíveis).'
+    caveats:
+    - TE Sakura 8.1 GB RAM em CPU — spawn exige folga (scope 20G recomendado)
+    - 1 slot de geração por vez (fila de 1 no server)
+    - Sem LoRAs fixos no fragment (decreto user) — tags <lora:> manuais funcionam
+    - Dimensões múltiplas de 32 (não 16)
