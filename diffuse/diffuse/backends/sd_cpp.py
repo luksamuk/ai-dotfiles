@@ -144,10 +144,13 @@ def load_pipeline_sd_cpp_qwen21(model_name: str, model_root: Path, sd_cli: str) 
         else "qwen-image-2.1-Q4_K_M.gguf"
     )
     vae_path = model_root / "vae" / "qwen_image_2.1_vae_bf16.safetensors"
-    # Text encoder: Heretic (pottokao, abliterated via directional ablation, KL 0.022)
-    # is the official TE since 25/set — A/B won over the RLHF'd original (attenuated
-    # sensitive prompts). mmproj heretic too (vision encoder for --edit).
-    llm_gguf = model_root / "text_encoder_heretic" / "qwen3vl_8b_heretic-Q4_K_M.gguf"
+    # Text encoder: Sakura 8-bit (webmp3, 09/out) — Heretic ablation no Qwen3-VL-8B
+    # ORIGINAL (o_proj+down_proj), quant Q8_0: PSNR 25.59 vs encoder oficial
+    # (card deles), mais fiel que o heretic Q4_K_M anterior (pottokao, KL 0.022 mas
+    # Q4 = encoder drift ~18.7 dB). User-decided swap direto sem A/B (09/10).
+    # RAM: 8.1 GB em CPU (encoder roda off-GPU). mmproj: heretic F16 mantido —
+    # é o F16 ORIGINAL do vision tower (abliteration só toca o LM; idêntico ao oficial).
+    llm_gguf = model_root / "text_encoder_sakura8" / "Sakura-TextEncoder-Qwen3VL-8B-Uncensored-8bit-8.11GiB.gguf"
     mmproj_gguf = model_root / "text_encoder_heretic" / "mmproj-qwen3vl_8b_heretic-f16.gguf"
 
     for label, path in [("DiT", dit_gguf), ("VAE", vae_path), ("LLM", llm_gguf)]:
