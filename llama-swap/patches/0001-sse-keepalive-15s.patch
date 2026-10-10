@@ -1,0 +1,32 @@
+diff --git a/internal/server/apigroup.go b/internal/server/apigroup.go
+index e92b2b4..bcff777 100644
+--- a/internal/server/apigroup.go
++++ b/internal/server/apigroup.go
+@@ -575,12 +575,27 @@ func (s *Server) serveSSE(w http.ResponseWriter, r *http.Request, name string, s
+ 
+ 	defer setup(send)()
+ 
++	// SSE Keepalive: SSE comments (lines starting with `:`) are ignored by
++	// EventSource clients but keep the TCP connection active. Without
++	// periodic traffic, idle connections starve and intermediaries or
++	// connection trackers silently drop them. When that happens browsers
++	// fire EventSource.onerror and reconnect, causing the UI to discard
++	// all its state (stores reset on onopen) — experienced as random
++	// full-page "refreshes". A ping every 15s prevents it.
++	keepalive := time.NewTicker(time.Second * 15)
++	defer keepalive.Stop()
++
+ 	for {
+ 		select {
+ 		case <-r.Context().Done():
+ 			return
+ 		case <-s.shutdownCtx.Done():
+ 			return
++		case <-keepalive.C:
++			// SSE comment line, ignored by EventSource but resets any
++			// idle timeout on proxies/trackers between client and server.
++			fmt.Fprintf(w, ": keepalive\n\n")
++			flusher.Flush()
+ 		case msg := <-sendBuffer:
+ 			data, err := json.Marshal(msg)
+ 			if err != nil {
