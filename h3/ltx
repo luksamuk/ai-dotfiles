@@ -45,6 +45,8 @@ REF_IMAGES=()
 IMAGE_START=""
 IMAGE_END=""
 IMAGE_PROMPT_TYPE="S"
+AUDIO_PROMPT_TYPE=""
+declare -a INGREDIENTS=()
 NSFW=false
 NSFW_STRENGTH=1.0
 DEFAULT_NSFW_LORAS=("LTX2.3-Rogue-Missionary-Cowgirl-v3" "LTX2-i2v-SexThrust" "LTX2.3-NSFWMOTION_00750" "LTX2.3_Crisp_Enhance")
@@ -92,8 +94,8 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --) shift; PROMPT="${PROMPT:-} $*"; break ;;
     -h|--help) usage ;;
-    --image-start) IMAGE_START="$(readlink -m "$PWD/$2")"; shift 2 ;;
-    --image-end) IMAGE_END="$(readlink -m "$PWD/$2")"; shift 2 ;;
+    --image-start) case "$2" in /*) IMAGE_START="$2" ;; *) IMAGE_START="$(readlink -m "$PWD/$2")" ;; esac; shift 2 ;;
+    --image-end) case "$2" in /*) IMAGE_END="$2" ;; *) IMAGE_END="$(readlink -m "$PWD/$2")" ;; esac; shift 2 ;;
     --frames) FRAMES="$2"; shift 2 ;;
     --steps) STEPS="$2"; shift 2 ;;
     --seed) SEED="$2"; shift 2 ;;
@@ -106,6 +108,8 @@ while [[ $# -gt 0 ]]; do
     --nsfw-lora) NSFW_LORAS+=("$2"); shift 2 ;;
     --nsfw-strength) NSFW_STRENGTH="$2"; shift 2 ;;
     --lora) LORAS+=("$2"); shift 2 ;;
+    --ref-voice) case "$2" in /*) REF_VOICE="$2" ;; *) REF_VOICE="$(readlink -m "$PWD/$2")" ;; esac; AUDIO_PROMPT_TYPE="1"; shift 2 ;;
+    --ingredients|-P) case "$2" in /*) INGREDIENTS+=("$2") ;; *) INGREDIENTS+=("$(readlink -m "$PWD/$2")") ;; esac; shift 2 ;;
     --output|-o|--output-dir)
       case "$2" in
         /*) OUTPUT_DIR="$(readlink -m "$2")" ;;
@@ -160,8 +164,16 @@ export LTX_MODEL_TYPE="$MODEL_TYPE"
 export LTX_IMAGE_START="$IMAGE_START"
 export LTX_IMAGE_END="$IMAGE_END"
 export LTX_IMAGE_PROMPT_TYPE="$IMAGE_PROMPT_TYPE"
-export LTX_LORAS_JSON="$LORAS_JSON"
-export LTX_MULTS_JSON="$MULTS_JSON"
+export LTX_REF_VOICE="$REF_VOICE"
+# IC-LoRA Ingredients (anti-drift): video_prompt_type 'I' + image_refs (o sheet vira video_conditioning)
+if [[ ${#INGREDIENTS[@]} -gt 0 ]]; then
+  export LTX_VIDEO_PROMPT_TYPE="I"
+  export LTX_IMAGE_REFS_JSON="$(printf '%s\n' "${INGREDIENTS[@]}" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read().split()))')"
+  ACTIVATED_LORAS+=("ltx-2.3-22b-ic-lora-ingredients-0.9.safetensors")
+  LORA_MULTS+=("1.4")
+fi
+export LTX_LORAS_JSON="$(printf '%s\n' "${ACTIVATED_LORAS[@]}" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read().split()))')"
+export LTX_MULTS_JSON="$(printf '%s\n' "${LORA_MULTS[@]}" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read().split()))')"
 export LTX_SETTINGS_FILE="$(mktemp /tmp/ltx_settings_XXXX.json)"
 
 # ── Enhance com VISION automática (relay) ─────────────────────────────────
@@ -208,6 +220,22 @@ s = {
 if os.environ.get('LTX_IMAGE_START'): s['image_start'] = os.environ['LTX_IMAGE_START']
 if os.environ.get('LTX_IMAGE_END'): s['image_end'] = os.environ['LTX_IMAGE_END']
 if s.get('image_start') or s.get('image_end'): s['image_prompt_type'] = os.environ['LTX_IMAGE_PROMPT_TYPE']
+# Reference Voice (ID-LoRA / modo A1OF): audio_guide = wav de ref de timbre; '1' ativa o id-lora
+if os.environ.get('LTX_REF_VOICE'):
+    s.setdefault('image_prompt_type', 'S') if os.environ.get('LTX_IMAGE_START') else s.update({'image_prompt_type': 'S'})
+    s['audio_prompt_type'] = '1'
+    s['audio_guide'] = os.environ['LTX_REF_VOICE']
+    _l = json.loads(os.environ.get('LTX_LORAS_JSON','[]'))
+    if 'id-lora-celebvhq-ltx2.3.safetensors' not in _l:
+        # PREPEND id-lora (não substituir!) — preserva ic-lora-ingredients da pilha
+        _m = json.loads(os.environ.get('LTX_MULTS_JSON','[]'))
+        os.environ['LTX_LORAS_JSON'] = __import__('json').dumps(['id-lora-celebvhq-ltx2.3.safetensors'] + _l)
+        os.environ['LTX_MULTS_JSON'] = __import__('json').dumps([os.environ.get('LTX_IDLORA_MULT', '1;0')] + _m)
+# IC-LoRA Ingredients (anti-drift): video_prompt_type 'I' + image_refs
+if os.environ.get('LTX_VIDEO_PROMPT_TYPE'):
+    s.setdefault('video_prompt_type', os.environ['LTX_VIDEO_PROMPT_TYPE'])
+    if os.environ.get('LTX_IMAGE_REFS_JSON'):
+        s['image_refs'] = json.loads(os.environ['LTX_IMAGE_REFS_JSON'])
 loras = json.loads(os.environ.get('LTX_LORAS_JSON','[]'))
 mults = json.loads(os.environ.get('LTX_MULTS_JSON','[]'))
 if loras:
