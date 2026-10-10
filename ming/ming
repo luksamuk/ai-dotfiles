@@ -95,7 +95,12 @@ try:
     print(c)
 except Exception: pass" 2>/dev/null || true)
     if [[ -n "$CONTENT" ]]; then
-      if [[ "$MODE" == "cutout" ]] || python3 -c "import json; json.loads('''$(echo "$CONTENT" | sed "s/'/''\\'/g" | head -c 100000)''')" 2>/dev/null; then
+      echo "$CONTENT" > "$TMP/last_prompt.txt"   # payload por ARQUIVO (nunca argv/env — gotcha doutrinado)
+      if [[ "$MODE" == "cutout" ]] || python3 -c "
+import json,sys
+raw = open('$TMP/last_prompt.txt').read().strip()
+json.loads(raw)
+" 2>/dev/null; then
         ENH_OK=1; break
       fi
       echo "  [tentativa $i] resposta não é JSON válido — reforçando e tentando de novo..."
@@ -132,7 +137,7 @@ echo "[ming 2/3] render via Wan2GP (profile 5, scope 20G)..."
 systemd-run --user --scope -p MemoryMax=20G bash -c "source '$VENV' && cd '$WGP_DIR' && python wgp.py --process '$TMP/settings.json' --profile 5 --output-dir '$OUT_DIR' $([[ "$DRY" == 1 ]] && echo --dry) --verbose 2" > "$TMP/wgp.log" 2>&1
 WGP_EXIT=$?
 if [[ $WGP_EXIT -ne 0 ]]; then tail -20 "$TMP/wgp.log" >&2; echo "[ming] render falhou (exit $WGP_EXIT)" >&2; exit 4; fi
-NEWEST=$(find "$OUT_DIR" -maxdepth 1 -name '*.jpg' -newermt "@$START_TS" -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+NEWEST=$(find "$OUT_DIR" -maxdepth 1 \( -name '*.jpg' -o -name '*.png' \) -newermt "@$START_TS" -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
 [[ -n "$NEWEST" ]] || { echo "[ming] nenhuma imagem nasceu no diretório (log: $TMP/wgp.log)" >&2; exit 5; }
 echo "[ming] render: $NEWEST"
 

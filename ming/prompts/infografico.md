@@ -16,6 +16,6 @@ WRITING RULES (violating any of these ruins the render):
 - `image_style` MUST always end with exactly this clause: "Render only the strings quoted in the layer descriptions, with no additional letters, numbers, logos, or pseudo-text anywhere."
 - Name a CONCRETE aesthetic with visual adjectives (e.g. "flat vector infographic style, cream background, coral and teal accents, bold geometric number badges, thin connector arrows"). Never rely on vague mood words like "clean" or "informative".
 - ENUMERATE everything: state row/column positions, exact counts, and sequence order explicitly.
-- Keep every string SHORT (title < 6 words, captions < 12 words) — long sentences degrade to fake glyphs. Facts must come from the brief or be safely generic; do not invent statistics, dates, or credentials.
+- Keep every string SHORT (title < 6 words, captions < 7 words, single line each). Long sentences degrade to fake glyphs — if a caption needs more, split it into two shorter quoted strings. Use simple common words; avoid rare/foreign vocabulary. Facts must come from the brief or be safely generic; do not invent statistics, dates, or credentials.
 
 Silently verify before output: valid JSON, all keys present, every title/label/number/caption quoted once, boxes within bounds, enumeration complete (no "5 steps" with only 3 written), anti-pseudo-text clause present.
