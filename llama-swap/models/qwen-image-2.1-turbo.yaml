@@ -51,7 +51,7 @@ qwen-image-2.1-turbo:
     context_length: 0
     embedding_length: 0
     quantization: q4_k_m (DiT) / q8_0 (TE)
-    note: 'Turbo OFICIAL (tweet Alibaba 09/10) — SIGMAS CUSTOM do card AtomicChat (1.0,0.978453,0.95418,0.926626,0.89508,0.845148,0.704534,0.414568,0.0) são OBRIGATÓRIOS no pipeline diffusers, o sd-server roda o schedule default @8 steps/cfg 1.0 (o default do sd-server é fiel no GGUF). RAM: TE 8.1 GB em CPU — scope/memory folga maior que o heretic antigo. LoRAs no mesmo dir do diffuse (9 adapters visíveis).'
+    note: 'Turbo OFICIAL (tweet Alibaba 09/10) — sigma schedule do card AtomicChat (1.0,0.978453,0.95418,0.926626,0.89508,0.845148,0.704534,0.414568,0.0) aplicado SERVER-SIDE via --sigmas no fragment (o default scheduler do sd-server não é o schedule do distill). RAM: TE 8.1 GB em CPU — scope/memory folga maior que o heretic antigo. LoRAs no mesmo dir do diffuse (9 adapters visíveis).'
     caveats:
     - TE Sakura 8.1 GB RAM em CPU — spawn exige folga (scope 20G recomendado)
     - 1 slot de geração por vez (fila de 1 no server)
