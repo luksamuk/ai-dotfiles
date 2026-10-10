@@ -237,6 +237,10 @@ def generate_image_qwen21_sd_cpp(
     # Turbo destilado: SEM auto-injeção (Pruna/Fix/Detailer treinados na base 40-step
     # bagunçam a receita few-step); tags manuais continuam funcionando — o dir é o
     # MESMO lora/ do base, e tags aceitam subdiretório (<lora:_nsfw/nome:0.7>).
+    # AUTO-INJECT (09/10, user: detailer "não-fixo"): apenas o fix-1.0 é always-on
+    # @0.6 no base. Detailer e os demais add-ons exigem tag <lora:...> manual —
+    # injetar tudo cegamente empilhava 5 adapters toda run.
+    AUTO_LORA = "qwen-image-2.1-fix-1.0-comfy"
     if config.get("is_turbo"):
         if config.get("lora_dir"):
             cmd += ["--lora-model-dir", config["lora_dir"]]
@@ -246,8 +250,10 @@ def generate_image_qwen21_sd_cpp(
         if loras:
             cmd += ["--lora-model-dir", lora_dir]
             if "<lora:" not in prompt:
-                prompt_lora = " ".join(f"<lora:{f.rsplit('.', 1)[0]}:0.6>" for f in loras)
-                cmd[cmd.index("-p") + 1] = prompt + " " + prompt_lora
+                auto = [f for f in loras if AUTO_LORA in f]
+                prompt_lora = " ".join(f"<lora:{f.rsplit('.', 1)[0]}:0.6>" for f in auto)
+                if prompt_lora:
+                    cmd[cmd.index("-p") + 1] = prompt + " " + prompt_lora
 
     # 6 GB VRAM budget. VAE runs on GPU: measured at 1024x1024 it takes 15.3s
     # there against 105.6s on CPU (7x), and pixel-identical output (99.7% of
