@@ -236,7 +236,7 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--show-enhanced", action="store_true",
-        help="Print the expanded prompt right after enhancement, before generating.",
+        help="(no-op, kept for compatibility) enhanced prompt is ALWAYS shown right after enhancement, before the render starts",
     )
     p.add_argument(
         "--cpu-fallback", action="store_true",
@@ -885,13 +885,13 @@ def _run_framepack(
         if viewer:
             subprocess.Popen([viewer, str(output_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
 def _show_enhanced_if_requested(args, enhanced: str | None) -> None:
-    """Print the expanded prompt right after enhancement, when --show-enhanced is set.
+    """Print the expanded prompt right after enhancement — ALWAYS (default since 09/10).
 
-    The flag existed but was never read, so the expanded prompt only surfaced in
-    the final debrief (after minutes of generation). Printing it here lets the
-    user abort a bad expansion before paying for the render.
+    Was opt-in via --show-enhanced (which now is kept as a no-op for script
+    compatibility). Printing unconditionally lets the user abort a bad
+    expansion (Ctrl+C) before paying for the render — mirrors the h3 wrapper.
     """
-    if not getattr(args, "show_enhanced", False) or not enhanced:
+    if not enhanced:
         return
     print()
     print("  ── Enhanced prompt " + "─" * 52)
