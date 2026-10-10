@@ -1265,8 +1265,65 @@ def _run_qwen21_sd_cpp_image(
                     print(f"     ────────────────────────────")
                 enhanced = enhanced if (enhanced and enhanced != prompt) else None
         elif enhance_type == "qwen21":
-            print(f"\n  \u2728 Enhancing prompt via {enhance_model} (qwen21 mode)...")
-            enhanced, raw_response = enhance_qwen21_prompt(prompt, enhance_model, nsfw=args.nsfw)
+            # Catálogo geral (non-NSFW): adapters de estilo/fix como o analogcore.
+            # Mirror do fluxo --nsfw (mesma mecânica LORAS: <ids>): sem tag manual
+            # no prompt, o rerank pré-ordena o catálogo e o LLM escolhe 0-2 —
+            # triggers + tags injetados FORA do paragraph depois do resolve.
+            # Fail-open: sem catálogo/sem rerank/sem linha LORAS: → roda base.
+            _gen_catalog_block = None
+            if "<lora:" not in prompt and not getattr(args, "nsfw", False):
+                import os as _os_c
+                import subprocess as _sp_c
+                _gen_cat = _os_c.environ.get("GEN_CATALOG_JSON") or str(
+                    Path.home() / ".local/share/diffuse/catalog_qwen21.json")
+                _gen_rerank = str(Path.home() / ".local/share/diffuse/rerank_catalog_qwen21.py")
+                if Path(_gen_cat).exists() and Path(_gen_rerank).exists():
+                    try:
+                        _env = dict(_os_c.environ)
+                        _env["NSFW_CATALOG_JSON"] = _gen_cat
+                        _ranked = _sp_c.run(
+                            ["python3", _gen_rerank, "--prompt", prompt, "--n", "5", "--mode", "rank"],
+                            capture_output=True, text=True, timeout=180, env=_env)
+                        if _ranked.returncode == 0 and _ranked.stdout.strip():
+                            _gen_catalog_block = _ranked.stdout.strip()
+                    except Exception as e:  # fail-open: sem ranking, geração segue
+                        print(f"  ⚠️  rerank do catálogo indisponível ({e}); seguindo sem seleção")
+            if _gen_catalog_block:
+                _gen_rule = (
+                    "LoRA SELECTION: at the very END of your output, on the LAST line, "
+                    "output exactly: LORAS: <comma-separated numeric IDs>\n"
+                    "- Choose the IDs best fit to the request (0 to 2 LoRAs; aesthetics "
+                    "LoRA + detailer may stack, never two of the same category).\n"
+                    "- If genuinely nothing fits the request, output: LORAS: none\n"
+                    "- Never mention catalog trigger words in the paragraph itself.\n\n"
+                    + _gen_catalog_block)
+                print(f"\n  ✨ Enhancing prompt via {enhance_model} (qwen21 mode + catálogo)...")
+                enhanced, raw_response = enhance_qwen21_prompt(
+                    prompt, enhance_model, nsfw=args.nsfw, extra_system=_gen_rule)
+                import os as _os_p
+                import re as _re_p
+                import subprocess as _sp_p
+                import json as _j_p
+                m = _re_p.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "")
+                _lora_ids = [int(x) for x in _re_p.findall(r"\d+", m.group(1))] if m and m.group(1).strip() else None
+                enhanced = _re_p.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_p.M).strip()
+                if _lora_ids:
+                    _resolver = str(Path.home() / ".local/share/diffuse/catalog_lora_resolve_qwen21.py")
+                    _res = _sp_p.run(["python3", _resolver, "--ids", ",".join(map(str, _lora_ids))],
+                                     capture_output=True, text=True, timeout=30)
+                    _sel = _j_p.loads(_res.stdout) if _res.returncode in (0, 3) and _res.stdout.strip() else {}
+                    if _sel.get("names"):
+                        _tags = " ".join(
+                            f"<lora:{n}:{m_}>" for n, m_ in zip(_sel["names"], _sel["mults"]))
+                        _trigs = [t for t in (_sel.get("triggers") or []) if t]
+                        enhanced = f"{_tags} {enhanced}"
+                        if _trigs:
+                            enhanced = f"{', '.join(_trigs)} {enhanced}"
+                        print(f"  🎯 LLM escolheu {len(_sel['names'])} LoRA(s): "
+                              f"{', '.join(_sel['names'])}")
+            else:
+                print(f"\n  ✨ Enhancing prompt via {enhance_model} (qwen21 mode)...")
+                enhanced, raw_response = enhance_qwen21_prompt(prompt, enhance_model, nsfw=args.nsfw)
         elif enhance_type == "vision":
             print(f"\n  \u2728 Enhancing prompt via {enhance_model} (vision mode)...")
             enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
