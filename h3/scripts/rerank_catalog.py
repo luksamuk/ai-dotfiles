@@ -37,7 +37,7 @@ def cosine(a, b):
     return dot / (na * nb) if na and nb else 0.0
 
 
-MAX_EMBED_CHARS = 1200  # bissectado 02/out: 1200 ok, 1600 = HTTP 400 (ctx 512 tokens do endpoint)
+MAX_EMBED_CHARS = 1200  # 10/out: fragment colbert --ctx-size 4096 --parallel 1 (llama.cpp novo divide -c pelos slots: 512/4=256/slot dava HTTP 400 @~1100 chars). 1200 chars = margem 4x.
 MAX_EMBED_BATCH = 32
 
 def _truncate(t):

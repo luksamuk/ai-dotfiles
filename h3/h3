@@ -117,6 +117,7 @@ LORA_MULTS=()
 # Substitui o turbo LoRA: heads no ckpts/ + LoRA auxiliar carregado pelo model def.
 PDD=false
 W4A8=false
+SINGULARITY=false   # --singularity: fusao Minimax-h3_Singularity (AIGC_Singularity, GGUF Q4_K_M Abiray 11.5GB)
 
 # Duas fases com tiling (fase 1 low-res → latent upscaler → fase 2 em 4 tiles).
 # Vence o OOM de denoise full-res em 720p+ no 6GB. Exige modelo normal (não-PDD/turbo).
@@ -244,6 +245,7 @@ while [[ $# -gt 0 ]]; do
       NSFW_LORAS+=("$RESOLVED"); shift 2 ;;
     --nsfw-strength) NSFW=true; NSFW_OVERRIDE_STRENGTH="$2"; shift 2 ;;  # sobrescreve todas
     --turbo) TURBO=true; shift ;;
+    --singularity) SINGULARITY=true; shift ;;
     --profile) H3_PROFILE="$2"; shift 2 ;;
     --turbo-strength) TURBO=true; TURBO_STRENGTH="$2"; shift 2 ;;
     --turbo-file) TURBO=true; TURBO_FILE_OVERRIDE="$2"; shift 2 ;;
@@ -631,11 +633,28 @@ if [[ "$FL2VA_MODE" == true && "$REF2VA_MODE" == true ]]; then
   exit 1
 fi
 
+# Singularity: heads PDD/W4A8 destilados pro checkpoint base — não cabem na fusão
+if [[ "$SINGULARITY" == true && "$PDD" == true ]]; then
+  echo "Erro: --singularity é incompatível com --pdd (heads destilados pro base)."
+  exit 1
+fi
+if [[ "$SINGULARITY" == true && "$W4A8" == true ]]; then
+  echo "Erro: --singularity é incompatível com --w4a8 (heads destilados pro base)."
+  exit 1
+fi
+
 # ── Verificar que os modelos existem em disco ────────────────────────────
 # O Wan2GP baixa modelos faltantes automaticamente, o que pode lotar o disco.
 # Bloquear antes se não tiver o checkpoint.
 CKPTS_DIR="$WAN2GP_DIR/ckpts"
-if [[ "$W4A8" == true ]]; then
+if [[ "$SINGULARITY" == true ]]; then
+  # Minimax-h3_Singularity (08/10): checkpoint UNICO cobra FL2VA e Ref2VA.
+  # TE Qwen3-VL abliterated + VAEs Abiray reusados — zero download extra.
+  MODEL_FILE="$CKPTS_DIR/Minimax-H3-Singularity-Q4_K_M.gguf"
+  TEXT_ENCODER="$CKPTS_DIR/Qwen3-VL-32B-Instruct/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf"
+  VIDEO_VAE="$CKPTS_DIR/MiniMax-H3-video_vae_fp16.safetensors"
+  AUDIO_VAE="$CKPTS_DIR/MiniMax-H3-audio_vae_fp32.safetensors"
+elif [[ "$W4A8" == true ]]; then
   # w4a8 experimental (Kijai): ~45% mais leve, ataca o OOM de --ref-video no 6GB.
   # Precisa do model def defaults/minimax_h3_ref2va_w4a8.json (criado 2026-09-01).
   if [[ "$REF2VA_MODE" == true ]]; then
@@ -674,7 +693,8 @@ done
 # ── Construir prompt types e model_type ──────────────────────────────────
 if [[ "$REF2VA_MODE" == true ]]; then
   MODEL_TYPE="minimax_h3_ref2va_pruned"
-[[ "${H3_GGUF:-1}" == "1" ]] && MODEL_TYPE="minimax_h3_ref2va_gguf"   # default: stack GGUF enxuta (H3_GGUF=0 volta pro int8)
+[[ "${H3_GGUF:-1}" == "1" ]] && MODEL_TYPE="minimax_h3_ref2va_gguf"
+[[ "$SINGULARITY" == true ]] && MODEL_TYPE="minimax_h3_ref2va_sing"   # default: stack GGUF enxuta (H3_GGUF=0 volta pro int8)
   TASK_TYPE="ref2va"
   VIDEO_PROMPT_TYPE=""
   [[ ${#REF_IMAGES[@]} -gt 0 ]] && VIDEO_PROMPT_TYPE+="I"
@@ -695,6 +715,7 @@ if [[ "$REF2VA_MODE" == true ]]; then
 elif [[ "$FL2VA_MODE" == true ]]; then
   MODEL_TYPE="minimax_h3_fl2va_pruned"
   [[ "${H3_GGUF:-1}" == "1" ]] && MODEL_TYPE="minimax_h3_fl2va_gguf"
+  [[ "$SINGULARITY" == true ]] && MODEL_TYPE="minimax_h3_fl2va_sing"
   TASK_TYPE="i2v"
   IMAGE_PROMPT_TYPE=""
   [[ -n "$IMAGE_START" ]] && IMAGE_PROMPT_TYPE+="S"
@@ -704,6 +725,7 @@ elif [[ "$FL2VA_MODE" == true ]]; then
 else
   MODEL_TYPE="minimax_h3_fl2va_pruned"
   [[ "${H3_GGUF:-1}" == "1" ]] && MODEL_TYPE="minimax_h3_fl2va_gguf"
+  [[ "$SINGULARITY" == true ]] && MODEL_TYPE="minimax_h3_fl2va_sing"
   TASK_TYPE="t2v"
   IMAGE_PROMPT_TYPE=""
   VIDEO_PROMPT_TYPE=""
