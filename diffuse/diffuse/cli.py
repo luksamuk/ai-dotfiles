@@ -1328,8 +1328,14 @@ def _run_qwen21_sd_cpp_image(
                         print(f"  🎯 LLM escolheu {len(_sel['names'])} LoRA(s): "
                               f"{', '.join(_sel['names'])}")
             else:
-                print(f"\n  ✨ Enhancing prompt via {enhance_model} (qwen21 mode)...")
-                enhanced, raw_response = enhance_qwen21_prompt(prompt, enhance_model, nsfw=args.nsfw)
+                if getattr(args, "nsfw", False):
+                    # --nsfw: o fluxo post-bloco roda rerank ANTES + UMA call só de
+                    # enhance (com o _lora_rule no system). Não enhance aqui: o
+                    # header duplicado + 2ª call eram desperdício no edit+nsfw.
+                    pass
+                else:
+                    print(f"\n  ✨ Enhancing prompt via {enhance_model} (qwen21 mode)...")
+                    enhanced, raw_response = enhance_qwen21_prompt(prompt, enhance_model, nsfw=False)
         elif enhance_type == "vision":
             print(f"\n  \u2728 Enhancing prompt via {enhance_model} (vision mode)...")
             enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
