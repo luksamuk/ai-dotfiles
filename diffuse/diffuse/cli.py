@@ -1245,16 +1245,57 @@ def _run_qwen21_sd_cpp_image(
             prompt, lora_tags = _extract_lora_tags(prompt)
 
         # --enhance-edit-with: VLM vê a reference image e refina a instrução (one-shot)
+        # MESMO FLUXO do text-only: rerank ANTES (o catálogo ranked no system do
+        # VLM) + a linha LORAS: no fim + resolve/injeção fora do paragraph —
+        # --enhance-edit-with é só TROCA DE MODELO, não outro pipeline.
+        _edit_catalog_block = None
         if is_edit and getattr(args, "enhance_edit_with", None):
+            import os as _os_e
+            import re as _re_e
+            import subprocess as _sp_e
+            import time as _time_e
             edit_model = args.enhance_edit_with
             if not _check_model_vision(edit_model):
                 print(f"  \u26a0\ufe0f  {edit_model} não tem visão — caindo pro enhance text-only")
                 enhanced, raw_response = enhance_qwen21_prompt(prompt, enhance_model, nsfw=args.nsfw)
             else:
+                _edit_rule = None
+                if "<lora:" not in prompt:
+                    _edit_cat = (_os_e.environ.get("NSFW_CATALOG_JSON" if getattr(args, "nsfw", False) else "GEN_CATALOG_JSON") or str(
+                        Path.home() / ".local/share/diffuse/{}catalog_qwen21.json".format("nsfw_" if getattr(args, "nsfw", False) else "")))
+                    _edit_rerank = str(Path.home() / ".local/share/diffuse/rerank_catalog_qwen21.py")
+                    if Path(_edit_cat).exists() and Path(_edit_rerank).exists():
+                        try:
+                            _env_e = dict(_os_e.environ)
+                            if not getattr(args, "nsfw", False):
+                                _env_e["NSFW_CATALOG_JSON"] = _edit_cat
+                            _t0e = _time_e.time()
+                            _ranked_e = _sp_e.run(
+                                ["python3", _edit_rerank, "--prompt", prompt, "--n", "10" if getattr(args, "nsfw", False) else "5", "--mode", "rank"],
+                                capture_output=True, text=True, timeout=180, env=_env_e)
+                            if _ranked_e.returncode == 0 and _ranked_e.stdout.strip():
+                                _edit_catalog_block = _ranked_e.stdout.strip()
+                                _n_e = len(_re_e.findall(r"^\d+:", _edit_catalog_block, flags=_re_e.M))
+                                print(f"  🔎 Rerank ColBERT: {_n_e} LoRAs pré-ordenados "
+                                      f"({_time_e.time() - _t0e:.1f}s)")
+                        except Exception as e:  # fail-open
+                            print(f"  ⚠️  rerank indisponível ({e}); seguindo sem seleção")
+                if _edit_catalog_block:
+                    _max_loras = "2" if getattr(args, "nsfw", False) else "2"
+                    _edit_rule = (
+                        "LoRA SELECTION: at the very END of your output, on the LAST line, "
+                        "output exactly: LORAS: <comma-separated numeric IDs>\n"
+                        "- Choose the IDs best fit to the request (0 to 2 LoRAs; aesthetics "
+                        "LoRA + detailer may stack, never two of the same category).\n"
+                        "- If genuinely nothing fits the request, output: LORAS: none\n"
+                        f"- {'Never mention catalog trigger phrases' if getattr(args, 'nsfw', False) else 'Never mention catalog trigger words'} in the paragraph itself.\n\n"
+                        + _edit_catalog_block)
                 print(f"\n  \U0001f441\ufe0f\u2728 {edit_model} analisa a referência e refina a instrução (one-shot)...")
                 enhanced, raw_response = analyze_and_enhance_edit(
-                    ref_image_paths[0], prompt, edit_model, nsfw=args.nsfw
-                )
+                    ref_image_paths[0], prompt, edit_model, nsfw=args.nsfw, extra_system=_edit_rule or "")
+                _m_edit = _re_e.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "") if _edit_catalog_block else None
+                _lora_ids_edit = [int(x) for x in _re_e.findall(r"\d+", _m_edit.group(1))] if _m_edit and _m_edit.group(1).strip() else None
+                enhanced = _re_e.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_e.M).strip()
                 if enhanced and enhanced != prompt:
                     print(f"     Expanded to ({len(enhanced)} chars)")
                     _show_enhanced_if_requested(args, enhanced)
@@ -1263,6 +1304,24 @@ def _run_qwen21_sd_cpp_image(
                     for line in _tw.wrap(enhanced, width=78):
                         print(f"     {line}")
                     print(f"     ────────────────────────────")
+                if _lora_ids_edit:
+                    _resolver_e = str(Path.home() / ".local/share/diffuse/nsfw_lora_resolve_qwen21.py" if getattr(args, "nsfw", False) else ".local/share/diffuse/catalog_lora_resolve_qwen21.py")
+                    if not _resolver_e.startswith("/"):
+                        _resolver_e = str(Path.home() / _resolver_e)
+                    _res_e = _sp_e.run(["python3", _resolver_e, "--ids", ",".join(map(str, _lora_ids_edit))],
+                                       capture_output=True, text=True, timeout=30)
+                    import json as _j_e
+                    _sel_e = _j_e.loads(_res_e.stdout) if _res_e.returncode in (0, 3) and _res_e.stdout.strip() else {}
+                    if _sel_e.get("names"):
+                        _tags_e = " ".join(f"<lora:{n}:{m_}>" for n, m_ in zip(_sel_e["names"], _sel_e["mults"]))
+                        _trigs_e = [t for t in (_sel_e.get("triggers") or []) if t]
+                        enhanced = f"{_tags_e} {enhanced}" if enhanced else enhanced
+                        if _trigs_e:
+                            enhanced = f"{', '.join(_trigs_e)} {enhanced}"
+                        print(f"  🎯 LLM escolheu {len(_sel_e['names'])} LoRA(s): "
+                              f"{', '.join(_sel_e['names'])}")
+                elif _edit_catalog_block:
+                    print("  ℹ️  LLM não escolheu LoRA (LORAS: none ou linha ausente); rodando base")
                 enhanced = enhanced if (enhanced and enhanced != prompt) else None
         elif enhance_type == "qwen21":
             # Catálogo geral (non-NSFW): adapters de estilo/fix como o analogcore.

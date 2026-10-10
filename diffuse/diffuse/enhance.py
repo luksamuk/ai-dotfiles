@@ -631,12 +631,15 @@ def enhance_edit_prompt(image_description: str, user_prompt: str, model: str, ns
 
 
 # ── One-shot vision + edit ──────────────────────────────────────────────────
-def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str, nsfw: bool = False) -> tuple:
+def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str, nsfw: bool = False, extra_system: str = "") -> tuple:
     """One-shot vision + edit enhancement: send image + instruction to a
     vision-capable model and get a refined edit prompt back.
 
     Used when the enhance model already has vision capability (e.g. minicpm-v-4.6),
     avoiding two separate LLM calls (analyze then enhance).
+
+    extra_system: appended to the system prompt (LORA SELECTION rule, same
+    contract as enhance_qwen21_prompt — rerank-first flows pass it here).
 
     Returns (enhanced_prompt, raw_response).
     On failure, enhanced_prompt is the original prompt and raw_response contains
@@ -660,6 +663,8 @@ def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str, nsfw
     mime = mime_map.get(ext, "image/jpeg")
 
     system = get_edit_vision_prompt(nsfw=nsfw)
+    if extra_system:
+        system = system + "\n\n" + extra_system
     user_text = (
         "I want to edit this image. My edit instruction: " + user_prompt
         + "\n\nLook at the image carefully, describe the relevant elements you see, "
