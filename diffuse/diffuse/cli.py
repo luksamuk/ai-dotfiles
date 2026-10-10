@@ -1273,7 +1273,9 @@ def _run_qwen21_sd_cpp_image(
             _gen_catalog_block = None
             if "<lora:" not in prompt and not getattr(args, "nsfw", False):
                 import os as _os_c
+                import re as _re_c
                 import subprocess as _sp_c
+                import time as _time_c
                 _gen_cat = _os_c.environ.get("GEN_CATALOG_JSON") or str(
                     Path.home() / ".local/share/diffuse/catalog_qwen21.json")
                 _gen_rerank = str(Path.home() / ".local/share/diffuse/rerank_catalog_qwen21.py")
@@ -1281,11 +1283,15 @@ def _run_qwen21_sd_cpp_image(
                     try:
                         _env = dict(_os_c.environ)
                         _env["NSFW_CATALOG_JSON"] = _gen_cat
+                        _t0 = _time_c.time()
                         _ranked = _sp_c.run(
                             ["python3", _gen_rerank, "--prompt", prompt, "--n", "5", "--mode", "rank"],
                             capture_output=True, text=True, timeout=180, env=_env)
                         if _ranked.returncode == 0 and _ranked.stdout.strip():
                             _gen_catalog_block = _ranked.stdout.strip()
+                            _n_ranked = len(_re_c.findall(r"^\d+:", _gen_catalog_block, flags=_re_c.M))
+                            print(f"  🔎 Rerank ColBERT: {_n_ranked} LoRAs pré-ordenados "
+                                  f"({_time_c.time() - _t0:.1f}s)")
                     except Exception as e:  # fail-open: sem ranking, geração segue
                         print(f"  ⚠️  rerank do catálogo indisponível ({e}); seguindo sem seleção")
             if _gen_catalog_block:
@@ -1361,11 +1367,16 @@ def _run_qwen21_sd_cpp_image(
                 _catalog_block = None
                 if Path(_rerank).exists() and Path(_cat_json).exists():
                     try:
+                        import time as _time_i
+                        _t0 = _time_i.time()
                         _ranked = _sp_i.run(
                             ["python3", _rerank, "--prompt", prompt, "--n", "10", "--mode", "rank"],
                             capture_output=True, text=True, timeout=180)
                         if _ranked.returncode == 0 and _ranked.stdout.strip():
                             _catalog_block = _ranked.stdout.strip()
+                            _n_ranked = len(_re_i.findall(r"^\d+:", _catalog_block, flags=_re_i.M))
+                            print(f"  🔎 Rerank ColBERT: {_n_ranked} LoRAs pré-ordenados "
+                                  f"({_time_i.time() - _t0:.1f}s)")
                     except Exception as e:  # fail-open: sem ranking, catálogo cru
                         print(f"  ⚠️  rerank indisponível ({e}); catálogo completo")
                 elif not Path(_cat_json).exists():
