@@ -1398,14 +1398,18 @@ def _run_qwen21_sd_cpp_image(
                         + _catalog_block)
                     enhanced, raw_response = enhance_qwen21_prompt(
                         prompt, enhance_model, nsfw=True, extra_system=_lora_rule)
-                    # (o bloco de exibição/logging abaixo, comum a todos os caminhos,
-                    #  já mostra o prompt expandido — nada extra aqui)
                     _lora_ids = None
                     m = _re_i.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "")
                     if m and m.group(1).strip():
                         _lora_ids = [int(x) for x in _re_i.findall(r"\d+", m.group(1))]
                     # strip da linha LORAS: do prompt (sintaxe interna, não é cena)
-                    enhanced = _re_i.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_i.M).strip()
+                    _enhanced_body = _re_i.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_i.M).strip()
+                    # display do enhanced (o único call LLM do fluxo): o Expanded +
+                    # bloco ── Enhanced prompt ──, igual aos outros caminhos
+                    if _enhanced_body:
+                        print(f"     Expanded to ({len(_enhanced_body)} chars)")
+                        _show_enhanced_if_requested(args, _enhanced_body)
+                    enhanced = _enhanced_body
                     if _lora_ids:
                         _res = _sp_i.run(["python3", _resolver, "--ids", ",".join(map(str, _lora_ids))],
                                          capture_output=True, text=True, timeout=30)
