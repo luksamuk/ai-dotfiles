@@ -42,6 +42,7 @@ matrix:
     # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
     k2fim: k2-horizon-3.7b-pollard-fim  # substitui o qpoll (aposentado 11/10/2026) — FIM CPU-only
+    k2p: k2-horizon-3.7b-pollard  # GPU agential lane — membro do heavy p/ coexistir c/ k2fim (eviction bug 11/10)
     # g12p: gemma4-12b-pollard  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%); restore: mv _disabled/ → models/
     # GPT-2 124M — museum piece (2019 original, completion-only, ctx 1024)
     # gpt2: gpt-2-124m  # desativado 17/09 (disk; restore: _disabled)
@@ -130,7 +131,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(k2 | lag) & (nemb | lfmcol | eg2) & k2fim" # q36 REMOVED Oct 8 2026 — aposentado; k2 reativado 05/10 APEX-Mini; orn15 merged no heretic; q36hc merged em q36
+    heavy: "(k2 | lag | k2p) & (nemb | lfmcol | eg2) & k2fim" # q36 REMOVED Oct 8 2026 — aposentado; k2 reativado 05/10 APEX-Mini; orn15 merged no heretic; q36hc merged em q36; k2p entra Oct 11 (coexistência GPU+FIM, bug 499)
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
