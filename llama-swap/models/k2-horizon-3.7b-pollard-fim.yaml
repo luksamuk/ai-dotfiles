@@ -15,6 +15,14 @@ k2-horizon-3.7b-pollard-fim:
 
     --ctx-size ${completion_ctx}
 
+    --cache-type-k ${small_cache_k}
+
+    --cache-type-v ${small_cache_v}
+
+    --k-cache-hadamard
+
+    --v-cache-hadamard
+
     --temp 0.7
 
     --top-p 0.8
