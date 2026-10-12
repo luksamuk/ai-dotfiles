@@ -13,15 +13,11 @@ k2-horizon-3.7b-pollard-fim:
 
     --parallel 1
 
-    --ctx-size ${completion_ctx}
+    --ctx-size 16384
 
     --cache-type-k ${small_cache_k}
 
     --cache-type-v ${small_cache_v}
-
-    --k-cache-hadamard
-
-    --v-cache-hadamard
 
     --temp 0.7
 
@@ -67,10 +63,10 @@ k2-horizon-3.7b-pollard-fim:
     - text
     tools: false
     reranker: false
-    context: 32768
+    context: 16384
   metadata:
-    size: ~3.1 GB (Pollard IQ4_XS)
-    context: 32768
+    size: ~3.1 GB (Pollard IQ4_XS, ctx 16K)
+    context: 16384
     vram_usage: 0 (CPU-only)
     source: PollardWeights/K2-Horizon-3.7B-Pollard (sha256 cd2add66...b0403)
     kv_cache: q8_0
