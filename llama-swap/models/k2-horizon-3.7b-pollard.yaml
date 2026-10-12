@@ -1,0 +1,91 @@
+# -------------------------------------------
+# K2-Horizon 3.7B Pollard - ik_llama.cpp (denso: k2_horizon nativo no ik_mainline
+# >= 23/09, build_k2horizon.cpp; kassane fork obsoleto). IQ4_XS Pollard
+# (+0.14 PPL vs f16), imatrix k2_shaped. Denso 3.3GB + KV q4_0 ~1.3GB @32K
+# cabe em VRAM: SEM override-tensor (nenhum expert), SEM --no-kv-offload,
+# SEM UMA env (OOM insurance desnecessaria aqui). 524K nativo no GGUF,
+# servimos 32768 (padrao casa @ik; smoke decide upgrade). Sem :think:
+# (--reasoning on ja emite reasoning_content; sempre-thinking).
+# -------------------------------------------
+k2-horizon-3.7b-pollard:
+  name: K2-Horizon 3.7B Pollard
+  description: "IFM's dense reasoning model (k2_horizon, text-only) — small sibling
+    of the MoVA family. Fits fully in VRAM at 32K context. Same PEG tool parser."
+  cmd: '${ik_llama_server} --port ${PORT}
+
+    --model ${models_dir}/k2-horizon-3.7b/K2-Horizon-3.7B-Pollard-IQ4_XS.gguf
+
+    -ngl 99
+
+    --ctx-size 32768
+
+    --temp 0.7
+
+    --top-p 0.95
+
+    --reasoning on
+
+    --reasoning-format deepseek
+
+    --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
+
+    --jinja
+
+    --parallel 1
+
+    --parallel-tool-calls
+
+    --cache-type-k ${large_cache_k}
+
+    --cache-type-v ${large_cache_v}
+
+    --flash-attn auto
+
+    --ubatch-size 256
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 32768
+  metadata:
+    size: ~3.33 GB (Pollard IQ4_XS)
+    context: 32768
+    vram_usage: ~5.0 GB VRAM (model 3.3GB + KV q4_0 ~1.3GB @32K + compute)
+    source: PollardWeights/K2-Horizon-3.7B-Pollard (SHA256 cd2add66...b0403)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: k2-horizon
+    parameters: 5100000000
+    embedding_length: 2560
+    context_length: 524288
+    quantization: IQ4_XS Pollard measured-allocation
+    note: "DENSO (general.size_label 5.1B, expert_count 0; 3.7B e o nome de marketing,
+      texto-only, sem mmproj). IQ4_XS +0.14 PPL vs f16 (recomendacao do card do
+      Pollard), imatrix k2_calib.txt. GGUF declara context_length 524288; servimos
+      32768 (padrao da casa para fragmentos @ik no 6GB). KV: 8 kv-heads x 128 +
+      36 camadas ~ 41KB/token em q4_0 ~ 1.3GB @32K — cabe em VRAM, --no-kv-offload
+      do 36B desnecessario. Sampling 0.7/0.95 vendor da familia (temp 1.0 leu
+      errado no agentic). --reasoning on sem budget (denso pequeno; add
+      --reasoning-budget se smoke mostrar loop). Tools OTIMISTA (BFCL 50.9 no
+      card da IFM) — smoke test pendente: parser PEG K2 dedicado no ik
+      (COMMON_CHAT_FORMAT_PEG_K2_HORIZON). Sem setParamsByID/:think — sempre-thinking,
+      reasoning_content via --reasoning-format deepseek."
