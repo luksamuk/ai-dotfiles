@@ -370,6 +370,7 @@ Configs preserved in `models/_disabled/` (GGUF deleted, can be re-downloaded):
 | `lfm2.5-1.2b-vllm.yaml` | LFM2.5 1.2B on vLLM | vLLM OOM on 6 GB VRAM |
 | `lfm2.5-sgl.yaml` | LFM2.5 on SGLang | SGLang OOM on 6 GB VRAM |
 | `mellum2.1-12b.yaml` | Mellum 2.1 12B A2.5B Thinking (MoE 12B/2.5B, Q4_K_M 8.07GB) | Aposentado 10/10/2026 com honras: N=5 agentic 121.8/155 (CV 1.2%, mais estável da classe pequena; recorde de velocidade 43.4 t/s; iChef 27/30) mas atrás da liga 4B (137.8–140.3). Legado em `FLEET-N5-CANONICAL.md` (repo benchmarks) + `models/_disabled/mellum2.1.HELPER.md` |
+| `qwen2.5-coder-1.5b-pollard.yaml` | Pollard Coder 1.5B (IQ4_XS + imatrix, FIM CPU-only) | Aposentado 11/10/2026 com honras: FIM da casa desde ago/2026 (minuet + Continue), 832MB CPU zero-VRAM, coexistia com tudo. Substituído pelo **k2-horizon-3.7b-pollard-fim** (mesma doutrina CPU-only, tokens FIM idênticos, raciocínio melhor — user: "o k2 dá conta DEMAIS"). GGUF + imatrix em `~/.llama-models/qwen2.5-coder-1.5b-pollard-new/` (mantidos). Restore: mv fragment + refs footer (var qpoll, sets small_embed/heavy, evict 1) |
 | `ministral-3-3b.yaml` | Ministral 3B | — |
 | `qwen3.5-0.8b*.yaml` | Qwen3.5 0.8B variants | — |
 | `qwen3-8b.yaml` | Qwen3 8B | — |
