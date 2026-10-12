@@ -249,6 +249,14 @@ models:
 
       -ngl 99
 
+      --spec-type ngram-mod
+
+      --spec-ngram-mod-n-match 24
+
+      --spec-ngram-mod-n-min 48
+
+      --spec-ngram-mod-n-max 64
+
       --temp 0.3
 
       --top-p 0.85
@@ -382,6 +390,110 @@ models:
       embedding_length: 5120
       quantization: PTQ1_0
       note: 'Merge heretic APROXIMADO: LoRA OT-Ridge cozido nos codigos ternarios preservando block scales (v2 = todas as camadas attn.o_proj/mlp.down_proj; v1 mexia so 34 matrizes). Ganhos v2 vs original: refusals 95/100 -> 0/100, thinking-incompleto 22% -> 9% (16% greedy), MMLU -0.66, HumanEval -0.61 (ns). Decode esperado IGUAL ao original (scales intactos, mesmos kernels) — 3.4-3.5 t/s @ngl 56; velocidade segue regua do original (Saluki 4.1 vence na Navi). Vision ATIVADA 10/10 — mmproj Q8_0 0.59 GB em CPU RAM (--no-mmproj-offload), ViT prefill ~35s/imagem pago so no request com imagem, decode zero custo. Handle a ativar so depois de smoke; mesmo conjunto de flags do original.'
+  neohorse-1-4b:
+    name: NeoHorse 1 4B
+    description: NeoHorse community 4B model. 131K context with --fit.
+    cmd: '${ik_llama_server} --port ${PORT}
+
+      --model ${models_dir}/neohorse-1-4b/NeoHorse-1-4B-Q4_K_M.gguf
+
+      --fit
+
+      --fit-margin 512
+
+      --jinja
+
+      --parallel 1
+
+      --parallel-tool-calls
+
+      --ctx-size ${small_model_max_ctx}
+
+      --temp 1.0
+
+      --top-p 0.95
+
+      --top-k 20
+
+      --min-p 0
+
+      --presence-penalty 1.5
+
+      --repeat-penalty 1.0
+
+      --reasoning on
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --k-cache-hadamard
+
+      --v-cache-hadamard
+
+      --flash-attn auto
+
+      --no-graph-reuse
+
+      --ctx-checkpoints 0
+
+      --ctx-checkpoints-interval 0
+
+      --batch-size 512
+
+      --ubatch-size 128
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p, presence_penalty
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.8
+          top_k: 20
+          presence_penalty: 1.5
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 20
+          presence_penalty: 0.0
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - text
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~2.71 GB (Q4_K_M)
+      context: 131072
+      vram_usage: ~4.4 GB VRAM
+      source: TokenRhythm/NeoHorse-1-4B-GGUF (Q4_K_M oficial)
+      kv_cache: q4_0/q4_0 + hadamard
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 4210000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: Q4_K_M
+      note: 'vram detalhe: ~4.4 GB (model 2.7GB + q4_0 hadamard cache + compute) | model 2.7GB Q4_K_M + q4_0 hadamard cache + compute Copy-YAML do qwen3.5-4b (18/09). Samplers do card TokenRhythm (protocolo SGLang: temp 1.0/top_p 0.95/presence 1.5 thinking; instruct 0.7/0.80/presence 1.5). SEM tensors nextn (o repack stripou o MTP do base — o base mantém, experimento MTP separado). Comparar na régua 155 vs qwen3.5-4b (66/75 histórico). Deploy: pending smoke (fila empero em curso 18/09).'
   lfm2.5-vl-3b:
     name: LFM2.5-VL 3B
     description: Liquid AI VLM with native grounding, OCR with layout annotation, and SigLIP2 NaFlex vision. 3B params, 32K context, 16 languages.
@@ -787,114 +899,6 @@ models:
       embedding_length: 384
       quantization: BF16
       note: 'vram detalhe: ~0.3 GB VRAM (model 303MB + compute) | model 303MB BF16 + compute Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Lightest judge: 144M, sub-5ms per question expected on GPU.'
-  agents-a1-4b:
-    name: Agents-A1 4B
-    description: "Agents-A1 4B dense agentic model by InternScience. Fine-tuned Qwen3.5-4B for long-horizon search, engineering, scientific research, and tool calling. Text-only (mmproj disabled for full context). Rewritten 11/10/2026 no padrão atual da casa (template fixo qwen35, fit, hadamard q4_0); quant official Q4_K_M mantida (scan 11/10: melhor fit pro papel; Q8_0 mata contexto, sem Pollard/APEX/ONYX do modelo)."
-    tags:
-      - agentic
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/agents-a1-4b/Agents-A1-4B-Q4_K_M.gguf
-
-      --fit
-
-      --fit-margin 512
-
-      --jinja
-
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-
-      --parallel 1
-
-      --parallel-tool-calls
-
-      --ctx-size ${small_model_max_ctx}
-
-      --temp 0.85
-
-      --top-p 0.95
-
-      --top-k 20
-
-      --min-p 0.0
-
-      --repeat-penalty 1.0
-
-      --presence-penalty 1.1
-
-      --reasoning on
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --k-cache-hadamard
-
-      --v-cache-hadamard
-
-      --flash-attn auto
-
-      --no-graph-reuse
-
-      --ctx-checkpoints 0
-
-      --ctx-checkpoints-interval 0
-
-      --batch-size 512
-
-      --ubatch-size 128
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p, presence_penalty, repetition_penalty
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.85
-          top_p: 0.95
-          presence_penalty: 1.1
-          repetition_penalty: 1.0
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.85
-          top_p: 0.95
-          presence_penalty: 1.1
-          repetition_penalty: 1.0
-    ttl: 60
-    health_check_timeout: 300
-    capabilities:
-      in:
-        - text
-      out:
-        - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~2.7 GB (Q4_K_M official)
-      context: 131072
-      vram_usage: ~4.5 GB VRAM
-      source: InternScience/Agents-A1-4B-Q4_K_M-GGUF (sha256 d93c393a...508f062, 2.708.805.312 bytes)
-      kv_cache: q4_0/q4_0 + hadamard
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 4000000000
-      context_length: 262144
-      embedding_length: 2560
-      quantization: Q4_K_M
-      note: "vram detalhe: ~4.5 GB VRAM (model 2.7GB + hadamard q4_0 cache + compute). Dense 4B agentic FT (Qwen3.5-4B base, InternScience; SFT -> teachers -> multi-TT distill). Fragment reescrito 11/10/2026 (padrao qwen3.5-4b.yaml da casa: chat-template-file fixo qwen35 tool-calls, ik hadamard KV, --fit, no-graph-reuse). Sampling = card InternScience (temp 0.85, top_p 0.95, top_k 20, min_p 0, presence 1.1, repeat 1.0). OOM doctrine: q4_0/q4_0 hadamard, checkpoints 0, batch 512, ubatch 128. Scan de quant 11/10: Q4_K_M official mantida; Q8_0 (~4.4GB) derrubaria ctx; sem Pollard/APEX/ONYX/MTP do modelo; Heretic excluido por decreto user."
   d1-3b:
     name: Liquid d1-3B
     description: Liquid AI decision model (LFM2 arch) with SigLIP2 vision — choices/scores with calibrated per-type temperatures. 3B params, 32K context.
@@ -1100,7 +1104,21 @@ models:
 
       -ngl 99
 
-      --ctx-size 32768
+      --ctx-size 131072
+
+      --fit
+
+      --fit-margin 512
+
+      --spec-type ngram-mod:n_max=64\,n_min=2\,ngram_size_n=16
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --k-cache-hadamard
+
+      --v-cache-hadamard
 
       --temp 0.7
 
@@ -1140,10 +1158,10 @@ models:
         - text
       tools: true
       reranker: false
-      context: 32768
+      context: 131072
     metadata:
       size: ~3.33 GB (Pollard IQ4_XS)
-      context: 32768
+      context: 131072
       vram_usage: ~5.0 GB VRAM (model 3.3GB + KV q4_0 ~1.3GB @32K + compute)
       source: PollardWeights/K2-Horizon-3.7B-Pollard (SHA256 cd2add66...b0403)
       kv_cache: q4_0/q4_0
@@ -1177,7 +1195,11 @@ models:
 
       --parallel 1
 
-      --ctx-size ${completion_ctx}
+      --ctx-size 16384
+
+      --cache-type-k ${small_cache_k}
+
+      --cache-type-v ${small_cache_v}
 
       --temp 0.7
 
@@ -1223,10 +1245,10 @@ models:
         - text
       tools: false
       reranker: false
-      context: 32768
+      context: 16384
     metadata:
-      size: ~3.1 GB (Pollard IQ4_XS)
-      context: 32768
+      size: ~3.1 GB (Pollard IQ4_XS, ctx 16K)
+      context: 16384
       vram_usage: 0 (CPU-only)
       source: PollardWeights/K2-Horizon-3.7B-Pollard (sha256 cd2add66...b0403)
       kv_cache: q8_0
@@ -1460,6 +1482,169 @@ models:
         - Server audio.cpp embutido (não llama-server) — endpoints /v1/audio/speech + /v1/audio/transcriptions
         - Porta 8890 fixa no fragment
         - eSpeak-ng system lib (pacman espeak-ng) — requerido no host
+  "minicpm-v-4.7-1b":
+    name: MiniCPM-V 4.7 1B
+    description: "OpenBMB MiniCPM-V 4.7 1B (Q8_0 oficial): dense 1B VLM, multi-imagem + video + OCR, early token compression (mmproj 4x/16x). Aparece em ambas variantes de mmproj; 4x = mais detalhe visual, 16x = mais rápido."
+    tags:
+      - vis
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/minicpm-v-4.7-1b/MiniCPM-V-4_7-1B-Q8_0.gguf
+
+      --mmproj ${models_dir}/minicpm-v-4.7-1b/mmproj-model-f16-4x.gguf
+
+      --media-path ${media_path}
+
+      --jinja
+
+      --parallel 1
+
+      --ctx-size 32768
+
+      --parallel 1
+
+      --temp 0.7
+
+      --top-p 0.9
+
+      --top-k 100
+
+      --min-p ${default_min_p}
+
+      --repeat-penalty 1.05
+
+      --cache-type-k ${small_cache_k}
+
+      --cache-type-v ${small_cache_v}
+
+      --flash-attn on
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        "minicpm-v-4.7-1b":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: false
+      reranker: false
+      context: 32768
+    metadata:
+      size: ~1.1 GB (Q8_0) + ~0.9 GB mmproj 4x
+      context: 32768
+      vram_usage: "~2.2 GB VRAM"
+      source: openbmb/MiniCPM-V-4.7-1B-gguf
+      kv_cache: "q4_0/q4_0 + hadamard"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: minicpm-v
+      parameters: 1000000000
+      context_length: 32768
+      embedding_length: 896
+      quantization: Q8_0
+      note: "Série MiniCPM-V 4.7 (out/2026): primeiro MoE visual da série é o 35B; este 1B é denso, foco on-device. Card: 'substantially outperforms Qwen3.5 0.8B in both overall score and inference efficiency'. M-RoPE canvas: EXIGE converter/llama.cpp at/after PR #29416 (rope.section_order + v.tok_embd_sep) — não rodar em ik/cafe até rebase. mmproj 4x (0.90GB) = downsample 4x, detalhe maior; 16x (1.11GB) = default. Sampling: card oficial minicpm-v = temp 0.7, top_p 0.9, top-k 100, rp 1.05 (herdado do 4.6; cookbook INT4: quantize Q4_K_M/Q5_K_M p/ 1B se Q8_0 folgar). Q8_0 = doutrina casa p/ <=2B. ctx 32K conservative: card não crava ctx nativo do 1B GGUF (262144 era do 4.6); subir após smoke."
+  "minicpm-v-4.7-35b":
+    name: MiniCPM-V 4.7 35B-A3B
+    description: "OpenBMB MiniCPM-V 4.7 35B-A3B (mix Q3 experts/Q4 base, imatrix oficial): primeiro MoE VISUAL da série, multi-imagem + video + OCR com early token compression (mmproj 4x/16x). Card: vence Qwen3.6-35B-A3B em score e tempo."
+    tags:
+      - vis
+      - tools
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/minicpm-v-4.7-35b/MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf
+
+      --mmproj ${models_dir}/minicpm-v-4.7-35b/mmproj-model-f16-4x.gguf
+
+      --media-path ${media_path}
+
+      --jinja
+
+      -ot "ffn_(gate|up|down)_exps=CPU"
+
+      -ngl 999
+
+      --ctx-size 32768
+
+      --parallel 1
+
+      --temp 0.7
+
+      --top-p 0.9
+
+      --top-k 100
+
+      --min-p ${default_min_p}
+
+      --repeat-penalty 1.05
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --flash-attn on
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        "minicpm-v-4.7-35b":
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.9
+    ttl: 60
+    health_check_timeout: 600
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 32768
+    metadata:
+      size: ~15.5 GB (mix Q3gud im) + ~0.9 GB mmproj 4x
+      context: 32768
+      vram_usage: "~5.0 GB VRAM + ~11 GB RAM"
+      source: openbmb/MiniCPM-V-4.7-35B-A3B-gguf
+      kv_cache: "q4_0/q4_0"
+      features:
+        completion: true
+        tools: true
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: minicpm-v
+      parameters: 35000000000
+      context_length: 131072
+      embedding_length: 2048
+      quantization: Q3_K exps / Q4_K base
+      note: "Linha MiniCPM-V 4.7 out/2026: card declara vence Qwen3.6-35B-A3B (score+tempo) — a liga disk 35B da casa é ornith 143.6 > occamy 141.4 > qwen3.8-distill 141.0, e a comparação declarada deles é vs a geração física anterior. mix_q3gud_im = recomendação OFICIAL do cookbook (experts Q3_K c/ imatrix sobre base Q4_K_M = 15.5GB 'matches Q4_K_M on benchmarks'); Q4_K_M puro = 21.17GB. -ot ffn_*_exps=CPU = rota de laguna/ornith (3B ativos, experts na RAM). M-RoPE canvas: EXIGE converted post-PR #29416 (rope.section_order) — vanilla rebased 12/Out OK; ik/cafe NÃO suportam ainda. tools: true = card diz tool-calling nativo (SGLang/vLLM/llama.cpp/ollama); smoke valida. mmproj 4x = mais detalhe; 16x alternativa mais rápida. health 600s = MoE 15.5GB + mmproj cold start longo. Sampling: card oficial temp 0.7/top-p 0.9/top-k 100/rp 1.05 (regra da série). LES (Lookahead Expert Scheduling) e DSpark NÃO fazem parte: são do fork tc-mb/llama.cpp-omni (13-17 t/s no iPhone é o cenário experts-no-SSD; nossa rota experts-na-RAM não usa)."
   minicpm5-2b:
     name: MiniCPM5 2B
     description: 'OpenBMB MiniCPM5-2B (Q4_K_M oficial): dense 2B, 131K ctx nativo, tool calling limpo em ambos os modos. Text-only, sem MTP.'
@@ -2047,7 +2232,8 @@ matrix:
   vars:
     # Modelos pequenos
     # q4: qwen3.5-4b  # removed Oct 11 2026 — qwen3.5-4b aposentado por decreto user (agents-a1-4b assume como padrão); handle órfão crasha config
-    a1: agents-a1-4b  # novo padrão pequeno da casa (Oct 11 2026)
+    # a1: agents-a1-4b  # OUTROU em Oct 12 2026 — régua disk N=5 fechada 124.4 (std 12.66; 03 zerado 1x, 01 tool_use 0 nas 5) — neohorse assumiu o trono 4B com dados (137.8)
+    neo4: neohorse-1-4b  # DE VOLTA Oct 12 2026 — barganha disk: neohorse 137.8 > qwen 136.8 > a1 124.4 (o 4B da casa)
     # q4x: qwen3.5-4b-262k  # disabled Sep 20 2026 — user: cafe fica pros MoEs, 4B segue no prod upstream/ik; ctx alto não importa nesse modelo
     # m5a: minicpm5-1b-agentic  # disabled
     # lfm8: lfm2.5-8b-a1b  # REMOVED Sep 10 2026 — GGUF deleted (bench 16/105, user confia no 2.6b); fragment em _removed/
@@ -2071,6 +2257,10 @@ matrix:
     # uocr: unlimited-ocr  # disabled Aug 2026 — unused
     # qwvl: qwen3-vl-4b  # REMOVED Sep 10 2026 — GGUF deleted (A/B lfm2.5-vl-3b pendente pro enhance do H3); fragment em _removed/
     lfmvl3: lfm2.5-vl-3b
+    # MiniCPM-V 4.7 (out/2026): denso 1B (Q8_0, ~2.2GB VRAM) + MoE 35B-A3B (mix oficial, experts RAM)
+    # EXIGE llama.cpp pós-PR #29416 (M-RoPE canvas: rope.section_order) — vanilla rebased 12/Out; ik/cafe SEM suporte ainda
+    mcv1: minicpm-v-4.7-1b
+    mcv35: minicpm-v-4.7-35b
     # g4: gemma4-e2b  # REMOVED Sep 10 2026 — GGUF QAT deleted (maturidade em outros modelos); fragment em _removed/
     # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
     # Pesados (offload)
@@ -2120,22 +2310,22 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(a1 | lfm26 | twp) & (nemb | lfmcol | eg2)"
+    small_vision: "(neo4 | lfm26 | twp) & (nemb | lfmcol | eg2)"
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(a1 | lfm26 | twp) & (nemb | lfmcol | eg2) & k2fim"
+    small_embed: "(neo4 | lfm26 | twp) & (nemb | lfmcol | eg2) & k2fim"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "a1 | lfm26 | twp"  # q4→a1 Oct 11 2026 (aposentadoria qwen3.5-4b)  # gpt2xl+man1 REMOVED Oct 3 2026 (disk)
+    small_only: "neo4 | lfm26 | twp"  # a1→neo4 Oct 12 2026 (a1 disk 124.4, neohorse 137.8 retoma)  # gpt2xl+man1 REMOVED Oct 3 2026 (disk)
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr | lfmvl3"
-    vision_embed: "(ocr | lfmvl3) & (nemb | lfmcol | eg2)"
+    vision_only: "ocr | lfmvl3 | mcv1 | mcv35"
+    vision_embed: "(ocr | lfmvl3 | mcv1 | mcv35) & (nemb | lfmcol | eg2)"
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -2168,6 +2358,9 @@ matrix:
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
+    # MiniCPM-V 4.7: barato de recarregar (1B 2.2GB GPU; 35B MoE ~11GB RAM, page cache)
+    mcv1: 2
+    mcv35: 4
     # orn15: 9  # merged no heretic 05/10
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     # q36: 9  # REMOVED Oct 8 2026 — model disabled
@@ -2181,14 +2374,15 @@ matrix:
     # q38g: 8  # removed Sep 20 2026
     # bonsai: 8  # removed Sep 20 2026
     # bonsai2: 9  # re-instalado Oct 10 2026 — handle inativo até bench; 27B denso denso = caro de recarregar
-    # neo4: 2  # removed Oct 11 2026 junto do modelo
+    neo4: 2  # DE VOLTA Oct 12 2026 — neohorse retomou (o assento e o custo)
+    # a1: 2  # OUTDO Oct 12 2026 (régua disk fechada 124.4)
     # g4: 3  # REMOVED Sep 10 2026 — model deleted
     ttsext: 4
     ocr: 3
     # qwvl: 3  # REMOVED Sep 10 2026
     lfmvl3: 3
     # q4: 2  # removed Oct 11 2026 junto do modelo (aposentadoria qwen3.5-4b)
-    a1: 2  # novo padrão pequeno
+    # a1: 2  # OUTDO Oct 12 2026 — régua disk 124.4 fechada; neohorse retomou
     # q4x: 2  # disabled Sep 20 2026
     # lfm8: 2  # REMOVED Sep 10 2026
     lfm26: 2

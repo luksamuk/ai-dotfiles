@@ -1,0 +1,78 @@
+"minicpm-v-4.7-35b":
+  name: MiniCPM-V 4.7 35B-A3B
+  description: "OpenBMB MiniCPM-V 4.7 35B-A3B (mix Q3 experts/Q4 base, imatrix oficial): primeiro MoE VISUAL da série, multi-imagem + video + OCR com early token compression (mmproj 4x/16x). Card: vence Qwen3.6-35B-A3B em score e tempo."
+  tags: [vis, tools]
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/minicpm-v-4.7-35b/MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf
+
+    --mmproj ${models_dir}/minicpm-v-4.7-35b/mmproj-model-f16-4x.gguf
+
+    --media-path ${media_path}
+
+    --jinja
+
+    -ot "ffn_(gate|up|down)_exps=CPU"
+
+    -ngl 999
+
+    --ctx-size 32768
+
+    --parallel 1
+
+    --temp 0.7
+
+    --top-p 0.9
+
+    --top-k 100
+
+    --min-p ${default_min_p}
+
+    --repeat-penalty 1.05
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      "minicpm-v-4.7-35b":
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.9
+  ttl: 60
+  health_check_timeout: 600
+  capabilities:
+    in: [text, image]
+    out: [text]
+    tools: true
+    reranker: false
+    context: 32768
+  metadata:
+    size: ~15.5 GB (mix Q3gud im) + ~0.9 GB mmproj 4x
+    context: 32768
+    vram_usage: "~5.0 GB VRAM + ~11 GB RAM"
+    source: openbmb/MiniCPM-V-4.7-35B-A3B-gguf
+    kv_cache: "q4_0/q4_0"
+    features:
+      completion: true
+      tools: true
+      thinking: false
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: minicpm-v
+    parameters: 35000000000
+    context_length: 131072
+    embedding_length: 2048
+    quantization: Q3_K exps / Q4_K base
+    note: "Linha MiniCPM-V 4.7 out/2026: card declara vence Qwen3.6-35B-A3B (score+tempo) — a liga disk 35B da casa é ornith 143.6 > occamy 141.4 > qwen3.8-distill 141.0, e a comparação declarada deles é vs a geração física anterior. mix_q3gud_im = recomendação OFICIAL do cookbook (experts Q3_K c/ imatrix sobre base Q4_K_M = 15.5GB 'matches Q4_K_M on benchmarks'); Q4_K_M puro = 21.17GB. -ot ffn_*_exps=CPU = rota de laguna/ornith (3B ativos, experts na RAM). M-RoPE canvas: EXIGE converted post-PR #29416 (rope.section_order) — vanilla rebased 12/Out OK; ik/cafe NÃO suportam ainda. tools: true = card diz tool-calling nativo (SGLang/vLLM/llama.cpp/ollama); smoke valida. mmproj 4x = mais detalhe; 16x alternativa mais rápida. health 600s = MoE 15.5GB + mmproj cold start longo. Sampling: card oficial temp 0.7/top-p 0.9/top-k 100/rp 1.05 (regra da série). LES (Lookahead Expert Scheduling) e DSpark NÃO fazem parte: são do fork tc-mb/llama.cpp-omni (13-17 t/s no iPhone é o cenário experts-no-SSD; nossa rota experts-na-RAM não usa)."

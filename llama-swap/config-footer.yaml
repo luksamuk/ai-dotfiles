@@ -31,7 +31,8 @@ matrix:
   vars:
     # Modelos pequenos
     # q4: qwen3.5-4b  # removed Oct 11 2026 — qwen3.5-4b aposentado por decreto user (agents-a1-4b assume como padrão); handle órfão crasha config
-    a1: agents-a1-4b  # novo padrão pequeno da casa (Oct 11 2026)
+    # a1: agents-a1-4b  # OUTROU em Oct 12 2026 — régua disk N=5 fechada 124.4 (std 12.66; 03 zerado 1x, 01 tool_use 0 nas 5) — neohorse assumiu o trono 4B com dados (137.8)
+    neo4: neohorse-1-4b  # DE VOLTA Oct 12 2026 — barganha disk: neohorse 137.8 > qwen 136.8 > a1 124.4 (o 4B da casa)
     # q4x: qwen3.5-4b-262k  # disabled Sep 20 2026 — user: cafe fica pros MoEs, 4B segue no prod upstream/ik; ctx alto não importa nesse modelo
     # m5a: minicpm5-1b-agentic  # disabled
     # lfm8: lfm2.5-8b-a1b  # REMOVED Sep 10 2026 — GGUF deleted (bench 16/105, user confia no 2.6b); fragment em _removed/
@@ -55,6 +56,10 @@ matrix:
     # uocr: unlimited-ocr  # disabled Aug 2026 — unused
     # qwvl: qwen3-vl-4b  # REMOVED Sep 10 2026 — GGUF deleted (A/B lfm2.5-vl-3b pendente pro enhance do H3); fragment em _removed/
     lfmvl3: lfm2.5-vl-3b
+    # MiniCPM-V 4.7 (out/2026): denso 1B (Q8_0, ~2.2GB VRAM) + MoE 35B-A3B (mix oficial, experts RAM)
+    # EXIGE llama.cpp pós-PR #29416 (M-RoPE canvas: rope.section_order) — vanilla rebased 12/Out; ik/cafe SEM suporte ainda
+    mcv1: minicpm-v-4.7-1b
+    mcv35: minicpm-v-4.7-35b
     # g4: gemma4-e2b  # REMOVED Sep 10 2026 — GGUF QAT deleted (maturidade em outros modelos); fragment em _removed/
     # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
     # Pesados (offload)
@@ -104,22 +109,22 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(a1 | lfm26 | twp) & (nemb | lfmcol | eg2)"
+    small_vision: "(neo4 | lfm26 | twp) & (nemb | lfmcol | eg2)"
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(a1 | lfm26 | twp) & (nemb | lfmcol | eg2) & k2fim"
+    small_embed: "(neo4 | lfm26 | twp) & (nemb | lfmcol | eg2) & k2fim"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "a1 | lfm26 | twp"  # q4→a1 Oct 11 2026 (aposentadoria qwen3.5-4b)  # gpt2xl+man1 REMOVED Oct 3 2026 (disk)
+    small_only: "neo4 | lfm26 | twp"  # a1→neo4 Oct 12 2026 (a1 disk 124.4, neohorse 137.8 retoma)  # gpt2xl+man1 REMOVED Oct 3 2026 (disk)
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr | lfmvl3"
-    vision_embed: "(ocr | lfmvl3) & (nemb | lfmcol | eg2)"
+    vision_only: "ocr | lfmvl3 | mcv1 | mcv35"
+    vision_embed: "(ocr | lfmvl3 | mcv1 | mcv35) & (nemb | lfmcol | eg2)"
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -152,6 +157,9 @@ matrix:
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
+    # MiniCPM-V 4.7: barato de recarregar (1B 2.2GB GPU; 35B MoE ~11GB RAM, page cache)
+    mcv1: 2
+    mcv35: 4
     # orn15: 9  # merged no heretic 05/10
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     # q36: 9  # REMOVED Oct 8 2026 — model disabled
@@ -165,14 +173,15 @@ matrix:
     # q38g: 8  # removed Sep 20 2026
     # bonsai: 8  # removed Sep 20 2026
     # bonsai2: 9  # re-instalado Oct 10 2026 — handle inativo até bench; 27B denso denso = caro de recarregar
-    # neo4: 2  # removed Oct 11 2026 junto do modelo
+    neo4: 2  # DE VOLTA Oct 12 2026 — neohorse retomou (o assento e o custo)
+    # a1: 2  # OUTDO Oct 12 2026 (régua disk fechada 124.4)
     # g4: 3  # REMOVED Sep 10 2026 — model deleted
     ttsext: 4
     ocr: 3
     # qwvl: 3  # REMOVED Sep 10 2026
     lfmvl3: 3
     # q4: 2  # removed Oct 11 2026 junto do modelo (aposentadoria qwen3.5-4b)
-    a1: 2  # novo padrão pequeno
+    # a1: 2  # OUTDO Oct 12 2026 — régua disk 124.4 fechada; neohorse retomou
     # q4x: 2  # disabled Sep 20 2026
     # lfm8: 2  # REMOVED Sep 10 2026
     lfm26: 2
