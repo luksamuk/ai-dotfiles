@@ -6,6 +6,19 @@ Some configuration for OpenCode.
   agents (build, fix, plan, review, research, explore, debug), MCP servers, and plugins.
 - ~AGENTS.template.md~: Extra snippets for an eventual ~AGENTS.md~ file.
 
+* MCP Servers (~mcp.servers~)
+
+- =searxng=: *remote* MCP no Sisyphus (=http://192.168.3.8:8899/mcp=), =oauth: false=,
+  auth =Authorization: Bearer {env:SEARXNG_MCP_TOKEN}=. Token exportado no ~.zshrc~
+  (NUNCA versionado). =opencode run= resolve ={env:VAR}= no processo cliente —
+  sessões lançadas de shell sem o export levam 401 no searxng.
+- =linear=: local via =npx mcp-remote= (OAuth próprio do OpenCode).
+- =rea=: local via =npx rea-agents@6.2.0= (Hopper).
+
+Nota: =opencode mcp list= só lista servidores com OAuth; servers remotos com
+Bearer header aparecem "não configurados" mesmo conectados. Verificação real:
+=opencode run= chamando a tool (ex.: =searxng_web_search=).
+
 * Model Configuration Notes
 
 ** Vision (~modalities~)
