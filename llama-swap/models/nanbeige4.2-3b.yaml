@@ -1,17 +1,19 @@
 nanbeige4.2-3b:
   name: Nanbeige 4.2 3B
   description: Nanbeige's 3B generalist chat model. 65K practical context (262K nominal).
-  cmd: '${llama_server} --port ${PORT}
+  cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/nanbeige4.2-3b/nanbeige4.2-3b-Q4_K_M.gguf
 
     --jinja
 
-    --fit on
+    --fit
 
     --parallel 1
 
-    --ctx-size 65536
+    --ctx-size 131072
+
+    -nkvo
 
     --temp 0.6
 
@@ -59,11 +61,11 @@ nanbeige4.2-3b:
     - text
     tools: true
     reranker: false
-    context: 65536
+    context: 131072
   metadata:
     size: ~2.4 GB (Q4_K_M)
-    context: 65536
-    vram_usage: ~5.3 GB VRAM
+    context: 131072
+    vram_usage: ~2.4 GB model (GPU) + ~6.6 GB KV q4_0 @131K (RAM via -nkvo) + compute
     source: owao/Nanbeige4.2-3B-GGUF (Q4_K_M)
     kv_cache: q4_0/q4_0
     features:
@@ -80,7 +82,12 @@ nanbeige4.2-3b:
     context_length: 262144
     embedding_length: 3072
     quantization: Q4_K_M
-    note: 'vram detalhe: ~2.4 GB model + ~2.9 GB q4_0 KV @ 65K + compute | model 2.4GB
-      Q4_K_M + q4_0 KV ~2.9GB @65K + compute Looped Transformer (22 layers x2 loops
-      = 44 effective). Upstream llama.cpp (PR #25994). Multi-turn tool calling FIXED
-      vs 4.1 (#22684). Thinking toggle via enable_thinking.'
+    note: 'MIGRACAO IK @131K (15/out, sondagem deleg_289362fb): nativo e 262K
+      (theta 70M, sem rope scaling; 131K fica DENTRO da janela treinada — zero
+      risco RoPE). GGUF owao Q4_K_M ja declara context_length 262144; cap 65K
+      antigo era de VRAM, nao do modelo. IK PR #2590 (merged, checkout local
+      13/out) = KV por camada logica (looped, 22x2=44 efetivas; KV q4_0 @131K
+      ~6.6GB vira RAM via -nkvo; modelo 2.4GB fica GPU). Upstream nanbeige =
+      PR #25994. YaRN >262K: org diz nao avaliado — nao usar. Pendente: smoke
+      duplo (chat + tool-call) + needle @131K no ik antes de fechar. Regra ik:
+      --fit sem "on"; sem --fit-ctx/--fit-target (usar --fit-margin).'

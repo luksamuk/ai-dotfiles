@@ -99,7 +99,9 @@ ORIGINAL_ORDER = [
     "smolvlm2-500m-video",  # ✅ ultra-light video VLM
     "lfm2.5-vl-1.6b",       # ✅ LFM flagship VLM with grounding
     "athenas-symbiote-9b",  # ✅ Qwen3.5-9B LoRA PT-BR legal (OAB/ENEM)
-    "nanbeige4.2-3b",        # ✅ Nanbeige 4.2 3B — Looped Transformer, nanbeige-llama.cpp fork
+    "nanbeige4.2-3b",        # ✅ Nanbeige 4.2 3B — Looped Transformer; ik @131K Oct 15 2026 (nativo 262K, KV q4_0 na RAM via -nkvo, PR ik #2590)
+    "nemotron-bolt-74b",     # EXPERIMENTO Oct 15 2026 — Nemotron 3.5 Bolt 74B-A9B IQ2 QAT, vanilla server + -ncmoe 88 (tweet-referência 24 t/s em 3060 12GB); criterio <10 t/s ou OOM = delete
+    "twil-lm3-pro",          # Oct 15 2026 — smoke pendente (user: "não agrega mas precisa smoke")
     # "mellum2-12b-thinking",   # DISABLED: tool calling broken (no chat_template in GGUF, --tool-call-parser hermes is vLLM-only). Awaiting community GGUF.
     # "ornstein-36-35b",        # DISABLED: Q4_K_M too large (21.7GB) — needs APEX I-Compact conversion (~16.1GB)
     "nomic-embed-text-v2-moe",  # ✅ Embedding (CPU-only, Q4_K_M)
