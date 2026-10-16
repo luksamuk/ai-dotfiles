@@ -123,6 +123,10 @@ def print_list() -> None:
         backend = info.get("backend_type", "")
         if backend == "hidream":
             p = Path.home() / ".llama-models" / model_dir
+        elif backend == "flux3_wan2gp":
+            # Weights live in the WanGP ckpts/ tree, not in diffuse models/
+            wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
+            return (wgp / "flux3_image_klein_sd_int8_convrot.safetensors").exists()
         else:
             p = MODELS_DIR / model_dir
         return p.exists() and any(p.iterdir()) if p.exists() else False
