@@ -10,7 +10,9 @@ bonsai2-9b:
 
     --port ${PORT}
 
-    -m ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-PTQ1_0.gguf
+    -m ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf
+
+    --spec-type draft-mtp --spec-draft-n-max 2 --spec-draft-n-min 0 --spec-draft-p-min 0
 
     --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf --no-mmproj-offload
 
@@ -32,7 +34,7 @@ bonsai2-9b:
     reranker: false
     context: 131072
   metadata:
-    size: 2.0 GB DiT (PTQ1_0) + 0.62 GB mmproj Q8_0
+    size: 2.68 GB DiT (PQ2_0-MTP-Q8_0, draft head built-in) + 0.62 GB mmproj Q8_0
     context: 131072
     vram_usage: ~3.4 GB total c/ desktop (ngl 99)
     source: prism-ml/Ternary-Bonsai-2-9B-gguf (PTQ1_0 + mmproj Q8_0)
@@ -51,7 +53,7 @@ bonsai2-9b:
     context_length: 131072
     embedding_length: 0
     quantization: ptq1_0 (1.71-bit block-scale ternary, kernels PrismML)
-    note: 'SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 66.2 t/s decode. Maior da família ternary 2026; o 27B antigo (bonsai-27b-1bit, Q1_0 upstream) rodava 60/75 na régua PTQ — este 9B tem mais compute por token (thinking).'
+    note: 'SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 66.2 t/s (PTQ1_0 puro) / 89.5 t/s (PQ2_0-MTP, spec decode draft 2) / 89.5 copy-heavy. Maior da família ternary 2026; o 27B antigo (bonsai-27b-1bit, Q1_0 upstream) rodava 60/75 na régua PTQ — este 9B tem mais compute por token (thinking).'
     caveats:
     - 'Exige LD_LIBRARY_PATH do build do fork Prism'
     - 'Thinking model: reasoning longo'
