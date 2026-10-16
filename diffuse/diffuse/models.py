@@ -129,29 +129,8 @@ MODELS: dict[str, dict] = {
             {"name": "mmproj-qwen3vl_8b_heretic-f16.gguf (vision, for --edit)", "path": "qwen-image-2.1/text_encoder_heretic/mmproj-qwen3vl_8b_heretic-f16.gguf", "size_gb": 1.2},
         ],
     },
-    # Qwen-Image 2.1 Viggle Turbo (distilled DiT, 6 steps, cfg=1.0, custom sigmas).
-    # Same dir/VAE/encoder as qwen-image-2.1; DiT swapped by the loader (model_name
-    # ends in "-viggle-turbo" -> qwen_image_2.1_turbo_Q6_K.gguf). Source: Abiray GGUF quants.
-    # RENAMED 09/10: "-turbo" now belongs to the OFFICIAL Alibaba turbo; Viggle keeps
-    # "-viggle-turbo" (user decision — official wins the canonical short name).
-    "qwen-image-2.1-viggle-turbo": {
-        "backend_id": "qwen-image-2.1-sd-cpp",
-        "dir": "qwen-image-2.1",
-        "backend_type": "qwen21_sd_cpp",
-        "category": "image",
-        "bits": "Q6_K GGUF (Viggle Turbo v0.3 distill, merged fp32→quant)",
-        "description": "Qwen-Image 2.1 Viggle Turbo — 6 steps, cfg=1.0, pinned sigmas; T2I + editing",
-        "enhance_model": "ornith-1.5-35b-heretic",
-        "enhance_type": "qwen21",
-        "default_size": (1024, 1024),
-        "components": [
-            {"name": "qwen_image_2.1_turbo_Q6_K.gguf (DiT, Viggle Turbo v0.3 6-step)", "path": "qwen-image-2.1/qwen_image_2.1_turbo_Q6_K.gguf", "size_gb": 5.6},
-        ],
-        "hf_files": [
-            {"repo": "Viggle/Qwen-Image-2.1-viggle-turbo",
-             "files": ["Qwen-Image-2.1-viggle-turbo-v0.3-6step-Q6_K.gguf"]},
-        ],
-    },
+    # Qwen-Image 2.1 Viggle Turbo REMOVIDO 15/out (user: "nós removemos ele")
+    # — entry do diffuse registry fora; fragment do swap em _disabled/.
     # Qwen-Image 2.1 TURBO OFICIAL (Alibaba distill, 09/10) — 8 steps, cfg=1.0,
     # sd-cli-native custom sigmas (AtomicChat card, built/checked w/ stable-diffusion.cpp).
     # Same dir/VAE/TE heretic as qwen-image-2.1; DiT swapped by the loader (model_name
@@ -266,6 +245,30 @@ MODELS: dict[str, dict] = {
             {"name": "pig_mageflow_vae_fp32-f16.gguf (VAE)", "path": "mageflow-edit-turbo/pig_mageflow_vae_fp32-f16.gguf", "size_gb": 0.33},
             {"name": "Qwen3VL-4B-Instruct-Q4_K_M.gguf (text encoder)", "path": "mageflow-edit-turbo/Qwen3VL-4B-Instruct-Q4_K_M.gguf", "size_gb": 2.4},
             {"name": "mmproj-Qwen3VL-4B-Instruct-F16.gguf (vision encoder)", "path": "mageflow-edit-turbo/mmproj-Qwen3VL-4B-Instruct-F16.gguf", "size_gb": 0.8},
+        ],
+    },
+    # FLUX 3 Image Klein (sd-cli / stable-diffusion.cpp — PR #2143, master-968)
+    # 5.6B BFL, 15/out. Destilado: 16 steps, cfg 1.0, euler. T2I + edição
+    # pixel-perfect + multi-ref (até 10 imgs). TE = Qwen3-VL-4B (txt_in espera
+    # 20480 = out_layers (4,8,12,16,20,24,28,32) x 2560; o Heretic-8B da casa
+    # emite 4096/layer → incompatível sem patch no conditioner). DiT fp8r
+    # 6.07 GB device NÃO cabe na 3050 6GB (graph 1-segment no sd_cpp) — rota
+    # CPU-padrão (~67 s/it, ~19 min/1MP). NSFW suprimido no treino (red team):
+    # casa usa qwen-image-2.1 para NSFW e Klein para texto-fino SFW/edição.
+    "flux-3-image-klein": {
+        "backend_id": "flux3-image-klein-sd-cpp",
+        "dir": "flux-3-image-klein",
+        "backend_type": "flux3_sd_cpp",
+        "category": "image",
+        "bits": "FP8 re-quant (BFL) — DiT 6.0 GB",
+        "description": "FLUX 3 Klein — 5.6B destilado (16 steps cfg 1.0), best-in-class text-render, edição pixel-perfect, multi-ref até 10; SFW",
+        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_type": "vision",
+        "default_size": (1024, 1024),
+        "components": [
+            {"name": "klein_fp8r_model.safetensors (DiT)", "path": "flux-3-image-klein/klein_fp8r_model.safetensors", "size_gb": 6.3},
+            {"name": "klein_ae.safetensors (VAE)", "path": "flux-3-image-klein/klein_ae.safetensors", "size_gb": 0.3},
+            {"name": "qwen3vl-4b-Q4_K_M.gguf (text encoder)", "path": "flux-3-image-klein/qwen3vl-4b-Q4_K_M.gguf", "size_gb": 2.5},
         ],
     },
 }

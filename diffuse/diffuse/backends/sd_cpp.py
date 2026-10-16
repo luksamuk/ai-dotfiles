@@ -52,6 +52,8 @@ def load_pipeline_sd_cpp(model_name: str) -> tuple:
         return load_pipeline_sd_cpp_mageflow(model_name, model_root, sd_cli)
     if backend_type == "qwen21_sd_cpp":
         return load_pipeline_sd_cpp_qwen21(model_name, model_root, sd_cli)
+    if backend_type == "flux3_sd_cpp":
+        return load_pipeline_sd_cpp_flux3(model_name, model_root, sd_cli)
 
     lora_dir = model_root / "lora"
     config = {
@@ -134,13 +136,10 @@ def load_pipeline_sd_cpp_qwen21(model_name: str, model_root: Path, sd_cli: str) 
     The text encoder is 4.68 GiB, which does not fit alongside the DiT on a 6 GB
     card, so the text encoder must run on CPU.
     """
-    # Viggle turbo variant: model_name ending in "-turbo" swaps the DiT for the
-    # distilled Viggle Turbo GGUF (6 steps, cfg=1.0, custom sigmas) when present.
-    turbo = model_name.endswith("-viggle-turbo")
-    turbo21 = model_name.endswith("-turbo") and not turbo  # official Alibaba turbo
+    # Viggle Turbo REMOVIDO 15/out — só o turbo oficial Alibaba resta
+    turbo21 = model_name.endswith("-turbo")  # official Alibaba turbo
     dit_gguf = model_root / (
-        "qwen_image_2.1_turbo_Q6_K.gguf" if turbo
-        else "qwen-image-2.1-turbo-Q4_K_M.gguf" if turbo21
+        "qwen-image-2.1-turbo-Q4_K_M.gguf" if turbo21
         else "qwen-image-2.1-Q4_K_M.gguf"
     )
     vae_path = model_root / "vae" / "qwen_image_2.1_vae_bf16.safetensors"
@@ -182,6 +181,97 @@ def load_pipeline_sd_cpp_qwen21(model_name: str, model_root: Path, sd_cli: str) 
         config["llm_vision"] = str(mmproj_gguf)
 
     return config, 0.0
+
+
+def load_pipeline_sd_cpp_flux3(model_name: str, model_root: Path, sd_cli: str) -> tuple:
+    """Prepare sd-cli config for FLUX 3 Image Klein. Returns (config_dict, 0.0).
+
+    Klein is distilled: 16 steps, cfg 1.0, euler. TE is Qwen3-VL-4B GGUF
+    (txt_in expects 20480 = out_layers (4,8,12,16,20,24,28,32) x 2560 — the
+    house Heretic-8B emits 4096/layer and does NOT fit the graph, see
+    conditioner.hpp out_layers). DiT fp8 is 6.07 GB device for a single
+    graph segment: on the 6 GB 3050 the denoise stage runs on CPU
+    (--backend diffusion=cpu) as the DEFAULT route.
+    """
+    dit = model_root / "klein_fp8r_model.safetensors"
+    vae = model_root / "klein_ae.safetensors"
+    llm = model_root / "qwen3vl-4b-Q4_K_M.gguf"
+
+    for label, path in [("DiT fp8r", dit), ("VAE", vae), ("TE", llm)]:
+        if not path.exists():
+            raise FileNotFoundError(f"{label} not found: {path}")
+
+    config = {
+        "sd_cli": sd_cli,
+        "diffusion_model": str(dit),
+        "llm": str(llm),
+        "vae": str(vae),
+        "is_flux3": True,
+    }
+    return config, 0.0
+
+
+def generate_image_flux3_sd_cpp(
+    config: dict, prompt: str, seed: int, width: int, height: int,
+    output_path: Path, ref_images: list[str] | None = None,
+    steps: int = 16, cfg_scale: float = 1.0, cpu_fallback: bool = False,
+) -> tuple:
+    """Generate (or edit) via sd-cli with FLUX 3 Klein. Returns (path, wall, 0.0).
+
+    Distilled recipe: 16 steps, cfg 1.0, euler. Reference images = native
+    pixel-perfect editing (up to 10, vision encoder inside the Qwen3-VL GGUF).
+    VRAM reality on the 6 GB 3050: the fp8 DiT needs 6.07 GB device for its
+    single graph segment, so generation runs with the diffusion backend on
+    CPU (~67 s/it measured) while VAE decode stays on GPU.
+    """
+    is_edit = bool(ref_images)
+    log.info(
+        "Generating via sd-cli FLUX 3 Klein %s: seed=%d size=%dx%d steps=%d cfg=%.1f",
+        "edit" if is_edit else "T2I", seed, width, height, steps, cfg_scale,
+    )
+
+    cmd = [
+        config["sd_cli"],
+        "--diffusion-model", config["diffusion_model"],
+        "--llm", config["llm"],
+        "--vae", config["vae"],
+        "-p", prompt,
+        "--cfg-scale", str(cfg_scale),
+        "--steps", str(steps),
+        "--sampling-method", "euler",
+        "--diffusion-fa",
+        "--offload-to-cpu",
+        "-H", str(height),
+        "-W", str(width),
+        "--seed", str(seed),
+        "-o", str(output_path),
+    ]
+    if is_edit:
+        for ref in ref_images:
+            cmd += ["-r", str(ref)]
+
+    # CPU-first: the single-segment fp8 graph (6.07 GB) does not fit beside
+    # the desktop on the 6 GB card. TE=cpu, denoise=cpu, VAE on GPU (18s
+    # measured at 1MP vs minutes on CPU).
+    if not cpu_fallback:
+        cmd += ["--backend", "te=cpu,diffusion=cpu,vae=gpu"]
+
+    t0 = time.perf_counter()
+    rc, output_text = _run_sd_cli_streaming(cmd)
+    wall_time = time.perf_counter() - t0
+
+    if rc != 0:
+        stderr_lines = output_text.strip().split("\n")[-20:]
+        for line in stderr_lines:
+            log.error("sd-cli: %s", line)
+        raise RuntimeError(f"sd-cli failed (rc={rc}). Last error: {stderr_lines[-1] if stderr_lines else 'unknown'}")
+
+    if not output_path.exists():
+        raise FileNotFoundError(f"sd-cli did not produce output: {output_path}")
+
+    file_size_mb = output_path.stat().st_size / (1024 * 1024)
+    log.info("sd-cli completed in %.1fs, output %.2f MiB", wall_time, file_size_mb)
+    return output_path, wall_time, 0.0
 
 
 def generate_image_qwen21_sd_cpp(

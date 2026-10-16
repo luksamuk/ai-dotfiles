@@ -326,12 +326,12 @@ def main() -> None:
         elif backend_type == "zimage_sd_cpp":
             args.steps = 9
         elif backend_type == "qwen21_sd_cpp":
-            if model_name.endswith("-viggle-turbo"):
-                args.steps = 6       # Viggle distill
-            elif model_name.endswith("-turbo"):
+            if model_name.endswith("-turbo"):
                 args.steps = 8       # official Alibaba turbo
             else:
                 args.steps = 40
+        elif backend_type == "flux3_sd_cpp":
+            args.steps = 16          # BFL distilled recipe
         elif backend_type == "agate":
             args.steps = 50
         else:
@@ -375,7 +375,7 @@ def main() -> None:
     # ── Validate --edit (hidream, mageflow, and qwen21 support it) ──
     ref_image_paths = None
     if args.edit:
-        if backend_type not in ("hidream", "mageflow_sd_cpp", "qwen21_sd_cpp"):
+        if backend_type not in ("hidream", "mageflow_sd_cpp", "qwen21_sd_cpp", "flux3_sd_cpp"):
             print(f"  ⚠️  --edit is only supported with hidream, mageflow-edit-turbo or qwen-image-2.1 (got {backend_type})")
             print(f"     Use: diffuse -m hidream-sdnq --edit {args.edit} -p 'instruction'")
             print(f"      or: diffuse -m mageflow-edit-turbo --edit {args.edit} -p 'instruction'")
@@ -422,6 +422,11 @@ def main() -> None:
     # ── Qwen-Image 2.1 early path (T2I + native editing via sd-cli) ──
     if backend_type == "qwen21_sd_cpp":
         _run_qwen21_sd_cpp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
+        return
+
+    # ── FLUX 3 Klein early path (T2I + pixel-perfect editing via sd-cli) ──
+    if backend_type == "flux3_sd_cpp":
+        _run_flux3_sd_cpp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
         return
 
     # ── LLM eviction (free VRAM for diffusion) ──
@@ -1173,6 +1178,101 @@ def _run_mageflow_sd_cpp_edit(
     )
 
 
+def _run_flux3_sd_cpp_image(
+    args,
+    model_name: str,
+    model_info: dict,
+    prompt: str,
+    original_prompt: str,
+    seed: int,
+    width: int,
+    height: int,
+    ref_image_paths: list[str] | None,
+) -> None:
+    """Handle FLUX 3 Klein generation/editing via sd-cli.
+
+    Klein ships distilled: fixed 16 steps, cfg 1.0, euler. Editing takes up
+    to 10 reference images (vision tower lives inside the Qwen3-VL GGUF).
+    On the 6 GB 3050 the fp8 denoise runs on CPU (~67 s/it, ~19 min per
+    1MP image) — the single-segment graph does not fit in VRAM.
+    """
+    from diffuse.backends.sd_cpp import (
+        load_pipeline_sd_cpp,
+        generate_image_flux3_sd_cpp,
+    )
+
+    is_edit = bool(ref_image_paths)
+    steps = args.steps if args.steps is not None else 16
+    guidance = args.cfg if args.cfg is not None else 1.0
+
+    if is_edit:
+        print(f"  \U0001f3a8 FLUX 3 Klein editing: {Path(ref_image_paths[0]).name}")
+        print(f"     Instruction: {prompt[:80] if len(prompt) > 80 else '...' if not prompt else prompt[:80]}")
+    else:
+        print(f"  \U0001f3a8 FLUX 3 Klein T2I")
+    print(f"     {width}x{height}, {steps} steps, cfg={guidance}, seed={seed}")
+
+    # -- Prompt enhancement (vision type, same flow as mageflow) --
+    enhanced = None
+    if args.enhance or args.enhance_with:
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "ornith-1.5-35b-heretic")
+        print(f"\n  \u2728 Enhancing prompt via {enhance_model} (vision mode)...")
+        enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
+        if enhanced and enhanced != prompt:
+            print(f"     Expanded to ({len(enhanced)} chars)")
+            _show_enhanced_if_requested(args, enhanced)
+            prompt = enhanced
+        else:
+            print(f"     \u26a0\ufe0f  Enhancement failed - using raw prompt")
+
+    # Evict LLMs (TE runs on CPU, but nothing else should hold VRAM)
+    running = llama_swap_running_models()
+    if running:
+        print(f"  \U0001f504 Evicting LLM models: {', '.join(running)}")
+        evict_llm()
+        print(f"     VRAM freed for image generation")
+
+    print(f"  [1/3] Loading FLUX 3 Klein pipeline ({model_info['bits']})...")
+    config, load_time = load_pipeline_sd_cpp(model_name)
+    print(f"        sd-cli config ready")
+
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+
+    print(f"  [2/3] {'Editing' if is_edit else 'Generating'} (denoise on CPU, ~19 min/1MP)...")
+    wall_t0 = time.perf_counter()
+    try:
+        output_path, diffusion_time, peak_hbm = generate_image_flux3_sd_cpp(
+            config, prompt, seed, width, height, output_path,
+            ref_images=ref_image_paths, steps=steps, cfg_scale=guidance,
+        )
+    except RuntimeError as e:
+        if "CUDA" in str(e):
+            print(f"  \u26a0\ufe0f  CUDA failed - retrying pure-CPU (this will be slow)...")
+            output_path, diffusion_time, peak_hbm = generate_image_flux3_sd_cpp(
+                config, prompt, seed, width, height, output_path,
+                ref_images=ref_image_paths, steps=steps, cfg_scale=guidance,
+            )
+        else:
+            raise
+    wall_time = time.perf_counter() - wall_t0
+
+    print(f"  [3/3] Done - unloading...")
+
+    save_metadata(
+        model_name, prompt, seed, width, height, steps,
+        0.0, diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+    )
+    print_debrief(
+        model_name, model_info, prompt, seed,
+        width, height, steps, 0.0,
+        diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+        original_prompt=original_prompt,
+    )
+
+
 def _run_qwen21_sd_cpp_image(
     args,
     model_name: str,
@@ -1198,8 +1298,7 @@ def _run_qwen21_sd_cpp_image(
 
     is_edit = bool(ref_image_paths)
     steps = args.steps if args.steps is not None else (
-        6 if model_name.endswith("-viggle-turbo")
-        else 8 if model_name.endswith("-turbo")
+        8 if model_name.endswith("-turbo")
         else 40
     )
     # Qwen's own specification (vLLM Recipes): 40 steps with classifier-free
