@@ -16,7 +16,7 @@ bonsai2-9b:
 
     --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf --no-mmproj-offload
 
-    -ngl 99 -c 131072 -fa on -ctk q8_0 -ctv q8_0
+    -ngl 99 -c 65536 -fa on -ctk q8_0 -ctv q8_0
 
     --host 127.0.0.1 --jinja
 
@@ -32,13 +32,13 @@ bonsai2-9b:
     - text
     tools: true
     reranker: false
-    context: 131072
+    context: 65536
   metadata:
     size: 2.68 GB DiT (PQ2_0-MTP-Q8_0, draft head built-in) + 0.62 GB mmproj Q8_0
-    context: 131072
+    context: 65536
     vram_usage: ~3.4 GB total c/ desktop (ngl 99)
     source: prism-ml/Ternary-Bonsai-2-9B-gguf (PTQ1_0 + mmproj Q8_0)
-    kv_cache: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.4 GB)
+    kv_cache: q8_0 @65536 (262K nativo — subir ctx deixa o rs-cache do MTP sem caber na 6GB) (~0.4 GB)
     features:
       completion: false
       tools: true
@@ -50,10 +50,10 @@ bonsai2-9b:
       image: true
     architecture: qwen35
     parameters: 9000000000
-    context_length: 131072
+    context_length: 65536
     embedding_length: 0
     quantization: ptq1_0 (1.71-bit block-scale ternary, kernels PrismML)
-    note: 'SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 66.2 t/s (PTQ1_0 puro) / 89.5 t/s (PQ2_0-MTP, spec decode draft 2) / 89.5 copy-heavy. Maior da família ternary 2026; o 27B antigo (bonsai-27b-1bit, Q1_0 upstream) rodava 60/75 na régua PTQ — este 9B tem mais compute por token (thinking).'
+    note: 'SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out: PTQ1_0 puro @131K = 66.2 t/s | PQ2_0-MTP (draft 2) @64K = 85.9-89.5 t/s (MTP: +30-35%; @131K com MTP o rs-cache 603MB estoura a 6GB → 64K é o talo prático). Copy-heavy: 89.5. Maior da família ternary 2026; o 27B antigo (bonsai-27b-1bit, Q1_0 upstream) rodava 60/75 na régua PTQ — este 9B tem mais compute por token (thinking).'
     caveats:
     - 'Exige LD_LIBRARY_PATH do build do fork Prism'
     - 'Thinking model: reasoning longo'
