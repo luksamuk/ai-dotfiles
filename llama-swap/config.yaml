@@ -131,6 +131,85 @@ models:
       embedding_length: 2048
       quantization: QAD Q4_0
       note: 'vram detalhe: ~3.9GB VRAM (model 1.55GB + q4_0 KV 131K + compute) | model 1.55GB QAD-Q4_0 + q4_0 KV @131K + compute Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only 8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM in 6GB. QAD (Quantization-Aware Distillation) recovers ~97% of BF16 quality vs native Q4_0. DSpark draft REMOVIDO 07/10: fit quebra c/ draft no build 06/10 (mede sem o draft -> pp buffer OOM -> SIGABRT). Baseline no-draft: 88.5 t/s.'
+  qwen2.5-coder-1.5b-pollard:
+    name: Qwen2.5 Coder 1.5B Pollard
+    description: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct, CPU-only. IQ4_XS with imatrix. FIM native. Code completion on CPU, zero VRAM, coexists with GPU MoE.
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/qwen2.5-coder-1.5b-pollard-new/Qwen2.5-Coder-1.5B-Pollard-v2-IQ4XS-class.gguf
+
+      --jinja
+
+      --parallel 1
+
+      --ctx-size ${completion_ctx}
+
+      --temp 0.7
+
+      --top-p 0.8
+
+      --top-k 20
+
+      --min-p 0.0
+
+      --repeat-penalty 1.1
+
+      --cache-type-k ${small_cache_k}
+
+      --cache-type-v ${small_cache_v}
+
+      --batch-size 512
+
+      --ubatch-size 128
+
+      --spec-type ngram-mod
+
+      --spec-ngram-mod-n-match 24
+
+      --spec-ngram-mod-n-min 48
+
+      --spec-ngram-mod-n-max 64
+
+      --no-webui
+
+      --metrics
+
+      '
+    env:
+    - CUDA_VISIBLE_DEVICES=
+    filters:
+      stripParams: temperature, top_p
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: false
+      reranker: false
+      context: 32768
+    metadata:
+      size: ~824 MB (Pollard IQ4_XS + imatrix)
+      context: 32768
+      vram_usage: 0 (CPU-only)
+      source: PollardWeights/Qwen2.5-Coder-1.5B-Instruct-Pollard (IQ4_XS)
+      kv_cache: q8_0
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: true
+        audio: false
+        image: false
+      architecture: qwen2
+      parameters: 1540000000
+      context_length: 32768
+      embedding_length: 1536
+      quantization: Pollard IQ4_XS
+      note: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE. ngram-mod enabled.
   laguna-xs-2.1:
     name: Laguna XS 2.1
     description: Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. 131K context, -cmoe expert offload.
@@ -814,6 +893,178 @@ models:
       embedding_length: 384
       quantization: BF16
       note: 'vram detalhe: ~0.3 GB VRAM (model 303MB + compute) | model 303MB BF16 + compute Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Lightest judge: 144M, sub-5ms per question expected on GPU.'
+  bonsai2-2b:
+    name: Ternary Bonsai 2B (PTQ1_0)
+    description: PrismML Bonsai-2 2B ternary (1.71-bit block-scale) — 209 t/s GPU. Thinking model. O menor da família.
+    tags:
+    - llm
+    - thinking
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: '${env.HOME}/git/bonsai-llama.cpp-prism/build/bin/llama-server
+
+      --port ${PORT}
+
+      -m ${models_dir}/bonsai2/Ternary-Bonsai-2-2B-PTQ1_0.gguf
+
+      -ngl 99 -c 131072 -fa on -ctk q8_0 -ctv q8_0
+
+      --host 127.0.0.1 --jinja
+
+      '
+    cmdStop: pkill -f 'Bonsai-2-2B'
+    health_check_timeout: 120
+    ttl: 1800
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: 0.43 GB (PTQ1_0 ternary block-scale)
+      context: 131072
+      vram_usage: ~1.7 GB total c/ desktop (ngl 99, tudo na GPU)
+      source: prism-ml/Ternary-Bonsai-2-2B-gguf (PTQ1_0)
+      kv_cache: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.1 GB)
+      features:
+        completion: false
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 2000000000
+      context_length: 131072
+      embedding_length: 0
+      quantization: ptq1_0 (1.71-bit block-scale ternary, kernels PrismML)
+      note: 'SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 209.0 t/s decode. Thinking model (reasoning_content longo). mmproj não baixado pro 2B (só 4B/9B têm).'
+      caveats:
+      - Exige LD_LIBRARY_PATH do build do fork Prism
+      - 'Thinking model: respostas curtas precisam de max_tokens generoso'
+  bonsai2-4b:
+    name: Ternary Bonsai 4B (PTQ1_0)
+    description: PrismML Bonsai-2 4B ternary (1.71-bit block-scale, Qwen3.5-base) — 109 t/s GPU, multimodal (mmproj Q8_0). Thinking model.
+    tags:
+    - llm
+    - thinking
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: '${env.HOME}/git/bonsai-llama.cpp-prism/build/bin/llama-server
+
+      --port ${PORT}
+
+      -m ${models_dir}/bonsai2/Ternary-Bonsai-2-4B-PTQ1_0.gguf
+
+      --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-4B-mmproj-Q8_0.gguf --no-mmproj-offload
+
+      -ngl 99 -c 131072 -fa on -ctk q8_0 -ctv q8_0
+
+      --host 127.0.0.1 --jinja
+
+      '
+    cmdStop: pkill -f 'Bonsai-2-4B'
+    health_check_timeout: 120
+    ttl: 1800
+    capabilities:
+      in:
+      - text
+      - image
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: 0.95 GB DiT (PTQ1_0) + 0.37 GB mmproj Q8_0
+      context: 131072
+      vram_usage: ~2.4 GB total c/ desktop (ngl 99)
+      source: prism-ml/Ternary-Bonsai-2-4B-gguf (PTQ1_0 + mmproj Q8_0)
+      kv_cache: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.2 GB)
+      features:
+        completion: false
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: true
+      architecture: qwen35
+      parameters: 4000000000
+      context_length: 131072
+      embedding_length: 0
+      quantization: ptq1_0 (1.71-bit block-scale ternary, kernels PrismML)
+      note: 'SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 109.6 t/s decode / 166.8 prompt. PQ2_0-MTP testado: 95.4 t/s — mais LENTO que PTQ1_0 puro (o pack PQ2_0 custa mais que o ganho do draft no 4B); MTP descartado neste tamanho. Alvo declarado do teste: bater Qwen3.5-4B (66/75 régua antiga). DFlash2 drafter (1.6GB BF16) em ~/.llama-models/bonsai2/ — spec-decode do fork, wiring futuro. mmproj Q8_0 = visão multimodal de fábrica.'
+      caveats:
+      - Exige LD_LIBRARY_PATH do build do fork Prism
+      - 'Thinking model: reasoning longo, max_tokens generoso'
+      - 3.9 t/s se cair pra CPU (-ngl 0) — sempre ngl 99
+  bonsai2-9b:
+    name: Ternary Bonsai 9B (PTQ1_0)
+    description: PrismML Bonsai-2 9B ternary (1.71-bit block-scale, Qwen3.5-base) — 66 t/s GPU, multimodal (mmproj Q8_0). Thinking model. O maior da família.
+    tags:
+    - llm
+    - thinking
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: '${env.HOME}/git/bonsai-llama.cpp-prism/build/bin/llama-server
+
+      --port ${PORT}
+
+      -m ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf
+
+      --spec-type draft-mtp --spec-draft-n-max 2 --spec-draft-n-min 0 --spec-draft-p-min 0
+
+      --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf --no-mmproj-offload
+
+      -ngl 99 -c 65536 -fa on -ctk q8_0 -ctv q8_0
+
+      --host 127.0.0.1 --jinja
+
+      '
+    cmdStop: pkill -f 'Bonsai-2-9B'
+    health_check_timeout: 120
+    ttl: 1800
+    capabilities:
+      in:
+      - text
+      - image
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 65536
+    metadata:
+      size: 2.68 GB DiT (PQ2_0-MTP-Q8_0, draft head built-in) + 0.62 GB mmproj Q8_0
+      context: 65536
+      vram_usage: ~3.4 GB total c/ desktop (ngl 99)
+      source: prism-ml/Ternary-Bonsai-2-9B-gguf (PTQ1_0 + mmproj Q8_0)
+      kv_cache: q8_0 @65536 (262K nativo — subir ctx deixa o rs-cache do MTP sem caber na 6GB) (~0.4 GB)
+      features:
+        completion: false
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: true
+      architecture: qwen35
+      parameters: 9000000000
+      context_length: 65536
+      embedding_length: 0
+      quantization: ptq1_0 (1.71-bit block-scale ternary, kernels PrismML)
+      note: 'SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out: PTQ1_0 puro @131K = 66.2 t/s | PQ2_0-MTP (draft 2) @64K = 85.9-89.5 t/s (MTP: +30-35%; @131K com MTP o rs-cache 603MB estoura a 6GB → 64K é o talo prático). Copy-heavy: 89.5. Maior da família ternary 2026; o 27B antigo (bonsai-27b-1bit, Q1_0 upstream) rodava 60/75 na régua PTQ — este 9B tem mais compute por token (thinking).'
+      caveats:
+      - Exige LD_LIBRARY_PATH do build do fork Prism
+      - 'Thinking model: reasoning longo'
+      - PQ2_0/MTP variants existem no repo HF — não baixadas
   d1-3b:
     name: Liquid d1-3B
     description: Liquid AI decision model (LFM2 arch) with SigLIP2 vision — choices/scores with calibrated per-type temperatures. 3B params, 32K context.
@@ -967,6 +1218,63 @@ models:
       embedding_length: 1024
       quantization: Q8_0
       note: 'FIX 08/10: -b/-ub 4096 (a imagem lain = 2584 vision tokens > batch 512/2048 default = "input too large" 500). Decision model 600M — text+image ou text+audio (audio via encoder LFM2.5 350M no mmproj). Edge/Jetson class. SEM chat_template no GGUF nem no repo fonte (só via prompt.py próprio) — testar se o llama-server aplica default da família lfm2. Candidate para decision audio. NOT a chat model.'
+  flux-3:
+    name: FLUX 3 Image Klein
+    description: FLUX 3 Klein 5.6B (BFL 15/out) — destilado 16 steps, cfg 1.0. Text-render best-in-class, edição pixel-perfect, multi-ref até 10 imgs. SFW (NSFW suprimido no treino, red team BFL).
+    tags:
+    - image
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /v1/models
+    cmd: '${env.HOME}/git/stable-diffusion.cpp/build/bin/sd-server
+
+      --diffusion-model ${env.HOME}/.flux3/klein_fp8r_model.safetensors
+
+      --vae ${env.HOME}/.flux3/klein_ae.safetensors
+
+      --llm ${env.HOME}/.flux3/qwen3vl-4b-Q4_K_M.gguf
+
+      --offload-to-cpu --backend te=cpu,vae=gpu
+
+      --steps 16 --cfg-scale 1.0 --sampling-method euler --listen-ip 127.0.0.1 --listen-port ${PORT}
+
+      '
+    cmdStop: pkill -f klein_fp8r
+    health_check_timeout: 3600
+    ttl: 3600
+    capabilities:
+      in:
+      - text
+      out:
+      - image
+      tools: false
+      reranker: false
+      context: 0
+    metadata:
+      size: 6.0 GB DiT fp8r + 160 MB VAE + 2.5 GB TE (compartilhado)
+      context: 0
+      vram_usage: 'DENOISE NÃO CABE NA 6GB: DiT fp8 6.07 GB device vs ~5.5 GPU livre (graph 1-segment) — denoise cai p/ CPU ~19 min/1MP; VAE/TE em CPU liberariam ainda menos VRAM'
+      source: black-forest-labs/flux-3-image-klein (variants/fp8r) + ae.safetensors + Qwen/Qwen3-VL-4B-Instruct-GGUF Q4_K_M
+      kv_cache: n/a
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: true
+      architecture: flux-3-image-klein
+      parameters: 5600000000
+      context_length: 0
+      embedding_length: 0
+      quantization: fp8_e4m3
+      note: 'Destilado BFL: 16 steps, cfg 1.0, euler (a base seriam 20 steps cfg 3.5). TE = Qwen3-VL-4B — o Heretic-8B da casa NÃO serve (txt_in espera 20480 = 8 layers x 2560; o 8B emite 4096/layer). VRAM: graph ainda 1-segment no sd_cpp (master-968) = 6.07 GB device de uma vez; rota CPU ~67 s/it. WanGP (DDM flux3 commit upstream) é a rota GPU futura. NSFW: suprimido no treino — casa usa qwen21 p/ NSFW.'
+      caveats:
+      - TE 2.5 GB RAM em CPU (backend te=cpu)
+      - Denoise na CPU (rota única na 6GB hoje) — ~19 min/1MP
+      - 1 slot de geração por vez
+      - Dimensões múltiplas de 16
   glm-ocr:
     name: GLM-OCR
     description: GLM's vision-language OCR model for complex document understanding and text extraction.
@@ -1001,348 +1309,6 @@ models:
         audio: false
         image: false
       note: 'vram detalhe: ~2GB (model + mmproj + cache) | GLM OCR multimodal: model 0.95GB + mmproj 0.48GB + cache; Q8_0 Specialized OCR model — use prompts like ''OCR'', ''OCR markdown'', ''Table Recognition:''. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.'
-  k2-horizon-3.7b-pollard:
-    name: K2-Horizon 3.7B Pollard
-    description: IFM's dense reasoning model (k2_horizon, text-only) — small sibling of the MoVA family. Fits fully in VRAM at 32K context. Same PEG tool parser.
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/k2-horizon-3.7b/K2-Horizon-3.7B-Pollard-IQ4_XS.gguf
-
-      -ngl 99
-
-      --ctx-size 131072
-
-      --fit
-
-      --fit-margin 512
-
-      --spec-type ngram-mod:n_max=64\,n_min=2\,ngram_size_n=16
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --k-cache-hadamard
-
-      --v-cache-hadamard
-
-      --temp 0.7
-
-      --top-p 0.95
-
-      --reasoning on
-
-      --reasoning-format deepseek
-
-      --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
-
-      --jinja
-
-      --parallel 1
-
-      --parallel-tool-calls
-
-      --cache-type-k ${large_cache_k}
-
-      --cache-type-v ${large_cache_v}
-
-      --flash-attn auto
-
-      --ubatch-size 256
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-    ttl: 60
-    health_check_timeout: 300
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~3.33 GB (Pollard IQ4_XS)
-      context: 131072
-      vram_usage: ~5.0 GB VRAM (model 3.3GB + KV q4_0 ~1.3GB @32K + compute)
-      source: PollardWeights/K2-Horizon-3.7B-Pollard (SHA256 cd2add66...b0403)
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: k2-horizon
-      parameters: 5100000000
-      embedding_length: 2560
-      context_length: 524288
-      quantization: IQ4_XS Pollard
-      note: 'DENSO (general.size_label 5.1B, expert_count 0; 3.7B e o nome de marketing, texto-only, sem mmproj). IQ4_XS +0.14 PPL vs f16 (recomendacao do card do Pollard), imatrix k2_calib.txt. GGUF declara context_length 524288; servimos 32768 (padrao da casa para fragmentos @ik no 6GB). KV: 8 kv-heads x 128 + 36 camadas ~ 41KB/token em q4_0 ~ 1.3GB @32K — cabe em VRAM, --no-kv-offload do 36B desnecessario. Sampling 0.7/0.95 vendor da familia (temp 1.0 leu errado no agentic). --reasoning on sem budget (denso pequeno; add --reasoning-budget se smoke mostrar loop). Tools OTIMISTA (BFCL 50.9 no card da IFM) — smoke test pendente: parser PEG K2 dedicado no ik (COMMON_CHAT_FORMAT_PEG_K2_HORIZON). Sem setParamsByID/:think — sempre-thinking, reasoning_content via --reasoning-format deepseek.'
-  k2-horizon-3.7b-pollard-fim:
-    name: K2-Horizon 3.7B Pollard FIM
-    description: K2-Horizon-3.7B Pollard IQ4_XS, CPU-only FIM lane. Zero VRAM, coexiste com GPU. FIM tokens no vocab (fim_prefix/suffix/middle/pad). Deploy separado de contexto pequeno; spec ngram-mod como o qpoll.
-    tags:
-    - fim
-    - code
-    - cpu
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/k2-horizon-3.7b/K2-Horizon-3.7B-Pollard-IQ4_XS.gguf
-
-      --jinja
-
-      --parallel 1
-
-      --ctx-size 16384
-
-      --cache-type-k ${small_cache_k}
-
-      --cache-type-v ${small_cache_v}
-
-      --temp 0.7
-
-      --top-p 0.8
-
-      --top-k 20
-
-      --min-p 0.0
-
-      --repeat-penalty 1.0
-
-      --cache-type-k ${small_cache_k}
-
-      --cache-type-v ${small_cache_v}
-
-      --batch-size 512
-
-      --ubatch-size 128
-
-      --spec-type ngram-mod
-
-      --spec-ngram-mod-n-match 24
-
-      --spec-ngram-mod-n-min 48
-
-      --spec-ngram-mod-n-max 64
-
-      --no-webui
-
-      --metrics
-
-      '
-    env:
-    - CUDA_VISIBLE_DEVICES=
-    filters:
-      stripParams: temperature, top_p
-    ttl: 300
-    health_check_timeout: 300
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: false
-      reranker: false
-      context: 16384
-    metadata:
-      size: ~3.1 GB (Pollard IQ4_XS, ctx 16K)
-      context: 16384
-      vram_usage: 0 (CPU-only)
-      source: PollardWeights/K2-Horizon-3.7B-Pollard (sha256 cd2add66...b0403)
-      kv_cache: q8_0
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-        insert: true
-        audio: false
-        image: false
-      architecture: k2-horizon
-      parameters: 5100000000
-      context_length: 524288
-      embedding_length: 2560
-      quantization: IQ4_XS Pollard
-      note: 'FIM lane CPU-only do K2-Horizon-3.7B (Pollard IQ4_XS 3.10GiB). Doutrina qpoll: CUDA_VISIBLE_DEVICES vazio, llama_server vanilla, ctx completion_ctx, ngram-mod spec (24/48/64), zero VRAM coexistindo com GPU. FIM tokens no vocab confirmados. Tool-calls OFF (agente vive no k2-horizon-3.7b-pollard GPU; aqui é completion-only).'
-  k2-horizon-36b:
-    name: K2-Horizon MoVA 36B
-    description: 'IFM''s sparse reasoning model — MoE with Mixture-of-Values attention. 4B active params, strong agentic/coding benchmarks, 524K native context. cafe-llama.cpp backend: 131K context, modest RAM/VRAM pressure.'
-    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
-
-      --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-APEX-Mini.gguf
-
-      --jinja
-
-      --parallel 1
-
-      --ctx-size 131072
-
-      --temp 0.7
-
-      --top-p 0.95
-
-      --reasoning on
-
-      --reasoning-format deepseek
-
-      --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
-
-      -cmoe
-
-      -nkvo
-
-      --override-tensor "tok_embd=CPU,attn_v_exps=CPU"
-
-      --cache-type-k ${large_cache_k}
-
-      --cache-type-v ${large_cache_v}
-
-      --flash-attn auto
-
-      -b 512
-
-      -ub 128
-
-      --reasoning-budget 16384
-
-      --reasoning-budget-message "Now answer directly."
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.95
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.95
-    ttl: 1200
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~14.7 GB (APEX-Mini)
-      context: 131072
-      vram_usage: ~4.8 GB VRAM + ~14 GB RAM
-      source: VladHong/K2-Horizon-MoVA-36B-A4B-APEX-Mini-GGUF (SHA256 A0B4FEBE...C74D233C4)
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-      note: 'NORMAL (07/10, cafe 0.75 build 11816): -cmoe + -nkvo + override MANUAL que cobre o MoVA (attn_v_exps=CPU — o regex do -cmoe so cobre ffn_*_exps, o MoVA ~3GB fica na GPU sem o override = OOM @131K). GOTCHA: --no-kv-offload longo NAO desliga o offload no cafe (o KV @131K = 6912MiB tenta GPU = OOM); usar -nkvo curto. decode 14.3 t/s @4.8GB @131K (ub128@b512). KV @131K = 6912MiB fica em CPU RAM via -nkvo (na GPU OOM). APEX-Mini VladHong (imatrix K2-shaped: Q3_K edges, IQ2_S middle, shared/attn precisos). UMA=OOM insurance ONLY. Samplers 0.7/0.95. Reasoning budget 16384. Quirk tool_choice auto: pode planejar calls em texto (re-run ou required resolve). Tool parsing: o cafe usa parser PEG K2 (herdado do upstream #29535) — VALIDAR E2E (o ik tem COMMON_CHAT_FORMAT_PEG_K2_HORIZON dedicado; o cafe pode comportar diferente). FAST variant = k2-horizon-36b-fast (ik @32K, 17.5 t/s, mais pressao). O id k2-horizon-36b era ik @131K antes (17.5 t/s @8K era o medido); promocao do cafe = troca de motor do principal 07/10 (user GO: normal=cafe, fast=ik).'
-      architecture: k2-horizon
-      parameters: 36000000000
-      embedding_length: 7168
-      quantization: APEX-Mini
-  k2-horizon-36b-fast:
-    name: K2-Horizon MoVA 36B (fast)
-    description: 'IFM''s sparse reasoning model — MoE with Mixture-of-Values attention. 4B active params, strong agentic/coding benchmarks. ik_llama.cpp backend: faster decode, more RAM/VRAM pressure.'
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-APEX-Mini.gguf
-
-      -ngl 99
-
-      --override-tensor "ffn_gate_exps=CPU,ffn_down_exps=CPU,ffn_up_exps=CPU,tok_embd=CPU"
-
-      --no-kv-offload
-
-      --ctx-size 32768
-
-      --temp 0.7
-
-      --top-p 0.95
-
-      --reasoning on
-
-      --reasoning-format deepseek
-
-      --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
-
-      --jinja
-
-      --parallel 1
-
-      --parallel-tool-calls
-
-      --cache-type-k ${large_cache_k}
-
-      --cache-type-v ${large_cache_v}
-
-      --flash-attn auto
-
-      --ubatch-size 256
-
-      --reasoning-budget 16384
-
-      --reasoning-budget-message "Now answer directly."
-
-      --metrics
-
-      '
-    env:
-    - GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.95
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.95
-    ttl: 1200
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 32768
-    metadata:
-      size: ~14.7 GB (APEX-Mini)
-      context: 32768
-      vram_usage: ~5.0 GB VRAM + ~14 GB RAM pinned
-      source: VladHong/K2-Horizon-MoVA-36B-A4B-APEX-Mini-GGUF (SHA256 A0B4FEBE...C74D233C4)
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-      note: 'FAST variant (07/10): ik backend @32K ctx, ~17.5 t/s @8K (medido 05/10), pressao maior de RAM/VRAM (user: fast pressiona RAM e VRAM). Manual mapping (--fit FAIL nesta arch): ffn_gate/down/up_exps + tok_embd CPU pinned; MoVA + output na GPU. KV q4_0 ~49KB/token. UMA=OOM insurance ONLY. APEX-Mini VladHong (imatrix K2-shaped). Hadamard K/V REJEITADO (glitches deterministicos no smoke; re-testar). VENENOS: NO_PINNED quebra sampling (fatal, llama-sampling.cpp:745), override attn_v_exps=CUDA0 = 0 ganho + fatal, UMA primario lento. Samplers 0.7/0.95 (model-card temp 1.0 quebrou leitura agentic em Sep). Reasoning budget 16384 (vendor pede effort high, 32K+ queima wall clock). Quirk tool_choice auto: pode planejar calls em texto e nao emitir <ifm|tool_calls> (re-run ou required resolve). Tool parsing: parser PEG dedicado no ik (COMMON_CHAT_FORMAT_PEG_K2_HORIZON) — validado E2E 4/4 calls 05/10. O id k2-horizon-36b @131K ik migrou pra caqui como -fast; o NORMAL @131K = cafe (-cmoe + -nkvo curto + attn_v_exps=CPU override, 14.3 t/s @4.8GB).'
-      architecture: k2-horizon
-      parameters: 36000000000
-      embedding_length: 7168
-      quantization: APEX-Mini
   kokoro-82m:
     name: Kokoro 82M
     description: Native C++ TTS (audio.cpp server, GGUF Q8_0 190MB). 9 languages incl. pt-br, 54+ preset voices, eSpeak-ng G2P. OpenAI-compatible /v1/audio/speech. Cold load ~3s, warm ~0.4s on CUDA.
@@ -1926,65 +1892,6 @@ models:
       - 1 slot de geração por vez (fila de 1 no server)
       - Sem LoRAs fixos no fragment (decreto user) — tags <lora:> manuais funcionam
       - Dimensões múltiplas de 32 (não 16)
-  qwen-image-2.1-viggle-turbo:
-    name: Qwen-Image 2.1 Viggle Turbo (v0.3)
-    description: Qwen-Image 2.1 destilado (6 steps) — mesma geração e edição, ~10x mais rápido. Ideal pra iterar prompts e drafts; pra detalhe final e edição multi-ref, use a base.
-    tags:
-    - image
-    proxy: http://127.0.0.1:${PORT}
-    checkEndpoint: /v1/models
-    cmd: '${env.HOME}/git/stable-diffusion.cpp/build/bin/sd-server
-
-      --diffusion-model ${env.HOME}/git/ai-dotfiles/diffuse/models/qwen-image-2.1/qwen_image_2.1_turbo_Q6_K.gguf
-
-      --vae ${env.HOME}/git/ai-dotfiles/diffuse/models/qwen-image-2.1/vae/qwen_image_2.1_vae_bf16.safetensors
-
-      --llm ${env.HOME}/git/ai-dotfiles/diffuse/models/qwen-image-2.1/text_encoder_heretic/qwen3vl_8b_heretic-Q4_K_M.gguf
-
-      --diffusion-fa --offload-to-cpu --backend te=cpu,vae=gpu
-
-      --lora-model-dir ${env.HOME}/git/ai-dotfiles/diffuse/models/qwen-image-2.1/lora
-
-      --steps 6 --cfg-scale 1.0 --listen-ip 127.0.0.1 --listen-port ${PORT}
-
-      '
-    cmdStop: pkill -f turbo_Q6_K
-    health_check_timeout: 3600
-    ttl: 3600
-    capabilities:
-      in:
-      - text
-      out:
-      - image
-      tools: false
-      reranker: false
-      context: 0
-    metadata:
-      size: 5.6 GB DiT (Viggle v0.3 Q6_K destilado) + 399 MB VAE + 5.0 GB TE (compartilhados)
-      context: 0
-      vram_usage: ~4.9 GB VRAM (DiT GPU, VAE GPU; TE 5 GB em CPU RAM)
-      source: Viggle/Qwen-Image-2.1-viggle-turbo (DiT destilado v0.3 6-step Q6_K) + VAE/TE idênticos à base
-      kv_cache: n/a
-      features:
-        completion: false
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: true
-      architecture: qwen-image-2.1
-      parameters: 7000000000
-      context_length: 0
-      embedding_length: 0
-      quantization: q6_k
-      note: 'DiT destilado Viggle v0.3 (6 steps, cfg 1.0, scheduler default — SEM sigmas custom; alias diffuse = qwen-image-2.1-turbo). Mesmos VAE/TE/lora-dir da base. Painel: 512~48s, 1024~2min. Edição complexa/multi-ref pior que a base (limitação do destilado). SEM LoRAs no painel (decreto); LoRAs de destilação nunca (mistura Viggle+Pruna = proibido no diffuse tb).'
-      caveats:
-      - TE Heretic 5 GB RAM em CPU — server precisa de folga de RAM no host
-      - 1 slot de geração por vez (fila de 1 no server)
-      - Sem LoRAs no fragment (decreto user 08/10) — o diffuse CLI mantém o proprio caminho de LoRA
-      - Dimensões múltiplas de 32 (não 16)
   qwen3-tts:
     name: Qwen3-TTS 0.6B
     description: Text-to-speech native (audio.cpp server, GGUF Q8_0 1.9GB) com voice cloning - biblioteca da casa via voice_presets. Voice library da casa (Lucas, Hermes, Drácula, Alucard, Batman, Bolso, Jarvis, Francisca, Thalita, Finch) via voice_presets. OpenAI-compatible /v1/audio/speech. Language codes por nome (portuguese, english...).
@@ -2038,79 +1945,6 @@ models:
       - Language codes por nome (portuguese) — NÃO pt-br (o pt-br é do kokoro)
       - server-fleet.json obsoleto (o multi-model num server só não roteia via swap)
       - Voz preset não-existente = fallback do modelo (voz default) — o UI lista só os válidos agora
-  saluki-27b:
-    name: Underdog Saluki 27B
-    description: Qwen3.8-27B comprimido pra 7.9 GB (IQ2-mix 2-bit) pela Underdog, foco em tool-calling agentic; visão opcional via add-on.
-    tags:
-    - vis
-    - think
-    - tools
-    proxy: http://127.0.0.1:${PORT}
-    checkEndpoint: /health
-    cmd: '${cafe_server} --host 127.0.0.1 --port ${PORT}
-
-      -m ${models_dir}/saluki-27b/Underdog-Saluki-27B-1.0-IQ2-mix.gguf
-
-      --mmproj ${models_dir}/saluki-27b/mmproj-Q8_0.gguf --no-mmproj-offload
-
-      -ngl 34 -c 65536 -fa on -nkvo --jinja
-
-      --temp 0.6 --top-p 0.95 --top-k 20
-
-      '
-    cmdStop: pkill -f "Saluki-27B-1.0-IQ2"
-    ttl: 900
-    health_check_timeout: 180
-    filters:
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.95
-          top_k: 20
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-          top_k: 20
-    capabilities:
-      in:
-      - text
-      - image
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 65536
-    metadata:
-      size: 7.9 GB (IQ2-mix) + 0.6 GB mmproj
-      context: 65536
-      vram_usage: ~5.5 GB VRAM + ~4.9 GB RAM
-      source: ConwayResearch/Underdog-Saluki-27B-1.0 (base Qwen3.8-27B, Apache 2.0)
-      kv_cache: f16
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 27000000000
-      context_length: 65536
-      embedding_length: 0
-      quantization: iq2_m
-      note: 'Handles: plain = thinking OFF (temp 0.6); :think = ON (temp 0.6, Underdog receita). GOTCHA: setParamsByID tem que ficar DENTRO de filters: (root = ignorado silenciosamente, K2 precedência). Smoke 08/10: cafe 4.7 t/s = vanilla 4.8 (paridade); ctx: 4K-64K free (-nkvo), 128K = server sobe mas requisição morre (OOM no compute do slot, -b/-ub baixos NÃO resolvem); 262K native = inviável (KV ~9GB em RAM); ik ELIMINADO (degenera, template qwen3.5 quebrado + OOM sem unified memory). Tool call OK (get_weather Diamantina). mmproj 629MB na CPU RAM (--no-mmproj-offload, zero VRAM); Vision: mmproj CPU ~35s prefill silver.jpg (1536 vis tok), leitura correta, custo decode zero. -ngl 34 = max com rs cache do hybrid no 6GB (40 OOM); 34/64 layers GPU, resto na CPU RAM; KV 64K em CPU RAM via -nkvo (+2.3GB, custo decode zero medido). Sampling = receita Underdog (0.6/0.95/20).'
-      caveats:
-      - Dense 27B IQ2: 4.6-4.8 t/s (lento p/ cotidiano vs MoE K2 17.5)
-      - Tool calling = foco do refino Underdog; math de competicao ~82-85% do full
-      - mmproj na RAM = ViT prefill ~35s/imagem (gargalo pago so com imagem)
-      - -ngl 34 fixo (rs cache do hybrid estoura 6GB acima de 34)
-      - backend ik NAO suportado (template quebrado)
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
@@ -2188,8 +2022,7 @@ matrix:
     lfm26: lfm2.5-2.6b
     nb42: nanbeige4.2-3b
     twp: twil-lm3-pro
-    k2fim: k2-horizon-3.7b-pollard-fim
-    k2p: k2-horizon-3.7b-pollard
+    qpfim: qwen2.5-coder-1.5b-pollard
     ocr: glm-ocr
     lfmvl3: lfm2.5-vl-3b
     mcv1: minicpm-v-4.7-1b
@@ -2197,7 +2030,6 @@ matrix:
     lfm24: lfm2.5-24b-a2b
     lfm24f: lfm2.5-24b-a2b-fast
     lag: laguna-xs-2.1
-    k2: k2-horizon-36b
     tg: translategemma-4b
     ttsext: qwen3-tts
     lfmemb: lfm2.5-embedding-350m
@@ -2208,12 +2040,12 @@ matrix:
     julia: julia-1
   sets:
     small_vision: (neo4 | lfm26 | twp | lfm24) & (nemb | lfmcol | eg2)
-    small_embed: (neo4 | lfm26 | twp | lfm24) & (nemb | lfmcol | eg2) & k2fim
+    small_embed: (neo4 | lfm26 | twp | lfm24) & (nemb | lfmcol | eg2) & qpfim
     small_only: neo4 | lfm26 | twp | lfm24
     vision_only: ocr | lfmvl3 | mcv1 | mcv35
     vision_embed: (ocr | lfmvl3 | mcv1 | mcv35) & (nemb | lfmcol | eg2)
-    medium: (k2 | lag) & (nemb | lfmcol | eg2)
-    heavy: (k2 | lag | k2p) & (nemb | lfmcol | eg2) & k2fim
+    medium: (lag) & (nemb | lfmcol | eg2)
+    heavy: (lag) & (nemb | lfmcol | eg2)
     translate_only: tg
     tts_external: ttsext
     embed_only: lfmemb & nemb & lfmcol & eg2
@@ -2222,7 +2054,6 @@ matrix:
   evict_costs:
     mcv1: 2
     mcv35: 4
-    k2: 9
     lag: 9
     neo4: 2
     ttsext: 4
@@ -2231,7 +2062,7 @@ matrix:
     lfm26: 2
     lfm24: 6
     twp: 2
-    k2fim: 1
+    qpfim: 1
     lfmemb: 1
     nemb: 1
     eg2: 1

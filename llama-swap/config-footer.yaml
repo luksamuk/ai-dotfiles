@@ -42,8 +42,10 @@ matrix:
     twp: twil-lm3-pro
     # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
-    k2fim: k2-horizon-3.7b-pollard-fim  # substitui o qpoll (aposentado 11/10/2026) — FIM CPU-only
-    k2p: k2-horizon-3.7b-pollard  # GPU agential lane — membro do heavy p/ coexistir c/ k2fim (eviction bug 11/10)
+    qpfim: qwen2.5-coder-1.5b-pollard  # reativado 16/out — FIM CPU-only (k2fim/k2p/k2 _disabled: GGUFs deletados no aperto SSD; restore: mv _disabled → models + vars)
+    # k2fim: k2-horizon-3.7b-pollard-fim  # _disabled 16/out — pesos deletados (aperto SSD)
+    # k2p: k2-horizon-3.7b-pollard  # _disabled 16/out — idem
+    # k2: k2-horizon-36b  # _disabled 16/out — pasta k2-horizon-36b deletada
     # g12p: gemma4-12b-pollard  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%); restore: mv _disabled/ → models/
     # GPT-2 124M — museum piece (2019 original, completion-only, ctx 1024)
     # gpt2: gpt-2-124m  # desativado 17/09 (disk; restore: _disabled)
@@ -75,7 +77,7 @@ matrix:
     # q36hc: MERGED em q36 05/10 (o "-cafe" virou o heretic oficial; o ik é -fast em _disabled/)
     # occ: occamy-1.0  # REMOVED Sep 27 2026 — bench 141.4±4.4 N=5, abaixo do ornith; GGUF deleted 15.4GB; fragment em _removed/
     lag: laguna-xs-2.1
-    k2: k2-horizon-36b  # NORMAL = cafe 0.75 @131K (-cmoe+-nkvo+attn_v_exps override, 14.3 t/s) 07/10; fast = k2-horizon-36b-fast (ik @32K, 17.5) — cafe HERDA a arch após #29535
+    # k2: k2-horizon-36b  # _disabled 16/out — pasta k2-horizon-36b deletada; NORMAL era cafe 0.75 @131K
     # k2h: k2-horizon-7b  # REMOVED Sep 16 2026 — errático em chat (idioma/identidade, tool-loop instável); GGUF a decidir; fragment em _removed/
     # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
     # Bonsai 1-bit disabled Aug 2026 — user request
@@ -115,7 +117,7 @@ matrix:
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(neo4 | lfm26 | twp | lfm24) & (nemb | lfmcol | eg2) & k2fim"
+    small_embed: "(neo4 | lfm26 | twp | lfm24) & (nemb | lfmcol | eg2) & qpfim"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
     small_only: "neo4 | lfm26 | twp | lfm24"  # a1→neo4 Oct 12 2026 (a1 disk 124.4, neohorse 137.8 retoma)  # gpt2xl+man1 REMOVED Oct 3 2026 (disk); lfm24 entra Oct 13
@@ -129,7 +131,7 @@ matrix:
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
-    medium: "(k2 | lag) & (nemb | lfmcol | eg2)" # q36 REMOVED Oct 8 2026 — aposentado (user decision); qc30 REMOVED Oct 6 2026 — coder aposentado; g12p REMOVED Oct 1 — disk
+    medium: "(lag) & (nemb | lfmcol | eg2)" # k2 _disabled 16/out (pesos deletados); q36 REMOVED Oct 8 2026 — aposentado (user decision); qc30 REMOVED Oct 6 2026 — coder aposentado; g12p REMOVED Oct 1 — disk
 
     # Modelos pesados (offload) + Embedding/Reranker + CPU completion
     # qw38 removed Aug 2026 — model disabled
@@ -137,7 +139,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(k2 | lag | k2p) & (nemb | lfmcol | eg2) & k2fim" # q36 REMOVED Oct 8 2026 — aposentado; k2 reativado 05/10 APEX-Mini; orn15 merged no heretic; q36hc merged em q36; k2p entra Oct 11 (coexistência GPU+FIM, bug 499)
+    heavy: "(lag) & (nemb | lfmcol | eg2)" # k2/k2p/k2fim _disabled 16/out (pesos deletados); q36 REMOVED Oct 8 2026 — aposentado; orn15 merged no heretic
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -164,7 +166,7 @@ matrix:
     # orn15: 9  # merged no heretic 05/10
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     # q36: 9  # REMOVED Oct 8 2026 — model disabled
-    k2: 9
+    # k2: 9  # _disabled 16/out (pesos deletados)
     # qc30: 7  # REMOVED Oct 06 2026
     # occ: 9  # REMOVED Sep 27 2026 — model deleted
     lag: 9
@@ -191,7 +193,7 @@ matrix:
     twp: 2
     # eq2: 2  # REMOVED Sep 10 2026
     # eq4: 3  # REMOVED Sep 10 2026
-    k2fim: 1
+    qpfim: 1
     # g12p: 3  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%)
     # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
     # gpt2xl: 3  # DISABLED Oct 3 2026 - gpt2xl removido
