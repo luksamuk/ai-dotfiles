@@ -255,7 +255,8 @@ MODELS: dict[str, dict] = {
     # 6.07 GB device NÃO cabe na 3050 6GB (graph 1-segment no sd_cpp) — rota
     # CPU-padrão (~67 s/it, ~19 min/1MP). NSFW suprimido no treino (red team):
     # casa usa qwen-image-2.1 para NSFW e Klein para texto-fino SFW/edição.
-    "flux-3-image-klein": {
+    # dir continua "flux-3-image-klein" no disco (pesos linkados); handle curto no registry
+    "flux-3": {
         "backend_id": "flux3-image-klein-sd-cpp",
         "dir": "flux-3-image-klein",
         "backend_type": "flux3_sd_cpp",
