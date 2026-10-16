@@ -1,6 +1,6 @@
 bonsai2-9b:
   name: Ternary Bonsai 9B (PTQ1_0 @131K, full-context)
-  description: "PrismML Bonsai-2 9B ternary (1.71-bit block-scale, Qwen3.5-base) — lane de contexto máximo: 131K sem drafter (~60-66 t/s). Multimodal (mmproj Q8_0). Thinking model. Exceção da frota: prioriza contextWindow sobre velocidade."
+  description: 'PrismML Bonsai-2 9B ternary (1.71-bit block-scale, Qwen3.5-base) — lane de contexto máximo: 131K sem drafter (~60-66 t/s). Multimodal (mmproj Q8_0). Thinking model. Exceção da frota: prioriza contextWindow sobre velocidade.'
   tags:
   - llm
   - thinking
@@ -36,7 +36,7 @@ bonsai2-9b:
     context: 131072
     vram_usage: ~3.4-3.9 GB total (ngl 99 @131K, sem rs-cache do MTP)
     source: prism-ml/Ternary-Bonsai-2-9B-gguf (PTQ1_0 + mmproj Q8_0)
-    kv_cache: q8_0 @131072 (262K nativo; PTQ1_0 puro não tem rs-cache — 131K cabe onde o MTP estoura)
+    kv_cache: q8_0 @131072
     features:
       completion: false
       tools: true
@@ -45,13 +45,30 @@ bonsai2-9b:
       embedding: false
       insert: false
       audio: false
-      image: true
+      image: false
     architecture: qwen35
     parameters: 9000000000
     context_length: 131072
     embedding_length: 0
-    quantization: ptq1_0 (1.71-bit block-scale ternary, kernels PrismML)
-    note: 'SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). DUPLO-DEPLOY 16/out (pedido do dono): bonsai2-9b = PTQ1_0 puro @131K SEM drafter (context first, 66.2 t/s medidos; PTQ1_0 sem rs-cache engole o 131K que o MTP OOMa) | bonsai2-9b:fast = PQ2_0-MTP draft 2 @64K (speed first, 83-90 t/s, draft acceptance 87.9%; copy-heavy 89.5).'
+    quantization: PTQ1_0
+    note: 'kv detalhe: q8_0 @131072 (262K nativo; PTQ1_0 puro não tem rs-cache — 131K cabe onde o MTP estoura). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). DUPLO-DEPLOY 16/out (pedido do dono): bonsai2-9b = PTQ1_0 puro @131K SEM drafter (context first, 66.2 t/s medidos; PTQ1_0 sem rs-cache engole o 131K que o MTP OOMa) | bonsai2-9b:fast = PQ2_0-MTP draft 2 @64K (speed first, 83-90 t/s, draft acceptance 87.9%; copy-heavy 89.5).'
     caveats:
-    - 'Exige o fork Prism (PrismML-Eng/llama.cpp branch prism, build ~/git/bonsai-llama.cpp-prism)'
+    - Exige o fork Prism (PrismML-Eng/llama.cpp branch prism, build ~/git/bonsai-llama.cpp-prism)
     - 'Thinking model: reasoning longo'
+  filters:
+    stripParams: temperature, top_p, top_k
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.8
+        top_k: 20
+        presence_penalty: 1.5
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 20
+        presence_penalty: 1.0
