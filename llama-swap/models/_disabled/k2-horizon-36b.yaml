@@ -1,23 +1,19 @@
 k2-horizon-36b:
   name: K2-Horizon MoVA 36B
-  description: K2-Horizon-MoVA-36B-A4B Q3_K_M. 36B MoE (100 experts, 8 ativos) + MoVA
-    (64 value-experts, top-4) no caminho de V. k2-horizon arch. Reasoning model (thinking
-    em reasoning_content). Text-only.
-  cmd: '${ik2_llama_server} --port ${PORT}
+  description: "IFM's sparse reasoning model — MoE with Mixture-of-Values attention.
+    4B active params, strong agentic/coding benchmarks, 524K native context.
+    cafe-llama.cpp backend: 131K context, modest RAM/VRAM pressure."
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
-    --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-Q3_K_M.gguf
+    --model ${models_dir}/k2-horizon-36b/K2-Horizon-MoVA-36B-A4B-APEX-Mini.gguf
 
-    --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
+    --jinja
 
-    -ngl 99
-
-    --override-tensor "ffn_gate_exps=CPU,ffn_down_exps=CPU,ffn_up_exps=CPU,tok_embd=CPU"
-
-    --no-kv-offload
+    --parallel 1
 
     --ctx-size 131072
 
-    --temp 1.0
+    --temp 0.7
 
     --top-p 0.95
 
@@ -25,13 +21,13 @@ k2-horizon-36b:
 
     --reasoning-format deepseek
 
-    --chat-template-kwargs ''{"reasoning_effort":"high"}''
+    --chat-template-file ${templates_dir}/k2-horizon-chat-template.jinja
 
-    --jinja
+    -cmoe
 
-    --parallel 1
+    -nkvo
 
-    --parallel-tool-calls
+    --override-tensor "tok_embd=CPU,attn_v_exps=CPU"
 
     --cache-type-k ${large_cache_k}
 
@@ -39,7 +35,9 @@ k2-horizon-36b:
 
     --flash-attn auto
 
-    --ubatch-size 256
+    -b 512
+
+    -ub 128
 
     --reasoning-budget 16384
 
@@ -48,8 +46,6 @@ k2-horizon-36b:
     --metrics
 
     '
-  env:
-  - GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
   filters:
     stripParams: temperature, top_p
     setParamsByID:
@@ -74,28 +70,30 @@ k2-horizon-36b:
     reranker: false
     context: 131072
   metadata:
-    size: ~17 GB (Q3_K_M)
+    size: ~14.7 GB (APEX-Mini)
     context: 131072
-    vram_usage: ~3.3 GB VRAM
-    source: abenzerps/K2-Horizon-MoVA-36B-A4B-GGUF (SHA256 662610e0)
-    kv_cache: q4_0 + attn_rot
+    vram_usage: ~4.8 GB VRAM + ~14 GB RAM
+    source: VladHong/K2-Horizon-MoVA-36B-A4B-APEX-Mini-GGUF (SHA256 A0B4FEBE...C74D233C4)
+    kv_cache: q4_0/q4_0
     features:
       completion: true
       tools: true
       thinking: true
-      vision: false
-      embedding: false
-      insert: false
-      audio: false
-      image: false
+    note: "NORMAL (07/10, cafe 0.75 build 11816): -cmoe + -nkvo + override MANUAL
+      que cobre o MoVA (attn_v_exps=CPU — o regex do -cmoe so cobre ffn_*_exps,
+      o MoVA ~3GB fica na GPU sem o override = OOM @131K). GOTCHA: --no-kv-offload
+      longo NAO desliga o offload no cafe (o KV @131K = 6912MiB tenta GPU = OOM);
+      usar -nkvo curto. decode 14.3 t/s @4.8GB @131K (ub128@b512). KV @131K = 6912MiB fica em CPU RAM via -nkvo (na GPU OOM). APEX-Mini
+      VladHong (imatrix K2-shaped: Q3_K edges, IQ2_S middle, shared/attn precisos).
+      UMA=OOM insurance ONLY. Samplers 0.7/0.95. Reasoning budget 16384. Quirk
+      tool_choice auto: pode planejar calls em texto (re-run ou required resolve).
+      Tool parsing: o cafe usa parser PEG K2 (herdado do upstream #29535) —
+      VALIDAR E2E (o ik tem COMMON_CHAT_FORMAT_PEG_K2_HORIZON dedicado; o cafe
+      pode comportar diferente). FAST variant = k2-horizon-36b-fast (ik @32K,
+      17.5 t/s, mais pressao). O id k2-horizon-36b era ik @131K antes (17.5 t/s
+      @8K era o medido); promocao do cafe = troca de motor do principal 07/10
+      (user GO: normal=cafe, fast=ik)."
     architecture: k2-horizon
     parameters: 36000000000
-    context_length: 524288
-    quantization: Q3_K_M
-    note: 'vram detalhe: ~3.3GB VRAM + ~16GB RAM pinned (medido @8K no R1; 131K muda
-      só o KV em RAM) Mapeamento manual (--fit falha nesta arch): experts FFN na CPU
-      (pinned), value-experts MoVA + output na GPU, KV em RAM. Flag UMA = seguro anti-OOM
-      apenas. Hadamard K rejeitada (glitches determinísticos; lado V, incl. MoVA,
-      verificado limpo). 131K consome ~24GB de RAM total (incl. sistema) — feche apps
-      pesados. Backend: fork do kassane + patch de vocab anexado. Template: abenzerps
-      (a embutida do IFM pressupõe o parser k2_horizon do fork MBZUAI).'
+    embedding_length: 7168
+    quantization: APEX-Mini
