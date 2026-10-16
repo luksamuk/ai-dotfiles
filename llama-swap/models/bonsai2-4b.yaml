@@ -36,7 +36,7 @@ bonsai2-4b:
     context: 131072
     vram_usage: ~2.4 GB total c/ desktop (ngl 99)
     source: prism-ml/Ternary-Bonsai-2-4B-gguf (PTQ1_0 + mmproj Q8_0)
-    kv_cache: q8_0 @131072
+    kv_cache: q8_0
     features:
       completion: false
       tools: true
@@ -51,7 +51,7 @@ bonsai2-4b:
     context_length: 131072
     embedding_length: 0
     quantization: PTQ1_0
-    note: 'kv detalhe: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.2 GB). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 109.6 t/s decode / 166.8 prompt. PQ2_0-MTP testado: 95.4 t/s — mais LENTO que PTQ1_0 puro (o pack PQ2_0 custa mais que o ganho do draft no 4B); MTP descartado neste tamanho. Alvo declarado do teste: bater Qwen3.5-4B (66/75 régua antiga). DFlash2 drafter (1.6GB BF16) em ~/.llama-models/bonsai2/ — spec-decode do fork, wiring futuro. mmproj Q8_0 = visão multimodal de fábrica.'
+    note: 'kv detalhe: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.2 GB). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 109.6 t/s decode / 166.8 prompt. PQ2_0-MTP testado: 95.4 t/s — mais LENTO que PTQ1_0 puro (o pack PQ2_0 custa mais que o ganho do draft no 4B); MTP descartado neste tamanho. Alvo declarado do teste: bater Qwen3.5-4B (66/75 régua antiga). DFlash2 drafter (1.6GB BF16) em ~/.llama-models/bonsai2/ — spec-decode do fork, wiring futuro. mmproj Q8_0 = visão multimodal de fábrica. Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0).'
     caveats:
     - Exige LD_LIBRARY_PATH do build do fork Prism
     - 'Thinking model: reasoning longo, max_tokens generoso'
@@ -60,15 +60,6 @@ bonsai2-4b:
     stripParams: temperature, top_p, top_k
     setParamsByID:
       ${MODEL_ID}:
-        chat_template_kwargs:
-          enable_thinking: false
-        temperature: 0.7
-        top_p: 0.8
-        top_k: 20
-        presence_penalty: 1.5
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 1.0
         top_p: 0.95
         top_k: 20

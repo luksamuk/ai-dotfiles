@@ -38,7 +38,7 @@ bonsai2-9b-fast:
     context: 32768
     vram_usage: ~3.4-5.6 GB total c/ desktop (ngl 99; rs-cache MTP 603 MB)
     source: prism-ml/Ternary-Bonsai-2-9B-gguf (PQ2_0-MTP-Q8_0 + mmproj Q8_0)
-    kv_cache: q8_0 @32768
+    kv_cache: q8_0
     features:
       completion: false
       tools: true
@@ -52,8 +52,8 @@ bonsai2-9b-fast:
     parameters: 9000000000
     context_length: 32768
     embedding_length: 0
-    quantization: PQ2_0-MTP Q8_0
-    note: 'kv detalhe: q8_0 @65536 (o rs-cache do MTP consome ~0.6 GB extra — 131K OOMa na 6GB c/ desktop). DUPLO-DEPLOY 16/out: fast = MTP draft 2 @64K, 83.5-85.9 t/s normais / 89.5 copy-heavy / 87.9% acceptance (vs 66.2 do PTQ1_0 puro). A lane sem drafter (contexto 131K) é o handle bonsai2-9b. Reload do swap PENDENTE (user testando — só o fragment muda; reload depois, sem stream em voo). ctx 32K (redução pedida 16/out).'
+    quantization: PQ2_0-MTP
+    note: 'kv detalhe: q8_0 @65536 (o rs-cache do MTP consome ~0.6 GB extra — 131K OOMa na 6GB c/ desktop). DUPLO-DEPLOY 16/out: fast = MTP draft 2 @64K, 83.5-85.9 t/s normais / 89.5 copy-heavy / 87.9% acceptance (vs 66.2 do PTQ1_0 puro). A lane sem drafter (contexto 131K) é o handle bonsai2-9b. Reload do swap PENDENTE (user testando — só o fragment muda; reload depois, sem stream em voo). ctx 32K (redução pedida 16/out). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0).'
     caveats:
     - Exige o fork Prism
     - 'Thinking model: reasoning longo'
@@ -62,15 +62,6 @@ bonsai2-9b-fast:
     stripParams: temperature, top_p, top_k
     setParamsByID:
       ${MODEL_ID}:
-        chat_template_kwargs:
-          enable_thinking: false
-        temperature: 0.7
-        top_p: 0.8
-        top_k: 20
-        presence_penalty: 1.5
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 1.0
         top_p: 0.95
         top_k: 20

@@ -36,7 +36,7 @@ bonsai2-9b:
     context: 131072
     vram_usage: ~3.4-3.9 GB total (ngl 99 @131K, sem rs-cache do MTP)
     source: prism-ml/Ternary-Bonsai-2-9B-gguf (PTQ1_0 + mmproj Q8_0)
-    kv_cache: q8_0 @131072
+    kv_cache: q8_0
     features:
       completion: false
       tools: true
@@ -51,7 +51,7 @@ bonsai2-9b:
     context_length: 131072
     embedding_length: 0
     quantization: PTQ1_0
-    note: 'kv detalhe: q8_0 @131072 (262K nativo; PTQ1_0 puro não tem rs-cache — 131K cabe onde o MTP estoura). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). DUPLO-DEPLOY 16/out (pedido do dono): bonsai2-9b = PTQ1_0 puro @131K SEM drafter (context first, 66.2 t/s medidos; PTQ1_0 sem rs-cache engole o 131K que o MTP OOMa) | bonsai2-9b:fast = PQ2_0-MTP draft 2 @64K (speed first, 83-90 t/s, draft acceptance 87.9%; copy-heavy 89.5).'
+    note: 'kv detalhe: q8_0 @131072 (262K nativo; PTQ1_0 puro não tem rs-cache — 131K cabe onde o MTP estoura). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). DUPLO-DEPLOY 16/out (pedido do dono): bonsai2-9b = PTQ1_0 puro @131K SEM drafter (context first, 66.2 t/s medidos; PTQ1_0 sem rs-cache engole o 131K que o MTP OOMa) | bonsai2-9b:fast = PQ2_0-MTP draft 2 @64K (speed first, 83-90 t/s, draft acceptance 87.9%; copy-heavy 89.5). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0).'
     caveats:
     - Exige o fork Prism (PrismML-Eng/llama.cpp branch prism, build ~/git/bonsai-llama.cpp-prism)
     - 'Thinking model: reasoning longo'
@@ -59,15 +59,6 @@ bonsai2-9b:
     stripParams: temperature, top_p, top_k
     setParamsByID:
       ${MODEL_ID}:
-        chat_template_kwargs:
-          enable_thinking: false
-        temperature: 0.7
-        top_p: 0.8
-        top_k: 20
-        presence_penalty: 1.5
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 1.0
         top_p: 0.95
         top_k: 20

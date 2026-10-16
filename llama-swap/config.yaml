@@ -928,7 +928,7 @@ models:
       context: 131072
       vram_usage: ~1.7 GB total c/ desktop (ngl 99, tudo na GPU)
       source: prism-ml/Ternary-Bonsai-2-2B-gguf (PTQ1_0)
-      kv_cache: q8_0 @131072
+      kv_cache: q8_0
       features:
         completion: false
         tools: true
@@ -943,7 +943,7 @@ models:
       context_length: 131072
       embedding_length: 0
       quantization: PTQ1_0
-      note: 'kv detalhe: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.1 GB). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 209.0 t/s decode. Thinking model (reasoning_content longo). mmproj não baixado pro 2B (só 4B/9B têm).'
+      note: 'kv detalhe: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.1 GB). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 209.0 t/s decode. Thinking model (reasoning_content longo). mmproj não baixado pro 2B (só 4B/9B têm). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0).'
       caveats:
       - Exige LD_LIBRARY_PATH do build do fork Prism
       - 'Thinking model: respostas curtas precisam de max_tokens generoso'
@@ -951,15 +951,6 @@ models:
       stripParams: temperature, top_p, top_k
       setParamsByID:
         ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.8
-          top_k: 20
-          presence_penalty: 1.5
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
           temperature: 1.0
           top_p: 0.95
           top_k: 20
@@ -1002,7 +993,7 @@ models:
       context: 131072
       vram_usage: ~2.4 GB total c/ desktop (ngl 99)
       source: prism-ml/Ternary-Bonsai-2-4B-gguf (PTQ1_0 + mmproj Q8_0)
-      kv_cache: q8_0 @131072
+      kv_cache: q8_0
       features:
         completion: false
         tools: true
@@ -1017,7 +1008,7 @@ models:
       context_length: 131072
       embedding_length: 0
       quantization: PTQ1_0
-      note: 'kv detalhe: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.2 GB). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 109.6 t/s decode / 166.8 prompt. PQ2_0-MTP testado: 95.4 t/s — mais LENTO que PTQ1_0 puro (o pack PQ2_0 custa mais que o ganho do draft no 4B); MTP descartado neste tamanho. Alvo declarado do teste: bater Qwen3.5-4B (66/75 régua antiga). DFlash2 drafter (1.6GB BF16) em ~/.llama-models/bonsai2/ — spec-decode do fork, wiring futuro. mmproj Q8_0 = visão multimodal de fábrica.'
+      note: 'kv detalhe: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.2 GB). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 109.6 t/s decode / 166.8 prompt. PQ2_0-MTP testado: 95.4 t/s — mais LENTO que PTQ1_0 puro (o pack PQ2_0 custa mais que o ganho do draft no 4B); MTP descartado neste tamanho. Alvo declarado do teste: bater Qwen3.5-4B (66/75 régua antiga). DFlash2 drafter (1.6GB BF16) em ~/.llama-models/bonsai2/ — spec-decode do fork, wiring futuro. mmproj Q8_0 = visão multimodal de fábrica. Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0).'
       caveats:
       - Exige LD_LIBRARY_PATH do build do fork Prism
       - 'Thinking model: reasoning longo, max_tokens generoso'
@@ -1026,15 +1017,6 @@ models:
       stripParams: temperature, top_p, top_k
       setParamsByID:
         ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.8
-          top_k: 20
-          presence_penalty: 1.5
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
           temperature: 1.0
           top_p: 0.95
           top_k: 20
@@ -1077,7 +1059,7 @@ models:
       context: 131072
       vram_usage: ~3.4-3.9 GB total (ngl 99 @131K, sem rs-cache do MTP)
       source: prism-ml/Ternary-Bonsai-2-9B-gguf (PTQ1_0 + mmproj Q8_0)
-      kv_cache: q8_0 @131072
+      kv_cache: q8_0
       features:
         completion: false
         tools: true
@@ -1092,7 +1074,7 @@ models:
       context_length: 131072
       embedding_length: 0
       quantization: PTQ1_0
-      note: 'kv detalhe: q8_0 @131072 (262K nativo; PTQ1_0 puro não tem rs-cache — 131K cabe onde o MTP estoura). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). DUPLO-DEPLOY 16/out (pedido do dono): bonsai2-9b = PTQ1_0 puro @131K SEM drafter (context first, 66.2 t/s medidos; PTQ1_0 sem rs-cache engole o 131K que o MTP OOMa) | bonsai2-9b:fast = PQ2_0-MTP draft 2 @64K (speed first, 83-90 t/s, draft acceptance 87.9%; copy-heavy 89.5).'
+      note: 'kv detalhe: q8_0 @131072 (262K nativo; PTQ1_0 puro não tem rs-cache — 131K cabe onde o MTP estoura). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). DUPLO-DEPLOY 16/out (pedido do dono): bonsai2-9b = PTQ1_0 puro @131K SEM drafter (context first, 66.2 t/s medidos; PTQ1_0 sem rs-cache engole o 131K que o MTP OOMa) | bonsai2-9b:fast = PQ2_0-MTP draft 2 @64K (speed first, 83-90 t/s, draft acceptance 87.9%; copy-heavy 89.5). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0).'
       caveats:
       - Exige o fork Prism (PrismML-Eng/llama.cpp branch prism, build ~/git/bonsai-llama.cpp-prism)
       - 'Thinking model: reasoning longo'
@@ -1100,15 +1082,6 @@ models:
       stripParams: temperature, top_p, top_k
       setParamsByID:
         ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.8
-          top_k: 20
-          presence_penalty: 1.5
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
           temperature: 1.0
           top_p: 0.95
           top_k: 20
@@ -1153,7 +1126,7 @@ models:
       context: 32768
       vram_usage: ~3.4-5.6 GB total c/ desktop (ngl 99; rs-cache MTP 603 MB)
       source: prism-ml/Ternary-Bonsai-2-9B-gguf (PQ2_0-MTP-Q8_0 + mmproj Q8_0)
-      kv_cache: q8_0 @32768
+      kv_cache: q8_0
       features:
         completion: false
         tools: true
@@ -1167,8 +1140,8 @@ models:
       parameters: 9000000000
       context_length: 32768
       embedding_length: 0
-      quantization: PQ2_0-MTP Q8_0
-      note: 'kv detalhe: q8_0 @65536 (o rs-cache do MTP consome ~0.6 GB extra — 131K OOMa na 6GB c/ desktop). DUPLO-DEPLOY 16/out: fast = MTP draft 2 @64K, 83.5-85.9 t/s normais / 89.5 copy-heavy / 87.9% acceptance (vs 66.2 do PTQ1_0 puro). A lane sem drafter (contexto 131K) é o handle bonsai2-9b. Reload do swap PENDENTE (user testando — só o fragment muda; reload depois, sem stream em voo). ctx 32K (redução pedida 16/out).'
+      quantization: PQ2_0-MTP
+      note: 'kv detalhe: q8_0 @65536 (o rs-cache do MTP consome ~0.6 GB extra — 131K OOMa na 6GB c/ desktop). DUPLO-DEPLOY 16/out: fast = MTP draft 2 @64K, 83.5-85.9 t/s normais / 89.5 copy-heavy / 87.9% acceptance (vs 66.2 do PTQ1_0 puro). A lane sem drafter (contexto 131K) é o handle bonsai2-9b. Reload do swap PENDENTE (user testando — só o fragment muda; reload depois, sem stream em voo). ctx 32K (redução pedida 16/out). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0).'
       caveats:
       - Exige o fork Prism
       - 'Thinking model: reasoning longo'
@@ -1177,15 +1150,6 @@ models:
       stripParams: temperature, top_p, top_k
       setParamsByID:
         ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.8
-          top_k: 20
-          presence_penalty: 1.5
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
           temperature: 1.0
           top_p: 0.95
           top_k: 20
