@@ -1,0 +1,58 @@
+bonsai2-4b:
+  name: Ternary Bonsai 4B (PTQ1_0)
+  description: PrismML Bonsai-2 4B ternary (1.71-bit block-scale, Qwen3.5-base) — 109 t/s GPU, multimodal (mmproj Q8_0). Thinking model.
+  tags:
+  - llm
+  - thinking
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: '${env.HOME}/git/bonsai-llama.cpp-prism/build/bin/llama-server
+
+    --port ${PORT}
+
+    -m ${models_dir}/bonsai2/Ternary-Bonsai-2-4B-PTQ1_0.gguf
+
+    --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-4B-mmproj-Q8_0.gguf --no-mmproj-offload
+
+    -ngl 99 -c 131072 -fa on -ctk q8_0 -ctv q8_0
+
+    --host 127.0.0.1 --jinja
+
+    '
+  cmdStop: pkill -f 'Bonsai-2-4B'
+  health_check_timeout: 120
+  ttl: 1800
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: 0.95 GB DiT (PTQ1_0) + 0.37 GB mmproj Q8_0
+    context: 131072
+    vram_usage: ~2.4 GB total c/ desktop (ngl 99)
+    source: prism-ml/Ternary-Bonsai-2-4B-gguf (PTQ1_0 + mmproj Q8_0)
+    kv_cache: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.2 GB)
+    features:
+      completion: false
+      tools: false
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: true
+    architecture: qwen35
+    parameters: 4000000000
+    context_length: 131072
+    embedding_length: 0
+    quantization: ptq1_0 (1.71-bit block-scale ternary, kernels PrismML)
+    note: 'SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 109.6 t/s decode / 166.8 prompt. Alvo declarado do teste: bater Qwen3.5-4B (66/75 régua antiga). DFlash2 drafter (1.6GB BF16) em ~/.llama-models/bonsai2/ — spec-decode do fork, wiring futuro. mmproj Q8_0 = visão multimodal de fábrica.'
+    caveats:
+    - 'Exige LD_LIBRARY_PATH do build do fork Prism'
+    - 'Thinking model: reasoning longo, max_tokens generoso'
+    - '3.9 t/s se cair pra CPU (-ngl 0) — sempre ngl 99'

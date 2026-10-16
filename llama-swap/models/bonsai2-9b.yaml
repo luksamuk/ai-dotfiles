@@ -1,0 +1,58 @@
+bonsai2-9b:
+  name: Ternary Bonsai 9B (PTQ1_0)
+  description: PrismML Bonsai-2 9B ternary (1.71-bit block-scale, Qwen3.5-base) — 66 t/s GPU, multimodal (mmproj Q8_0). Thinking model. O maior da família.
+  tags:
+  - llm
+  - thinking
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: '${env.HOME}/git/bonsai-llama.cpp-prism/build/bin/llama-server
+
+    --port ${PORT}
+
+    -m ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-PTQ1_0.gguf
+
+    --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf --no-mmproj-offload
+
+    -ngl 99 -c 131072 -fa on -ctk q8_0 -ctv q8_0
+
+    --host 127.0.0.1 --jinja
+
+    '
+  cmdStop: pkill -f 'Bonsai-2-9B'
+  health_check_timeout: 120
+  ttl: 1800
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: 2.0 GB DiT (PTQ1_0) + 0.62 GB mmproj Q8_0
+    context: 131072
+    vram_usage: ~3.4 GB total c/ desktop (ngl 99)
+    source: prism-ml/Ternary-Bonsai-2-9B-gguf (PTQ1_0 + mmproj Q8_0)
+    kv_cache: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.4 GB)
+    features:
+      completion: false
+      tools: false
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: true
+    architecture: qwen35
+    parameters: 9000000000
+    context_length: 131072
+    embedding_length: 0
+    quantization: ptq1_0 (1.71-bit block-scale ternary, kernels PrismML)
+    note: 'SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 66.2 t/s decode. Maior da família ternary 2026; o 27B antigo (bonsai-27b-1bit, Q1_0 upstream) rodava 60/75 na régua PTQ — este 9B tem mais compute por token (thinking).'
+    caveats:
+    - 'Exige LD_LIBRARY_PATH do build do fork Prism'
+    - 'Thinking model: reasoning longo'
+    - 'PQ2_0/MTP variants existem no repo HF — não baixadas'

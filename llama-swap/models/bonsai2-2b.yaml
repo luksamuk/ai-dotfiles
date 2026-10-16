@@ -1,0 +1,54 @@
+bonsai2-2b:
+  name: Ternary Bonsai 2B (PTQ1_0)
+  description: PrismML Bonsai-2 2B ternary (1.71-bit block-scale) — 209 t/s GPU. Thinking model. O menor da família.
+  tags:
+  - llm
+  - thinking
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: '${env.HOME}/git/bonsai-llama.cpp-prism/build/bin/llama-server
+
+    --port ${PORT}
+
+    -m ${models_dir}/bonsai2/Ternary-Bonsai-2-2B-PTQ1_0.gguf
+
+    -ngl 99 -c 131072 -fa on -ctk q8_0 -ctv q8_0
+
+    --host 127.0.0.1 --jinja
+
+    '
+  cmdStop: pkill -f 'Bonsai-2-2B'
+  health_check_timeout: 120
+  ttl: 1800
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: 0.43 GB (PTQ1_0 ternary block-scale)
+    context: 131072
+    vram_usage: ~1.7 GB total c/ desktop (ngl 99, tudo na GPU)
+    source: prism-ml/Ternary-Bonsai-2-2B-gguf (PTQ1_0)
+    kv_cache: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.1 GB)
+    features:
+      completion: false
+      tools: false
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 2000000000
+    context_length: 131072
+    embedding_length: 0
+    quantization: ptq1_0 (1.71-bit block-scale ternary, kernels PrismML)
+    note: 'SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 209.0 t/s decode. Thinking model (reasoning_content longo). mmproj não baixado pro 2B (só 4B/9B têm).'
+    caveats:
+    - 'Exige LD_LIBRARY_PATH do build do fork Prism'
+    - 'Thinking model: respostas curtas precisam de max_tokens generoso'
