@@ -895,7 +895,7 @@ models:
       note: 'vram detalhe: ~0.3 GB VRAM (model 303MB + compute) | model 303MB BF16 + compute Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Lightest judge: 144M, sub-5ms per question expected on GPU.'
   bonsai2-2b:
     name: Ternary Bonsai 2B
-    description: PrismML's smallest ternary Bonsai 2 model on Qwen3.5 base — always-thinking, fast chat and short tasks. Text-only.
+    description: Ternary Bonsai 2B is a 2B ternary (1.71-bit) model from PrismML, built on the Qwen3.5 base. Always-thinking, text-only, tuned for fast chat and short agentic tasks.
     tags:
     - llm
     - thinking
@@ -957,7 +957,7 @@ models:
           presence_penalty: 1.0
   bonsai2-4b:
     name: Ternary Bonsai 4B
-    description: PrismML's mid-size ternary Bonsai 2 model on Qwen3.5 base — always-thinking, multimodal (text + images), strong speed-for-size ratio.
+    description: Ternary Bonsai 4B is a 4B ternary (1.71-bit) model from PrismML, built on the Qwen3.5 base with native vision. Always-thinking — it handles multimodal input, tool calling, and everyday coding at high speed.
     tags:
     - llm
     - thinking
@@ -1023,7 +1023,7 @@ models:
           presence_penalty: 1.0
   bonsai2-9b:
     name: Ternary Bonsai 9B
-    description: PrismML's largest small Bonsai 2 ternary model on Qwen3.5 base — always-thinking, multimodal (text + images), 131K context for long documents.
+    description: Ternary Bonsai 9B is a 9B ternary (1.71-bit) model from PrismML, built on the Qwen3.5 base with native vision and a 131K context window. Always-thinking — it targets long-horizon work, document analysis, and quality-sensitive coding.
     tags:
     - llm
     - thinking
@@ -1088,7 +1088,7 @@ models:
           presence_penalty: 1.0
   bonsai2-9b-fast:
     name: Ternary Bonsai 9B (fast)
-    description: PrismML's 9B ternary Bonsai 2 with MTP speculative decoding — the same model in a fast lane with 32K context for quick iteration.
+    description: Ternary Bonsai 9B (fast) is the same 9B ternary model served with MTP speculative decoding, trading context for speed. Always-thinking and multimodal — it targets quick iteration when the full 131K window is not needed.
     tags:
     - llm
     - thinking
