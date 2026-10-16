@@ -1,7 +1,6 @@
 qwen2.5-coder-1.5b-pollard:
   name: Qwen2.5 Coder 1.5B Pollard
-  description: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct, CPU-only. IQ4_XS with
-    imatrix. FIM native. Code completion on CPU, zero VRAM, coexists with GPU MoE.
+  description: Qwen2.5-Coder-1.5B-Instruct memory-fit for code completion. FIM native, CPU-only serving with zero VRAM.
   cmd: '${llama_server} --port ${PORT}
 
     --model ${models_dir}/qwen2.5-coder-1.5b-pollard-new/Qwen2.5-Coder-1.5B-Pollard-v2-IQ4XS-class.gguf
@@ -77,6 +76,4 @@ qwen2.5-coder-1.5b-pollard:
     context_length: 32768
     embedding_length: 1536
     quantization: Pollard IQ4_XS
-    note: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed
-      prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE.
-      ngram-mod enabled.
+    note: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE. ngram-mod enabled.

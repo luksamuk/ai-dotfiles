@@ -133,7 +133,7 @@ models:
       note: 'vram detalhe: ~3.9GB VRAM (model 1.55GB + q4_0 KV 131K + compute) | model 1.55GB QAD-Q4_0 + q4_0 KV @131K + compute Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only 8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM in 6GB. QAD (Quantization-Aware Distillation) recovers ~97% of BF16 quality vs native Q4_0. DSpark draft REMOVIDO 07/10: fit quebra c/ draft no build 06/10 (mede sem o draft -> pp buffer OOM -> SIGABRT). Baseline no-draft: 88.5 t/s.'
   qwen2.5-coder-1.5b-pollard:
     name: Qwen2.5 Coder 1.5B Pollard
-    description: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct, CPU-only. IQ4_XS with imatrix. FIM native. Code completion on CPU, zero VRAM, coexists with GPU MoE.
+    description: Qwen2.5-Coder-1.5B-Instruct memory-fit for code completion. FIM native, CPU-only serving with zero VRAM.
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/qwen2.5-coder-1.5b-pollard-new/Qwen2.5-Coder-1.5B-Pollard-v2-IQ4XS-class.gguf
@@ -303,7 +303,7 @@ models:
       note: 'vram detalhe: ~4.0 GB VRAM + ~5 GB RAM (page cache evictável) | -cmoe: 3.9GB VRAM c/ desktop ativo; ~18GB em page cache file-backed EVICTÁVEL (não é pinned — o kernel pode reclaim); decode 34.6-35.1 t/s. -hmoe: 4.7GB VRAM + ~12-14GB pinned vram detalhe: MEDIDO 05/10 0.74 (c/ desktop ativo): -cmoe 3.9GB VRAM + ~5GB RAM used (18GB em page cache file-backed evictável), decode 34.6-35.1 t/s | -hmoe: 4.7GB VRAM + ~21GB used pinado, 28.5-32.0 | -ssd+predict: empata mas PERDEU no uso live (user verbatim ''lento''), rejeitado Revanche Sep 2026: cafe-llama.cpp carrega o que o ik nao conseguia (o ik morria com 29GB RSS no load). MoE offload via -hmoe (experts pinned em RAM, ~12-14GB, sem warmup por dominio; o -ssd era a alternativa com warmup). Q4_K_M oficial obrigatorio — APEX I-Compact trava com system prompt (deletado). Template EMBUTIDO via --jinja (externo v5 nao renderiza no cafe). turbo4/turbo2 corrompem a arch SWA hibrida — teto de ctx com qualidade: 131K q4_0. Decode 31.8 t/s @131K. Tool calling: com tools no request a grammar do cafe limita a 1 call/round e suprime o thinking (bug do fork, ver skill). GGUF em ~/.llama-models/laguna-xs-2.1/.'
   neohorse-1-4b:
     name: NeoHorse 1 4B
-    description: NeoHorse community 4B model. 131K context with --fit.
+    description: Community fine-tune of Qwen3.5-4B with 131K context.
     cmd: '${ik_llama_server} --port ${PORT}
 
       --model ${models_dir}/neohorse-1-4b/NeoHorse-1-4B-Q4_K_M.gguf
@@ -895,7 +895,7 @@ models:
       note: 'vram detalhe: ~0.3 GB VRAM (model 303MB + compute) | model 303MB BF16 + compute Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Lightest judge: 144M, sub-5ms per question expected on GPU.'
   bonsai2-2b:
     name: Ternary Bonsai 2B
-    description: PrismML Bonsai 2 2B — modelo leve da PrismML, raciocina sempre e responde muito rápido (209 t/s). Texto.
+    description: PrismML's smallest ternary Bonsai 2 model on Qwen3.5 base — always-thinking, fast chat and short tasks. Text-only.
     tags:
     - llm
     - thinking
@@ -957,7 +957,7 @@ models:
           presence_penalty: 1.0
   bonsai2-4b:
     name: Ternary Bonsai 4B
-    description: 'PrismML Bonsai 2 4B — meio-termo da família: rápido (109 t/s), entende imagens e texto, raciocina sempre.'
+    description: PrismML's mid-size ternary Bonsai 2 model on Qwen3.5 base — always-thinking, multimodal (text + images), strong speed-for-size ratio.
     tags:
     - llm
     - thinking
@@ -1022,8 +1022,8 @@ models:
           top_k: 20
           presence_penalty: 1.0
   bonsai2-9b:
-    name: Ternary Bonsai 9B (contexto máximo)
-    description: PrismML Bonsai 2 9B — o maior da família, com 131K de contexto para documentos longos. Entende imagens, raciocina sempre. Menos veloz que a lane rápida.
+    name: Ternary Bonsai 9B
+    description: PrismML's largest small Bonsai 2 ternary model on Qwen3.5 base — always-thinking, multimodal (text + images), 131K context for long documents.
     tags:
     - llm
     - thinking
@@ -1087,8 +1087,8 @@ models:
           top_k: 20
           presence_penalty: 1.0
   bonsai2-9b-fast:
-    name: Ternary Bonsai 9B (rápido)
-    description: 'PrismML Bonsai 2 9B — lane rápida: quase 90 t/s com 32K de contexto. Mesma inteligência da lane de contexto máximo.'
+    name: Ternary Bonsai 9B (fast)
+    description: PrismML's 9B ternary Bonsai 2 with MTP speculative decoding — the same model in a fast lane with 32K context for quick iteration.
     tags:
     - llm
     - thinking
@@ -1763,7 +1763,7 @@ models:
       note: 'Linha MiniCPM-V 4.7 out/2026: card declara vence Qwen3.6-35B-A3B (score+tempo) — a liga disk 35B da casa é ornith 143.6 > occamy 141.4 > qwen3.8-distill 141.0, e a comparação declarada deles é vs a geração física anterior. mix_q3gud_im = recomendação OFICIAL do cookbook (experts Q3_K c/ imatrix sobre base Q4_K_M = 15.5GB ''matches Q4_K_M on benchmarks''); Q4_K_M puro = 21.17GB. -ot ffn_*_exps=CPU = rota de laguna/ornith (3B ativos, experts na RAM). M-RoPE canvas: PR #29416 (rope.section_order) — cafe v0.76 (ad57e28a1, 13/Out) MERGEADO e suporta; ik SEM #29416 ainda (fragment usa cafe). tools: true = card diz tool-calling nativo (SGLang/vLLM/llama.cpp/ollama); smoke valida. mmproj 4x = mais detalhe; 16x alternativa mais rápida. health 600s = MoE 15.5GB + mmproj cold start longo. Sampling: card oficial temp 0.7/top-p 0.9/top-k 100/rp 1.05 (regra da série). LES (Lookahead Expert Scheduling) e DSpark NÃO fazem parte: são do fork tc-mb/llama.cpp-omni (13-17 t/s no iPhone é o cenário experts-no-SSD; nossa rota experts-na-RAM não usa).'
   minicpm5-2b:
     name: MiniCPM5 2B
-    description: 'OpenBMB MiniCPM5-2B (Q4_K_M oficial): dense 2B, 131K ctx nativo, tool calling limpo em ambos os modos. Text-only, sem MTP.'
+    description: OpenBMB MiniCPM5-2B dense model with 131K native context and clean tool calling. Text-only.
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/minicpm5-2b/MiniCPM5-2B-Q4_K_M.gguf
@@ -1833,7 +1833,7 @@ models:
       note: 'vram detalhe: ~4.1GB @131K (modelo 1.45GB + KV q4_0 ~1.35GB + buffers) Pollard IQ4_XS testado 07-08/09 e REVERTIDO 08/09: loop infinito em tarefa de código simples (Adler32) no uso real — dados do A/B permanecem válidos (empate decode GPU, TTFT -23%, -148MB, CPU -30%), mas o comportamento agêntico pesa mais. Tool call: Q4_K_M clean nos DOIS modos (IQ4_XS só no :think). REMOVIDOS 08/09: Q8_0 oficial, Pollard Q5_K_M (GGUFs deletados). Pollard IQ4_XS GGUF MANTIDO no dir como opção A/B futura. Fallback docs no header.'
   ornith-1.5-35b-heretic:
     name: Ornith 1.5 35B Heretic
-    description: '35B-A3B MoE generalist assistant, abliterated (heretic TPE). Fleet daily driver: 200K context, strong agentic/tool calling.'
+    description: 35B-A3B MoE generalist assistant, abliterated (heretic TPE). 200K context, strong agentic and tool-calling behavior.
     cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
       --model ${models_dir}/ornith-heretic/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-I-Compact.gguf
