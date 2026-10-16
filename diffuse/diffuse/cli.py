@@ -381,6 +381,9 @@ def main() -> None:
             print(f"\n  ✗ Model not found: {model_path}")
             print(f"    Run: diffuse download {model_info['dir'].split('-')[0]}")
             sys.exit(1)
+    elif backend_type == "flux3_wan2gp":
+        # Weights live in the WanGP ckpts/ tree; backends/wan2gp verifies per-file
+        pass
     else:
         require_model_dir(model_name)
 
@@ -1224,12 +1227,23 @@ def _run_flux3_wan2gp_image(
         print(f"  \U0001f3a8 FLUX 3 Klein T2I")
     print(f"     {width}x{height}, {steps} steps, cfg={guidance}, seed={seed}")
 
-    # -- Prompt enhancement (vision type, same flow as mageflow) --
+    # -- Prompt enhancement --
+    # Edit-aware: with refs, the VLM SEES the image and refines the INSTRUCTION
+    # (analyze_and_enhance_edit, same one-shot flow as qwen21/hidream). The plain
+    # T2I enhancer re-describes the scene from scratch ("young woman in her late
+    # 20s...") and the diffusion loses the reference identity — the iany bug.
+    # Without refs, standard T2I vision enhancement.
     enhanced = None
     if args.enhance or args.enhance_with:
         enhance_model = args.enhance_with or model_info.get("enhance_model", "ornith-1.5-35b-heretic")
-        print(f"\n  \u2728 Enhancing prompt via {enhance_model} (vision mode)...")
-        enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
+        if is_edit and _check_model_vision(enhance_model):
+            print(f"\n  \U0001f441\ufe0f\u2728 {enhance_model} analyzes the reference and refines the edit instruction...")
+            enhanced, raw_response = analyze_and_enhance_edit(
+                ref_image_paths[0], prompt, enhance_model, nsfw=args.nsfw
+            )
+        else:
+            print(f"\n  \u2728 Enhancing prompt via {enhance_model} (vision mode)...")
+            enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
         if enhanced and enhanced != prompt:
             print(f"     Expanded to ({len(enhanced)} chars)")
             _show_enhanced_if_requested(args, enhanced)
