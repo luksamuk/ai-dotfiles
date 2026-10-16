@@ -894,8 +894,8 @@ models:
       quantization: BF16
       note: 'vram detalhe: ~0.3 GB VRAM (model 303MB + compute) | model 303MB BF16 + compute Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Lightest judge: 144M, sub-5ms per question expected on GPU.'
   bonsai2-2b:
-    name: Ternary Bonsai 2B (PTQ1_0)
-    description: PrismML Bonsai-2 2B ternary (1.71-bit block-scale) — 209 t/s GPU. Thinking model. O menor da família.
+    name: Ternary Bonsai 2B
+    description: PrismML Bonsai 2 2B — modelo leve da PrismML, raciocina sempre e responde muito rápido (209 t/s). Texto.
     tags:
     - llm
     - thinking
@@ -956,8 +956,8 @@ models:
           top_k: 20
           presence_penalty: 1.0
   bonsai2-4b:
-    name: Ternary Bonsai 4B (PTQ1_0)
-    description: PrismML Bonsai-2 4B ternary (1.71-bit block-scale, Qwen3.5-base) — 109 t/s GPU, multimodal (mmproj Q8_0). Thinking model.
+    name: Ternary Bonsai 4B
+    description: 'PrismML Bonsai 2 4B — meio-termo da família: rápido (109 t/s), entende imagens e texto, raciocina sempre.'
     tags:
     - llm
     - thinking
@@ -1022,8 +1022,8 @@ models:
           top_k: 20
           presence_penalty: 1.0
   bonsai2-9b:
-    name: Ternary Bonsai 9B (PTQ1_0 @131K, full-context)
-    description: 'PrismML Bonsai-2 9B ternary (1.71-bit block-scale, Qwen3.5-base) — lane de contexto máximo: 131K sem drafter (~60-66 t/s). Multimodal (mmproj Q8_0). Thinking model. Exceção da frota: prioriza contextWindow sobre velocidade.'
+    name: Ternary Bonsai 9B (contexto máximo)
+    description: PrismML Bonsai 2 9B — o maior da família, com 131K de contexto para documentos longos. Entende imagens, raciocina sempre. Menos veloz que a lane rápida.
     tags:
     - llm
     - thinking
@@ -1087,8 +1087,8 @@ models:
           top_k: 20
           presence_penalty: 1.0
   bonsai2-9b-fast:
-    name: Ternary Bonsai 9B fast (PQ2_0-MTP draft 2 @64K)
-    description: 'Lane rápida do mesmo 9B: pack PQ2_0-MTP (draft head built-in, spec draft 2) @64K — 83-90 t/s (acceptance 87.9%, copy-heavy 89.5). Mesma VRAM ~3.4 GB. Para quando velocidade > contexto.'
+    name: Ternary Bonsai 9B (rápido)
+    description: 'PrismML Bonsai 2 9B — lane rápida: quase 90 t/s com 32K de contexto. Mesma inteligência da lane de contexto máximo.'
     tags:
     - llm
     - thinking
