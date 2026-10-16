@@ -1006,8 +1006,65 @@ models:
       - 'Thinking model: reasoning longo, max_tokens generoso'
       - 3.9 t/s se cair pra CPU (-ngl 0) — sempre ngl 99
   bonsai2-9b:
-    name: Ternary Bonsai 9B (PTQ1_0)
-    description: PrismML Bonsai-2 9B ternary (1.71-bit block-scale, Qwen3.5-base) — 66 t/s GPU, multimodal (mmproj Q8_0). Thinking model. O maior da família.
+    name: Ternary Bonsai 9B (PTQ1_0 @131K, full-context)
+    description: 'PrismML Bonsai-2 9B ternary (1.71-bit block-scale, Qwen3.5-base) — lane de contexto máximo: 131K sem drafter (~60-66 t/s). Multimodal (mmproj Q8_0). Thinking model. Exceção da frota: prioriza contextWindow sobre velocidade.'
+    tags:
+    - llm
+    - thinking
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: '${env.HOME}/git/bonsai-llama.cpp-prism/build/bin/llama-server
+
+      --port ${PORT}
+
+      -m ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-PTQ1_0.gguf
+
+      --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf --no-mmproj-offload
+
+      -ngl 99 -c 131072 -fa on -ctk q8_0 -ctv q8_0
+
+      --host 127.0.0.1 --jinja
+
+      '
+    cmdStop: pkill -f 'Bonsai-2-9B'
+    health_check_timeout: 120
+    ttl: 1800
+    capabilities:
+      in:
+      - text
+      - image
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: 2.0 GB DiT (PTQ1_0, sem draft head) + 0.62 GB mmproj Q8_0
+      context: 131072
+      vram_usage: ~3.4-3.9 GB total (ngl 99 @131K, sem rs-cache do MTP)
+      source: prism-ml/Ternary-Bonsai-2-9B-gguf (PTQ1_0 + mmproj Q8_0)
+      kv_cache: q8_0 @131072 (262K nativo; PTQ1_0 puro não tem rs-cache — 131K cabe onde o MTP estoura)
+      features:
+        completion: false
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: true
+      architecture: qwen35
+      parameters: 9000000000
+      context_length: 131072
+      embedding_length: 0
+      quantization: ptq1_0 (1.71-bit block-scale ternary, kernels PrismML)
+      note: 'SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). DUPLO-DEPLOY 16/out (pedido do dono): bonsai2-9b = PTQ1_0 puro @131K SEM drafter (context first, 66.2 t/s medidos; PTQ1_0 sem rs-cache engole o 131K que o MTP OOMa) | bonsai2-9b:fast = PQ2_0-MTP draft 2 @64K (speed first, 83-90 t/s, draft acceptance 87.9%; copy-heavy 89.5).'
+      caveats:
+      - Exige o fork Prism (PrismML-Eng/llama.cpp branch prism, build ~/git/bonsai-llama.cpp-prism)
+      - 'Thinking model: reasoning longo'
+  bonsai2-9b-fast:
+    name: Ternary Bonsai 9B fast (PQ2_0-MTP draft 2 @64K)
+    description: 'Lane rápida do mesmo 9B: pack PQ2_0-MTP (draft head built-in, spec draft 2) @64K — 83-90 t/s (acceptance 87.9%, copy-heavy 89.5). Mesma VRAM ~3.4 GB. Para quando velocidade > contexto.'
     tags:
     - llm
     - thinking
@@ -1028,7 +1085,7 @@ models:
       --host 127.0.0.1 --jinja
 
       '
-    cmdStop: pkill -f 'Bonsai-2-9B'
+    cmdStop: pkill -f 'Bonsai-2-9B-PQ2_0-MTP'
     health_check_timeout: 120
     ttl: 1800
     capabilities:
@@ -1041,11 +1098,11 @@ models:
       reranker: false
       context: 65536
     metadata:
-      size: 2.68 GB DiT (PQ2_0-MTP-Q8_0, draft head built-in) + 0.62 GB mmproj Q8_0
+      size: 2.68 GB DiT (PQ2_0-MTP-Q8_0, draft head embutido) + 0.62 GB mmproj Q8_0
       context: 65536
-      vram_usage: ~3.4 GB total c/ desktop (ngl 99)
-      source: prism-ml/Ternary-Bonsai-2-9B-gguf (PTQ1_0 + mmproj Q8_0)
-      kv_cache: q8_0 @65536 (262K nativo — subir ctx deixa o rs-cache do MTP sem caber na 6GB) (~0.4 GB)
+      vram_usage: ~3.4-5.6 GB total c/ desktop (ngl 99; rs-cache MTP 603 MB)
+      source: prism-ml/Ternary-Bonsai-2-9B-gguf (PQ2_0-MTP-Q8_0 + mmproj Q8_0)
+      kv_cache: q8_0 @65536 (o rs-cache do MTP consome ~0.6 GB extra — 131K OOMa na 6GB c/ desktop)
       features:
         completion: false
         tools: true
@@ -1059,12 +1116,12 @@ models:
       parameters: 9000000000
       context_length: 65536
       embedding_length: 0
-      quantization: ptq1_0 (1.71-bit block-scale ternary, kernels PrismML)
-      note: 'SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out: PTQ1_0 puro @131K = 66.2 t/s | PQ2_0-MTP (draft 2) @64K = 85.9-89.5 t/s (MTP: +30-35%; @131K com MTP o rs-cache 603MB estoura a 6GB → 64K é o talo prático). Copy-heavy: 89.5. Maior da família ternary 2026; o 27B antigo (bonsai-27b-1bit, Q1_0 upstream) rodava 60/75 na régua PTQ — este 9B tem mais compute por token (thinking).'
+      quantization: pq2_0 + MTP draft head (Q8_0, kernels PrismML)
+      note: 'DUPLO-DEPLOY 16/out: fast = MTP draft 2 @64K, 83.5-85.9 t/s normais / 89.5 copy-heavy / 87.9% acceptance (vs 66.2 do PTQ1_0 puro). A lane sem drafter (contexto 131K) é o handle bonsai2-9b. Reload do swap PENDENTE (user testando — só o fragment muda; reload depois, sem stream em voo).'
       caveats:
-      - Exige LD_LIBRARY_PATH do build do fork Prism
+      - Exige o fork Prism
       - 'Thinking model: reasoning longo'
-      - PQ2_0/MTP variants existem no repo HF — não baixadas
+      - cmdStop distinto por handle (pkill no sufixo do GGUF) — não matar a lane errada
   d1-3b:
     name: Liquid d1-3B
     description: Liquid AI decision model (LFM2 arch) with SigLIP2 vision — choices/scores with calibrated per-type temperatures. 3B params, 32K context.

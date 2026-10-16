@@ -1,0 +1,60 @@
+bonsai2-9b-fast:
+  name: Ternary Bonsai 9B fast (PQ2_0-MTP draft 2 @64K)
+  description: "Lane rápida do mesmo 9B: pack PQ2_0-MTP (draft head built-in, spec draft 2) @64K — 83-90 t/s (acceptance 87.9%, copy-heavy 89.5). Mesma VRAM ~3.4 GB. Para quando velocidade > contexto."
+  tags:
+  - llm
+  - thinking
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: '${env.HOME}/git/bonsai-llama.cpp-prism/build/bin/llama-server
+
+    --port ${PORT}
+
+    -m ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf
+
+    --spec-type draft-mtp --spec-draft-n-max 2 --spec-draft-n-min 0 --spec-draft-p-min 0
+
+    --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf --no-mmproj-offload
+
+    -ngl 99 -c 65536 -fa on -ctk q8_0 -ctv q8_0
+
+    --host 127.0.0.1 --jinja
+
+    '
+  cmdStop: pkill -f 'Bonsai-2-9B-PQ2_0-MTP'
+  health_check_timeout: 120
+  ttl: 1800
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 65536
+  metadata:
+    size: 2.68 GB DiT (PQ2_0-MTP-Q8_0, draft head embutido) + 0.62 GB mmproj Q8_0
+    context: 65536
+    vram_usage: ~3.4-5.6 GB total c/ desktop (ngl 99; rs-cache MTP 603 MB)
+    source: prism-ml/Ternary-Bonsai-2-9B-gguf (PQ2_0-MTP-Q8_0 + mmproj Q8_0)
+    kv_cache: q8_0 @65536 (o rs-cache do MTP consome ~0.6 GB extra — 131K OOMa na 6GB c/ desktop)
+    features:
+      completion: false
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: true
+    architecture: qwen35
+    parameters: 9000000000
+    context_length: 65536
+    embedding_length: 0
+    quantization: pq2_0 + MTP draft head (Q8_0, kernels PrismML)
+    note: 'DUPLO-DEPLOY 16/out: fast = MTP draft 2 @64K, 83.5-85.9 t/s normais / 89.5 copy-heavy / 87.9% acceptance (vs 66.2 do PTQ1_0 puro). A lane sem drafter (contexto 131K) é o handle bonsai2-9b. Reload do swap PENDENTE (user testando — só o fragment muda; reload depois, sem stream em voo).'
+    caveats:
+    - 'Exige o fork Prism'
+    - 'Thinking model: reasoning longo'
+    - 'cmdStop distinto por handle (pkill no sufixo do GGUF) — não matar a lane errada'
