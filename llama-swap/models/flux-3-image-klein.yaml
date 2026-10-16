@@ -1,0 +1,57 @@
+flux-3-image-klein:
+  name: FLUX 3 Image Klein
+  description: 'FLUX 3 Klein 5.6B (BFL 15/out) — destilado 16 steps, cfg 1.0. Text-render best-in-class, edição pixel-perfect, multi-ref até 10 imgs. SFW (NSFW suprimido no treino, red team BFL).'
+  tags:
+  - image
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /v1/models
+  cmd: '${env.HOME}/git/stable-diffusion.cpp/build/bin/sd-server
+
+    --diffusion-model ${env.HOME}/.flux3/klein_fp8r_model.safetensors
+
+    --vae ${env.HOME}/.flux3/klein_ae.safetensors
+
+    --llm ${env.HOME}/.flux3/qwen3vl-4b-Q4_K_M.gguf
+
+    --offload-to-cpu --backend te=cpu,vae=gpu
+
+    --steps 16 --cfg-scale 1.0 --sampling-method euler --listen-ip 127.0.0.1 --listen-port ${PORT}
+
+    '
+  cmdStop: pkill -f klein_fp8r
+  health_check_timeout: 3600
+  ttl: 3600
+  capabilities:
+    in:
+    - text
+    out:
+    - image
+    tools: false
+    reranker: false
+    context: 0
+  metadata:
+    size: 6.0 GB DiT fp8r + 160 MB VAE + 2.5 GB TE (compartilhado)
+    context: 0
+    vram_usage: 'DENOISE NÃO CABE NA 6GB: DiT fp8 6.07 GB device vs ~5.5 GPU livre (graph 1-segment) — denoise cai p/ CPU ~19 min/1MP; VAE/TE em CPU liberariam ainda menos VRAM'
+    source: black-forest-labs/flux-3-image-klein (variants/fp8r) + ae.safetensors + Qwen/Qwen3-VL-4B-Instruct-GGUF Q4_K_M
+    kv_cache: n/a
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: true
+    architecture: flux-3-image-klein
+    parameters: 5600000000
+    context_length: 0
+    embedding_length: 0
+    quantization: fp8_e4m3
+    note: 'Destilado BFL: 16 steps, cfg 1.0, euler (a base seriam 20 steps cfg 3.5). TE = Qwen3-VL-4B — o Heretic-8B da casa NÃO serve (txt_in espera 20480 = 8 layers x 2560; o 8B emite 4096/layer). VRAM: graph ainda 1-segment no sd_cpp (master-968) = 6.07 GB device de uma vez; rota CPU ~67 s/it. WanGP (DDM flux3 commit upstream) é a rota GPU futura. NSFW: suprimido no treino — casa usa qwen21 p/ NSFW.'
+    caveats:
+    - TE 2.5 GB RAM em CPU (backend te=cpu)
+    - Denoise na CPU (rota única na 6GB hoje) — ~19 min/1MP
+    - 1 slot de geração por vez
+    - Dimensões múltiplas de 16
