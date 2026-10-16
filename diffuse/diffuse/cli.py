@@ -132,6 +132,9 @@ def print_list() -> None:
     total_pending = 0.0
 
     print()
+    # Installed models render full detail inline; not-installed collapse into a
+    # summary block at the end so the working inventory stays scannable.
+    line_missing = []
     for cat_label, cat_key in [("IMAGE GENERATION", "image"), ("VIDEO GENERATION", "video")]:
         models = categories.get(cat_key, [])
         if not models:
@@ -139,23 +142,28 @@ def print_list() -> None:
         print(f"  {cat_label}")
         for name, info in sorted(models):
             installed = _check_installed(info)
-            status = "" if installed else " [not installed]"
-            print(f"    {name:20s} {info.get('description', ''):60s}{status}")
 
             total_gb = 0.0
             for comp in info.get("components", []):
-                comp_name = comp["name"]
-                comp_gb = comp["size_gb"]
-                total_gb += comp_gb
-                shared_tag = " [shared]" if "[shared]" in comp_name else ""
-                print(f"      ├── {comp_name:55s} {_fmt_size_gb(comp_gb)}")
+                total_gb += comp["size_gb"]
 
             if installed:
                 total_installed += total_gb
+                print(f"    {name:20s} {info.get('description', ''):60s}")
+                for comp in info.get("components", []):
+                    comp_name = comp["name"]
+                    shared_tag = " [shared]" if "[shared]" in comp_name else ""
+                    print(f"      ├── {comp_name:55s} {_fmt_size_gb(comp['size_gb'])}")
+                print(f"      └── {'Total':55s} {_fmt_size_gb(total_gb)}")
+                print()
             else:
                 total_pending += total_gb
-            print(f"      └── {'Total':55s} {_fmt_size_gb(total_gb)}")
-            print()
+                line_missing.append(f"    {name:20s} {_fmt_size_gb(total_gb):8s} {info.get('description', '')}")
+
+    if line_missing:
+        print("  NOT INSTALLED (weights off disk — download via `diffuse download <model>`):")
+        print("\n".join(line_missing))
+        print()
 
     print(f"  TOTAL DISK: {_fmt_size_gb(total_installed + total_pending)} ({_fmt_size_gb(total_installed)} installed + {_fmt_size_gb(total_pending)} pending)")
     print()
