@@ -338,7 +338,7 @@ def main() -> None:
                 args.steps = 8       # official Alibaba turbo
             else:
                 args.steps = 40
-        elif backend_type == "flux3_sd_cpp":
+        elif backend_type == "flux3_wan2gp":
             args.steps = 16          # BFL distilled recipe
         elif backend_type == "agate":
             args.steps = 50
@@ -383,7 +383,7 @@ def main() -> None:
     # ── Validate --edit (hidream, mageflow, and qwen21 support it) ──
     ref_image_paths = None
     if args.edit:
-        if backend_type not in ("hidream", "mageflow_sd_cpp", "qwen21_sd_cpp", "flux3_sd_cpp"):
+        if backend_type not in ("hidream", "mageflow_sd_cpp", "qwen21_sd_cpp", "flux3_wan2gp"):
             print(f"  ⚠️  --edit is only supported with hidream, mageflow-edit-turbo or qwen-image-2.1 (got {backend_type})")
             print(f"     Use: diffuse -m hidream-sdnq --edit {args.edit} -p 'instruction'")
             print(f"      or: diffuse -m mageflow-edit-turbo --edit {args.edit} -p 'instruction'")
@@ -432,9 +432,9 @@ def main() -> None:
         _run_qwen21_sd_cpp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
         return
 
-    # ── FLUX 3 Klein early path (T2I + pixel-perfect editing via sd-cli) ──
-    if backend_type == "flux3_sd_cpp":
-        _run_flux3_sd_cpp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
+    # ── FLUX 3 Klein early path (T2I + editing via WanGP) ──
+    if backend_type == "flux3_wan2gp":
+        _run_flux3_wan2gp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
         return
 
     # ── LLM eviction (free VRAM for diffusion) ──
@@ -1186,7 +1186,7 @@ def _run_mageflow_sd_cpp_edit(
     )
 
 
-def _run_flux3_sd_cpp_image(
+def _run_flux3_wan2gp_image(
     args,
     model_name: str,
     model_info: dict,
@@ -1197,16 +1197,16 @@ def _run_flux3_sd_cpp_image(
     height: int,
     ref_image_paths: list[str] | None,
 ) -> None:
-    """Handle FLUX 3 Klein generation/editing via sd-cli.
+    """Handle FLUX 3 Klein generation/editing via WanGP.
 
-    Klein ships distilled: fixed 16 steps, cfg 1.0, euler. Editing takes up
-    to 10 reference images (vision tower lives inside the Qwen3-VL GGUF).
-    On the 6 GB 3050 the fp8 denoise runs on CPU (~67 s/it, ~19 min per
-    1MP image) — the single-segment graph does not fit in VRAM.
+    Klein ships distilled: fixed 16 steps, cfg 1.0. Editing takes up to 10
+    reference images. WanGP mmgp Profile 5 offloads blocks one-by-one —
+    the same regime as Ming/H3 in the 6 GB fleet — so the denoise runs on
+    GPU instead of the sd_cpp CPU fallback (~67 s/it).
     """
-    from diffuse.backends.sd_cpp import (
-        load_pipeline_sd_cpp,
-        generate_image_flux3_sd_cpp,
+    from diffuse.backends.wan2gp import (
+        load_pipeline_wan2gp,
+        generate_image_flux3_wan2gp,
     )
 
     is_edit = bool(ref_image_paths)
@@ -1241,28 +1241,18 @@ def _run_flux3_sd_cpp_image(
         print(f"     VRAM freed for image generation")
 
     print(f"  [1/3] Loading FLUX 3 Klein pipeline ({model_info['bits']})...")
-    config, load_time = load_pipeline_sd_cpp(model_name)
-    print(f"        sd-cli config ready")
+    config, load_time = load_pipeline_wan2gp(model_name)
+    print(f"        WanGP config ready")
 
     orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
     output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
 
-    print(f"  [2/3] {'Editing' if is_edit else 'Generating'} (denoise on CPU, ~19 min/1MP)...")
+    print(f"  [2/3] {'Editing' if is_edit else 'Generating'} (WanGP profile 5, GPU offload)...")
     wall_t0 = time.perf_counter()
-    try:
-        output_path, diffusion_time, peak_hbm = generate_image_flux3_sd_cpp(
-            config, prompt, seed, width, height, output_path,
-            ref_images=ref_image_paths, steps=steps, cfg_scale=guidance,
-        )
-    except RuntimeError as e:
-        if "CUDA" in str(e):
-            print(f"  \u26a0\ufe0f  CUDA failed - retrying pure-CPU (this will be slow)...")
-            output_path, diffusion_time, peak_hbm = generate_image_flux3_sd_cpp(
-                config, prompt, seed, width, height, output_path,
-                ref_images=ref_image_paths, steps=steps, cfg_scale=guidance,
-            )
-        else:
-            raise
+    output_path, diffusion_time, peak_hbm = generate_image_flux3_wan2gp(
+        config, prompt, seed, width, height, output_path,
+        ref_images=ref_image_paths, steps=steps, cfg_scale=guidance,
+    )
     wall_time = time.perf_counter() - wall_t0
 
     print(f"  [3/3] Done - unloading...")

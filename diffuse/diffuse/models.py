@@ -247,29 +247,27 @@ MODELS: dict[str, dict] = {
             {"name": "mmproj-Qwen3VL-4B-Instruct-F16.gguf (vision encoder)", "path": "mageflow-edit-turbo/mmproj-Qwen3VL-4B-Instruct-F16.gguf", "size_gb": 0.8},
         ],
     },
-    # FLUX 3 Image Klein (sd-cli / stable-diffusion.cpp — PR #2143, master-968)
-    # 5.6B BFL, 15/out. Destilado: 16 steps, cfg 1.0, euler. T2I + edição
-    # pixel-perfect + multi-ref (até 10 imgs). TE = Qwen3-VL-4B (txt_in espera
-    # 20480 = out_layers (4,8,12,16,20,24,28,32) x 2560; o Heretic-8B da casa
-    # emite 4096/layer → incompatível sem patch no conditioner). DiT fp8r
-    # 6.07 GB device NÃO cabe na 3050 6GB (graph 1-segment no sd_cpp) — rota
-    # CPU-padrão (~67 s/it, ~19 min/1MP). NSFW suprimido no treino (red team):
-    # casa usa qwen-image-2.1 para NSFW e Klein para texto-fino SFW/edição.
-    # dir continua "flux-3-image-klein" no disco (pesos linkados); handle curto no registry
+    # FLUX 3 Image Klein (Wan2GP / DeepBeepMeep — 16/out). 5.6B BFL destilado:
+    # 16 steps, cfg 1.0. T2I + edição c/ até 10 refs ordenadas (KI = main ref
+    # dimensiona o output). Pipeline mmgp Profile 5 offload bloco a bloco — o
+    # mesmo regime do Ming/H3 na 6GB — denoise em GPU (o sd_cpp não engolava o
+    # fp8r de 6.07 GB num graph 1-segment e caía pra CPU a 67 s/it). NSFW
+    # suprimido no treino (red team BFL): casa usa qwen-image-2.1 pra NSFW e
+    # Klein pra texto-fino SFW/edição. Pesos em ~/git/Wan2GP/models/flux3/
     "flux-3": {
-        "backend_id": "flux3-image-klein-sd-cpp",
+        "backend_id": "flux3-image-klein-wan2gp",
         "dir": "flux-3-image-klein",
-        "backend_type": "flux3_sd_cpp",
+        "backend_type": "flux3_wan2gp",
         "category": "image",
-        "bits": "FP8 re-quant (BFL) — DiT 6.0 GB",
-        "description": "FLUX 3 Klein — 5.6B destilado (16 steps cfg 1.0), best-in-class text-render, edição pixel-perfect, multi-ref até 10; SFW",
+        "bits": "INT8 ConvRot (DDM repack)",
+        "description": "FLUX 3 Klein — 5.6B destilado (16 steps cfg 1.0), best-in-class text-render, edição c/ até 10 refs, via Wan2GP; SFW",
         "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "vision",
         "default_size": (1024, 1024),
         "components": [
-            {"name": "klein_fp8r_model.safetensors (DiT)", "path": "flux-3-image-klein/klein_fp8r_model.safetensors", "size_gb": 6.3},
-            {"name": "klein_ae.safetensors (VAE)", "path": "flux-3-image-klein/klein_ae.safetensors", "size_gb": 0.3},
-            {"name": "qwen3vl-4b-Q4_K_M.gguf (text encoder)", "path": "flux-3-image-klein/qwen3vl-4b-Q4_K_M.gguf", "size_gb": 2.5},
+            {"name": "flux3_image_klein_sd_int8_convrot.safetensors (DiT)", "path": "Wan2GP/ckpts/flux3_image_klein_sd_int8_convrot.safetensors", "size_gb": 5.9},
+            {"name": "qwen3vl_4b_int8_convrot.safetensors (text encoder)", "path": "Wan2GP/ckpts/Qwen3-VL-4B-Instruct/qwen3vl_4b_int8_convrot.safetensors", "size_gb": 4.9},
+            {"name": "flux2_vae.safetensors (VAE)", "path": "Wan2GP/ckpts/flux3/flux2_vae.safetensors", "size_gb": 0.35},
         ],
     },
 }
