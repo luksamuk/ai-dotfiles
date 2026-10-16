@@ -568,7 +568,7 @@ models:
       note: 'MIGRACAO IK @131K (15/out, sondagem deleg_289362fb): nativo e 262K (theta 70M, sem rope scaling; 131K fica DENTRO da janela treinada — zero risco RoPE). GGUF owao Q4_K_M ja declara context_length 262144; cap 65K antigo era de VRAM, nao do modelo. IK PR #2590 (merged, checkout local 13/out) = KV por camada logica (looped, 22x2=44 efetivas; KV q4_0 @131K ~6.6GB vira RAM via -nkvo; modelo 2.4GB fica GPU). Upstream nanbeige = PR #25994. YaRN >262K: org diz nao avaliado — nao usar. Pendente: smoke duplo (chat + tool-call) + needle @131K no ik antes de fechar. Regra ik: --fit sem "on"; sem --fit-ctx/--fit-target (usar --fit-margin).'
   twil-lm3-pro:
     name: TwIL-LM3-Pro
-    description: webAI's 3.66B dense formal-logic reasoning specialist (on Granite 4.2-3B). 131K context.
+    description: Twil LM3 Pro is webAI's 3.66B dense reasoning specialist, built on IBM Granite 4.2-3B. It targets formal logic and mathematical reasoning, with a 131K context window.
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/twil-lm3-pro/TwIL-LM3-Pro-Q6_K.gguf
@@ -751,7 +751,7 @@ models:
       note: 'vram detalhe: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only) | -ngl 0, ~0.1GB CUDA ctx overhead apenas Embedding-only model. Use /v1/embeddings endpoint. Prefix inputs with ''query: '' for queries and ''passage: '' for documents. 34 languages. 2048-dim L2-normalized vectors. Supports dimension slicing (1024/512) with re-normalization. SOTA at 1B scale on MMTEB.'
   embeddinggemma-2:
     name: EmbeddingGemma 2
-    description: 'Embedding model multimodal do Google DeepMind: texto (incl. código), imagem, áudio e vídeo num espaço unico de 768 dim. 740M (texto 270M + visao 170M + audio 300M), 100+linguas, ctx 8K, MRL (128/256/512/768d), Apache 2.0.'
+    description: EmbeddingGemma 2 is Google DeepMind's 740M multimodal embedding model, mapping text, images, audio, and video into a single 768-dimension space. It supports 100+ languages with MRL flexible dimensions.
     env:
     - CUDA_VISIBLE_DEVICES=
     cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/embeddinggemma-2/embeddinggemma-2-Q8_0.gguf\n--mmproj ${models_dir}/embeddinggemma-2/mmproj-embeddinggemma-2-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 8192\n--cont-batching\n--parallel 1\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
@@ -1088,7 +1088,7 @@ models:
           presence_penalty: 1.0
   bonsai2-9b-fast:
     name: Ternary Bonsai 9B (fast)
-    description: Ternary Bonsai 9B (fast) is the same 9B ternary model served with MTP speculative decoding, trading context for speed. Always-thinking and multimodal — it targets quick iteration when the full 131K window is not needed.
+    description: Ternary Bonsai 9B (fast) is the same 9B ternary model from PrismML, trading context for speed. Always-thinking and multimodal — it targets quick iteration when the full 131K window is not needed.
     tags:
     - llm
     - thinking
@@ -1156,7 +1156,7 @@ models:
           presence_penalty: 1.0
   d1-3b:
     name: Liquid d1-3B
-    description: Liquid AI decision model (LFM2 arch) with SigLIP2 vision — choices/scores with calibrated per-type temperatures. 3B params, 32K context.
+    description: d1 is a 3B decision model from Liquid AI, built on LFM2 with SigLIP2 vision. It outputs choices and scores with calibrated per-type temperatures.
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/d1-3B/d1-3B-Q4_K_M.gguf
@@ -1231,7 +1231,7 @@ models:
       note: 'Base LFM2.5-VL 3B (vision via SigLIP2 mmproj). Decision model (choices/scores/noul) with temperature calibration per choice type (config.json temperatures). Base LFM2.5-VL 3B. Real-time decisions: classifier + image understanding. Candidate to judge systemone (laya-snake). mmproj 583MB gives SigLIP2 vision. NOT a chat model: structured decision output.'
   d1-omni-600m:
     name: Liquid d1-omni 600M
-    description: Liquid AI decision model 600M — text + image OR text + audio input, choices/scores output. 16K context.
+    description: d1-omni is a 600M decision model from Liquid AI, accepting text with either images or audio and outputting choices and scores.
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/d1-omni-600M/d1-omni-600M-Q8_0.gguf
@@ -1309,7 +1309,7 @@ models:
       note: 'FIX 08/10: -b/-ub 4096 (a imagem lain = 2584 vision tokens > batch 512/2048 default = "input too large" 500). Decision model 600M — text+image ou text+audio (audio via encoder LFM2.5 350M no mmproj). Edge/Jetson class. SEM chat_template no GGUF nem no repo fonte (só via prompt.py próprio) — testar se o llama-server aplica default da família lfm2. Candidate para decision audio. NOT a chat model.'
   flux-3:
     name: FLUX 3 Image Klein
-    description: FLUX 3 Klein 5.6B (BFL 15/out) — destilado 16 steps, cfg 1.0. Text-render best-in-class, edição pixel-perfect, multi-ref até 10 imgs. SFW (NSFW suprimido no treino, red team BFL).
+    description: FLUX 3 Klein is Black Forest Labs' 5.6B distilled image generation model, optimized for 16 steps. It excels at text rendering, pixel-perfect editing, and multi-reference composition of up to 10 images.
     tags:
     - image
     proxy: http://127.0.0.1:${PORT}
@@ -1400,7 +1400,7 @@ models:
       note: 'vram detalhe: ~2GB (model + mmproj + cache) | GLM OCR multimodal: model 0.95GB + mmproj 0.48GB + cache; Q8_0 Specialized OCR model — use prompts like ''OCR'', ''OCR markdown'', ''Table Recognition:''. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.'
   kokoro-82m:
     name: Kokoro 82M
-    description: Native C++ TTS (audio.cpp server, GGUF Q8_0 190MB). 9 languages incl. pt-br, 54+ preset voices, eSpeak-ng G2P. OpenAI-compatible /v1/audio/speech. Cold load ~3s, warm ~0.4s on CUDA.
+    description: Kokoro is an 82M text-to-speech model covering nine languages including Brazilian Portuguese, with 54+ preset voices. OpenAI-compatible /v1/audio/speech endpoint.
     tags:
     - tts
     proxy: http://127.0.0.1:${PORT}
@@ -1924,7 +1924,7 @@ models:
       note: 'vram detalhe: ~4.9 GB VRAM + ~4.7 GB RAM used | experts em page cache file-backed evictável via -cmoe (a RAM usada é cache — evictável quando o sistema pede) vram detalhe: MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s 0.74 05/10/2026: -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap 24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly. Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K).'
   qwen-image-2.1-turbo:
     name: Qwen-Image 2.1 Turbo (Oficial)
-    description: Turbo OFICIAL da Alibaba (distill 8 steps) — mesmo DiT 7B destilado + TE Sakura 8-bit uncensored. Geração e edição nativa; ~5x mais rápido que a base 40-step.
+    description: Qwen-Image 2.1 Turbo is Alibaba's official 8-step distilled image model, with generation and native editing, roughly five times faster than the 40-step base.
     tags:
     - image
     proxy: http://127.0.0.1:${PORT}
@@ -1983,7 +1983,7 @@ models:
       - Dimensões múltiplas de 32 (não 16)
   qwen3-tts:
     name: Qwen3-TTS 0.6B
-    description: Text-to-speech native (audio.cpp server, GGUF Q8_0 1.9GB) com voice cloning - biblioteca da casa via voice_presets. Voice library da casa (Lucas, Hermes, Drácula, Alucard, Batman, Bolso, Jarvis, Francisca, Thalita, Finch) via voice_presets. OpenAI-compatible /v1/audio/speech. Language codes por nome (portuguese, english...).
+    description: Qwen3 TTS is a text-to-speech model with voice cloning, served from the house voice library (Lucas, Hermes, Drácula, and more) via voice presets. OpenAI-compatible /v1/audio/speech endpoint.
     tags:
     - tts
     proxy: http://127.0.0.1:${PORT}

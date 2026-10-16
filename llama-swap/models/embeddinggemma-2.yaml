@@ -1,6 +1,6 @@
 embeddinggemma-2:
   name: EmbeddingGemma 2
-  description: "Embedding model multimodal do Google DeepMind: texto (incl. código), imagem, áudio e vídeo num espaço unico de 768 dim. 740M (texto 270M + visao 170M + audio 300M), 100+linguas, ctx 8K, MRL (128/256/512/768d), Apache 2.0."
+  description: EmbeddingGemma 2 is Google DeepMind's 740M multimodal embedding model, mapping text, images, audio, and video into a single 768-dimension space. It supports 100+ languages with MRL flexible dimensions.
   env:
   - CUDA_VISIBLE_DEVICES=
   cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/embeddinggemma-2/embeddinggemma-2-Q8_0.gguf\n--mmproj ${models_dir}/embeddinggemma-2/mmproj-embeddinggemma-2-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 8192\n--cont-batching\n--parallel 1\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"

@@ -1,15 +1,11 @@
 kokoro-82m:
   name: Kokoro 82M
-  description: Native C++ TTS (audio.cpp server, GGUF Q8_0 190MB). 9 languages incl. pt-br, 54+ preset voices, eSpeak-ng G2P. OpenAI-compatible /v1/audio/speech. Cold load ~3s, warm ~0.4s on CUDA.
+  description: Kokoro is an 82M text-to-speech model covering nine languages including Brazilian Portuguese, with 54+ preset voices. OpenAI-compatible /v1/audio/speech endpoint.
   tags:
   - tts
   proxy: http://127.0.0.1:${PORT}
   checkEndpoint: /health
-  cmd: ${env.HOME}/git/audio.cpp/build/linux-cuda-release/bin/audiocpp_server
-    --config ${env.HOME}/git/audio.cpp/server-kokoro.json
-    --model-spec-override ${env.HOME}/git/audio.cpp/model_specs
-    --port ${PORT} --host 127.0.0.1
-
+  cmd: ${env.HOME}/git/audio.cpp/build/linux-cuda-release/bin/audiocpp_server --config ${env.HOME}/git/audio.cpp/server-kokoro.json --model-spec-override ${env.HOME}/git/audio.cpp/model_specs --port ${PORT} --host 127.0.0.1
   cmdStop: pkill -f server-kokoro.json
   health_check_timeout: 120
   ttl: 300
