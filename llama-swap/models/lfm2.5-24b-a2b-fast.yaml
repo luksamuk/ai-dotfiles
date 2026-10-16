@@ -1,0 +1,84 @@
+lfm2.5-24b-a2b-fast:
+  name: LFM 2.5 24B A2B (fast)
+  description: "LiquidAI flagship agentic MoE. 24B total / 2.45B active (64 experts,
+    top-4 routing, 30 shortconv + 10 GQA layers). 131K context, 128K vocab, native
+    reasoning. Agent-focused training (36T tokens); knowledge-heavy tasks need retrieval.
+    ik_llama.cpp backend, higher RAM/VRAM usage."
+  cmd: '${ik_llama_server} --port ${PORT}
+
+    --model ${models_dir}/lfm25-24b-a2b/LFM2.5-24B-A2B-APEX-I-Compact.gguf
+
+    --jinja
+
+    -ot "blk\.([7-9]|1[0-9]|2[0-9]|3[0-9])\.ffn_(gate|up|down)_exps=CPU"
+
+    -ngl 99
+
+    --ctx-size 131072
+
+    --parallel 1
+
+    --temp 0.1
+
+    --top-k 50
+
+    --repeat-penalty 1.05
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        temperature: 0.1
+        top_k: 50
+        repetition_penalty: 1.05
+  ttl: 300
+  health_check_timeout: 600
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: ~10.4 GB (APEX I-Compact)
+    context: 131072
+    vram_usage: "~4.6 GB VRAM (gpu7: experts blk 0-6 na GPU) + ~10.1 GB RAM"
+    source: mudler/LFM2.5-24B-A2B-APEX-GGUF (APEX I-Compact)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: lfm2moe
+    parameters: 24000000000
+    active: 2000000000
+    embedding_length: 2048
+    context_length: 131072
+    quantization: APEX I-Compact
+    note: 'Backend ik. -ot parcial gpu7: experts dos blocos 0-6 na GPU
+      (7-39 na CPU) — A/B 13/out: baseline (todos CPU) 33.3 t/s, gpu7 36.3 t/s
+      (+9%) @400 tokens, ambos prompt único/temp 0.1 (VRAM 65% vs 37%,
+      RAM -3.5 GB). GGML_CUDA_NO_PINNED=1 PROIBIDO: pinned obrigatório (sem
+      ele: load trava 13.3 GiB alloc + decode 0.63 t/s). Pinned exige RAM
+      folgada no load. -cmoe é EXCLUSIVO do cafe. Ik binary pull
+      3dbc2c9f (Oct 13) inclui lfm2moe runtime #2530 e spec decode LFM2 #2652 (CPU
+      checkpoint). tok_embd fica NA GPU (o vocab 128K embd em CPU mataria o decode;
+      o -ot tok_embd do k2 NÃO se aplica aqui). -nkvo OFF (a arch shortconv híbrida:
+      o teste decide o KV residency — se OOM @32K: -nkvo como o k2). Smoke pending
+      (pós-N=5 do minicpm5). GGUF em ~/.llama-models/lfm25-24b-a2b/.'

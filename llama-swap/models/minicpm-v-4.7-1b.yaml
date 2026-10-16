@@ -1,7 +1,8 @@
 "minicpm-v-4.7-1b":
   name: MiniCPM-V 4.7 1B
-  description: "OpenBMB MiniCPM-V 4.7 1B (Q8_0 oficial): dense 1B VLM, multi-imagem + video + OCR, early token compression (mmproj 4x/16x). Aparece em ambas variantes de mmproj; 4x = mais detalhe visual, 16x = mais rápido."
-  tags: [vis]
+  description: "OpenBMB MiniCPM-V 4.7 1B - dense VLM: multi-image, video and OCR
+    with early token compression. 262K context, native reasoning."
+  tags: [vis, think, tools]
   cmd: '${llama_server} --port ${PORT}
 
     --model ${models_dir}/minicpm-v-4.7-1b/MiniCPM-V-4_7-1B-Q8_0.gguf
@@ -14,7 +15,7 @@
 
     --parallel 1
 
-    --ctx-size 32768
+    --ctx-size 262144
 
     --parallel 1
 
@@ -45,6 +46,11 @@
           enable_thinking: false
         temperature: 0.7
         top_p: 0.9
+      "minicpm-v-4.7-1b:think":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.7
+        top_p: 0.9
   ttl: 60
   health_check_timeout: 300
   capabilities:
@@ -52,10 +58,10 @@
     out: [text]
     tools: false
     reranker: false
-    context: 32768
+    context: 262144
   metadata:
     size: ~1.1 GB (Q8_0) + ~0.9 GB mmproj 4x
-    context: 32768
+    context: 262144
     vram_usage: "~2.2 GB VRAM"
     source: openbmb/MiniCPM-V-4.7-1B-gguf
     kv_cache: "q4_0/q4_0 + hadamard"
@@ -70,7 +76,7 @@
       image: false
     architecture: minicpm-v
     parameters: 1000000000
-    context_length: 32768
+    context_length: 262144
     embedding_length: 896
     quantization: Q8_0
-    note: "Série MiniCPM-V 4.7 (out/2026): primeiro MoE visual da série é o 35B; este 1B é denso, foco on-device. Card: 'substantially outperforms Qwen3.5 0.8B in both overall score and inference efficiency'. M-RoPE canvas: EXIGE converter/llama.cpp at/after PR #29416 (rope.section_order + v.tok_embd_sep) — não rodar em ik/cafe até rebase. mmproj 4x (0.90GB) = downsample 4x, detalhe maior; 16x (1.11GB) = default. Sampling: card oficial minicpm-v = temp 0.7, top_p 0.9, top-k 100, rp 1.05 (herdado do 4.6; cookbook INT4: quantize Q4_K_M/Q5_K_M p/ 1B se Q8_0 folgar). Q8_0 = doutrina casa p/ <=2B. ctx 32K conservative: card não crava ctx nativo do 1B GGUF (262144 era do 4.6); subir após smoke."
+    note: "Série MiniCPM-V 4.7 (out/2026): primeiro MoE visual da série é o 35B; este 1B é denso, foco on-device. Card: 'substantially outperforms Qwen3.5 0.8B in both overall score and inference efficiency'. M-RoPE canvas: EXIGE converter/llama.cpp at/after PR #29416 (rope.section_order + v.tok_embd_sep) — não rodar em ik/cafe até rebase. mmproj 4x (0.90GB) = downsample 4x, detalhe maior; 16x (1.11GB) = default. Sampling: card oficial minicpm-v = temp 0.7, top_p 0.9, top-k 100, rp 1.05 (herdado do 4.6; cookbook INT4: quantize Q4_K_M/Q5_K_M p/ 1B se Q8_0 folgar). Q8_0 = doutrina casa p/ <=2B. ctx 262144 = NATIVO do GGUF 1B (metadata cravado 13/Out, decreto user: nativo ou morte)."

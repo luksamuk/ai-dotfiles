@@ -1,11 +1,11 @@
 nemotron-bolt-74b:
   name: Nemotron 3.5 Bolt 74B-A9B (IQ2 QAT)
   description: "NVIDIA Nemotron 3.5 Bolt — 74B total / 9B active, LatentMoE Mamba-2
-    hybrid (only 8 full-attention layers), C-RADIO vision. IQ2 QAT nativo. 262K
-    context (~1.2 GB KV q8 @262K). Deploy community recipe (DogukanUrker, RTX 3060
-    12GB+16GB RAM: 24 t/s decode, 500 t/s prefill, 262K inteiro) — experts na
-    CPU RAM via -ncmoe, dense/SSM na GPU."
-  cmd: '${llama_server} --port ${PORT}
+    hybrid (8 full-attn layers), C-RADIO vision. IQ2 QAT nativo. 262K native.
+    Deploy CAFE + -ssd-streaming (experts do NVMe): -ncmoe no vanilla NAO CABE
+    no 6GB Navi (dense ~4.8GB + compute > 5.1GB free; fit abortado por tensor
+    overrides — testado 15/out, RAM 93%). Cafe fit auto-ajusta."
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
     --model ${models_dir}/nemotron-bolt/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB.gguf
 
@@ -13,19 +13,23 @@ nemotron-bolt-74b:
 
     --parallel 1
 
-    --ctx-size 131072
-
-    --n-cpu-moe 88
-
-    --cache-type-k q8_0
-
-    --cache-type-v q8_0
+    --ctx-size 32768
 
     --flash-attn on
 
-    -b 2048
+    -ngl 34
 
-    -ub 1024
+    -nkvo
+
+    -ssd-streaming
+
+    -ssd-io-threads 8
+
+    -ssd-cache-mb 4096
+
+    -b 512
+
+    -ub 128
 
     --metrics
 
