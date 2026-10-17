@@ -297,8 +297,8 @@ def parse_args() -> argparse.Namespace:
         help="qwen-image-2.1: smart LoRA selection via catalog (strength via DIFFUSE_NSFW_STRENGTH, default 0.7); skipped when the prompt has a manual <lora:...> tag. Other models: NSFW enhance prompts.",
     )
     p.add_argument(
-        "--pruna", action="store_true",
-        help="qwen-image-2.1 (base only): attach the Pruna 8-step distillation LoRA at strength 1.0 and default to 8 steps / cfg 1.0. Incompatible with -turbo (mixed distillation families).",
+        "--turbo", action="store_true",
+        help="moss-image: attach the DMD 8-step distillation LoRA at strength 1.0 and default to 8 steps / cfg 1.0 (50->8 steps, ~4x faster, not part of --enhance LoRA selection).",
     )
     return p.parse_args()
 
@@ -1333,6 +1333,24 @@ def _run_moss_wan2gp_image(
     guidance = args.cfg if args.cfg is not None else 3.0
     negative = None if args.nsfw else "nsfw, worst quality, bad anatomy, watermark, jpeg artifact"
 
+    # --turbo: DMD 8-step distillation LoRA (lodestones) @1.0 + cfg 1.0.
+    # Non-selectable: injected via activated_loras directly, never via the
+    # --enhance catalog. 8 steps cfg 1.0 validated E2E (poster A/B: 24s vs
+    # 4m34s @512, zero visible loss).
+    loras_extra: list[str] = []
+    mults_extra: list[str] = []
+    if getattr(args, "turbo", False):
+        loras_extra = ["moss_dmd_8step.safetensors"]
+        mults_extra = ["1.0"]
+        # main() already materialized the per-backend default into args.steps
+        # (50), so check against that, not None (the --pruna lesson).
+        if args.steps in (None, 50):
+            steps = 8
+        if args.cfg is None:
+            guidance = 1.0
+            negative = None  # cfg 1.0: negative é no-op
+        print(f"     TURBO: DMD 8-step LoRA @1.0 (cfg {guidance}, {steps} steps)")
+
     print(f"  \U0001f5bc\ufe0f MOSS-Image SFT T2I")
     print(f"     {width}x{height}, {steps} steps, cfg={guidance}, shift=5, seed={seed}")
     if args.nsfw:
@@ -1374,6 +1392,7 @@ def _run_moss_wan2gp_image(
         ref_images=None, steps=steps, cfg_scale=guidance,
         model_type="moss_image_sft", negative_prompt=negative or "",
         unit_name="diffuse-moss", lora_root_name="moss_image", flow_shift=5,
+        activated_loras=loras_extra, loras_multipliers=mults_extra,
     )
     wall_time = time.perf_counter() - wall_t0
 
@@ -1746,23 +1765,6 @@ def _run_qwen21_sd_cpp_image(
     # a 2.01x ratio. cfg 1.0 at 40 steps is both FASTER and better-looking
     # than cfg 4.0 at 28 steps. Do not raise this without an A/B.
     guidance = args.cfg if args.cfg is not None else 1.0
-
-    # --pruna: Pruna 8-step distillation LoRA on the BASE model only. Mixing a
-    # Pruna adapter with the Viggle-turbo DiT stacks two independent distillation
-    # lines — the catalog explicitly says the families are not interchangeable.
-    if getattr(args, "pruna", False):
-        if model_name.endswith("-turbo"):
-            raise SystemExit(
-                "  ✗ --pruna is for the base model only (-m qwen-image-2.1). "
-                "The turbo is already distilled (Viggle or official); stacking a Pruna LoRA on "
-                "it mixes distillation families and corrupts the sampling recipe."
-            )
-        if "<lora:" not in prompt:
-            prompt = f"<lora:p_qwen_image_2.1_8step_v0.1:1.0> {prompt}"
-        # main() already materialized the per-backend default into args.steps
-        # (40/6), so check against those, not None.
-        if not args.steps or args.steps in (40, 6):
-            steps = 8
 
     if is_edit:
         print(f"  \U0001f3a8 Qwen-Image 2.1 editing: {Path(ref_image_paths[0]).name}")

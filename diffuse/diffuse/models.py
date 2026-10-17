@@ -101,7 +101,8 @@ MODELS: dict[str, dict] = {
     # DiT qwen-image-2.1-Q4_K_M.gguf DELETED; weights re-installable from
     # abenzerps/Qwen-Image-2.1-Uncensored-GGUF (Q4_K_M 4.60 GB). Entry kept in the
     # registry on purpose (code stays; weights gone) — loader missing-error is the
-    # intended guardrail. --pruna dies with it (LoRA extracts p_qwen_5/8step deleted).
+    # intended guardrail. The old --pruna flag was removed (base retired; its
+    # LoRA extracts p_qwen_5/8step deleted with it).
     "qwen-image-2.1": {
         "backend_id": "qwen-image-2.1-sd-cpp",
         "dir": "qwen-image-2.1",
