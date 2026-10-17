@@ -16,7 +16,13 @@ log = logging.getLogger("diffuse")
 def resolve_output_path(model_name: str, seed: int, output_arg: str | None, cwd: Path | None = None) -> Path:
     """Determine output PNG path."""
     if output_arg is not None:
-        return Path(output_arg).expanduser().resolve()
+        out = Path(output_arg).expanduser()
+        if not out.is_absolute():
+            # Relative --output resolves against the USER's original cwd (the
+            # run.sh wrapper cds to SCRIPT_DIR, so the process cwd is wrong).
+            base = cwd if cwd else Path.cwd()
+            out = base / out
+        return out.resolve()
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     # Sanitize model name for filesystem (replace : and other problematic chars)
