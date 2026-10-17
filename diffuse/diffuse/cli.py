@@ -26,6 +26,7 @@ from diffuse.enhance import (
     enhance_vision_prompt,
     enhance_qwen21_prompt,
     enhance_agate_prompt,
+    enhance_moss_prompt,
     enhance_edit_prompt,
     analyze_image,
     analyze_and_enhance_edit,
@@ -127,6 +128,12 @@ def print_list() -> None:
             # Weights live in the WanGP ckpts/ tree, not in diffuse models/
             wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
             return (wgp / "flux3_image_klein_sd_int8_convrot.safetensors").exists()
+        elif backend == "moss_wan2gp":
+            wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
+            return (wgp / "moss_image_sft_int8_convrot.safetensors").exists()
+        elif backend == "qwen21_turbo_wan2gp":
+            wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
+            return (wgp / "qwen_image_21_turbo_7B_int8_convrot.safetensors").exists()
         else:
             p = MODELS_DIR / model_dir
         return p.exists() and any(p.iterdir()) if p.exists() else False
@@ -337,13 +344,12 @@ def main() -> None:
             args.steps = 20
         elif backend_type == "zimage_sd_cpp":
             args.steps = 9
-        elif backend_type == "qwen21_sd_cpp":
-            if model_name.endswith("-turbo"):
-                args.steps = 8       # official Alibaba turbo
-            else:
-                args.steps = 40
+        elif backend_type == "qwen21_turbo_wan2gp":
+            args.steps = 8           # official Alibaba turbo (distilled)
         elif backend_type == "flux3_wan2gp":
             args.steps = 16          # BFL distilled recipe
+        elif backend_type == "moss_wan2gp":
+            args.steps = 50          # OpenMOSS release recipe (CFG 3, SLG 22; sem distill oficial no WanGP)
         elif backend_type == "agate":
             args.steps = 50
         else:
@@ -381,7 +387,7 @@ def main() -> None:
             print(f"\n  ✗ Model not found: {model_path}")
             print(f"    Run: diffuse download {model_info['dir'].split('-')[0]}")
             sys.exit(1)
-    elif backend_type == "flux3_wan2gp":
+    elif backend_type in ("flux3_wan2gp", "qwen21_turbo_wan2gp", "moss_wan2gp"):
         # Weights live in the WanGP ckpts/ tree; backends/wan2gp verifies per-file
         pass
     else:
@@ -390,8 +396,8 @@ def main() -> None:
     # ── Validate --edit (hidream, mageflow, and qwen21 support it) ──
     ref_image_paths = None
     if args.edit:
-        if backend_type not in ("hidream", "mageflow_sd_cpp", "qwen21_sd_cpp", "flux3_wan2gp"):
-            print(f"  ⚠️  --edit is only supported with hidream, mageflow-edit-turbo or qwen-image-2.1 (got {backend_type})")
+        if backend_type not in ("hidream", "mageflow_sd_cpp", "qwen21_sd_cpp", "flux3_wan2gp", "qwen21_turbo_wan2gp"):
+            print(f"  ⚠️  --edit is only supported with hidream, mageflow-edit-turbo, qwen-image-2.1 or flux-3 (got {backend_type})")
             print(f"     Use: diffuse -m hidream-sdnq --edit {args.edit} -p 'instruction'")
             print(f"      or: diffuse -m mageflow-edit-turbo --edit {args.edit} -p 'instruction'")
             print(f"      or: diffuse -m qwen-image-2.1 --edit {args.edit} -p 'instruction'")
@@ -442,6 +448,16 @@ def main() -> None:
     # ── FLUX 3 Klein early path (T2I + editing via WanGP) ──
     if backend_type == "flux3_wan2gp":
         _run_flux3_wan2gp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
+        return
+
+    # ── Qwen-Image 2.1 Turbo early path (T2I + editing via WanGP; Sakura TE) ──
+    if backend_type == "qwen21_turbo_wan2gp":
+        _run_qwen21_turbo_wan2gp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
+        return
+
+    # ── MOSS-Image early path (T2I via WanGP; layout-JSON nativo) ──
+    if backend_type == "moss_wan2gp":
+        _run_moss_wan2gp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
         return
 
     # ── LLM eviction (free VRAM for diffusion) ──
@@ -1270,6 +1286,413 @@ def _run_flux3_wan2gp_image(
     output_path, diffusion_time, peak_hbm = generate_image_flux3_wan2gp(
         config, prompt, seed, width, height, output_path,
         ref_images=ref_image_paths, steps=steps, cfg_scale=guidance,
+    )
+    wall_time = time.perf_counter() - wall_t0
+
+    print(f"  [3/3] Done - unloading...")
+
+    save_metadata(
+        model_name, prompt, seed, width, height, steps,
+        0.0, diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+    )
+    print_debrief(
+        model_name, model_info, prompt, seed,
+        width, height, steps, 0.0,
+        diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+        original_prompt=original_prompt,
+    )
+
+
+def _run_moss_wan2gp_image(
+    args,
+    model_name: str,
+    model_info: dict,
+    prompt: str,
+    original_prompt: str,
+    seed: int,
+    width: int,
+    height: int,
+    ref_image_paths: list[str] | None,
+) -> None:
+    """Handle MOSS-Image SFT generation via WanGP (T2I only).
+
+    OpenMOSS release recipe: 50 steps, cfg 3, shift 5, SLG layer-22 skip built
+    into the pipeline. Uncensored by training doctrine — the official negative
+    tag set (nsfw, worst quality...) is applied ONLY for SFW requests (--nsfw
+    drops the negative entirely). No reference images: structured editing goes
+    through the JSON layout prompt format.
+    """
+    from diffuse.backends.wan2gp import (
+        load_pipeline_wan2gp,
+        generate_image_wan2gp,
+    )
+
+    steps = args.steps if args.steps is not None else 50
+    guidance = args.cfg if args.cfg is not None else 3.0
+    negative = None if args.nsfw else "nsfw, worst quality, bad anatomy, watermark, jpeg artifact"
+
+    print(f"  \U0001f5bc\ufe0f MOSS-Image SFT T2I")
+    print(f"     {width}x{height}, {steps} steps, cfg={guidance}, shift=5, seed={seed}")
+    if args.nsfw:
+        print(f"     NSFW: negative prompt desativado (modelo uncensored por doutrina de treino)")
+    else:
+        print(f"     SFW: negative '{negative}'")
+
+    # -- Prompt enhancement (moss doctrine: typography-first, no euphemisms) --
+    enhanced = None
+    if args.enhance or args.enhance_with:
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "ornith-1.5-35b-heretic")
+        print(f"\n  \u2728 Enhancing prompt via {enhance_model} (moss doctrine)...")
+        enhanced, raw_response = enhance_moss_prompt(prompt, enhance_model, nsfw=args.nsfw)
+        if enhanced and enhanced != prompt:
+            print(f"     Expanded to ({len(enhanced)} chars)")
+            _show_enhanced_if_requested(args, enhanced)
+            prompt = enhanced
+        else:
+            print(f"     \u26a0\ufe0f  Enhancement failed - using raw prompt")
+
+    # Evict LLMs (TE runs on CPU, but nothing else should hold VRAM)
+    running = llama_swap_running_models()
+    if running:
+        print(f"  \U0001f504 Evicting LLM models: {', '.join(running)}")
+        evict_llm()
+        print(f"     VRAM freed for image generation")
+
+    print(f"  [1/3] Loading MOSS-Image pipeline ({model_info['bits']})...")
+    config, load_time = load_pipeline_wan2gp(model_name)
+    print(f"        WanGP config ready")
+
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+
+    print(f"  [2/3] Generating (WanGP profile 5, GPU offload)...")
+    wall_t0 = time.perf_counter()
+    output_path, diffusion_time, peak_hbm = generate_image_wan2gp(
+        config, prompt, seed, width, height, output_path,
+        ref_images=None, steps=steps, cfg_scale=guidance,
+        model_type="moss_image_sft", negative_prompt=negative or "",
+        unit_name="diffuse-moss", lora_root_name="moss_image", flow_shift=5,
+    )
+    wall_time = time.perf_counter() - wall_t0
+
+    print(f"  [3/3] Done - unloading...")
+
+    save_metadata(
+        model_name, prompt, seed, width, height, steps,
+        0.0, diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+    )
+    print_debrief(
+        model_name, model_info, prompt, seed,
+        width, height, steps, 0.0,
+        diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+        original_prompt=original_prompt,
+    )
+
+
+def _run_qwen21_turbo_wan2gp_image(
+    args,
+    model_name: str,
+    model_info: dict,
+    prompt: str,
+    original_prompt: str,
+    seed: int,
+    width: int,
+    height: int,
+    ref_image_paths: list[str] | None,
+) -> None:
+    """Qwen-Image 2.1 Turbo via WanGP (official Alibaba distill).
+
+    8 steps, cfg 1.0, qwen21_turbo scheduler (fixed released sigmas). TE = the
+    local Sakura Heretic GGUF 8B (remapped natively by the handler). WanGP mmgp
+    Profile 5 offloads blocks one-by-one — denoise on GPU, same regime as the
+    flx3/Ming/H3 routes in the 6 GB fleet.
+    """
+    from diffuse.backends.wan2gp import (
+        load_pipeline_wan2gp,
+        generate_image_wan2gp,
+    )
+
+    is_edit = bool(ref_image_paths)
+    steps = args.steps if args.steps is not None else 8
+    guidance = args.cfg if args.cfg is not None else 1.0
+
+    if is_edit:
+        print(f"  \U0001f3a8 Qwen-Image 2.1 Turbo editing: {Path(ref_image_paths[0]).name}")
+    else:
+        print(f"  \U0001f3a8 Qwen-Image 2.1 Turbo T2I (official distill)")
+    print(f"     {width}x{height}, {steps} steps, cfg={guidance}, seed={seed}")
+
+    # -- Prompt enhancement + LoRA selection (qwen21 flow, ported from the
+    # sd.cpp runner — catálogo ranked via ColBERT rerank, LLM picks 0-2 via the
+    # LORAS: <ids> line, resolve -> <lora:tags> re-applied; the wan2gp backend
+    # then converts tags -> activated_loras settings, see generate_image_wan2gp).
+    lora_tags = ""
+    if "<lora:" in prompt:
+        prompt, lora_tags = _extract_lora_tags(prompt)
+    enhanced = None
+    if args.enhance or args.enhance_with or getattr(args, "enhance_edit_with", None):
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "ornith-1.5-35b-heretic")
+        enhance_type = model_info.get("enhance_type", "qwen21")
+
+        # --enhance-edit-with: VLM vê a referência e refina a instrução (one-shot);
+        # MESMO fluxo do text-only: rerank antes + linha LORAS: + resolve/inyección.
+        _edit_catalog_block = None
+        if is_edit and getattr(args, "enhance_edit_with", None):
+            import os as _os_e
+            import re as _re_e
+            import subprocess as _sp_e
+            import time as _time_e
+            edit_model = args.enhance_edit_with
+            if not _check_model_vision(edit_model):
+                print(f"  \u26a0\ufe0f  {edit_model} não tem visão — caindo pro enhance text-only")
+                enhanced, raw_response = enhance_qwen21_prompt(prompt, enhance_model, nsfw=args.nsfw)
+            else:
+                _edit_rule = None
+                if "<lora:" not in prompt:
+                    _edit_cat = (_os_e.environ.get("NSFW_CATALOG_JSON" if getattr(args, "nsfw", False) else "GEN_CATALOG_JSON") or str(
+                        Path.home() / ".local/share/diffuse/{}catalog_qwen21.json".format("nsfw_" if getattr(args, "nsfw", False) else "")))
+                    _edit_rerank = str(Path.home() / ".local/share/diffuse/rerank_catalog_qwen21.py")
+                    if Path(_edit_cat).exists() and Path(_edit_rerank).exists():
+                        try:
+                            _env_e = dict(_os_e.environ)
+                            if not getattr(args, "nsfw", False):
+                                _env_e["NSFW_CATALOG_JSON"] = _edit_cat
+                            _t0e = _time_e.time()
+                            _ranked_e = _sp_e.run(
+                                ["python3", _edit_rerank, "--prompt", prompt, "--n", "10" if getattr(args, "nsfw", False) else "5", "--mode", "rank"],
+                                capture_output=True, text=True, timeout=180, env=_env_e)
+                            if _ranked_e.returncode == 0 and _ranked_e.stdout.strip():
+                                _edit_catalog_block = _ranked_e.stdout.strip()
+                                _n_e = len(_re_e.findall(r"^\d+:", _edit_catalog_block, flags=_re_e.M))
+                                print(f"  🔎 Rerank ColBERT: {_n_e} LoRAs pré-ordenados "
+                                      f"({_time_e.time() - _t0e:.1f}s)")
+                        except Exception as e:  # fail-open
+                            print(f"  ⚠️  rerank indisponível ({e}); seguindo sem seleção")
+                if _edit_catalog_block:
+                    _edit_rule = (
+                        "LoRA SELECTION: at the very END of your output, on the LAST line, "
+                        "output exactly: LORAS: <comma-separated numeric IDs>\n"
+                        "- Choose the IDs best fit to the request (0 to 2 LoRAs; aesthetics "
+                        "LoRA + detailer may stack, never two of the same category).\n"
+                        "- If genuinely nothing fits the request, output: LORAS: none\n"
+                        f"- {'Never mention catalog trigger phrases' if getattr(args, 'nsfw', False) else 'Never mention catalog trigger words'} in the paragraph itself.\n\n"
+                        + _edit_catalog_block)
+                print(f"\n  \U0001f441\ufe0f\u2728 {edit_model} analisa a referência e refina a instrução (one-shot)...")
+                enhanced, raw_response = analyze_and_enhance_edit(
+                    ref_image_paths[0], prompt, edit_model, nsfw=args.nsfw, extra_system=_edit_rule or "")
+                _m_edit = _re_e.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "") if _edit_catalog_block else None
+                _lora_ids_edit = [int(x) for x in _re_e.findall(r"\d+", _m_edit.group(1))] if _m_edit and _m_edit.group(1).strip() else None
+                enhanced = _re_e.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_e.M).strip()
+                if enhanced and enhanced != prompt:
+                    print(f"     Expanded to ({len(enhanced)} chars)")
+                    _show_enhanced_if_requested(args, enhanced)
+                    print(f"     ─── Enhanced edit prompt ───")
+                    import textwrap as _tw
+                    for line in _tw.wrap(enhanced, width=78):
+                        print(f"     {line}")
+                    print(f"     ────────────────────────────")
+                if _lora_ids_edit:
+                    _resolver_e = str(Path.home() / ".local/share/diffuse/nsfw_lora_resolve_qwen21.py" if getattr(args, "nsfw", False) else ".local/share/diffuse/catalog_lora_resolve_qwen21.py")
+                    if not _resolver_e.startswith("/"):
+                        _resolver_e = str(Path.home() / _resolver_e)
+                    _res_e = _sp_e.run(["python3", _resolver_e, "--ids", ",".join(map(str, _lora_ids_edit))],
+                                       capture_output=True, text=True, timeout=30)
+                    import json as _j_e
+                    _sel_e = _j_e.loads(_res_e.stdout) if _res_e.returncode in (0, 3) and _res_e.stdout.strip() else {}
+                    if _sel_e.get("names"):
+                        _tags_e = " ".join(f"<lora:{n}:{m_}>" for n, m_ in zip(_sel_e["names"], _sel_e["mults"]))
+                        _trigs_e = [t for t in (_sel_e.get("triggers") or []) if t]
+                        enhanced = f"{_tags_e} {enhanced}" if enhanced else enhanced
+                        if _trigs_e:
+                            enhanced = f"{', '.join(_trigs_e)} {enhanced}"
+                        print(f"  🎯 LLM escolheu {len(_sel_e['names'])} LoRA(s): "
+                              f"{', '.join(_sel_e['names'])}")
+                elif _edit_catalog_block:
+                    print("  ℹ️  LLM não escolheu LoRA (LORAS: none ou linha ausente); rodando base")
+                enhanced = enhanced if (enhanced and enhanced != prompt) else None
+        elif enhance_type == "qwen21":
+            # Catálogo geral (non-NSFW): adapters de estilo/fix. Mirror do sd.cpp
+            # (compartilhado por T2I e edits): sem tag manual, rerank pré-ordena o
+            # catálogo e o LLM escolhe 0-2 — triggers + tags injetados FORA do
+            # paragraph depois do resolve. Fail-open: sem catálogo/sem rerank/sem
+            # linha LORAS: → roda base. No edit+nsfw NÃO há enhance aqui (o
+            # post-bloco --nsfw roda rerank + UMA call só) — duas calls eram o
+            # desperdício reportado pelo user.
+            _gen_catalog_block = None
+            if "<lora:" not in prompt and not getattr(args, "nsfw", False):
+                import os as _os_c
+                import re as _re_c
+                import subprocess as _sp_c
+                import time as _time_c
+                _gen_cat = _os_c.environ.get("GEN_CATALOG_JSON") or str(
+                    Path.home() / ".local/share/diffuse/catalog_qwen21.json")
+                _gen_rerank = str(Path.home() / ".local/share/diffuse/rerank_catalog_qwen21.py")
+                if Path(_gen_cat).exists() and Path(_gen_rerank).exists():
+                    try:
+                        _env = dict(_os_c.environ)
+                        _env["NSFW_CATALOG_JSON"] = _gen_cat
+                        _t0 = _time_c.time()
+                        _ranked = _sp_c.run(
+                            ["python3", _gen_rerank, "--prompt", prompt, "--n", "5", "--mode", "rank"],
+                            capture_output=True, text=True, timeout=180, env=_env)
+                        if _ranked.returncode == 0 and _ranked.stdout.strip():
+                            _gen_catalog_block = _ranked.stdout.strip()
+                            _n_ranked = len(_re_c.findall(r"^\d+:", _gen_catalog_block, flags=_re_c.M))
+                            print(f"  🔎 Rerank ColBERT: {_n_ranked} LoRAs pré-ordenados "
+                                  f"({_time_c.time() - _t0:.1f}s)")
+                    except Exception as e:  # fail-open: sem ranking, geração segue
+                        print(f"  ⚠️  rerank do catálogo indisponível ({e}); seguindo sem seleção")
+            if _gen_catalog_block:
+                _gen_rule = (
+                    "LoRA SELECTION: at the very END of your output, on the LAST line, "
+                    "output exactly: LORAS: <comma-separated numeric IDs>\n"
+                    "- Choose the IDs best fit to the request (0 to 2 LoRAs; aesthetics "
+                    "LoRA + detailer may stack, never two of the same category).\n"
+                    "- If genuinely nothing fits the request, output: LORAS: none\n"
+                    "- Never mention catalog trigger words in the paragraph itself.\n\n"
+                    + _gen_catalog_block)
+                print(f"\n  ✨ Enhancing prompt via {enhance_model} (qwen21 mode + catálogo)...")
+                enhanced, raw_response = enhance_qwen21_prompt(
+                    prompt, enhance_model, nsfw=args.nsfw, extra_system=_gen_rule)
+                import os as _os_p
+                import re as _re_p
+                import subprocess as _sp_p
+                import json as _j_p
+                m = _re_p.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "")
+                _lora_ids = [int(x) for x in _re_p.findall(r"\d+", m.group(1))] if m and m.group(1).strip() else None
+                enhanced = _re_p.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_p.M).strip()
+                if _lora_ids:
+                    _resolver = str(Path.home() / ".local/share/diffuse/catalog_lora_resolve_qwen21.py")
+                    _res = _sp_p.run(["python3", _resolver, "--ids", ",".join(map(str, _lora_ids))],
+                                     capture_output=True, text=True, timeout=30)
+                    _sel = _j_p.loads(_res.stdout) if _res.returncode in (0, 3) and _res.stdout.strip() else {}
+                    if _sel.get("names"):
+                        _tags = " ".join(
+                            f"<lora:{n}:{m_}>" for n, m_ in zip(_sel["names"], _sel["mults"]))
+                        _trigs = [t for t in (_sel.get("triggers") or []) if t]
+                        enhanced = f"{_tags} {enhanced}"
+                        if _trigs:
+                            enhanced = f"{', '.join(_trigs)} {enhanced}"
+                        print(f"  🎯 LLM escolheu {len(_sel['names'])} LoRA(s): "
+                              f"{', '.join(_sel['names'])}")
+            else:
+                if getattr(args, "nsfw", False):
+                    # --nsfw: o fluxo post-bloco roda rerank ANTES + UMA call só de
+                    # enhance (com o _lora_rule no system). Não enhance aqui: o
+                    # header duplicado + 2ª call eram desperdício no edit+nsfw.
+                    pass
+                else:
+                    print(f"\n  ✨ Enhancing prompt via {enhance_model} (qwen21 mode)...")
+                    enhanced, raw_response = enhance_qwen21_prompt(prompt, enhance_model, nsfw=False)
+        elif enhance_type == "vision":
+            print(f"\n  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
+            enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
+        else:
+            enhanced, raw_response = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
+
+        if enhanced and enhanced != prompt:
+            print(f"     Expanded to ({len(enhanced)} chars)")
+            _show_enhanced_if_requested(args, enhanced)
+            prompt = enhanced
+        if lora_tags:
+            prompt = _reapply_lora_tags(prompt, lora_tags)
+
+    # --nsfw: seletor inteligente de LoRAs (mirror exato do sd.cpp runner).
+    # Fail-open na CADEIA inteira: sem enhance/sem resposta/sem linha LORAS:/IDs
+    # inválidos → roda BASE sem tags (avisado), nunca bloqueia a geração.
+    if getattr(args, "nsfw", False) and "<lora:" not in prompt:
+        import os as _os_i
+        import re as _re_i
+        import subprocess as _sp_i
+        if args.enhance or args.enhance_with:
+            _cat_json = _os_i.environ.get("NSFW_CATALOG_JSON") or str(
+                Path.home() / ".local/share/diffuse/nsfw_catalog_qwen21.json")
+            _rerank = str(Path.home() / ".local/share/diffuse/rerank_catalog_qwen21.py")
+            _resolver = str(Path.home() / ".local/share/diffuse/nsfw_lora_resolve_qwen21.py")
+            _catalog_block = None
+            if Path(_rerank).exists() and Path(_cat_json).exists():
+                try:
+                    import time as _time_i
+                    _t0 = _time_i.time()
+                    _ranked = _sp_i.run(
+                        ["python3", _rerank, "--prompt", prompt, "--n", "10", "--mode", "rank"],
+                        capture_output=True, text=True, timeout=180)
+                    if _ranked.returncode == 0 and _ranked.stdout.strip():
+                        _catalog_block = _ranked.stdout.strip()
+                        _n_ranked = len(_re_i.findall(r"^\d+:", _catalog_block, flags=_re_i.M))
+                        print(f"  🔎 Rerank ColBERT: {_n_ranked} LoRAs pré-ordenados "
+                              f"({_time_i.time() - _t0:.1f}s)")
+                except Exception as e:  # fail-open: sem ranking, catálogo completo
+                    print(f"  ⚠️  rerank indisponível ({e}); catálogo completo")
+            elif not Path(_cat_json).exists():
+                print("  ⚠️  catálogo NSFW não encontrado; pulando seleção (roda base)")
+            if _catalog_block:
+                _lora_rule = (
+                    "LoRA SELECTION: at the very END of your output, on the LAST line, "
+                    "output exactly: LORAS: <comma-separated numeric IDs>\n"
+                    "- Choose the IDs best fit to the request (0 to 2 LoRAs, avoid stacking two "
+                    "that target the same feature/body aspect).\n"
+                    "- If genuinely nothing fits, output: LORAS: none\n"
+                    "- Never mention catalog trigger phrases in the paragraph itself.\n\n"
+                    + _catalog_block)
+                enhanced, raw_response = enhance_qwen21_prompt(
+                    prompt, args.enhance_with or model_info.get("enhance_model", "ornith-1.5-35b-heretic"),
+                    nsfw=True, extra_system=_lora_rule)
+                _lora_ids = None
+                m = _re_i.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "")
+                if m and m.group(1).strip():
+                    _lora_ids = [int(x) for x in _re_i.findall(r"\d+", m.group(1))]
+                _enhanced_body = _re_i.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_i.M).strip()
+                if _enhanced_body:
+                    print(f"     Expanded to ({len(_enhanced_body)} chars)")
+                    _show_enhanced_if_requested(args, _enhanced_body)
+                enhanced = _enhanced_body
+                if _lora_ids:
+                    _res = _sp_i.run(["python3", _resolver, "--ids", ",".join(map(str, _lora_ids))],
+                                     capture_output=True, text=True, timeout=30)
+                    import json as _j
+                    _sel = _j.loads(_res.stdout) if _res.returncode in (0, 3) and _res.stdout.strip() else {}
+                    if _sel.get("names"):
+                        _tags = " ".join(
+                            f"<lora:{n}:{m_}>" for n, m_ in zip(_sel["names"], _sel["mults"]))
+                        _trigs = [t for t in (_sel.get("triggers") or []) if t]
+                        enhanced = f"{_tags} {enhanced}"
+                        if _trigs:
+                            enhanced = f"{', '.join(_trigs)} {enhanced}"
+                        print(f"  🎯 LLM escolheu {len(_sel['names'])} LoRA(s): "
+                              f"{', '.join(Path(n).name for n in _sel['names'])}")
+                    else:
+                        print("  ⚠️  LLM respondeu LORAS: mas nada resolveu; rodando base (sem tags)")
+                elif enhanced:
+                    print("  ℹ️  LLM não escolheu LoRA (LORAS: none ou linha ausente); rodando base")
+                prompt = enhanced
+        else:
+            print("  ⚠️  --nsfw sem --enhance: sem seleção inteligente; rodando base")
+
+    # Evict LLMs (TE runs on CPU with block offload; nothing else holds VRAM)
+    running = llama_swap_running_models()
+    if running:
+        print(f"  \U0001f504 Evicting LLM models: {', '.join(running)}")
+        evict_llm()
+        print(f"     VRAM freed for image generation")
+
+    print(f"  [1/3] Loading Qwen-Image 2.1 Turbo pipeline (WanGP, {model_info['bits']})...")
+    config, load_time = load_pipeline_wan2gp(model_name)
+    print(f"        WanGP config ready")
+
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+
+    print(f"  [2/3] {'Editing' if is_edit else 'Generating'} (WanGP profile 5, GPU offload)...")
+    wall_t0 = time.perf_counter()
+    output_path, diffusion_time, peak_hbm = generate_image_wan2gp(
+        config, prompt, seed, width, height, output_path,
+        ref_images=ref_image_paths, steps=steps, cfg_scale=guidance,
+        model_type="qwen_image_21_turbo_7B",
     )
     wall_time = time.perf_counter() - wall_t0
 

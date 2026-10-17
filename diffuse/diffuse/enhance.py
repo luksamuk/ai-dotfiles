@@ -13,6 +13,7 @@ from diffuse.prompts import (
     get_vision_enhance_prompt,
     get_qwen21_enhance_prompt,
     get_agate_enhance_prompt,
+    get_moss_enhance_prompt,
     get_vision_analysis_prompt,
     get_edit_enhance_prompt,
     get_edit_vision_prompt,
@@ -287,6 +288,80 @@ def enhance_qwen21_prompt(prompt: str, model: str, nsfw: bool = False, extra_sys
 
     if not enhanced:
         log.warning("Empty qwen21-enhancement response — using raw prompt")
+        return prompt, enhanced
+
+    return enhanced, enhanced
+
+
+def enhance_moss_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
+    """Use an LLM via llama-swap to expand a prompt for MOSS-Image.
+
+    Dedicated sibling of enhance_qwen21_prompt: same natural-language caption
+    contract, but the system prompt is the OpenMOSS official enhancer doctrine
+    (moss_enhance.yaml) — typography-first, layout-aware, and NO safety
+    euphemisms (the model is uncensored by training doctrine; blunt vocab is
+    in-distribution and euphemisms hurt).
+
+    Returns (enhanced_prompt, raw_response).
+    On failure, enhanced_prompt is the original prompt.
+    """
+    import urllib.request
+    import urllib.error
+
+    system = get_moss_enhance_prompt(nsfw=nsfw)
+
+    log.info("MOSS-Image enhancing prompt via %s", model)
+    t0 = time.perf_counter()
+
+    max_tokens_val = 4096
+
+    _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
+    payload = json.dumps({
+        "model": _enhance_model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.7,
+        "max_tokens": max_tokens_val,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        f"{_enhance_url}/v1/chat/completions",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    max_retries = 12  # up to ~2 minutes
+    enhanced = ""
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=None) as resp:
+                data = json.loads(resp.read())
+                msg = data["choices"][0]["message"]
+                enhanced = msg.get("content", "").strip()
+                reasoning = msg.get("reasoning_content", "")
+                if not enhanced and reasoning:
+                    log.warning("MOSS-enhancement returned empty content with %d chars of reasoning", len(reasoning))
+                    return prompt, reasoning
+                break
+        except urllib.error.HTTPError as e:
+            if e.code == 400 and attempt < max_retries - 1:
+                log.info("Model loading (attempt %d/%d), retrying in 10s...", attempt + 1, max_retries)
+                time.sleep(10)
+                continue
+            log.error("MOSS-enhancement failed: %s — using raw prompt", e)
+            return prompt, str(e)
+        except (urllib.error.URLError, OSError, KeyError, json.JSONDecodeError) as e:
+            log.error("MOSS-enhancement failed: %s — using raw prompt", e)
+            return prompt, str(e)
+
+    elapsed = time.perf_counter() - t0
+    log.info("MOSS-enhancement completed in %.1fs", elapsed)
+
+    if not enhanced:
+        log.warning("Empty moss-enhancement response — using raw prompt")
         return prompt, enhanced
 
     return enhanced, enhanced

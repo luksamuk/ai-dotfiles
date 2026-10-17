@@ -131,29 +131,26 @@ MODELS: dict[str, dict] = {
     },
     # Qwen-Image 2.1 Viggle Turbo REMOVIDO 15/out (user: "nós removemos ele")
     # — entry do diffuse registry fora; fragment do swap em _disabled/.
-    # Qwen-Image 2.1 TURBO OFICIAL (Alibaba distill, 09/10) — 8 steps, cfg=1.0,
-    # sd-cli-native custom sigmas (AtomicChat card, built/checked w/ stable-diffusion.cpp).
-    # Same dir/VAE/TE heretic as qwen-image-2.1; DiT swapped by the loader (model_name
-    # ends in "-turbo" but NOT "-viggle-turbo" -> qwen-image-2.1-turbo-Q4_K_M.gguf).
-    # Architecture note: official turbo MLP is SPLIT (gate_layer+proj, 297 tensors)
-    # vs base/viggle fused gate_up (265) — sd-cli recognizes both layouts.
-    # User plan 09/10: this replaces qwen-image-2.1 (base) after A/B; viggle stays.
+    # Qwen-Image 2.1 TURBO OFICIAL (Alibaba distill, 09/10) — 8 steps, cfg=1.0.
+    # MIGRADO 16/out ao Wan2GP (backend wan2gp_backend): o path sd.cpp (Turbo
+    # Q4_K_M da abenzerps + custom sigmas sd-cli) foi aposentado junto — o
+    # WanGP carrega o turbo int8_convrot com denoise em GPU (profile 5) e TE
+    # Sakura GGUF local (remap blk.* nativo do handler). Réguas no
+    # references/qwen-image-2.1.md.
     "qwen-image-2.1-turbo": {
-        "backend_id": "qwen-image-2.1-sd-cpp",
-        "dir": "qwen-image-2.1",
-        "backend_type": "qwen21_sd_cpp",
+        "backend_id": "qwen-image-2.1-turbo-wan2gp",
+        "dir": "qwen21-turbo-wan2gp",  # weights live in WanGP ckpts/, not here
+        "backend_type": "qwen21_turbo_wan2gp",
         "category": "image",
-        "bits": "Q4_K_M GGUF — official Alibaba turbo checkpoint (abenzerps quant)",
-        "description": "Qwen-Image 2.1 Turbo OFICIAL — 8 steps, cfg=1.0, custom sigmas; T2I + editing",
+        "bits": "INT8 ConvRot (DDM repack) — official Alibaba turbo checkpoint",
+        "description": "Qwen-Image 2.1 Turbo OFICIAL — 8 steps, cfg=1.0, TE Sakura uncensored, T2I + editing via Wan2GP",
         "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "qwen21",
         "default_size": (1024, 1024),
         "components": [
-            {"name": "qwen-image-2.1-turbo-Q4_K_M.gguf (DiT, official turbo, abenzerps quant)", "path": "qwen-image-2.1/qwen-image-2.1-turbo-Q4_K_M.gguf", "size_gb": 4.1},
-        ],
-        "hf_files": [
-            {"repo": "abenzerps/Qwen-Image-2.1-Turbo-Quantized",
-             "files": ["qwen-image-2.1-turbo-Q4_K_M.gguf"]},
+            {"name": "qwen_image_21_turbo_7B_int8_convrot.safetensors (DiT, official turbo)", "path": "Wan2GP/ckpts/qwen_image_21_turbo_7B_int8_convrot.safetensors", "size_gb": 6.76},
+            {"name": "Sakura-TextEncoder-Qwen3VL-8B-Uncensored-8bit GGUF (TE, abliterated)", "path": "Wan2GP/ckpts/Qwen3-VL-8B-Instruct/Sakura-TextEncoder-Qwen3VL-8B-Uncensored-8bit-8.11GiB.gguf", "size_gb": 8.11},
+            {"name": "qwen_image_21_vae.safetensors (VAE, F32 DDM repack)", "path": "Wan2GP/ckpts/qwen_image_21/qwen_image_21_vae.safetensors", "size_gb": 1.26},
         ],
     },
     # Agate preview 001 (Logolabs) — 260M thinker-steered FCDM, pure PyTorch backend.
@@ -267,7 +264,31 @@ MODELS: dict[str, dict] = {
         "components": [
             {"name": "flux3_image_klein_sd_int8_convrot.safetensors (DiT)", "path": "Wan2GP/ckpts/flux3_image_klein_sd_int8_convrot.safetensors", "size_gb": 5.9},
             {"name": "qwen3vl_4b_int8_convrot.safetensors (text encoder)", "path": "Wan2GP/ckpts/Qwen3-VL-4B-Instruct/qwen3vl_4b_int8_convrot.safetensors", "size_gb": 4.9},
-            {"name": "flux2_vae.safetensors (VAE)", "path": "Wan2GP/ckpts/flux3/flux2_vae.safetensors", "size_gb": 0.35},
+            {"name": "flux2_vae.safetensors (VAE)", "path": "Wan2GP/ckpts/flux3/flux2-vae.safetensors", "size_gb": 0.35},
+        ],
+    },
+    # MOSS-Image SFT (Wan2GP / DeepBeepMeep — 16/out). DiT 5B single-stream da
+    # OpenMOSS (Apache 2.0): king do text-render aberto (96.3 LLTB) + layout
+    # JSON nativo w/ bounding boxes. Treinado sob a doutrina "annotate rather
+    # than filter" (TR oficial) — naturalmente uncensored; o guia oficial usa
+    # "nsfw" como NEGATIVE tag default. 50 steps, CFG 3, shift 5, SLG layer 22
+    # embutido no pipeline. T2I puro no Wan2GP upstream (sem ref-image/mask) —
+    # edição estruturada anda pelo layout JSON. Pesos: repack DDM int8_convrot
+    # (DiT 5.41G + TE Qwen3.5-9B int8 8.96G + VAE flux2 small decoder 61MB).
+    "moss-image": {
+        "backend_id": "moss-image-wan2gp",
+        "dir": "moss-image",
+        "backend_type": "moss_wan2gp",
+        "category": "image",
+        "bits": "INT8 ConvRot (DDM repack)",
+        "description": "MOSS-Image SFT — 5B OpenMOSS, text-render best-in-class, layout JSON, uncensored por doutrina de treino, via Wan2GP",
+        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_type": "moss",
+        "default_size": (1024, 1024),
+        "components": [
+            {"name": "moss_image_sft_int8_convrot.safetensors (DiT)", "path": "Wan2GP/ckpts/moss_image_sft_int8_convrot.safetensors", "size_gb": 5.41},
+            {"name": "qwen3_5_9b_text_int8_convrot.safetensors (text encoder)", "path": "Wan2GP/ckpts/Qwen3.5-9B/qwen3_5_9b_text_int8_convrot.safetensors", "size_gb": 8.96},
+            {"name": "flux2_small_decoder_bf16.safetensors (VAE)", "path": "Wan2GP/ckpts/moss_image/flux2_small_decoder_bf16.safetensors", "size_gb": 0.06},
         ],
     },
 }

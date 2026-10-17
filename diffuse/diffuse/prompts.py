@@ -13,6 +13,7 @@ _PROMPT_FILES: dict[str, str] = {
     "vision_enhance": "vision_enhance.yaml",
     "qwen21_enhance": "qwen21_enhance.yaml",
     "agate_enhance": "agate_enhance.yaml",
+    "moss_enhance": "moss_enhance.yaml",
     "edit_enhance": "edit_enhance.yaml",
     "edit_vision": "edit_vision.yaml",
     "vision_analysis": "vision_analysis.yaml",
@@ -88,6 +89,13 @@ def get_agate_enhance_prompt(nsfw: bool = False) -> str:
     """Agate is a small uncensored model (MIT, no filter); the Ideogram safety-rule
     rewrite does not apply — the prompt is used verbatim."""
     return _load_prompt("agate_enhance")
+
+
+def get_moss_enhance_prompt(nsfw: bool = False) -> str:
+    """MOSS-Image is uncensored by training doctrine ("annotate rather than
+    filter", OpenMOSS tech report) — no safety-avoidance rewrite; blunt vocab
+    and explicit content are in-distribution."""
+    return _load_prompt("moss_enhance")
 
 
 def get_edit_enhance_prompt(nsfw: bool = False) -> str:
