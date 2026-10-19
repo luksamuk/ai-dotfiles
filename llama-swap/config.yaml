@@ -1786,7 +1786,7 @@ models:
       vram_usage: "~5.0 GB VRAM + ~11 GB RAM"
       source: openbmb/MiniCPM-V-4.7-35B-A3B-gguf
       kv_cache: "q4_0/q4_0"
-      chat_template: "--chat-template-file oficial (openbmb 19/out fix enable_thinking=False default; :think via setParamsByID kwargs)"
+      chat_template: "--chat-template-file oficial (openbmb 19/out fix enable_thinking=False default; :think via setParamsByID kwargs). :think CONHECIDO-FLAKY: em prompts triviais o modelo escreve a RESPOSTA dentro do think, fecha e para sem content (eos=im_end correto id248046, open/close=248068/69, split do servidor correto = bug do modelo em modo think; upstream defaultou OFF e não re-quantizou; manter e monitorar)"
       features:
         completion: true
         tools: true
