@@ -74,6 +74,20 @@ def load_pipeline_wan2gp(model_name: str, model_root: Path | None = None) -> tup
             raise FileNotFoundError(
                 f"WanGP moss processor files missing in ckpts/Qwen3.5-9B/: {missing_processor}"
             )
+    elif model_name == "moss-image-kromoss":
+        checks = {
+            "transformer Kromoss int8_convrot": wgp_dir / "ckpts" / "kromoss_int8_convrot.safetensors",
+            "TE Qwen3.5-9B int8_convrot": wgp_dir / "ckpts" / "Qwen3.5-9B" / "qwen3_5_9b_text_int8_convrot.safetensors",
+            "VAE flux2 small decoder": wgp_dir / "ckpts" / "moss_image" / "flux2_small_decoder_bf16.safetensors",
+        }
+        missing_processor = [
+            name for name in ("config.json", "tokenizer.json", "tokenizer_config.json", "chat_template.jinja")
+            if not (wgp_dir / "ckpts" / "Qwen3.5-9B" / name).exists()
+        ]
+        if missing_processor:
+            raise FileNotFoundError(
+                f"WanGP moss processor files missing in ckpts/Qwen3.5-9B/: {missing_processor}"
+            )
     else:
         raise ValueError(f"load_pipeline_wan2gp: unsupported model {model_name}")
 

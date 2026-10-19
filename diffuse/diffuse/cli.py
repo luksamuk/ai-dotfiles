@@ -130,6 +130,10 @@ def print_list() -> None:
             return (wgp / "flux3_image_klein_sd_int8_convrot.safetensors").exists()
         elif backend == "moss_wan2gp":
             wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
+            if info.get("dir") == "moss-image-base":
+                return (wgp / "moss_image_base_int8_convrot.safetensors").exists()
+            if info.get("dir") == "moss-image-kromoss":
+                return (wgp / "kromoss_int8_convrot.safetensors").exists()
             return (wgp / "moss_image_sft_int8_convrot.safetensors").exists()
         elif backend == "qwen21_turbo_wan2gp":
             wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
@@ -1329,6 +1333,11 @@ def _run_moss_wan2gp_image(
         generate_image_wan2gp,
     )
 
+    # model_type pro wgp = stem do defaults/*.json: moss_image (Base) e
+    # moss_image_sft (def do DDM); kromoss = variant local (defaults criado pela casa).
+    variant = ("moss_image" if model_name == "moss-image-base"
+               else "moss_image_kromoss" if model_name == "moss-image-kromoss"
+               else "moss_image_sft")
     steps = args.steps if args.steps is not None else 50
     guidance = args.cfg if args.cfg is not None else 3.0
     negative = None if args.nsfw else "nsfw, worst quality, bad anatomy, watermark, jpeg artifact"
@@ -1340,6 +1349,9 @@ def _run_moss_wan2gp_image(
     loras_extra: list[str] = []
     mults_extra: list[str] = []
     if getattr(args, "turbo", False):
+        if variant != "moss_image_sft":
+            print("     ⚠️  TURBO cross-LoRA: DMD destilada sobre o SFT; cross base/Kromoss não"
+                  " e validado pela casa (a comunidade usa no Kromoss — julgar por render)")
         loras_extra = ["moss_dmd_8step.safetensors"]
         mults_extra = ["1.0"]
         # main() already materialized the per-backend default into args.steps
@@ -1351,7 +1363,8 @@ def _run_moss_wan2gp_image(
             negative = None  # cfg 1.0: negative é no-op
         print(f"     TURBO: DMD 8-step LoRA @1.0 (cfg {guidance}, {steps} steps)")
 
-    print(f"  \U0001f5bc\ufe0f MOSS-Image SFT T2I")
+    label = {"moss_image": "Base", "moss_image_kromoss": "Kromoss"}.get(variant, "SFT")
+    print(f"  \U0001f5bc\ufe0f MOSS-Image {label} T2I")
     print(f"     {width}x{height}, {steps} steps, cfg={guidance}, shift=5, seed={seed}")
     if args.nsfw:
         print(f"     NSFW: negative prompt desativado (modelo uncensored por doutrina de treino)")
@@ -1390,7 +1403,7 @@ def _run_moss_wan2gp_image(
     output_path, diffusion_time, peak_hbm = generate_image_wan2gp(
         config, prompt, seed, width, height, output_path,
         ref_images=None, steps=steps, cfg_scale=guidance,
-        model_type="moss_image_sft", negative_prompt=negative or "",
+        model_type=variant, negative_prompt=negative or "",
         unit_name="diffuse-moss", lora_root_name="moss_image", flow_shift=5,
         activated_loras=loras_extra, loras_multipliers=mults_extra,
     )

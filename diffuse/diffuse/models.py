@@ -292,4 +292,21 @@ MODELS: dict[str, dict] = {
             {"name": "flux2_small_decoder_bf16.safetensors (VAE)", "path": "Wan2GP/ckpts/moss_image/flux2_small_decoder_bf16.safetensors", "size_gb": 0.06},
         ],
     },
+    "moss-image-kromoss": {
+        "backend_id": "moss-image-kromoss-wan2gp",
+        "dir": "moss-image-kromoss",
+        "backend_type": "moss_wan2gp",
+        "lora_root": "moss_image",
+        "category": "image",
+        "bits": "INT8 ConvRot (repack do lodestones no proprio repo do Kromoss)",
+        "description": "Kromoss — full fine-tune do MOSS-Image Base @1024px (fix de blurriness, checkpoint 7000 EMA), mesma arch/TE/VAE/pipeline do SFT, via Wan2GP",
+        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_type": "moss",
+        "default_size": (1024, 1024),
+        "components": [
+            {"name": "kromoss_int8_convrot.safetensors (DiT)", "path": "Wan2GP/ckpts/kromoss_int8_convrot.safetensors", "size_gb": 5.41},
+            {"name": "qwen3_5_9b_text_int8_convrot.safetensors (text encoder)", "path": "Wan2GP/ckpts/Qwen3.5-9B/qwen3_5_9b_text_int8_convrot.safetensors", "size_gb": 8.96},
+            {"name": "flux2_small_decoder_bf16.safetensors (VAE)", "path": "Wan2GP/ckpts/moss_image/flux2_small_decoder_bf16.safetensors", "size_gb": 0.06},
+        ],
+    },
 }
