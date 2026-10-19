@@ -14,6 +14,8 @@
 
     --jinja
 
+    --chat-template-file ${templates_dir}/minicpm-v-4.7-chat-template.jinja
+
     -ot "ffn_(gate|up|down)_exps=CPU"
 
     -ngl 999
@@ -68,6 +70,7 @@
     vram_usage: "~5.0 GB VRAM + ~11 GB RAM"
     source: openbmb/MiniCPM-V-4.7-35B-A3B-gguf
     kv_cache: "q4_0/q4_0"
+    chat_template: "--chat-template-file oficial (openbmb 19/out fix enable_thinking=False default; :think via setParamsByID kwargs)"
     features:
       completion: true
       tools: true
