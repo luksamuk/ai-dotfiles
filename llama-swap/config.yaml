@@ -365,7 +365,7 @@ models:
             enable_thinking: true
           temperature: 0.7
           top_p: 0.9
-    ttl: 300
+    ttl: 0
     health_check_timeout: 300
     capabilities:
       in:
@@ -1520,7 +1520,7 @@ models:
           temperature: 0.1
           top_k: 50
           repetition_penalty: 1.05
-    ttl: 300
+    ttl: 0
     health_check_timeout: 600
     capabilities:
       in:
@@ -1591,7 +1591,7 @@ models:
           temperature: 0.1
           top_k: 50
           repetition_penalty: 1.05
-    ttl: 300
+    ttl: 0
     health_check_timeout: 600
     capabilities:
       in:
@@ -1767,7 +1767,7 @@ models:
             enable_thinking: true
           temperature: 0.7
           top_p: 0.9
-    ttl: 60
+    ttl: 0
     health_check_timeout: 600
     capabilities:
       in:
@@ -1928,7 +1928,7 @@ models:
         ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
-    ttl: 900
+    ttl: 0
     health_check_timeout: 900
     capabilities:
       in:
@@ -2140,6 +2140,108 @@ models:
         - Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma
         - Needs explicit translation prompt (Sprachspiel format works)
       note: 'vram detalhe: ~3.5GB (model + cache) | model 2.4GB Q4_K_M + cache + compute Translation model. Sprachspiel translate mode default. 55 languages.'
+  whittle-35b:
+    name: Whittle Qwen3.8 35B-A3B
+    description: logic65 Whittle 35B — corpo Qwen3.6-35B podado (180 experts) reformatado p/ arch qwen4_exp (GDN+FA, hyper-connections) + tabela n-gram hashada 10B servida Q8_0. Distill logit do Qwen3.8-27B. Text-only, sem MTP, sem vision.
+    tags:
+      - think
+      - tools
+    cmd: env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT} --model ${models_dir}/whittle-35b/Whittle-Qwen-3.8-35B-A3B-ONYX-compact.gguf --ctx-size 131072 --jinja --parallel 1 --cache-type-k q4_0 --cache-type-v q4_0 --flash-attn on -cmoe -ngl 99 -b 512 -ub 128 --lazy-mode off --temp 0.7 --top-p 0.8 --top-k 20 --repeat-penalty 1.05 --reasoning-budget 8192 --metrics
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.8
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.7
+          top_p: 0.8
+    ttl: 0
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~21.9 GB (ONYX compact)
+      context: 131072
+      vram_usage: atencao/hyper-conn/shared na GPU; tabela+experts em page cache file-backed evictavel via -cmoe
+      source: el4/Whittle-Qwen-3.8-35B-A3B-ONYX-GGUF (compact)
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen4exp
+      parameters: 35100000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: ONYX compact
+      note: 'Tabela n-gram = load-bearing (sem ela codigo +4.9 nats): ONYX manteve a tabela Q8_0 — nunca usar quant que droppa linhas. Sem MTP (zero nextn nos 1022 tensores) e sem vision (sem mmproj). --lazy-mode off OBRIGATORIO (default auto le a tabela lazy do disco, -ot ignorado, prefill despenca — issue 28355). Sampler da autora: temp 0.7, top_p 0.8, top_k 20, rp 1.05 — greedy decodifica em loop nessa familia. Sem min_p (a receita nao usa).'
+  whittle-35b-fast:
+    name: Whittle Qwen3.8 35B-A3B (fast)
+    description: Slot veloz do Whittle 35B no ik — kernels ik + builder de grafo qwen4exp dedicado (graphs/build_qwen4exp.cpp). Mesma quant compact — TESTE de RAM pinned estimado em ~28-30GB anon; deletar fragmento inteiro se matar o desktop. Sem spec decode (sem MTP).
+    tags:
+      - think
+      - tools
+    cmd: ${ik_llama_server} --port ${PORT} --model ${models_dir}/whittle-35b/Whittle-Qwen-3.8-35B-A3B-ONYX-compact.gguf --ctx-size 131072 --jinja --parallel 1 --cache-type-k q4_0 --cache-type-v q4_0 --flash-attn on -ngl 99 -b 512 -ub 128 -ptcall -ot per_layer_token_embd=CPU -ot "blk\.([6-9]|1[0-9]|2[0-9]|3[0-9])\.ffn_(up|down|gate)_exps=CPU" --temp 0.7 --top-p 0.8 --top-k 20 --repeat-penalty 1.05 --reasoning-budget 8192 --metrics
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.8
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.7
+          top_p: 0.8
+    ttl: 0
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~21.9 GB (ONYX compact, MESMO arquivo do whittle-35b)
+      context: 131072
+      vram_usage: atencao/hyper-conn/shared na GPU; tabela+experts pinned anon ~28-30GB RAM — RISCO medido no smoke
+      source: el4/Whittle-Qwen-3.8-35B-A3B-ONYX-GGUF (compact compartilhado c/ cafe)
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen4exp
+      parameters: 35100000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: ONYX compact
+      note: 'Loader ik e eager (sem --lazy-mode aqui: flag nao existe no ik). SEM --prefetch-experts: no-op bugado ate o rebase #2667 (19 commits pendentes). -nkvo OFF (decisao do teste). Protocolo do user 17/out: se o load matar o desktop, DELETAR este fragmento inteiro (sem _disabled).'
 # Hooks: ações na inicialização do llama-swap
 # preload: carrega modelos síncronamente antes de aceitar requests
 # Ideal para vLLM (startup lento = 30-90s sem warm-up)
