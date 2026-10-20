@@ -110,7 +110,7 @@ ORIGINAL_ORDER = [
     "nemotron-3-embed-1b",      # ✅ Embedding (CPU-only, Q8_0, converted from BF16)
     "embeddinggemma-2",         # ✅ Embedding multimodal (CPU-only, Q8_0, texto+img+audio, 768d MRL, 06/10/2026)
     # Decision models (System One, /v1/systemone #29818; llama-swap routing PENDING #1195)
-    "laya",                     # ✅ Judge para laya-snake (ModernBERT 421M BF16)
+    # "laya",                   # REMOVED 20/out/2026 — juiz ruído (snake) + seletor 21% (diffuse); julia-1 cobre
     "julia-1",                  # ✅ Juiz leve (ModernBERT 144M BF16)
 ]
 

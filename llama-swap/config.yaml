@@ -971,60 +971,6 @@ models:
         audio: true
         image: false
       note: 'vram detalhe: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only) | Text-steered: queries ''task: {tarefa} | query:'' e docs ''title: {t} | text: {conteudo}'' (title: none se sem titulo); media SEM prefixo. Multimodal via mmproj (vision 212 tensors + audio 751 tensors no mmproj). MRL: truncate + re-normalizar client-side (768/512/256 perde pouco; 128 valida antes). Smoke 06/10/2026: MRR=1.0 retrieval 8q pt-BR, STS spearman 0.94 (par-a-par com nemotron-3-embed, 23ms vs 104ms query CPU). mmproj carrega vision+audio: aceita imagem/audio como input (vision tag = input, image false = nao gera). Lançamento 06/10/2026, GGUF oficial ggml-org; build 2796+ do llama.cpp necessita (arch gemma-embedding2, PR #30054).'
-  laya:
-    name: Laya
-    description: System One decision model (ModernBERT 421M BF16). Serves POST /v1/systemone for laya-snake judge. Not a chat model.
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/decision-models/Laya-GGUF/Laya-BF16.gguf
-
-      --ctx-size 8192
-
-      --batch-size 512
-
-      --ubatch-size 512
-
-      --parallel 1
-
-      --no-webui
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p, top_k, min_p, repeat_penalty
-    ttl: 3600
-    health_check_timeout: 60
-    capabilities:
-      in:
-        - text
-      out:
-        - text
-      tools: false
-      reranker: false
-      context: 8192
-    metadata:
-      size: ~844 MB (BF16)
-      context: 8192
-      vram_usage: ~0.9 GB VRAM
-      source: 'ggml-org/Laya-GGUF (BF16, official #29818 conversion)'
-      kv_cache: n/a
-      features:
-        decision: true
-        completion: false
-        tools: false
-        thinking: false
-        vision: false
-        image: false
-        embedding: false
-        insert: false
-        audio: false
-      architecture: modern-bert
-      parameters: 421000000
-      context_length: 8192
-      embedding_length: 1024
-      quantization: BF16
-      note: 'vram detalhe: ~0.9 GB VRAM (model 0.8GB + compute) | model 844MB BF16 + compute Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Judge for laya-snake: noul risk questions, frame-relative state, answers.noul >= 0.15 margin gates the verdict.'
   julia-1:
     name: Julia-1
     description: System One decision model (ModernBERT 144M BF16). Serves POST /v1/systemone for laya-snake judge. Not a chat model.
@@ -2391,7 +2337,10 @@ matrix:
     lfmcol: lfm2.5-colbert-350m
     # Decision models (System One scorers, /v1/systemone) — exclusive no
     # matrix (fora de sets); judge do laya-snake; routing #1195 pending
-    laya: laya
+    # laya: DESINSTALADO 20/out/2026 — recall@3 21% no harness do seletor
+    #   (4 falsos no controle negativo, prior fixo) e ruído ~0.5 como juiz do
+    #   snake; julia-1 cobre o posto com 400x mais discriminação. Fragment em
+    #   _disabled/ + laya.HELPER.md; pesos apagados (805MB, ggml-org re-download)
     julia: julia-1
 
   sets:
@@ -2488,5 +2437,5 @@ matrix:
     lfmcol: 1
     tg: 2
     # Decision models (juizes /v1/systemone) - recarregam em ~2s, evictam primeiro
-    laya: 1
+    # laya: 1  # DESINSTALADO 20/out/2026
     julia: 1

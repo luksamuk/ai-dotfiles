@@ -107,7 +107,10 @@ matrix:
     lfmcol: lfm2.5-colbert-350m
     # Decision models (System One scorers, /v1/systemone) — exclusive no
     # matrix (fora de sets); judge do laya-snake; routing #1195 pending
-    laya: laya
+    # laya: DESINSTALADO 20/out/2026 — recall@3 21% no harness do seletor
+    #   (4 falsos no controle negativo, prior fixo) e ruído ~0.5 como juiz do
+    #   snake; julia-1 cobre o posto com 400x mais discriminação. Fragment em
+    #   _disabled/ + laya.HELPER.md; pesos apagados (805MB, ggml-org re-download)
     julia: julia-1
 
   sets:
@@ -204,5 +207,5 @@ matrix:
     lfmcol: 1
     tg: 2
     # Decision models (juizes /v1/systemone) - recarregam em ~2s, evictam primeiro
-    laya: 1
+    # laya: 1  # DESINSTALADO 20/out/2026
     julia: 1
