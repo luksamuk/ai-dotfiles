@@ -1603,8 +1603,11 @@ def _run_moss_wan2gp_image(
                 print(f"  \U0001f3af LLM escolheu {len(_sel['names'])} LoRA(s): {', '.join(_sel['names'])}")
             elif _rule:
                 print("  \u2139\ufe0f  LLM nao escolheu LoRA (LORAS: none ou linha ausente); rodando base")
-        if lora_tags:
-            prompt = _reapply_lora_tags(prompt, lora_tags)
+    # tags manuais vencem SEMPRE — reapply FORA do bloco enhance (bug 20/out/2026:
+    # sem --enhance, tags eram extraídas e nunca devolvidas; a LoRA era
+    # silenciosamente ignorada — renders bit-idênticos com/sem tag, achado no V-MOSS)
+    if lora_tags:
+        prompt = _reapply_lora_tags(prompt, lora_tags)
 
     # Evict LLMs (TE runs on CPU, but nothing else should hold VRAM)
     running = llama_swap_running_models()
@@ -1852,8 +1855,11 @@ def _run_qwen21_turbo_wan2gp_image(
             print(f"     Expanded to ({len(enhanced)} chars)")
             _show_enhanced_if_requested(args, enhanced)
             prompt = enhanced
-        if lora_tags:
-            prompt = _reapply_lora_tags(prompt, lora_tags)
+    # tags manuais vencem SEMPRE — reapply FORA do bloco enhance (bug 20/out/2026:
+    # sem --enhance, tags eram extraídas e nunca devolvidas; a LoRA era
+    # silenciosamente ignorada — renders bit-idênticos com/sem tag, achado no V-MOSS)
+    if lora_tags:
+        prompt = _reapply_lora_tags(prompt, lora_tags)
 
     # --nsfw: seletor inteligente de LoRAs (mirror exato do sd.cpp runner).
     # Fail-open na CADEIA inteira: sem enhance/sem resposta/sem linha LORAS:/IDs
@@ -2210,8 +2216,11 @@ def _run_qwen21_wan2gp_image(
             print(f"     Expanded to ({len(enhanced)} chars)")
             _show_enhanced_if_requested(args, enhanced)
             prompt = enhanced
-        if lora_tags:
-            prompt = _reapply_lora_tags(prompt, lora_tags)
+    # tags manuais vencem SEMPRE — reapply FORA do bloco enhance (bug 20/out/2026:
+    # sem --enhance, tags eram extraídas e nunca devolvidas; a LoRA era
+    # silenciosamente ignorada — renders bit-idênticos com/sem tag, achado no V-MOSS)
+    if lora_tags:
+        prompt = _reapply_lora_tags(prompt, lora_tags)
 
     # --nsfw: seletor inteligente de LoRAs (mirror exato do sd.cpp runner).
     # Fail-open na CADEIA inteira: sem enhance/sem resposta/sem linha LORAS:/IDs
@@ -2542,8 +2551,11 @@ def _run_qwen21_sd_cpp_image(
             print(f"     Expanded to ({len(enhanced)} chars)")
             _show_enhanced_if_requested(args, enhanced)
             prompt = enhanced
-        if lora_tags:
-            prompt = _reapply_lora_tags(prompt, lora_tags)
+    # tags manuais vencem SEMPRE — reapply FORA do bloco enhance (bug 20/out/2026:
+    # sem --enhance, tags eram extraídas e nunca devolvidas; a LoRA era
+    # silenciosamente ignorada — renders bit-idênticos com/sem tag, achado no V-MOSS)
+    if lora_tags:
+        prompt = _reapply_lora_tags(prompt, lora_tags)
 
     # --nsfw: seletor inteligente de LoRAs (mirror do H3, 03/out — decreto do
     # user: --nsfw PURO, o auto-attach ALL saiu). Fluxo:
