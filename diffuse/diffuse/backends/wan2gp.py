@@ -210,6 +210,9 @@ def generate_image_wan2gp(
         "guidance_scale": cfg_scale,
         "seed": seed,
         "batch_size": 1,
+        # prompts multi-secao (###) viram 2 tasks no padrão PG e abortam —
+        # doutrina da casa: prompt inteiro como tarefa unica (FG)
+        "multi_prompts_gen_type": "FG",
     }
     if negative_prompt:
         # Only effective at guidance > 1 (CFG); harmless no-op for distilled recipes.
