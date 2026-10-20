@@ -16,8 +16,6 @@ from diffuse.paths import setup_environment, DEFAULT_VISION_MODEL
 from diffuse.models import MODELS
 from diffuse.backends import load_pipeline, unload_pipeline, require_model_dir
 from diffuse.backends.gemlite import generate_image_gemlite
-from diffuse.backends.sd_cpp import generate_image_sd_cpp
-from diffuse.backends.hidream import generate_image_hidream
 from diffuse.backends.agate import generate_image_agate
 from diffuse.backends.framepack import generate_video_framepack
 from diffuse.llm import evict_llm, llama_swap_running_models
@@ -27,8 +25,6 @@ from diffuse.enhance import (
     enhance_qwen21_prompt,
     enhance_agate_prompt,
     enhance_moss_prompt,
-    enhance_edit_prompt,
-    analyze_image,
     analyze_and_enhance_edit,
     _check_model_vision,
 )
@@ -122,9 +118,7 @@ def print_list() -> None:
     def _check_installed(info: dict) -> bool:
         model_dir = info.get("dir", "")
         backend = info.get("backend_type", "")
-        if backend == "hidream":
-            p = Path.home() / ".llama-models" / model_dir
-        elif backend == "flux3_wan2gp":
+        if backend == "flux3_wan2gp":
             # Weights live in the WanGP ckpts/ tree, not in diffuse models/
             wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
             return (wgp / "flux3_image_klein_sd_int8_convrot.safetensors").exists()
@@ -304,16 +298,13 @@ def parse_args() -> argparse.Namespace:
             "  diffuse -m ternary-gemlite -p 'a cat on the moon'\n"
             "  diffuse -m ternary-gemlite --enhance -p 'a rainy day at a coffee shop'\n"
             "  diffuse -m ternary-gemlite --enhance-with laguna-xs2 --evict-llm -p 'cyberpunk city'\n"
-            "  diffuse -m hidream-sdnq -p 'a cat on a windowsill at golden hour'\n"
-            "  diffuse -m hidream-sdnq -p 'add a red hat' --edit photo.png\n"
+
             "  diffuse --list                        # show model details\n"
             "\n"
             "Model capabilities:\n"
             "  ternary-gemlite  — 1.58-bit Bonsai, T2I only\n"
             "  binary-gemlite   — 1-bit Bonsai, T2I only\n"
-            "  ideogram4-q4      — Ideogram 4, T2I (JSON prompts with --enhance)\n"
-            "  hidream-sdnq      — HiDream-O1 SDNQ, T2I + image editing (--edit)\n"
-            "  mageflow-edit-turbo — Mage-Flow-Edit-Turbo, 4B instruction-based image editing (--edit)\n"
+
             "\n"
             "Resolution guide (RTX 3050 6GB):\n"
             "  Bonsai:     512×512 max (OOM above this)\n"
@@ -331,10 +322,10 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("-p", "--prompt", help="Text prompt. If omitted, prompted interactively.")
     p.add_argument("--seed", type=int, default=None, help="Random seed (random if not set).")
-    p.add_argument("--steps", type=int, default=None, help="Denoising steps (default: 4 for bonsai, 20 for ideogram4, 28 for hidream, 50 for agate).")
+    p.add_argument("--steps", type=int, default=None, help="Denoising steps (default per backend: bonsai=4, qwen21-turbo=8, flux3=16, qwen21=40, moss=50, agate=50).")
     p.add_argument(
         "--size", type=parse_size, default=None,
-        help="Image size as WxH (default: 512x512 for bonsai, 480x480 for ideogram4, 1024x1024 for hidream; agate is fixed 256x256).",
+        help="Image size as WxH (default: 512x512 for bonsai; agate fixed 256x256; others 1024x1024).",
     )
     p.add_argument("--output", type=Path, default=None, help="Output PNG path (auto-generated in cwd if not set).")
     p.add_argument("--open", action="store_true", help="Open the generated image with feh after saving.")
@@ -370,8 +361,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--enhance", action="store_true",
         help="Expand prompt via LLM. "
-             "For ideogram4: structured JSON with layout/colors/text. "
-             "For hidream/bonsai: natural English description with character details. "
+             "For qwen21/moss/bonsai: natural English description with details. "
              "Uses model's 'enhance_model' or qwen3.5-4b by default.",
     )
     p.add_argument(
@@ -398,7 +388,7 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--edit", metavar="IMAGE", type=Path, default=None, nargs="+",
-        help="Reference image for editing (hidream or mageflow-edit-turbo). Pass an image path to use instruction-based editing.",
+        help="Reference image for editing (qwen-image-2.1 / flux-3). Pass an image path to use instruction-based editing.",
     )
     p.add_argument(
         "--input-image", metavar="IMAGE", type=Path, default=None,
@@ -475,15 +465,9 @@ def main() -> None:
     backend_type = model_info.get("backend_type", "gemlite")
 
     # ── Defaults per backend ──
-    # Steps: bonsai=4, ideogram4=20, hidream=28, z-image=9 (8 NFE), qwen21=28, agate=50
+    # Steps: bonsai=4, qwen21-turbo=8, flux3=16, moss=50, qwen21=40, agate=50
     if args.steps is None:
-        if backend_type == "hidream":
-            args.steps = 28
-        elif backend_type == "sd_cpp":
-            args.steps = 20
-        elif backend_type == "zimage_sd_cpp":
-            args.steps = 9
-        elif backend_type == "qwen21_turbo_wan2gp":
+        if backend_type == "qwen21_turbo_wan2gp":
             args.steps = 8           # official Alibaba turbo (distilled)
         elif backend_type == "flux3_wan2gp":
             args.steps = 16          # BFL distilled recipe
@@ -521,27 +505,18 @@ def main() -> None:
     original_prompt = prompt
 
     # Pre-flight
-    if backend_type == "hidream":
-        # HiDream models live in ~/.llama-models/, not diffuse/models/
-        model_path = Path(os.path.expanduser(f"~/.llama-models/{model_info['dir']}"))
-        if not model_path.exists():
-            print(f"\n  ✗ Model not found: {model_path}")
-            print(f"    Run: diffuse download {model_info['dir'].split('-')[0]}")
-            sys.exit(1)
-    elif backend_type in ("flux3_wan2gp", "qwen21_wan2gp", "qwen21_turbo_wan2gp", "moss_wan2gp"):
+    if backend_type in ("flux3_wan2gp", "qwen21_wan2gp", "qwen21_turbo_wan2gp", "moss_wan2gp"):
         # Weights live in the WanGP ckpts/ tree; backends/wan2gp verifies per-file
         pass
     else:
         require_model_dir(model_name)
 
-    # ── Validate --edit (hidream, mageflow, and qwen21 support it) ──
+    # ── Validate --edit (qwen21 e flux-3 suportam) ──
     ref_image_paths = None
     if args.edit:
-        if backend_type not in ("hidream", "mageflow_sd_cpp", "qwen21_sd_cpp", "flux3_wan2gp", "qwen21_wan2gp", "qwen21_turbo_wan2gp"):
-            print(f"  ⚠️  --edit is only supported with hidream, mageflow-edit-turbo, qwen-image-2.1 or flux-3 (got {backend_type})")
-            print(f"     Use: diffuse -m hidream-sdnq --edit {args.edit} -p 'instruction'")
-            print(f"      or: diffuse -m mageflow-edit-turbo --edit {args.edit} -p 'instruction'")
-            print(f"      or: diffuse -m qwen-image-2.1 --edit {args.edit} -p 'instruction'")
+        if backend_type not in ("flux3_wan2gp", "qwen21_wan2gp", "qwen21_turbo_wan2gp"):
+            print(f"  ⚠️  --edit is only supported with qwen-image-2.1 or flux-3 (got {backend_type})")
+            print(f"     Use: diffuse -m qwen-image-2.1 --edit {args.edit} -p 'instruction'")
             sys.exit(1)
         missing = [x for x in args.edit if not x.exists()]
         if missing:
@@ -569,21 +544,6 @@ def main() -> None:
     # ── Bonsai subprocess early path ─────────────────────────────────────────
     if backend_type == "bonsai":
         _run_bonsai_image(args, model_name, model_info, prompt, original_prompt, seed, width, height)
-        return
-
-    # ── Z-Image subprocess early path (uses sd-cli, same as Ideogram 4) ─────
-    if backend_type == "zimage_sd_cpp":
-        _run_zimage_sd_cpp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height)
-        return
-
-    # ── Mage-Flow-Edit-Turbo early path (uses sd-cli, instruction-based editing) ──
-    if backend_type == "mageflow_sd_cpp":
-        _run_mageflow_sd_cpp_edit(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
-        return
-
-    # ── Qwen-Image 2.1 early path (T2I + native editing via sd-cli) ──
-    if backend_type == "qwen21_sd_cpp":
-        _run_qwen21_sd_cpp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
         return
 
     # ── FLUX 3 Klein early path (T2I + editing via WanGP) ──
@@ -670,85 +630,10 @@ def main() -> None:
         args.enhance = True  # implied
 
     if args.enhance:
-        enhance_type = model_info.get("enhance_type", "ideogram")
+        enhance_type = model_info.get("enhance_type", "qwen21")
 
-        # ── Edit + Enhance: analyze image, then refine prompt ──
-        if ref_image_paths and enhance_type == "vision":
-            enhance_has_vision = _check_model_vision(enhance_model)
-
-            if enhance_has_vision:
-                # One-shot: enhance model has vision → single call for analysis + prompt
-                print(f"  👁️✨ {enhance_model} has vision — one-shot image analysis + edit enhancement")
-                print(f"  📷 Analyzing & enhancing edit prompt via {enhance_model}...")
-                enhanced_result, raw_response = analyze_and_enhance_edit(
-                    ref_image_paths[0], prompt, enhance_model, nsfw=args.nsfw
-                )
-                if enhanced_result != prompt:
-                    enhanced_prompt = enhanced_result
-                    print(f"     Expanded to edit instruction ({len(enhanced_result)} chars)")
-                    print(f"     ─── Enhanced edit prompt ───")
-                    import textwrap as _tw
-                    for line in _tw.wrap(enhanced_result, width=78):
-                        print(f"     {line}")
-                    print(f"     ────────────────────────────")
-                    prompt = enhanced_result
-                else:
-                    print(f"     ⚠️  One-shot vision+edit failed — falling back to raw prompt")
-                    if raw_response and raw_response != prompt:
-                        print(f"     ─── LLM response ───")
-                        display = raw_response[:500] + ("..." if len(raw_response) > 500 else "")
-                        print(f"     {display}")
-                        print(f"     ────────────────────")
-            else:
-                # Two-shot: separate vision model for analysis, then enhance model for prompt
-                if args.vision_with:
-                    vision_model = args.vision_with
-                    print(f"  👁️  Using {vision_model} for image analysis (override)")
-                else:
-                    vision_model = DEFAULT_VISION_MODEL
-                    print(f"  👁️  Using {vision_model} for image analysis (default)")
-
-                # Step 1: Analyze the image with the vision model
-                print(f"  📷 Analyzing reference image via {vision_model}...")
-                image_description = analyze_image(ref_image_paths[0], vision_model, prompt, nsfw=args.nsfw)
-                if not image_description:
-                    print(f"     ⚠️  Image analysis failed — falling back to prompt-only enhancement")
-                else:
-                    print(f"     ─── Image description ({len(image_description)} chars) ───")
-                    import textwrap
-                    for line in textwrap.wrap(image_description, width=78):
-                        print(f"     {line}")
-                    print(f"     ────────────────────────────────────────")
-
-                    # Evict vision model (it's different from enhance model)
-                    running = llama_swap_running_models()
-                    if running:
-                        print(f"  🔄 Evicting {vision_model} after image analysis...")
-                        evict_llm()
-                        print(f"     VRAM freed for prompt enhancement")
-
-                    # Step 2: Refine the edit prompt using the image description
-                    print(f"  ✨ Enhancing edit prompt via {enhance_model} (vision + edit mode)...")
-                    enhanced_result, raw_response = enhance_edit_prompt(image_description, prompt, enhance_model, nsfw=args.nsfw)
-                    if enhanced_result != prompt:
-                        enhanced_prompt = enhanced_result
-                        print(f"     Expanded to edit instruction ({len(enhanced_result)} chars)")
-                        print(f"     ─── Enhanced edit prompt ───")
-                        import textwrap as _tw
-                        for line in _tw.wrap(enhanced_result, width=78):
-                            print(f"     {line}")
-                        print(f"     ────────────────────────────")
-                        prompt = enhanced_result
-                    else:
-                        print(f"     ⚠️  Edit-enhancement failed — using raw prompt")
-                        if raw_response and raw_response != prompt:
-                            print(f"     ─── LLM response ───")
-                            display = raw_response[:500] + ("..." if len(raw_response) > 500 else "")
-                            print(f"     {display}")
-                            print(f"     ────────────────────")
-
-        # ── Normal enhancement (no edit, or ideogram type, or vision edit failed) ──
-        if not ref_image_paths or enhance_type != "vision" or (ref_image_paths and enhance_type == "vision" and not enhanced_prompt):
+        # ── Normal enhancement (sem edit no main; edits vivos têm early path próprio) ──
+        if not ref_image_paths:  # edit-analysis flow saiu com o hidream (F5); edits vivos têm early path próprio
             enhanced_result = prompt  # default: no change
             if enhance_type == "agate":
                 print(f"  ✨ Enhancing prompt via {enhance_model} (agate mode)...")
@@ -813,9 +698,7 @@ def main() -> None:
                         print(f"     {display}")
                         print(f"     ────────────────────")
             # Apply enhanced prompt
-            if backend_type == "sd_cpp" and enhanced_result != prompt:
-                prompt = enhanced_result
-            elif enhance_type in ("vision", "agate") and enhanced_result != prompt:
+            if enhance_type in ("vision", "agate") and enhanced_result != prompt:
                 prompt = enhanced_result
 
     # Show warm/cold estimate
@@ -827,10 +710,7 @@ def main() -> None:
         print(f"  ⚡ {len(prior)} prior run(s) at {width}×{height} — warmed kernels available")
         print(f"     Historical wall: mean {mean_s:.1f}s, best {best_s:.1f}s")
     else:
-        if backend_type == "hidream":
-            print(f"  ⏳ First run at {width}×{height}")
-            print(f"     Expected: ~3-4min (model load + CPU offload + 28 denoising steps)")
-        elif backend_type == "agate":
+        if backend_type == "agate":
             print(f"  ⏳ First run at {width}×{height}")
             print(f"     Expected: ~15s (imports + model load + CUDA graph warmup)")
             print(f"     Subsequent runs: ~2-4s")
@@ -850,24 +730,12 @@ def main() -> None:
             print(f"     VRAM freed for image generation")
             print()
 
-    # ── Evict LLMs before HiDream (needs ~4.5GB VRAM) ──
-    if backend_type == "hidream" and not args.enhance:
-        running = llama_swap_running_models()
-        if running:
-            print(f"  🔄 Evicting LLM models for HiDream: {', '.join(running)}")
-            evict_llm()
-            print(f"     VRAM freed for HiDream (~4.5GB needed)")
-            print()
 
     # ── Phase 1: Load pipeline ──
     print(f"  [1/3] Loading pipeline ({model_info['bits']})...")
     pipeline, load_time = load_pipeline(model_name, editing=bool(ref_image_paths))
     if backend_type == "gemlite":
         print(f"        Pipeline ready in {load_time:.1f}s")
-    elif backend_type == "hidream":
-        print(f"        Model dispatched (CPU offload) in {load_time:.1f}s")
-    else:
-        print(f"        sd-cli config ready")
 
     # ── Phase 2: Generate ──
     gen_desc = f"{width}×{height}, {args.steps} steps, seed={seed}"
@@ -884,14 +752,6 @@ def main() -> None:
         orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
         output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
         output_path.write_bytes(png_bytes)
-    elif backend_type == "hidream":
-        png_bytes, diffusion_time, peak_hbm = generate_image_hidream(
-            pipeline, prompt, seed, args.steps, width, height,
-            ref_image_paths=ref_image_paths,
-        )
-        orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
-        output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
-        output_path.write_bytes(png_bytes)
     elif backend_type == "agate":
         # Default "sharper faces" do card 001: autoguide 1.0 (cfg continua em 3.0 a menos que --cfg passe 4.0 junto)
         agate_autoguide = args.agate_autoguide
@@ -904,27 +764,6 @@ def main() -> None:
         orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
         output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
         output_path.write_bytes(png_bytes)
-    elif backend_type == "sd_cpp":
-        # For sd_cpp, we need an output path upfront
-        orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
-        output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
-        try:
-            output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
-                pipeline, prompt, seed, width, height, output_path,
-                nsfw=args.nsfw,
-            )
-        except RuntimeError as e:
-            if "CUDA" in str(e) and args.cpu_fallback:
-                print(f"  ⚠️  CUDA failed — retrying on CPU (this will be very slow)...")
-                output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
-                    pipeline, prompt, seed, width, height, output_path,
-                    cpu_fallback=True,
-                    nsfw=args.nsfw,
-                )
-            else:
-                raise
-        load_time = 0.0  # sd-cli handles its own loading
-
     wall_time = time.perf_counter() - wall_t0
 
     # ── Phase 3: Save + Unload ──
@@ -935,7 +774,7 @@ def main() -> None:
         enhanced_prompt=enhanced_prompt,
     )
 
-    if backend_type in ("gemlite", "hidream", "agate"):
+    if backend_type in ("gemlite", "agate"):
         unload_pipeline()
 
     # ── Debrief ──
@@ -1170,190 +1009,6 @@ def _run_bonsai_image(
     )
 
 
-def _run_zimage_sd_cpp_image(
-    args,
-    model_name: str,
-    model_info: dict,
-    prompt: str,
-    original_prompt: str,
-    seed: int,
-    width: int,
-    height: int,
-) -> None:
-    """Handle Z-Image-Turbo image generation via sd-cli (same path as Ideogram 4)."""
-    from diffuse.backends.sd_cpp import load_pipeline_sd_cpp, generate_image_sd_cpp
-
-    steps = args.steps if args.steps != 28 else 9  # Default 8 NFE for Turbo
-    guidance = 1.0  # Turbo distilled: sd-cli warns "use cfg-scale=1 for distilled models"
-
-    print(f"  🎨 Z-Image-Turbo T2I: {width}×{height}, {steps} steps (8 NFE), seed={seed}")
-
-    # ── Prompt enhancement ──
-    enhanced = None
-    if args.enhance or args.enhance_with:
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
-        enhance_type = model_info.get("enhance_type", "vision")
-
-        if enhance_type == "vision":
-            print(f"\n  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
-            enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
-        else:
-            enhanced, raw_response = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
-
-        if enhanced and enhanced != prompt:
-            print(f"     Expanded to ({len(enhanced)} chars)")
-            _show_enhanced_if_requested(args, enhanced)
-            prompt = enhanced
-
-    # Evict LLMs before loading
-    running = llama_swap_running_models()
-    if running:
-        print(f"  🔄 Evicting LLM models: {', '.join(running)}")
-        evict_llm()
-        print(f"     VRAM freed for image generation")
-
-    print(f"  [1/3] Loading Z-Image-Turbo pipeline ({model_info['bits']})...")
-    config, load_time = load_pipeline_sd_cpp(model_name)
-    config["steps"] = steps
-    config["cfg"] = guidance
-    print(f"        sd-cli config ready")
-
-    # Output path
-    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
-    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
-
-    print(f"  [2/3] Generating...")
-    wall_t0 = time.perf_counter()
-    try:
-        output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
-            config, prompt, seed, width, height, output_path,
-            nsfw=args.nsfw,
-        )
-    except RuntimeError as e:
-        if "CUDA" in str(e) and args.cpu_fallback:
-            print(f"  ⚠️  CUDA failed — retrying on CPU (this will be very slow)...")
-            output_path, diffusion_time, peak_hbm = generate_image_sd_cpp(
-                config, prompt, seed, width, height, output_path, cpu_fallback=True,
-                nsfw=args.nsfw,
-            )
-        else:
-            raise
-    wall_time = time.perf_counter() - wall_t0
-
-    print(f"  [3/3] Done — unloading...")
-
-    save_metadata(
-        model_name, prompt, seed, width, height, steps,
-        0.0, diffusion_time, wall_time, peak_hbm, output_path,
-        enhanced_prompt=enhanced,
-    )
-    print_debrief(
-        model_name, model_info, prompt, seed,
-        width, height, steps, 0.0,
-        diffusion_time, wall_time, peak_hbm, output_path,
-        enhanced_prompt=enhanced,
-        original_prompt=original_prompt,
-    )
-
-
-def _run_mageflow_sd_cpp_edit(
-    args,
-    model_name: str,
-    model_info: dict,
-    prompt: str,
-    original_prompt: str,
-    seed: int,
-    width: int,
-    height: int,
-    ref_image_paths: list[str] | None,
-) -> None:
-    """Handle Mage-Flow-Edit-Turbo image editing via sd-cli.
-
-    Mage-Flow-Edit is instruction-based: pass a reference image with --edit
-    and a text instruction as the prompt. No masks needed. Turbo = 4 steps.
-    """
-    from diffuse.backends.sd_cpp import (
-        load_pipeline_sd_cpp,
-        generate_image_mageflow_sd_cpp,
-    )
-
-    if not ref_image_paths:
-        print("  ✗ Mage-Flow-Edit requires --edit IMAGE to specify a reference image")
-        sys.exit(1)
-
-    ref_image = ref_image_paths[0]
-    steps = 4  # Turbo distilled
-    guidance = 1.0  # Turbo: cfg=1.0
-
-    print(f"  🎨 Mage-Flow-Edit-Turbo: editing {Path(ref_image).name}")
-    print(f"     Instruction: {prompt[:80]}{'...' if len(prompt) > 80 else ''}")
-    print(f"     {width}x{height}, {steps} steps, seed={seed}")
-
-    # ── Prompt enhancement ──
-    enhanced = None
-    if args.enhance or args.enhance_with:
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
-        enhance_type = model_info.get("enhance_type", "vision")
-
-        if enhance_type == "vision":
-            print(f"\n  ✨ Enhancing edit instruction via {enhance_model} (vision mode)...")
-            enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
-        else:
-            enhanced, raw_response = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
-
-        if enhanced and enhanced != prompt:
-            print(f"     Expanded to ({len(enhanced)} chars)")
-            _show_enhanced_if_requested(args, enhanced)
-            prompt = enhanced
-
-    # Evict LLMs before loading
-    running = llama_swap_running_models()
-    if running:
-        print(f"  🔄 Evicting LLM models: {', '.join(running)}")
-        evict_llm()
-        print(f"     VRAM freed for image editing")
-
-    print(f"  [1/3] Loading Mage-Flow-Edit-Turbo pipeline ({model_info['bits']})...")
-    config, load_time = load_pipeline_sd_cpp(model_name)
-    print(f"        sd-cli config ready")
-
-    # Output path
-    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
-    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
-
-    print(f"  [2/3] Editing...")
-    wall_t0 = time.perf_counter()
-    try:
-        output_path, diffusion_time, peak_hbm = generate_image_mageflow_sd_cpp(
-            config, prompt, seed, width, height, output_path, ref_image,
-        )
-    except RuntimeError as e:
-        if "CUDA" in str(e) and args.cpu_fallback:
-            print(f"  ⚠️  CUDA failed — retrying on CPU (this will be very slow)...")
-            output_path, diffusion_time, peak_hbm = generate_image_mageflow_sd_cpp(
-                config, prompt, seed, width, height, output_path, ref_image,
-                cpu_fallback=True,
-            )
-        else:
-            raise
-    wall_time = time.perf_counter() - wall_t0
-
-    print(f"  [3/3] Done — unloading...")
-
-    save_metadata(
-        model_name, prompt, seed, width, height, steps,
-        0.0, diffusion_time, wall_time, peak_hbm, output_path,
-        enhanced_prompt=enhanced,
-    )
-    print_debrief(
-        model_name, model_info, prompt, seed,
-        width, height, steps, 0.0,
-        diffusion_time, wall_time, peak_hbm, output_path,
-        enhanced_prompt=enhanced,
-        original_prompt=original_prompt,
-    )
-
-
 def _run_flux3_wan2gp_image(
     args,
     model_name: str,
@@ -1370,7 +1025,7 @@ def _run_flux3_wan2gp_image(
     Klein ships distilled: fixed 16 steps, cfg 1.0. Editing takes up to 10
     reference images. WanGP mmgp Profile 5 offloads blocks one-by-one —
     the same regime as Ming/H3 in the 6 GB fleet — so the denoise runs on
-    GPU instead of the sd_cpp CPU fallback (~67 s/it).
+    GPU (sem fallback CPU — sd.cpp saiu da frota, F5).
     """
     from diffuse.backends.wan2gp import (
         load_pipeline_wan2gp,
@@ -1390,7 +1045,7 @@ def _run_flux3_wan2gp_image(
 
     # -- Prompt enhancement --
     # Edit-aware: with refs, the VLM SEES the image and refines the INSTRUCTION
-    # (analyze_and_enhance_edit, same one-shot flow as qwen21/hidream). The plain
+    # (analyze_and_enhance_edit, same one-shot flow as qwen21). The plain
     # T2I enhancer re-describes the scene from scratch ("young woman in her late
     # 20s...") and the diffusion loses the reference identity — the iany bug.
     # Without refs, standard T2I vision enhancement.
@@ -1974,355 +1629,3 @@ def _run_qwen21_wan2gp_image(
         original_prompt=original_prompt,
     )
 
-
-def _run_qwen21_sd_cpp_image(
-    args,
-    model_name: str,
-    model_info: dict,
-    prompt: str,
-    original_prompt: str,
-    seed: int,
-    width: int,
-    height: int,
-    ref_image_paths: list[str] | None,
-) -> None:
-    """Handle Qwen-Image 2.1 generation/editing via sd-cli.
-
-    Qwen-Image 2.1 is unified: the same model does T2I, native editing (up to 10
-    reference images, no masks) and RGBA transparency. Unlike Z-Image-Turbo or
-    Mage-Flow it is NOT a distilled model, but its own specification still calls
-    for classifier-free guidance OFF (cfg 1.0) with 40 steps — see below.
-    """
-    from diffuse.backends.sd_cpp import (
-        load_pipeline_sd_cpp,
-        generate_image_qwen21_sd_cpp,
-    )
-
-    is_edit = bool(ref_image_paths)
-    steps = args.steps if args.steps is not None else (
-        8 if model_name.endswith("-turbo")
-        else 40
-    )
-    # Qwen's own specification (vLLM Recipes): 40 steps with classifier-free
-    # guidance OFF (cfg 1.0). Measured on this 3050: cfg 4.0 costs 11.03 s/it
-    # because the DiT runs twice per step, while cfg 1.0 costs 5.5 s/it --
-    # a 2.01x ratio. cfg 1.0 at 40 steps is both FASTER and better-looking
-    # than cfg 4.0 at 28 steps. Do not raise this without an A/B.
-    guidance = args.cfg if args.cfg is not None else 1.0
-
-    if is_edit:
-        print(f"  \U0001f3a8 Qwen-Image 2.1 editing: {Path(ref_image_paths[0]).name}")
-        print(f"     Instruction: {prompt[:80]}{'...' if len(prompt) > 80 else ''}")
-    else:
-        print(f"  \U0001f3a8 Qwen-Image 2.1 T2I")
-    print(f"     {width}x{height}, {steps} steps, cfg={guidance}, seed={seed}")
-
-    # -- Prompt enhancement --
-    enhanced = None
-    if args.enhance or args.enhance_with or getattr(args, "enhance_edit_with", None):
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
-        enhance_type = model_info.get("enhance_type", "vision")
-
-        # Preserve <lora:...> tags: extract before enhance, re-apply after
-        lora_tags = ""
-        if "<lora:" in prompt:
-            prompt, lora_tags = _extract_lora_tags(prompt)
-
-        # --enhance-edit-with: VLM vê a reference image e refina a instrução (one-shot)
-        # MESMO FLUXO do text-only: rerank ANTES (o catálogo ranked no system do
-        # VLM) + a linha LORAS: no fim + resolve/injeção fora do paragraph —
-        # --enhance-edit-with é só TROCA DE MODELO, não outro pipeline.
-        _edit_catalog_block = None
-        if is_edit and getattr(args, "enhance_edit_with", None):
-            import os as _os_e
-            import re as _re_e
-            import subprocess as _sp_e
-            import time as _time_e
-            edit_model = args.enhance_edit_with
-            if not _check_model_vision(edit_model):
-                print(f"  \u26a0\ufe0f  {edit_model} não tem visão — caindo pro enhance text-only")
-                enhanced, raw_response = enhance_qwen21_prompt(prompt, enhance_model, nsfw=args.nsfw)
-            else:
-                _edit_rule = None
-                if "<lora:" not in prompt:
-                    _edit_cat = (_os_e.environ.get("NSFW_CATALOG_JSON" if getattr(args, "nsfw", False) else "GEN_CATALOG_JSON") or str(
-                        Path.home() / ".local/share/diffuse/{}catalog_qwen21.json".format("nsfw_" if getattr(args, "nsfw", False) else "")))
-                    _edit_rerank = str(Path.home() / ".local/share/diffuse/rerank_catalog_qwen21.py")
-                    if Path(_edit_cat).exists() and Path(_edit_rerank).exists():
-                        try:
-                            _env_e = dict(_os_e.environ)
-                            if not getattr(args, "nsfw", False):
-                                _env_e["NSFW_CATALOG_JSON"] = _edit_cat
-                            _t0e = _time_e.time()
-                            _ranked_e = _sp_e.run(
-                                ["python3", _edit_rerank, "--prompt", prompt, "--n", "10" if getattr(args, "nsfw", False) else "5", "--mode", "rank"],
-                                capture_output=True, text=True, timeout=180, env=_env_e)
-                            if _ranked_e.returncode == 0 and _ranked_e.stdout.strip():
-                                _edit_catalog_block = _ranked_e.stdout.strip()
-                                _n_e = len(_re_e.findall(r"^\d+:", _edit_catalog_block, flags=_re_e.M))
-                                print(f"  🔎 Rerank ColBERT: {_n_e} LoRAs pré-ordenados "
-                                      f"({_time_e.time() - _t0e:.1f}s)")
-                        except Exception as e:  # fail-open
-                            print(f"  ⚠️  rerank indisponível ({e}); seguindo sem seleção")
-                if _edit_catalog_block:
-                    _max_loras = "2" if getattr(args, "nsfw", False) else "2"
-                    _edit_rule = (
-                        "LoRA SELECTION: at the very END of your output, on the LAST line, "
-                        "output exactly: LORAS: <comma-separated numeric IDs>\n"
-                        "- Choose the IDs best fit to the request (0 to 2 LoRAs; aesthetics "
-                        "LoRA + detailer may stack, never two of the same category).\n"
-                        "- If genuinely nothing fits the request, output: LORAS: none\n"
-                        f"- {'Never mention catalog trigger phrases' if getattr(args, 'nsfw', False) else 'Never mention catalog trigger words'} in the paragraph itself.\n\n"
-                        + _edit_catalog_block)
-                print(f"\n  \U0001f441\ufe0f\u2728 {edit_model} analisa a referência e refina a instrução (one-shot)...")
-                enhanced, raw_response = analyze_and_enhance_edit(
-                    ref_image_paths[0], prompt, edit_model, nsfw=args.nsfw, extra_system=_edit_rule or "")
-                _m_edit = _re_e.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "") if _edit_catalog_block else None
-                _lora_ids_edit = [int(x) for x in _re_e.findall(r"\d+", _m_edit.group(1))] if _m_edit and _m_edit.group(1).strip() else None
-                enhanced = _re_e.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_e.M).strip()
-                if enhanced and enhanced != prompt:
-                    print(f"     Expanded to ({len(enhanced)} chars)")
-                    _show_enhanced_if_requested(args, enhanced)
-                    print(f"     ─── Enhanced edit prompt ───")
-                    import textwrap as _tw
-                    for line in _tw.wrap(enhanced, width=78):
-                        print(f"     {line}")
-                    print(f"     ────────────────────────────")
-                if _lora_ids_edit:
-                    _resolver_e = str(Path.home() / ".local/share/diffuse/nsfw_lora_resolve_qwen21.py" if getattr(args, "nsfw", False) else ".local/share/diffuse/catalog_lora_resolve_qwen21.py")
-                    if not _resolver_e.startswith("/"):
-                        _resolver_e = str(Path.home() / _resolver_e)
-                    _res_e = _sp_e.run(["python3", _resolver_e, "--ids", ",".join(map(str, _lora_ids_edit))],
-                                       capture_output=True, text=True, timeout=30)
-                    import json as _j_e
-                    _sel_e = _j_e.loads(_res_e.stdout) if _res_e.returncode in (0, 3) and _res_e.stdout.strip() else {}
-                    if _sel_e.get("names"):
-                        _tags_e = " ".join(f"<lora:{n}:{m_}>" for n, m_ in zip(_sel_e["names"], _sel_e["mults"]))
-                        _trigs_e = [t for t in (_sel_e.get("triggers") or []) if t]
-                        enhanced = f"{_tags_e} {enhanced}" if enhanced else enhanced
-                        if _trigs_e:
-                            enhanced = f"{', '.join(_trigs_e)} {enhanced}"
-                        print(f"  🎯 LLM escolheu {len(_sel_e['names'])} LoRA(s): "
-                              f"{', '.join(_sel_e['names'])}")
-                elif _edit_catalog_block:
-                    print("  ℹ️  LLM não escolheu LoRA (LORAS: none ou linha ausente); rodando base")
-                enhanced = enhanced if (enhanced and enhanced != prompt) else None
-        elif enhance_type == "qwen21":
-            # Catálogo geral (non-NSFW): adapters de estilo/fix como o analogcore.
-            # Mirror do fluxo --nsfw (mesma mecânica LORAS: <ids>): sem tag manual
-            # no prompt, o rerank pré-ordena o catálogo e o LLM escolhe 0-2 —
-            # triggers + tags injetados FORA do paragraph depois do resolve.
-            # Fail-open: sem catálogo/sem rerank/sem linha LORAS: → roda base.
-            _gen_catalog_block = None
-            if "<lora:" not in prompt and not getattr(args, "nsfw", False):
-                import os as _os_c
-                import re as _re_c
-                import subprocess as _sp_c
-                import time as _time_c
-                _gen_cat = _os_c.environ.get("GEN_CATALOG_JSON") or str(
-                    Path.home() / ".local/share/diffuse/catalog_qwen21.json")
-                _gen_rerank = str(Path.home() / ".local/share/diffuse/rerank_catalog_qwen21.py")
-                if Path(_gen_cat).exists() and Path(_gen_rerank).exists():
-                    try:
-                        _env = dict(_os_c.environ)
-                        _env["NSFW_CATALOG_JSON"] = _gen_cat
-                        _t0 = _time_c.time()
-                        _ranked = _sp_c.run(
-                            ["python3", _gen_rerank, "--prompt", prompt, "--n", "5", "--mode", "rank"],
-                            capture_output=True, text=True, timeout=180, env=_env)
-                        if _ranked.returncode == 0 and _ranked.stdout.strip():
-                            _gen_catalog_block = _ranked.stdout.strip()
-                            _n_ranked = len(_re_c.findall(r"^\d+:", _gen_catalog_block, flags=_re_c.M))
-                            print(f"  🔎 Rerank ColBERT: {_n_ranked} LoRAs pré-ordenados "
-                                  f"({_time_c.time() - _t0:.1f}s)")
-                    except Exception as e:  # fail-open: sem ranking, geração segue
-                        print(f"  ⚠️  rerank do catálogo indisponível ({e}); seguindo sem seleção")
-            if _gen_catalog_block:
-                _gen_rule = (
-                    "LoRA SELECTION: at the very END of your output, on the LAST line, "
-                    "output exactly: LORAS: <comma-separated numeric IDs>\n"
-                    "- Choose the IDs best fit to the request (0 to 2 LoRAs; aesthetics "
-                    "LoRA + detailer may stack, never two of the same category).\n"
-                    "- If genuinely nothing fits the request, output: LORAS: none\n"
-                    "- Never mention catalog trigger words in the paragraph itself.\n\n"
-                    + _gen_catalog_block)
-                print(f"\n  ✨ Enhancing prompt via {enhance_model} (qwen21 mode + catálogo)...")
-                enhanced, raw_response = enhance_qwen21_prompt(
-                    prompt, enhance_model, nsfw=args.nsfw, extra_system=_gen_rule)
-                import os as _os_p
-                import re as _re_p
-                import subprocess as _sp_p
-                import json as _j_p
-                m = _re_p.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "")
-                _lora_ids = [int(x) for x in _re_p.findall(r"\d+", m.group(1))] if m and m.group(1).strip() else None
-                enhanced = _re_p.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_p.M).strip()
-                if _lora_ids:
-                    _resolver = str(Path.home() / ".local/share/diffuse/catalog_lora_resolve_qwen21.py")
-                    _res = _sp_p.run(["python3", _resolver, "--ids", ",".join(map(str, _lora_ids))],
-                                     capture_output=True, text=True, timeout=30)
-                    _sel = _j_p.loads(_res.stdout) if _res.returncode in (0, 3) and _res.stdout.strip() else {}
-                    if _sel.get("names"):
-                        _tags = " ".join(
-                            f"<lora:{n}:{m_}>" for n, m_ in zip(_sel["names"], _sel["mults"]))
-                        _trigs = [t for t in (_sel.get("triggers") or []) if t]
-                        enhanced = f"{_tags} {enhanced}"
-                        if _trigs:
-                            enhanced = f"{', '.join(_trigs)} {enhanced}"
-                        print(f"  🎯 LLM escolheu {len(_sel['names'])} LoRA(s): "
-                              f"{', '.join(_sel['names'])}")
-            else:
-                if getattr(args, "nsfw", False):
-                    # --nsfw: o fluxo post-bloco roda rerank ANTES + UMA call só de
-                    # enhance (com o _lora_rule no system). Não enhance aqui: o
-                    # header duplicado + 2ª call eram desperdício no edit+nsfw.
-                    pass
-                else:
-                    print(f"\n  ✨ Enhancing prompt via {enhance_model} (qwen21 mode)...")
-                    enhanced, raw_response = enhance_qwen21_prompt(prompt, enhance_model, nsfw=False)
-        elif enhance_type == "vision":
-            print(f"\n  \u2728 Enhancing prompt via {enhance_model} (vision mode)...")
-            enhanced, raw_response = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
-        else:
-            enhanced, raw_response = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
-
-        if enhanced and enhanced != prompt:
-            print(f"     Expanded to ({len(enhanced)} chars)")
-            _show_enhanced_if_requested(args, enhanced)
-            prompt = enhanced
-    # tags manuais vencem SEMPRE — reapply FORA do bloco enhance (bug 20/out/2026:
-    # sem --enhance, tags eram extraídas e nunca devolvidas; a LoRA era
-    # silenciosamente ignorada — renders bit-idênticos com/sem tag, achado no V-MOSS)
-    if lora_tags:
-        prompt = _reapply_lora_tags(prompt, lora_tags)
-
-    # --nsfw: seletor inteligente de LoRAs (mirror do H3, 03/out — decreto do
-    # user: --nsfw PURO, o auto-attach ALL saiu). Fluxo:
-    #   1. rerank ColBERT pré-ordena o catálogo (~/.local/share/diffuse/nsfw_catalog_qwen21.json)
-    #   2. catálogo ranked + instrução "LORAS: <ids>" entram no system do enhance
-    #   3. o output do enhance traz a linha LORAS: no fim → parse → resolve (paths
-    #      relativos + strengths do catálogo + triggers-frase)
-    #   4. tags <lora:...:str> re-aplicadas ao prompt enhanced
-    # Fail-open na CADEIA inteira: sem enhance/sem resposta/sem linha LORAS:/IDs
-    # inválidos → roda BASE sem tags (avisado), nunca bloqueia a geração.
-    if getattr(args, "nsfw", False):
-        import os as _os_i
-        import re as _re_i
-        import subprocess as _sp_i
-        from diffuse.paths import MODELS_DIR
-        # tags manuais do user vencem (o enhance preserva e re-aplica as delas depois)
-        if "<lora:" not in prompt:
-            if args.enhance or args.enhance_with:
-                _cat_json = _os_i.environ.get("NSFW_CATALOG_JSON") or str(
-                    Path.home() / ".local/share/diffuse/nsfw_catalog_qwen21.json")
-                _rerank = str(Path.home() / ".local/share/diffuse/rerank_catalog_qwen21.py")
-                _resolver = str(Path.home() / ".local/share/diffuse/nsfw_lora_resolve_qwen21.py")
-                _catalog_block = None
-                if Path(_rerank).exists() and Path(_cat_json).exists():
-                    try:
-                        import time as _time_i
-                        _t0 = _time_i.time()
-                        _ranked = _sp_i.run(
-                            ["python3", _rerank, "--prompt", prompt, "--n", "10", "--mode", "rank"],
-                            capture_output=True, text=True, timeout=180)
-                        if _ranked.returncode == 0 and _ranked.stdout.strip():
-                            _catalog_block = _ranked.stdout.strip()
-                            _n_ranked = len(_re_i.findall(r"^\d+:", _catalog_block, flags=_re_i.M))
-                            print(f"  🔎 Rerank ColBERT: {_n_ranked} LoRAs pré-ordenados "
-                                  f"({_time_i.time() - _t0:.1f}s)")
-                    except Exception as e:  # fail-open: sem ranking, catálogo cru
-                        print(f"  ⚠️  rerank indisponível ({e}); catálogo completo")
-                elif not Path(_cat_json).exists():
-                    print("  ⚠️  catálogo NSFW não encontrado; pulando seleção (roda base)")
-                if _catalog_block:
-                    _lora_rule = (
-                        "LoRA SELECTION: at the very END of your output, on the LAST line, "
-                        "output exactly: LORAS: <comma-separated numeric IDs>\n"
-                        "- Choose the IDs best fit to the request (0 to 2 LoRAs, avoid stacking two "
-                        "that target the same feature/body aspect).\n"
-                        "- If genuinely nothing fits, output: LORAS: none\n"
-                        "- Never mention catalog trigger phrases in the paragraph itself.\n\n"
-                        + _catalog_block)
-                    enhanced, raw_response = enhance_qwen21_prompt(
-                        prompt, enhance_model, nsfw=True, extra_system=_lora_rule)
-                    _lora_ids = None
-                    m = _re_i.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "")
-                    if m and m.group(1).strip():
-                        _lora_ids = [int(x) for x in _re_i.findall(r"\d+", m.group(1))]
-                    # strip da linha LORAS: do prompt (sintaxe interna, não é cena)
-                    _enhanced_body = _re_i.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_i.M).strip()
-                    # display do enhanced (o único call LLM do fluxo): o Expanded +
-                    # bloco ── Enhanced prompt ──, igual aos outros caminhos
-                    if _enhanced_body:
-                        print(f"     Expanded to ({len(_enhanced_body)} chars)")
-                        _show_enhanced_if_requested(args, _enhanced_body)
-                    enhanced = _enhanced_body
-                    if _lora_ids:
-                        _res = _sp_i.run(["python3", _resolver, "--ids", ",".join(map(str, _lora_ids))],
-                                         capture_output=True, text=True, timeout=30)
-                        import json as _j
-                        _sel = _j.loads(_res.stdout) if _res.returncode in (0, 3) and _res.stdout.strip() else {}
-                        if _sel.get("names"):
-                            _tags = " ".join(
-                                f"<lora:{n}:{m_}>" for n, m_ in zip(_sel["names"], _sel["mults"]))
-                            _trigs = [t for t in (_sel.get("triggers") or []) if t]
-                            enhanced = f"{_tags} {enhanced}"
-                            if _trigs:
-                                enhanced = f"{', '.join(_trigs)} {enhanced}"
-                            print(f"  🎯 LLM escolheu {len(_sel['names'])} LoRA(s): "
-                                  f"{', '.join(Path(n).name for n in _sel['names'])}")
-                        else:
-                            print("  ⚠️  LLM respondeu LORAS: mas nada resolveu; rodando base (sem tags)")
-                    elif enhanced:
-                        print("  ℹ️  LLM não escolheu LoRA (LORAS: none ou linha ausente); rodando base")
-                    prompt = enhanced
-            else:
-                print("  ⚠️  --nsfw sem --enhance: sem seleção inteligente; rodando base")
-
-    # Evict LLMs before loading (the text encoder runs on CPU, but the DiT needs VRAM)
-    running = llama_swap_running_models()
-    if running:
-        print(f"  \U0001f504 Evicting LLM models: {', '.join(running)}")
-        evict_llm()
-        print(f"     VRAM freed for image generation")
-
-    print(f"  [1/3] Loading Qwen-Image 2.1 pipeline ({model_info['bits']})...")
-    config, load_time = load_pipeline_sd_cpp(model_name)
-    print(f"        sd-cli config ready")
-
-    # Output path
-    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
-    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
-
-    print(f"  [2/3] {'Editing' if is_edit else 'Generating'}...")
-    wall_t0 = time.perf_counter()
-    try:
-        output_path, diffusion_time, peak_hbm = generate_image_qwen21_sd_cpp(
-            config, prompt, seed, width, height, output_path,
-            ref_images=ref_image_paths, steps=steps, cfg_scale=guidance,
-        )
-    except RuntimeError as e:
-        if "CUDA" in str(e) and args.cpu_fallback:
-            print(f"  \u26a0\ufe0f  CUDA failed - retrying on CPU (this will be very slow)...")
-            output_path, diffusion_time, peak_hbm = generate_image_qwen21_sd_cpp(
-                config, prompt, seed, width, height, output_path,
-                ref_images=ref_image_paths, cpu_fallback=True,
-                steps=steps, cfg_scale=guidance,
-            )
-        else:
-            raise
-    wall_time = time.perf_counter() - wall_t0
-
-    print(f"  [3/3] Done - unloading...")
-
-    save_metadata(
-        model_name, prompt, seed, width, height, steps,
-        0.0, diffusion_time, wall_time, peak_hbm, output_path,
-        enhanced_prompt=enhanced,
-    )
-    print_debrief(
-        model_name, model_info, prompt, seed,
-        width, height, steps, 0.0,
-        diffusion_time, wall_time, peak_hbm, output_path,
-        enhanced_prompt=enhanced,
-        original_prompt=original_prompt,
-    )

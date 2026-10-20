@@ -132,18 +132,6 @@ def load_pipeline(model_name: str, editing: bool = False) -> tuple:
     elif backend_type == "gemlite":
         from diffuse.backends.gemlite import load_pipeline_gemlite
         return load_pipeline_gemlite(model_name)
-    elif backend_type == "sd_cpp":
-        from diffuse.backends.sd_cpp import load_pipeline_sd_cpp
-        return load_pipeline_sd_cpp(model_name)
-    elif backend_type == "zimage_sd_cpp":
-        from diffuse.backends.sd_cpp import load_pipeline_sd_cpp
-        return load_pipeline_sd_cpp(model_name)
-    elif backend_type == "qwen21_sd_cpp":
-        from diffuse.backends.sd_cpp import load_pipeline_sd_cpp
-        return load_pipeline_sd_cpp(model_name)
-    elif backend_type == "hidream":
-        from diffuse.backends.hidream import load_pipeline_hidream
-        return load_pipeline_hidream(model_name, editing=editing)
     elif backend_type == "agate":
         from diffuse.backends.agate import load_pipeline_agate
         return load_pipeline_agate(model_name, editing=editing)

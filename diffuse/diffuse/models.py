@@ -34,75 +34,6 @@ MODELS: dict[str, dict] = {
         ],
     },
     # Z-Image-Turbo (diffusers ZImagePipeline + GGUF, subprocess in bonsai-venv)
-    "z-image-turbo-q4": {
-        "backend_id": "z-image-turbo-q4-sd-cpp",
-        "dir": "z-image-turbo-q4",
-        "backend_type": "zimage_sd_cpp",
-        "category": "image",
-        "bits": "Q3_K GGUF (auto-selected for 6GB VRAM)",
-        "description": "Z-Image-Turbo — 6B S3-DiT, 8 NFE, sub-second on H800, uncensored, bilingual text",
-        "default_size": (1024, 1024),
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
-        "enhance_type": "vision",
-        "components": [
-            {"name": "z_image_turbo GGUF (DiT)", "path": "z-image-turbo-q4/z_image_turbo-Q3_K.gguf", "size_gb": 3.0},
-            {"name": "Qwen3-4B-Instruct-2507 Q4_K_M GGUF (text encoder)", "path": "z-image-turbo-q4/Qwen3-4B-Instruct-2507-Q4_K_M.gguf", "size_gb": 2.4},
-            {"name": "Flux VAE", "path": "z-image-turbo-q4/pipeline/vae/diffusion_pytorch_model.safetensors", "size_gb": 0.32},
-        ],
-    },
-    # HiDream-O1-Image-Dev SDNQ (transformers + accelerate CPU offload)
-    "hidream-sdnq": {
-        "dir": "HiDream-O1-Image-Dev-SDNQ-last8",
-        "backend_type": "hidream",
-        "category": "image",
-        "bits": "4-bit SDNQ (uint4+svd-r32 last8-odown-bf16)",
-        "description": "HiDream-O1-Image-Dev SDNQ — 8B unified (T2I + editing + IP), ~3min/2048² on 6GB VRAM",
-        "default_size": (1024, 1024),
-        "hidream_repo": "~/git/HiDream-O1-Image",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
-        "enhance_type": "vision",
-        "components": [
-            {"name": "Qwen3-VL 8B SDNQ (unified DiT + text encoder)", "path": "~/.llama-models/HiDream-O1-Image-Dev-SDNQ-last8", "size_gb": 7.3},
-        ],
-    },
-    # Ideogram 4 (sd-cli / stable-diffusion.cpp)
-    # Models auto-download from HuggingFace on first use (no pre-download needed).
-    "ideogram4-q4": {
-        "backend_id": "ideogram4-q4-sd-cpp",
-        "dir": "ideogram-4-Q4_0",
-        "backend_type": "sd_cpp",
-        "category": "image",
-        "bits": "4-bit",
-        "description": "Ideogram 4 Q4_0 — 9.3B DiT, structured JSON prompts, best-in-class text rendering",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
-        "enhance_type": "ideogram",
-        "default_size": (1024, 1024),
-        "hf_files": [
-            {"repo": "leejet/ideogram-4-GGUF", "files": ["ideogram4-Q4_0.gguf", "ideogram4_uncond-Q4_0.gguf"]},
-            {"repo": "unsloth/Qwen3-VL-8B-Instruct-GGUF", "files": ["Qwen3-VL-8B-Instruct-Q4_K_M.gguf"],
-             "rename": {"Qwen3-VL-8B-Instruct-Q4_K_M.gguf": "Qwen3VL-8B-Instruct-Q4_K_M.gguf"}},
-            {"repo": "black-forest-labs/FLUX.2-dev", "files": ["ae.safetensors"], "subdir": "vae",
-             "rename": {"ae.safetensors": "flux2-vae.safetensors"}},
-        ],
-        "components": [
-            {"name": "ideogram4-Q4_0.gguf (DiT)", "path": "ideogram-4-Q4_0/ideogram4-Q4_0.gguf", "size_gb": 5.0},
-            {"name": "ideogram4_uncond-Q4_0.gguf (uncond DiT)", "path": "ideogram-4-Q4_0/ideogram4_uncond-Q4_0.gguf", "size_gb": 5.0},
-            {"name": "Qwen3VL-8B-Instruct-Q4_K_M.gguf (text encoder)", "path": "ideogram-4-Q4_0/Qwen3VL-8B-Instruct-Q4_K_M.gguf", "size_gb": 4.7},
-            {"name": "flux2-vae.safetensors (VAE)", "path": "ideogram-4-Q4_0/vae/flux2-vae.safetensors", "size_gb": 0.2},
-        ],
-    },
-    # Qwen-Image 2.1 (sd-cli / stable-diffusion.cpp — day-0 support, sd.cpp 137f740)
-    # 7B DiT, 32 blocks, hidden 4096. T2I + native editing (up to 10 reference images) + RGBA.
-    # Text encoder is Qwen3-VL-8B (NOT the Qwen2.5-VL-7B of Qwen-Image 1.0).
-    # The VAE is NOT interchangeable with Qwen-Image 1.0 or Wan 2.2 — the name
-    # conversion path differs (convert_diffusers_to_original_wan_vae(qwen_image_2_1=true)).
-    # Dimensions MUST be multiples of 32.
-    # Qwen-Image 2.1 BASE — APOSENTADO 09/10 (user: "vamos aposentar o antigo").
-    # DiT qwen-image-2.1-Q4_K_M.gguf DELETED; weights re-installable from
-    # abenzerps/Qwen-Image-2.1-Uncensored-GGUF (Q4_K_M 4.60 GB). Entry kept in the
-    # registry on purpose (code stays; weights gone) — loader missing-error is the
-    # intended guardrail. The old --pruna flag was removed (base retired; its
-    # LoRA extracts p_qwen_5/8step deleted with it).
     "qwen-image-2.1": {
         "backend_id": "qwen-image-2.1-wan2gp",
         "dir": "qwen-image-2.1-UC-wan2gp",
@@ -214,35 +145,6 @@ MODELS: dict[str, dict] = {
     # Mage-Flow-Edit-Turbo (sd-cli / stable-diffusion.cpp — instruction-based image editing)
     # 4B NR-MMDiT, 4 steps, cfg=1.0 (Turbo). Uses Qwen3-VL-4B as text+vision encoder.
     # GGUF from gguf-org, VAE included. Only edit-turbo variant (no T2I GGUF yet).
-    "mageflow-edit-turbo": {
-        "backend_id": "mageflow-edit-turbo-sd-cpp",
-        "dir": "mageflow-edit-turbo",
-        "backend_type": "mageflow_sd_cpp",
-        "category": "image",
-        "bits": "NVFP4 GGUF",
-        "description": "Mage-Flow-Edit-Turbo — 4B NR-MMDiT, 4-step instruction-based image editing, no masks needed",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
-        "enhance_type": "vision",
-        "hf_files": [
-            {"repo": "gguf-org/mageflow-gguf",
-             "files": ["mageflow-edit-turbo-nvfp4.gguf", "pig_mageflow_vae_fp32-f16.gguf"]},
-            {"repo": "Qwen/Qwen3-VL-4B-Instruct-GGUF",
-             "files": ["Qwen3VL-4B-Instruct-Q4_K_M.gguf", "mmproj-Qwen3VL-4B-Instruct-F16.gguf"]},
-        ],
-        "components": [
-            {"name": "mageflow-edit-turbo-nvfp4.gguf (DiT)", "path": "mageflow-edit-turbo/mageflow-edit-turbo-nvfp4.gguf", "size_gb": 2.3},
-            {"name": "pig_mageflow_vae_fp32-f16.gguf (VAE)", "path": "mageflow-edit-turbo/pig_mageflow_vae_fp32-f16.gguf", "size_gb": 0.33},
-            {"name": "Qwen3VL-4B-Instruct-Q4_K_M.gguf (text encoder)", "path": "mageflow-edit-turbo/Qwen3VL-4B-Instruct-Q4_K_M.gguf", "size_gb": 2.4},
-            {"name": "mmproj-Qwen3VL-4B-Instruct-F16.gguf (vision encoder)", "path": "mageflow-edit-turbo/mmproj-Qwen3VL-4B-Instruct-F16.gguf", "size_gb": 0.8},
-        ],
-    },
-    # FLUX 3 Image Klein (Wan2GP / DeepBeepMeep — 16/out). 5.6B BFL destilado:
-    # 16 steps, cfg 1.0. T2I + edição c/ até 10 refs ordenadas (KI = main ref
-    # dimensiona o output). Pipeline mmgp Profile 5 offload bloco a bloco — o
-    # mesmo regime do Ming/H3 na 6GB — denoise em GPU (o sd_cpp não engolava o
-    # fp8r de 6.07 GB num graph 1-segment e caía pra CPU a 67 s/it). NSFW
-    # suprimido no treino (red team BFL): casa usa qwen-image-2.1 pra NSFW e
-    # Klein pra texto-fino SFW/edição. Pesos em ~/git/Wan2GP/models/flux3/
     "flux-3": {
         "backend_id": "flux3-image-klein-wan2gp",
         "dir": "flux-3-image-klein",

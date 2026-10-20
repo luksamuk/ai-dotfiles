@@ -6,7 +6,6 @@
 # Commands:
 #   generate    Generate an image or video (main command)
 #   setup       Install dependencies (uv sync + clone vendor deps)
-#   download    Download model weights
 #   list        List installed models with dependencies and sizes
 #   loras       List WanGP LoRA files per model + cataloged entries
 #   evict       Evict all LLM models from llama-swap (free VRAM)
@@ -120,10 +119,6 @@ cmd_generate() {
     DIFFUSE_ORIG_CWD="$DIFFUSE_ORIG_CWD" exec uv run --no-sync -m diffuse "$@"
 }
 
-cmd_download() {
-    "${SCRIPT_DIR}/download-model.sh" "$@"
-}
-
 cmd_list() {
     check_venv || exit 1
     cd "$SCRIPT_DIR"
@@ -218,7 +213,6 @@ Usage: diffuse [command] [options]
 Commands:
   generate    Generate an image or video (passes args to generate.py)
   setup       Install dependencies (uv sync + vendor deps, pinned SHAs)
-  download    Download model weights (passes args to download-model.sh)
   list        List installed models with dependencies, sizes, and shared components
   loras       List WanGP LoRA files per model + cataloged moss entries
   evict       Evict all LLM models from llama-swap (free VRAM for diffusion)
@@ -228,10 +222,9 @@ Commands:
 
 Examples:
   diffuse list                              # Show all models, deps, sizes
-  diffuse generate -m hidream-sdnq -p 'a cat on the moon'
-  diffuse generate -m ideogram4-q4 -p 'text: HELLO' --enhance
+  diffuse generate -m qwen-image-2.1 -p 'a cat on the moon'
+  diffuse generate -m qwen-image-2.1 --enhance -p 'a rainy day at a coffee shop'
   diffuse evict                             # Free VRAM by unloading all LLMs
-  diffuse download hidream                  # Download HiDream weights
 EOF
 }
 
@@ -243,10 +236,6 @@ case "${1:-help}" in
         ;;
     setup)
         cmd_setup
-        ;;
-    download)
-        shift
-        cmd_download "$@"
         ;;
     list)
         cmd_list

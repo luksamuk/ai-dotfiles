@@ -10,7 +10,7 @@ MODELS_DIR = SCRIPT_DIR / "models"
 OUTPUTS_DIR = SCRIPT_DIR / "outputs"
 TRITON_CACHE_DIR = OUTPUTS_DIR / ".triton_cache"
 GEMLITE_PERSIST_PATH = OUTPUTS_DIR / ".gemlite_cache" / "autotune.json"
-SD_CLI_PATH = SCRIPT_DIR / "bin" / "sd-cli"
+# SD_CLI_PATH removido na F5 — backends sd.cpp fora da frota
 PROMPTS_DIR = SCRIPT_DIR / "prompts"
 
 DEFAULT_VISION_MODEL = "lfm2.5-vl-3b"  # qwen3-vl-4b removed from fleet Sep 2026; lfm2.5-vl-3b deployed (llama-swap id + GGUF verified 2026-09-16)
