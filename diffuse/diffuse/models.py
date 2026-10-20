@@ -5,10 +5,11 @@ from __future__ import annotations
 # Each entry defines:
 #   backend_type: which backend module handles generation
 #   bits: quantization description
-#   dir: model directory under MODELS_DIR (or ~/.llama-models/ for hidream)
+#   dir: model directory under MODELS_DIR
 #   description: human-readable description
 #   enhance_model: default LLM for prompt enhancement
-#   enhance_type: "ideogram" (JSON) or "vision" (natural language)
+#   enhance_type: "qwen21" | "vision" | "agate" | "moss" (natural language;
+#                 "ideogram" é legado JSON, sem entry viva hoje)
 #   default_size: (width, height) tuple, optional
 #   hf_files: list of {repo, files, subdir?, rename?, hf_path?} for auto-download
 #   components: list of {name, path, size_gb} for diffuse list display

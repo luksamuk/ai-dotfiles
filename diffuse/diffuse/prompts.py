@@ -14,7 +14,6 @@ _PROMPT_FILES: dict[str, str] = {
     "qwen21_enhance": "qwen21_enhance.yaml",
     "agate_enhance": "agate_enhance.yaml",
     "moss_enhance": "moss_enhance.yaml",
-    "edit_enhance": "edit_enhance.yaml",
     "edit_vision": "edit_vision.yaml",
     "vision_analysis": "vision_analysis.yaml",
 }
@@ -97,9 +96,6 @@ def get_moss_enhance_prompt(nsfw: bool = False) -> str:
     and explicit content are in-distribution."""
     return _load_prompt("moss_enhance")
 
-
-def get_edit_enhance_prompt(nsfw: bool = False) -> str:
-    return _toggle_safety_rules(_load_prompt("edit_enhance"), nsfw)
 
 
 def get_edit_vision_prompt(nsfw: bool = False) -> str:
