@@ -532,7 +532,7 @@ def _check_model_vision(model: str) -> bool:
     if model.startswith("ollama:"):
         # Ollama does not publish a vision flag; fall back to name heuristics.
         name = model[len("ollama:"):].lower()
-        return any(tag in name for tag in ("vl", "vision", "llava", "gemma4", "minicpm-v", "qwen3-vl", "ornith"))
+        return any(tag in name for tag in ("vl", "vision", "llava", "gemma4", "minicpm-v", "qwen3-vl", "qwen3.6", "ornith"))
 
     base_model = model.split(":")[0]
     try:
@@ -550,7 +550,7 @@ def _check_model_vision(model: str) -> bool:
     # mesma lista do relay_vision_common h3/ltx. Ornith: a família sempre nasce com
     # mmproj no fleet; um id truncado não deve perder visão silenciosamente.
     name = base_model.lower()
-    return any(t in name for t in ("vl", "vision", "llava", "gemma4", "minicpm-v", "qwen3-vl", "ornith"))
+    return any(t in name for t in ("vl", "vision", "llava", "gemma4", "minicpm-v", "qwen3-vl", "qwen3.6", "ornith"))
 
 
 # ── Image analysis ─────────────────────────────────────────────────────────
