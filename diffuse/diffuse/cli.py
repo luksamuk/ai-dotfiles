@@ -181,9 +181,10 @@ def print_list() -> None:
 def print_loras() -> None:
     """Print the LoRA inventory per model family: cataloged entries x files on disk.
 
-    Cross-checks the catalogs (~/.local/share/diffuse/{catalog,nsfw_catalog}_<root>.json)
-    against the .safetensors installed under ~/git/Wan2GP/loras/<root>/, and flags:
-      - orphans: file installed with no catalog entry (invisible to the LLM selector)
+    Cross-checks the unified catalog (~/.local/share/diffuse/loras_<root>.json —
+    com nsfw:bool e compat por variante) against the .safetensors installed under
+    ~/git/Wan2GP/loras/<root>/, and flags:
+      - orphans: file installed with no catalog entry (invisible to the selector)
       - ghosts:  catalog entry with no file on disk (the selector would fail on it)
     """
     import json as _json
@@ -225,19 +226,8 @@ def print_loras() -> None:
                 cats.append(("unificado", _json.load(open(p)).get("loras", [])))
             except Exception as e:
                 print(f"  [warn] {p.name}: {e}")
-        # legado (catalog_/nsfw_catalog_) só enquanto a F2-F4 não migra os runners
-        if not cats:
-            for alias in sorted(aliases):
-                for fname, label in ((f"catalog_{alias}.json", "general"),
-                                     (f"nsfw_catalog_{alias}.json", "nsfw")):
-                    p = share / fname
-                    if p in loaded or not p.exists():
-                        continue
-                    loaded.add(p)
-                    try:
-                        cats.append((label, _json.load(open(p)).get("loras", [])))
-                    except Exception as e:
-                        print(f"  [warn] {fname}: {e}")
+        # F6: catálogos legados (catalog_/nsfw_catalog_) removidos do disco;
+        # o único formato agora é o unificado loras_<alias>.json
 
         files: dict = {}
         for d in fam["dirs"]:
