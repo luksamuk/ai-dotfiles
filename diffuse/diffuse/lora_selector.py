@@ -197,7 +197,8 @@ def build_prompt(prompt: str, resolved):
     tags = " ".join(f"<lora:{n[:-len('.safetensors')] if n.endswith('.safetensors') else n}:{m}>"
                     for n, m, _ in resolved)
     trigs = ", ".join(t for _, _, ts in resolved for t in ts)
-    parts = [p for p in (tags, trigs, prompt) if p]
+    # ordem histórica dos resolvers antigos: triggers ANTES das tags (V2 achou a inversão)
+    parts = [p for p in (trigs, tags, prompt) if p]
     return " ".join(parts)
 
 
@@ -230,6 +231,8 @@ def select_loras(prompt: str, *, root: str, nsfw: bool, variant: str,
                               else "nenhuma acima do corte")
             return prompt, [], info
         resolved = resolve_ids(entries, ids)
+        print(f"  \U0001f3af decision ({cfg.decision_model}) escolheu {len(ids)} LoRA(s): "
+              f"{', '.join(n for n, _, _ in resolved)} [{info['secs']}s, corte {cfg.decision_threshold}]")
         return build_prompt(prompt, resolved), resolved, info
 
     # llm
@@ -251,10 +254,19 @@ def select_loras(prompt: str, *, root: str, nsfw: bool, variant: str,
     ids = [int(x) for x in re.findall(r"\d+", m.group(1))] if m else []
     body = re.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=re.M).strip()
     info = {"mode": "llm", "ids": ids, "body": body}
+    if not body:
+        # guarda dos monstros: modelo devolveu SO a linha LORAS: — mantém o original
+        print("  \u26a0\ufe0f  enhance devolveu so a selecao de LoRA (corpo vazio); mantendo o prompt original")
+        body = prompt
+    elif body.strip() == (prompt or "").strip():
+        print("  \u26a0\ufe0f  enhance devolveu o prompt original sem expansao (modelo nao expandiu)")
+    else:
+        print(f"     Expanded to ({len(body)} chars)")
     if not ids:
-        return (body or prompt), [], info
+        return body, [], info
     resolved = resolve_ids(entries, ids)
-    return build_prompt(body or prompt, resolved), resolved, info
+    print(f"  \U0001f3af LLM escolheu {len(resolved)} LoRA(s): {', '.join(n for n, _, _ in resolved)}")
+    return build_prompt(body, resolved), resolved, info
 
 
 def _rerank_block(prompt: str, entries, root: str):
@@ -276,10 +288,15 @@ def _rerank_block(prompt: str, entries, root: str):
     env["CATALOG_JSON"] = tmp
     env["NSFW_CATALOG_JSON"] = tmp
     try:
+        t0 = time.time()
         r = subprocess.run(["python3", str(script), "--prompt", prompt,
                             "--n", "10", "--mode", "rank"],
                            capture_output=True, text=True, timeout=180, env=env)
         if r.returncode == 0 and r.stdout.strip():
+            import re as _re_r
+            print(f"  \U0001f50e Rerank ColBERT: "
+                  f"{len(_re_r.findall(r'^\d+:', r.stdout, flags=_re_r.M))} LoRAs pr\u00e9-ordenados "
+                  f"({time.time() - t0:.1f}s)")
             return r.stdout.strip()
         print(f"  [warn] rerank falhou (rc={r.returncode}); catálogo completo")
         # fallback: bloco NÃO rankeado (o LLM escolhe entre todos)
