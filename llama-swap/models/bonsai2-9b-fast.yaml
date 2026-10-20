@@ -16,6 +16,8 @@ bonsai2-9b-fast:
 
     --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf --no-mmproj-offload
 
+    --lora-scaled ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-Uncensored-LoRA.gguf:1
+
     -ngl 99 -c 32768 -fa on -ctk q8_0 -ctv q8_0
 
     --host 127.0.0.1 --jinja
@@ -53,9 +55,10 @@ bonsai2-9b-fast:
     context_length: 32768
     embedding_length: 0
     quantization: PQ2_0-MTP
-    note: 'kv detalhe: q8_0 @65536 (o rs-cache do MTP consome ~0.6 GB extra — 131K OOMa na 6GB c/ desktop). DUPLO-DEPLOY 16/out: fast = MTP draft 2 @64K, 83.5-85.9 t/s normais / 89.5 copy-heavy / 87.9% acceptance (vs 66.2 do PTQ1_0 puro). A lane sem drafter (contexto 131K) é o handle bonsai2-9b. Reload do swap PENDENTE (user testando — só o fragment muda; reload depois, sem stream em voo). ctx 32K (redução pedida 16/out). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0).'
+    note: 'kv detalhe: q8_0 @65536 (o rs-cache do MTP consome ~0.6 GB extra — 131K OOMa na 6GB c/ desktop). DUPLO-DEPLOY 16/out: fast = MTP draft 2 @64K, 83.5-85.9 t/s normais / 89.5 copy-heavy / 87.9% acceptance (vs 66.2 do PTQ1_0 puro). A lane sem drafter (contexto 131K) é o handle bonsai2-9b. Reload do swap PENDENTE (user testando — só o fragment muda; reload depois, sem stream em voo). ctx 32K (redução pedida 16/out). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0). UNCENSORED 20/out: mesmo LoRA abliteration do 9b base, fixo --lora-scaled:1 — OFF-CARD em PQ2_0-MTP (direção estimada no PTQ1_0; efeito neste quant não medido, experimento do dono).'
     caveats:
     - Exige o fork Prism
+    - 'LoRA AtomicChat: estimado no PTQ1_0, NÃO medido em PQ2_0-MTP pelo card — validar na régua'
     - 'Thinking model: reasoning longo'
     - cmdStop distinto por handle (pkill no sufixo do GGUF) — não matar a lane errada
   filters:
