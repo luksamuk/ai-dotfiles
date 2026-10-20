@@ -354,6 +354,8 @@ def main() -> None:
             args.steps = 16          # BFL distilled recipe
         elif backend_type == "moss_wan2gp":
             args.steps = 50          # OpenMOSS release recipe (CFG 3, SLG 22; sem distill oficial no WanGP)
+        elif backend_type == "qwen21_wan2gp":
+            args.steps = 40          # base 2.1 recipe (cfg 4.0; --turbo remaps para 8 no runner)
         elif backend_type == "agate":
             args.steps = 50
         else:
@@ -391,7 +393,7 @@ def main() -> None:
             print(f"\n  ✗ Model not found: {model_path}")
             print(f"    Run: diffuse download {model_info['dir'].split('-')[0]}")
             sys.exit(1)
-    elif backend_type in ("flux3_wan2gp", "qwen21_turbo_wan2gp", "moss_wan2gp"):
+    elif backend_type in ("flux3_wan2gp", "qwen21_wan2gp", "qwen21_turbo_wan2gp", "moss_wan2gp"):
         # Weights live in the WanGP ckpts/ tree; backends/wan2gp verifies per-file
         pass
     else:

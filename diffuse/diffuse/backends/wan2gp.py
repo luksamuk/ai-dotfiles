@@ -51,7 +51,9 @@ def load_pipeline_wan2gp(model_name: str, model_root: Path | None = None) -> tup
             "VAE": wgp_dir / "ckpts" / "qwen_image_21" / "qwen_image_2.1_vae_bf16.safetensors",
         }
         missing_processor = [
-            name for name in ("config.json", "tokenizer.json", "tokenizer_config.json", "chat_template.jinja")
+            name for name in ("config_legacy.json", "tokenizer_legacy.json",
+                              "tokenizer_config_legacy.json", "preprocessor_config.json",
+                              "merges.txt", "vocab.json")
             if not (wgp_dir / "ckpts" / "Qwen3-VL-8B-Instruct" / name).exists()
         ]
         if missing_processor:
