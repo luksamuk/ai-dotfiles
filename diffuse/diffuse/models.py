@@ -292,6 +292,23 @@ MODELS: dict[str, dict] = {
             {"name": "flux2_small_decoder_bf16.safetensors (VAE)", "path": "Wan2GP/ckpts/moss_image/flux2_small_decoder_bf16.safetensors", "size_gb": 0.06},
         ],
     },
+    "moss-image-base": {
+        "backend_id": "moss-image-base-wan2gp",
+        "dir": "moss-image-base",
+        "backend_type": "moss_wan2gp",
+        "lora_root": "moss_image",
+        "category": "image",
+        "bits": "INT8 ConvRot (DDM repack)",
+        "description": "MOSS-Image Base — 5B OpenMOSS pre-treino, mesma arch/TE/VAE do SFT (sem o pós-treino de dados curados), via Wan2GP",
+        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_type": "moss",
+        "default_size": (1024, 1024),
+        "components": [
+            {"name": "moss_image_base_int8_convrot.safetensors (DiT)", "path": "Wan2GP/ckpts/moss_image_base_int8_convrot.safetensors", "size_gb": 5.41},
+            {"name": "qwen3_5_9b_text_int8_convrot.safetensors (text encoder)", "path": "Wan2GP/ckpts/Qwen3.5-9B/qwen3_5_9b_text_int8_convrot.safetensors", "size_gb": 8.96},
+            {"name": "flux2_small_decoder_bf16.safetensors (VAE)", "path": "Wan2GP/ckpts/moss_image/flux2_small_decoder_bf16.safetensors", "size_gb": 0.06},
+        ],
+    },
     "moss-image-kromoss": {
         "backend_id": "moss-image-kromoss-wan2gp",
         "dir": "moss-image-kromoss",
