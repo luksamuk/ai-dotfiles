@@ -221,17 +221,29 @@ def print_loras() -> None:
         aliases = {root, root.split("_")[0]}
         cats = []
         loaded = set()
+        # catálogo unificado (F0): loras_<alias>.json, com nsfw:bool e compat por variante
         for alias in sorted(aliases):
-            for fname, label in ((f"catalog_{alias}.json", "general"),
-                                 (f"nsfw_catalog_{alias}.json", "nsfw")):
-                p = share / fname
-                if p in loaded or not p.exists():
-                    continue
-                loaded.add(p)
-                try:
-                    cats.append((label, _json.load(open(p)).get("loras", [])))
-                except Exception as e:
-                    print(f"  [warn] {fname}: {e}")
+            p = share / f"loras_{alias}.json"
+            if p in loaded or not p.exists():
+                continue
+            loaded.add(p)
+            try:
+                cats.append(("unificado", _json.load(open(p)).get("loras", [])))
+            except Exception as e:
+                print(f"  [warn] {p.name}: {e}")
+        # legado (catalog_/nsfw_catalog_) só enquanto a F2-F4 não migra os runners
+        if not cats:
+            for alias in sorted(aliases):
+                for fname, label in ((f"catalog_{alias}.json", "general"),
+                                     (f"nsfw_catalog_{alias}.json", "nsfw")):
+                    p = share / fname
+                    if p in loaded or not p.exists():
+                        continue
+                    loaded.add(p)
+                    try:
+                        cats.append((label, _json.load(open(p)).get("loras", [])))
+                    except Exception as e:
+                        print(f"  [warn] {fname}: {e}")
 
         files: dict = {}
         for d in fam["dirs"]:
@@ -265,8 +277,10 @@ def print_loras() -> None:
                 st = f" @{st}" if st not in (None, "") else ""
                 trig = (e.get("trigger_instr_arquivo") or "").strip()
                 tr = f"  trigger: {trig[:40]}" if trig else ""
+                compat = ",".join(e.get("compat") or []) or "-"
+                nsfwtag = " [NSFW]" if e.get("nsfw") else ""
                 print(f"    id {str(e.get('id', '?')):>2}  {nm[:44]:<44} "
-                      f"{e.get('categoria', '')[:18]:<18}{st}{tr}{mark}")
+                      f"{e.get('categoria', '')[:18]:<18}{st}{tr}{nsfwtag}  compat:{compat}{mark}")
 
         if orphans:
             print(f"\n  Orphans — on disk, not in any catalog ({len(orphans)}):")
