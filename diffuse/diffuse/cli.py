@@ -1858,7 +1858,32 @@ def _run_qwen21_wan2gp_image(
     is_edit = bool(ref_image_paths)
     steps = args.steps if args.steps is not None else 40
     guidance = args.cfg if args.cfg is not None else 4.0
+    # --turbo: LoRA de destilacao aplicado SOBRE o base uncensored (a 2a passada
+    # do plano: o turbo-CHECKPOINT da Alibaba e censurado de fabrica; o base
+    # abenzerps nao tem refusals, o distill-lora acelera sem trocar o vocabulario).
+    # Sem o lora em disco ou sem tag manual: roda base cru (avisado), nunca falha.
+    loras_extra: list[str] = []
+    mults_extra: list[str] = []
+    turbo = getattr(args, "turbo", False)
+    if turbo and "<lora:" in prompt:
+        print("     TURBO: tag manual de LoRA no prompt vence — injecao nativa pulada")
+        turbo = False
+    if turbo:
+        _wgp_loradir = Path.home() / "git" / "Wan2GP" / "loras" / "qwen21"
+        candidates = sorted(_wgp_loradir.glob("*turbo*.safetensors")) if _wgp_loradir.exists() else []
+        if candidates:
+            loras_extra = [candidates[0].name]
+            mults_extra = ["1.0"]
+            if args.steps in (None, 40):
+                steps = 8
+            if args.cfg is None:
+                guidance = 1.0
+                negative = None
+            print(f"     TURBO: distill LoRA {candidates[0].name} @1.0 (8 steps, cfg 1.0)")
+        else:
+            print("     TURBO: LoRA distill nao instalado ainda (passada 2) — rodando base cru")
 
+        print(f"     VRAM freed for image generation")
     if is_edit:
         print(f"  \U0001f3a8 Qwen-Image 2.1 Uncensored editing: {Path(ref_image_paths[0]).name}")
     else:
@@ -1872,6 +1897,11 @@ def _run_qwen21_wan2gp_image(
     lora_tags = ""
     if "<lora:" in prompt:
         prompt, lora_tags = _extract_lora_tags(prompt)
+    # Evict LLMs (TE runs on CPU with block offload; nothing else holds VRAM)
+    running = llama_swap_running_models()
+    if running:
+        print(f"  \U0001f504 Evicting LLM models: {', '.join(running)}")
+        evict_llm()
     enhanced = None
     if args.enhance or args.enhance_with or getattr(args, "enhance_edit_with", None):
         enhance_model = args.enhance_with or model_info.get("enhance_model", "ornith-1.5-35b-heretic")
@@ -2112,37 +2142,7 @@ def _run_qwen21_wan2gp_image(
         else:
             print("  ⚠️  --nsfw sem --enhance: sem seleção inteligente; rodando base")
 
-    # --turbo: LoRA de destilacao aplicado SOBRE o base uncensored (a 2a passada
-    # do plano: o turbo-CHECKPOINT da Alibaba e censurado de fabrica; o base
-    # abenzerps nao tem refusals, o distill-lora acelera sem trocar o vocabulario).
-    # Sem o lora em disco ou sem tag manual: roda base cru (avisado), nunca falha.
-    loras_extra: list[str] = []
-    mults_extra: list[str] = []
-    turbo = getattr(args, "turbo", False)
-    if turbo and "<lora:" in prompt:
-        print("     TURBO: tag manual de LoRA no prompt vence — injecao nativa pulada")
-        turbo = False
-    if turbo:
-        _wgp_loradir = Path.home() / "git" / "Wan2GP" / "loras" / "qwen21"
-        candidates = sorted(_wgp_loradir.glob("*turbo*.safetensors")) if _wgp_loradir.exists() else []
-        if candidates:
-            loras_extra = [candidates[0].name]
-            mults_extra = ["1.0"]
-            if args.steps in (None, 40):
-                steps = 8
-            if args.cfg is None:
-                guidance = 1.0
-                negative = None
-            print(f"     TURBO: distill LoRA {candidates[0].name} @1.0 (8 steps, cfg 1.0)")
-        else:
-            print("     TURBO: LoRA distill nao instalado ainda (passada 2) — rodando base cru")
 
-    # Evict LLMs (TE runs on CPU with block offload; nothing else holds VRAM)
-    running = llama_swap_running_models()
-    if running:
-        print(f"  \U0001f504 Evicting LLM models: {', '.join(running)}")
-        evict_llm()
-        print(f"     VRAM freed for image generation")
 
     print(f"  [1/3] Loading Qwen-Image 2.1 Uncensored pipeline (WanGP, {model_info['bits']})...")
     config, load_time = load_pipeline_wan2gp(model_name)
