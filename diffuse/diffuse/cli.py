@@ -1535,79 +1535,46 @@ def _run_moss_wan2gp_image(
     if "<lora:" in prompt:
         prompt, lora_tags = _extract_lora_tags(prompt)
     enhanced = None
+    from diffuse.lora_selector import select_loras, load_selector_cfg
+    _cfg = load_selector_cfg(args)
+    # variant de catálogo: as 3 entries moss têm arquiteturas de DiT distintas
+    # (base/sft: proj.q/k/v separados; kromoss: qkv fundido — keymap do wgp cobre,
+    # provado no V-MOSS; o compat por variante fica pronto pra quando discriminar)
+    _variant_moss = {"moss-image": "sft", "moss-image-base": "base",
+                     "moss-image-kromoss": "kromoss"}.get(model_name, "*")
     if args.enhance or args.enhance_with:
         enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
-        _rule = None
-        if "<lora:" not in prompt:  # tags manuais vencem o seletor (decreto)
-            _cat = str(Path.home() / ".local/share/diffuse/{}catalog_moss.json".format(
-                "nsfw_" if args.nsfw else ""))
-            _rerank = str(Path.home() / ".local/share/diffuse/rerank_catalog_moss.py")
-            if Path(_cat).exists() and Path(_rerank).exists():
-                try:
-                    import re as _re_s
-                    import subprocess as _sp_s
-                    import time as _t_s
-                    _env = dict(os.environ)
-                    if not args.nsfw:
-                        _env["NSFW_CATALOG_JSON"] = _cat  # rerank generico no T2I SFW
-                    _t0 = _t_s.perf_counter()
-                    _ranked = _sp_s.run(
-                        ["python3", _rerank, "--prompt", prompt,
-                         "--n", "10" if args.nsfw else "5", "--mode", "rank"],
-                        capture_output=True, text=True, timeout=180, env=_env)
-                    if _ranked.returncode == 0 and _ranked.stdout.strip():
-                        _block = _ranked.stdout.strip()
-                        _n_r = len(_re_s.findall(r"^\d+:", _block, flags=_re_s.M))
-                        _rule = (
-                            "LoRA SELECTION: at the very END of your output, on the LAST line, "
-                            "output exactly: LORAS: <comma-separated numeric IDs>\n"
-                            "- Choose the IDs best fit to the request (0 to 2 LoRAs; a style LoRA "
-                            "and a body LoRA may stack, never two of the same category).\n"
-                            "- If genuinely nothing fits the request, output: LORAS: none\n"
-                            "- Never mention catalog trigger words or LoRA names in the "
-                            "paragraph itself.\n\n" + _block)
-                        print(f"  \U0001f50e Rerank ColBERT: {_n_r} LoRAs pre-ordenados ({_t_s.perf_counter() - _t0:.1f}s)")
-                except Exception as e:
-                    print(f"  \u26a0\ufe0f  rerank indisponivel ({e}); seguindo sem selecao")
-        print(f"\n  \u2728 Enhancing prompt via {enhance_model} (moss doctrine)...")
-        enhanced, raw_response = enhance_moss_prompt(prompt, enhance_model, nsfw=args.nsfw, extra_system=_rule or "")
-        _ids = None
-        if _rule:
-            import re as _re_l
-            _m_l = _re_l.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "")
-            _ids = [int(x) for x in _re_l.findall(r"\d+", _m_l.group(1))] if (_m_l and _m_l.group(1).strip()) else []
-            enhanced = _re_l.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_l.M).strip()
-        if enhanced and enhanced != prompt:
-            print(f"     Expanded to ({len(enhanced)} chars)")
-            _show_enhanced_if_requested(args, enhanced)
-            prompt = enhanced
+        print(f"\n  ✨ Enhancing prompt via {enhance_model} (moss doctrine)...")
+        if _cfg.selector == "llm" and "<lora:" not in prompt:
+            # uma call: enhance + seleção juntos (fluxo histórico do moss)
+            prompt, _res, info = select_loras(
+                prompt, root="moss_image", nsfw=bool(args.nsfw), variant=_variant_moss,
+                cfg=_cfg, enhance_fn=enhance_moss_prompt, enhance_model=enhance_model)
+            if info.get("body"):
+                _show_enhanced_if_requested(args, info["body"])
         else:
-            print(f"     \u26a0\ufe0f  Enhancement failed - using raw prompt")
-        if _ids:
-            _resolver = str(Path.home() / ".local/share/diffuse/{}".format(
-                "nsfw_lora_resolve_moss.py" if args.nsfw else "catalog_lora_resolve_moss.py"))
-            try:
-                import subprocess as _sp_r
-                _res = _sp_r.run(["python3", _resolver, "--ids", ",".join(str(x) for x in _ids)],
-                                 capture_output=True, text=True, timeout=30)
-                _sel = json.loads(_res.stdout) if _res.returncode in (0, 3) and _res.stdout.strip() else {}
-            except Exception as e:
-                print(f"  \u26a0\ufe0f  resolve de LoRA falhou ({e}); rodando base")
-                _sel = {}
-            if _sel.get("names"):
-                _tags_s = " ".join(f"<lora:{n}:{m_}>" for n, m_ in zip(_sel["names"], _sel["mults"]))
-                _trigs = [t for t in (_sel.get("triggers") or []) if t]
-                prompt = " ".join(x for x in (_tags_s, prompt) if x)
-                if _trigs:
-                    prompt = f"{', '.join(_trigs)} {prompt}"
-                print(f"  \U0001f3af LLM escolheu {len(_sel['names'])} LoRA(s): {', '.join(_sel['names'])}")
-            elif _rule:
-                print("  \u2139\ufe0f  LLM nao escolheu LoRA (LORAS: none ou linha ausente); rodando base")
+            # decision (ou tag manual): enhance puro; seleção decision depois
+            enhanced, raw_response = enhance_moss_prompt(prompt, enhance_model, nsfw=args.nsfw)
+            if enhanced and enhanced != prompt:
+                print(f"     Expanded to ({len(enhanced)} chars)")
+                _show_enhanced_if_requested(args, enhanced)
+                prompt = enhanced
+            else:
+                print(f"     ⚠️  Enhancement failed - using raw prompt")
+
     # tags manuais vencem SEMPRE — reapply FORA do bloco enhance (bug 20/out/2026:
     # sem --enhance, tags eram extraídas e nunca devolvidas; a LoRA era
     # silenciosamente ignorada — renders bit-idênticos com/sem tag, achado no V-MOSS)
     if lora_tags:
         prompt = _reapply_lora_tags(prompt, lora_tags)
+
+    # seleção decision (pós-enhance, sobre o texto final) — novo no moss
+    if _cfg.selector == "decision" and "<lora:" not in prompt and (args.enhance or args.enhance_with):
+        _pre_moss = prompt
+        prompt, _res, _info = select_loras(
+            prompt, root="moss_image", nsfw=bool(args.nsfw), variant=_variant_moss, cfg=_cfg)
+        if prompt != _pre_moss and enhanced is None:
+            enhanced = prompt
 
     # Evict LLMs (TE runs on CPU, but nothing else should hold VRAM)
     running = llama_swap_running_models()
@@ -1865,8 +1832,6 @@ def _run_qwen21_wan2gp_image(
             print(f"     TURBO: distill LoRA {candidates[0].name} @1.0 (8 steps, cfg 1.0)")
         else:
             print("     TURBO: LoRA distill nao instalado ainda (passada 2) — rodando base cru")
-
-        print(f"     VRAM freed for image generation")
     if is_edit:
         print(f"  \U0001f3a8 Qwen-Image 2.1 Uncensored editing: {Path(ref_image_paths[0]).name}")
     else:

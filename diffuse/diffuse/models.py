@@ -270,6 +270,7 @@ MODELS: dict[str, dict] = {
     # (DiT 5.41G + TE Qwen3.5-9B int8 8.96G + VAE flux2 small decoder 61MB).
     "moss-image": {
         "backend_id": "moss-image-wan2gp",
+        "lora_root": "moss_image",
         "dir": "moss-image",
         "backend_type": "moss_wan2gp",
         "category": "image",
