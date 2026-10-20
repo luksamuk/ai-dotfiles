@@ -94,11 +94,7 @@ def print_debrief(
     if original_prompt and original_prompt != prompt:
         print(f"  Prompt:      \"{original_prompt}\"")
         if enhanced_prompt:
-            try:
-                json.loads(enhanced_prompt)
-                print(f"  Enhanced:    Yes → Ideogram 4 JSON")
-            except (json.JSONDecodeError, TypeError):
-                print(f"  Enhanced:    Yes")
+            print(f"  Enhanced:    Yes")
         else:
             print(f"  Enhanced:    Yes")
     else:

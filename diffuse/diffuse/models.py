@@ -33,7 +33,6 @@ MODELS: dict[str, dict] = {
             {"name": "FLUX.2 VAE (AutoencoderKLFlux2)", "path": "bonsai-image-4B-ternary-gemlite/vae", "size_gb": 0.17},
         ],
     },
-    # Z-Image-Turbo (diffusers ZImagePipeline + GGUF, subprocess in bonsai-venv)
     "qwen-image-2.1": {
         "backend_id": "qwen-image-2.1-wan2gp",
         "dir": "qwen-image-2.1-UC-wan2gp",
@@ -142,9 +141,6 @@ MODELS: dict[str, dict] = {
             {"name": "agate/ pipeline code (imported from model dir)", "path": "agate-preview-003/agate", "size_gb": 0.0},
         ],
     },
-    # Mage-Flow-Edit-Turbo (sd-cli / stable-diffusion.cpp — instruction-based image editing)
-    # 4B NR-MMDiT, 4 steps, cfg=1.0 (Turbo). Uses Qwen3-VL-4B as text+vision encoder.
-    # GGUF from gguf-org, VAE included. Only edit-turbo variant (no T2I GGUF yet).
     "flux-3": {
         "backend_id": "flux3-image-klein-wan2gp",
         "dir": "flux-3-image-klein",

@@ -1,224 +1,116 @@
 ---
 name: diffuse
-description: Generate images and video locally with the diffuse CLI. Covers all available models, prompt enhancement strategy (emit enhanced prompts yourself instead of using --enhance), per-model formatting rules, and the --nsfw bypass flag.
+description: Generate images locally with the diffuse CLI. Wan2GP-only fleet (qwen-image-2.1, moss-image, flux-3, agate, bonsai), prompt guidelines per family, LoRA tags, and the --nsfw catalog selector. Emit enhanced prompts yourself instead of using --enhance.
 ---
 
-# diffuse — Local Image & Video Generation
+# diffuse — Local Image Generation
 
-The `diffuse` CLI generates images and video from text prompts using local AI models on the GPU. It coordinates with llama-swap via `--evict-llm` to free VRAM before loading.
+The `diffuse` CLI generates images from text prompts using local models on the GPU (Wan2GP is the canonical image backend — sd.cpp was retired 2026-10-20). It coordinates with llama-swap via `--evict-llm` to free VRAM before loading.
 
 **Important:** Some models may not be installed. If a model fails to load or is not listed by `diffuse --list`, inform the user and suggest an alternative from the list below.
 
 ## CRITICAL: Do NOT use --enhance. Emit the enhanced prompt yourself.
 
-The `diffuse` CLI has an `--enhance` flag that calls a local LLM to expand prompts. **Do not use it.** You are a more capable prompt engineer than the local LLMs. Instead, craft the enhanced prompt yourself and pass it directly with `-p`.
+The `--enhance` flag calls a local LLM (qwen3.6-heretic via llama-swap) to expand prompts and select LoRAs. **Do not use it** — you are a more capable prompt engineer than the local LLMs. Craft the enhanced prompt yourself and pass it directly with `-p`. (Exception: `--enhance` is acceptable as a fallback when you cannot see an input image the user references.)
 
-This means:
+All image models today take **natural language** — a rich English paragraph with subject, art style, lighting, composition, and mood. The structured-JSON prompt format belonged to Ideogram 4, which was retired.
 
-- For **vision-type models** (HiDream, Wan2.2): write a rich, detailed English paragraph describing the scene, characters, art style, lighting, and composition. Pass it directly: `diffuse generate -m <model> -p "<your enhanced prompt>"`.
-- For **ideogram-type models** (Ideogram 4): write a complete JSON object with the required structure (see below) and pass it directly: `diffuse generate -m ideogram4-q4 -p '<your JSON>'`.
-- For **video models** (Wan2.2): if you have a reference image, use your own vision capabilities to analyze it, then write a detailed motion-focused prompt. Do not rely on `--enhance` to analyze the image for you.
+## Model Selection
 
-If you cannot see the input image (no vision capability in the current session), ask the user to describe it, or use `--enhance` as a fallback only in that specific case.
-
-## Model Selection: Prefer Ideogram 4
-
-**Default model: `ideogram4-q4`.** Use Ideogram 4 for most image generation tasks unless the user specifically asks for a different model or needs a capability Ideogram 4 can't provide (e.g. image editing → use HiDream, video → use Wan2.2).
-
-Rationale: Ideogram 4 produces the best overall image quality, has excellent text rendering, and supports structured prompt input via JSON. It runs at native 1024×1024 on 6GB VRAM.
-
-Choose other models only when:
+**Default model: `qwen-image-2.1`** (Qwen-Image 2.1 Uncensored via Wan2GP) — best overall quality, no refusals, text rendering, and native editing. Use it for most tasks.
 
 | Need | Model | Why |
 |------|-------|-----|
-| Default image generation | `ideogram4-q4` | Best quality, text rendering, structured JSON input |
-| Image editing (inpaint) | `hidream-sdnq` | Only model that supports `--edit` |
-| Image-to-video | `wan22-i2v` | Only video model |
-| Fast/draft generation | `ternary-gemlite` | Fastest, 1-bit Bonsai weights |
-| Music | `magenta-rt` | Separate CLI, not diffuse |
+| Default image generation | `qwen-image-2.1` | Best quality; uncensored (UC weights, abliterated TE) |
+| Fast generation (8 steps) | `qwen-image-2.1 --turbo` | Same base + distilled LoRA; or `qwen-image-2.1-turbo` (official checkpoint) |
+| Image editing / multi-reference | `qwen-image-2.1 --edit` | Instruction-based editing; up to 4 reference images |
+| Flat anime / cel-shaded illustration | `qwen-image-2.1` + FlatAnime LoRA (see below) | Style LoRA from the catalog |
+| Structured JSON-native illustration (MOSS family) | `moss-image` / `moss-image-base` / `moss-image-kromoss` | JSON layout-native; kromoss is a full fine-tune of the base |
+| Text-rendering poster / typography | `flux-3` | FLUX 3 Klein, best-in-class text render, SFW |
+| Logos / icons / small drafts | `agate-preview-001` / `agate-preview-003` | 260M FCDM, seconds per image |
+| Fast 1-bit draft | `ternary-gemlite` | Bonsai ternary, 512×512 |
 
-## Available Models
+LoRA selection is done by catalog + reranker when `--enhance`/`--nsfw` is used; for manual control, use **LoRA tags** (below).
 
-### Image Models
+## LoRA Tags (manual, no --enhance needed)
 
-| Model | Flag | Backend | Best for | Default size | Prompt type |
-|-------|------|---------|----------|-------------|-------------|
-| `ideogram4-q4` | `-m ideogram4-q4` | sd.cpp | **Default choice** — best text rendering, overall quality | 1024x1024 | ideogram (JSON) |
-| `hidream-sdnq` | `-m hidream-sdnq` | transformers (HiDream) | T2I + image editing, high-res native | 2048x2048 (snapped) | vision (natural language) |
-| `binary-gemlite` | `-m binary-gemlite` | gemlite (Bonsai) | Fast generation, 1-bit weights | 512x512 | vision (natural language) |
-| `ternary-gemlite` | `-m ternary-gemlite` | gemlite (Bonsai) | 95% of FP16 quality | 512x512 | vision (natural language) |
-
-### Video Models
-
-| Model | Flag | Backend | Best for | Notes |
-|-------|------|---------|----------|-------|
-| `wan22-i2v` | `-m wan22-i2v` | sd.cpp (GGUF) | Image-to-video, Wan2.2 A14B | Requires `--input-image`. 4-step accelerator. ~48min on 6GB for 33 frames. Use Q4_K_S quant (never Q2_K). |
-
-### Music Models (separate CLI: `magenta-rt`)
-
-| Model | Flag | Best for | Notes |
-|-------|------|----------|-------|
-| `mrt2_small` | `-m mrt2_small` | Recommended for 6GB VRAM | 230M params, faster than real-time on GPU |
-| `mrt2_base` | `-m mrt2_base` | Higher quality but OOMs on 6GB | 2.4B params, CPU fallback ~10x slower |
-
-## The `--nsfw` Flag
-
-By default, Ideogram 4 applies content safety filters (baked into the DiT weights). The `--nsfw` flag toggles a bypass that works for **horror, dark, and gothic content** — NOT for explicit nudity.
-
-### What `--nsfw` does technically:
-
-1. **Removes the uncond (negative guidance) diffusion model** — the safety filter lives in both the cond and uncond DiT transformers. Removing uncond eliminates the "safety overlay" that fights generation.
-2. **Applies Realism Engine V5 LoRA** (weight 0.6) to the cond transformer — steers generation toward uncensored output.
-3. **Disables runtime safety rules** in prompt YAML files.
-
-### What `--nsfw` does NOT do:
-
-- Does **not** bypass explicit NSFW/nudity filters. The LoRA works for horror, violence, dark themes, and gothic aesthetics. Explicit sexual content is still filtered by the cond transformer weights.
-- Does **not** improve quality or add detail. It only removes the safety filter.
-
-### When to use `--nsfw`:
-
-Use `--nsfw` when the user asks for horror, dark fantasy, gothic, or violent content that the default filter blocks (produces "safety filter" overlay or refuses). Examples: "draw a vampire", "blood and gore", "dark horror scene", "gothic cathedral with skeletons".
+Manual tags in the prompt override everything and disable the selector:
 
 ```bash
-# With NSFW bypass (horror/dark content)
-diffuse generate -m ideogram4-q4 --evict-llm --nsfw -p '<your JSON>'
+# tag syntax: <lora:NAME:multiplier> — NAME WITHOUT the .safetensors extension
+diffuse generate -m qwen-image-2.1 -p "<lora:FlatAnime_Qwen_2.1:1.0> An anime illustration of a girl, flat colors, cel shading"
 ```
 
-### When NOT to use `--nsfw`:
+Rules:
 
-Keep it off for normal generation. The bypass changes image characteristics (no uncond means less negative guidance). For everyday use, the default mode produces cleaner results.
+- The tag name is the filename **without** `.safetensors` (e.g. `FlatAnime_Qwen_2.1`, `nsfw_image_edit_aio`).
+- Multiplier 0.4-1.0 typical; 1.0 for styles, 0.6-0.8 for anatomy/fixes.
+- Style LoRAs need the style vocabulary **in the prompt** — a FlatAnime tag with a photographic prompt still yields a photo (measured: the LoRA applies, but the medium follows the prompt).
+- Browse what exists: `diffuse loras` (per-family inventory: cataloged entries, orphans on disk, compat per variant).
 
-## Prompt Enhancement Guidelines Per Model
+## The `--nsfw` Flag (catalog selector)
 
-### Ideogram 4 (ideogram4-q4) — Structured JSON  ⭐ DEFAULT
+Unlike the retired Ideogram-bypass semantics, `--nsfw` today means: **the LoRA selector may pick from the NSFW entries of the family catalog** (unified `loras_<family>.json`, field `nsfw: bool`). The qwen/moss models themselves are uncensored by training (UC weights / abliterated TE) — the flag does not "unlock" them; it only widens the LoRA candidate pool and relaxes the negative prompt.
 
-Ideogram 4 **requires** structured JSON. Plain text produces garbage output. Write a complete JSON object with these fields:
+Selection modes (config in `~/.local/share/fleet/enhance-models.yaml`, override via `--lora-selector llm|decision`):
 
-```json
-{
-  "high_level_description": "One-sentence scene summary",
-  "style_description": {
-    "aesthetics": "art style, visual genre",
-    "lighting": "lighting description",
-    "color_palette": ["#RRGGBB", "#RRGGBB", "#RRGGBB"]
-  },
-  "compositional_deconstruction": {
-    "canvas": "canvas description (size, orientation)",
-    "background": "what's behind the subject",
-    "layout": "spatial arrangement of elements",
-    "elements": [
-      {"name": "element name", "description": "visual details"}
-    ]
-  }
-}
-```
+- `llm` (default): ColBERT reranks the eligible catalog, then the enhance LLM picks 0-2 via a `LORAS:` line.
+- `decision`: a fleet decision model (d1-3b via `/v1/systemone`) scores each eligible LoRA independently; cutoff 0.5, max 4. Validated at 93% recall@3.
 
-Rules for Ideogram 4 JSON:
-
-- Always use medium: "illustration" or "painting" to avoid photo-mode safety filters (unless using `--nsfw`)
-- When NOT using `--nsfw`: avoid trigger words — "vampire", "blood", "death", "gothic", "horror", "oil on canvas" — use safe alternatives ("pale immortal noble", "crimson", "distinguished", "ornate medieval", "richly painted artwork")
-- When using `--nsfw`: trigger words for horror/dark content are safe to use directly
-- Include 3-5 colors in `color_palette` as hex codes — this anchors the model and reduces structural collapse
-- The `elements` array should describe each visible component of the image
-- Default resolution is 1024×1024 (native). Do not reduce below 1024 unless specifically requested — 480×480 caused element duplication on complex prompts
-
-### HiDream (hidream-sdnq) — Natural Language + Editing
-
-For T2I: same guidelines as Bonsai (rich English paragraph). HiDream snaps all resolutions to a minimum of 2048x2048 — there is no way to generate below that. Use Ideogram 4 or Bonsai for smaller images.
-
-For image editing (`--edit photo.png`): write a clear instruction describing what to change. Include:
-
-- **Age preservation**: if editing a photo of a person, explicitly state their approximate age and skin quality (e.g. "a man in his early 30s with smooth, youthful skin, no wrinkles") — HiDream tends to age subjects without this
-- **Body proportions**: include "full body shot, natural body proportions, head proportional to body" to avoid the "big head" distortion
-- **Safety avoidance**: same trigger word rules as Ideogram 4 (unless `--nsfw` is used)
-
-Example edit prompt:
-
-> Add a red scarf around the puppy's neck. The puppy is a young golden retriever with soft fluffy fur, keep its exact age and appearance. Full body shot, natural body proportions. Warm lighting, cozy atmosphere, illustration style.
-
-### Bonsai (binary-gemlite, ternary-gemlite) — Natural Language
+## Prompt Guidelines (all models: natural language)
 
 Write a single rich English paragraph. Include:
 
-- **Subject**: who/what is in the scene, described physically (do not assume the model knows named characters — describe them as if it doesn't)
-- **Art style**: medium, aesthetic, visual references (e.g. "oil painting style", "anime illustration", "cinematic photography")
-- **Lighting**: direction, quality, color temperature (e.g. "golden hour backlight", "dramatic chiaroscuro")
+- **Subject**: described physically (the model does not know named characters)
+- **Art style**: medium and aesthetic ("cinematic photography", "anime illustration with flat colors and clean lineart")
+- **Lighting**: direction, quality, color temperature
 - **Composition**: framing, camera angle, depth of field
-- **Mood/atmosphere**: emotional tone of the image
+- **Mood**: emotional tone
 
-Example enhanced prompt:
+Example:
 
-> A lone samurai standing under a torrential downpour at dusk, rain streaking across the frame in silver threads. The samurai wears weathered indigo armor, water beading on the lacquered plates, a tachi sword at his side. Cinematic low-angle shot, shallow depth of field with rain drops in sharp foreground. Moody blue-teal color palette with warm amber reflections from distant lanterns. Concept art illustration style, dramatic rim lighting, volumetric mist.
+> A lone samurai standing under a torrential downpour at dusk, rain streaking across the frame in silver threads. The samurai wears weathered indigo armor, water beading on the lacquered plates, a tachi sword at his side. Cinematic low-angle shot, shallow depth of field with rain drops in sharp foreground. Moody blue-teal palette with warm amber reflections from distant lanterns. Concept art illustration style, dramatic rim lighting, volumetric mist.
 
-### Wan2.2 I2V (wan22-i2v) — Motion-Focused Video Prompt
-
-Video prompts must emphasize **motion and temporal dynamics**, not just static image qualities. Include:
-
-- **Character description**: physical appearance (the video model needs visual anchoring)
-- **Motion description**: what moves, how, direction, speed (e.g. "slowly turns his head to the right", "hair flows in the wind", "cape billows behind him")
-- **Camera movement**: pan, zoom, tilt, dolly (e.g. "camera slowly dollies in", "static camera with subject movement")
-- **Physics/environment**: ambient effects (candles flicker, leaves scatter, dust particles float)
-- **Atmosphere**: mood that carries through the temporal sequence
-
-The AllInOne 4-step accelerator tends to produce near-zero motion with subtle prompts. Be aggressive: use words like "dramatic", "strongly", "swiftly", "billowing", "flying".
-
-Example video prompt:
-
-> Silver the Hedgehog, a young anthropomorphic hedgehog with silver fur, golden eyes, white gloves, and cyan wristbands, stands in a dark gothic cathedral. He dramatically raises his hand, psychokinetic energy surging around him as golden particles explode outward. His golden pocket watch swings wildly. Camera slowly dollies in from a low angle. Candles flicker violently, stone dust rises from the floor, his silver fur ripples from the energy pulse. Dramatic lighting with intense golden highlights against deep shadows. 5 seconds of dynamic motion.
+For **editing** (`--edit photo.png`): write a clear instruction of what to change, plus preservation constraints (age, proportions) and the parts that must stay untouched.
 
 ## Usage Patterns
 
 ```bash
-# Image generation — DEFAULT: Ideogram 4 (always use --evict-llm to free VRAM)
-diffuse generate -m ideogram4-q4 --evict-llm -p '<your JSON>'
+# Default generation (always --evict-llm to free VRAM)
+diffuse generate -m qwen-image-2.1 --evict-llm -p "<your enhanced prompt>"
 
-# Image generation — Bonsai (natural language)
-diffuse generate -m ternary-gemlite --evict-llm -p "<your enhanced prompt>"
+# Fast: same base + distilled turbo LoRA (8 steps)
+diffuse generate -m qwen-image-2.1 --turbo --evict-llm -p "<your enhanced prompt>"
 
-# Image generation — HiDream (high-res, also supports editing)
-diffuse generate -m hidream-sdnq --evict-llm -p "<your enhanced prompt>"
+# Editing (qwen21 or flux-3)
+diffuse generate -m qwen-image-2.1 --evict-llm --edit photo.png -p "<edit instruction>"
 
-# Image editing (HiDream only)
-diffuse generate -m hidream-sdnq --evict-llm --edit photo.png -p "<your edit instruction>"
+# Manual LoRA tag (no --enhance needed)
+diffuse generate -m qwen-image-2.1 --evict-llm -p "<lora:FlatAnime_Qwen_2.1:1.0> <anime prompt>"
 
-# Video generation (Wan2.2)
-diffuse generate -m wan22-i2v --evict-llm --input-image photo.png -p "<your motion prompt>"
+# Moss family (JSON layout native)
+diffuse generate -m moss-image-base --evict-llm -p "<your enhanced prompt>"
 
-# With NSFW bypass (horror/dark/gothic content — Ideogram 4 only)
-diffuse generate -m ideogram4-q4 --evict-llm --nsfw -p '<your JSON>'
-
-# Custom resolution
-diffuse generate -m ideogram4-q4 --evict-llm -p '<your JSON>' --size 768x768
-
-# With seed for reproducibility
-diffuse generate -m ideogram4-q4 --evict-llm -p '<your JSON>' --seed 42
-
-# Music generation (separate CLI)
-magenta-rt generate -p "high-energy 16-bit era platformer music, FM synthesis, driving bassline, 140bpm" --duration 8.0 --evict-llm
+# Custom resolution / seed
+diffuse generate -m qwen-image-2.1 --evict-llm -p "<prompt>" --size 1360x768 --seed 42
 ```
 
 ## Important Notes
 
 - **Always use `--evict-llm`** before generation to free VRAM from llama-swap models
-- **Default model is `ideogram4-q4`** — prefer it for most image generation tasks
-- **Ideogram 4 native resolution: 1024×1024** — do not reduce below 1024 unless requested (480×480 caused element duplication on complex prompts)
-- **Images save to the caller's current working directory**, not the diffuse project dir
-- **HiDream resolution snapping**: all outputs are minimum 2048x2048 — use Ideogram 4 or Bonsai for smaller images
-- **Wan2.2 video takes ~48 minutes** on 6GB VRAM for 33 frames — plan accordingly
-- **`diffuse --list`** shows all available models, backends, and sizes
-- **Some models may not be installed** — if `diffuse generate -m <model>` fails, check `diffuse --list` and suggest an alternative
-- **FramePack I2V was decommissioned** — use `wan22-i2v` for video generation instead
-- **Music prompts**: describe the sound, not the context. "Sega Genesis style, FM synthesis brass, driving bassline, 140bpm" works. "Sonic the Hedgehog music" does not — the model doesn't know game franchises
+- **Default model is `qwen-image-2.1`**
+- Images save to the **caller's current working directory**, not the diffuse project dir
+- **`diffuse --list`** shows all models; **`diffuse loras`** shows the LoRA inventory per family
+- Qwen-Image 2.1 dimensions are multiples of 32; ~1MP is the sweet spot (1024×1024, 1424×800)
+- Moss family: 50 steps, cfg 3.0 by default (~3min on 6GB); qwen21 base: 40 steps cfg 4.0; `--turbo`: 8 steps
+- **Two concurrent diffuse processes freeze VRAM** — never run in parallel; wait for one to finish
 
 ## Pitfalls
 
-- Do not stack quality tags like "masterpiece, best quality, 4k" — the models ignore or degrade from them
+- Do not stack quality tags ("masterpiece, best quality, 4k") — models ignore or degrade from them
 - One mood per prompt — conflicting vibes produce incoherent images
 - Seed matters more than prompt refinement — iterate seeds before rewriting prompts
-- **Ideogram 4 content filter**: without `--nsfw`, the filter is baked into the DiT weights. Trigger words for gothic/horror may produce a "safety overlay" (washed-out, distorted output). Use `--nsfw` to bypass for horror/dark content. For explicit NSFW, the bypass is **not** reliable — the LoRA only covers horror/dark themes, not nudity.
-- **Ideogram 4 at low resolution** (below 1024×1024): complex prompts cause element duplication. Always use 1024×1024 or higher.
-- HiDream ages subjects in editing — always include explicit age preservation instructions
-- Wan2.2 Q2_K quant produces severe hallucinations — Q4_K_S is the minimum viable quant
-- Wan2.2 4-step accelerator produces near-zero motion with subtle prompts — be aggressive with motion language
-- **Two concurrent diffuse processes freeze VRAM** — never run diffuse in parallel. Wait for one to finish before starting another.
+- **LoRA of style ≠ filter**: the tag applies the weights, but the prompt still decides the medium — ask for the style in words too
+- **Do not stack the `--turbo` distill with manual LoRA tags** — the turbo native injection is skipped when a tag is present (deliberate; stacking produced broken anatomy)
+- The `qwen-image-2.1-fix-1.0-comfy` LoRA is DoRA-format: the WanGP handler rejects it and **kills the render** — never tag it manually (it is excluded from catalogs)
+- Music generation is a separate CLI (`magenta-rt`), not part of diffuse; video generation is currently decommissioned in this fleet

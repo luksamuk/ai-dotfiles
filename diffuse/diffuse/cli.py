@@ -298,9 +298,6 @@ def parse_args() -> argparse.Namespace:
             "\n"
             "Resolution guide (RTX 3050 6GB):\n"
             "  Bonsai:     512×512 max (OOM above this)\n"
-            "  Ideogram 4: 1024×1024 native, up to 1920×1088 (~15 min)\n"
-            "  HiDream:    snaps to 2048×2048 or 2560×1440 minimum\n"
-            "              T2I: ~3 min | editing (--edit): ~8 min\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -662,7 +659,7 @@ def main() -> None:
                         print(f"     {display}")
                         print(f"     ────────────────────")
             else:
-                print(f"  ✨ Enhancing prompt via {enhance_model} (Ideogram JSON)...")
+                print(f"  ✨ Enhancing prompt via {enhance_model} (legacy JSON mode)...")
                 enhanced_result, raw_response = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
                 if enhanced_result != prompt:
                     enhanced_prompt = enhanced_result
@@ -937,6 +934,11 @@ def _run_bonsai_image(
         sys.exit(1)
 
     # ── Prompt enhancement ──
+    # fix V5: tags manuais extraídas ANTES do enhance (NameError pré-existente —
+    # lora_tags era usada no reapply sem nunca ser definida neste runner)
+    lora_tags = ""
+    if "<lora:" in prompt:
+        prompt, lora_tags = _extract_lora_tags(prompt)
     enhanced = None
     if args.enhance or args.enhance_with:
         enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
