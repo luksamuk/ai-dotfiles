@@ -44,6 +44,20 @@ def load_pipeline_wan2gp(model_name: str, model_root: Path | None = None) -> tup
             "TE Sakura bf16 uncensored": wgp_dir / "ckpts" / "Qwen3-VL-4B-Instruct" / "Sakura-TextEncoder-Qwen3VL-4B-Uncensored-bf16-8.27GiB.safetensors",
             "VAE": wgp_dir / "ckpts" / "flux3" / "flux2-vae.safetensors",
         }
+    elif model_name == "qwen-image-2.1":
+        checks = {
+            "transformer UC int8_convrot": wgp_dir / "ckpts" / "qwen-image-2.1-UC-int8_convrot.safetensors",
+            "TE Qwen3-VL-8B UC convrot": wgp_dir / "ckpts" / "qwen3vl_8b_int8_convrot.safetensors",
+            "VAE": wgp_dir / "ckpts" / "qwen_image_21" / "qwen_image_2.1_vae_bf16.safetensors",
+        }
+        missing_processor = [
+            name for name in ("config.json", "tokenizer.json", "tokenizer_config.json", "chat_template.jinja")
+            if not (wgp_dir / "ckpts" / "Qwen3-VL-8B-Instruct" / name).exists()
+        ]
+        if missing_processor:
+            raise FileNotFoundError(
+                f"WanGP qwen21 processor files missing in ckpts/Qwen3-VL-8B-Instruct/: {missing_processor}"
+            )
     elif model_name == "qwen-image-2.1-turbo":  # WanGP route (official distill)
         checks = {
             "transformer turbo int8_convrot": wgp_dir / "ckpts" / "qwen_image_21_turbo_7B_int8_convrot.safetensors",
