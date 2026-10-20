@@ -305,6 +305,97 @@ models:
       embedding_length: 1536
       quantization: Pollard IQ4_XS
       note: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE. ngram-mod enabled.
+  qwen3.6-35b-a3b-heretic:
+    name: Qwen 3.6 35B Heretic
+    description: Qwen's 35B-A3B MoE generalist, abliterated (heretic TPE). 131K context, single slot.
+    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
+      --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
+
+      --mmproj ${models_dir}/qwen36-heretic-apex-mini/mmproj.gguf
+
+      --ctx-size 131072
+
+      --jinja
+
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+
+      --parallel 1
+
+      --no-mmproj-offload
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --flash-attn on
+
+      -cmoe
+
+      -ngl 99
+
+      -b 512
+
+      -ub 128
+
+      --temp ${code_temp}
+
+      --top-p ${code_top_p}
+
+      --top-k ${code_top_k}
+
+      --min-p ${code_min_p}
+
+      --repeat-penalty ${code_repeat_penalty}
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.95
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.95
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~14.66 GB (APEX-I-Compact, heretic)
+      context: 131072
+      vram_usage: ~5.1 GB VRAM + ~15 GB RAM pinned
+      source: SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth Q8
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 34660000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: APEX I-Compact
+      note: 'vram detalhe: ~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe) | turbo4 KV; hmoe experts pinned Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused (IK TurboQuant); source do mmproj: unsloth Q8.'
   laguna-xs-2.1:
     name: Laguna XS 2.1
     description: Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention and native interleaved reasoning. 131K context, -cmoe expert offload.
@@ -1132,6 +1223,8 @@ models:
 
       --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf --no-mmproj-offload
 
+      --lora-scaled ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-Uncensored-LoRA.gguf:1
+
       -ngl 99 -c 131072 -fa on -ctk q8_0 -ctv q8_0
 
       --host 127.0.0.1 --jinja
@@ -1169,10 +1262,11 @@ models:
       context_length: 131072
       embedding_length: 0
       quantization: PTQ1_0
-      note: 'kv detalhe: q8_0 @131072 (262K nativo; PTQ1_0 puro não tem rs-cache — 131K cabe onde o MTP estoura). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). DUPLO-DEPLOY 16/out (pedido do dono): bonsai2-9b = PTQ1_0 puro @131K SEM drafter (context first, 66.2 t/s medidos; PTQ1_0 sem rs-cache engole o 131K que o MTP OOMa) | bonsai2-9b:fast = PQ2_0-MTP draft 2 @64K (speed first, 83-90 t/s, draft acceptance 87.9%; copy-heavy 89.5). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0).'
+      note: 'kv detalhe: q8_0 @131072 (262K nativo; PTQ1_0 puro não tem rs-cache — 131K cabe onde o MTP estoura). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). DUPLO-DEPLOY 16/out (pedido do dono): bonsai2-9b = PTQ1_0 puro @131K SEM drafter (context first, 66.2 t/s medidos; PTQ1_0 sem rs-cache engole o 131K que o MTP OOMa) | bonsai2-9b:fast = PQ2_0-MTP draft 2 @64K (speed first, 83-90 t/s, draft acceptance 87.9%; copy-heavy 89.5). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0). UNCENSORED 20/out: LoRA abliteration AtomicChat rank-1 fixo --lora-scaled:1 (direção residual 23, Arditi et al. 2024). Held-out do card: refusals 100%→0%, MMLU 76.0→71.7 (-4.3 pts). Card mediu só PTQ1_0 com thinking OFF — nosso thinking nativo é terreno não medido; visão/mmproj também não testada no card. Base pack permanece byte-idêntico (rank-1 nunca mergeado — ternário arredondaria o edit).'
       caveats:
         - Exige o fork Prism (PrismML-Eng/llama.cpp branch prism, build ~/git/bonsai-llama.cpp-prism)
         - 'Thinking model: reasoning longo'
+        - LoRA: ~/.llama-models/bonsai2/Ternary-Bonsai-2-9B-Uncensored-LoRA.gguf (HF AtomicChat, 3.2 MB) — rollback = remover a linha --lora-scaled e re-sync
     filters:
       stripParams: temperature, top_p, top_k
       setParamsByID:
@@ -1198,6 +1292,8 @@ models:
       --spec-type draft-mtp --spec-draft-n-max 2 --spec-draft-n-min 0 --spec-draft-p-min 0
 
       --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf --no-mmproj-offload
+
+      --lora-scaled ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-Uncensored-LoRA.gguf:1
 
       -ngl 99 -c 32768 -fa on -ctk q8_0 -ctv q8_0
 
@@ -1236,9 +1332,10 @@ models:
       context_length: 32768
       embedding_length: 0
       quantization: PQ2_0-MTP
-      note: 'kv detalhe: q8_0 @65536 (o rs-cache do MTP consome ~0.6 GB extra — 131K OOMa na 6GB c/ desktop). DUPLO-DEPLOY 16/out: fast = MTP draft 2 @64K, 83.5-85.9 t/s normais / 89.5 copy-heavy / 87.9% acceptance (vs 66.2 do PTQ1_0 puro). A lane sem drafter (contexto 131K) é o handle bonsai2-9b. Reload do swap PENDENTE (user testando — só o fragment muda; reload depois, sem stream em voo). ctx 32K (redução pedida 16/out). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0).'
+      note: 'kv detalhe: q8_0 @65536 (o rs-cache do MTP consome ~0.6 GB extra — 131K OOMa na 6GB c/ desktop). DUPLO-DEPLOY 16/out: fast = MTP draft 2 @64K, 83.5-85.9 t/s normais / 89.5 copy-heavy / 87.9% acceptance (vs 66.2 do PTQ1_0 puro). A lane sem drafter (contexto 131K) é o handle bonsai2-9b. Reload do swap PENDENTE (user testando — só o fragment muda; reload depois, sem stream em voo). ctx 32K (redução pedida 16/out). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0). UNCENSORED 20/out: mesmo LoRA abliteration do 9b base, fixo --lora-scaled:1 — OFF-CARD em PQ2_0-MTP (direção estimada no PTQ1_0; efeito neste quant não medido, experimento do dono).'
       caveats:
         - Exige o fork Prism
+        - 'LoRA AtomicChat: estimado no PTQ1_0, NÃO medido em PQ2_0-MTP pelo card — validar na régua'
         - 'Thinking model: reasoning longo'
         - cmdStop distinto por handle (pkill no sufixo do GGUF) — não matar a lane errada
     filters:
@@ -2016,6 +2113,107 @@ models:
         - Language codes por nome (portuguese) — NÃO pt-br (o pt-br é do kokoro)
         - server-fleet.json obsoleto (o multi-model num server só não roteia via swap)
         - Voz preset não-existente = fallback do modelo (voz default) — o UI lista só os válidos agora
+  qwen3.6-35b-a3b-heretic-fast:
+    name: Qwen 3.6 35B Heretic Fast
+    description: Assistente de código sem censura (heretic TPE) com visão, em 14 GB — a quant mais compacta da família. Ideal para teste de velocidade e comparação com o prod.
+    cmd: '${ik_llama_server} --port ${PORT}
+
+      --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
+
+      --mmproj ${models_dir}/qwen36-heretic-apex-mini/mmproj.gguf
+
+      --no-mmproj-offload
+
+      --no-graph-reuse
+
+      -ngl 99
+
+      --n-cpu-moe 35
+
+      --ctx-size 102400
+
+      --temp ${code_temp}
+
+      --top-p ${code_top_p}
+
+      --top-k ${code_top_k}
+
+      --min-p ${code_min_p}
+
+      --repeat-penalty ${code_repeat_penalty}
+
+      --reasoning on
+
+      --jinja
+
+      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+
+      --parallel 1
+
+      --parallel-tool-calls
+
+      --cache-type-k ${large_cache_k}
+
+      --cache-type-v ${large_cache_v}
+
+      --k-cache-hadamard
+
+      --v-cache-hadamard
+
+      --flash-attn auto
+
+      --defer-experts
+
+      --prefetch-experts
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.85
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.95
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 102400
+    metadata:
+      size: ~14.32 GB (APEX-I-Mini, heretic) + 903 MB mmproj
+      context: 102400
+      vram_usage: ~5.1 GB VRAM + ~14 GB RAM pinned
+      source: mudler/Qwen3.6-35B-A3B-uncensored-heretic-APEX-GGUF (APEX-I-Mini, base llmfan46 heretic TPE)
+      kv_cache: q4_0/q4_0 + hadamard
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 34660000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: APEX I-Mini
+      note: 'vram detalhe: ~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34) APEX I-Mini quant do mudler (base llmfan46 heretic TPE, -2.7 GB vs prod). Sep 24: experimental. O mesmo heretic TPE do prod em quant APEX-I-Mini (14.32 GB). MTP off (sem nextn tail). Se andar bem, substitui o prod.'
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
@@ -2084,108 +2282,6 @@ models:
         - Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma
         - Needs explicit translation prompt (Sprachspiel format works)
       note: 'vram detalhe: ~3.5GB (model + cache) | model 2.4GB Q4_K_M + cache + compute Translation model. Sprachspiel translate mode default. 55 languages.'
-  whittle-35b:
-    name: Whittle Qwen3.8 35B-A3B
-    description: logic65 Whittle 35B — corpo Qwen3.6-35B podado (180 experts) reformatado p/ arch qwen4_exp (GDN+FA, hyper-connections) + tabela n-gram hashada 10B servida Q8_0. Distill logit do Qwen3.8-27B. Text-only, sem MTP, sem vision.
-    tags:
-      - think
-      - tools
-    cmd: env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT} --model ${models_dir}/whittle-35b/Whittle-Qwen-3.8-35B-A3B-ONYX-compact.gguf --ctx-size 131072 --jinja --parallel 1 --cache-type-k q4_0 --cache-type-v q4_0 --flash-attn on -cmoe -ngl 99 -b 512 -ub 128 --lazy-mode off --temp 0.7 --top-p 0.8 --top-k 20 --repeat-penalty 1.05 --reasoning-budget 8192 --metrics
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.8
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.8
-    ttl: 0
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - text
-      out:
-        - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~21.9 GB (ONYX compact)
-      context: 131072
-      vram_usage: atencao/hyper-conn/shared na GPU; tabela+experts em page cache file-backed evictavel via -cmoe
-      source: el4/Whittle-Qwen-3.8-35B-A3B-ONYX-GGUF (compact)
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen4exp
-      parameters: 35100000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: ONYX compact
-      note: 'Tabela n-gram = load-bearing (sem ela codigo +4.9 nats): ONYX manteve a tabela Q8_0 — nunca usar quant que droppa linhas. Sem MTP (zero nextn nos 1022 tensores) e sem vision (sem mmproj). --lazy-mode off OBRIGATORIO (default auto le a tabela lazy do disco, -ot ignorado, prefill despenca — issue 28355). Sampler da autora: temp 0.7, top_p 0.8, top_k 20, rp 1.05 — greedy decodifica em loop nessa familia. Sem min_p (a receita nao usa).'
-  whittle-35b-fast:
-    name: Whittle Qwen3.8 35B-A3B (fast)
-    description: Slot veloz do Whittle 35B no ik — kernels ik + builder de grafo qwen4exp dedicado (graphs/build_qwen4exp.cpp). Mesma quant compact — TESTE de RAM pinned estimado em ~28-30GB anon; deletar fragmento inteiro se matar o desktop. Sem spec decode (sem MTP).
-    tags:
-      - think
-      - tools
-    cmd: ${ik_llama_server} --port ${PORT} --model ${models_dir}/whittle-35b/Whittle-Qwen-3.8-35B-A3B-ONYX-compact.gguf --ctx-size 131072 --jinja --parallel 1 --cache-type-k q4_0 --cache-type-v q4_0 --flash-attn on -ngl 99 -b 512 -ub 128 -ptcall -ot per_layer_token_embd=CPU -ot "blk\.([6-9]|1[0-9]|2[0-9]|3[0-9])\.ffn_(up|down|gate)_exps=CPU" --temp 0.7 --top-p 0.8 --top-k 20 --repeat-penalty 1.05 --reasoning-budget 8192 --metrics
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.8
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.8
-    ttl: 0
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - text
-      out:
-        - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~21.9 GB (ONYX compact, MESMO arquivo do whittle-35b)
-      context: 131072
-      vram_usage: atencao/hyper-conn/shared na GPU; tabela+experts pinned anon ~28-30GB RAM — RISCO medido no smoke
-      source: el4/Whittle-Qwen-3.8-35B-A3B-ONYX-GGUF (compact compartilhado c/ cafe)
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen4exp
-      parameters: 35100000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: ONYX compact
-      note: 'Loader ik e eager (sem --lazy-mode aqui: flag nao existe no ik). SEM --prefetch-experts: no-op bugado ate o rebase #2667 (19 commits pendentes). -nkvo OFF (decisao do teste). Protocolo do user 17/out: se o load matar o desktop, DELETAR este fragmento inteiro (sem _disabled).'
 # Hooks: ações na inicialização do llama-swap
 # preload: carrega modelos síncronamente antes de aceitar requests
 # Ideal para vLLM (startup lento = 30-90s sem warm-up)
@@ -2258,7 +2354,7 @@ matrix:
     # aw: agentworld-35b  # disabled Aug 2026
     # orn15: MERGED no heretic 05/10 (fragment em _disabled/ornith-1.5-35b-onyx-old.yaml; GGUF deletado)
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
-    # q36: qwen3.6-35b-a3b-heretic  # DISABLED Oct 8 2026 — user out; GGUF movido p/ _disabled (re-downloadável de SC117); ornith heretic assumiu os enhance da casa
+    q36: qwen3.6-35b-a3b-heretic  # REATIVADO 20/out 2026 — melhor prompter que o ornith nos enhance (user); pesos re-baixados (APEX-I-Mini, mudler)
     # Baseline de codigo APEX I-Compact (sem heretic, sem MTP) + variante cafe; Oct 1 2026
     # qc30/qc30f: REMOVED Oct 06 2026 — qwen3-coder aposentado (cafe + fast; GGUF 14.7GB deleted).
     # N=5 canônico: 118.0/155 (piso 106). Fragments em _removed/
@@ -2353,7 +2449,7 @@ matrix:
     mcv35: 4
     # orn15: 9  # merged no heretic 05/10
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
-    # q36: 9  # REMOVED Oct 8 2026 — model disabled
+    q36: 9  # REATIVADO 20/out 2026
     # k2: 9  # _disabled 16/out (pesos deletados)
     # qc30: 7  # REMOVED Oct 06 2026
     # occ: 9  # REMOVED Sep 27 2026 — model deleted

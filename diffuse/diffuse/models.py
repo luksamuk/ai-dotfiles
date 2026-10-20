@@ -25,7 +25,7 @@ MODELS: dict[str, dict] = {
         "bits": "1.58-bit",
         "description": "Bonsai Image 4B Ternary — 1.58-bit gemlite, 95% of FP16 quality, fast T2I",
         "default_size": (512, 512),
-        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
         "enhance_type": "vision",
         "components": [
             {"name": "Bonsai 4B Ternary transformer (gemlite int2)", "path": "bonsai-image-4B-ternary-gemlite/transformer-gemlite-int2", "size_gb": 1.5},
@@ -42,7 +42,7 @@ MODELS: dict[str, dict] = {
         "bits": "Q3_K GGUF (auto-selected for 6GB VRAM)",
         "description": "Z-Image-Turbo — 6B S3-DiT, 8 NFE, sub-second on H800, uncensored, bilingual text",
         "default_size": (1024, 1024),
-        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
         "enhance_type": "vision",
         "components": [
             {"name": "z_image_turbo GGUF (DiT)", "path": "z-image-turbo-q4/z_image_turbo-Q3_K.gguf", "size_gb": 3.0},
@@ -59,7 +59,7 @@ MODELS: dict[str, dict] = {
         "description": "HiDream-O1-Image-Dev SDNQ — 8B unified (T2I + editing + IP), ~3min/2048² on 6GB VRAM",
         "default_size": (1024, 1024),
         "hidream_repo": "~/git/HiDream-O1-Image",
-        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
         "enhance_type": "vision",
         "components": [
             {"name": "Qwen3-VL 8B SDNQ (unified DiT + text encoder)", "path": "~/.llama-models/HiDream-O1-Image-Dev-SDNQ-last8", "size_gb": 7.3},
@@ -74,7 +74,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "4-bit",
         "description": "Ideogram 4 Q4_0 — 9.3B DiT, structured JSON prompts, best-in-class text rendering",
-        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
         "enhance_type": "ideogram",
         "default_size": (1024, 1024),
         "hf_files": [
@@ -111,7 +111,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (abenzerps UC repack)",
         "description": "Qwen-Image 2.1 7B UNCENSORED — edit/outpaint/RGBA/4K nativos do Wan2GP, TE Qwen3-VL-8B abliterated convrot. --turbo = LoRA distill sobre o base (passada 2)",
-        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
         "enhance_type": "qwen21",
         "default_size": (1024, 1024),
         "components": [
@@ -136,7 +136,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (DDM repack) — official Alibaba turbo checkpoint",
         "description": "Qwen-Image 2.1 Turbo OFICIAL — 8 steps, cfg=1.0, TE Sakura uncensored, T2I + editing via Wan2GP",
-        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
         "enhance_type": "qwen21",
         "default_size": (1024, 1024),
         "components": [
@@ -157,7 +157,7 @@ MODELS: dict[str, dict] = {
         "bits": "BF16 (native, no quant)",
         "description": "Agate 001 — 260M FCDM, fixed 256×256, GenEval 0.550, flat logos/icons + spatial drafts in seconds",
         "default_size": (256, 256),
-        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
         "enhance_type": "agate",
         "hf_files": [
             {"repo": "Logolabs/agate-preview-001",
@@ -189,7 +189,7 @@ MODELS: dict[str, dict] = {
         "bits": "BF16 (native, no quant)",
         "description": "Agate 003 — 261M FCDM multi-res 512/256, QIB 32.6, flat logos/icons + spatial drafts",
         "default_size": (512, 512),
-        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
         "enhance_type": "agate",
         "hf_files": [
             {"repo": "Logolabs/agate-preview-003",
@@ -221,7 +221,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "NVFP4 GGUF",
         "description": "Mage-Flow-Edit-Turbo — 4B NR-MMDiT, 4-step instruction-based image editing, no masks needed",
-        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
         "enhance_type": "vision",
         "hf_files": [
             {"repo": "gguf-org/mageflow-gguf",
@@ -251,7 +251,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (DDM repack)",
         "description": "FLUX 3 Klein — 5.6B destilado (16 steps cfg 1.0), best-in-class text-render, edição c/ até 10 refs, via Wan2GP; SFW",
-        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
         "enhance_type": "vision",
         "default_size": (1024, 1024),
         "components": [
@@ -275,7 +275,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (DDM repack)",
         "description": "MOSS-Image SFT — 5B OpenMOSS, text-render best-in-class, layout JSON, uncensored por doutrina de treino, via Wan2GP",
-        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
         "enhance_type": "moss",
         "default_size": (1024, 1024),
         "components": [
@@ -292,7 +292,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (DDM repack)",
         "description": "MOSS-Image Base — 5B OpenMOSS pre-treino, mesma arch/TE/VAE do SFT (sem o pós-treino de dados curados), via Wan2GP",
-        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
         "enhance_type": "moss",
         "default_size": (1024, 1024),
         "components": [
@@ -309,7 +309,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (repack do lodestones no proprio repo do Kromoss)",
         "description": "Kromoss — full fine-tune do MOSS-Image Base @1024px (fix de blurriness, checkpoint 7000 EMA), mesma arch/TE/VAE/pipeline do SFT, via Wan2GP",
-        "enhance_model": "ornith-1.5-35b-heretic",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
         "enhance_type": "moss",
         "default_size": (1024, 1024),
         "components": [

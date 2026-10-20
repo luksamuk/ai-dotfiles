@@ -1261,7 +1261,7 @@ def _run_flux3_wan2gp_image(
     # Without refs, standard T2I vision enhancement.
     enhanced = None
     if args.enhance or args.enhance_with:
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "ornith-1.5-35b-heretic")
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
         if is_edit and _check_model_vision(enhance_model):
             print(f"\n  \U0001f441\ufe0f\u2728 {enhance_model} analyzes the reference and refines the edit instruction...")
             enhanced, raw_response = analyze_and_enhance_edit(
@@ -1401,7 +1401,7 @@ def _run_moss_wan2gp_image(
         prompt, lora_tags = _extract_lora_tags(prompt)
     enhanced = None
     if args.enhance or args.enhance_with:
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "ornith-1.5-35b-heretic")
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
         _rule = None
         if "<lora:" not in prompt:  # tags manuais vencem o seletor (decreto)
             _cat = str(Path.home() / ".local/share/diffuse/{}catalog_moss.json".format(
@@ -1554,7 +1554,7 @@ def _run_qwen21_turbo_wan2gp_image(
         prompt, lora_tags = _extract_lora_tags(prompt)
     enhanced = None
     if args.enhance or args.enhance_with or getattr(args, "enhance_edit_with", None):
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "ornith-1.5-35b-heretic")
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
         enhance_type = model_info.get("enhance_type", "qwen21")
 
         # --enhance-edit-with: VLM vê a referência e refina a instrução (one-shot);
@@ -1759,14 +1759,22 @@ def _run_qwen21_turbo_wan2gp_image(
                     "- Never mention catalog trigger phrases in the paragraph itself.\n\n"
                     + _catalog_block)
                 enhanced, raw_response = enhance_qwen21_prompt(
-                    prompt, args.enhance_with or model_info.get("enhance_model", "ornith-1.5-35b-heretic"),
+                    prompt, args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic"),
                     nsfw=True, extra_system=_lora_rule)
                 _lora_ids = None
                 m = _re_i.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "")
                 if m and m.group(1).strip():
                     _lora_ids = [int(x) for x in _re_i.findall(r"\d+", m.group(1))]
                 _enhanced_body = _re_i.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_i.M).strip()
-                if _enhanced_body:
+                if not _enhanced_body:
+                    # guarda: modelo devolveu SO a linha LORAS: (corpo vazio). Sem isto o prompt
+                    # final virava apenas as tags <lora:...> e o render saia sem descricao
+                    # nenhuma (= imagem aleatoria / "monstro").
+                    print("  \u26a0\ufe0f  enhance devolveu so a selecao de LoRA (corpo vazio); mantendo o prompt original")
+                    _enhanced_body = prompt
+                elif _enhanced_body.strip() == (prompt or "").strip():
+                    print("  \u26a0\ufe0f  enhance devolveu o prompt original sem expansao (modelo nao expandiu)")
+                else:
                     print(f"     Expanded to ({len(_enhanced_body)} chars)")
                     _show_enhanced_if_requested(args, _enhanced_body)
                 enhanced = _enhanced_body
@@ -1866,7 +1874,7 @@ def _run_qwen21_wan2gp_image(
     mults_extra: list[str] = []
     turbo = getattr(args, "turbo", False)
     if turbo and "<lora:" in prompt:
-        print("     TURBO: tag manual de LoRA no prompt vence — injecao nativa pulada")
+        print("     TURBO: tag manual de LoRA no prompt vence — injecao nativa pulada (distill embate = monstro)")
         turbo = False
     if turbo:
         _wgp_loradir = Path.home() / "git" / "Wan2GP" / "loras" / "qwen21"
@@ -1904,7 +1912,7 @@ def _run_qwen21_wan2gp_image(
         evict_llm()
     enhanced = None
     if args.enhance or args.enhance_with or getattr(args, "enhance_edit_with", None):
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "ornith-1.5-35b-heretic")
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
         enhance_type = model_info.get("enhance_type", "qwen21")
 
         # --enhance-edit-with: VLM vê a referência e refina a instrução (one-shot);
@@ -2109,14 +2117,22 @@ def _run_qwen21_wan2gp_image(
                     "- Never mention catalog trigger phrases in the paragraph itself.\n\n"
                     + _catalog_block)
                 enhanced, raw_response = enhance_qwen21_prompt(
-                    prompt, args.enhance_with or model_info.get("enhance_model", "ornith-1.5-35b-heretic"),
+                    prompt, args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic"),
                     nsfw=True, extra_system=_lora_rule)
                 _lora_ids = None
                 m = _re_i.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "")
                 if m and m.group(1).strip():
                     _lora_ids = [int(x) for x in _re_i.findall(r"\d+", m.group(1))]
                 _enhanced_body = _re_i.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=_re_i.M).strip()
-                if _enhanced_body:
+                if not _enhanced_body:
+                    # guarda: modelo devolveu SO a linha LORAS: (corpo vazio). Sem isto o prompt
+                    # final virava apenas as tags <lora:...> e o render saia sem descricao
+                    # nenhuma (= imagem aleatoria / "monstro").
+                    print("  \u26a0\ufe0f  enhance devolveu so a selecao de LoRA (corpo vazio); mantendo o prompt original")
+                    _enhanced_body = prompt
+                elif _enhanced_body.strip() == (prompt or "").strip():
+                    print("  \u26a0\ufe0f  enhance devolveu o prompt original sem expansao (modelo nao expandiu)")
+                else:
                     print(f"     Expanded to ({len(_enhanced_body)} chars)")
                     _show_enhanced_if_requested(args, _enhanced_body)
                 enhanced = _enhanced_body

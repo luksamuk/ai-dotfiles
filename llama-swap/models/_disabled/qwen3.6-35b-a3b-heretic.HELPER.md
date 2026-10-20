@@ -1,5 +1,11 @@
 # _disabled/ — Re-enable guide
 
+> **REATIVADO 20/out/2026.** Fragments de volta em `models/` (principal cafe + `-fast` ik),
+> pesos re-baixados (APEX-I-Mini 14,3 GB + mmproj 902 MB, repo `mudler/Qwen3.6-35B-A3B-uncensored-heretic-APEX-GGUF`),
+> alias `q36` e `evict_costs.q36` descomentados no footer. Este documento fica como histórico;
+> os sets `medium`/`heavy` NÃO foram re-anchorados (decisão: enhance não exige coexistência de matriz).
+
+
 ## qwen3.6-35b-a3b-heretic (REMOVED Oct 8 2026 — weights DELETED, user explicit)
 
 User aposentadoria: ornith-1.5-35b-heretic assumiu todos
