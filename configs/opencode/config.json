@@ -996,6 +996,19 @@
           "https://mcp.linear.app/mcp"
         ]
       },
+      "rea": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "rea-agents@6.4.0",
+          "mcp"
+        ],
+        "environment": {
+          "GHIDRA_INSTALL_DIR": "/opt/ghidra",
+          "JAVA_HOME": "/usr/lib/jvm/java-27-openjdk"
+        }
+      },
       "searxng": {
         "type": "remote",
         "url": "http://192.168.3.8:8899/mcp",
@@ -1005,5 +1018,6 @@
         }
       }
     }
-  }
+  },
+  "websearch": false
 }
