@@ -184,6 +184,103 @@ def print_list() -> None:
     print()
 
 
+def print_loras() -> None:
+    """Print the LoRA inventory per model family: cataloged entries x files on disk.
+
+    Cross-checks the catalogs (~/.local/share/diffuse/{catalog,nsfw_catalog}_<root>.json)
+    against the .safetensors installed under ~/git/Wan2GP/loras/<root>/, and flags:
+      - orphans: file installed with no catalog entry (invisible to the LLM selector)
+      - ghosts:  catalog entry with no file on disk (the selector would fail on it)
+    """
+    import json as _json
+    from diffuse.models import MODELS
+    from diffuse.paths import MODELS_DIR
+
+    share = Path.home() / ".local" / "share" / "diffuse"
+    wgp_loras = Path.home() / "git" / "Wan2GP" / "loras"
+
+    fams: dict = {}
+    for name, info in MODELS.items():
+        root = info.get("lora_root")
+        if not root:
+            continue
+        fam = fams.setdefault(root, {"models": [], "dirs": []})
+        fam["models"].append(name)
+        for cand in (wgp_loras / root, MODELS_DIR / info.get("dir", "") / "lora"):
+            if cand.exists() and cand not in fam["dirs"]:
+                fam["dirs"].append(cand)
+
+    if not fams:
+        print("No model declares lora_root — nothing to list.")
+        return
+
+    total_files = total_cat = 0
+    for root in sorted(fams):
+        fam = fams[root]
+        # o lora_root nem sempre casa com o nome do catálogo (moss_image -> moss)
+        aliases = {root, root.split("_")[0]}
+        cats = []
+        loaded = set()
+        for alias in sorted(aliases):
+            for fname, label in ((f"catalog_{alias}.json", "general"),
+                                 (f"nsfw_catalog_{alias}.json", "nsfw")):
+                p = share / fname
+                if p in loaded or not p.exists():
+                    continue
+                loaded.add(p)
+                try:
+                    cats.append((label, _json.load(open(p)).get("loras", [])))
+                except Exception as e:
+                    print(f"  [warn] {fname}: {e}")
+
+        files: dict = {}
+        for d in fam["dirs"]:
+            for f in sorted(d.glob("*.safetensors")):
+                files.setdefault(f.name, f)
+
+        cataloged = {e.get("safetensors", "") for _, entries in cats for e in entries}
+        orphans = [n for n in files if n not in cataloged]
+        ghosts = [e for _, entries in cats for e in entries
+                  if e.get("safetensors", "") not in files]
+
+        n_cat = sum(len(e) for _, e in cats)
+        total_files += len(files)
+        total_cat += n_cat
+
+        print(f"\n=== {root} ===")
+        print(f"  models: {', '.join(sorted(fam['models']))}")
+        for d in fam["dirs"]:
+            print(f"  dir:    {d}")
+        print(f"  files: {len(files)} .safetensors | catalog: {n_cat} "
+              f"| orphans: {len(orphans)} | ghosts: {len(ghosts)}")
+
+        for label, entries in cats:
+            if not entries:
+                continue
+            print(f"\n  Cataloged / {label} ({len(entries)}):")
+            for e in sorted(entries, key=lambda x: str(x.get("id"))):
+                nm = e.get("safetensors", "?")
+                mark = "" if nm in files else "  [MISSING]"
+                st = e.get("strength_autor")
+                st = f" @{st}" if st not in (None, "") else ""
+                trig = (e.get("trigger_instr_arquivo") or "").strip()
+                tr = f"  trigger: {trig[:40]}" if trig else ""
+                print(f"    id {str(e.get('id', '?')):>2}  {nm[:44]:<44} "
+                      f"{e.get('categoria', '')[:18]:<18}{st}{tr}{mark}")
+
+        if orphans:
+            print(f"\n  Orphans — on disk, not in any catalog ({len(orphans)}):")
+            for n in orphans:
+                print(f"    {n}  ({files[n].stat().st_size / 1e6:.0f} MB)")
+
+        if ghosts:
+            print(f"\n  Ghosts — catalog entry, no file on disk ({len(ghosts)}):")
+            for e in ghosts:
+                print(f"    id {str(e.get('id', '?')):>2}  {e.get('safetensors', '?')}")
+
+    print(f"\nTotal: {total_files} files on disk, {total_cat} catalog entries.")
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="diffuse",
@@ -230,6 +327,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--list", action="store_true",
         help="List available models with details and exit.",
+    )
+    p.add_argument(
+        "--lora", action="store_true",
+        help="List the LoRA inventory (catalog x files on disk, orphans/ghosts) and exit.",
     )
     p.add_argument(
         "--evict-llm", action="store_true",
@@ -327,6 +428,10 @@ def get_prompt_interactive() -> str:
 # ── Main ────────────────────────────────────────────────────────────────────
 def main() -> None:
     args = parse_args()
+
+    if args.lora:
+        print_loras()
+        sys.exit(0)
 
     if args.list:
         print_list()

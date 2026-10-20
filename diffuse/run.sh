@@ -8,6 +8,7 @@
 #   setup       Install dependencies (uv sync + clone vendor deps)
 #   download    Download model weights
 #   list        List installed models with dependencies and sizes
+#   loras       List WanGP LoRA files per model + cataloged entries
 #   evict       Evict all LLM models from llama-swap (free VRAM)
 #   status      Check prerequisites and model availability
 #   clean       Remove generated images and caches
@@ -129,6 +130,12 @@ cmd_list() {
     uv run --no-sync -m diffuse --list
 }
 
+cmd_loras() {
+    check_venv || exit 1
+    cd "$SCRIPT_DIR"
+    uv run --no-sync -m diffuse --lora
+}
+
 cmd_status() {
     echo "=== diffuse Status ==="
     echo ""
@@ -213,6 +220,7 @@ Commands:
   setup       Install dependencies (uv sync + vendor deps, pinned SHAs)
   download    Download model weights (passes args to download-model.sh)
   list        List installed models with dependencies, sizes, and shared components
+  loras       List WanGP LoRA files per model + cataloged moss entries
   evict       Evict all LLM models from llama-swap (free VRAM for diffusion)
   status      Check prerequisites and model availability
   clean       Remove generated images and caches
@@ -242,6 +250,9 @@ case "${1:-help}" in
         ;;
     list)
         cmd_list
+        ;;
+    loras)
+        cmd_loras
         ;;
     evict)
         cmd_evict
