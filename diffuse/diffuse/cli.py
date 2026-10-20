@@ -1526,11 +1526,11 @@ def _run_moss_wan2gp_image(
     else:
         print(f"     SFW: negative '{negative}'")
 
-    # -- Prompt enhancement + LoRA selection (moss mirror do fluxo qwen21) --
-    # catalogo moss ranked via ColBERT (rerank_catalog_moss.py) e o enhancer
-    # escolhe 0-2 pela linha LORAS:; resolve -> tags <lora:NAME:mult> que o
-    # backend wan2gp converte em activated_loras. Fail-open: sem catalogo, sem
-    # rerank ou sem linha LORAS: = roda base (decreto do catalogo).
+    # -- Prompt enhancement + LoRA selection (moss, F4) --
+    # seleção unificada via diffuse/lora_selector.py (rerank ColBERT no catálogo
+    # loras_moss_image.json + LLM pela linha LORAS: OU modelo de decisão); o
+    # backend wan2gp converte tags -> activated_loras. Fail-open garantido pelo
+    # módulo: sem catálogo/rede/linha LORAS: = roda base.
     lora_tags = ""
     if "<lora:" in prompt:
         prompt, lora_tags = _extract_lora_tags(prompt)

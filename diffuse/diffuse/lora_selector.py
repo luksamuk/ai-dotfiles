@@ -252,7 +252,11 @@ def select_loras(prompt: str, *, root: str, nsfw: bool, variant: str,
     enhanced, raw = enhance_fn(prompt, enhance_model, nsfw=nsfw, extra_system=rule)
     m = re.search(r"LORAS:\s*([0-9,\s]+)", enhanced or "")
     ids = [int(x) for x in re.findall(r"\d+", m.group(1))] if m else []
-    body = re.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=re.M).strip()
+    body = re.sub(r"^\s*LORAS:.*$", "", enhanced or "", flags=re.M)
+    # guarda V4 (20/out): o LLM às vezes emite 'LORAS: <ids>' INLINE no fim do
+    # texto (sem quebra de linha) — o multiline não pega e o literal vazava pro
+    # prompt renderizado. LORAS: é sintaxe interna: qualquer sobra é lixo.
+    body = re.sub(r"\bLORAS:\s*[0-9,\s]*", "", body).strip()
     info = {"mode": "llm", "ids": ids, "body": body}
     if not body:
         # guarda dos monstros: modelo devolveu SO a linha LORAS: — mantém o original
