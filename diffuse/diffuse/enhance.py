@@ -293,7 +293,7 @@ def enhance_qwen21_prompt(prompt: str, model: str, nsfw: bool = False, extra_sys
     return enhanced, enhanced
 
 
-def enhance_moss_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
+def enhance_moss_prompt(prompt: str, model: str, nsfw: bool = False, extra_system: str = "") -> tuple:
     """Use an LLM via llama-swap to expand a prompt for MOSS-Image.
 
     Dedicated sibling of enhance_qwen21_prompt: same natural-language caption
@@ -309,6 +309,8 @@ def enhance_moss_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     import urllib.error
 
     system = get_moss_enhance_prompt(nsfw=nsfw)
+    if extra_system:
+        system = f"{system}\n\n{extra_system}"
 
     log.info("MOSS-Image enhancing prompt via %s", model)
     t0 = time.perf_counter()
