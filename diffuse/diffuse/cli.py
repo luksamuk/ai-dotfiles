@@ -347,6 +347,22 @@ def parse_args() -> argparse.Namespace:
         help="List the LoRA inventory (catalog x files on disk, orphans/ghosts) and exit.",
     )
     p.add_argument(
+        "--lora-selector", choices=["llm", "reranker", "decision"], default=None,
+        help="LoRA selection mode: llm (rerank + LLM, default) or decision (systemone model).",
+    )
+    p.add_argument(
+        "--decision-model", default=None,
+        help="Decision model handle for --lora-selector decision (default: d1-3b).",
+    )
+    p.add_argument(
+        "--decision-threshold", type=float, default=None,
+        help="Cutoff score for the decision selector (default 0.5).",
+    )
+    p.add_argument(
+        "--decision-max", type=int, default=None,
+        help="Max LoRAs the decision selector may pick (default 4).",
+    )
+    p.add_argument(
         "--evict-llm", action="store_true",
         help="Evict all running LLM models (via llama-swap) to free VRAM before generating. "
              "Automatically done when --enhance is used (double-evict: before and after LLM call).",
