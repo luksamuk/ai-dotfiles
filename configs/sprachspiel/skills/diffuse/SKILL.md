@@ -111,6 +111,6 @@ diffuse generate -m qwen-image-2.1 --evict-llm -p "<prompt>" --size 1360x768 --s
 - One mood per prompt — conflicting vibes produce incoherent images
 - Seed matters more than prompt refinement — iterate seeds before rewriting prompts
 - **LoRA of style ≠ filter**: the tag applies the weights, but the prompt still decides the medium — ask for the style in words too
-- **Do not stack the `--turbo` distill with manual LoRA tags** — the turbo native injection is skipped when a tag is present (deliberate; stacking produced broken anatomy)
-- The `qwen-image-2.1-fix-1.0-comfy` LoRA is DoRA-format: the WanGP handler rejects it and **kills the render** — never tag it manually (it is excluded from catalogs)
+- **Distilled LoRAs (turbo/DMD) are never selectable** — they enter via `--turbo` or tags only, by house decree
+- The `qwen-image-2.1-fix-1.0-comfy` LoRA (DoRA format) was **removed entirely** (2026-10-20): the WanGP handler rejected it and killed the render; do not re-add it or tag it
 - Music generation is a separate CLI (`magenta-rt`), not part of diffuse; video generation is currently decommissioned in this fleet
