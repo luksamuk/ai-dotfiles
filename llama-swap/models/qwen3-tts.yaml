@@ -48,6 +48,6 @@ qwen3-tts:
     quantization: q8_0
     note: 'Aposentado o stack torch-direct/FastAPI (port 8880). 10 voice presets da casa (voice_ref + reference_text). Clone nativo ok via presets — o --voice-ref CLI puro travou (bug p/ reportar). Language por nome: portuguese/english/etc.'
     caveats:
-    - Language codes por nome (portuguese) — NÃO pt-br (o pt-br é do kokoro)
+    - Language codes por nome (portuguese) — NÃO pt-br (pt-br é o código dos modelos de áudio, ex. phonon-40m-pt)
     - server-fleet.json obsoleto (o multi-model num server só não roteia via swap)
     - Voz preset não-existente = fallback do modelo (voz default) — o UI lista só os válidos agora
