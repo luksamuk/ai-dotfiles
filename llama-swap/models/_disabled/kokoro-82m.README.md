@@ -36,13 +36,17 @@ argumento para manter o Kokoro.
 ## Ressurreição
 
 1. `mv models/_disabled/kokoro-82m.yaml models/`
-2. Pesos: **mantidos em disco** em `~/.llama-models/audio/Kokoro-82M-GGUF/`
-   (não foram apagados — decisão de limpeza ficou pendente com o usuário).
-   Se um dia faltarem, re-baixar de `audio-cpp/audio.cpp-gguf`
-   (`Kokoro-82M-GGUF/`, entrada `kokoro` em `model_specs/kokoro_tts.json`;
-   `tools/model_manager_v2.py install kokoro_82m --models-root ~/.llama-models`).
-3. Requer build do audio.cpp (`build/linux-cuda-release/bin/audiocpp_server`) e a
-   lib de sistema `espeak-ng`.
+2. Pesos: **APAGADOS em 21/10/2026** (181 MB liberados, a pedido do usuário).
+   Re-baixar de `audio-cpp/audio.cpp-gguf` (`Kokoro-82M-GGUF/`, entrada `kokoro` em
+   `model_specs/kokoro_tts.json`): `python3 tools/model_manager_v2.py install
+   kokoro_82m --models-root ~/.llama-models`. O dir `~/git/audio.cpp/models/` é
+   symlink para `~/.llama-models/audio/` — o link do kokoro foi removido junto.
+3. Requer apenas o build do audio.cpp
+   (`build/linux-cuda-release/bin/audiocpp_server`). **Não precisa de eSpeak-ng de
+   sistema**: os dados eSpeak são empacotados no binário (`tools/espeak_data_pack.cpp`);
+   verificado em 21/10/2026 — nada de espeak instalado via pacman e `ldd` do
+   audiocpp_server não mostra libespeak. O caveat antigo do fragment dizendo
+   "eSpeak-ng system lib requerido" estava errado.
 4. `build-config.py` e confirmar que `kokoro-82m` volta em `/v1/models`.
 
 ## O que não era
