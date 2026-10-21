@@ -21,7 +21,9 @@
 
 WAN2GP_DIR="$HOME/git/Wan2GP"
 VENV="$WAN2GP_DIR/.venv"
-OUTPUT_DIR="$PWD"
+# Output padrão = ~/v (decreto user 21/out/2026: "concentrar tudo em ~/v, não ficar coisa espalhada").
+# --output continua sobrescrevendo; H3_OUTPUT_DIR troca o default sem editar o script.
+OUTPUT_DIR="${H3_OUTPUT_DIR:-$HOME/v}"
 LLAMA_SWAP_URL="http://localhost:12434/v1/chat/completions"
 OLLAMA_URL="http://localhost:11434/v1/chat/completions"
 
@@ -59,7 +61,7 @@ SHOW_ENHANCED=false
 VISION_DESCRIBE=true
 VLM_MODEL="lfm2.5-vl-3b"
 VLM_MODEL_OVERRIDE=""
-MAX_IMAGE_MP="1.0"  # Max megapixels per image (ref2va ref images + fl2va start/end frames)
+MAX_IMAGE_MP="1.0"  # Max megapixels per image (default já é 1.0; replace trava explícito no gate)
 # Redimensiona imagens que excedem este limite para /tmp antes de processar,
 # mantendo aspect ratio e alinhamento ao fator 32 do Qwen3-VL.
 
@@ -87,9 +89,9 @@ TURBO_STEPS=8                       # 8 (o ref2v lightx2v v1.0 é treinado p/ 8 
 H3_PROFILE=5                        # Profile Wan2GP (5=VeryLowRAM_LowVRAM block-by-block; 4=grupos maiores, 2=RAM cache)
 SIDNEY=false
 SIDNEY_FILE="MM-H3 - Sydney Sweeney.safetensors"  # easter egg: ator de referência
-TURBO_STRENGTH="1.0"                # lightx2v recomenda 1.0
+TURBO_STRENGTH="0.5"                # 0.5 = default do Wan2GP ("1.0 seems too strong" — docs/CHANGELOG.md). Decreto user 21/out: usar SEMPRE o recomendado
 # Único turbo compatível com o pruned Q4 (full-rank = MOSAICO — doutrina 30/09):
-TURBO_FILE="minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
+TURBO_FILE="MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors"
 
 # Facial Realism LoRA (close-up de rosto — textura de pele, micro-expressões)
 # prithivMLmods/MiniMax-H3-Facial-Realism-CloseUp, cp2000, rank 16, trigger "Facial Realism"
@@ -119,9 +121,21 @@ PDD=false
 W4A8=false
 SINGULARITY=false   # --singularity: fusao Minimax-h3_Singularity (AIGC_Singularity, GGUF Q4_K_M Abiray 11.5GB)
 
+# Character Swap LoRA (akatz-ai, caso fixo especial de Ref2VA — 11/out):
+# troca UM personagem do --ref-video pela identidade da --ref-img.
+# Doutrina: LoRA SOLO @1.0, sem enhance, sem outras LoRAs (gate hard-error);
+# --turbo permitido so como draft (entrega = full 50 steps).
+REPLACE=false
+REPLACE_STRENGTH="1.0"   # 13/out: LoRA Alissonerdx r64 (card do autor: strength 1; o 1.3 era régua do Akatz, aposentado)
+REPLACE_SWAPPED_DESC=""
+REPLACE_LORA_NAME="minimax_h3_character_swap_v1.0_ref2va_r64_gl"   # Alissonerdx (consolidação 13/out; Akatz aposentado)
+FRAMES_SET=false        # --frames/--seconds passado explicitamente pelo user
+MAX_IMAGE_MP_SET=false  # --max-image-mp passado explicitamente pelo user
+
 # Duas fases com tiling (fase 1 low-res → latent upscaler → fase 2 em 4 tiles).
 # Vence o OOM de denoise full-res em 720p+ no 6GB. Exige modelo normal (não-PDD/turbo).
 TWO_PHASE=false
+VEDA=true   # 21/out: lane padrao da casa = int8_convrot rank8 + Veda (2,2x medido)
 
 
 # FL2VA inputs
@@ -193,6 +207,7 @@ lora_desc() {
   case "$1" in
     natural_face_speech_h3_lora_v1_500) echo "NAFASP: fala natural + dinâmica facial [OFF por padrão; --nafasp liga @0.6]" ;;
     minimax-h3-facial-realism-closeup-cp2000) echo "Facial Realism cp2000: poros/textura de pele em close-up humano [use --facial]" ;;
+    h3_character_swap_pro4500_1000) echo "CHARACTER SWAP: troca personagem do ref-video pela ref-img [use --replace]" ;;
     Grindtime) echo "NSFW: movimento rítmico de quadril [1.0str]" ;;
     "HMPussy v1.0"*) echo "NSFW: genitália feminina [0.9str]" ;;
     "HMPenetration I2V"*) echo "NSFW: penetração, trigger 'hmotion' [1.0str]" ;;
@@ -207,8 +222,8 @@ lora_desc() {
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --frames) FRAMES="$2"; shift 2 ;;
-    --seconds) SECONDS_WANT="$2"; shift 2 ;;
+    --frames) FRAMES="$2"; FRAMES_SET=true; shift 2 ;;
+    --seconds) SECONDS_WANT="$2"; FRAMES_SET=true; shift 2 ;;
     --steps)  STEPS="$2"; shift 2 ;;
     --seed)   SEED="$2"; shift 2 ;;
     --guidance) GUIDANCE="$2"; shift 2 ;;
@@ -222,7 +237,7 @@ while [[ $# -gt 0 ]]; do
     --resolution) RESOLUTION="$2"; shift 2 ;;
     --show-enhanced) SHOW_ENHANCED=true; shift ;;
     --no-vision-describe) VISION_DESCRIBE=false; shift ;;
-    --max-image-mp) MAX_IMAGE_MP="$2"; shift 2 ;;
+    --max-image-mp) MAX_IMAGE_MP="$2"; MAX_IMAGE_MP_SET=true; shift 2 ;;
     # FL2VA
     --image-start) IMAGE_START="$2"; shift 2 ;;
     --image-end)   IMAGE_END="$2"; shift 2 ;;
@@ -244,11 +259,11 @@ while [[ $# -gt 0 ]]; do
       fi
       NSFW_LORAS+=("$RESOLVED"); shift 2 ;;
     --nsfw-strength) NSFW=true; NSFW_OVERRIDE_STRENGTH="$2"; shift 2 ;;  # sobrescreve todas
-    --turbo) TURBO=true; shift ;;
+    --turbo) echo "Aviso: --turbo IGNORADO — nao existe aceleradora compativel com a geometria rank8 (heads 32/96). Rode sem turbo e controle por --steps (12 = rapido, 50 = entrega)." >&2; TURBO=false; shift ;;
     --singularity) SINGULARITY=true; shift ;;
     --profile) H3_PROFILE="$2"; shift 2 ;;
-    --turbo-strength) TURBO=true; TURBO_STRENGTH="$2"; shift 2 ;;
-    --turbo-file) TURBO=true; TURBO_FILE_OVERRIDE="$2"; shift 2 ;;
+    --turbo-strength) echo "Aviso: --turbo-strength ignorado (sem aceleradora para a geometria rank8)." >&2; shift 2 ;;
+    --turbo-file) echo "Aviso: --turbo-file ignorado — nenhuma aceleradora publicada aceita a geometria rank8 (heads 32/96). Use --steps." >&2; shift 2 ;;
     --output|-o|--output-dir)
       case "$2" in
         /*) OUTPUT_DIR="$(readlink -m "$2")" ;;
@@ -266,8 +281,16 @@ while [[ $# -gt 0 ]]; do
     --lora) LORA_RAW+=("$2"); shift 2 ;;
     --list-loras) LIST_LORAS=true; shift ;;
     --pdd) PDD=true; shift ;;
-    --2p|--two-phase) TWO_PHASE=true; shift ;;
+    --2p|--two-phase) echo "Erro: --2p foi REMOVIDO em 21/out/2026 (user: nunca deu resultado bom). Gere em fase unica; se der OOM, baixe resolucao." >&2; exit 1 ;;
+    --veda) VEDA=true; shift ;;
+    --no-veda) VEDA=false; shift ;;
     --w4a8) W4A8=true; shift ;;
+    --replace)
+      REPLACE=true; shift ;;
+    --replace-desc)
+      REPLACE=true; REPLACE_SWAPPED_DESC="$2"; shift 2 ;;
+    --replace-strength)
+      REPLACE=true; REPLACE_STRENGTH="$2"; shift 2 ;;
     --*)
       echo "Erro: flag desconhecida: $1"
       echo "(flags de valor: --flag VAL; booleanas: --flag; -h pra ajuda)"
@@ -289,6 +312,12 @@ Modos:
   --ref-audio PATH              Ref2VA: áudio de referência 1
   --ref-audio2 PATH             Ref2VA: áudio de referência 2
   --use-soundtrack              Ref2VA: usar soundtrack do vídeo de referência
+  --replace                     Character Swap (LoRA Akatz, Ref2VA especial):
+                                troca quem o prompt descreve no --ref-video pela
+                                identidade do --ref-img (LoRA sola @1.0, sem
+                                enhance; use --steps baixo como draft)
+  --replace-desc DESCRICAO      Cláusula extra sobre o personagem SUBSTITUTO
+  --replace-strength N          Força do LoRA de swap (default: 1.0)
 
 Opções gerais:
   --frames N         Duração em FRAMES a 24fps (default 107 ≈ 4,5s; mínimo 107,
@@ -306,10 +335,6 @@ Opções gerais:
   --guidance N       Guidance scale (default: 1.0)
   --flow-shift N     Flow shift (default: 12.0)
   --resolution WxH   Resolução (default: 832x480). Ex: 480x256, 416x224
-  --2p               Duas fases com tiling: denoise em resolução reduzida + upscaler
-                     latente + refinamento em 4 tiles. Vence o OOM de 720p+ no 6GB.
-                     Custo ~3x tempo. Combina com --turbo (fase 1 acelerada, ~3x mais
-                     rápido que --2p sozinho). Incompatível com --pdd.
   --enhance          Expande prompt via LLM (llama-swap)
   --enhance-with M   LLM específico para enhance (default: qwen3.5-4b)
                      Use prefixo ollama: para modelos via Ollama (porta 11434):
@@ -339,14 +364,21 @@ Opções gerais:
                      Catálogo completo com IDs e forças: h3 --list-loras
   --nsfw-strength N   Sobrescreve força de TODOS os LoRAs NSFW (default: força
                      recomendada de cada um; sem catálogo = 0.8, range 0.1-1.0)
-  --turbo             Ativa LoRA Turbo (destilação: ~10x mais rápido)
-                     Default: rank-21 resized @4 steps (único compatível com o
-                     pruned Q4 — full-rank 768p = MOSAICO; ver doutrina 30/09)
-  --turbo-strength N  Força do LoRA Turbo (default: 1.0, lightx2v recomenda 1.0)
-  --turbo-file NOME   Override do LoRA Turbo (default: fl2v rank-21 resized)
+  --veda              ATIVA o Veda Sparse (já é o DEFAULT desde 21/out). Só existe
+                     pareado com int8_convrot. Medido em 832x480: 25,8s/step contra
+                     70,5s do GGUF Q4_K — 2,2x, com perda de detalhe fino irrisória
+                     (dentes e movimento). Lane padrao da casa.
+  --no-veda           Desliga o Veda. ATENCAO: a lane sem Veda era o GGUF Q4_K, que
+                     foi apagado em 21/out — hoje falha no pre-flight ate baixar o
+                     int8 rank64 (20,6 GiB, geometria de heads diferente).
+  --turbo             DESATIVADO. Nenhuma aceleradora publicada aceita a geometria
+                     rank8 (heads 32/96): as Kijai Acc-8Step e as lightx2v 768p
+                     miram o rank64 (heads 1024/3072) e falham no load. A flag e
+                     ignorada com aviso; controle a velocidade por --steps
+                     (12 = rascunho ~8min / 50 = entrega ~24min).
   --sidney            Sidney Sweeney.
   --facial            Ativa LoRA Facial Realism (close-up de rosto: poros, textura
-                     de pele, micro-expressões). Empilha com --turbo. Trigger word
+                     de pele, micro-expressões). Empilha com as LoRAs de estilo.
                      "Facial Realism" é injetada no prompt automaticamente
   --facial-strength N Força do LoRA Facial (default: 1.0, range 0.1-1.0)
   --facial-file NOME  Override do arquivo do LoRA Facial
@@ -366,6 +398,11 @@ Regras Ref2VA:
   - Máximo 12 arquivos de referência no total
   - Áudio requer >= referências visuais (imgs+vídeos) que áudios
   - --use-soundtrack usa o audio track dos vídeos de referência
+  - --replace: janela única (default 124f ~5,17s); fonte 24fps contínuo de
+    4-5s é a zona de acerto. Com --use-soundtrack (o fragmento DEVE ter trilha):
+    modo KS — áudio original sai INTACTO no output e o vídeo é gerado seguindo
+    o soundtrack (lip-sync com a voz/música do fonte). Sem soundtrack, o H3
+    regenera áudio (descartável) e a boca não sincroniza.
 
 Enhance:
   Usa llama-swap (localhost:12434) para expandir o prompt.
@@ -390,11 +427,12 @@ Exemplos:
   h3 "A character walks through a forest" --image-start forest.jpg --image-end exit.jpg
   h3 "A hero with a red cape" --ref-img hero.jpg --ref-video action.mp4
   h3 "Continue this scene" --ref-video scene.mp4 --use-soundtrack
+  h3 "the man in the purple shirt" --replace --ref-img hero.jpg --ref-video scene.mp4
   h3 "A singer performs" --ref-img singer.jpg --ref-audio song.wav --enhance --show-enhanced
   h3 "explicit prompt here" --nsfw                            # NSFW (LoRAs default a 0.5, ver flags acima)
-  h3 "explicit prompt here" --turbo --steps 6            # Turbo com 6 steps (melhor qualidade)
-  h3 "A close-up portrait of a woman smiling" --turbo --facial   # Realismo facial (trigger injetado)
-  h3 "portrait close-up" --turbo --facial --facial-strength 0.7  # Facial mais sutil
+  h3 "explicit prompt here" --steps 12                     # rascunho rapido (~8min)
+  h3 "A close-up portrait of a woman smiling" --facial --steps 12   # realismo facial
+  h3 "portrait close-up" --facial --facial-strength 0.7 --steps 50  # entrega (~24min)
 HELPEOF
       exit 0 ;;
     *) PROMPT="$1"; shift ;;
@@ -434,7 +472,7 @@ if [[ "$LIST_LORAS" == true ]]; then
   echo "Uso: --lora NOME[@FORÇA]  (repeatable; aceita apelidos: nafasp, facial, grindtime,"
   echo "     aio, hmpussy, penetration, turbo-fl2v...)"
   echo "Ex.: h3 \"...\" --lora nafasp@0.6 --lora grindtime@0.5"
-  echo "Nota: nafasp tá OFF por padrão (--nafasp liga, @0.6). Turbo e PDD têm flags próprias (--turbo/--pdd)."
+  echo "Nota: nafasp tá OFF por padrão (--nafasp liga, @0.6). Não há mais LoRA turbo (geometria rank8 não tem aceleradora); PDD tem flag própria (--pdd)."
   exit 0
 fi
 
@@ -681,6 +719,25 @@ fi
 if [[ "${H3_GGUF:-1}" == "1" ]]; then :; fi
 # (GGUF branch seta TEXT_ENCODER/VAEs completos; int8 legacy path idem)
 
+# Veda Sparse (21/out/2026): SO existe pareado com int8_convrot — o predictor segue a
+# quantizacao do transformer (docs do handler: "BF16 or INT8 ConvRot"). Com GGUF Q4_K o
+# read_metadata nao barra e o kernel path vira loteria. Forca a lane int8.
+if [[ "$VEDA" == true ]]; then
+  if [[ "$PDD" == true ]]; then
+    echo "Erro: --veda e --pdd nao se combinam." >&2; exit 1
+  fi
+  if [[ "$REF2VA_MODE" == true ]]; then
+    MODEL_TYPE="minimax_h3_ref2va_veda_local"
+    MODEL_FILE="$CKPTS_DIR/MiniMax-H3-Ref2VA-pruned_rank8_int8_convrot.safetensors"
+  else
+    MODEL_TYPE="minimax_h3_fl2va_veda_local"
+    MODEL_FILE="$CKPTS_DIR/MiniMax-H3-FL2VA-pruned_rank8_int8_convrot.safetensors"
+  fi
+  TEXT_ENCODER="$CKPTS_DIR/Qwen3-VL-32B-Instruct/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf"
+  AUDIO_VAE="$CKPTS_DIR/MiniMax-H3-audio_vae_fp32.safetensors"
+  [[ "$TURBO" == true ]] && echo "Aviso: --veda + --turbo nao e o recomendado pelo upstream (use os defaults da variante primeiro)."
+fi
+
 for f in "$MODEL_FILE" "$TEXT_ENCODER" "$VIDEO_VAE" "$AUDIO_VAE"; do
   if [[ ! -e "$f" ]]; then
     echo "Erro: modelo não encontrado: $f"
@@ -696,16 +753,34 @@ if [[ "$REF2VA_MODE" == true ]]; then
 [[ "${H3_GGUF:-1}" == "1" ]] && MODEL_TYPE="minimax_h3_ref2va_gguf"
 [[ "$SINGULARITY" == true ]] && MODEL_TYPE="minimax_h3_ref2va_sing"   # default: stack GGUF enxuta (H3_GGUF=0 volta pro int8)
   TASK_TYPE="ref2va"
+  # Soundtrack implícito no --replace (cravado ANTES do bloco AUDIO_PROMPT_TYPE do
+  # ref2va — a ordem importa; o patch tardio no gate do replace era no-op p/ o type).
+  [[ "$REPLACE" == true ]] && USE_SOUNDTRACK=true
   VIDEO_PROMPT_TYPE=""
   [[ ${#REF_IMAGES[@]} -gt 0 ]] && VIDEO_PROMPT_TYPE+="I"
-  if [[ -n "$REF_VIDEO" && -n "$REF_VIDEO2" ]]; then
+  if [[ "$REPLACE" == true ]]; then
+    # Character swap: ref-video = REFERENCE VIDEO INTEIRO ("V-"). NUNCA o G:
+    # G = Denoise Control, que em denoising_strength 1.0 (default) passa ZERO
+    # condicionamento visual — o run vira "fotinha de ref + cena inventada"
+    # (bug do 1o smoke: "IVG" fez o h3 ignorar o Rick completamente).
+    VIDEO_PROMPT_TYPE+="V-"
+  elif [[ -n "$REF_VIDEO" && -n "$REF_VIDEO2" ]]; then
     VIDEO_PROMPT_TYPE+="V+G"
   elif [[ -n "$REF_VIDEO" ]]; then
-    VIDEO_PROMPT_TYPE+="VG"
-  fi
+    # Ref2VA manual: ref-video = REFERENCE INTEIRO ("V-"), igual ao --replace.
+    # O "VG" (V+G) que estava aqui é o bug do 11/out: G = Denoise Control, e com
+    # denoising_strength 1.0 (default do ref2va) passa ZERO condicionamento visual —
+    # o run ignora o fonte e re-emitia a própria ref image como vídeo (achado 13/out:
+    # smoke UntMods saiu com a character sheet rendendo parada em vez dos 5s do clip).
+    VIDEO_PROMPT_TYPE+="V-"
+  fi 
   AUDIO_PROMPT_TYPE=""
   if [[ "$USE_SOUNDTRACK" == true ]]; then
-    AUDIO_PROMPT_TYPE="K"
+    # KS = manter o soundtrack do REFERENCE video (o track do fonte intacto + lip-sync
+    # emergente). O "K" puro é soundtrack de CONTROL video — com ref2va (V sem -,
+    # videos[] vazio) o handler morre: "requires a Reference Video" (achado 13/out,
+    # smoke UnMods/FaceSwap). O KS é a única rota viva pro soundtrack de ref-video.
+    AUDIO_PROMPT_TYPE="KS"
   elif [[ -n "$REF_AUDIO" && -n "$REF_AUDIO2" ]]; then
     AUDIO_PROMPT_TYPE="AB"
   elif [[ -n "$REF_AUDIO" ]]; then
@@ -735,6 +810,14 @@ fi
 # PDD: variantes de model type dedicadas (8 steps + Euler travados no pipeline)
 [[ "$PDD" == true ]] && MODEL_TYPE="${MODEL_TYPE}_pdd"
 
+# Veda: MODEL_TYPE DEFINITIVO. O bloco la em cima so ajustou MODEL_FILE/VAEs para o
+# pre-flight passar; o bloco de modalidade reescreve MODEL_TYPE depois, entao a
+# atribuicao final precisa vir aqui.
+if [[ "$VEDA" == true ]]; then
+  if [[ "$REF2VA_MODE" == true ]]; then MODEL_TYPE="minimax_h3_ref2va_veda_local"
+  else MODEL_TYPE="minimax_h3_fl2va_veda_local"; fi
+fi
+
 # ── Validar Ref2VA: pelo menos 1 referência ──────────────────────────────
 # Modalidade do run pro aparato NSFW (resolver dropa variantes da outra modalidade;
 # rerank oculta as exclusivas do menu do LLM)
@@ -763,6 +846,60 @@ if [[ "$REF2VA_MODE" == true ]]; then
     echo "Erro: --use-soundtrack requer pelo menos um --ref-video."
     exit 1
   fi
+fi
+
+# ── Character Swap (--replace): caso fixo especial de Ref2VA (11/out) ──────
+# Doutrina: swap = LoRA akatz SOLO @1.0; sem enhance/outras LoRAs; turbo so
+# draft (entrega = full 50 steps); janela unica ~5s; ref-img ~0.5MP; audio do
+# fonte e remuxado DEPOIS com ffmpeg (a LoRA nao preserva voz — model card).
+if [[ "$REPLACE" == true ]]; then
+  if [[ "$REF2VA_MODE" != true ]]; then
+    echo "Erro: --replace exige Ref2VA: 1 --ref-img (personagem substituto) + 1 --ref-video (cena fonte)."
+    exit 1
+  fi
+  if [[ ${#REF_IMAGES[@]} -ne 1 || -z "$REF_VIDEO" || -n "$REF_VIDEO2" ]]; then
+    echo "Erro: --replace espera EXATAMENTE 1 --ref-img (personagem) + 1 --ref-video (fonte, janela unica)."
+    echo "       Video longo = workflow de fragmentacao (doc: skill wan2gp → references/h3-replace.md)."
+    exit 1
+  fi
+  BAD=""
+  [[ "$ENHANCE" == true ]] && BAD="$BAD --enhance"
+  [[ "$NSFW" == true ]] && BAD="$BAD --nsfw"
+  [[ "$FACIAL" == true ]] && BAD="$BAD --facial"
+  # nafasp liberado no --replace (12/out, teste de expressividade do user)
+  [[ "$PDD" == true ]] && BAD="$BAD --pdd"
+  [[ "$W4A8" == true ]] && BAD="$BAD --w4a8"
+  [[ "$SINGULARITY" == true ]] && BAD="$BAD --singularity"
+  [[ "$SIDNEY" == true ]] && BAD="$BAD --sidney"
+  [[ ${#LORA_RAW[@]} -gt 0 ]] && BAD="$BAD --lora"
+  [[ -n "$REF_AUDIO" || -n "$REF_AUDIO2" ]] && BAD="$BAD --ref-audio"
+  if [[ -n "$BAD" ]]; then
+    echo "Erro: --replace é incompatível com:$BAD"
+    echo "       (doutrina: swap = LoRA única + prompt canônico; áudio do fonte = remux ffmpeg depois)"
+    exit 1
+  fi
+  MAX_IMAGE_MP="1.0"   # régua final: 4x tokens de identidade — @0.5MP a identidade vinha diluída/escura
+
+  SWAP_RW="${RESOLUTION%x*}"; SWAP_RH="${RESOLUTION#*x}"
+  if [[ "$SWAP_RW" =~ ^[0-9]+$ && "$SWAP_RH" =~ ^[0-9]+$ ]] && (( SWAP_RW * SWAP_RH > 414720 )); then
+    echo "Aviso: resolução ${RESOLUTION} acima da zona validada do swap (864x480 / 0.4MP) — fidelidade não testada pelo autor acima disso."
+  fi
+  if [[ "$FRAMES_SET" != true ]]; then
+    FRAMES=124   # janela canonica do autor (grade 17n+5; ~5.17s)
+  fi
+  if ! grep -qi "<video" <<< "$PROMPT"; then
+    # Canônico Alissonerdx (13/out — o template que fechou o smoke verde do Rick Roll):
+    # trigger `body_swap:` + follow the guide performance (guide-latent conditioning é
+    # o que a LoRA treina) + identidade/desc do substituto DO USUARIO ($REPLACE_SWAPPED_DESC)
+    SWAP_CANON="body_swap: Replace the $PROMPT in <Video 1> with the person from <Picture 1>, replacing the guide subject while following the guide performance. Keep the replacement character's identity, outfit, and art style from <Picture 1>. Preserve the source video's camera, framing, background, lighting, and all other people. Match the target person's position, scale, pose, and movement. Do not show the reference sheet or its background."
+    [[ -n "$REPLACE_SWAPPED_DESC" ]] && SWAP_CANON="$SWAP_CANON $REPLACE_SWAPPED_DESC"
+    PROMPT="$SWAP_CANON"
+    echo "=== Character swap: prompt canônico aplicado (seu texto = quem trocar) ==="
+  fi
+  TURBO_STR=" [full 50-step]"
+  [[ "$TURBO" == true ]] && TURBO_STR=" [DRAFT turbo]"
+  SWAP_SECONDS=$(python3 -c "print(f'{$FRAMES/24:.2f}')" 2>/dev/null || echo "?")
+  echo "=== Character swap: janela ${FRAMES}f (~${SWAP_SECONDS}s) | refs @${MAX_IMAGE_MP}MP ${TURBO_STR} ==="
 fi
 
 # ── Prompt enhancement ──────────────────────────────────────────────────
@@ -1572,6 +1709,19 @@ if [[ "$NAFASP" == true ]]; then
   echo "=== NAFASP: LoRA '${NAFASP_FILE}' ativo (força $NAFASP_STRENGTH) ==="
 fi
 
+# ── Character Swap LoRA: validar (a UNICA LoRA do run) ────────────────────
+if [[ "$REPLACE" == true ]]; then
+  REPLACE_FILE_PATH="$WAN2GP_DIR/loras/minimax_h3/${REPLACE_LORA_NAME}.safetensors"
+  if [[ ! -f "$REPLACE_FILE_PATH" ]]; then
+    echo "Erro: LoRA de character swap não encontrada: $REPLACE_FILE_PATH"
+    echo "Baixe com: hf download Alissonerdx/Minimax-H3-ComfyUI loras/minimax_h3_character_swap_v1.0_ref2va_r64_gl.safetensors --local-dir ~/git/Wan2GP/loras/minimax_h3/"
+    exit 1
+  fi
+  REPLACE_LORA_NAMES=("$REPLACE_LORA_NAME")
+  REPLACE_LORA_MULTS=("$REPLACE_STRENGTH")
+  echo "=== Character swap LoRA '${REPLACE_LORA_NAME}' @${REPLACE_STRENGTH} (SOLO — nenhuma outra LoRA no run) ==="
+fi
+
 # ── Turbo: validar e forçar steps ─────────────────────────────────────────
 if [[ "$TURBO" == true ]]; then
   # Auto-seleção por modo (2026-08-28): Ref2VA usa o LoRA 4-step v0.1 (único Ref2VA
@@ -1580,10 +1730,13 @@ if [[ "$TURBO" == true ]]; then
   if [[ -z "$TURBO_FILE_OVERRIDE" ]]; then
     # 05/10: PDMD-DMAD assume o slot FL2VA (A/B user: PDMD-4 e PDMD-8 vencem v1.2-4;
     # v1.2 é steps-locked — @8 steps alucina "sonic peludo"); Ref2VA segue ref2v 8step v1.0
+    # 21/out/2026 (decreto do user): 100% Kijai Acc-8Step pruned nos dois heads.
+    # Sao as unicas feitas PARA a base pruned (sufixo _pruned_) e fixam 8 steps.
+    # As 4-step e as lightx2v full-rank 768p foram apagadas do disco.
     if [[ "$REF2VA_MODE" == true ]]; then
-      TURBO_FILE="minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
+      TURBO_FILE="MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors"
     else
-      TURBO_FILE="minimax_h3_PDMD_DMAD_4step_r256_add_fro1_turbo_lora.safetensors"
+      TURBO_FILE="MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors"
     fi
   else
     TURBO_FILE="$TURBO_FILE_OVERRIDE"
@@ -1597,7 +1750,7 @@ if [[ "$TURBO" == true ]]; then
   # Turbo requer 4-8 steps — auto por modalidade (ref2v8=8/shift6, PDMD fl2v=4/shift12;
   # PDMD suporta 6-8 com margem — "possibly more" —, v1.2 era steps-locked e saiu) se não setado
   if [[ "$STEPS" == "50" ]]; then
-    if [[ "$REF2VA_MODE" == true ]]; then STEPS=8; else STEPS=4; fi
+    if [[ "$REF2VA_MODE" == true ]]; then STEPS=8; else STEPS=8; fi   # 8 fixo nas DUAS lanes (21/out/2026)
   fi
   if [[ "$FLOW_SHIFT_SET" != "true" ]]; then
     if [[ "$REF2VA_MODE" == true ]]; then FLOW_SHIFT=6.0; else FLOW_SHIFT=12.0; fi
@@ -1636,27 +1789,10 @@ fi
 # Constraints do pipeline: exatamente 8 steps, Euler, 1 fase. O LoRA PDD NÃO entra
 # em activated_loras — o model def defaults/*_pdd.json o carrega automaticamente
 # (prefetch de ckpts/ e loras/minimax_h3/). NSFW LoRAs empilham normal.
-# Two-Phase Tiling: denoise low-res + upscaler latente + refinamento tiled em 4 quadrantes.
-# Combinável com --turbo (o WanGP gerencia o LoRA turbo da fase 2 sozinho — o turbo acelera
-# a fase 1 e a fase 2 roda 3 steps de refinamento sem turbo). Só o PDD é que trava em 1 fase.
-if [[ "$TWO_PHASE" == true ]]; then
-  if [[ "$PDD" == true ]]; then
-    echo "Erro: --2p é incompatível com --pdd (PDD trava em 1 fase). Use --2p com o modelo normal ou com --turbo."
-    exit 1
-  fi
-  if [[ "$TURBO" == true ]]; then
-    echo "=== Two-Phase Tiling + Turbo: fase 1 acelerada (8 steps) → latent upscaler → fase 2 em 4 tiles ==="
-  else
-    echo "=== Two-Phase Tiling: fase 1 em resolução reduzida → latent upscaler → fase 2 em 4 tiles ==="
-  fi
-  # Contra-indicado em resolução baixa: cada tile cobre ~o frame inteiro, os 4
-  # re-denoisam a cena semi-independentes do noise start → ghosting, sujeito
-  # duplicado, morphing entre painéis (observado 2026-09-05 @832x480).
-  RW=$(echo "$RESOLUTION" | cut -dx -f1); RH=$(echo "$RESOLUTION" | cut -dx -f2)
-  if [[ "$RW" -lt 960 || "$RH" -lt 540 ]]; then
-    echo "Aviso: --2p em resolução baixa (${RESOLUTION}): tiles ≈ frame inteiro, cada tile re-alucina conteúdo (ghosting/morphing já observado). Prefira fase única; só use --2p aqui se der OOM e aceitar o risco."
-  fi
-fi
+# Two-Phase Tiling (--2p) REMOVIDO em 21/out/2026 por decreto do user: ghosting/morphing
+# em resolucao baixa, OOM em 15s@720p e nenhum resultado bom. O latent upscaler continua
+# no disco porque e asset obrigatorio do model def (query_model_files do handler) — sem
+# --2p ele nunca e invocado (pipeline.py:1500 e o unico consumidor).
 if [[ "$PDD" == true ]]; then
   if [[ "$TURBO" == true ]]; then
     echo "Erro: --pdd e --turbo são mutuamente exclusivos (PDD substitui o Turbo)."
@@ -1711,6 +1847,7 @@ export H3_TURBO_FILE="$TURBO_FILE"
 export H3_TURBO_STRENGTH="$TURBO_STRENGTH"
 export H3_PDD="$PDD"
 export H3_TWO_PHASE="$TWO_PHASE"
+export H3_VEDA="$VEDA"
 export H3_FACIAL="$FACIAL"
 export H3_FACIAL_FILE="$FACIAL_FILE"
 export H3_NAFASP="$NAFASP"
@@ -1724,6 +1861,14 @@ export H3_MODEL_FILE_NAME=$(basename "$MODEL_FILE")
 
 # Passar array de imagens como JSON
 export H3_REF_IMAGES_JSON=$(python3 -c "import json,sys; print(json.dumps([x for x in sys.argv[1:]]))" "${REF_IMAGES[@]}")
+export H3_REPLACE="false"
+export H3_REPLACE_LORAS_JSON="[]"
+export H3_REPLACE_MULTS_JSON="[]"
+if [[ "$REPLACE" == true ]]; then
+  export H3_REPLACE="true"
+  export H3_REPLACE_LORAS_JSON=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1:]))" "${REPLACE_LORA_NAMES[@]}")
+  export H3_REPLACE_MULTS_JSON=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1:]))" "${REPLACE_LORA_MULTS[@]}")
+fi
 
 python3 -c "
 import json, os
@@ -1744,6 +1889,8 @@ if os.environ.get('H3_PDD') == 'true':
     settings['sample_solver'] = 'euler'
 if os.environ.get('H3_TWO_PHASE') == 'true':
     settings['guidance_phases'] = '2~'
+if os.environ.get('H3_VEDA') == 'true':
+    settings['override_attention'] = 'veda'
 
 # FL2VA fields
 if os.environ.get('H3_IMAGE_START'):
@@ -1774,6 +1921,14 @@ if os.environ.get('H3_AUDIO_PROMPT_TYPE'):
 activated_loras = []
 loras_multipliers = []
 
+# Character Swap (--replace): LoRA ÚNICA doutrinada (entra antes de qualquer outra)
+if os.environ.get('H3_REPLACE') == 'true':
+    rl = json.loads(os.environ.get('H3_REPLACE_LORAS_JSON', '[]'))
+    rm = json.loads(os.environ.get('H3_REPLACE_MULTS_JSON', '[]'))
+    for i, lora_name in enumerate(rl):
+        activated_loras.append(lora_name + '.safetensors')
+        loras_multipliers.append(float(rm[i]) if i < len(rm) else 1.0)
+
 # NSFW LoRAs (múltiplas, cada uma com sua força)
 if os.environ.get('H3_NSFW') == 'true':
     nsfw_loras = json.loads(os.environ.get('H3_NSFW_LORAS_JSON', '[]'))
@@ -1786,7 +1941,7 @@ if os.environ.get('H3_NSFW') == 'true':
 # Turbo LoRA (destilação)
 if os.environ.get('H3_TURBO') == 'true':
     turbo_file = os.environ.get('H3_TURBO_FILE', 'minimax_h3_ref2v_turbo_4step_v0.1_bf16.safetensors')
-    turbo_strength = float(os.environ.get('H3_TURBO_STRENGTH', '1.0'))
+    turbo_strength = float(os.environ.get('H3_TURBO_STRENGTH', '0.5'))
     activated_loras.append(turbo_file)
     loras_multipliers.append(turbo_strength)
 
@@ -1858,6 +2013,9 @@ if [[ "$REF2VA_MODE" == true ]]; then
   [[ -n "$REF_AUDIO" ]] && echo "Ref audio 1: $REF_AUDIO"
   [[ -n "$REF_AUDIO2" ]] && echo "Ref audio 2: $REF_AUDIO2"
   [[ "$USE_SOUNDTRACK" == true ]] && echo "Use soundtrack: yes"
+  if [[ "$REPLACE" == true ]]; then
+    echo "Character swap: ${REPLACE_LORA_FILE%.safetensors} @${REPLACE_STRENGTH}${TURBO_STR}${USE_SOUNDTRACK:+ + soundtrack KS}"
+  fi
   echo "Video prompt type: $VIDEO_PROMPT_TYPE"
   echo "Audio prompt type: $AUDIO_PROMPT_TYPE"
 fi
