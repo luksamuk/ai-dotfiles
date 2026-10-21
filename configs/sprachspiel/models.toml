@@ -239,12 +239,6 @@ model_id = "lfm2.5-embedding-350m"
 embeddings = true
 dimensions = 1024
 
-[models."nemotron-3-embed-1b"]
-provider = "llama-swap"
-model_id = "nemotron-3-embed-1b"
-embeddings = true
-dimensions = 2048
-
 [models."embeddinggemma-2"]
 provider = "llama-swap"
 model_id = "embeddinggemma-2"
@@ -319,7 +313,7 @@ thinking = true
 
 [models."deepseek-v4.1-flash"]
 provider = "ollama"
-model_id = "deepseek-v4.1-flash:cloud"
+model_id = "deepseek-v4.1-flash:1017-cloud"
 num_ctx = 1048576
 thinking = true
 
@@ -358,6 +352,7 @@ provider = "ollama"
 model_id = "deepseek-v4-pro:cloud"
 num_ctx = 1048576
 thinking = true
+
 [models."ornith-1.5-35b"]
 provider = "llama-swap"
 model_id = "ornith-1.5-35b-heretic:think"
@@ -453,3 +448,41 @@ temperature = 0.7
 top_p = 0.95
 thinking = true
 tools = true
+
+# --- FLEET SYNC 06/10 (llama-swap-cli list -> models.toml) ---
+
+# [models."qwen3-coder-30b-fast"]
+# REMOVIDO 06/10 — user desinstalando o qwen3-coder (a variante padrão tb foi removida acima)
+
+# --- LFM 2.5 24B A2B (LiquidAI MoE 24B/2.45B ativo, cafe -cmoe, reasoning NATIVO always-think) ---
+
+[models."lfm2.5-24b-a2b"]
+provider = "llama-swap"
+model_id = "lfm2.5-24b-a2b"
+num_ctx = 131072
+temperature = 0.1
+top_p = 0.95
+top_k = 50
+thinking = true
+tools = true
+
+# --- BONSAI 2 9B (ternary PrismML, always-think nativo, visao via mmproj, 131K) ---
+
+[models."bonsai2-9b"]
+provider = "llama-swap"
+model_id = "bonsai2-9b"
+num_ctx = 131072
+temperature = 1.0
+top_p = 0.95
+top_k = 20
+thinking = true
+tools = true
+
+# --- QWEN2.5-CODER 1.5B POLLARD (FIM completion, sem tools, 32K) ---
+
+[models."qwen2.5-coder-1.5b-pollard"]
+provider = "llama-swap"
+model_id = "qwen2.5-coder-1.5b-pollard"
+num_ctx = 32768
+thinking = false
+tools = false

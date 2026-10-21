@@ -1,16 +1,16 @@
 [model]
-default = "qwen3.6-35b-a3b-heretic"
+default = "lfm2.5-24b-a2b"
 
 [model.query]
-model = "qwen3.5-4b"
+model = "bonsai2-9b"
 tools = true
 
 [model.chat]
-model = "qwen3.6-35b-a3b-heretic"
+model = "lfm2.5-24b-a2b"
 tools = true
 
 [model.summarize]
-model = "qwen3.5-4b"
+model = "lfm2.5-24b-a2b"
 thinking = false
 tools = false
 
@@ -21,7 +21,7 @@ tools = false
 
 # --- CODE MODE ---
 [model.code]
-model = "qwen3.6-35b-a3b-heretic"
+model = "ornith-1.5-35b"
 thinking = true
 tools = true
 
@@ -84,14 +84,16 @@ enabled = false
 # The alias must be declared with `embeddings = true` and
 # `dimensions = N` in models.toml. The provider is inferred from
 # the alias — no provider override here.
-model = "nemotron-3-embed-1b"
+# 06/10/2026: trocado de nemotron-3-embed-1b (2048d) p/ embeddinggemma-2 (768d MRL).
+# A/B 06/10: MRR 1.0/1.0, STS rho .94/.94, query CPU 23ms vs 104ms. Diffs .bak-20261006-eg2.
+model = "embeddinggemma-2"
 
 # Prefix prepended to each text before embedding.
-# nomic-embed-text models use "search_document: " (the default).
-# Models that don't need a prefix (BGE, GTE) should set this to "".
-# Nemotron-3-Embed uses asymmetric: "query: " for queries, "document: " for passages.
-# Sprachspiel embeds documents/passages, so use "document: ".
-prefix = "document: "
+# eg2 usa task-steering DIFERENTE p/ query vs doc ("task: search result |
+# query:" vs "title: t | text: c") — o sprach tem UM prefix global só.
+# README: omitir o prefix "works but reduces precision". Com prefix único
+# global, "" é o menos errado (não etiqueta documento como query nem vice-versa).
+prefix = ""
 
 # Probe /v1/embeddings at startup to verify the model is served.
 # When true (default), sprach makes 1 POST /v1/embeddings call.
