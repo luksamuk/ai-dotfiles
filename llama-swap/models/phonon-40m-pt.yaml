@@ -1,0 +1,46 @@
+phonon-40m-pt:
+  name: Phonon 40M Portuguese
+  description: "Phonon is a 40M text-to-speech model from Gradium, built on a flow-matching language model over Mimi audio latents. Made for low-latency on-device Portuguese speech, it streams audio as it generates and carries twelve Brazilian Portuguese voices."
+  tags:
+  - tts
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: ${env.HOME}/.local/bin/ptts-openai-server --addr 127.0.0.1:${PORT} --model ${env.HOME}/.llama-models/audio/phonon-40m-pt --quant q8_0 --lang pt --device cpu --voice-catalog ${env.HOME}/.llama-models/audio/phonon-voices
+  cmdStop: pkill -f "ptts-openai-server.*phonon-40m-pt"
+  health_check_timeout: 120
+  ttl: 300
+  capabilities:
+    in:
+    - text
+    out:
+    - audio
+    tools: false
+    reranker: false
+    context: 0
+  metadata:
+    size: ~75 MB (q8_0)
+    context: 0
+    vram_usage: 0 (CPU-only)
+    source: gradium/phonon-40m-pt
+    kv_cache: n/a
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      tts: true
+      image: false
+    architecture: phonon
+    parameters: 40000000
+    context_length: 0
+    embedding_length: 0
+    quantization: q8_0
+    note: 'Gradium Phonon 40M (flow-matching LM 9 camadas d_model 512 -> latentes Mimi 32d @12.5 fps -> decoder Mimi -> 24 kHz). Params reais 50.5M (flow + Mimi decoder); "40M" e o nome comercial. Servido por ptts-openai-server (Rust, upstream gradium-ai/xn-ptts): binario instalado em ~/.local/bin/ptts-openai-server, build CPU-only; o repo clonado foi apagado depois do build (re-clonar p/ rebuild), NAO por audio.cpp: o checkpoint so traz decoder (sem encoder Mimi), entao o port pro audio.cpp exigiria conversor de voz e conditioners. Decisao CPU-only: build CUDA falha (cudarc 0.19.9 nao conhece CUDA 13.4) e o modelo nao precisa de GPU — medido RTF 0.095 (5.44 s de audio em 0.52 s) com 8 threads, 380 MB RSS, zero VRAM. Licenca CC BY-NC 4.0 (nao comercial). Vozes: catalogo gradium/phonon-voices copiado para ~/.llama-models/audio/phonon-voices (12 pt-br baixadas; o catalogo completo tem 102). Vocabulario SPM, tokenizer.json + tokenizer.model no dir do modelo.'
+    caveats:
+    - CC BY-NC 4.0 — uso nao comercial
+    - Servidor ptts-openai-server (Rust), nao llama-server nem audio.cpp
+    - Idioma fixo no startup (--lang pt); outro idioma exige outro handle com --lang diferente
+    - Sem clonagem de voz — o checkpoint liberado so traz o decoder Mimi; vozes vem do catalogo

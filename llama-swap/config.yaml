@@ -2006,6 +2006,98 @@ models:
       embedding_length: 2048
       quantization: APEX I-Compact
       note: 'vram detalhe: ~4.9 GB VRAM + ~4.7 GB RAM used | experts em page cache file-backed evictável via -cmoe (a RAM usada é cache — evictável quando o sistema pede) vram detalhe: MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s 0.74 05/10/2026: -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap 24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly. Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K).'
+  phonon-40m-multilingual:
+    name: Phonon 40M Multilingual
+    description: "Phonon Multilingual is a 40M text-to-speech model from Gradium that speaks English, French, German, Spanish and Portuguese from one set of weights, built on a flow-matching language model over Mimi audio latents. Made for low-latency on-device speech, it streams audio as it generates and draws its voices from a shared multilingual catalog."
+    tags:
+      - tts
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: ${env.HOME}/.local/bin/ptts-openai-server --addr 127.0.0.1:${PORT} --model ${env.HOME}/.llama-models/audio/phonon-40m-multilingual --quant q8_0 --lang pt --device cpu --voice-catalog ${env.HOME}/.llama-models/audio/phonon-voices
+    cmdStop: pkill -f "ptts-openai-server.*phonon-40m-multilingual"
+    health_check_timeout: 120
+    ttl: 300
+    capabilities:
+      in:
+        - text
+      out:
+        - audio
+      tools: false
+      reranker: false
+      context: 0
+    metadata:
+      size: ~75 MB (q8_0)
+      context: 0
+      vram_usage: 0 (CPU-only)
+      source: gradium/phonon-40m-multilingual
+      kv_cache: n/a
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        tts: true
+        image: false
+      architecture: phonon
+      parameters: 40000000
+      context_length: 0
+      embedding_length: 0
+      quantization: q8_0
+      note: 'Variante multilingue do Phonon 40M (en/fr/de/es/pt num checkpoint so; mesmo runtime, mesmas 9 camadas de flow, Mimi 32d @12.5 fps, 24 kHz). Params reais 50.5M; "40M" e o nome comercial. Handle servido com --lang pt (normalizacao PT-BR): o idioma e flag de startup, entao servir ingles/alemao exigiria outro handle com --lang proprio. RTF medido 0.093 em CPU (5.44 s de audio em 0.51 s), 385 MB RSS, zero VRAM. Upstream gradium-ai/xn-ptts (Rust): binario em ~/.local/bin/ptts-openai-server (build CPU-only, repo apagado apos instalar); build CUDA inviavel (cudarc 0.19.9 vs CUDA 13.4). Licenca CC BY-NC 4.0.'
+      caveats:
+        - CC BY-NC 4.0 — uso nao comercial
+        - Servidor ptts-openai-server (Rust), nao llama-server nem audio.cpp
+        - Idioma fixo no startup (--lang pt) — as outras quatro linhas do modelo pedem handles proprios
+        - Sem clonagem de voz — checkpoint liberado traz so o decoder Mimi; vozes do catalogo
+  phonon-40m-pt:
+    name: Phonon 40M Portuguese
+    description: "Phonon is a 40M text-to-speech model from Gradium, built on a flow-matching language model over Mimi audio latents. Made for low-latency on-device Portuguese speech, it streams audio as it generates and carries twelve Brazilian Portuguese voices."
+    tags:
+      - tts
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: ${env.HOME}/.local/bin/ptts-openai-server --addr 127.0.0.1:${PORT} --model ${env.HOME}/.llama-models/audio/phonon-40m-pt --quant q8_0 --lang pt --device cpu --voice-catalog ${env.HOME}/.llama-models/audio/phonon-voices
+    cmdStop: pkill -f "ptts-openai-server.*phonon-40m-pt"
+    health_check_timeout: 120
+    ttl: 300
+    capabilities:
+      in:
+        - text
+      out:
+        - audio
+      tools: false
+      reranker: false
+      context: 0
+    metadata:
+      size: ~75 MB (q8_0)
+      context: 0
+      vram_usage: 0 (CPU-only)
+      source: gradium/phonon-40m-pt
+      kv_cache: n/a
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        tts: true
+        image: false
+      architecture: phonon
+      parameters: 40000000
+      context_length: 0
+      embedding_length: 0
+      quantization: q8_0
+      note: 'Gradium Phonon 40M (flow-matching LM 9 camadas d_model 512 -> latentes Mimi 32d @12.5 fps -> decoder Mimi -> 24 kHz). Params reais 50.5M (flow + Mimi decoder); "40M" e o nome comercial. Servido por ptts-openai-server (Rust, upstream gradium-ai/xn-ptts): binario instalado em ~/.local/bin/ptts-openai-server, build CPU-only; o repo clonado foi apagado depois do build (re-clonar p/ rebuild), NAO por audio.cpp: o checkpoint so traz decoder (sem encoder Mimi), entao o port pro audio.cpp exigiria conversor de voz e conditioners. Decisao CPU-only: build CUDA falha (cudarc 0.19.9 nao conhece CUDA 13.4) e o modelo nao precisa de GPU — medido RTF 0.095 (5.44 s de audio em 0.52 s) com 8 threads, 380 MB RSS, zero VRAM. Licenca CC BY-NC 4.0 (nao comercial). Vozes: catalogo gradium/phonon-voices copiado para ~/.llama-models/audio/phonon-voices (12 pt-br baixadas; o catalogo completo tem 102). Vocabulario SPM, tokenizer.json + tokenizer.model no dir do modelo.'
+      caveats:
+        - CC BY-NC 4.0 — uso nao comercial
+        - Servidor ptts-openai-server (Rust), nao llama-server nem audio.cpp
+        - Idioma fixo no startup (--lang pt); outro idioma exige outro handle com --lang diferente
+        - Sem clonagem de voz — o checkpoint liberado so traz o decoder Mimi; vozes vem do catalogo
   qwen3-tts:
     name: Qwen3-TTS 0.6B
     description: Qwen3 TTS is a text-to-speech model with voice cloning, served from the house voice library (Lucas, Hermes, Drácula, and more) via voice presets. OpenAI-compatible /v1/audio/speech endpoint.

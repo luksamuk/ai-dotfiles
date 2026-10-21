@@ -1,0 +1,46 @@
+phonon-40m-multilingual:
+  name: Phonon 40M Multilingual
+  description: "Phonon Multilingual is a 40M text-to-speech model from Gradium that speaks English, French, German, Spanish and Portuguese from one set of weights, built on a flow-matching language model over Mimi audio latents. Made for low-latency on-device speech, it streams audio as it generates and draws its voices from a shared multilingual catalog."
+  tags:
+  - tts
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: ${env.HOME}/.local/bin/ptts-openai-server --addr 127.0.0.1:${PORT} --model ${env.HOME}/.llama-models/audio/phonon-40m-multilingual --quant q8_0 --lang pt --device cpu --voice-catalog ${env.HOME}/.llama-models/audio/phonon-voices
+  cmdStop: pkill -f "ptts-openai-server.*phonon-40m-multilingual"
+  health_check_timeout: 120
+  ttl: 300
+  capabilities:
+    in:
+    - text
+    out:
+    - audio
+    tools: false
+    reranker: false
+    context: 0
+  metadata:
+    size: ~75 MB (q8_0)
+    context: 0
+    vram_usage: 0 (CPU-only)
+    source: gradium/phonon-40m-multilingual
+    kv_cache: n/a
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      tts: true
+      image: false
+    architecture: phonon
+    parameters: 40000000
+    context_length: 0
+    embedding_length: 0
+    quantization: q8_0
+    note: 'Variante multilingue do Phonon 40M (en/fr/de/es/pt num checkpoint so; mesmo runtime, mesmas 9 camadas de flow, Mimi 32d @12.5 fps, 24 kHz). Params reais 50.5M; "40M" e o nome comercial. Handle servido com --lang pt (normalizacao PT-BR): o idioma e flag de startup, entao servir ingles/alemao exigiria outro handle com --lang proprio. RTF medido 0.093 em CPU (5.44 s de audio em 0.51 s), 385 MB RSS, zero VRAM. Upstream gradium-ai/xn-ptts (Rust): binario em ~/.local/bin/ptts-openai-server (build CPU-only, repo apagado apos instalar); build CUDA inviavel (cudarc 0.19.9 vs CUDA 13.4). Licenca CC BY-NC 4.0.'
+    caveats:
+    - CC BY-NC 4.0 — uso nao comercial
+    - Servidor ptts-openai-server (Rust), nao llama-server nem audio.cpp
+    - Idioma fixo no startup (--lang pt) — as outras quatro linhas do modelo pedem handles proprios
+    - Sem clonagem de voz — checkpoint liberado traz so o decoder Mimi; vozes do catalogo
