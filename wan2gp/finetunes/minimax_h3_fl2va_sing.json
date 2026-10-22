@@ -1,0 +1,13 @@
+{
+ "model": {
+  "name": "MiniMax H3 FL2VA Singularity v1.3 int8 pruned (local)",
+  "architecture": "minimax_h3_fl2va_pruned",
+  "description": "Minimax-h3_Singularity (AIGC_Singularity fusao HDR/deblur/rosto-distante/de-oiled via WarmBloodAban, quant Abiray GGUF Q4_K_M 11.5GB local 08/10). Checkpoint UNICO cobre FL2VA e Ref2VA — shapes provadas identicas ao pruned (5376/7168/28672, 532 tensores, blocos 0-49). Bloqueios: sem --pdd/--w4a8 (heads distilados pro base). Forcas das LoRAs NSFW precisam revalidacao nesta massa.",
+  "URLs": [
+   "/home/alchemist/git/Wan2GP/ckpts/Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors"
+  ],
+  "text_encoder_variant": "gguf_q4_k_m"
+ },
+ "prompt": "A cinematic close-up of a jazz duo performing in a softly lit club. The singer delivers a warm, intimate line while the pianist answers with a gentle stereo flourish; natural lip motion, realistic room acoustics, subtle camera movement.",
+ "override_attention": "veda"
+}

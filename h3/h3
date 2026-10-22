@@ -77,8 +77,15 @@ NSFW_LORAS=()                       # lista de LoRAs NSFW (repeatable)
 NSFW_DEFAULT_LORAS=()
 declare -A NSFW_LORA_STRENGTHS=()   # strengths agora vêm do catálogo (strength_autor)
 NSFW_AVAILABLE_LORAS=""   # populado do catálogo
-NSFW_CATALOG_JSON="${NSFW_CATALOG_JSON:-$HOME/.local/share/h3/nsfw_catalog_h3.json}"
+# 21/out: catalogo unificado (schema do diffuse: nsfw + compat), gerado do DISCO.
+# Os leitores antigos (rerank/build/resolve) leem os mesmos campos e ignoram os novos.
+# O nsfw_catalog_h3.json antigo fica como registro da curadoria (43 entradas, 40 fantasmas).
+NSFW_CATALOG_JSON="${NSFW_CATALOG_JSON:-$HOME/.local/share/h3/loras_minimax_h3.json}"
 NSFW_RESOLVER="${NSFW_RESOLVER:-$HOME/.local/share/h3/nsfw_lora_resolve.py}"
+# ── Seletor de LoRA (21/out/2026, herda a config do diffuse) ──
+# vazio = resolve do ~/.local/share/fleet/enhance-models.yaml (secao `h3`)
+LORA_SELECTOR=""; DECISION_MODEL=""; DECISION_THRESHOLD=""; DECISION_MAX=""
+LORA_SELECT=true       # DEFAULT (22/out): seletor roda sempre, espelhando o diffuse. --no-lora-select desliga
 FORCE_NSFW_LORA_IDS=""   # --force-nsfw-loras "1,2,3"
 
 # Turbo LoRA (destilação — reduz 80 steps pra 4-8)
@@ -119,7 +126,7 @@ LORA_MULTS=()
 # Substitui o turbo LoRA: heads no ckpts/ + LoRA auxiliar carregado pelo model def.
 PDD=false
 W4A8=false
-SINGULARITY=false   # --singularity: fusao Minimax-h3_Singularity (AIGC_Singularity, GGUF Q4_K_M Abiray 11.5GB)
+SINGULARITY=true    # DEFAULT: base = Minimax-h3_Singularity v1.3 pruned int8 (22/out). --no-singularity volta pra FL2VA rank8 antiga
 
 # Character Swap LoRA (akatz-ai, caso fixo especial de Ref2VA — 11/out):
 # troca UM personagem do --ref-video pela identidade da --ref-img.
@@ -259,11 +266,10 @@ while [[ $# -gt 0 ]]; do
       fi
       NSFW_LORAS+=("$RESOLVED"); shift 2 ;;
     --nsfw-strength) NSFW=true; NSFW_OVERRIDE_STRENGTH="$2"; shift 2 ;;  # sobrescreve todas
-    --turbo) echo "Aviso: --turbo IGNORADO — nao existe aceleradora compativel com a geometria rank8 (heads 32/96). Rode sem turbo e controle por --steps (12 = rapido, 50 = entrega)." >&2; TURBO=false; shift ;;
+    --turbo|--turbo-strength|--turbo-file|--sidney|--nafasp|--no-nafasp|--nafasp-strength|--nafasp-file) echo "Erro: flag removida. Nao existe aceleradora compativel com a geometria rank8, e a escolha de LoRA agora e do seletor: use --lora-select ou --lora NOME@FORCA." >&2; exit 1 ;;
     --singularity) SINGULARITY=true; shift ;;
+    --no-singularity) SINGULARITY=false; shift ;;   # fallback: base FL2VA rank8 antiga (Ref2VA antiga apagada 22/out)
     --profile) H3_PROFILE="$2"; shift 2 ;;
-    --turbo-strength) echo "Aviso: --turbo-strength ignorado (sem aceleradora para a geometria rank8)." >&2; shift 2 ;;
-    --turbo-file) echo "Aviso: --turbo-file ignorado — nenhuma aceleradora publicada aceita a geometria rank8 (heads 32/96). Use --steps." >&2; shift 2 ;;
     --output|-o|--output-dir)
       case "$2" in
         /*) OUTPUT_DIR="$(readlink -m "$2")" ;;
@@ -273,17 +279,18 @@ while [[ $# -gt 0 ]]; do
     --facial) FACIAL=true; shift ;;
     --facial-strength) FACIAL=true; FACIAL_STRENGTH="$2"; shift 2 ;;
     --facial-file) FACIAL=true; FACIAL_FILE_OVERRIDE="$2"; shift 2 ;;
-    --sidney) SIDNEY=true; shift ;;  # easter egg: ator de referência (MM-H3 Sydney Sweeney)
-    --no-nafasp) NAFASP=false; shift ;;
-    --nafasp) NAFASP=true; shift ;;
-    --nafasp-strength) NAFASP=true; NAFASP_STRENGTH="$2"; shift 2 ;;
-    --nafasp-file) NAFASP=true; NAFASP_FILE_OVERRIDE="$2"; shift 2 ;;
     --lora) LORA_RAW+=("$2"); shift 2 ;;
     --list-loras) LIST_LORAS=true; shift ;;
     --pdd) PDD=true; shift ;;
     --2p|--two-phase) echo "Erro: --2p foi REMOVIDO em 21/out/2026 (user: nunca deu resultado bom). Gere em fase unica; se der OOM, baixe resolucao." >&2; exit 1 ;;
     --veda) VEDA=true; shift ;;
     --no-veda) VEDA=false; shift ;;
+    --lora-select) LORA_SELECT=true; shift ;;
+    --no-lora-select) LORA_SELECTOR="none"; shift ;;
+    --lora-selector) LORA_SELECTOR="$2"; shift 2 ;;
+    --decision-model) DECISION_MODEL="$2"; shift 2 ;;
+    --decision-threshold) DECISION_THRESHOLD="$2"; shift 2 ;;
+    --decision-max) DECISION_MAX="$2"; shift 2 ;;
     --w4a8) W4A8=true; shift ;;
     --replace)
       REPLACE=true; shift ;;
@@ -371,21 +378,11 @@ Opções gerais:
   --no-veda           Desliga o Veda. ATENCAO: a lane sem Veda era o GGUF Q4_K, que
                      foi apagado em 21/out — hoje falha no pre-flight ate baixar o
                      int8 rank64 (20,6 GiB, geometria de heads diferente).
-  --turbo             DESATIVADO. Nenhuma aceleradora publicada aceita a geometria
-                     rank8 (heads 32/96): as Kijai Acc-8Step e as lightx2v 768p
-                     miram o rank64 (heads 1024/3072) e falham no load. A flag e
-                     ignorada com aviso; controle a velocidade por --steps
-                     (12 = rascunho ~8min / 50 = entrega ~24min).
-  --sidney            Sidney Sweeney.
   --facial            Ativa LoRA Facial Realism (close-up de rosto: poros, textura
                      de pele, micro-expressões). Empilha com as LoRAs de estilo.
                      "Facial Realism" é injetada no prompt automaticamente
   --facial-strength N Força do LoRA Facial (default: 1.0, range 0.1-1.0)
   --facial-file NOME  Override do arquivo do LoRA Facial
-  --nafasp            ATIVA o LoRA NAFASP (fala natural + dinâmica facial, @0.6).
-                      OFF por padrão (02/out — suspeita de interferência nos renders)
-  --nafasp-strength N Força do NAFASP (default: 0.6, card recomenda 0.4-0.8)
-  --nafasp-file NOME  Override do arquivo do LoRA NAFASP
   --lora NOME[@FORÇA] Carrega qualquer LoRA (repeatable; aceita apelidos didáticos,
                      ex: --lora nafasp@0.6 --lora grindtime@0.5)
   --list-loras        Lista LoRAs disponíveis com descrições e sai
@@ -726,7 +723,10 @@ if [[ "$VEDA" == true ]]; then
   if [[ "$PDD" == true ]]; then
     echo "Erro: --veda e --pdd nao se combinam." >&2; exit 1
   fi
-  if [[ "$REF2VA_MODE" == true ]]; then
+  if [[ "$SINGULARITY" == true ]]; then
+    MODEL_FILE="$CKPTS_DIR/Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors"
+    if [[ "$REF2VA_MODE" == true ]]; then MODEL_TYPE="minimax_h3_ref2va_sing"; else MODEL_TYPE="minimax_h3_fl2va_sing"; fi
+  elif [[ "$REF2VA_MODE" == true ]]; then
     MODEL_TYPE="minimax_h3_ref2va_veda_local"
     MODEL_FILE="$CKPTS_DIR/MiniMax-H3-Ref2VA-pruned_rank8_int8_convrot.safetensors"
   else
@@ -814,7 +814,10 @@ fi
 # pre-flight passar; o bloco de modalidade reescreve MODEL_TYPE depois, entao a
 # atribuicao final precisa vir aqui.
 if [[ "$VEDA" == true ]]; then
-  if [[ "$REF2VA_MODE" == true ]]; then MODEL_TYPE="minimax_h3_ref2va_veda_local"
+  if [[ "$SINGULARITY" == true ]]; then
+    if [[ "$REF2VA_MODE" == true ]]; then MODEL_TYPE="minimax_h3_ref2va_sing"
+    else MODEL_TYPE="minimax_h3_fl2va_sing"; fi
+  elif [[ "$REF2VA_MODE" == true ]]; then MODEL_TYPE="minimax_h3_ref2va_veda_local"
   else MODEL_TYPE="minimax_h3_fl2va_veda_local"; fi
 fi
 
@@ -1682,6 +1685,45 @@ if [[ "$SIDNEY" == true ]]; then
     SIDNEY_DISPLAY="=== Sidney Sweeney: LoRA de ator injetado @0.8 ==="
     echo "$SIDNEY_DISPLAY"
   fi
+fi
+
+# ── Seleção de LoRA por modelo de decisão (21/out) ────────────────────────
+# Roda quando --nsfw (legado) OU --lora-select. Precedência:
+#   --lora explícita  >  --force-nsfw-loras  >  seletor
+if [[ -z "$LORA_SELECTOR" ]]; then
+  IFS='|' read -r LORA_SELECTOR DECISION_MODEL DECISION_THRESHOLD DECISION_MAX < <(python3 -c "
+import yaml, os
+try:
+    c = (yaml.safe_load(open(os.path.expanduser('~/.local/share/fleet/enhance-models.yaml'))) or {}).get('h3') or {}
+    print('|'.join(str(c.get(k, d)) for k, d in
+          (('lora_selector','decision'),('decision_model','d1-3b'),
+           ('decision_threshold',0.5),('decision_max',4))))
+except Exception:
+    print('decision|d1-3b|0.5|4')
+" 2>/dev/null)
+  LORA_SELECTOR="${LORA_SELECTOR:-decision}"; DECISION_MODEL="${DECISION_MODEL:-d1-3b}"
+  DECISION_THRESHOLD="${DECISION_THRESHOLD:-0.5}"; DECISION_MAX="${DECISION_MAX:-4}"
+fi
+
+if { [[ "$LORA_SELECT" == true ]] || [[ "$NSFW" == true ]]; } \
+   && [[ "$LORA_SELECTOR" != "none" ]] \
+   && [[ -z "${FORCE_NSFW_LORA_IDS:-}" ]] \
+   && [[ "$LORAS_JSON" == "[]" ]]; then
+  SEL_IN=$(mktemp /tmp/h3_selin_XXXX.txt); SEL_OUT=$(mktemp /tmp/h3_selout_XXXX.json)
+  printf '%s' "$PROMPT" > "$SEL_IN"
+  ARGS=(--prompt-file "$SEL_IN" --out "$SEL_OUT" --selector "$LORA_SELECTOR"
+        --decision-model "$DECISION_MODEL" --threshold "$DECISION_THRESHOLD"
+        --max "$DECISION_MAX")
+  [[ "$NSFW" == true ]] && ARGS+=(--nsfw)
+  [[ -n "${NSFW_RUN_MODALITY:-}" ]] && ARGS+=(--modality "$NSFW_RUN_MODALITY")
+  echo "=== Seletor de LoRA: $LORA_SELECTOR ($DECISION_MODEL, corte $DECISION_THRESHOLD, teto $DECISION_MAX) ==="
+  python3 "$HOME/.local/share/h3/lora_select_cli.py" "${ARGS[@]}" || echo "Aviso: seletor falhou; seguindo base"
+  if [[ -s "$SEL_OUT" ]]; then
+    PROMPT=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['prompt'])" "$SEL_OUT" 2>/dev/null) || PROMPT="$PROMPT"
+    LORAS_JSON=$(python3 -c "import json,sys;print(json.dumps(json.load(open(sys.argv[1]))['loras']))" "$SEL_OUT" 2>/dev/null) || LORAS_JSON="[]"
+    LORAS_MULTS_JSON=$(python3 -c "import json,sys;print(json.dumps(json.load(open(sys.argv[1]))['mults']))" "$SEL_OUT" 2>/dev/null) || LORAS_MULTS_JSON="[]"
+  fi
+  rm -f "$SEL_IN" "$SEL_OUT"
 fi
 
 if [[ "$NAFASP" == true && "$FACIAL" == true ]]; then
