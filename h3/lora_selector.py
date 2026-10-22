@@ -156,11 +156,25 @@ def _decision_select(prompt: str, entries, cfg: SelectorCfg):
     }).encode("utf-8")
     req = urllib.request.Request(f"{LLAMA_SWAP_URL}/v1/systemone", data=payload,
                                  headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=240) as r:
-            answers = (json.loads(r.read()) or {}).get("answers") or {}
-    except Exception as e:
-        print(f"  [warn] seletor decision indisponível ({e}); rodando base sem LoRA")
+    # retry: o d1 pode estar sendo carregado ou evicted durante um render na GPU.
+    # Sem isso, um 500 transitorio derrubava a selecao e o run seguia SEM LoRA nenhuma
+    # (silencioso: num NSFW perde a identidade inteira).
+    answers, ultimo_erro = None, None
+    for tentativa, espera in enumerate((0, 8, 25, 60), 1):
+        if espera:
+            time.sleep(espera)
+        try:
+            with urllib.request.urlopen(req, timeout=240) as r:
+                answers = (json.loads(r.read()) or {}).get("answers") or {}
+            if tentativa > 1:
+                print(f"  [seletor] decision respondeu na tentativa {tentativa}")
+            break
+        except Exception as e:
+            ultimo_erro = e
+            print(f"  [seletor] tentativa {tentativa} falhou: {e}")
+    if answers is None:
+        print(f"  [warn] seletor decision indisponivel apos 4 tentativas ({ultimo_erro}); "
+              f"rodando base SEM LoRA — selecione manualmente com --lora se for NSFW")
         return [], None
     scores = {}
     for k, v in answers.items():
