@@ -91,14 +91,15 @@ FORCE_NSFW_LORA_IDS=""   # --force-nsfw-loras "1,2,3"
 # Turbo LoRA (destilação — reduz 80 steps pra 4-8)
 # Usar versão ComfyUI-pruned (compatível com Wan2GP). A versão diffusers original
 # tem keys diferentes (transformer_blocks/token_refiner) que o Wan2GP não reconhece.
-TURBO=false
-TURBO_STEPS=8                       # 8 (o ref2v lightx2v v1.0 é treinado p/ 8 steps, shift 6)
+TURBO=true                  # DEFAULT (22/out): turbo resized rank_21, 4 steps, roda com int8+Veda (3m07s). --no-turbo desliga
+TURBO_STEPS=4                       # 4-step resized rank_21 (FL2VA/T2V). Ref2VA usa 8 (ref2v v1.0)
 H3_PROFILE=5                        # Profile Wan2GP (5=VeryLowRAM_LowVRAM block-by-block; 4=grupos maiores, 2=RAM cache)
 SIDNEY=false
 SIDNEY_FILE="MM-H3 - Sydney Sweeney.safetensors"  # easter egg: ator de referência
 TURBO_STRENGTH="0.5"                # 0.5 = default do Wan2GP ("1.0 seems too strong" — docs/CHANGELOG.md). Decreto user 21/out: usar SEMPRE o recomendado
 # Único turbo compatível com o pruned Q4 (full-rank = MOSAICO — doutrina 30/09):
-TURBO_FILE="MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors"
+TURBO_FILE_OVERRIDE=""
+TURBO_FILE="minimax_h3_fl2v_turbo_8step_v1.1_768p_bf16.safetensors"   # lightx2v: LoRA pura, carrega na geometria pruned
 
 # Facial Realism LoRA (close-up de rosto — textura de pele, micro-expressões)
 # prithivMLmods/MiniMax-H3-Facial-Realism-CloseUp, cp2000, rank 16, trigger "Facial Realism"
@@ -126,7 +127,7 @@ LORA_MULTS=()
 # Substitui o turbo LoRA: heads no ckpts/ + LoRA auxiliar carregado pelo model def.
 PDD=false
 W4A8=false
-SINGULARITY=true    # DEFAULT: base = Minimax-h3_Singularity v1.3 pruned int8 (22/out). --no-singularity volta pra FL2VA rank8 antiga
+SINGULARITY=false   # base FL2VA rank8 (default). Singularity APAGADA 22/out: atenuava LoRA de identidade
 
 # Character Swap LoRA (akatz-ai, caso fixo especial de Ref2VA — 11/out):
 # troca UM personagem do --ref-video pela identidade da --ref-img.
@@ -231,7 +232,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --frames) FRAMES="$2"; FRAMES_SET=true; shift 2 ;;
     --seconds) SECONDS_WANT="$2"; FRAMES_SET=true; shift 2 ;;
-    --steps)  STEPS="$2"; shift 2 ;;
+    --steps)  STEPS="$2"; STEPS_SET=true; shift 2 ;;
     --seed)   SEED="$2"; shift 2 ;;
     --guidance) GUIDANCE="$2"; shift 2 ;;
     --flow-shift) FLOW_SHIFT="$2"; FLOW_SHIFT_SET=true; shift 2 ;;
@@ -266,8 +267,12 @@ while [[ $# -gt 0 ]]; do
       fi
       NSFW_LORAS+=("$RESOLVED"); shift 2 ;;
     --nsfw-strength) NSFW=true; NSFW_OVERRIDE_STRENGTH="$2"; shift 2 ;;  # sobrescreve todas
-    --turbo|--turbo-strength|--turbo-file|--sidney|--nafasp|--no-nafasp|--nafasp-strength|--nafasp-file) echo "Erro: flag removida. Nao existe aceleradora compativel com a geometria rank8, e a escolha de LoRA agora e do seletor: use --lora-select ou --lora NOME@FORCA." >&2; exit 1 ;;
-    --singularity) SINGULARITY=true; shift ;;
+    --sidney|--nafasp|--no-nafasp|--nafasp-strength|--nafasp-file) echo "Erro: flag removida. Nao existe aceleradora compativel com a geometria rank8, e a escolha de LoRA agora e do seletor: use --lora-select ou --lora NOME@FORCA." >&2; exit 1 ;;
+    --singularity) echo "Erro: Singularity foi apagado em 22/out (atenua LoRA de identidade). Re-baixe de WarmBloodAban/Minimax-h3_Singularity se precisar." >&2; exit 1 ;;
+    --turbo) TURBO=true; shift ;;   # turbo resized rank_21: compativel com int8+Veda (medido 22/out, 3m07s)
+    --no-turbo) TURBO=false; shift ;;
+    --turbo-strength) TURBO_STRENGTH="$2"; shift 2 ;;
+    --turbo-file) TURBO_FILE_OVERRIDE="$2"; TURBO=true; shift 2 ;;
     --no-singularity) SINGULARITY=false; shift ;;   # fallback: base FL2VA rank8 antiga (Ref2VA antiga apagada 22/out)
     --profile) H3_PROFILE="$2"; shift 2 ;;
     --output|-o|--output-dir)
@@ -1691,6 +1696,7 @@ fi
 # Roda quando --nsfw (legado) OU --lora-select. Precedência:
 #   --lora explícita  >  --force-nsfw-loras  >  seletor
 if [[ -z "$LORA_SELECTOR" ]]; then
+  _MOD_CLI="$DECISION_MODEL"; _THR_CLI="$DECISION_THRESHOLD"; _MAX_CLI="$DECISION_MAX"
   IFS='|' read -r LORA_SELECTOR DECISION_MODEL DECISION_THRESHOLD DECISION_MAX < <(python3 -c "
 import yaml, os
 try:
@@ -1701,8 +1707,10 @@ try:
 except Exception:
     print('decision|d1-3b|0.5|4')
 " 2>/dev/null)
-  LORA_SELECTOR="${LORA_SELECTOR:-decision}"; DECISION_MODEL="${DECISION_MODEL:-d1-3b}"
-  DECISION_THRESHOLD="${DECISION_THRESHOLD:-0.5}"; DECISION_MAX="${DECISION_MAX:-4}"
+  LORA_SELECTOR="${LORA_SELECTOR:-decision}"
+  DECISION_MODEL="${_MOD_CLI:-${DECISION_MODEL:-d1-3b}}"
+  DECISION_THRESHOLD="${_THR_CLI:-${DECISION_THRESHOLD:-0.5}}"
+  DECISION_MAX="${_MAX_CLI:-${DECISION_MAX:-4}}"   # CLI vence o config (era sobrescrito)
 fi
 
 if { [[ "$LORA_SELECT" == true ]] || [[ "$NSFW" == true ]]; } \
@@ -1776,9 +1784,9 @@ if [[ "$TURBO" == true ]]; then
     # Sao as unicas feitas PARA a base pruned (sufixo _pruned_) e fixam 8 steps.
     # As 4-step e as lightx2v full-rank 768p foram apagadas do disco.
     if [[ "$REF2VA_MODE" == true ]]; then
-      TURBO_FILE="MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors"
+      TURBO_FILE="minimax_h3_ref2v_turbo_8step_v1.1_768p_bf16.safetensors"; TURBO_STEPS=8
     else
-      TURBO_FILE="MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors"
+      TURBO_FILE="minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors"; TURBO_STEPS=4
     fi
   else
     TURBO_FILE="$TURBO_FILE_OVERRIDE"
@@ -1791,9 +1799,8 @@ if [[ "$TURBO" == true ]]; then
   fi
   # Turbo requer 4-8 steps — auto por modalidade (ref2v8=8/shift6, PDMD fl2v=4/shift12;
   # PDMD suporta 6-8 com margem — "possibly more" —, v1.2 era steps-locked e saiu) se não setado
-  if [[ "$STEPS" == "50" ]]; then
-    if [[ "$REF2VA_MODE" == true ]]; then STEPS=8; else STEPS=8; fi   # 8 fixo nas DUAS lanes (21/out/2026)
-  fi
+  if [[ "${STEPS_SET:-false}" != "true" ]]; then STEPS="${TURBO_STEPS:-4}"
+  else echo "=== Turbo: respeitando --steps $STEPS (a LoRA destilada rende menos fora do budget)" >&2; fi
   if [[ "$FLOW_SHIFT_SET" != "true" ]]; then
     if [[ "$REF2VA_MODE" == true ]]; then FLOW_SHIFT=6.0; else FLOW_SHIFT=12.0; fi
   fi
