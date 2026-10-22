@@ -23,7 +23,7 @@ WAN2GP_DIR="$HOME/git/Wan2GP"
 VENV="$WAN2GP_DIR/.venv"
 # Output padrão = ~/v (decreto user 21/out/2026: "concentrar tudo em ~/v, não ficar coisa espalhada").
 # --output continua sobrescrevendo; H3_OUTPUT_DIR troca o default sem editar o script.
-OUTPUT_DIR="${H3_OUTPUT_DIR:-$HOME/v}"
+OUTPUT_DIR="${H3_OUTPUT_DIR:-$PWD}"   # default: pasta onde voce rodou (era ~/v; trocado 22/out a pedido)
 LLAMA_SWAP_URL="http://localhost:12434/v1/chat/completions"
 OLLAMA_URL="http://localhost:11434/v1/chat/completions"
 
