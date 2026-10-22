@@ -143,7 +143,7 @@ def _decision_select(prompt: str, entries, cfg: SelectorCfg):
     questions = {}
     for e in entries:
         nome = e["safetensors"].replace(".safetensors", "")
-        desc = (e.get("desc_llm") or "").replace("\n", " ")[:160]
+        desc = (e.get("desc_llm") or "").replace("\n", " ")[:400]  # 400: clausula de escopo no fim tem que caber (era 160 e cortava)
         questions[f"lora_{e['id']}"] = {
             "type": "noul",
             "instructions": f"This LoRA applies and should be used for the request: "
@@ -289,12 +289,12 @@ def _rerank_block(prompt: str, entries, root: str, modality: str = ""):
         print(f"  [warn] rerank falhou (rc={r.returncode}); catálogo completo")
         return "\n".join(f"{e['id']}. [{e.get('categoria','')}] "
                          f"{e['safetensors'].replace('.safetensors','')}: "
-                         f"{(e.get('desc_llm') or '')[:150]}" for e in entries)
+                         f"{(e.get('desc_llm') or '')[:400]}" for e in entries)
     except Exception as e:
         print(f"  [warn] rerank indisponível ({e}); catálogo completo")
         return "\n".join(f"{e['id']}. [{e.get('categoria','')}] "
                          f"{e['safetensors'].replace('.safetensors','')}: "
-                         f"{(e.get('desc_llm') or '')[:150]}" for e in entries)
+                         f"{(e.get('desc_llm') or '')[:400]}" for e in entries)
     finally:
         try:
             os.unlink(tmp)
