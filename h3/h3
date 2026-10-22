@@ -269,7 +269,7 @@ while [[ $# -gt 0 ]]; do
     --nsfw-strength) NSFW=true; NSFW_OVERRIDE_STRENGTH="$2"; shift 2 ;;  # sobrescreve todas
     --sidney|--nafasp|--no-nafasp|--nafasp-strength|--nafasp-file) echo "Erro: flag removida. Nao existe aceleradora compativel com a geometria rank8, e a escolha de LoRA agora e do seletor: use --lora-select ou --lora NOME@FORCA." >&2; exit 1 ;;
     --singularity) echo "Erro: Singularity foi apagado em 22/out (atenua LoRA de identidade). Re-baixe de WarmBloodAban/Minimax-h3_Singularity se precisar." >&2; exit 1 ;;
-    --turbo) TURBO=true; shift ;;   # turbo resized rank_21: compativel com int8+Veda (medido 22/out, 3m07s)
+    --turbo) TURBO=true; TURBO_EXPLICIT=true; shift ;;   # turbo resized rank_21: compativel com int8+Veda (medido 22/out, 3m07s)
     --no-turbo) TURBO=false; shift ;;
     --turbo-strength) TURBO_STRENGTH="$2"; shift 2 ;;
     --turbo-file) TURBO_FILE_OVERRIDE="$2"; TURBO=true; shift 2 ;;
@@ -1772,6 +1772,10 @@ if [[ "$REPLACE" == true ]]; then
 fi
 
 # ── Turbo: validar e forçar steps ─────────────────────────────────────────
+if [[ "$TURBO" == true && "$REF2VA_MODE" == true && "${TURBO_EXPLICIT:-false}" != "true" ]]; then
+  TURBO=false
+  echo "=== Turbo: desligado em Ref2VA (nao ha aceleradora resized rank_21 pra ref2v; use --turbo-file ou 30 steps)" >&2
+fi
 if [[ "$TURBO" == true ]]; then
   # Auto-seleção por modo (2026-08-28): Ref2VA usa o LoRA 4-step v0.1 (único Ref2VA
   # da família); FL2VA/T2V usam o FL2V 8-step v1.0 (lightx2v, treinado p/ 8 steps,
