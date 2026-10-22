@@ -218,4 +218,21 @@ MODELS: dict[str, dict] = {
             {"name": "flux2_small_decoder_bf16.safetensors (VAE)", "path": "Wan2GP/ckpts/moss_image/flux2_small_decoder_bf16.safetensors", "size_gb": 0.06},
         ],
     },
+    "moss-imagine": {
+        "backend_id": "moss-imagine-wan2gp",
+        "dir": "moss-imagine",
+        "backend_type": "moss_wan2gp",
+        "lora_root": "moss_image",
+        "category": "image",
+        "bits": "INT8 ConvRot (realrebelai, merge rank-32 sobre o SFT)",
+        "description": "MOSS-Imagine — adaptacao do SFT com dataset gerado pelo Grok Imagine (look fotografico/cinematografico/editorial), mesma arch/TE/VAE/pipeline do SFT; tensores bf16 bit-identicos ao SFT da casa, qkv fundido (layout Comfy-Org), via Wan2GP",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_type": "moss",
+        "default_size": (1024, 1024),
+        "components": [
+            {"name": "moss_imagine_int8_convrot.safetensors (DiT)", "path": "Wan2GP/ckpts/moss_imagine_int8_convrot.safetensors", "size_gb": 5.41},
+            {"name": "qwen3_5_9b_text_int8_convrot.safetensors (text encoder)", "path": "Wan2GP/ckpts/Qwen3.5-9B/qwen3_5_9b_text_int8_convrot.safetensors", "size_gb": 8.96},
+            {"name": "flux2_small_decoder_bf16.safetensors (VAE)", "path": "Wan2GP/ckpts/moss_image/flux2_small_decoder_bf16.safetensors", "size_gb": 0.06},
+        ],
+    },
 }

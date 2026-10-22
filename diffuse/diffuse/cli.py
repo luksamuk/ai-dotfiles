@@ -128,6 +128,8 @@ def print_list() -> None:
                 return (wgp / "moss_image_base_int8_convrot.safetensors").exists()
             if info.get("dir") == "moss-image-kromoss":
                 return (wgp / "kromoss_int8_convrot.safetensors").exists()
+            if info.get("dir") == "moss-imagine":
+                return (wgp / "moss_imagine_int8_convrot.safetensors").exists()
             return (wgp / "moss_image_sft_int8_convrot.safetensors").exists()
         elif backend == "qwen21_turbo_wan2gp":
             wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
@@ -1125,6 +1127,7 @@ def _run_moss_wan2gp_image(
     # moss_image_sft (def do DDM); kromoss = variant local (defaults criado pela casa).
     variant = ("moss_image" if model_name == "moss-image-base"
                else "moss_image_kromoss" if model_name == "moss-image-kromoss"
+               else "moss_image_imagine" if model_name == "moss-imagine"
                else "moss_image_sft")
     steps = args.steps if args.steps is not None else 50
     guidance = args.cfg if args.cfg is not None else 3.0
@@ -1149,6 +1152,8 @@ def _run_moss_wan2gp_image(
             "moss_image": ("moss_dmd_8step_base.safetensors", "DMD-Base 8-step"),
             "moss_image_kromoss": ("moss_dmd_8step_base.safetensors",
                                    "DMD-Base 8-step (a LoRA que o proprio card do Kromoss embarca, sha f0e6cd07)"),
+            "moss_image_imagine": ("moss_dmd_8step.safetensors",
+                                   "DMD-SFT 8-step (Imagine e derivada do SFT; compat do merge rank-32 = probe)"),
         }
         _dmd_file, _dmd_label = _dmd_native[variant]
         if "<lora:moss_dmd_8step:" in prompt or "<lora:moss_dmd_8step_base:" in prompt:
@@ -1165,7 +1170,8 @@ def _run_moss_wan2gp_image(
             negative = None  # cfg 1.0: negative é no-op
         print(f"     TURBO: {_dmd_label} LoRA @1.0 (cfg {guidance}, {steps} steps)")
 
-    label = {"moss_image": "Base", "moss_image_kromoss": "Kromoss"}.get(variant, "SFT")
+    label = {"moss_image": "Base", "moss_image_kromoss": "Kromoss",
+             "moss_image_imagine": "Imagine"}.get(variant, "SFT")
     print(f"  \U0001f5bc\ufe0f MOSS-Image {label} T2I")
     print(f"     {width}x{height}, {steps} steps, cfg={guidance}, shift=5, seed={seed}")
     if args.nsfw:
@@ -1188,7 +1194,7 @@ def _run_moss_wan2gp_image(
     # (base/sft: proj.q/k/v separados; kromoss: qkv fundido — keymap do wgp cobre,
     # provado no V-MOSS; o compat por variante fica pronto pra quando discriminar)
     _variant_moss = {"moss-image": "sft", "moss-image-base": "base",
-                     "moss-image-kromoss": "kromoss"}.get(model_name, "*")
+                     "moss-image-kromoss": "kromoss", "moss-imagine": "imagine"}.get(model_name, "*")
     if args.enhance or args.enhance_with:
         enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
         print(f"\n  ✨ Enhancing prompt via {enhance_model} (moss doctrine)...")
