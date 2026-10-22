@@ -740,7 +740,6 @@ if [[ "$VEDA" == true ]]; then
   fi
   TEXT_ENCODER="$CKPTS_DIR/Qwen3-VL-32B-Instruct/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf"
   AUDIO_VAE="$CKPTS_DIR/MiniMax-H3-audio_vae_fp32.safetensors"
-  [[ "$TURBO" == true ]] && echo "Aviso: --veda + --turbo nao e o recomendado pelo upstream (use os defaults da variante primeiro)."
 fi
 
 for f in "$MODEL_FILE" "$TEXT_ENCODER" "$VIDEO_VAE" "$AUDIO_VAE"; do
