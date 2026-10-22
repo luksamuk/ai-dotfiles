@@ -1630,8 +1630,15 @@ if [[ "$NSFW" == true ]]; then
     NSFW_PREFIX="${NSFW_PREFIX},"
   fi
   if [[ -n "$NSFW_PREFIX" ]]; then
-    PROMPT="$NSFW_PREFIX $PROMPT"
-    echo "=== Trigger words injetadas: ${NSFW_PREFIX%,} ==="
+    # idempotente: dois caminhos (LLM e decision) podem resolver o mesmo trigger;
+    # sem isso o prompt saia com a frase duplicada na frente ("She is x. she is x.,")
+    _tr_puro="${NSFW_PREFIX%,}"
+    if echo "$PROMPT" | grep -qiF "$_tr_puro"; then
+      echo "=== Trigger words: ja presentes no prompt (sem duplicar) ==="
+    else
+      PROMPT="$NSFW_PREFIX $PROMPT"
+      echo "=== Trigger words injetadas: ${NSFW_PREFIX%,} ==="
+    fi
   else
     echo "=== Trigger words: nenhuma LoRA resolvida com trigger hard-token ==="
   fi
