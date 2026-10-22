@@ -1643,6 +1643,25 @@ if [[ "$NSFW" == true ]]; then
     NSFW_RESOLVED_TRIGGERS="$(echo "$_tr_dedup" | tr '\n' ' ')"
     unset _tr_dedup
   fi
+  # Dedupe da STRING (nao so do array): o caminho do decision escreve direto aqui, e o
+  # token repetido virava prefixo "hmotion hmotion ," (espaco antes da virgula = assinatura).
+  if [[ -n "$NSFW_RESOLVED_TRIGGERS" ]]; then
+    NSFW_RESOLVED_TRIGGERS=$(T="$NSFW_RESOLVED_TRIGGERS" python3 -c '
+import os
+s = os.environ["T"]
+partes = [p.strip() for p in s.split(",") if p.strip()]
+vistos, out = set(), []
+for p in partes:
+    w = p.split()
+    metade = len(w) // 2
+    if metade and w[:metade] == w[metade:]:   # "hmotion hmotion" -> "hmotion"
+        p = " ".join(w[:metade])
+    if p.lower() in vistos:
+        continue
+    vistos.add(p.lower()); out.append(p)
+print(", ".join(out))
+' 2>/dev/null)
+  fi
   NSFW_PREFIX=""
   if [[ -n "$NSFW_RESOLVED_TRIGGERS" ]]; then
     NSFW_PREFIX="$(echo "$NSFW_RESOLVED_TRIGGERS" | tr '[:upper:]' '[:lower:]' | sed 's/  */ /g; s/^ *, *//; s/ *, *$//')"
