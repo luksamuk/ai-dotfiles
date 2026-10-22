@@ -6,7 +6,7 @@ bonsai2-9b-fast:
   - thinking
   proxy: http://127.0.0.1:${PORT}
   checkEndpoint: /health
-  cmd: '${env.HOME}/git/bonsai-llama.cpp-prism/build/bin/llama-server
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
 
     --port ${PORT}
 
@@ -16,14 +16,12 @@ bonsai2-9b-fast:
 
     --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf --no-mmproj-offload
 
-    --lora-scaled ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-Uncensored-LoRA.gguf:1
-
-    -ngl 99 -c 32768 -fa on -ctk q8_0 -ctv q8_0
+    -ngl 99 -c 65536 -fa on -ctk q4_0 -ctv q4_0 -b 512 -ub 128
 
     --host 127.0.0.1 --jinja
 
     '
-  cmdStop: pkill -f 'Bonsai-2-9B-PQ2_0-MTP'
+  cmdStop: pkill -f 'cafe-llama.cpp/build/bin/llama-server.*Bonsai-2-9B-PQ2_0-MTP'
   health_check_timeout: 120
   ttl: 1800
   capabilities:
@@ -34,13 +32,13 @@ bonsai2-9b-fast:
     - text
     tools: true
     reranker: false
-    context: 32768
+    context: 65536
   metadata:
     size: 2.68 GB DiT (PQ2_0-MTP-Q8_0, draft head embutido) + 0.62 GB mmproj Q8_0
-    context: 32768
-    vram_usage: ~3.4-5.6 GB total c/ desktop (ngl 99; rs-cache MTP 603 MB)
+    context: 65536
+    vram_usage: pico medido 4905 MiB = 79,8% da 3050 (MTP2 @64K, KV q4_0)
     source: prism-ml/Ternary-Bonsai-2-9B-gguf (PQ2_0-MTP-Q8_0 + mmproj Q8_0)
-    kv_cache: q8_0
+    kv_cache: q4_0
     features:
       completion: false
       tools: true
@@ -52,12 +50,13 @@ bonsai2-9b-fast:
       image: false
     architecture: qwen35
     parameters: 9000000000
-    context_length: 32768
+    context_length: 65536
     embedding_length: 0
     quantization: PQ2_0-MTP
     note: 'kv detalhe: q8_0 @65536 (o rs-cache do MTP consome ~0.6 GB extra — 131K OOMa na 6GB c/ desktop). DUPLO-DEPLOY 16/out: fast = MTP draft 2 @64K, 83.5-85.9 t/s normais / 89.5 copy-heavy / 87.9% acceptance (vs 66.2 do PTQ1_0 puro). A lane sem drafter (contexto 131K) é o handle bonsai2-9b. Reload do swap PENDENTE (user testando — só o fragment muda; reload depois, sem stream em voo). ctx 32K (redução pedida 16/out). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0). UNCENSORED 20/out: mesmo LoRA abliteration do 9b base, fixo --lora-scaled:1 — OFF-CARD em PQ2_0-MTP (direção estimada no PTQ1_0; efeito neste quant não medido, experimento do dono).'
     caveats:
-    - Exige o fork Prism
+    - 'MTP acima de 64K não carrega: rs-cache do drafter pede ~603 MiB e estoura a 6GB'
+    - 'Sempre-thinking: orçamento curto devolve content vazio — usar max_tokens ~1000+'
     - 'LoRA AtomicChat: estimado no PTQ1_0, NÃO medido em PQ2_0-MTP pelo card — validar na régua'
     - 'Thinking model: reasoning longo'
     - cmdStop distinto por handle (pkill no sufixo do GGUF) — não matar a lane errada

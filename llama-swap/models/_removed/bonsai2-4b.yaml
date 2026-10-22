@@ -6,7 +6,7 @@ bonsai2-4b:
   - thinking
   proxy: http://127.0.0.1:${PORT}
   checkEndpoint: /health
-  cmd: '${env.HOME}/git/bonsai-llama.cpp-prism/build/bin/llama-server
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
 
     --port ${PORT}
 

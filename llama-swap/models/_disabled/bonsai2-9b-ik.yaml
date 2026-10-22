@@ -1,0 +1,81 @@
+bonsai2-9b-ik:
+  name: Ternary Bonsai 9B (ik A/B)
+  description: 'Mesmo Ternary Bonsai 9B (PTQ1_0 puro, 131K, sempre-thinking, visão),
+    rodando no ik_llama.cpp em vez do fork PrismML. Fragmento de A/B: existe pra
+    provar (ou derrubar) que o ik substitui o fork — só é promovido se bater a
+    velocidade do fork COM coerência preservada.'
+  tags:
+  - llm
+  - thinking
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: '${ik_llama_server}
+
+    --port ${PORT}
+
+    -m ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-PTQ1_0.gguf
+
+    --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf --no-mmproj-offload
+
+    -rtr
+
+    -ngl 99 -c 131072 -fa on -ctk q8_0 -ctv q8_0
+
+    --host 127.0.0.1 --jinja
+
+    '
+  cmdStop: pkill -f 'ik_llama.cpp/build/bin/llama-server.*Bonsai-2-9B-PTQ1_0'
+  health_check_timeout: 120
+  ttl: 1800
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: 2.0 GB DiT (PTQ1_0, sem draft head) + 0.62 GB mmproj Q8_0
+    context: 131072
+    vram_usage: ~3.4-3.9 GB total (ngl 99 @131K, sem rs-cache do MTP)
+    source: prism-ml/Ternary-Bonsai-2-9B-gguf (PTQ1_0 + mmproj Q8_0)
+    kv_cache: q8_0
+    features:
+      completion: false
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 9000000000
+    context_length: 131072
+    embedding_length: 0
+    quantization: PTQ1_0
+    note: '[A/B 22/10: BLOQUEADO — PTQ1_0 não tem kernel CUDA no ik (só PQ2_0): 2,71 t/s vs 66,2 do fork. Não promover.] A/B CONTRA O FORK (lane contexto, sem drafter). Baseline a bater: 66.2 t/s
+      medidos no fork PrismML (llama-server, PTQ1_0 puro @131K, sem rs-cache). O ik
+      carrega PTQ1_0 desde b25a013d (29/set, tipos PQ2_0/PTQ1_0 + Hadamard) e teve
+      os kernels CUDA completados em 3d7b18cf (#2691, 19/out) — que se chama
+      literalmente output fixes + complete CUDA support, LOGO: medir t/s E checar
+      coerência (se ele mentir bonito e rápido, não vale). Diferenças vs fragmento
+      PrismML: backend ${ik_llama_server}, `-rtr` (run-time repack, o caminho que o
+      ik usa pra ternary interleaved — sem ele a MMVQ não pega o variant rápido).
+      Passa no A/B = migrar o bonsai2-9b de produção pra cá e aposentar o fork.
+      Samplers oficiais Prism mantidos: temp 1.0/0.95/20/presence 1.0.'
+    caveats:
+    - 'A/B: só promove se t/s >= fork E coerência preservada (o #2691 teve output fixes)'
+    - 'LoRA em peso ternary no ik nunca foi testado aqui — se o load falhar, tirar --lora-scaled primeiro pra isolar a causa'
+    - 'cmdStop casa só o binário do ik + o sufixo do GGUF, pra não matar a lane do fork em paralelo'
+    - 'Thinking model: reasoning longo'
+  filters:
+    stripParams: temperature, top_p, top_k
+    setParamsByID:
+      ${MODEL_ID}:
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 20
+        presence_penalty: 1.0

@@ -6,7 +6,7 @@ bonsai2-9b:
   - thinking
   proxy: http://127.0.0.1:${PORT}
   checkEndpoint: /health
-  cmd: '${env.HOME}/git/bonsai-llama.cpp-prism/build/bin/llama-server
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
 
     --port ${PORT}
 
@@ -14,14 +14,12 @@ bonsai2-9b:
 
     --mmproj ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf --no-mmproj-offload
 
-    --lora-scaled ${models_dir}/bonsai2/Ternary-Bonsai-2-9B-Uncensored-LoRA.gguf:1
-
-    -ngl 99 -c 131072 -fa on -ctk q8_0 -ctv q8_0
+    -ngl 99 -c 131072 -fa on -ctk q4_0 -ctv q4_0 -b 512 -ub 128
 
     --host 127.0.0.1 --jinja
 
     '
-  cmdStop: pkill -f 'Bonsai-2-9B'
+  cmdStop: pkill -f 'cafe-llama.cpp/build/bin/llama-server.*Bonsai-2-9B-PTQ1_0'
   health_check_timeout: 120
   ttl: 1800
   capabilities:
@@ -36,9 +34,9 @@ bonsai2-9b:
   metadata:
     size: 2.0 GB DiT (PTQ1_0, sem draft head) + 0.62 GB mmproj Q8_0
     context: 131072
-    vram_usage: ~3.4-3.9 GB total (ngl 99 @131K, sem rs-cache do MTP)
+    vram_usage: pico medido 4471 MiB = 72,8% da 3050 (KV q4_0 @131K)
     source: prism-ml/Ternary-Bonsai-2-9B-gguf (PTQ1_0 + mmproj Q8_0)
-    kv_cache: q8_0
+    kv_cache: q4_0
     features:
       completion: false
       tools: true
@@ -53,11 +51,11 @@ bonsai2-9b:
     context_length: 131072
     embedding_length: 0
     quantization: PTQ1_0
-    note: 'kv detalhe: q8_0 @131072 (262K nativo; PTQ1_0 puro não tem rs-cache — 131K cabe onde o MTP estoura). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). DUPLO-DEPLOY 16/out (pedido do dono): bonsai2-9b = PTQ1_0 puro @131K SEM drafter (context first, 66.2 t/s medidos; PTQ1_0 sem rs-cache engole o 131K que o MTP OOMa) | bonsai2-9b:fast = PQ2_0-MTP draft 2 @64K (speed first, 83-90 t/s, draft acceptance 87.9%; copy-heavy 89.5). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0). UNCENSORED 20/out: LoRA abliteration AtomicChat rank-1 fixo --lora-scaled:1 (direção residual 23, Arditi et al. 2024). Held-out do card: refusals 100%→0%, MMLU 76.0→71.7 (-4.3 pts). Card mediu só PTQ1_0 com thinking OFF — nosso thinking nativo é terreno não medido; visão/mmproj também não testada no card. Base pack permanece byte-idêntico (rank-1 nunca mergeado — ternário arredondaria o edit).'
+    note: 'kv detalhe: q8_0 @131072 (262K nativo; PTQ1_0 puro não tem rs-cache — 131K cabe onde o MTP estoura). MIGRADO PRO CAFE 22/10: o cafe carrega PTQ1_0 com kernel CUDA nativo (mmq-instance-ptq1_0, contribuído pelo próprio Prism em set/2026) — 56,5 t/s @131K com KV q4_0 e pico de 72,8% de VRAM. O fork do Prism deixou de ser necessário e foi apagado. DUPLO-DEPLOY 16/out (pedido do dono): bonsai2-9b = PTQ1_0 puro @131K SEM drafter (context first, 66.2 t/s medidos; PTQ1_0 sem rs-cache engole o 131K que o MTP OOMa) | bonsai2-9b:fast = PQ2_0-MTP draft 2 @64K (speed first, 83-90 t/s, draft acceptance 87.9%; copy-heavy 89.5). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0). UNCENSORED 20/out: LoRA abliteration AtomicChat rank-1 fixo --lora-scaled:1 (direção residual 23, Arditi et al. 2024). Held-out do card: refusals 100%→0%, MMLU 76.0→71.7 (-4.3 pts). Card mediu só PTQ1_0 com thinking OFF — nosso thinking nativo é terreno não medido; visão/mmproj também não testada no card. Base pack permanece byte-idêntico (rank-1 nunca mergeado — ternário arredondaria o edit). SEM LoRA DESDE 22/10 (pedido do dono): o cafe rejeita LoRA em peso ternary (erro: tensor aponta pra peso folded do prism.hadamard, não suportado) e o LoRA era o único impeditivo pra migrar; abliteration uncensored descartada pra destravar o cafe — comportamento passa a ser o do modelo base. Arquivo do LoRA apagado.'
     caveats:
-    - Exige o fork Prism (PrismML-Eng/llama.cpp branch prism, build ~/git/bonsai-llama.cpp-prism)
-    - 'Thinking model: reasoning longo'
-    - LoRA: ~/.llama-models/bonsai2/Ternary-Bonsai-2-9B-Uncensored-LoRA.gguf (HF AtomicChat, 3.2 MB) — rollback = remover a linha --lora-scaled e re-sync
+    - 'Sempre-thinking: orçamento curto devolve content vazio — clientes precisam de max_tokens ~1000+'
+    - 'KV q4_0: troca ~3% de velocidade por ~9 pontos de VRAM (medido 22/10)'
+    - 'LoRA uncensored removido 22/10 (cafe não aplica LoRA em peso ternary)'
   filters:
     stripParams: temperature, top_p, top_k
     setParamsByID:
