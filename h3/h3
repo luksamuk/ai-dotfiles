@@ -1622,8 +1622,27 @@ if [[ "$NSFW" == true ]]; then
     PROMPT="${PROMPT//${tw},/}"
     PROMPT="${PROMPT//${tw}/}"
   done
+  # Strip generico: remove do prompt os triggers das LoRAs REALMENTE resolvidas, nao so a
+  # lista fixa de legados acima. O LLM as vezes escreve o trigger mesmo instruido a nao;
+  # aqui garante que a unica ocorrencia seja a injetada pelo sistema.
+  if [[ ${#NSFW_TRIGGERS_ARRAY[@]} -gt 0 ]]; then
+    while IFS= read -r _tw; do
+      [ -z "$_tw" ] && continue
+      PROMPT="${PROMPT//$_tw/}"
+    done < <(printf '%s\n' "${NSFW_TRIGGERS_ARRAY[@]}" | awk '{print length, $0}' | sort -rn | cut -d' ' -f2-)
+    PROMPT="$(echo "$PROMPT" | sed 's/^[\t ,.]*//; s/  */ /g')"
+    unset _tw
+  fi
   # Determinar triggers: os das LoRAs resolvidas (LLM/force/fallback) — minúscula, vírgula-sep
   # Frases (ex.: "she is flat chested.") preservam espaços internos; só collapse múltiplos.
+  # Dedupe: dois caminhos (enhance e decision) podem resolver a MESMA LoRA, e o array
+  # ficava com o trigger repetido -> prefixo "hmotion hmotion," (sem virgula entre eles).
+  # O check de idempotencia anterior olhava o prompt, nao o array.
+  if [[ ${#NSFW_TRIGGERS_ARRAY[@]} -gt 0 ]]; then
+    _tr_dedup=$(printf '%s\n' "${NSFW_TRIGGERS_ARRAY[@]}" | awk 'NF && !visto[$0]++')
+    NSFW_RESOLVED_TRIGGERS="$(echo "$_tr_dedup" | tr '\n' ' ')"
+    unset _tr_dedup
+  fi
   NSFW_PREFIX=""
   if [[ -n "$NSFW_RESOLVED_TRIGGERS" ]]; then
     NSFW_PREFIX="$(echo "$NSFW_RESOLVED_TRIGGERS" | tr '[:upper:]' '[:lower:]' | sed 's/  */ /g; s/^ *, *//; s/ *, *$//')"
