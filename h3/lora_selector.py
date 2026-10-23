@@ -183,17 +183,62 @@ def _decision_select(prompt: str, entries, cfg: SelectorCfg):
     rank = sorted(scores.items(), key=lambda x: -x[1])
     # [H3] no maximo UM LoRA por conceito: versoes da mesma familia (VBVR Pro/v1,
     # better_human_motion/motion_combat) competem entre si, nao ocupam duas vagas
-    conceito = {str(e["id"]): (e.get("conceito") or e["safetensors"]) for e in entries}
-    sel, familias = [], set()
+    # [H3] EIXO DE PAPEL (22/out): cada LoRA ocupa no maximo UM papel. Antes o dedupe era
+    # por "conceito", e como hmmotion/grindtime/AIO tinham conceitos distintos, dois priors
+    # de movimento (ou de ato) entravam juntos e brigavam no denoise.
+    # GATE DE ATO: LoRA de ato so entra se o pedido descreve um ato. Sem gate, cena solo
+    # de nudez carregava LoRA de ato e o modelo inventava parceiro (bunda masculina, 22/out).
+    papel_por_id = {str(e["id"]): _papel(e) for e in entries}
+    conceito_por_id = {str(e["id"]): str(e.get("conceito") or "") for e in entries}
+    tem_ato = bool(ACT_RE.search(prompt))
+    sel, ocupados = [], set()
+    # PIN: em cena com ato, o AIO entra SEMPRE como o ato principal (decisao do usuario,
+    # 22/out), independente da nota — ele e a base do ato e pontua baixo sozinho.
+    if tem_ato:
+        _pin = [i for i, _ in rank if conceito_por_id.get(str(i)) == "ato-aio"]
+        if _pin:
+            sel.append(_pin[0]); ocupados.add("ato")
     for i, p in rank:
         if p < cfg.decision_threshold or len(sel) >= cfg.decision_max:
             break
-        fam = conceito.get(str(i), str(i))
-        if fam in familias:
+        papel = papel_por_id.get(str(i), "outro")
+        if papel == "ato" and not tem_ato:
             continue
-        familias.add(fam)
+        if papel in ocupados:
+            continue
+        ocupados.add(papel)
         sel.append(i)
     return sel, rank
+
+
+# ── papel de cada LoRA e gate de ato ────────────────────────────────────────
+
+ACT_RE = re.compile(
+    r"\b(fuck|fucked|fucking|penetrat\w*|thrust\w*|sex|blowjob|handjob|hj|bj|"
+    r"riding|rides|mount\w*|cum\w*|ejaculat\w*|oral|masturbat\w*|fingering|"
+    r"doggystyle|cowgirl|missionary|gangbang|org\w*|grind\w*|girando|gyrat\w*|"
+    r"transa\w*|fod\w*|penetr\w*|chup\w*|punhet\w*|sentando|goz\w*)\b",
+    re.I)
+
+
+def _papel(e):
+    """Papel funcional: identidade | ato | movimento | estilo | camera | corpo | fala | outro."""
+    txt = (str(e.get("categoria") or "") + " " + str(e.get("conceito") or "")).lower()
+    for chave, papel in (
+        ("identidade", "identidade"),
+        # movimento ANTES de ato: "movimento-ato" contem "ato" e cairia no papel errado
+        ("movimento", "movimento"), ("motion", "movimento"), ("grind", "movimento"),
+        ("ato", "ato"), ("cumshot", "ato"),
+        ("camera", "camera"), ("zoom", "camera"),
+        ("corpo", "corpo"), ("conceito", "corpo"),
+        ("fala", "fala"), ("speech", "fala"),
+        ("estilo", "estilo"), ("style", "estilo"), ("anime", "estilo"),
+        ("olhos", "estilo"), ("skin", "estilo"),
+        ("ref2v", "referencia"), ("vbvr", "referencia"),
+    ):
+        if chave in txt:
+            return papel
+    return "outro"
 
 
 # ── resolve ids -> tags ─────────────────────────────────────────────────────
