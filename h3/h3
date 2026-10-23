@@ -1357,6 +1357,19 @@ json.dump(out, open('$ENHANCE_IMAGES_FILE', 'w'))
 "
   fi
 
+  # Contexto de janelas (22/out): se a duracao passa do tamanho de janela, o H3 gera em
+  # blocos e o prompt PRECISA ser paragraph-per-window — senao a emenda entre janelas e
+  # arbitraria (o modelo nao sabe que existe continuacao). Formato do upstream (PW).
+  _WIN_CTX="${WINDOW_SIZE:-362}"
+  if [[ "$FRAMES" -gt "$_WIN_CTX" ]]; then
+    _OVL_CTX="${WINDOW_OVERLAP:-22}"
+    _NB_CTX=$(( (FRAMES - _OVL_CTX) / (_WIN_CTX - _OVL_CTX) + 1 ))
+    _SW=$(python3 -c "print(f'{${_WIN_CTX}/24:.2f}')")
+    _SO=$(python3 -c "print(f'{${_OVL_CTX}/24:.2f}')")
+    MEDIA_CONTEXT+="[Windowed generation: ${_NB_CTX} windows of ${_SW}s each, ${_SO}s overlap]"$'\n'
+    MEDIA_CONTEXT+="Write paragraph-per-window (PW): ${_NB_CTX} blocks separated by a blank line, in order. Each block covers only its own window, begins as [Shot 1] at 0.00s, and keeps its fields together. The last frame of a block is the first frame of the next: continue the same action across the boundary instead of restarting it."$'\n'
+    echo "=== Janelas: ${_NB_CTX} x ${_SW}s (overlap ${_SO}s) — prompt em formato PW ==="
+  fi
   echo "=== Enhancing prompt via $ENHANCE_MODEL ($SYSTEM_PROMPT_VAR) ==="
   echo "=== Media context: $(echo -e "$MEDIA_CONTEXT" | head -1) ==="
   ENHANCED_PROMPT=$(python3 -c "
