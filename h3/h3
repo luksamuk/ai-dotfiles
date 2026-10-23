@@ -1583,8 +1583,13 @@ if [[ "$NSFW" == true ]]; then
     done
     echo "=== Force NSFW LoRAs (${#NSFW_LORAS[@]}): ==="
     for n in "${NSFW_LORAS[@]}"; do echo "  → $n"; done
+  elif [[ ${#NSFW_LORAS[@]} -eq 0 && "${LORA_SELECTOR:-decision}" != "decision" ]]; then
+    # so no modo llm: ai a ausencia de LoRA ja e definitiva neste ponto
+    echo "=== --nsfw sem LoRA (modo llm, nenhuma escolhida): rodando base ==="
   elif [[ ${#NSFW_LORAS[@]} -eq 0 ]]; then
-    echo "=== --nsfw sem LoRA selecionada (sem enhance): rodando base, SEM LoRA (decr.—nenhuma pilha automatica) ==="
+    # modo decision: a selecao acontece DEPOIS desta linha. Antes o log anunciava
+    # 'SEM LoRA' aqui e a selecao vinha em seguida — mensagem mentindo sobre o estado.
+    echo "=== --nsfw: selecao de LoRA fica com o decision (roda mais abaixo) ==="
   fi
 fi
 
