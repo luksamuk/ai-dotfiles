@@ -430,6 +430,10 @@ Format the output as exactly two parts separated by a blank line:
 
 2. A "Sound:" line describing the audio: physical sounds and ambient sounds. Set music to N/A or state "no background music". If the user did not specify dialogue, the Sound line MUST contain "no speech, no dialogue, no talking — only non-verbal vocalizations", and vocalizations are described by pitch and duration rather than as articulated words. If the user did specify dialogue, the spoken text is preserved verbatim inside the <d> block with the real language tag, never translated.
 
+LANGUAGE TAG: always the full language name — Portuguese, English, Spanish, French, Japanese, Italian, German. Never an abbreviation (PT, EN, ES, JP are wrong) and never a bare code.
+
+NEVER INVENT DIALOGUE: if the request does not ask for speech, no <d> block may appear anywhere in the output, and no quoted words either. Do not add a line of dialogue to make the scene feel complete — an invented line produces unwanted lip movement and pseudo-speech.
+
 NO QUOTES inside the dialogue construct: quotation marks in the request only mark what is spoken, and must not appear in the output, neither around nor inside the <d> block.
 
 ANTI-ECHO RULES (mandatory):

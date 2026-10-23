@@ -149,6 +149,18 @@ def _decision_select(prompt: str, entries, cfg: SelectorCfg):
             "instructions": f"This LoRA applies and should be used for the request: "
                             f"[{e.get('categoria','')}] {nome}: {desc}",
         }
+    # GATE DE ATO no proprio modelo (22/out): regex errava para menos em descricao
+    # indireta ("ela recebe ele por tras") e o modelo acerta. Vai na MESMA chamada.
+    questions["__gate_ato"] = {
+        "type": "choice",
+        "instructions": "Classify whether the request describes an explicit sexual act "
+                        "happening between participants.",
+        "question": "Does this request describe a sexual act between two or more participants?",
+        "criteria": {
+            "ato": "the request describes a sexual act happening between participants",
+            "sem_ato": "nudity, posing or a person alone with no sexual act",
+        },
+    }
     payload = json.dumps({
         "model": cfg.decision_model,
         "state": {"request": prompt},
@@ -176,8 +188,12 @@ def _decision_select(prompt: str, entries, cfg: SelectorCfg):
         print(f"  [warn] seletor decision indisponivel apos 4 tentativas ({ultimo_erro}); "
               f"rodando base SEM LoRA — selecione manualmente com --lora se for NSFW")
         return [], None
+    gate = answers.get("__gate_ato") or {}
+    gate_choice = gate.get("choice") if isinstance(gate, dict) else None
     scores = {}
     for k, v in answers.items():
+        if str(k) == "__gate_ato":
+            continue
         p = v.get("noul") if isinstance(v, dict) else None
         scores[str(k).replace("lora_", "")] = float(p) if isinstance(p, (int, float)) else 0.0
     rank = sorted(scores.items(), key=lambda x: -x[1])
@@ -190,7 +206,10 @@ def _decision_select(prompt: str, entries, cfg: SelectorCfg):
     # de nudez carregava LoRA de ato e o modelo inventava parceiro (bunda masculina, 22/out).
     papel_por_id = {str(e["id"]): _papel(e) for e in entries}
     conceito_por_id = {str(e["id"]): str(e.get("conceito") or "") for e in entries}
-    tem_ato = bool(ACT_RE.search(prompt))
+    if gate_choice in ("ato", "sem_ato"):
+        tem_ato = gate_choice == "ato"
+    else:
+        tem_ato = bool(ACT_RE.search(prompt))   # fallback se o gate nao veio
     sel, ocupados = [], set()
     # PIN: em cena com ato, o AIO entra SEMPRE como o ato principal (decisao do usuario,
     # 22/out), independente da nota — ele e a base do ato e pontua baixo sozinho.
