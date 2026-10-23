@@ -155,10 +155,11 @@ def _decision_select(prompt: str, entries, cfg: SelectorCfg):
         "type": "choice",
         "instructions": "Classify whether the request describes an explicit sexual act "
                         "happening between participants.",
-        "question": "Does this request describe a sexual act between two or more participants?",
+        "question": "Does this request describe a sexual act taking place, solo or with a partner?",
         "criteria": {
-            "ato": "the request describes a sexual act happening between participants",
-            "sem_ato": "nudity, posing or a person alone with no sexual act",
+            "ato": "the request describes a sexual act, including a person stimulating "
+                   "themselves (masturbation, fingering, dildo) or any act with a partner",
+            "sem_ato": "nudity, posing or a body shot with no sexual act taking place",
         },
     }
     payload = json.dumps({
@@ -217,6 +218,16 @@ def _decision_select(prompt: str, entries, cfg: SelectorCfg):
         _pin = [i for i, _ in rank if conceito_por_id.get(str(i)) == "ato-aio"]
         if _pin:
             sel.append(_pin[0]); ocupados.add("ato")
+    # PIN DE IDENTIDADE POR NOME (22/out): citar o sujeito e sinal deterministico, nao
+    # probabilidade. "Sidney Sweeney completamente nua" deu 0.25 para a LoRA dela e ela
+    # ficou de fora — a identidade e o unico sinal que o usuario deu de forma explicita.
+    for e in entries:
+        if papel_por_id.get(str(e["id"])) != "identidade":
+            continue
+        nome = _nome_sujeito(e)
+        if nome and _nome_citado(nome, prompt):
+            if "identidade" not in ocupados:
+                sel.insert(0, str(e["id"])); ocupados.add("identidade")
     for i, p in rank:
         if p < cfg.decision_threshold or len(sel) >= cfg.decision_max:
             break
@@ -238,6 +249,30 @@ ACT_RE = re.compile(
     r"doggystyle|cowgirl|missionary|gangbang|org\w*|grind\w*|girando|gyrat\w*|"
     r"transa\w*|fod\w*|penetr\w*|chup\w*|punhet\w*|sentando|goz\w*)\b",
     re.I)
+
+
+def _nome_citado(nome, prompt):
+    """Casa o nome do sujeito mesmo com grafia proxima: o usuario escreve 'Sidney' e o
+    arquivo diz 'Sydney'. Compara token a token com tolerancia de grafia."""
+    import difflib
+    alvo = nome.lower().split()
+    palavras = re.findall(r"[a-zà-ÿ']+", prompt.lower())
+    if not alvo or len(palavras) < len(alvo):
+        return False
+    for i in range(len(palavras) - len(alvo) + 1):
+        janela = palavras[i:i + len(alvo)]
+        if all(difflib.SequenceMatcher(None, a, b).ratio() >= 0.8 for a, b in zip(alvo, janela)):
+            return True
+    return False
+
+
+def _nome_sujeito(e):
+    """Nome do sujeito a partir do arquivo: 'MM-H3 - Sydney Sweeney.safetensors' -> 'Sydney Sweeney'."""
+    base = str(e.get("safetensors") or "").replace(".safetensors", "")
+    if " - " in base:
+        base = base.split(" - ", 1)[1]
+    base = re.sub(r"[_\-]+", " ", base).strip()
+    return base if 2 <= len(base.split()) <= 4 and len(base) > 4 else ""
 
 
 def _papel(e):
