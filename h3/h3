@@ -1363,7 +1363,7 @@ json.dump(out, open('$ENHANCE_IMAGES_FILE', 'w'))
   _WIN_CTX="${WINDOW_SIZE:-362}"
   if [[ "$FRAMES" -gt "$_WIN_CTX" ]]; then
     _OVL_CTX="${WINDOW_OVERLAP:-22}"
-    _NB_CTX=$(( (FRAMES - _OVL_CTX) / (_WIN_CTX - _OVL_CTX) + 1 ))
+    _NB_CTX=$(( (FRAMES - _OVL_CTX + (_WIN_CTX - _OVL_CTX) - 1) / (_WIN_CTX - _OVL_CTX) ))   # ceil
     _SW=$(python3 -c "print(f'{${_WIN_CTX}/24:.2f}')")
     _SO=$(python3 -c "print(f'{${_OVL_CTX}/24:.2f}')")
     MEDIA_CONTEXT+="[Windowed generation: ${_NB_CTX} windows of ${_SW}s each, ${_SO}s overlap]"$'\n'
@@ -1998,7 +1998,7 @@ export H3_RESOLUTION="$RESOLUTION"
 # de shot continuo nao serve). Default do WanGP quando nada e passado: 362.
 _WIN_EFETIVO="${WINDOW_SIZE:-362}"
 if [[ "$FRAMES" -gt "$_WIN_EFETIVO" ]]; then
-  _NJAN=$(( (FRAMES - ${WINDOW_OVERLAP:-22}) / (_WIN_EFETIVO - ${WINDOW_OVERLAP:-22}) + 1 ))
+  _OV=${WINDOW_OVERLAP:-22}; _NJAN=$(( (FRAMES - _OV + (_WIN_EFETIVO - _OV) - 1) / (_WIN_EFETIVO - _OV) ))   # ceil
   echo "=== Aviso: $FRAMES frames > janela de $_WIN_EFETIVO — o run sera quebrado em ~$_NJAN janelas"
   echo "    (prompt de shot continuo nao cobre emenda; para passe unico use --window-size >= $FRAMES)"
 fi
