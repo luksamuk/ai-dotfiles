@@ -936,6 +936,7 @@ case "${LORA_SELECTOR:-decision}" in
   *) echo "Aviso: lora_selector invalido '${LORA_SELECTOR}' — usando decision."; LORA_SELECTOR=decision ;;
 esac
 if [[ "$ENHANCE" == true ]]; then
+  PROMPT_PRE_ENHANCE="$PROMPT"   # pedido cru: decide se fala foi pedida
   # ── Fleet resolve: valida o default contra a frota viva; fallback se ausente ──
   if [[ -z "$ENHANCE_MODEL" ]]; then
     if curl -s --max-time 5 "${LLAMA_SWAP_URL%/v1/chat/completions}/v1/models" 2>/dev/null | grep -q "\"$ENHANCE_DEFAULT\"" \
@@ -1651,6 +1652,23 @@ if [[ "$NSFW" == true ]]; then
     done < <(printf '%s\n' "${NSFW_TRIGGERS_ARRAY[@]}" | awk '{print length, $0}' | sort -rn | cut -d' ' -f2-)
     PROMPT="$(echo "$PROMPT" | sed 's/^[\t ,.]*//; s/  */ /g')"
     unset _tw
+  fi
+  # GUARDA MECANICA (22/out): instrucao no system prompt nao segurou — o modelo inventava
+  # "<d>Portuguese Hey</d>" em cena que nao pedia fala. Se o pedido cru nao tem aspas, <d>
+  # nem verbo de fala, o bloco <d> do output e removido e o no-speech entra no Sound.
+  if ! printf '%s' "${PROMPT_PRE_ENHANCE:-$PROMPT}" | grep -qiE '<d>|["“”]|dizendo|diz |sussurr|falando|fala |grit|says|saying|whisper|speak'; then
+    PROMPT=$(PROMPT="$PROMPT" python3 -c '
+import os, re, sys
+p = os.environ["PROMPT"]
+p2 = re.sub(r"<d>.*?</d>", "", p, flags=re.S)
+if p2 != p:
+    print("[h3] dialogo inventado removido (fala nao foi pedida)", file=sys.stderr)
+    if re.search(r"(?i)sound:", p2):
+        p2 = re.sub(r"(?i)(sound:[^\n]*)", r"\1 no speech, no dialogue, no talking - only non-verbal vocalizations", p2, count=1)
+    else:
+        p2 = p2.rstrip() + " Sound: no speech, no dialogue, no talking - only non-verbal vocalizations"
+print(re.sub(r"[ \t]{2,}", " ", p2).strip())
+')
   fi
   # Determinar triggers: os das LoRAs resolvidas (LLM/force/fallback) — minúscula, vírgula-sep
   # Frases (ex.: "she is flat chested.") preservam espaços internos; só collapse múltiplos.
