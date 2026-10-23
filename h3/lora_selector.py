@@ -120,6 +120,8 @@ def eligible(entries, nsfw: bool, variant: str = "*", modality: str = ""):
     """Filtra por conteúdo, variante, modalidade e destilados."""
     out = []
     for e in entries or []:
+        if e.get("disabled"):        # pausa por decreto: registrada no catalogo, fora do jogo
+            continue
         if _DISTILL.search(e.get("safetensors", "")):
             continue
         if e.get("nsfw") and not nsfw:
