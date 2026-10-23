@@ -55,6 +55,11 @@ ENHANCE_DEFAULT="$(read_fleet_h3 model)"
 [[ -z "$ENHANCE_DEFAULT" ]] && ENHANCE_DEFAULT="qwen3.6-35b-a3b-heretic"
 H3_ENHANCE_FALLBACK="$(read_fleet_h3 fallback)"
 [[ -z "$H3_ENHANCE_FALLBACK" ]] && H3_ENHANCE_FALLBACK="qwen3.6-35b-a3b-heretic"
+# Quem escolhe as LoRAs: espelha a chave `lora_selector` do diffuse (llm | decision).
+# decision (default): o LLM escreve o prompt, o seletor decide. llm: modo antigo, o LLM
+# emite a linha LORAS: e o seletor nao opina. O gate/eixo de papel so existem no decision.
+LORA_SELECTOR="$(read_fleet_h3 lora_selector)"
+[[ -z "$LORA_SELECTOR" ]] && LORA_SELECTOR="decision"
 ENHANCE_WITH_VISION=false  # --enhance-with-vision: imagens vao inline no pedido de enhance
 RESOLUTION="832x480"
 SHOW_ENHANCED=false
@@ -240,6 +245,7 @@ while [[ $# -gt 0 ]]; do
     --web)     WEB=true; shift ;;
     --enhance) ENHANCE=true; shift ;;
     --enhance-with) ENHANCE=true; ENHANCE_MODEL="$2"; shift 2 ;;
+    --lora-selector) LORA_SELECTOR="${2:-}"; shift 2 ;;
     --enhance-with-vision) ENHANCE=true; ENHANCE_WITH_VISION=true; shift ;;
     --vision-with) VLM_MODEL_OVERRIDE="$2"; shift 2 ;;
     --resolution) RESOLUTION="$2"; shift 2 ;;
@@ -924,6 +930,11 @@ if [[ "$ENHANCE_WITH_VISION" == true ]]; then
   [[ -n "$VLM_MODEL_OVERRIDE" ]] && echo "Aviso: --vision-with não tem efeito com --enhance-with-vision (não há vision describe separado). Ignorando."
   [[ "$VISION_DESCRIBE" == false ]] && echo "Aviso: --no-vision-describe redundante com --enhance-with-vision (describe já é pulado)."
 fi
+case "${LORA_SELECTOR:-decision}" in
+  llm|decision) ;;
+  reranker) echo "Aviso: lora_selector=reranker nao implementado no H3 — usando decision."; LORA_SELECTOR=decision ;;
+  *) echo "Aviso: lora_selector invalido '${LORA_SELECTOR}' — usando decision."; LORA_SELECTOR=decision ;;
+esac
 if [[ "$ENHANCE" == true ]]; then
   # ── Fleet resolve: valida o default contra a frota viva; fallback se ausente ──
   if [[ -z "$ENHANCE_MODEL" ]]; then
@@ -977,7 +988,14 @@ MODALITY_NOTICE
 CATBLOCK
 )
     # injeção do catálogo real (placeholder → texto)
-    CATALOG_SYSTEM="${CATALOG_SYSTEM//CATALOG_PLACEHOLDER/$CATALOG_TEXT}"
+    if [[ "${LORA_SELECTOR:-decision}" == "llm" ]]; then
+      CATALOG_SYSTEM="${CATALOG_SYSTEM//CATALOG_PLACEHOLDER/$CATALOG_TEXT}"
+    else
+      # modo decision: o catalogo sai do system e a exigencia de linha LORAS: tambem —
+      # o seletor e a unica autoridade (o LLM escolhia flat-chested pra Sidney, etc.)
+      CATALOG_SYSTEM="${CATALOG_SYSTEM//CATALOG_PLACEHOLDER/}"
+      CATALOG_SYSTEM="$(printf '%s\n' "$CATALOG_SYSTEM" | grep -vE '^- *Trigger words from chosen LoRAs|^After the enhanced paragraph|^If genuinely nothing fits|^Never mention catalog trigger words|^- *STACKING LIMIT|^- *Read the user.s request as INTENT|^- *MODALIDADE|^- *Multi-LoRA is normal')"
+    fi
     # Aviso de modalidade (o enhance vê refs ativas e prefere LoRAs [REF2VA] no catálogo)
     if [[ "${REF2VA_MODE:-}" == true ]]; then
       MODALITY_TEXT="Current generation modality: ref2va (reference frames/videos ACTIVE: identity comes from the provided refs). Prefer LoRAs tagged [REF2VA] in the catalog — they are trained for reference runs and preserve identity."
@@ -1449,8 +1467,9 @@ for attempt in range(max_retries):
       fi
       NSFW_LORAS=()
       for idx in "${!NSFW_LORAS_ARRAY[@]}"; do NSFW_LORAS+=("${NSFW_LORAS_ARRAY[$idx]}"); done
-    else
+    elif [[ "${LORA_SELECTOR:-decision}" == "llm" ]]; then
       # LLM path: extrair linha LORAS: do output do enhance e resolver
+      # (so no modo llm; no decision quem seleciona e o seletor, mais abaixo)
       NSFW_RAW_RESOLVED=""
       NSFW_LORAS_ARRAY=()
       NSFW_STRENGTHS_ARRAY=()
