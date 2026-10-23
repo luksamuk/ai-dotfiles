@@ -30,6 +30,10 @@ OLLAMA_URL="http://localhost:11434/v1/chat/completions"
 # H3 defaults (do handler: 20 steps, guidance 1.0, flow_shift 12, euler, 24fps)
 PROMPT=""
 FRAMES=107        # ~4.5s a 24fps (mínimo do H3)
+# Janela de atenção (frames por passe). Default do WanGP = 362 (15,08s). Acima disso o
+# H3 quebra em janelas com overlap, e o prompt precisa estar no formato PW.
+WINDOW_SIZE=""
+WINDOW_OVERLAP=""
 SECONDS_WANT=""   # --seconds N: conversão pra frames (round half up, 24fps)
 STEPS=50
 SEED=""             # vazio = seed aleatório por geração (0-999999999, range do Wan2GP)
@@ -249,6 +253,8 @@ while [[ $# -gt 0 ]]; do
     --enhance-with-vision) ENHANCE=true; ENHANCE_WITH_VISION=true; shift ;;
     --vision-with) VLM_MODEL_OVERRIDE="$2"; shift 2 ;;
     --resolution) RESOLUTION="$2"; shift 2 ;;
+    --window-size) WINDOW_SIZE="$2"; shift 2 ;;
+    --window-overlap) WINDOW_OVERLAP="$2"; shift 2 ;;
     --show-enhanced) SHOW_ENHANCED=true; shift ;;
     --no-vision-describe) VISION_DESCRIBE=false; shift ;;
     --max-image-mp) MAX_IMAGE_MP="$2"; MAX_IMAGE_MP_SET=true; shift 2 ;;
@@ -1973,6 +1979,16 @@ fi
 export H3_TASK_TYPE="$TASK_TYPE"
 export H3_PROMPT="$PROMPT"
 export H3_RESOLUTION="$RESOLUTION"
+[[ -n "$WINDOW_SIZE" ]] && export H3_WINDOW_SIZE="$WINDOW_SIZE"
+[[ -n "$WINDOW_OVERLAP" ]] && export H3_WINDOW_OVERLAP="$WINDOW_OVERLAP"
+# Aviso util: se os frames passam do tamanho de janela, havera janelas (e o prompt
+# de shot continuo nao serve). Default do WanGP quando nada e passado: 362.
+_WIN_EFETIVO="${WINDOW_SIZE:-362}"
+if [[ "$FRAMES" -gt "$_WIN_EFETIVO" ]]; then
+  _NJAN=$(( (FRAMES - ${WINDOW_OVERLAP:-22}) / (_WIN_EFETIVO - ${WINDOW_OVERLAP:-22}) + 1 ))
+  echo "=== Aviso: $FRAMES frames > janela de $_WIN_EFETIVO — o run sera quebrado em ~$_NJAN janelas"
+  echo "    (prompt de shot continuo nao cobre emenda; para passe unico use --window-size >= $FRAMES)"
+fi
 export H3_FRAMES="$FRAMES"
 export H3_STEPS="$STEPS"
 export H3_SEED="$SEED"
@@ -2037,6 +2053,10 @@ if os.environ.get('H3_PDD') == 'true':
     settings['sample_solver'] = 'euler'
 if os.environ.get('H3_TWO_PHASE') == 'true':
     settings['guidance_phases'] = '2~'
+if os.environ.get('H3_WINDOW_SIZE'):
+    settings['sliding_window_size'] = int(os.environ['H3_WINDOW_SIZE'])
+if os.environ.get('H3_WINDOW_OVERLAP'):
+    settings['sliding_window_overlap'] = int(os.environ['H3_WINDOW_OVERLAP'])
 if os.environ.get('H3_VEDA') == 'true':
     settings['override_attention'] = 'veda'
 
