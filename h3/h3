@@ -1659,14 +1659,23 @@ if [[ "$NSFW" == true ]]; then
   if ! printf '%s' "${PROMPT_PRE_ENHANCE:-$PROMPT}" | grep -qiE '<d>|["“”]|dizendo|diz |sussurr|falando|fala |grit|says|saying|whisper|speak'; then
     PROMPT=$(PROMPT="$PROMPT" python3 -c '
 import os, re, sys
+FRASE = "no speech, no dialogue, no talking - only non-verbal vocalizations"
 p = os.environ["PROMPT"]
+# 1) dialogo inventado
 p2 = re.sub(r"<d>.*?</d>", "", p, flags=re.S)
 if p2 != p:
     print("[h3] dialogo inventado removido (fala nao foi pedida)", file=sys.stderr)
-    if re.search(r"(?i)sound:", p2):
-        p2 = re.sub(r"(?i)(sound:[^\n]*)", r"\1 no speech, no dialogue, no talking - only non-verbal vocalizations", p2, count=1)
-    else:
-        p2 = p2.rstrip() + " Sound: no speech, no dialogue, no talking - only non-verbal vocalizations"
+# 2) Sound N/A ou vazio: sem som descrito o modelo gera BGM sozinho, e a frase de
+#    no-speech (que impede fala inventada) nunca entra. Sempre falha, nunca escolha.
+m = re.search(r"(?i)sound:\s*([^\n]*)", p2)
+if m:
+    linha = m.group(1).strip()
+    if not linha or re.fullmatch(r"(?i)(n/?a|none|nothing|-|\.)\.?", linha):
+        p2 = p2[:m.start(1)] + " " + FRASE + p2[m.end(1):]
+        print("[h3] Sound N/A -> frase de no-speech", file=sys.stderr)
+elif "<d>" not in p2:
+    p2 = p2.rstrip() + " Sound: " + FRASE
+    print("[h3] sem linha Sound -> no-speech acrescentado", file=sys.stderr)
 print(re.sub(r"[ \t]{2,}", " ", p2).strip())
 ')
   fi
