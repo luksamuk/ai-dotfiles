@@ -97,7 +97,7 @@ FORCE_NSFW_LORA_IDS=""   # --force-nsfw-loras "1,2,3"
 # Usar versão ComfyUI-pruned (compatível com Wan2GP). A versão diffusers original
 # tem keys diferentes (transformer_blocks/token_refiner) que o Wan2GP não reconhece.
 TURBO=true                  # DEFAULT (22/out): turbo resized rank_21, 4 steps, roda com int8+Veda (3m07s). --no-turbo desliga
-TURBO_STEPS=4                       # 4-step resized rank_21 (FL2VA/T2V). Ref2VA usa 8 (ref2v v1.0)
+TURBO_STEPS=8                       # decreto user 22/out: 8 no FL2VA/T2V (o A/B mediu nitidez melhor com mais steps). Ref2VA nao tem turbo
 H3_PROFILE=5                        # Profile Wan2GP (5=VeryLowRAM_LowVRAM block-by-block; 4=grupos maiores, 2=RAM cache)
 SIDNEY=false
 SIDNEY_FILE="MM-H3 - Sydney Sweeney.safetensors"  # easter egg: ator de referência
@@ -1885,7 +1885,7 @@ if [[ "$TURBO" == true ]]; then
     if [[ "$REF2VA_MODE" == true ]]; then
       TURBO_FILE="minimax_h3_ref2v_turbo_8step_v1.1_768p_bf16.safetensors"; TURBO_STEPS=8
     else
-      TURBO_FILE="minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors"; TURBO_STEPS=4
+      TURBO_FILE="minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors"; TURBO_STEPS=8
     fi
   else
     TURBO_FILE="$TURBO_FILE_OVERRIDE"
@@ -1898,7 +1898,7 @@ if [[ "$TURBO" == true ]]; then
   fi
   # Turbo requer 4-8 steps — auto por modalidade (ref2v8=8/shift6, PDMD fl2v=4/shift12;
   # PDMD suporta 6-8 com margem — "possibly more" —, v1.2 era steps-locked e saiu) se não setado
-  if [[ "${STEPS_SET:-false}" != "true" ]]; then STEPS="${TURBO_STEPS:-4}"
+  if [[ "${STEPS_SET:-false}" != "true" ]]; then STEPS="${TURBO_STEPS:-8}"
   else echo "=== Turbo: respeitando --steps $STEPS (a LoRA destilada rende menos fora do budget)" >&2; fi
   if [[ "$FLOW_SHIFT_SET" != "true" ]]; then
     if [[ "$REF2VA_MODE" == true ]]; then FLOW_SHIFT=6.0; else FLOW_SHIFT=12.0; fi
