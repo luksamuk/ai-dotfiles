@@ -1,0 +1,86 @@
+nemotron-bolt-e4b:
+  name: Nemotron 3.5 Bolt E4B
+  description: NVIDIA's Nemotron 3.5 Bolt E4B is a post-training of Gemma 4 E4B (8B total, 4B effective) tuned for multi-turn tool use, instruction following and input grounding in fast local voice/device assistants. 64K context, text-only in this release.
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/nemotron-bolt-e4b/NVIDIA-Nemotron-3.5-Bolt-E4B-UD-Q4_K_XL.gguf
+
+    --jinja
+
+    --parallel 1
+
+    --ctx-size 49152
+
+    -ngl 99
+
+    -b 512 -ub 128
+
+    --flash-attn on
+
+    --cache-type-k q8_0
+
+    --cache-type-v q4_0
+
+    --spec-type draft-dflash
+
+    --model-draft ${models_dir}/nemotron-bolt-e4b/dflash-NVIDIA-Nemotron-3.5-Bolt-E4B-Q8_0.gguf
+
+    --spec-draft-n-max 4
+
+    --temp 1.0
+
+    --top-p 0.95
+
+    --top-k 64
+
+    --repeat-penalty 1.0
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p, top_k
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 64
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 64
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 49152
+  metadata:
+    size: ~5.06 GB (UD-Q4_K_XL)
+    context: 49152
+    vram_usage: pico medido 5296 MiB = 86,2% da 3050 (ctx 48K + DFlash, KV q8_0/q4_0)
+    source: unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF (UD-Q4_K_XL)
+    kv_cache: q8_0 + q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: gemma4
+    parameters: 8000000000
+    context_length: 49152
+    embedding_length: 2560
+    quantization: UD-Q4_K_XL
+    note: 'DFLASH LIGADO 24/10 (pedido do dono) em 48K: DFlash @48K mediu 62,4 e 58,3 t/s em respostas longas (524 e 388 tokens), draft 307/864 (35,5%) e 215/688 (31,2%), pico 5296 MiB = 86,2%. Contra 29,6 t/s AR: ~2x. A aceitacao cai em relacao aos 65% vistos @65K numa resposta de codigo — acceptance depende do conteudo, e 33% ainda paga o drafter com folga. Em 65K o DFlash nao cabe (pico 91,2%). Smoke 24/10: upstream, ik NAO serve (compute buffer de gemma4 denso estoura acima de 16K). Tool calling OK (finish=tool_calls com argumento certo) e coerencia PT-BR OK. 131K NAO cabe em Q4 (93% projetado); com UD-Q3_K_XL mediu-se 38,5-39,9 t/s e 74% em 131K — numeros guardados, nao usados. Sliding window 512 em padrao 5 local : 1 global (7 camadas globais de 42) — eh o que encarece o KV em contexto longo. Card declara entrada texto-only: vision/audio existem no peso e NAO estao validados (nao anunciar vision).'

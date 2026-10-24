@@ -1,0 +1,80 @@
+spark-x2.6-4b:
+  name: Spark X2.6 4B
+  description: Spark-X2.6-4B is XHToken's 4B dense model on the Spark 2.5 architecture, with controllable thinking budget (none/low/high), 1M native context and strong agentic/tool-calling gains over X2.5.
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/spark-x2.6-4b/Spark-X2.6-4B-Q4_K_M.gguf
+
+    --jinja
+
+    --parallel 1
+
+    --ctx-size 131072
+
+    -ngl 99
+
+    -b 256 -ub 64
+
+    --flash-attn on
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --temp 1.0
+
+    --top-p 0.95
+
+    --top-k 0
+
+    --repeat-penalty 1.0
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p, top_k
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 0
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 0
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: ~3.54 GB (Q4_K_M)
+    context: 131072
+    vram_usage: ~5.4 GB pico medido 5449 MiB = 88,7% da 3050 (ctx 131K, KV q4_0, -b 256 -ub 64)
+    source: XHToken/Spark-X2.6-4B-GGUF (Q4_K_M, repo oficial)
+    kv_cache: q4_0 + q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: spark2_5
+    parameters: 4000000000
+    context_length: 1048576
+    embedding_length: 2560
+    quantization: Q4_K_M
+    note: 'Smoke 24/10/2026 (upstream, arch spark2_5 presente no llama.cpp e no cafe; ausente no ik). Medido @131K: 41,9-43,0 t/s, tool calling OK (finish=tool_calls com argumento certo), funcao Python OK. @65K fica em 77,6% e 42-44 t/s. Acima de 131K nao cabe: KV q8_0 estoura a 3050. Samplers do proprio GGUF (temp 1.0, top_p 0.95, top_k -1, repeat 1.0) — hardcoded, nao usar macro. Thinking: template enable_thinking. BASE E :think SAO AMBOS thinking-ON (24/10): o modo thinking-none respondeu em CHINES a uma saudacao curta, nao chamou ferramenta (finish=stop sem tool_calls) e errou 17x23 numa amostra — o default do vendor eh thinking ligado e o "none" nao serve. Smoke via llama-swap: 36-38 t/s, tool calling OK, pico 88,9% (5461 MiB). X2.6 mantem a arch do X2.5: os ganhos sao de pos-treino (agentico, tool use, contexto longo). Irmon X2.5 reprovou snake v2 (bug de colisao) e estourou o bench agentico 03 — regua pendente.'

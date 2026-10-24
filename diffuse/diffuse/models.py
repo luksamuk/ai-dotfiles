@@ -235,4 +235,26 @@ MODELS: dict[str, dict] = {
             {"name": "flux2_small_decoder_bf16.safetensors (VAE)", "path": "Wan2GP/ckpts/moss_image/flux2_small_decoder_bf16.safetensors", "size_gb": 0.06},
         ],
     },
+    "fibo2-edit-turbo": {
+        "backend_id": "fibo2-sdcpp",
+        "dir": "fibo2",
+        "backend_type": "fibo_sdcpp",
+        "transformer": "fibo2_edit_turbo_int8_convrot.safetensors",
+        "cfg_scale": 1.0,
+        "category": "image",
+        "bits": "INT8 ConvRot",
+        "description": "BRIA Fibo 2.0 Edit Turbo — edicao multi-referencia em 4 passos (CFG 1), TE Qwen3-VL-4B, VAE FLUX.2, via sd.cpp (arch fibo2 nativa)",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_type": "fibo",
+        "default_size": (1024, 1024),
+        "components": [
+            {"name": "fibo2_edit_turbo_int8_convrot.safetensors (DiT)", "path": "fibo2/diffusion_models", "size_gb": 8.41},
+            {"name": "Qwen3VL-4B-Instruct-Q4_K_M.gguf (text encoder)", "path": "fibo2/te", "size_gb": 2.50},
+            {"name": "flux2-vae.safetensors (VAE FLUX.2)", "path": "fibo2/vae", "size_gb": 0.34},
+        ],
+    },
+    # fibo2-dev REMOVIDO 24/out: A/B com seed e caption VGL congelados deu 263s (20 passos,
+    # CFG 5) contra 39s do edit-turbo (4 passos, CFG 1) — qualidade igual ou melhor no turbo,
+    # so perdendo aderencia literal ao campo lighting. Transformer de 8,4 GB deletado.
+    # Unica vantagem do dev seria negative prompt (CFG 1 desliga guidance); se precisar, rebaixar.
 }

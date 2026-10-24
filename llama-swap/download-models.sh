@@ -87,6 +87,9 @@ declare -A MODELS=(
   # Consolidated: formerly qwen3.5-4b-mtp, now canonical qwen3.5-4b (Jul 2026)
   # Uses ik_llama + hadamard KV + UD-Q4_K_XL (2.8 GB)
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-UD-Q4_K_XL.gguf"
+  ["spark-x2.6-4b"]="XHToken/Spark-X2.6-4B-GGUF Spark-X2.6-4B-Q4_K_M.gguf"
+  ["nemotron-bolt-e4b"]="unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF NVIDIA-Nemotron-3.5-Bolt-E4B-UD-Q4_K_XL.gguf"
+  ["nemotron-bolt-e4b-dflash"]="unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF dflash-NVIDIA-Nemotron-3.5-Bolt-E4B-Q8_0.gguf"
   # ["qwen3.5-4b-mtp"] — consolidated into qwen3.5-4b, Jul 2026
   # [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
   # ["lfm2.5-8b-a1b"]="mudler/LFM2.5-8B-A1B-APEX-GGUF LFM2.5-8B-A1B-APEX-I-Compact.gguf"  # REMOVED Sep 10 2026

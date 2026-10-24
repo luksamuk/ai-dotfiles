@@ -14,6 +14,7 @@ _PROMPT_FILES: dict[str, str] = {
     "qwen21_enhance": "qwen21_enhance.yaml",
     "agate_enhance": "agate_enhance.yaml",
     "moss_enhance": "moss_enhance.yaml",
+    "fibo_enhance": "fibo_enhance.yaml",
     "edit_vision": "edit_vision.yaml",
     "vision_analysis": "vision_analysis.yaml",
 }
@@ -88,6 +89,12 @@ def get_agate_enhance_prompt(nsfw: bool = False) -> str:
     """Agate is a small uncensored model (MIT, no filter); the Ideogram safety-rule
     rewrite does not apply — the prompt is used verbatim."""
     return _load_prompt("agate_enhance")
+
+
+def get_fibo_enhance_prompt(nsfw: bool = False) -> str:
+    """System prompt do FIBO 2.0 - caption JSON estruturada (schema VGL da BRIA)."""
+    content = _load_prompt("fibo_enhance")
+    return _toggle_safety_rules(content, nsfw)
 
 
 def get_moss_enhance_prompt(nsfw: bool = False) -> str:

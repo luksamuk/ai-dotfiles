@@ -140,6 +140,172 @@ macros:
   "gemma_cache_k": "q4_0"
   "gemma_cache_v": "q4_0"
 models:
+  spark-x2.6-4b:
+    name: Spark X2.6 4B
+    description: Spark-X2.6-4B is XHToken's 4B dense model on the Spark 2.5 architecture, with controllable thinking budget (none/low/high), 1M native context and strong agentic/tool-calling gains over X2.5.
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/spark-x2.6-4b/Spark-X2.6-4B-Q4_K_M.gguf
+
+      --jinja
+
+      --parallel 1
+
+      --ctx-size 131072
+
+      -ngl 99
+
+      -b 256 -ub 64
+
+      --flash-attn on
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --temp 1.0
+
+      --top-p 0.95
+
+      --top-k 0
+
+      --repeat-penalty 1.0
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p, top_k
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 0
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 0
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - text
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~3.54 GB (Q4_K_M)
+      context: 131072
+      vram_usage: ~5.4 GB pico medido 5449 MiB = 88,7% da 3050 (ctx 131K, KV q4_0, -b 256 -ub 64)
+      source: XHToken/Spark-X2.6-4B-GGUF (Q4_K_M, repo oficial)
+      kv_cache: q4_0 + q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: spark2_5
+      parameters: 4000000000
+      context_length: 1048576
+      embedding_length: 2560
+      quantization: Q4_K_M
+      note: 'Smoke 24/10/2026 (upstream, arch spark2_5 presente no llama.cpp e no cafe; ausente no ik). Medido @131K: 41,9-43,0 t/s, tool calling OK (finish=tool_calls com argumento certo), funcao Python OK. @65K fica em 77,6% e 42-44 t/s. Acima de 131K nao cabe: KV q8_0 estoura a 3050. Samplers do proprio GGUF (temp 1.0, top_p 0.95, top_k -1, repeat 1.0) — hardcoded, nao usar macro. Thinking: template enable_thinking. BASE E :think SAO AMBOS thinking-ON (24/10): o modo thinking-none respondeu em CHINES a uma saudacao curta, nao chamou ferramenta (finish=stop sem tool_calls) e errou 17x23 numa amostra — o default do vendor eh thinking ligado e o "none" nao serve. Smoke via llama-swap: 36-38 t/s, tool calling OK, pico 88,9% (5461 MiB). X2.6 mantem a arch do X2.5: os ganhos sao de pos-treino (agentico, tool use, contexto longo). Irmon X2.5 reprovou snake v2 (bug de colisao) e estourou o bench agentico 03 — regua pendente.'
+  nemotron-bolt-e4b:
+    name: Nemotron 3.5 Bolt E4B
+    description: NVIDIA's Nemotron 3.5 Bolt E4B is a post-training of Gemma 4 E4B (8B total, 4B effective) tuned for multi-turn tool use, instruction following and input grounding in fast local voice/device assistants. 64K context, text-only in this release.
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/nemotron-bolt-e4b/NVIDIA-Nemotron-3.5-Bolt-E4B-UD-Q4_K_XL.gguf
+
+      --jinja
+
+      --parallel 1
+
+      --ctx-size 49152
+
+      -ngl 99
+
+      -b 512 -ub 128
+
+      --flash-attn on
+
+      --cache-type-k q8_0
+
+      --cache-type-v q4_0
+
+      --spec-type draft-dflash
+
+      --model-draft ${models_dir}/nemotron-bolt-e4b/dflash-NVIDIA-Nemotron-3.5-Bolt-E4B-Q8_0.gguf
+
+      --spec-draft-n-max 4
+
+      --temp 1.0
+
+      --top-p 0.95
+
+      --top-k 64
+
+      --repeat-penalty 1.0
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p, top_k
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 64
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 64
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - text
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 49152
+    metadata:
+      size: ~5.06 GB (UD-Q4_K_XL)
+      context: 49152
+      vram_usage: pico medido 5296 MiB = 86,2% da 3050 (ctx 48K + DFlash, KV q8_0/q4_0)
+      source: unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF (UD-Q4_K_XL)
+      kv_cache: q8_0 + q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4
+      parameters: 8000000000
+      context_length: 49152
+      embedding_length: 2560
+      quantization: UD-Q4_K_XL
+      note: 'DFLASH LIGADO 24/10 (pedido do dono) em 48K: DFlash @48K mediu 62,4 e 58,3 t/s em respostas longas (524 e 388 tokens), draft 307/864 (35,5%) e 215/688 (31,2%), pico 5296 MiB = 86,2%. Contra 29,6 t/s AR: ~2x. A aceitacao cai em relacao aos 65% vistos @65K numa resposta de codigo — acceptance depende do conteudo, e 33% ainda paga o drafter com folga. Em 65K o DFlash nao cabe (pico 91,2%). Smoke 24/10: upstream, ik NAO serve (compute buffer de gemma4 denso estoura acima de 16K). Tool calling OK (finish=tool_calls com argumento certo) e coerencia PT-BR OK. 131K NAO cabe em Q4 (93% projetado); com UD-Q3_K_XL mediu-se 38,5-39,9 t/s e 74% em 131K — numeros guardados, nao usados. Sliding window 512 em padrao 5 local : 1 global (7 camadas globais de 42) — eh o que encarece o KV em contexto longo. Card declara entrada texto-only: vision/audio existem no peso e NAO estao validados (nao anunciar vision).'
   qwen2.5-coder-1.5b-pollard:
     name: Qwen2.5 Coder 1.5B Pollard
     description: Qwen2.5-Coder-1.5B-Instruct memory-fit for code completion. FIM native, CPU-only serving with zero VRAM.
@@ -1706,6 +1872,8 @@ matrix:
     #   snake; julia-1 cobre o posto com 400x mais discriminação. Fragment em
     #   _disabled/ + laya.HELPER.md; pesos apagados (805MB, ggml-org re-download)
     julia: julia-1
+    sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
+    nbe4: nemotron-bolt-e4b  # NVIDIA Bolt E4B (Gemma 4 E4B pos-treino), 64K em Q4 por escolha do dono
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
@@ -1714,10 +1882,10 @@ matrix:
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(twp | lfm24) & (lfmcol | eg2) & qpfim"
+    small_embed: "(twp | lfm24 | sp26 | nbe4) & (lfmcol | eg2) & qpfim"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "twp | lfm24"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados); twp + lfm24 restam
+    small_only: "twp | lfm24 | sp26 | nbe4"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados); twp + lfm24 restam
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
@@ -1809,3 +1977,5 @@ matrix:
     # Decision models (juizes /v1/systemone) - recarregam em ~2s, evictam primeiro
     # laya: 1  # DESINSTALADO 20/out/2026
     julia: 1
+    sp26: 2  # 3,54 GB denso — reload barato
+    nbe4: 3  # 5,06 GB denso — reload medio

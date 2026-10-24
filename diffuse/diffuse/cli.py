@@ -466,6 +466,8 @@ def main() -> None:
             args.steps = 40          # base 2.1 recipe (cfg 4.0; --turbo remaps para 8 no runner)
         elif backend_type == "agate":
             args.steps = 50
+        elif backend_type == "fibo_sdcpp":
+            args.steps = 4 if "turbo" in model_name else 20   # turbo: 4 passos (distill BRIA); dev: default do sd.cpp
         else:
             args.steps = 4
 
@@ -500,11 +502,11 @@ def main() -> None:
     else:
         require_model_dir(model_name)
 
-    # ── Validate --edit (qwen21 e flux-3 suportam) ──
+    # ── Validate --edit (qwen21, flux-3 e fibo suportam) ──
     ref_image_paths = None
     if args.edit:
-        if backend_type not in ("flux3_wan2gp", "qwen21_wan2gp", "qwen21_turbo_wan2gp"):
-            print(f"  ⚠️  --edit is only supported with qwen-image-2.1 or flux-3 (got {backend_type})")
+        if backend_type not in ("flux3_wan2gp", "qwen21_wan2gp", "qwen21_turbo_wan2gp", "fibo_sdcpp"):
+            print(f"  ⚠️  --edit is only supported with qwen-image-2.1, flux-3 or fibo (got {backend_type})")
             print(f"     Use: diffuse -m qwen-image-2.1 --edit {args.edit} -p 'instruction'")
             sys.exit(1)
         missing = [x for x in args.edit if not x.exists()]
@@ -552,6 +554,11 @@ def main() -> None:
     # ── MOSS-Image early path (T2I via WanGP; layout-JSON nativo) ──
     if backend_type == "moss_wan2gp":
         _run_moss_wan2gp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
+        return
+
+    # ── Fibo 2.0 via sd.cpp (T2I + edição por referência) ──
+    if backend_type == "fibo_sdcpp":
+        _run_fibo_sdcpp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
         return
 
     # ── LLM eviction (free VRAM for diffusion) ──
@@ -998,6 +1005,98 @@ def _run_bonsai_image(
         model_name, model_info, prompt, seed,
         width, height, steps, 0.0,
         diffusion_time, wall_time, peak_hbm, output_path,
+        enhanced_prompt=enhanced,
+        original_prompt=original_prompt,
+    )
+
+
+def _run_fibo_sdcpp_image(
+    args,
+    model_name: str,
+    model_info: dict,
+    prompt: str,
+    original_prompt: str,
+    seed: int,
+    width: int,
+    height: int,
+    ref_image_paths: list[str] | None,
+) -> None:
+    """Fibo 2.0 via sd.cpp: T2I no Dev/Turbo e edição por referência no Edit Turbo.
+
+    Exceção contida à doutrina F5 (sd.cpp fora da frota): o Wan2GP não tem
+    handler de Fibo e o sd.cpp upstream tem arch nativa (`#2180`).
+    """
+    from diffuse.backends.sdcpp import generate_image_sdcpp
+
+    is_edit = bool(ref_image_paths)
+    steps = args.steps if args.steps is not None else (4 if "turbo" in model_name else 20)
+    cfg = model_info.get("cfg_scale", 1.0)
+
+    print(f"  🎨 Fibo 2.0 {'edição' if is_edit else 'T2I'}: {width}×{height}, {steps} steps, cfg={cfg}, seed={seed}")
+
+    require_model_dir(model_name)
+
+    # ── Prompt enhancement ──
+    lora_tags = ""
+    if "<lora:" in prompt:
+        prompt, lora_tags = _extract_lora_tags(prompt)
+    enhanced = None
+    if args.enhance or args.enhance_with:
+        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
+        enhance_type = model_info.get("enhance_type", "qwen21")
+        if enhance_type == "fibo":
+            print(f"\n  ✨ Enhancing prompt via {enhance_model} (FIBO VGL JSON caption)...")
+            from diffuse.enhance import enhance_fibo_prompt
+            enhanced, _ = enhance_fibo_prompt(prompt, enhance_model, nsfw=args.nsfw)
+        elif enhance_type == "vision":
+            print(f"\n  ✨ Enhancing prompt via {enhance_model} (vision mode)...")
+            enhanced, _ = enhance_vision_prompt(prompt, enhance_model, nsfw=args.nsfw)
+        else:
+            enhanced, _ = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
+        if enhanced and enhanced != prompt:
+            enhanced = _reapply_lora_tags(enhanced, lora_tags)
+            print(f"     Expanded to ({len(enhanced)} chars)")
+            _show_enhanced_if_requested(args, enhanced)
+            prompt = enhanced
+
+    # Evict LLMs antes de carregar (o DiT do Fibo usa RAM pesada via --offload-to-cpu)
+    running = llama_swap_running_models()
+    if running:
+        print(f"  🔄 Evicting LLM models: {', '.join(running)}")
+        evict_llm()
+        print(f"     VRAM freed for image generation")
+
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+
+    print(f"  [1/3] Rodando sd-cli ({model_info['bits']})...")
+    try:
+        output_path, wall_time = generate_image_sdcpp(
+            model_name=model_name,
+            prompt=prompt,
+            seed=seed,
+            steps=steps,
+            width=width,
+            height=height,
+            output_path=output_path,
+            ref_images=ref_image_paths,
+            cfg_scale=cfg,
+        )
+    except RuntimeError as exc:
+        print(f"\n  ✗ {exc}")
+        sys.exit(1)
+
+    print(f"  [3/3] Done.")
+
+    save_metadata(
+        model_name, prompt, seed, width, height, steps,
+        cfg, 0.0, wall_time, 0.0, output_path,
+        enhanced_prompt=enhanced,
+    )
+    print_debrief(
+        model_name, model_info, prompt, seed,
+        width, height, steps, cfg,
+        0.0, wall_time, 0.0, output_path,
         enhanced_prompt=enhanced,
         original_prompt=original_prompt,
     )

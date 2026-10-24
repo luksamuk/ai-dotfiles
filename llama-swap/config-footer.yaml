@@ -115,6 +115,8 @@ matrix:
     #   snake; julia-1 cobre o posto com 400x mais discriminação. Fragment em
     #   _disabled/ + laya.HELPER.md; pesos apagados (805MB, ggml-org re-download)
     julia: julia-1
+    sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
+    nbe4: nemotron-bolt-e4b  # NVIDIA Bolt E4B (Gemma 4 E4B pos-treino), 64K em Q4 por escolha do dono
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
@@ -123,10 +125,10 @@ matrix:
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(twp | lfm24) & (lfmcol | eg2) & qpfim"
+    small_embed: "(twp | lfm24 | sp26 | nbe4) & (lfmcol | eg2) & qpfim"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "twp | lfm24"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados); twp + lfm24 restam
+    small_only: "twp | lfm24 | sp26 | nbe4"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados); twp + lfm24 restam
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
@@ -218,3 +220,5 @@ matrix:
     # Decision models (juizes /v1/systemone) - recarregam em ~2s, evictam primeiro
     # laya: 1  # DESINSTALADO 20/out/2026
     julia: 1
+    sp26: 2  # 3,54 GB denso — reload barato
+    nbe4: 3  # 5,06 GB denso — reload medio

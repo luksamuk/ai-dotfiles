@@ -67,6 +67,8 @@ ORIGINAL_ORDER = [
     "gemma4-e4b",       # ✅ upstream ik backend (Bee was slower at 36 vs 40 tok/s)
     "gemma4-e2b",            # ✅
     "lfm2.5-1.2b",           # ✅
+    "spark-x2.6-4b",        # ✅ upstream (arch spark2_5), 131K @88,7% — 24/out
+    "nemotron-bolt-e4b",    # ✅ upstream (arch gemma4), 64K Q4 @82,3% — 24/out
     "lfm2.5-2.6b",           # ✅ Dense hybrid, agentic RL, on-device
     "qwen2.5-coder-1.5b-pollard",  # ✅ Pollard Coder IQ4_XS CPU-only (FIM, imatrix, coexists with GPU MoE)
     "gemma4-12b-pollard",    # ✅ Pollard IQ4_XS dense 12B multimodal (measured-allocation; ativo Sep 20)
