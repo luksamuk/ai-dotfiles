@@ -4,10 +4,12 @@
 # Uso: h3-uninstall-pesos.sh [--exec] [manifesto]
 set -u
 EXEC=false
+COM_LORAS=false
 MAN="$HOME/.local/share/h3/h3_manifest_2026-10-23.json"
 for a in "$@"; do
   case "$a" in
     --exec) EXEC=true ;;
+    --loras) COM_LORAS=true ;;
     *) MAN="$a" ;;
   esac
 done
@@ -45,6 +47,25 @@ for link, alvo in m["symlinks"]:
     if os.path.lexists(lp):
         print("  " + link)
 PY
+
+# LoRAs recuperaveis (as orfas ficam: nao ha de onde baixar)
+LM="$HOME/.local/share/h3/h3_loras_manifest_2026-10-23.json"
+if [ "$COM_LORAS" = true ] && [ -f "$LM" ]; then
+  echo ""
+  echo "=== LoRAs recuperaveis (orfas ficam):"
+  python3 - "$LM" <<'PYL' > /tmp/h3_lora_rm.txt
+import json, sys
+for x in json.load(open(sys.argv[1]))["loras"]:
+    print(f"{x['dest']}\t{x['size'] or 0}")
+PYL
+  while IFS=$'\t' read -r dest size; do
+    p="$W/$dest"
+    [ -f "$p" ] || continue
+    echo "  ${size} B  $dest"
+    LIB=$((LIB + size))
+    [ "$EXEC" = true ] && rm -f "$p"
+  done < /tmp/h3_lora_rm.txt
+fi
 
 if [ "$EXEC" != true ]; then
   echo ""

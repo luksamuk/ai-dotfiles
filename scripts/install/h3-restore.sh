@@ -39,6 +39,27 @@ while IFS=$'\t' read -r repo file dest size sha; do
 done < /tmp/h3_restore_lista.txt
 
 echo ""
+LM="$HOME/.local/share/h3/h3_loras_manifest_2026-10-23.json"
+if [ -f "$LM" ]; then
+  echo "=== LoRAs (Civitai, precisa de ~/.civitai_key)"
+  TOK=$(cat "$HOME/.civitai_key" 2>/dev/null)
+  python3 - "$LM" <<'PYL' > /tmp/h3_lora_lista.txt
+import json, sys
+for x in json.load(open(sys.argv[1]))["loras"]:
+    print(f"{x['url']}\t{x['dest']}\t{x['size']}\t{x['sha256']}")
+PYL
+  while IFS=$'\t' read -r url dest size sha; do
+    [ -f "$dest" ] && [ "$(stat -c %s "$dest")" = "$size" ] && { echo "  ok  $(basename "$dest")"; continue; }
+    echo "  baixando $(basename "$dest")"
+    curl -sSL -A "Mozilla/5.0" -H "Authorization: Bearer $TOK" -o "$dest" "$url?token=$TOK" || { echo "    FALHOU"; continue; }
+    A=$(sha256sum "$dest" | cut -d' ' -f1)
+    [ "$A" = "$sha" ] && echo "    sha256 OK" || echo "    SHA256 DIFERENTE"
+  done < /tmp/h3_lora_lista.txt
+else
+  echo "=== sem manifesto de LoRAs (pulando)"
+fi
+
+echo ""
 echo "=== symlinks"
 python3 - "$MAN" <<'PY'
 import json, os, sys
