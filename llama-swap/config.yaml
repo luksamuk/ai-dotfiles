@@ -1114,7 +1114,47 @@ models:
         audio: false
         image: false
       note: 'vram detalhe: ~2GB (model + mmproj + cache) | GLM OCR multimodal: model 0.95GB + mmproj 0.48GB + cache; Q8_0 Specialized OCR model — use prompts like ''OCR'', ''OCR markdown'', ''Table Recognition:''. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.'
+  gyro-s:
+    name: Qwen 3.8 Gyro-S
+    description: "Qwen3.8-Flash-Next 125B MoE comprimido em quant trellis 1-bit (agentionai Gyro). 16K context (teto real da placa de 6GB; o motor streamia experts do page cache)."
+    cmd: 'sh -c "cd ${env.HOME}/.local/share/strata/terminal/current && CUDA_MODULE_LOADING=LAZY GGML_CUDA_FORCE_MMQ=1 exec ./python/bin/python3.12 -m serve.server --engine strata --config ${env.HOME}/.local/state/strata/launch/gyro-s-16k.json --host 127.0.0.1 --port ${PORT}"'
+    env:
+      - "CUDA_MODULE_LOADING=LAZY"
+      - "GGML_CUDA_FORCE_MMQ=1"
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+      out:
+        - text
+      tools: false
+      reranker: false
+      context: 16384
+    metadata:
+      size: ~60 GB no disco (GGUF 58.5 + pack 1.5)
+      context: 16384
+      vram_usage: ~5.7 GB VRAM (93%) + ~24 GB RAM como page cache (zero-copy, evictable)
+      source: agentionai/Qwen3.8-Flash-Next-Gyro-GGUF (Gyro-S TQ1_0, engine Strata 0.1.48 cuda13 / Terminal 0.2.4.2)
+      kv_cache: k8v4 (streaming, resident 4096)
+      features:
+        completion: true
+        tools: false
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen4exp
+      parameters: 125000000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: TQ1_0
+      note: "Install via Terminal oficial do Strata (Terminal 0.2.4.2, engine 0.1.48 cuda13, driver 580+). Bench da casa N=5 (24/10, 0 falhas): chat decode 17.87 t/s (piso 15.9, CV 3.9%), prompt 4K 257 t/s, agent decode 16.3 t/s / cache hit 70.8%. Referencial: Mac mini 32GB 9.1 t/s, A750 8GB 15.8, 3050-8GB do kassane 20-25. O teto REAL de contexto na 6GB e 16K: 32K abre (2/2, ~5.77 GB VRAM) mas colapsa em uso com 'verify: instantiate: out of memory' (15 falhas no bench); 64K/128K nunca abrem (parede do alocador do prompt path no raso do VMM, free-at-failure constante ~44-48 MiB, buffers 9/18/36 por passo de ctx - forense na skill strata-gyro-6gb). Sem MTP draft (custa 3.75 GiB de VRAM; prepado em Strata-data para teste futuro). Sampling do proprio server (temp 1.0/0.95/20/0.05, Qwen-oficial). Emergency: strata launch --stop; presets salvos: gyro-32k, gyro-131k (nao operacionais); manifest de desinstalacao em ~/.llama-models/REINSTALAR-STRATA-2026-10.md."
+# GGUF deletado 24/10/2026 (sacrificio pro Gyro-S); re-baixavel de mudler/LFM2.5-24B-A2B-APEX-GGUF
   lfm2.5-24b-a2b:
+    unlisted: true
     name: LFM 2.5 24B A2B
     description: "LiquidAI flagship agentic MoE: 24B total / 2.45B active (64 experts, top-4 routing, 30 shortconv + 10 GQA layers). 131K context, 128K vocab, native reasoning. Agent-focused training (36T tokens); knowledge-heavy tasks need retrieval."
     cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
@@ -1185,7 +1225,9 @@ models:
       context_length: 131072
       quantization: APEX I-Compact
       note: 'MoE 64 experts +4 usados/token, 2 dense-lead blocks (header do GGUF cravado). Reasoning NATIVO (template preserve_thinking — SEM toggle enable_thinking, sempre pensa; SEM handle :think de decreto do user 13/out: a variante é desnecessária no always-think). ctx 131072 NO cmd (decreto user 13/out: 131K ou morte; o KV q4_0 = +0.7 GB VRAM: cabe). -cmoe = o offload exclusivo do cafe (experts RAM page-cache evictável, receita validada do laguna 34.6 t/s @131K). Estimativa de decode: 25-35 t/s (A2B < A3B do laguna). GGUF em ~/.llama-models/lfm25-24b-a2b/.'
+# aponta pro mesmo GGUF deletado (ver lfm2.5-24b-a2b)
   lfm2.5-24b-a2b-fast:
+    unlisted: true
     name: LFM 2.5 24B A2B (fast)
     description: "LiquidAI flagship agentic MoE. 24B total / 2.45B active (64 experts, top-4 routing, 30 shortconv + 10 GQA layers). 131K context, 128K vocab, native reasoning. Agent-focused training (36T tokens); knowledge-heavy tasks need retrieval. ik_llama.cpp backend, higher RAM/VRAM usage."
     cmd: '${ik_llama_server} --port ${PORT}
@@ -1348,7 +1390,9 @@ models:
       embedding_length: 2048
       quantization: Q3_K exps / Q4_K base
       note: "Linha MiniCPM-V 4.7 out/2026: card declara vence Qwen3.6-35B-A3B (score+tempo) — a liga disk 35B da casa é ornith 143.6 > occamy 141.4 > qwen3.8-distill 141.0, e a comparação declarada deles é vs a geração física anterior. mix_q3gud_im = recomendação OFICIAL do cookbook (experts Q3_K c/ imatrix sobre base Q4_K_M = 15.5GB 'matches Q4_K_M on benchmarks'); Q4_K_M puro = 21.17GB. -ot ffn_*_exps=CPU = rota de laguna/ornith (3B ativos, experts na RAM). M-RoPE canvas: PR #29416 (rope.section_order) — cafe v0.76 (ad57e28a1, 13/Out) MERGEADO e suporta; ik SEM #29416 ainda (fragment usa cafe). tools: true = card diz tool-calling nativo (SGLang/vLLM/llama.cpp/ollama); smoke valida. mmproj 4x = mais detalhe; 16x alternativa mais rápida. health 600s = MoE 15.5GB + mmproj cold start longo. Sampling: card oficial temp 0.7/top-p 0.9/top-k 100/rp 1.05 (regra da série). LES (Lookahead Expert Scheduling) e DSpark NÃO fazem parte: são do fork tc-mb/llama.cpp-omni (13-17 t/s no iPhone é o cenário experts-no-SSD; nossa rota experts-na-RAM não usa)."
+# GGUF+mmproj deletados 24/10/2026 (sacrificio pro Gyro-S); fonte SC117 viva (HTTP 200 em 24/10)
   ornith-1.5-35b-heretic:
+    unlisted: true
     name: Ornith 1.5 35B Heretic
     description: 35B-A3B MoE generalist assistant, abliterated (heretic TPE). 200K context, strong agentic and tool-calling behavior.
     cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
