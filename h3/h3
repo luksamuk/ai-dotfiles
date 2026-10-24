@@ -187,8 +187,7 @@ resolve_lora() {
     pdd-fl2v) echo "minimax_h3_fl2va_pdd_8step_lora_bf16"; return 0 ;;
     pdd-ref) echo "minimax_h3_ref2va_pdd_8step_lora_bf16"; return 0 ;;
   esac
-  # 3) busca parcial case-insensitive (1 hit = resolve; key única do nome serve:
-  #    hmpussy, penetration, grindtime, deepthroat, "handjob helper", innie, masturbating...)
+  # 3) busca parcial case-insensitive (1 hit = resolve; qualquer trecho único do nome serve)
   #    NOTA 02/out: apelidos de stems mortos da era int8 foram REMOVIDOS — eles
   #    sombreavam a busca parcial que resolve pelo nome vivo do disco
   hits=$(ls -1 "$WAN2GP_DIR/loras/minimax_h3/" 2>/dev/null | grep -i "$key" | grep '\.safetensors$' || true)
@@ -197,8 +196,7 @@ resolve_lora() {
     echo "${hits%.safetensors}"; return 0
   elif [[ "$nhits" -gt 1 ]]; then
     # Ambíguo: prioriza stem que COMEÇA com a key (é o nome do LoRA, não a trigger
-    # embutida no nome de outra — ex. "hmpussy" casa HMPussy v1.0 E o trigger dentro
-    # do nome do HMMasturbation; o prefixo desambigua)
+    # embutida no nome de outra; o prefixo desambigua)
     pref=""
     while IFS= read -r h; do
       [[ -z "$h" ]] && continue
@@ -225,10 +223,6 @@ lora_desc() {
     natural_face_speech_h3_lora_v1_500) echo "NAFASP: fala natural + dinâmica facial [OFF por padrão; --nafasp liga @0.6]" ;;
     minimax-h3-facial-realism-closeup-cp2000) echo "Facial Realism cp2000: poros/textura de pele em close-up humano [use --facial]" ;;
     h3_character_swap_pro4500_1000) echo "CHARACTER SWAP: troca personagem do ref-video pela ref-img [use --replace]" ;;
-    Grindtime) echo "NSFW: movimento rítmico de quadril [1.0str]" ;;
-    "HMPussy v1.0"*) echo "NSFW: genitália feminina [0.9str]" ;;
-    "HMPenetration I2V"*) echo "NSFW: penetração, trigger 'hmotion' [1.0str]" ;;
-    "Penis Lora v1.1"*) echo "NSFW: anatomia masculina PENISLORA [1.0str]" ;;
     minimax_h3_fl2v_lightx2v_turbo_8step_v1.0_resized_avg_rank_24_bf16) echo "TURBO FL2VA 8-step [prefira --turbo]" ;;
     minimax_h3_ref2v_turbo_4step_v0.1_comfyui_resized_avg_rank_21_bf16) echo "TURBO Ref2VA 4-step [prefira --turbo]" ;;
     minimax_h3_fl2va_pdd_8step_lora_bf16) echo "PDD FL2VA 8-step [prefira --pdd]" ;;
@@ -379,13 +373,8 @@ Opções gerais:
                      use --nsfw-lora/--force-nsfw-loras/--lora, senão roda base
                      (sem genitália; avisado no log)
   --nsfw-lora PALAVRA  Força UMA LoRA pelo nome (repeatable; palavra-chave ÚNICA do
-                     nome resolve via busca parcial):
-                     hmpussy     (genitália fem, 0.9)
-                     penetration (penetração, trigger hmotion)
-                     grindtime   (mov. rítmico de quadril)
-                     deepthroat  (Daring FL2VA)
-                     handjob helper / innie / masturbating / fingering / penis lora
-                     Catálogo completo com IDs e forças: h3 --list-loras
+                     nome resolve via busca parcial). Os nomes e forças vivem no
+                     catálogo, não aqui: use `h3 --list-loras` para ver o que existe.
   --nsfw-strength N   Sobrescreve força de TODOS os LoRAs NSFW (default: força
                      recomendada de cada um; sem catálogo = 0.8, range 0.1-1.0)
   --veda              ATIVA o Veda Sparse (já é o DEFAULT desde 21/out). Só existe
@@ -400,8 +389,8 @@ Opções gerais:
                      "Facial Realism" é injetada no prompt automaticamente
   --facial-strength N Força do LoRA Facial (default: 1.0, range 0.1-1.0)
   --facial-file NOME  Override do arquivo do LoRA Facial
-  --lora NOME[@FORÇA] Carrega qualquer LoRA (repeatable; aceita apelidos didáticos,
-                     ex: --lora nafasp@0.6 --lora grindtime@0.5)
+  --lora NOME[@FORÇA] Carrega qualquer LoRA (repeatable; aceita apelido ou trecho do
+                     nome). Ex.: --lora nafasp@0.6
   --list-loras        Lista LoRAs disponíveis com descrições e sai
   --web              Abre interface web (Gradio UI)
   -h, --help         Esta ajuda
@@ -483,9 +472,8 @@ if [[ "$LIST_LORAS" == true ]]; then
     fi
   done < <(ls -1 "$WAN2GP_DIR/loras/minimax_h3/"*.safetensors 2>/dev/null)
   echo ""
-  echo "Uso: --lora NOME[@FORÇA]  (repeatable; aceita apelidos: nafasp, facial, grindtime,"
-  echo "     aio, hmpussy, penetration, turbo-fl2v...)"
-  echo "Ex.: h3 \"...\" --lora nafasp@0.6 --lora grindtime@0.5"
+  echo "Uso: --lora NOME[@FORÇA]  (repeatable; aceita apelido ou trecho do nome)"
+  echo "Ex.: h3 \"...\" --lora nafasp@0.6"
   echo "Nota: nafasp tá OFF por padrão (--nafasp liga, @0.6). Não há mais LoRA turbo (geometria rank8 não tem aceleradora); PDD tem flag própria (--pdd)."
   exit 0
 fi
@@ -1655,17 +1643,34 @@ fi
 # ── NSFW: injetar trigger words no início do prompt (30/09) ───────────────
 # Feito FORA do bloco enhance (mesma razão do facial) pra cobrir com e sem --enhance.
 # Triggers AGORA vêm das LoRAs efetivamente resolvidas (resolve raw, 3ª seção),
-# não de heurística. Antes: "hmotion," ia SEMPRE (mesmo sem HMPenetration carregada —
-# token solto que puxava a base p/ sexo em cena que o LLM direcionou de outra forma)
-# e o trigger das LoRAs escolhidas (cmst, bl0w_j0b...) nunca entrava (LoRA carrega, sem ativação).
+# não de heurística. Antes um trigger fixo ia SEMPRE, mesmo sem a LoRA correspondente
+# carregada (token solto que puxava a base p/ conteúdo adulto em cena que o LLM
+# direcionou de outra forma), e o trigger das LoRAs escolhidas nunca entrava.
 if [[ "$NSFW" == true ]]; then
   # Limpar backticks, vírgulas soltas, espaços extras no início
   PROMPT="$(echo "$PROMPT" | sed 's/`//g; s/^[\t ,.]*//; s/  */ /g')"
   # Remover triggers que o LLM tenha colocado (sistema injeta — idempotente)
-  for tw in hmotion grindtime cmst bl0w_j0b penislora hmpussy inniepussy hmcumshot cumsh0t sensual_fingering squirting hmasturbation; do
+  # Lista vem do CATALOGO (fonte unica), nao de literais aqui: o codigo nao precisa
+  # conhecer vocabulario nenhum, so os triggers que existem hoje.
+  while IFS= read -r tw; do
+    [ ${#tw} -lt 3 ] && continue
     PROMPT="${PROMPT//${tw},/}"
     PROMPT="${PROMPT//${tw}/}"
-  done
+  done < <(python3 -c "
+import json, os
+p = os.path.expanduser('~/.local/share/h3/loras_minimax_h3.json')
+try:
+    for e in json.load(open(p))['loras']:
+        t = (e.get('trigger_instr_arquivo') or '').strip()
+        if not t:
+            continue
+        print(t)                      # frase inteira
+        tok = t.split(',')[0].strip()  # e o token duro (trigger costuma ser "X, frases...")
+        if len(tok) >= 3 and tok != t:
+            print(tok)
+except Exception:
+    pass
+" 2>/dev/null)
   # Strip generico: remove do prompt os triggers das LoRAs REALMENTE resolvidas, nao so a
   # lista fixa de legados acima. O LLM as vezes escreve o trigger mesmo instruido a nao;
   # aqui garante que a unica ocorrencia seja a injetada pelo sistema.
