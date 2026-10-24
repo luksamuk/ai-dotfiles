@@ -1,0 +1,95 @@
+{
+ "criado": "2026-10-23",
+ "modelo": "MiniMax H3 (FL2VA + Ref2VA) via Wan2GP",
+ "nota": "Desinstalacao reversivel dos PESOS. LoRAs, codigo e catalogo ficam (3,1 GB).",
+ "total_bytes": 61070316509,
+ "bases": [
+  {
+   "repo": "DeepBeepMeep/MiniMax-H3",
+   "file": "MiniMax-H3-FL2VA-pruned_rank8_int8_convrot.safetensors",
+   "dest": "ckpts/MiniMax-H3-FL2VA-pruned_rank8_int8_convrot.safetensors",
+   "size": 21057674787,
+   "sha256": "30ff400f974b11a1ef13d216c5d9f6439a9c10322a3988b0374a39672ce286f0",
+   "presente_local": true
+  },
+  {
+   "repo": "DeepBeepMeep/MiniMax-H3",
+   "file": "MiniMax-H3-Ref2VA-pruned_rank8_int8_convrot.safetensors",
+   "dest": "ckpts/MiniMax-H3-Ref2VA-pruned_rank8_int8_convrot.safetensors",
+   "size": 21057674788,
+   "sha256": "e09db861c48d13560222948b4e38082bc21b1b7d4ddcaed9c865bf9c3233898c",
+   "presente_local": true
+  },
+  {
+   "repo": "DeepBeepMeep/MiniMax-H3",
+   "file": "Qwen3-VL-32B-Instruct/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf",
+   "dest": "ckpts/Qwen3-VL-32B-Instruct/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf",
+   "size": 14576977888,
+   "sha256": "1bf75e038c5895b97b6ea16cc1e3d32076254b06ec3df10657650d86dc82279e",
+   "presente_local": true
+  },
+  {
+   "repo": "DeepBeepMeep/MiniMax-H3",
+   "file": "minimax_h3/minimax_h3_latent_upscaler_3d_bf16.safetensors",
+   "dest": "ckpts/minimax_h3/minimax_h3_latent_upscaler_3d_bf16.safetensors",
+   "size": 690592992,
+   "sha256": "4f57821f5837f32f7142b67d815606dbd7550f194e5c769f7d6c3f83b146a5e6",
+   "presente_local": true
+  },
+  {
+   "repo": "DeepBeepMeep/MiniMax-H3",
+   "file": "minimax_h3/minimax_h3_r2va_veda_predictor_int8_convrot.safetensors",
+   "dest": "ckpts/minimax_h3/minimax_h3_r2va_veda_predictor_int8_convrot.safetensors",
+   "size": 280726347,
+   "sha256": "222be84ea4717959f88e7222cdba7e3ce4530e881a9bed0a44cdf7299cc1f924",
+   "presente_local": true
+  },
+  {
+   "repo": "DeepBeepMeep/MiniMax-H3",
+   "file": "minimax_h3/minimax_h3_t2va_veda_predictor_int8_convrot.safetensors",
+   "dest": "ckpts/minimax_h3/minimax_h3_t2va_veda_predictor_int8_convrot.safetensors",
+   "size": 280726251,
+   "sha256": "21600e9c9007409d55ca6e9f65e373d95f5113cbb3939560feaf1bef3c9b389c",
+   "presente_local": true
+  },
+  {
+   "repo": "DeepBeepMeep/MiniMax-H3",
+   "file": "minimax_h3/minimax_h3_video_vae_int8_convrot.safetensors",
+   "dest": "ckpts/minimax_h3/minimax_h3_video_vae_int8_convrot.safetensors",
+   "size": 2811065256,
+   "sha256": "0cb8161a12166fb049a2c1295e6a4833fdc571effdab9ac0ed074b10f2d6646d",
+   "presente_local": true
+  }
+ ],
+ "turbo": {
+  "repo": "GuangyuanSD/minimax_h3_video_vae_int8_convrot",
+  "file": "minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors",
+  "dest": "loras/minimax_h3/minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors",
+  "size": 314878200,
+  "sha256": "3a069f26fbc33f377a60dc72dd9e15f2aa42aa1d1b44915fded835716672dd36",
+  "presente_local": true
+ },
+ "symlinks": [
+  [
+   "ckpts/MiniMax-H3-FL2VA-pruned_int8_convrot.safetensors",
+   "MiniMax-H3-FL2VA-pruned_rank8_int8_convrot.safetensors"
+  ],
+  [
+   "ckpts/MiniMax-H3-Ref2VA-pruned_int8_convrot.safetensors",
+   "MiniMax-H3-Ref2VA-pruned_rank8_int8_convrot.safetensors"
+  ],
+  [
+   "ckpts/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf",
+   "Qwen3-VL-32B-Instruct/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf"
+  ]
+ ],
+ "manter": [
+  "~/.local/bin/h3",
+  "~/git/ai-dotfiles/h3/*.py",
+  "~/.local/share/h3/*.json",
+  "~/git/Wan2GP/loras/minimax_h3 (3,1 GB)",
+  "~/git/Wan2GP/finetunes/minimax_h3_*.json",
+  "~/git/Wan2GP/wgp_config.json",
+  "~/.hermes/scripts/h3_*.sh"
+ ]
+}
