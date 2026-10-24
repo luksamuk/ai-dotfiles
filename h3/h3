@@ -1849,11 +1849,15 @@ if { [[ "$LORA_SELECT" == true ]] || [[ "$NSFW" == true ]]; } \
   # O seletor carrega o decision model (d1-3b) no llama-swap DEPOIS do evict do enhance.
   # Sem este evict ele fica na VRAM durante todo o render, brigando com o H3 em 6 GB.
   if [[ "$LORA_SELECTOR" == "decision" ]]; then
-    if "$LLAMA_SWAP_CLI" unload 2>/dev/null; then
+    # LLAMA_SWAP_CLI so e definido dentro do bloco do enhance; sem --enhance fica vazio.
+    # O fallback HTTP /v1/unload nao existe (404), entao o CLI e o unico caminho real.
+    _LSC="${LLAMA_SWAP_CLI:-$HOME/git/ai-dotfiles/llama-swap/llama-swap-cli}"
+    if [[ -x "$_LSC" ]] && "$_LSC" unload 2>/dev/null; then
       echo "=== Decision model evictado da VRAM ==="
-    elif curl -s --fail -X POST http://localhost:12434/v1/unload 2>/dev/null >/dev/null; then
-      echo "=== Decision model evictado via API ==="
+    else
+      echo "=== Aviso: decision model pode seguir na VRAM (unload falhou) ==="
     fi
+    unset _LSC
   fi
 fi
 
