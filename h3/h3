@@ -1691,14 +1691,14 @@ if p2 != p:
     print("[h3] dialogo inventado removido (fala nao foi pedida)", file=sys.stderr)
 # 2) Sound N/A ou vazio: sem som descrito o modelo gera BGM sozinho, e a frase de
 #    no-speech (que impede fala inventada) nunca entra. Sempre falha, nunca escolha.
-m = re.search(r"(?i)sound:\s*([^\n]*)", p2)
+m = re.search(r"(?i)(?:overall_)?sound(?:scape)?:\s*([^\n]*)", p2)
 if m:
     linha = m.group(1).strip()
     if not linha or re.fullmatch(r"(?i)(n/?a|none|nothing|-|\.)\.?", linha):
         p2 = p2[:m.start(1)] + " " + FRASE + p2[m.end(1):]
         print("[h3] Sound N/A -> frase de no-speech", file=sys.stderr)
 elif "<d>" not in p2:
-    p2 = p2.rstrip() + " Sound: " + FRASE
+    p2 = p2.rstrip() + "\n\noverall_soundscape: " + FRASE
     print("[h3] sem linha Sound -> no-speech acrescentado", file=sys.stderr)
 print(re.sub(r"[ \t]{2,}", " ", p2).strip())
 ')
