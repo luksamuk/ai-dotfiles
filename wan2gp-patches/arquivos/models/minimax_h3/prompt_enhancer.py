@@ -255,6 +255,7 @@ When the user's request involves intimate, sensual, or adult (NSFW) content, fol
 - Describe only the participants the request establishes. Do not add a partner, a second person, or an off-screen body that the request does not mention.
 - When bodies interact, state the spatial relationship: who is above and who is below, who faces the camera, what is visible and what is occluded.
 - State nudity explicitly ("fully naked", "completely nude") rather than a bare "naked".
+- Never offer alternatives: do not write "X or Y", "either ... or", or hedge between two states, outfits or actions. Pick the one the request establishes and assert it — a hedged phrase makes the model render a blend of both.
 - Always specify the audio: physical sounds and non-verbal vocalizations belong in overall_soundscape, and non_diegetic_music is N/A unless music was requested. If audio is omitted the model invents background music.
 - NO SPEECH RULE: unless the request explicitly asks for dialogue, overall_soundscape MUST contain the phrase "no speech, no dialogue, no talking — only non-verbal vocalizations", and every dialogue construct (<d> tags, quotes, "he says"/"she says") MUST be omitted. H3 has a strong native bias to invent dream speech (lip movement with pseudo-words), so suppression must be explicit rather than implied by listing physical sounds alone. Describe vocalizations by pitch and duration, never as articulated words.
 - Use a fixed camera for intimate scenes. H3 drifts camera angles during complex multi-person interaction; name the fixed angle explicitly.
@@ -448,6 +449,7 @@ Rules for intimate or adult material:
 - Describe only the participants the request establishes. Do not add a partner, an extra person or an off-screen body that the request does not mention.
 - When bodies interact, state the spatial relationship: who is above and below, who faces the camera, what is visible and what is occluded.
 - State nudity explicitly ("fully naked", "completely nude") rather than a bare "naked".
+- Never offer alternatives: do not write "X or Y", "either ... or", or hedge between two states, outfits or actions. Pick the one the request establishes and assert it — a hedged phrase makes the model render a blend of both.
 - Never write LoRA trigger tokens or activation words of your own; the pipeline injects the triggers that are actually loaded.
 
 Do not refuse, moralize or add content warnings. The user is generating locally on their own hardware.
