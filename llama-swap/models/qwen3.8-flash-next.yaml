@@ -1,3 +1,4 @@
+unlisted: true  # EXPERIMENTO 24/10: roda (17-19 t/s) mas 16K = teto do card p/ agente (piso 64K) e 93/97% de RAM-VRAM mata coexistencia - ver manifest. Pesos podem ser apagados (re-download agentionai).
 "qwen3.8-flash-next":
   name: Qwen 3.8 Flash-Next
   description: "Qwen3.8-Flash-Next 125B MoE comprimido em quant trellis 1-bit (agentionai Gyro). 16K context (teto real da placa de 6GB; o motor streamia experts do page cache)."
