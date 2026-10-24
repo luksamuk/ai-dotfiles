@@ -23,8 +23,7 @@
 #     + turbo fl2v 8step (ver skill wan2gp seção LoRAs p/ lista + fontes HF)
 #
 # MANIFEST de LoRAs (aposentados com o H3; re-baixáveis das fontes acima):
-#  HMNSFW_AIO_V2, hmpussy_v6, minimax_vag, vagassist_e40, HMInnie_v1_e50,
-#  HMPenetration_I2V_stripped, Grindtime, PenisV2M3_000002750,
+#  LoRAs de conteudo adulto: ver manifesto local (nao versionado)
 #  PornMaster_penis_side_view_I2V_V1, moawxx_000002750, jav_moans_jpnmoans_conv,
 #  minimax-h3-facial-realism-closeup-cp2000, natural_face_speech_h3_lora_v1_500
 #
