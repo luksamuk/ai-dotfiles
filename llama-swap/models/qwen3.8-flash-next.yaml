@@ -1,5 +1,5 @@
-gyro-s:
-  name: Qwen 3.8 Gyro-S
+"qwen3.8-flash-next":
+  name: Qwen 3.8 Flash-Next
   description: "Qwen3.8-Flash-Next 125B MoE comprimido em quant trellis 1-bit (agentionai Gyro). 16K context (teto real da placa de 6GB; o motor streamia experts do page cache)."
   cmd: 'sh -c "cd ${env.HOME}/.local/share/strata/terminal/current && CUDA_MODULE_LOADING=LAZY GGML_CUDA_FORCE_MMQ=1 STRATA_RESIDENT_HEADROOM_GIB=1.5 exec ionice -c2 -n7 ./python/bin/python3.12 -m serve.server --engine strata --config ${env.HOME}/git/ai-dotfiles/llama-swap/strata/gyro-s-16k.json --host 127.0.0.1 --port ${PORT}"'
   env:
