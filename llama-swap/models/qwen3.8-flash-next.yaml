@@ -1,5 +1,7 @@
-unlisted: true  # EXPERIMENTO 24/10: roda (17-19 t/s) mas 16K = teto do card p/ agente (piso 64K) e 93/97% de RAM-VRAM mata coexistencia - ver manifest. Pesos podem ser apagados (re-download agentionai).
+# EXPERIMENTO 24/10: roda (17-21 t/s) mas 16K = teto do card para agente (piso da casa 64K)
+# e 93/97% de RAM-VRAM mata coexistencia - ver manifest (REINSTALAR-STRATA). Pesos apagaveis (re-download agentionai).
 "qwen3.8-flash-next":
+  unlisted: true
   name: Qwen 3.8 Flash-Next
   description: "Qwen3.8-Flash-Next 125B MoE comprimido em quant trellis 1-bit (agentionai Gyro). 16K context (teto real da placa de 6GB; o motor streamia experts do page cache)."
   cmd: 'sh -c "cd ${env.HOME}/.local/share/strata/terminal/current && CUDA_MODULE_LOADING=LAZY GGML_CUDA_FORCE_MMQ=1 STRATA_RESIDENT_HEADROOM_GIB=1.5 exec ionice -c2 -n7 ./python/bin/python3.12 -m serve.server --engine strata --config ${env.HOME}/git/ai-dotfiles/llama-swap/strata/gyro-s-16k.json --host 127.0.0.1 --port ${PORT}"'
