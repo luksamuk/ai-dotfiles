@@ -1693,10 +1693,10 @@ models:
       embedding_length: 2048
       quantization: APEX I-Mini
       note: 'vram detalhe: ~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34) APEX I-Mini quant do mudler (base llmfan46 heretic TPE, -2.7 GB vs prod). Sep 24: experimental. O mesmo heretic TPE do prod em quant APEX-I-Mini (14.32 GB). MTP off (sem nextn tail). Se andar bem, substitui o prod.'
-# EXPERIMENTO 24/10: roda (17-21 t/s) mas 16K = teto do card para agente (piso da casa 64K)
-# e 93/97% de RAM-VRAM mata coexistencia - ver manifest (REINSTALAR-STRATA). Pesos apagaveis (re-download agentionai).
+# VEREDITO FINAL 24/10 (user): RODA, velocidade boa, mas INVIABILIZA o resto do uso do computador
+# (93-94% VRAM / 97% RAM no modo residente, o guard de 512 espremido por qualquer processo vivo).
+# Cenario ideal: rodar o modelo SEM o Hyprland - e mesmo assim o teto e 16K (o piso de agente da casa e 64K).
   "qwen3.8-flash-next":
-    unlisted: true
     name: Qwen 3.8 Flash-Next
     description: "Qwen3.8-Flash-Next 125B MoE comprimido em quant trellis 1-bit (agentionai Gyro). 16K context (teto real da placa de 6GB; o motor streamia experts do page cache)."
     cmd: 'sh -c "cd ${env.HOME}/.local/share/strata/terminal/current && CUDA_MODULE_LOADING=LAZY GGML_CUDA_FORCE_MMQ=1 STRATA_RESIDENT_HEADROOM_GIB=1.5 exec ionice -c2 -n7 ./python/bin/python3.12 -m serve.server --engine strata --config ${env.HOME}/git/ai-dotfiles/llama-swap/strata/gyro-s-16k.json --host 127.0.0.1 --port ${PORT}"'
