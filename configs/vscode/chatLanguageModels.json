@@ -5,76 +5,49 @@
     "apiType": "chat-completions",
     "models": [
       {
-        "id": "qwen3.5-4b",
-        "name": "Qwen 3.5 4B",
+        "id": "bonsai2-9b",
+        "name": "Ternary Bonsai 9B",
         "url": "http://localhost:12434/v1/chat/completions",
         "toolCalling": true,
-        "vision": false,
-        "maxInputTokens": 131072,
-        "maxOutputTokens": 16000
+        "vision": true,
+        "maxInputTokens": 114688,
+        "maxOutputTokens": 16384
       },
       {
-        "id": "qwen3.5-4b:think",
-        "name": "Qwen 3.5 4B (Think)",
+        "id": "lfm2.5-24b-a2b",
+        "name": "LFM 2.5 24B A2B",
         "url": "http://localhost:12434/v1/chat/completions",
         "toolCalling": true,
         "vision": false,
-        "maxInputTokens": 131072,
-        "maxOutputTokens": 16000
+        "maxInputTokens": 114688,
+        "maxOutputTokens": 16384
       },
       {
-        "id": "lfm2.5-2.6b",
-        "name": "LFM 2.5 2.6B",
+        "id": "minicpm-v-4.7-35b",
+        "name": "MiniCPM-V 4.7 35B-A3B",
         "url": "http://localhost:12434/v1/chat/completions",
         "toolCalling": true,
-        "vision": false,
-        "maxInputTokens": 131072,
-        "maxOutputTokens": 16000
+        "vision": true,
+        "maxInputTokens": 114688,
+        "maxOutputTokens": 16384
       },
       {
-        "id": "lfm2.5-2.6b:think",
-        "name": "LFM 2.5 2.6B (Think)",
+        "id": "nemotron-bolt-e4b",
+        "name": "Nemotron 3.5 Bolt E4B",
         "url": "http://localhost:12434/v1/chat/completions",
         "toolCalling": true,
         "vision": false,
-        "maxInputTokens": 131072,
-        "maxOutputTokens": 16000
+        "maxInputTokens": 32768,
+        "maxOutputTokens": 16384
       },
       {
-        "id": "ornith-1.5-35b",
-        "name": "Ornith 1.5 35B",
+        "id": "ornith-1.5-35b-heretic",
+        "name": "Ornith 1.5 35B Heretic",
         "url": "http://localhost:12434/v1/chat/completions",
         "toolCalling": true,
-        "vision": false,
-        "maxInputTokens": 131072,
-        "maxOutputTokens": 16000
-      },
-      {
-        "id": "ornith-1.5-35b:think",
-        "name": "Ornith 1.5 35B (Thinking)",
-        "url": "http://localhost:12434/v1/chat/completions",
-        "toolCalling": true,
-        "vision": false,
-        "maxInputTokens": 131072,
-        "maxOutputTokens": 16000
-      },
-      {
-        "id": "bonsai-27b",
-        "name": "Bonsai 27B (1-bit)",
-        "url": "http://localhost:12434/v1/chat/completions",
-        "toolCalling": true,
-        "vision": false,
-        "maxInputTokens": 131072,
-        "maxOutputTokens": 16000
-      },
-      {
-        "id": "bonsai-27b:think",
-        "name": "Bonsai 27B 1-bit (Thinking)",
-        "url": "http://localhost:12434/v1/chat/completions",
-        "toolCalling": true,
-        "vision": false,
-        "maxInputTokens": 131072,
-        "maxOutputTokens": 16000
+        "vision": true,
+        "maxInputTokens": 183616,
+        "maxOutputTokens": 16384
       },
       {
         "id": "qwen3.6-35b-a3b-heretic",
@@ -82,35 +55,35 @@
         "url": "http://localhost:12434/v1/chat/completions",
         "toolCalling": true,
         "vision": true,
-        "maxInputTokens": 131072,
-        "maxOutputTokens": 16000
+        "maxInputTokens": 114688,
+        "maxOutputTokens": 16384
       },
       {
-        "id": "qwen3.6-35b-a3b-heretic:think",
-        "name": "Qwen 3.6 35B Heretic (Thinking)",
+        "id": "qwen3.6-35b-a3b-heretic-fast",
+        "name": "Qwen 3.6 35B Heretic Fast",
         "url": "http://localhost:12434/v1/chat/completions",
         "toolCalling": true,
         "vision": true,
-        "maxInputTokens": 131072,
-        "maxOutputTokens": 16000
+        "maxInputTokens": 86016,
+        "maxOutputTokens": 16384
       },
       {
-        "id": "qwen3.6-35b-a3b-heretic-cafe:think",
-        "name": "Qwen 3.6 35B Heretic (Thinking, Cafe-Llama.cpp)",
-        "url": "http://localhost:12434/v1/chat/completions",
-        "toolCalling": true,
-        "vision": true,
-        "maxInputTokens": 65536,
-        "maxOutputTokens": 16000
-      },
-      {
-        "id": "qwen3-coder-30b",
-        "name": "Qwen 3 Coder 30B",
+        "id": "spark-x2.6-4b",
+        "name": "Spark X2.6 4B",
         "url": "http://localhost:12434/v1/chat/completions",
         "toolCalling": true,
         "vision": false,
-        "maxInputTokens": 131072,
-        "maxOutputTokens": 16000
+        "maxInputTokens": 114688,
+        "maxOutputTokens": 16384
+      },
+      {
+        "id": "twil-lm3-pro",
+        "name": "TwIL-LM3-Pro",
+        "url": "http://localhost:12434/v1/chat/completions",
+        "toolCalling": true,
+        "vision": false,
+        "maxInputTokens": 114688,
+        "maxOutputTokens": 16384
       }
     ]
   },
@@ -120,12 +93,39 @@
     "apiType": "chat-completions",
     "models": [
       {
-        "id": "deepseek-v4.1-flash:cloud",
+        "id": "deepseek-v4-pro:cloud",
+        "name": "DeepSeek V4 Pro",
+        "url": "http://localhost:11434/v1/chat/completions",
+        "toolCalling": true,
+        "vision": false,
+        "maxInputTokens": 1015808,
+        "maxOutputTokens": 32768
+      },
+      {
+        "id": "deepseek-v4.1-flash:1017-cloud",
         "name": "DeepSeek V4.1 Flash",
         "url": "http://localhost:11434/v1/chat/completions",
         "toolCalling": true,
         "vision": false,
-        "maxInputTokens": 1000000,
+        "maxInputTokens": 1015808,
+        "maxOutputTokens": 32768
+      },
+      {
+        "id": "gemma4:31b-cloud",
+        "name": "Gemma 4 31B",
+        "url": "http://localhost:11434/v1/chat/completions",
+        "toolCalling": true,
+        "vision": true,
+        "maxInputTokens": 229376,
+        "maxOutputTokens": 32768
+      },
+      {
+        "id": "glm-5.2:cloud",
+        "name": "GLM-5.2",
+        "url": "http://localhost:11434/v1/chat/completions",
+        "toolCalling": true,
+        "vision": false,
+        "maxInputTokens": 967232,
         "maxOutputTokens": 32768
       },
       {
@@ -134,7 +134,7 @@
         "url": "http://localhost:11434/v1/chat/completions",
         "toolCalling": true,
         "vision": false,
-        "maxInputTokens": 1000000,
+        "maxInputTokens": 1015808,
         "maxOutputTokens": 32768
       },
       {
@@ -143,7 +143,7 @@
         "url": "http://localhost:11434/v1/chat/completions",
         "toolCalling": true,
         "vision": false,
-        "maxInputTokens": 1000000,
+        "maxInputTokens": 1015808,
         "maxOutputTokens": 32768
       },
       {
@@ -151,9 +151,9 @@
         "name": "Kimi K2.6",
         "url": "http://localhost:11434/v1/chat/completions",
         "toolCalling": true,
-        "vision": false,
-        "maxInputTokens": 128000,
-        "maxOutputTokens": 16000
+        "vision": true,
+        "maxInputTokens": 229376,
+        "maxOutputTokens": 32768
       },
       {
         "id": "kimi-k2.7-code:cloud",
@@ -161,7 +161,7 @@
         "url": "http://localhost:11434/v1/chat/completions",
         "toolCalling": true,
         "vision": true,
-        "maxInputTokens": 262144,
+        "maxInputTokens": 229376,
         "maxOutputTokens": 32768
       },
       {
@@ -170,7 +170,7 @@
         "url": "http://localhost:11434/v1/chat/completions",
         "toolCalling": true,
         "vision": true,
-        "maxInputTokens": 1000000,
+        "maxInputTokens": 1015808,
         "maxOutputTokens": 32768
       },
       {
@@ -179,17 +179,17 @@
         "url": "http://localhost:11434/v1/chat/completions",
         "toolCalling": true,
         "vision": false,
-        "maxInputTokens": 128000,
-        "maxOutputTokens": 16000
+        "maxInputTokens": 1015808,
+        "maxOutputTokens": 32768
       },
       {
         "id": "minimax-m3:cloud",
         "name": "MiniMax M3",
         "url": "http://localhost:11434/v1/chat/completions",
         "toolCalling": true,
-        "vision": false,
-        "maxInputTokens": 128000,
-        "maxOutputTokens": 16000
+        "vision": true,
+        "maxInputTokens": 491520,
+        "maxOutputTokens": 32768
       },
       {
         "id": "nemotron-3-nano:30b-cloud",
@@ -197,8 +197,8 @@
         "url": "http://localhost:11434/v1/chat/completions",
         "toolCalling": true,
         "vision": false,
-        "maxInputTokens": 128000,
-        "maxOutputTokens": 16000
+        "maxInputTokens": 1015808,
+        "maxOutputTokens": 32768
       },
       {
         "id": "nemotron-3-super:cloud",
@@ -206,8 +206,8 @@
         "url": "http://localhost:11434/v1/chat/completions",
         "toolCalling": true,
         "vision": false,
-        "maxInputTokens": 128000,
-        "maxOutputTokens": 16000
+        "maxInputTokens": 229376,
+        "maxOutputTokens": 32768
       },
       {
         "id": "nemotron-3-ultra:cloud",
@@ -215,17 +215,8 @@
         "url": "http://localhost:11434/v1/chat/completions",
         "toolCalling": true,
         "vision": false,
-        "maxInputTokens": 128000,
-        "maxOutputTokens": 16000
-      },
-      {
-        "id": "qwen3.5:cloud",
-        "name": "Qwen 3.5 397B",
-        "url": "http://localhost:11434/v1/chat/completions",
-        "toolCalling": true,
-        "vision": false,
-        "maxInputTokens": 128000,
-        "maxOutputTokens": 16000
+        "maxInputTokens": 229376,
+        "maxOutputTokens": 32768
       }
     ]
   }

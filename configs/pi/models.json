@@ -20,7 +20,7 @@
           "maxTokens": 16384
         },
         {
-          "id": "deepseek-v4.1-flash:cloud",
+          "id": "deepseek-v4.1-flash:1017-cloud",
           "name": "DeepSeek V4.1 Flash",
           "reasoning": true,
           "input": [
@@ -173,65 +173,72 @@
       },
       "models": [
         {
-          "id": "glm-ocr",
-          "name": "GLM-OCR",
-          "description": "OCR nativo (glm4 940M).",
-          "reasoning": false,
+          "id": "bonsai2-9b",
+          "name": "Ternary Bonsai 9B",
+          "reasoning": true,
           "input": [
             "text",
             "image"
           ],
           "contextWindow": 131072,
-          "maxTokens": 32768
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "top_k": 20,
+            "presence_penalty": 1.0
+          }
         },
         {
-          "id": "laguna-xs-2.1",
-          "name": "Laguna XS 2.1",
-          "description": "Poolside 33B MoE, codigo.",
+          "id": "bonsai2-9b-fast",
+          "name": "Ternary Bonsai 9B (fast)",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 65536,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "top_k": 20,
+            "presence_penalty": 1.0
+          }
+        },
+        {
+          "id": "lfm2.5-24b-a2b",
+          "name": "LFM 2.5 24B A2B",
           "reasoning": true,
           "input": [
             "text"
           ],
           "contextWindow": 131072,
-          "maxTokens": 32768
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.1,
+            "top_k": 50,
+            "repetition_penalty": 1.05
+          }
         },
         {
-          "id": "laguna-xs-2.1:think",
-          "name": "Laguna XS 2.1 Thinking",
-          "description": "Poolside 33B MoE, codigo.",
+          "id": "lfm2.5-24b-a2b-fast",
+          "name": "LFM 2.5 24B A2B (fast)",
           "reasoning": true,
           "input": [
             "text"
           ],
           "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "lfm2.5-2.6b",
-          "name": "LFM 2.5 2.6B",
-          "description": "Liquid AI 2.6B hybrid model — fast reasoning and tool calling, 131K context in 3.5 GB.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "lfm2.5-2.6b:think",
-          "name": "LFM 2.5 2.6B (Thinking)",
-          "description": "Liquid AI 2.6B hybrid model — fast reasoning and tool calling, 131K context in 3.5 GB.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.1,
+            "top_k": 50,
+            "repetition_penalty": 1.05
+          }
         },
         {
           "id": "lfm2.5-vl-3b",
           "name": "LFM2.5-VL 3B",
-          "description": "LFM2.5 VL 3B — visao texto+imagem.",
           "reasoning": false,
           "input": [
             "text",
@@ -241,105 +248,190 @@
           "maxTokens": 32768
         },
         {
-          "id": "minicpm5-2b",
-          "name": "MiniCPM5 2B",
-          "description": "OpenBMB MiniCPM5-2B: dense 2B (arch llama), 131K ctx nativo, tool calling limpo em ambos os modos, decode 78-84 t/s. Vendor SOTA 2B (AA Intelligence 15, acima de Granite 8B). Text-only, sem MTP.",
-          "reasoning": true,
+          "id": "minicpm-v-4.7-35b",
+          "name": "MiniCPM-V 4.7 35B-A3B",
+          "reasoning": false,
           "input": [
-            "text"
+            "text",
+            "image"
           ],
           "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "minicpm5-2b:think",
-          "name": "MiniCPM5 2B (Thinking)",
-          "description": "OpenBMB MiniCPM5-2B com thinking. Tool calling limpo nos dois modos. Fleet-best decode estavel (78 t/s CV 2.3%), needle @131K correta. Melhor disciplina de tool call do A/B (0 falso positivo).",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "nanbeige4.2-3b",
-          "name": "Nanbeige 4.2 3B",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 65536,
           "maxTokens": 32768,
           "samplingParams": {
             "temperature": 0.7,
-            "top_p": 0.9,
-            "top_k": 20
+            "top_p": 0.9
           }
         },
         {
-          "id": "nanbeige4.2-3b:think",
-          "name": "Nanbeige 4.2 3B (Thinking)",
+          "id": "minicpm-v-4.7-35b:think",
+          "name": "MiniCPM-V 4.7 35B-A3B",
           "reasoning": true,
           "input": [
-            "text"
+            "text",
+            "image"
           ],
-          "contextWindow": 65536,
+          "contextWindow": 131072,
           "maxTokens": 32768,
           "samplingParams": {
             "temperature": 0.7,
-            "top_p": 0.9,
-            "top_k": 20
+            "top_p": 0.9
           }
         },
         {
-          "id": "neohorse-1-4b",
-          "name": "NeoHorse 1 4B",
-          "description": "Qwen3.5-4B fine-tune comunitaria, 128K.",
+          "id": "nemotron-bolt-e4b",
+          "name": "Nemotron 3.5 Bolt E4B",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 49152,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "top_k": 64
+          }
+        },
+        {
+          "id": "nemotron-bolt-e4b:think",
+          "name": "Nemotron 3.5 Bolt E4B",
           "reasoning": true,
           "input": [
             "text"
           ],
-          "contextWindow": 131072,
+          "contextWindow": 49152,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "top_k": 64
+          }
+        },
+        {
+          "id": "ornith-1.5-35b-heretic",
+          "name": "Ornith 1.5 35B Heretic",
+          "reasoning": false,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 200000,
           "maxTokens": 32768
         },
         {
-          "id": "neohorse-1-4b:think",
-          "name": "NeoHorse 1 4B Thinking",
-          "description": "Qwen3.5-4B fine-tune comunitaria, 128K.",
+          "id": "ornith-1.5-35b-heretic:think",
+          "name": "Ornith 1.5 35B Heretic",
           "reasoning": true,
           "input": [
-            "text"
+            "text",
+            "image"
           ],
-          "contextWindow": 131072,
+          "contextWindow": 200000,
           "maxTokens": 32768
         },
         {
-          "id": "qwen3.5-4b",
-          "name": "Qwen3.5 4B",
-          "description": "Qwen 3.5 open-source multimodal model — exceptional utility and performance, integrating broad agentic capabilities.",
-          "reasoning": true,
+          "id": "qwen2.5-coder-1.5b-pollard",
+          "name": "Qwen2.5 Coder 1.5B Pollard",
+          "reasoning": false,
           "input": [
             "text"
           ],
-          "contextWindow": 131072,
+          "contextWindow": 32768,
           "maxTokens": 32768
         },
         {
-          "id": "qwen3.5-4b:think",
-          "name": "Qwen3.5 4B (Thinking)",
-          "description": "Qwen 3.5 open-source multimodal model — exceptional utility and performance, integrating broad agentic capabilities.",
+          "id": "qwen3.6-35b-a3b-heretic",
+          "name": "Qwen 3.6 35B Heretic",
+          "reasoning": false,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.95
+          }
+        },
+        {
+          "id": "qwen3.6-35b-a3b-heretic:think",
+          "name": "Qwen 3.6 35B Heretic",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.95
+          }
+        },
+        {
+          "id": "qwen3.6-35b-a3b-heretic-fast",
+          "name": "Qwen 3.6 35B Heretic Fast",
+          "reasoning": false,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 102400,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.85
+          }
+        },
+        {
+          "id": "qwen3.6-35b-a3b-heretic-fast:think",
+          "name": "Qwen 3.6 35B Heretic Fast",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 102400,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.95
+          }
+        },
+        {
+          "id": "spark-x2.6-4b",
+          "name": "Spark X2.6 4B",
           "reasoning": true,
           "input": [
             "text"
           ],
           "contextWindow": 131072,
-          "maxTokens": 32768
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "top_k": 0
+          }
+        },
+        {
+          "id": "spark-x2.6-4b:think",
+          "name": "Spark X2.6 4B",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "top_k": 0
+          }
         },
         {
           "id": "translategemma-4b",
           "name": "TranslateGemma 4B",
-          "description": "Traducao dedicada (Gemma3).",
           "reasoning": false,
           "input": [
             "text"
@@ -350,97 +442,20 @@
         {
           "id": "twil-lm3-pro",
           "name": "TwIL-LM3-Pro",
-          "description": "Especialista formal-logic da webAI (3.66B denso, Granite 4.2-3B). Entailment, FOL, Lean. Tool calling ok.",
-          "reasoning": true,
+          "reasoning": false,
           "input": [
             "text"
           ],
           "contextWindow": 131072,
-          "maxTokens": 32768
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 1.0,
+            "top_p": 0.95
+          }
         },
         {
           "id": "twil-lm3-pro:think",
-          "name": "TwIL-LM3-Pro Thinking",
-          "description": "Especialista formal-logic da webAI (3.66B denso, Granite 4.2-3B). Entailment, FOL, Lean. Tool calling ok.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "ornith-1.5-35b-heretic",
-          "name": "Ornith 1.5 35B Heretic",
-          "description": "Heretic Tiel (SC117 KL 0.0105 + Sharp v22.5.0) OFICIAL no cafe-llama.cpp 0.74 (-cmoe): ~30 t/s, RAM evictável, ctx 200K. Visão via mmproj BF16.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 200000,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.95,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "ornith-1.5-35b-heretic:think",
-          "name": "Ornith 1.5 35B Heretic (Thinking)",
-          "description": "Heretic Tiel (SC117 KL 0.0105 + Sharp v22.5.0) OFICIAL no cafe-llama.cpp 0.74 (-cmoe): ~30 t/s, RAM evictável, ctx 200K. Visão via mmproj BF16.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 200000,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.95,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "qwen3.6-35b-a3b-heretic",
-          "name": "Qwen 3.6 35B Heretic",
-          "description": "Heretic qwen3.6 (llmfan46 KL 0.0015) OFICIAL no cafe-llama.cpp 0.74 (-cmoe, Turbo KV): ctx 131K, RAM evictável. Visão via mmproj Q8.",
-          "reasoning": false,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.95,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "qwen3.6-35b-a3b-heretic:think",
-          "name": "Qwen 3.6 35B Heretic (Thinking)",
-          "description": "Heretic qwen3.6 (llmfan46 KL 0.0015) OFICIAL no cafe-llama.cpp 0.74 (-cmoe, Turbo KV): ctx 131K, RAM evictável. Visão via mmproj Q8.",
-          "reasoning": true,
-          "input": [
-            "text",
-            "image"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.6,
-            "top_p": 0.95,
-            "top_k": 20
-          }
-        },
-        {
-          "id": "k2-horizon-36b",
-          "name": "K2-Horizon MoVA 36B",
-          "description": "IFM K2-Horizon-MoVA-36B (APEX-Mini 14.74GB) no cafe-llama.cpp 0.75 — MoVA via override, 131K ctx. Normal (velocidade 14.3 t/s).",
+          "name": "TwIL-LM3-Pro",
           "reasoning": true,
           "input": [
             "text"
@@ -448,23 +463,7 @@
           "contextWindow": 131072,
           "maxTokens": 32768,
           "samplingParams": {
-            "temperature": 0.7,
-            "top_p": 0.95
-          }
-        },
-        {
-          "id": "k2-horizon-36b:think",
-          "name": "K2-Horizon MoVA 36B Thinking",
-          "description": "IFM K2-Horizon-MoVA-36B (APEX-Mini 14.74GB) no cafe-llama.cpp 0.75 — MoVA via override, 131K ctx. Normal com thinking.",
-          "reasoning": true,
-          "input": [
-            "text"
-          ],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
-          "samplingParams": {
-            "temperature": 0.7,
-            "top_p": 0.95
+            "temperature": 0.0
           }
         }
       ]
