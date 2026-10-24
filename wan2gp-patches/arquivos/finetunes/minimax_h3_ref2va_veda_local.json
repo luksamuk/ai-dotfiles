@@ -1,0 +1,19 @@
+{
+    "model": {
+        "name": "MiniMax H3 Ref2VA Pruned rank8 INT8 ConvRot + Veda Sparse (local)",
+        "architecture": "minimax_h3_ref2va_pruned",
+        "description": "INT8 ConvRot rank8 local + Veda attention. O predictor segue a quantizacao do transformer (INT8 ConvRot), que e o pareamento documentado. Exige Triton e GPU SM80+.",
+        "URLs": [
+            "/home/alchemist/git/Wan2GP/ckpts/MiniMax-H3-Ref2VA-pruned_rank8_int8_convrot.safetensors"
+        ],
+        "modules": [
+            [
+                "https://huggingface.co/DeepBeepMeep/MiniMax-H3/resolve/main/minimax_h3/minimax_h3_r2va_veda_predictor_int8_convrot.safetensors|minimax_h3"
+            ]
+        ],
+        "veda": true,
+        "text_encoder_variant": "gguf_q4_k_m"
+    },
+    "override_attention": "veda",
+    "prompt": "A woman looks toward the camera and smiles warmly, soft window light, slow push-in."
+}
