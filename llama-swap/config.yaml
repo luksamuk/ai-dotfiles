@@ -1693,49 +1693,6 @@ models:
       embedding_length: 2048
       quantization: APEX I-Mini
       note: 'vram detalhe: ~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34) APEX I-Mini quant do mudler (base llmfan46 heretic TPE, -2.7 GB vs prod). Sep 24: experimental. O mesmo heretic TPE do prod em quant APEX-I-Mini (14.32 GB). MTP off (sem nextn tail). Se andar bem, substitui o prod.'
-# VEREDITO FINAL 24/10 (user): RODA, velocidade boa, mas INVIABILIZA o resto do uso do computador
-# (93-94% VRAM / 97% RAM no modo residente, o guard de 512 espremido por qualquer processo vivo).
-# Cenario ideal: rodar o modelo SEM o Hyprland - e mesmo assim o teto e 16K (o piso de agente da casa e 64K).
-  "qwen3.8-flash-next":
-    name: Qwen 3.8 Flash-Next
-    description: "Qwen3.8-Flash-Next 125B MoE comprimido em quant trellis 1-bit (agentionai Gyro). 16K context (teto real da placa de 6GB; o motor streamia experts do page cache)."
-    cmd: 'sh -c "cd ${env.HOME}/.local/share/strata/terminal/current && CUDA_MODULE_LOADING=LAZY GGML_CUDA_FORCE_MMQ=1 STRATA_RESIDENT_HEADROOM_GIB=1.5 exec ionice -c2 -n7 ./python/bin/python3.12 -m serve.server --engine strata --config ${env.HOME}/git/ai-dotfiles/llama-swap/strata/gyro-s-16k.json --host 127.0.0.1 --port ${PORT}"'
-    env:
-      - "CUDA_MODULE_LOADING=LAZY"
-      - "GGML_CUDA_FORCE_MMQ=1"
-      - "STRATA_RESIDENT_HEADROOM_GIB=1.5"
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - text
-        - image
-      out:
-        - text
-      tools: true
-      reranker: false
-      context: 16384
-    metadata:
-      size: ~60 GB no disco (GGUF 58.5 + pack 1.5 + mmproj 0.9)
-      context: 16384
-      vram_usage: ~5.74 GB VRAM em request (93%) + ~21 GB RAM page-locked (hibrido mmap + resident-budget com lock 21, cache capado 200 e reserve 512)
-      source: agentionai/Qwen3.8-Flash-Next-Gyro-GGUF (Gyro-S TQ1_0; engine Strata 0.1.48 cuda13 / Terminal 0.2.4.2; mmproj F16)
-      kv_cache: k8v4
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen4exp
-      parameters: 125000000000
-      context_length: 262144
-      embedding_length: 2560
-      quantization: TQ1_0
-      note: "Install via Terminal oficial do Strata (0.2.4.2, engine 0.1.48 cuda13, driver 580+). Bench da casa N=5 (24/10, 0 falhas): chat decode 17.87 t/s (piso 15.9, CV 3.9%), prompt 4K 257 t/s, agent decode 16.3 t/s / cache hit 70.8%. Referencial: Mac mini 32GB 9.1 t/s, A750 8GB 15.8, 3050-8GB do kassane 20-25. Stamps pela porta da frota: tool call limpa (get_temp, finish=tool_calls) e visao via reader de CPU (mmproj-F16: um circulo vermelho sobre fundo branco, zero VRAM). SSD relief via modo residente: --resident-budget-gib 21.0 (21/21 GB page-locked hoje: o ulimit de uma vez engoliu; LimitMEMLOCK no servico do llama-swap garantiza), cache GPU CAPADO 200 + reserve 512 + kv-resident 2048 = SSD 461 MB-2.8 GB/request (era 5.6-6.7, o thrash do kernel: 4 faults) e multi-turno de tool-flow INTEIRO (o selo final: 436 tok @ 19.5 t/s, as 4 tool calls + resumo final). REGRA DA REGUA: free de VRAM no inicio do request >= 550-600 MiB = tudo passa; abaixo = cut nas trocas de fase (#2065 do paging + o raso das capturas = a mesma parede). O grafo de decode (~590 MiB) e contrato do serve.server. VRAM em request assenta ~93% (5.72-5.74 GB); o grafo de decode (~590 MiB) e CONTRATO do serve.server (--no-token-graph quebra o serve). Reserva 512 MiB no config (o warning do proprio engine: card full = driver paginaria VRAM pro RAM = decode a 0.5 t/s e streams quebrados, issue #2065); com o cache CAPADO (modo residente) o reserve e alavanca real (o auto nao re-come). A RAM paga o trade (user aprovou). O teto REAL de contexto na 6GB e 16K: 32K abre (2/2, ~5.77 GB VRAM) mas colapsa em uso (verify: instantiate: out of memory, 15 falhas no bench); 64K/128K nunca abrem (parede do alocador no raso do VMM: free-at-failure ~44-48 MiB, buffers 9/18/36 por passo de ctx - forense na skill strata-gyro-6gb). Sem MTP draft (custa 3.75 GiB de VRAM; prepado em Strata-data p/ teste futuro). Sampling do proprio server (temp 1.0/0.95/20/0.05, Qwen-oficial). Emergency: strata launch --stop; presets salvos: gyro-32k, gyro-131k (nao operacionais); manifest de desinstalacao em ~/.llama-models/REINSTALAR-STRATA-2026-10.md. Config do fleet versionado em llama-swap/strata/gyro-s-16k.json (edita LA e copia pro live se precisar). "
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
