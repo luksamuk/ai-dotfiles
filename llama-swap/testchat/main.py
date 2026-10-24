@@ -472,11 +472,39 @@ def parse_context_to_tokens(ctx) -> int | None:
     return max_tokens
 
 
+def _is_tts_model(model: dict) -> bool:
+    """Detecta modelo TTS (text->audio) no payload cru do /v1/models.
+
+    Três sinais redundantes, do mais confiável pro menos:
+      1. meta.llamaswap.features.tts == true   (tag do llama-swap)
+      2. capabilities.audio_speech == true     (tag OpenAI-compat)
+      3. architecture.output_modalities contém "audio"
+
+    NÃO confunda com feature "audio" (áudio de ENTRADA): d1-omni e
+    embeddinggemma aceitam áudio mas respondem texto — são chat, não TTS.
+    """
+    if not model:
+        return False
+    features = ((model.get("meta") or {}).get("llamaswap") or {}).get("features") or {}
+    if features.get("tts"):
+        return True
+    if (model.get("capabilities") or {}).get("audio_speech"):
+        return True
+    out_modalities = (model.get("architecture") or {}).get("output_modalities") or []
+    return "audio" in out_modalities
+
+
+# Modelos TTS não servem pra chat (endpoint /v1/chat/completions) — ficam
+# fora do picker. Escapar com TESTCHAT_SHOW_TTS=1 pra inspecionar.
+SHOW_TTS_MODELS = os.environ.get("TESTCHAT_SHOW_TTS", "").strip() not in ("", "0", "false", "no")
+
+
 def fetch_available_models():
     """Busca modelos disponíveis do endpoint /v1/models.
     
     Deduplica aliases (modelo = mesmo name), mantendo o ID mais descritivo.
     Separa variantes :think como propriedade do modelo base.
+    Filtra modelos TTS (text->audio) — não são chat.
     """
     try:
         response = requests.get(f"{BASE_URL}/models", timeout=5)
@@ -497,6 +525,13 @@ def fetch_available_models():
             if model_id in seen_ids:
                 continue
             seen_ids.add(model_id)
+            
+            # Pular modelos TTS (text->audio): não têm /v1/chat/completions.
+            # Fallback por nome quando o llama-swap não expõe as tags.
+            if not SHOW_TTS_MODELS and _is_tts_model(model):
+                continue
+            if not SHOW_TTS_MODELS and re.search(r'(^|[-_])(tts)([-_]|$)', model_id, re.IGNORECASE):
+                continue
             
             is_think = model_id.endswith(":think")
             name = model.get("name", model_id)
