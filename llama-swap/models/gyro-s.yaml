@@ -1,31 +1,33 @@
 gyro-s:
   name: Qwen 3.8 Gyro-S
   description: "Qwen3.8-Flash-Next 125B MoE comprimido em quant trellis 1-bit (agentionai Gyro). 16K context (teto real da placa de 6GB; o motor streamia experts do page cache)."
-  cmd: 'sh -c "cd ${env.HOME}/.local/share/strata/terminal/current && CUDA_MODULE_LOADING=LAZY GGML_CUDA_FORCE_MMQ=1 exec ./python/bin/python3.12 -m serve.server --engine strata --config ${env.HOME}/.local/state/strata/launch/gyro-s-16k.json --host 127.0.0.1 --port ${PORT}"'
+  cmd: 'sh -c "cd ${env.HOME}/.local/share/strata/terminal/current && CUDA_MODULE_LOADING=LAZY GGML_CUDA_FORCE_MMQ=1 STRATA_RESIDENT_HEADROOM_GIB=1.5 exec ionice -c2 -n7 ./python/bin/python3.12 -m serve.server --engine strata --config ${env.HOME}/.local/state/strata/launch/gyro-s-16k.json --host 127.0.0.1 --port ${PORT}"'
   env:
     - "CUDA_MODULE_LOADING=LAZY"
     - "GGML_CUDA_FORCE_MMQ=1"
+    - "STRATA_RESIDENT_HEADROOM_GIB=1.5"
   ttl: 900
   health_check_timeout: 900
   capabilities:
     in:
     - text
+    - image
     out:
     - text
-    tools: false
+    tools: true
     reranker: false
     context: 16384
   metadata:
-    size: ~60 GB no disco (GGUF 58.5 + pack 1.5)
+    size: ~60 GB no disco (GGUF 58.5 + pack 1.5 + mmproj 0.9)
     context: 16384
     vram_usage: ~5.7 GB VRAM (93%) + ~24 GB RAM como page cache (zero-copy, evictable)
-    source: agentionai/Qwen3.8-Flash-Next-Gyro-GGUF (Gyro-S TQ1_0, engine Strata 0.1.48 cuda13 / Terminal 0.2.4.2)
+    source: agentionai/Qwen3.8-Flash-Next-Gyro-GGUF (Gyro-S TQ1_0; engine Strata 0.1.48 cuda13 / Terminal 0.2.4.2; mmproj F16)
     kv_cache: k8v4 (streaming, resident 4096)
     features:
       completion: true
-      tools: false
+      tools: true
       thinking: true
-      vision: false
+      vision: true
       embedding: false
       insert: false
       audio: false
@@ -35,16 +37,21 @@ gyro-s:
     context_length: 262144
     embedding_length: 2560
     quantization: TQ1_0
-    note: "Install via Terminal oficial do Strata (Terminal 0.2.4.2, engine 0.1.48 cuda13,
-      driver 580+). Bench da casa N=5 (24/10, 0 falhas): chat decode 17.87 t/s (piso
-      15.9, CV 3.9%), prompt 4K 257 t/s, agent decode 16.3 t/s / cache hit 70.8%.
-      Referencial: Mac mini 32GB 9.1 t/s, A750 8GB 15.8, 3050-8GB do kassane 20-25.
-      O teto REAL de contexto na 6GB e 16K: 32K abre (2/2, ~5.77 GB VRAM) mas colapsa
-      em uso com 'verify: instantiate: out of memory' (15 falhas no bench); 64K/128K
-      nunca abrem (parede do alocador do prompt path no raso do VMM, free-at-failure
-      constante ~44-48 MiB, buffers 9/18/36 por passo de ctx - forense na skill
-      strata-gyro-6gb). Sem MTP draft (custa 3.75 GiB de VRAM; prepado em
-      Strata-data para teste futuro). Sampling do proprio server (temp 1.0/0.95/20/0.05,
-      Qwen-oficial). Emergency: strata launch --stop; presets salvos: gyro-32k,
-      gyro-131k (nao operacionais); manifest de desinstalacao em
-      ~/.llama-models/REINSTALAR-STRATA-2026-10.md."
+    note: "Install via Terminal oficial do Strata (0.2.4.2, engine 0.1.48 cuda13, driver 580+).
+      Bench da casa N=5 (24/10, 0 falhas): chat decode 17.87 t/s (piso 15.9, CV 3.9%),
+      prompt 4K 257 t/s, agent decode 16.3 t/s / cache hit 70.8%. Referencial: Mac
+      mini 32GB 9.1 t/s, A750 8GB 15.8, 3050-8GB do kassane 20-25. Stamps pela porta
+      da frota: tool call limpa (get_temp, finish=tool_calls) e visao via reader de
+      CPU (mmproj-F16: 'um circulo vermelho sobre fundo branco', zero VRAM). SSD relief:
+      STRATA_RESIDENT_HEADROOM_GIB=1.5 (-17% de leitura: 5.6 vs 6.7 GB/request) + ionice
+      -c2 -n7 (desktop fluido); o grande alivio e RAM livre: ~26GB disponiveis no ponto
+      de carga = cache segura 100% os experts e o thrash de ~6GB/request morre; o motor
+      tenta o page-lock em toda carga se a RAM fechar. O teto REAL de contexto na 6GB
+      e 16K: 32K abre (2/2, ~5.77 GB VRAM) mas colapsa em uso com 'verify: instantiate:
+      out of memory' (15 falhas no bench); 64K/128K nunca abrem (parede do alocador
+      do prompt path no raso do VMM, free-at-failure constante ~44-48 MiB, buffers
+      9/18/36 por passo de ctx - forense na skill strata-gyro-6gb). Sem MTP draft
+      (custa 3.75 GiB de VRAM; prepado em Strata-data para teste futuro). Sampling
+      do proprio server (temp 1.0/0.95/20/0.05, Qwen-oficial). Emergency: strata launch
+      --stop; presets salvos: gyro-32k, gyro-131k (nao operacionais); manifest de
+      desinstalacao em ~/.llama-models/REINSTALAR-STRATA-2026-10.md."
