@@ -29,18 +29,13 @@ Reinstalar é rodar `scripts/install/h3-restore.sh`.
 Lossless: FFV1 (matematicamente sem perda) + FLAC. Backup do original em
 `wgp_config.json.bak-lossless`. Custo: ~7x o tamanho do mp4.
 
-## Manifestos locais (NÃO versionados — contêm nomes de LoRAs NSFW)
+## Manifestos locais (NÃO versionados — contêm curadoria pessoal de LoRAs)
 
 - `~/.local/share/h3/h3_loras_manifest_2026-10-23.json` — 15 LoRAs com URL Civitai + sha256
 - `~/.local/share/h3/loras_minimax_h3.json` — catálogo vivo
-- `~/.local/share/h3/nsfw_catalog_h3.json` — espelho pro enhancer (mesmos IDs)
+- `~/.local/share/h3/<espelho>.json` — cópia lida pelo enhancer (mesmos IDs)
 
 Requisitos pra restauração: `~/.cache/huggingface/token` (HF) e `~/.civitai_key` (Civitai).
-
-## Orfão conhecido
-
-`MM-H3 - Sydney Sweeney.safetensors` (148 MB) não existe no Civitai com base H3 — sem
-referência de download. Removido em 23/out por decisão do usuário (dispensável).
 
 ## Pegadinhas aprendidas (custaram tempo)
 
