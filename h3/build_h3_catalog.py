@@ -145,6 +145,23 @@ DESATIVADOS = {
     'h3-cumshot-final-step16600-r16-k3nk.safetensors': dict(model_id=2857340, version_id=3329529, size=310206704, sha256="8fb36c6e70cdb25adafb72530e7fbebb95c9dfd7de4fc5e23f6542502d84d2ef"),
 }
 
+
+# Referencia de download das LoRAs ATIVAS (23/out): prova por sha256 de que o arquivo
+# local e o mesmo do Civitai, apesar do rename. Sem isso, apagar a LoRA = perde-la.
+DOWNLOAD_MAP = {
+    'h3_anime_shinkai_style_v3302128.safetensors': dict(version_id=3302128, remote='YOURNAME_H3_V1-step00009900.safetensors', size=298262032, sha256='19a7525a482f770668a7517c2d176b143998e6ac76ad10f887a61e99b75bb4e6'),
+    'h3_better_human_motion_v3256084.safetensors': dict(version_id=3256084, remote='mvmt_h3_lora_v1_500.safetensors', size=310168816, sha256='285f9ed3fbb735c3625fca0d22166c7450ad7acb552a869fcbbd8e86e79d1f4c'),
+    'h3_camera_motion_v3297480.safetensors': dict(version_id=3297480, remote='camera_motion_h3_lora_v1_3000_pruned.safetensors', size=155109680, sha256='9d7d98d7377f56efed3aa7d507f767936112d208906f49908ec9a8ae912be88b'),
+    'h3_crash_zoom_v3294020.safetensors': dict(version_id=3294020, remote='7Q8XQ01KW0HZ1Q97N543ZVZ1J0.safetensors', size=310170000, sha256='e02937650c695e803f0952a03ecb9d86605074e9e7c7139b2611295b89ac991c'),
+    'h3_motion_combat_reasoning_v3377709.safetensors': dict(version_id=3377709, remote='DaSiWa-MMH3-Motion-Combat-Reasoning.safetensors', size=332346328, sha256='76e38d290668eeaf6282c38e7566a0b91ca863a9d011e379a58e351921d77d24'),
+    'h3_polyhedron_eyes_skin_v3278036.safetensors': dict(version_id=3278036, remote='polyhedron_minimax_h3_image_lora_v2.safetensors', size=310168848, sha256='95a3950efd58af267652eaca52cf76f5e94fb93fcf72cc7b42ebfa3a1ff34666'),
+    'MiniMaxH3_Ref2V_JoinsTheBattle_v1.0.safetensors': dict(version_id=3274864, remote='MiniMaxH3_Ref2V_JoinsTheBattle_v1.0.safetensors', size=155110760, sha256='f755d86a18c56ee253190225799352d0030ee19254fa7d4a1b83d03b3101cf56'),
+    'VBVR-H3-Pro-attn.safetensors': dict(version_id=3306139, remote='H3_VBVR_Pro_attn_only.safetensors', size=65628216, sha256='9c20efa6d207f1a843443b741a2f6bc0d1993f938cef743e7e8a250d62baa1e0'),
+    'anirl_mmh3_t2va.safetensors': dict(version_id=3360987, remote='anirl_mmh3_t2va.safetensors', size=149164816, sha256='96960d49dc3c8bc171b148f49829882c4c1e9a026d885964d5538073ce56e610'),
+    'natural_face_speech_h3_lora_v1_500.safetensors': dict(version_id=3310245, remote='nafasp_lora_v1_500.safetensors', size=310168816, sha256='74150d1d047fe8fb97c861cafb887ce1d030b11055f50f91eb93a0b169da297f'),
+    'HMNSFW-AIO-V2.5.safetensors': dict(version_id=3268303, remote='HMNSFW-AIO-V2.5.safetensors', size=86040232, sha256='a07732a84fd733085eb5d910f602f918fa7a3658117116927e4329f5951a9d2d'),
+}
+
 disk = sorted(os.path.basename(x) for x in glob.glob(os.path.join(LORAS, "*.safetensors")))
 prox = max([i for i in legacy.values() if isinstance(i, int)] or [0]) + 1
 out, faltando, usados = [], [], set()
@@ -206,6 +223,15 @@ doc = {"motor": "minimax_h3", "versao": 1,
        "fonte": "disco ~/git/Wan2GP/loras/minimax_h3 + curadoria Civitai (21/out/2026)",
        "formato_selecao": "LORAS: <int-id,int-id,...> (ultima linha do enhance)",
        "loras": out}
+# download das ativas: anexa o bloco de recuperacao a cada entrada com arquivo em disco
+for e in out:
+    d = DOWNLOAD_MAP.get(e["safetensors"])
+    if d:
+        e["download"] = dict(provider="civitai",
+                             url=f"https://civitai.com/api/download/models/{d['version_id']}",
+                             version_id=d["version_id"], remote_file=d["remote"],
+                             size_bytes=d["size"], sha256=d["sha256"])
+
 # desativadas: entram no catalogo como registro, nunca como candidata
 for nome, d in DESATIVADOS.items():
     if any(e["safetensors"] == nome for e in out):
