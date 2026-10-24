@@ -472,31 +472,54 @@ def parse_context_to_tokens(ctx) -> int | None:
     return max_tokens
 
 
-def _is_tts_model(model: dict) -> bool:
-    """Detecta modelo TTS (text->audio) no payload cru do /v1/models.
+def _classify_non_chat(model: dict) -> str | None:
+    """Classifica um modelo como não-selecionável no chat, ou None se é chat.
 
-    Três sinais redundantes, do mais confiável pro menos:
-      1. meta.llamaswap.features.tts == true   (tag do llama-swap)
-      2. capabilities.audio_speech == true     (tag OpenAI-compat)
-      3. architecture.output_modalities contém "audio"
+    O /v1/models do llama-swap carrega tudo que precisa — não é preciso
+    adivinhar pelo nome. Três categorias não-chat no fleet:
 
-    NÃO confunda com feature "audio" (áudio de ENTRADA): d1-omni e
-    embeddinggemma aceitam áudio mas respondem texto — são chat, não TTS.
+      "tts"       — text->audio (phonon-40m-*, qwen3-tts).
+                     Sinais: meta.llamaswap.features.tts,
+                     capabilities.audio_speech, output_modalities contém "audio".
+
+      "embedding" — embedding/reranker (lfm2.5-embedding-350m,
+                     lfm2.5-colbert-350m, embeddinggemma-2).
+                     Sinal: meta.llamaswap.features.embedding.
+                     Não têm /v1/chat/completions — só /v1/embeddings.
+
+      "decision"  — judge de /v1/systemone, sem chat (julia-1).
+                     Sinal: features.decision E features.completion != true.
+
+    NÃO confunda feature "audio" (áudio de ENTRADA) com TTS: d1-omni e
+    embeddinggemma aceitam áudio e respondem texto.
+
+    Decision models COM completion (d1-3b, d1-omni-600m) são chat de verdade
+    (servidos com --jinja/chat template) — ficam no picker.
     """
     if not model:
-        return False
+        return None
     features = ((model.get("meta") or {}).get("llamaswap") or {}).get("features") or {}
-    if features.get("tts"):
-        return True
-    if (model.get("capabilities") or {}).get("audio_speech"):
-        return True
+    caps = model.get("capabilities") or {}
     out_modalities = (model.get("architecture") or {}).get("output_modalities") or []
-    return "audio" in out_modalities
+
+    # TTS: audio na SAÍDA
+    if features.get("tts") or caps.get("audio_speech") or "audio" in out_modalities:
+        return "tts"
+
+    # Embedding / reranker
+    if features.get("embedding"):
+        return "embedding"
+
+    # Decision sem completion (judge do /v1/systemone)
+    if features.get("decision") and not features.get("completion"):
+        return "decision"
+
+    return None
 
 
-# Modelos TTS não servem pra chat (endpoint /v1/chat/completions) — ficam
-# fora do picker. Escapar com TESTCHAT_SHOW_TTS=1 pra inspecionar.
-SHOW_TTS_MODELS = os.environ.get("TESTCHAT_SHOW_TTS", "").strip() not in ("", "0", "false", "no")
+# Modelos sem capacidade de chat ficam fora do picker, com contador no fim
+# da lista. Escapar com TESTCHAT_SHOW_NONCHAT=1 pra inspecionar.
+SHOW_NONCHAT = os.environ.get("TESTCHAT_SHOW_NONCHAT", "").strip().lower() not in ("", "0", "false", "no")
 
 
 def fetch_available_models():
@@ -504,7 +527,8 @@ def fetch_available_models():
     
     Deduplica aliases (modelo = mesmo name), mantendo o ID mais descritivo.
     Separa variantes :think como propriedade do modelo base.
-    Filtra modelos TTS (text->audio) — não são chat.
+    Filtra modelos sem capacidade de chat (TTS, embedding, decision-only).
+    Retorna (modelos_chat, ocultos_por_categoria).
     """
     try:
         response = requests.get(f"{BASE_URL}/models", timeout=5)
@@ -517,6 +541,7 @@ def fetch_available_models():
         base_models = {}  # name -> model dict (melhor ID)
         think_variants = {}  # name -> think model dict
         seen_ids = set()  # Track IDs já processados
+        hidden = {}  # categoria -> lista de ids (contador pro rodapé)
         
         for model in data.get("data", []):
             model_id = model.get("id", "")
@@ -526,12 +551,15 @@ def fetch_available_models():
                 continue
             seen_ids.add(model_id)
             
-            # Pular modelos TTS (text->audio): não têm /v1/chat/completions.
+            # Pular modelos sem capacidade de chat (TTS, embedding, judge).
             # Fallback por nome quando o llama-swap não expõe as tags.
-            if not SHOW_TTS_MODELS and _is_tts_model(model):
-                continue
-            if not SHOW_TTS_MODELS and re.search(r'(^|[-_])(tts)([-_]|$)', model_id, re.IGNORECASE):
-                continue
+            if not SHOW_NONCHAT:
+                category = _classify_non_chat(model)
+                if category is None and re.search(r'(^|[-_])(tts|embed|colbert|rerank)([-_]|$)', model_id, re.IGNORECASE):
+                    category = "embedding"
+                if category:
+                    hidden.setdefault(category, []).append(model_id)
+                    continue
             
             is_think = model_id.endswith(":think")
             name = model.get("name", model_id)
@@ -667,11 +695,11 @@ def fetch_available_models():
                 # Não adicionamos na lista principal pra não poluir;
                 # o select_model() trata a escolha de variante :think
         
-        return models
+        return models, hidden
         
     except Exception as e:
         console.print(f"[red]Erro ao buscar modelos: {e}[/]")
-        return []
+        return [], {}
 
 
 class StreamingChat:
@@ -698,6 +726,7 @@ class StreamingChat:
         self.tool_calls = []  # Accumulated tool calls from current response
         self.all_tool_calls = []  # All tool calls across turns (for final display)
         self.available_models = []
+        self.hidden_nonchat = {}  # categoria -> ids de modelos sem chat (rodapé)
         self.image_paths = []  # Caminhos das imagens extraídas do prompt
         self.audio_paths = []  # Caminhos dos áudios extraídos do prompt
         self.video_paths = []  # Caminhos dos vídeos extraídos do prompt
@@ -767,6 +796,38 @@ class StreamingChat:
         console.print("[yellow]⚠ Modelo não encontrado nos metadados, assumindo sem reasoning[/]")
         return False
     
+    def _format_hidden_footer(self) -> str:
+        """Rodapé da lista: N modelos ocultos por não terem capacidade de chat.
+
+        Ex: "⛔ 6 outros modelos não-selecionáveis (3 embedding · 2 tts · 1 decision)"
+        Vazio se não houver nada oculto (ou se TESTCHAT_SHOW_NONCHAT=1).
+        """
+        hidden = getattr(self, "hidden_nonchat", None) or {}
+        if not hidden:
+            return ""
+        
+        labels = {
+            "embedding": "embedding",
+            "tts": "tts",
+            "decision": "decision",
+        }
+        parts = []
+        for cat in ("embedding", "tts", "decision"):
+            ids = hidden.get(cat)
+            if ids:
+                parts.append(f"{len(ids)} {labels[cat]}")
+        
+        total = sum(len(v) for v in hidden.values())
+        if not parts:
+            return ""
+        plural = total > 1
+        return (
+            f"⛔ {total} outro{'s' if plural else ''} "
+            f"modelo{'s' if plural else ''} "
+            f"{'não-selecionáveis' if plural else 'não-selecionável'} "
+            f"({' · '.join(parts)})"
+        )
+    
     def _format_model_label(self, model: dict) -> str:
         """Formata label de UMA linha do modelo para o menu de seleção.
         
@@ -811,21 +872,34 @@ class StreamingChat:
         Fluxo:
         1. Exibe Panel com detalhes do modelo (ID, size, VRAM, descrição, warning)
         2. Lista de seleção com labels de uma linha
-        3. Após seleção, pergunta sobre variante :think se disponível
+        3. Rodapé na lista: contador de modelos ocultos (sem capacidade de chat)
+        4. Após seleção, pergunta sobre variante :think se disponível
         
         Retorna: model_id selecionado (ou :think variant)
         """
         console.clear()
         
         # Busca modelos da API
-        self.available_models = fetch_available_models()
+        self.available_models, self.hidden_nonchat = fetch_available_models()
         
         if not self.available_models:
             console.print("[red]Nenhum modelo disponível. Verifique se o servidor está rodando.[/]")
             sys.exit(1)
         
         modelos = self.available_models
-        choices = [self._format_model_label(m) for m in modelos]
+        # Choice com value=índice: o rodapé final (disabled) não desalinha o mapeamento
+        choices = [
+            questionary.Choice(title=self._format_model_label(m), value=i)
+            for i, m in enumerate(modelos)
+        ]
+        
+        # Rodapé: quantos modelos existem mas não são selecionáveis (sem chat)
+        footer = self._format_hidden_footer()
+        if footer:
+            # disabled=True (bool, não string): questionary trata bool como
+            # "sem sufixo" na renderização, mas continua bloqueando a seleção.
+            # disabled="" é falsy em Python e deixaria o item selecionável.
+            choices.append(questionary.Choice(title=footer, value=None, disabled=True))
         
         # Cabeçalho com instruções
         console.print("[bold cyan]🤖 Selecione o modelo para o chat[/]")
@@ -851,18 +925,16 @@ class StreamingChat:
         except KeyboardInterrupt:
             console.print("[dim]Saindo...[/]")
             sys.exit(0)
-        if not selected:
+        if selected is None:
             console.print("[dim]Saindo...[/]")
             sys.exit(0)
         
-        # Extrai o model_id: label = "Name  badges", sem mais linhas
-        # Usa o modelo na posição correspondente ao label selecionado
-        selected_idx = choices.index(selected)
-        selected_model = modelos[selected_idx]
+        # Extrai o model_id pelo índice (o rodapé disabled nunca é retornado)
+        selected_model = modelos[selected]
         model_id = selected_model["id"]
         
         # Easter egg: Se é Pepe Turbo, guarda info para injeção de system prompt
-        # e mapeia o ID virtual para o backend real na request API
+        # e mapeia o ID virtual pro backend real na request API
         self.is_pepe_turbo = selected_model.get("_is_pepe_turbo", False)
         if self.is_pepe_turbo:
             self._pepe_turbo_backend_id = selected_model["_backend_model_id"]
@@ -2038,7 +2110,9 @@ Opções:
 Variáveis de ambiente:
     LLAMA_SWAP_HOST     host do servidor (default: 127.0.0.1)
     LLAMA_SWAP_PORT     porta do servidor (default: 12434)
-""")
+    TESTCHAT_SHOW_NONCHAT=1  mostra no picker os modelos sem chat
+                     (TTS, embedding/reranker, judges de /v1/systemone)
+    """)
 
 
 def main():
