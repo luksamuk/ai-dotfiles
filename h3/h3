@@ -1846,6 +1846,15 @@ if { [[ "$LORA_SELECT" == true ]] || [[ "$NSFW" == true ]]; } \
     LORAS_MULTS_JSON=$(python3 -c "import json,sys;print(json.dumps(json.load(open(sys.argv[1]))['mults']))" "$SEL_OUT" 2>/dev/null) || LORAS_MULTS_JSON="[]"
   fi
   rm -f "$SEL_IN" "$SEL_OUT"
+  # O seletor carrega o decision model (d1-3b) no llama-swap DEPOIS do evict do enhance.
+  # Sem este evict ele fica na VRAM durante todo o render, brigando com o H3 em 6 GB.
+  if [[ "$LORA_SELECTOR" == "decision" ]]; then
+    if "$LLAMA_SWAP_CLI" unload 2>/dev/null; then
+      echo "=== Decision model evictado da VRAM ==="
+    elif curl -s --fail -X POST http://localhost:12434/v1/unload 2>/dev/null >/dev/null; then
+      echo "=== Decision model evictado via API ==="
+    fi
+  fi
 fi
 
 if [[ "$NAFASP" == true && "$FACIAL" == true ]]; then
