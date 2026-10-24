@@ -4,32 +4,40 @@
 
 * Sobre
 
-Este repositório contém configurações /dotfiles/ para diversas ferramentas de IA — agentes de código, CLIs, dashboards e serviços Docker — todos versionados em um só lugar para facilitar sincronização entre máquinas.
+Este repositório contém configurações /dotfiles/ para diversas ferramentas de IA — agentes de código, CLIs, geração local de mídia, serviços Docker e a frota de modelos — tudo versionado em um só lugar para facilitar sincronização entre máquinas.
+
+** Máquinas
+
+| Nome      | O que é                              | Papel                                              |
+|-----------+--------------------------------------+----------------------------------------------------|
+| Navi      | notebook Dell G15, i7-13650HX, RTX 3050 6GB | estação principal: geração local, frota, agentes |
+| Sisyphus  | Raspberry Pi 4                       | serviços sempre-ligados: Forgejo, backups, dashboard |
+
+** O que não está aqui
+
+Pesos de modelo (GGUF, safetensors, checkpoints) **não** são versionados: são grandes e reconstruíveis a partir de manifestos. Cada lane que depende disso documenta como reinstalar (ver seção H3 e =scripts/install/=).
 
 * Estrutura do Repositório
 
 #+BEGIN_SRC
 ai-dotfiles/
-├── configs/                    # Configurações por ferramenta
-│   ├── sprachspiel/          # Sprachspiel CLI agent
-│   ├── codex/                  # OpenAI Codex CLI
-│   ├── crush/                  # Charm Crush CLI
-│   ├── droid/                  # Factory.ai Droid
-│   ├── hermes-workspace/       # Docker Compose para Hermes Agent
-│   ├── homepage-navi/          # Homepage dashboard
-│   ├── goose/                   # Goose AI Agent (AAIF)
-│   ├── opencode/               # OpenCode CLI
-│   ├── open-webui/             # Open WebUI Docker
-│   ├── pi/                     # Pi Coding Agent
-│   ├── tui-studio/             # TUI Studio Docker
-│   └── vscode/                 # VSCode language model providers
-├── diffuse/                    # Geração de imagens locais (Bonsai Image 4B)
-├── llama-swap/                 # Config do llama-swap + modelos GGUF
-├── magenta-rt/                 # Geração de música local (Magenta RealTime 2)
-├── modelfiles/                  # Ollama Modelfiles (Makefile)
+├── configs/                    # Configurações por ferramenta (18 harnesses/serviços)
+├── h3/                         # MiniMax H3 (vídeo com áudio) — wrapper + catálogo + seletor
+├── wan2gp-patches/             # Backup da camada de patches locais do Wan2GP
+├── diffuse/                    # Geração de imagens locais
+├── music3/                     # MiniMax Music 3 — geração de música
+├── magenta-rt/                 # Magenta RealTime 2 — geração de música (JAX)
 ├── parakeet-stt/               # STT local (parakeet.cpp)
-├── scripts/                     # DEPRECATED — script ask-ai.py antigo
-└── docs/                        # Documentação adicional
+├── llama-swap/                 # Frota de modelos GGUF (config fragmentada + assembler)
+├── llama-android/              # Frota enxuta para rodar no Android (Termux)
+├── sisyphus/                   # Deploy do RPi: docker-compose, homepage, llama-swap
+├── openscience/                # OpenScience (workbench científico) em Docker
+├── ming/                       # CLI de recorte/edição com prompts
+├── modelfiles/                 # Ollama Modelfiles (Makefile)
+├── emacs-work/                 # Config de trabalho do Emacs
+├── scripts/                    # install/ (kits de reinstalação) + deprecated/
+├── docs/                       # Documentação adicional
+└── archive/                    # Material arquivado, mantido por histórico
 #+END_SRC
 
 * Configurações por Ferramenta
@@ -121,28 +129,6 @@ Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) par
   cp ~/git/ai-dotfiles/configs/opencode/tui.json ~/.config/opencode/tui.json
   #+END_SRC
 
-** Modelos por Harness (resumo)
-
-| Harness     | Regra local                     | Cloud | Obs                                     |
-|-------------+---------------------------------+-------+-----------------------------------------|
-| Pi          | Todos (22 base + 16 :think)     | 14    | Exceção: todos os modelos do fleet      |
-| Crush       | Tools-only (14 base + 12 :think)| 15    | Sem modelos sem tool-calling            |
-| Codex       | Tools-only (perfis TOML)        | 15    | Local limitado (Responses API)          |
-| Droid       | Tools-only (14 base + 12 :think)| 15    | =noImageSupport= booleano               |
-| OpenCode    | Tools-only (14 base + 12 :think)| 15    | =modalities= + =capabilities= schema    |
-| Goose       | dynamic_models + lista explícita | 15+   | Providers declarativos JSON (SEM llama_swap — canonical registry bug) |
-
-Notas:
-- Modelos *always thinking* (GPT-OSS 20B) NÃO têm variante =:think=
-- =qwen3.6-35b-a3b= (llama-swap) é o modelo local com vision (=input: [text, image]=). Nenhum modelo local ativo suporta áudio.
-- O Codex local é limitado: llama-swap não suporta Responses API, usar =--oss --local-provider=ollama= como workaround
-
-** open-webui — Open WebUI Docker
-
-- **Ferramenta**: [[https://github.com/open-webui/open-webui][Open WebUI]] — interface web para modelos de IA (Docker).
-- **Diretório**: =configs/open-webui/=
-- **Uso**: Configs para bind-mount no container Docker do Open WebUI.
-
 ** pi — Pi Coding Agent
 
 - **Ferramenta**: [[https://pi.agent][Pi Coding Agent]] — agente de IA para programação, com suporte a MCP e extensões.
@@ -158,33 +144,170 @@ Notas:
 
 - **Nota**: O arquivo =auth.json= (chaves de API) está no =.gitignore= e **não** é versionado.
 
+** vscode — VSCode Language Model Providers
+
+- **Ferramenta**: [[https://code.visualstudio.com/][Visual Studio Code]] — editor com suporte a Language Models via API.
+- **Diretório**: =configs/vscode/=
+- **Arquivos**: =chatLanguageModels.json= — providers customizados (Llama-Swap local, Ollama Cloud) com todos os modelos que suportam tool calling.
+- **Destino**: =~/.config/Code/User/chatLanguageModels.json=
+- **Sync**:
+  #+BEGIN_SRC bash
+  cp ~/git/ai-dotfiles/configs/vscode/chatLanguageModels.json ~/.config/Code/User/chatLanguageModels.json
+  #+END_SRC
+
+** zed — Zed Editor
+
+- **Diretório**: =configs/zed/=
+- **Arquivos**: =settings.json= — inclui =context_servers= (Linear e outros MCP).
+- **Destino**: =~/.config/zed/settings.json=
+
+** omp — oh-my-pi
+
+- **Diretório**: =configs/omp/=
+- **Arquivos**: =config.yml=, =models.yml=, =mcp.json=.
+- **Destino**: =~/.omp/agent/=
+
+** nanocoder — Nanocoder
+
+- **Diretório**: =configs/nanocoder/=
+- **Arquivos**: =agents.config.json=, =.mcp.json=, =README.org=.
+- **Destino**: =~/.config/nanocoder/=
+
+** cline — Cline (VSCode extension)
+
+- **Diretório**: =configs/cline/=
+- **Arquivos**: =cline_mcp_settings.json= (MCP servers), =providers.json= (providers/modelos).
+- **Destino**: o diretório de settings globais da extensão Cline.
+
+** claude-code — Claude Code
+
+- **Diretório**: =configs/claude-code/=
+- **Conteúdo**: =README.md= com as decisões de configuração (sem credenciais).
+
+** copilot-cli — GitHub Copilot CLI
+
+- **Diretório**: =configs/copilot-cli/=
+- **Arquivos**: =copilot-local= — launcher/aponte para modelos locais.
+
 ** tui-studio — TUI Studio Docker
 
 - **Ferramenta**: TUI Studio — ambiente Docker para desenvolvimento de TUI apps.
 - **Diretório**: =configs/tui-studio/=
 - **Uso**: Configs para bind-mount no container Docker.
 
+** Modelos por Harness (resumo)
+
+| Harness     | Regra local                      | Cloud | Obs                                     |
+|-------------+----------------------------------+-------+-----------------------------------------|
+| Pi          | Todos os handles do fleet        | 14    | Exceção: libera tudo                    |
+| Crush       | Tools-only (base + :think)       | 15    | Sem modelos sem tool-calling            |
+| Codex       | Tools-only (perfis TOML)         | 15    | Local limitado (Responses API)          |
+| Droid       | Tools-only (base + :think)       | 15    | =noImageSupport= booleano               |
+| OpenCode    | Tools-only (base + :think)       | 15    | =modalities= + =capabilities= schema    |
+| Goose       | dynamic_models + lista explícita | 15+   | Providers declarativos JSON (SEM llama_swap — canonical registry bug) |
+
+Notas:
+- A frota expõe **27 handles** em =http://127.0.0.1:12434= (base e =:think=). O número muda quando modelos entram/saem — a fonte é =llama-swap/config.yaml=, não esta tabela.
+- Modelos *always thinking* (GPT-OSS 20B) NÃO têm variante =:think=
+- =qwen3.6-35b-a3b= (llama-swap) é o modelo local com vision (=input: [text, image]=). Nenhum modelo local ativo suporta áudio.
+- O Codex local é limitado: llama-swap não suporta Responses API, usar =--oss --local-provider=ollama= como workaround
+
+* h3 — MiniMax H3 (vídeo com áudio)
+
+Geração local de vídeo com áudio sincronizado (MiniMax H3) via Wan2GP, na RTX 3050 6GB.
+
+- **Wrapper**: =h3/h3= (instalado em =~/.local/bin/h3=)
+- **Catálogo**: =h3/build_h3_catalog.py= gera o catálogo a partir do disco; =h3/lora_selector.py= escolhe as LoRAs
+- **Auxiliares de runtime**: =h3/scripts/= — 6 arquivos dos quais o wrapper depende
+- **Patches**: =wan2gp-patches/arquivos/models/minimax_h3/prompt_enhancer.py= (system prompts do enhance)
+
+** Lane padrão
+
+#+BEGIN_SRC bash
+h3 "descrição da cena" --enhance             # 1344x768, turbo 8 steps, ~13 min
+h3 "..." --nsfw --enhance                    # modo adulto
+h3 "..." --frames 362                        # 15,08s (teto de passe único)
+h3 "..." --steps 12                          # sobrescreve o turbo
+#+END_SRC
+
+| Item | Valor |
+|---|---|
+| Resolução default | 1344x768 (treino nativo) |
+| Steps | 8 (turbo resized rank_21 @ 0,5) |
+| Teto de passe único | 362 frames = 15,08s |
+| Saída | MKV + FFV1 + FLAC (lossless) |
+| Aceleradores | turbo rank_21 (FL2VA) — Ref2VA não tem |
+
+** Seleção de LoRAs
+
+O wrapper tem duas autoridades possíveis, escolhidas por =lora_selector= no
+=~/.local/share/fleet/enhance-models.yaml= (ou =--lora-selector=):
+
+- =decision= (default): o LLM escreve o prompt, o **seletor** escolhe as LoRAs
+- =llm=: o LLM escreve o prompt **e** escolhe (modo antigo, mantido para comparar)
+
+No modo =decision= o seletor aplica: gate de ato (pergunta =choice= ao modelo),
+eixo de papel (capacity 1 por função), pins (AIO em cena de ato, identidade por nome citado).
+
+** Pesos não são versionados
+
+Os ~59 GiB de pesos (2 bases + text encoder + VAEs + predictors + turbo + LoRAs) saem e
+voltam por manifesto:
+
+#+BEGIN_SRC bash
+bash scripts/install/h3-restore.sh          # baixa tudo, confere sha256, recria symlinks
+bash scripts/install/h3-uninstall-pesos.sh  # dry-run; --exec para remover
+#+END_SRC
+
+Detalhes, pegadinhas e o que permanece: =wan2gp-patches/H3-RESTORE-NOTES.md=.
+
+** Dados de curadoria (repo separado, privado)
+
+O catálogo tem descrições de conteúdo adulto (o texto que o classificador lê). Isso fica
+em reposítório **privado e cifrado**, não aqui:
+
+- =github.com/luksamuk/h3-data= (privado, GPG com a chave do Keybase)
+- contém =catalog_cur.py=, manifestos de LoRAs e os catálogos gerados
+
+A curadoria local vive em =~/.local/share/h3/catalog_cur.py= (o builder importa de lá).
+
+* wan2gp-patches — Patches locais do Wan2GP
+
+Backup versionado da camada de modificações aplicada sobre o Wan2GP (o motor que roda H3).
+Serve para reaplicar depois de atualizar o upstream, sem perder o que foi ajustado aqui.
+
+- **=arquivos/=** — cópia dos arquivos vivos (modelos, defaults, finetunes, prompt_enhancer)
+- **=patches-locais.patch=** — diff agregado
+- **=H3-RESTORE-NOTES.md=** — o que reinstalar e as pegadinhas conhecidas
+
 * diffuse — Geração de Imagens Locais
 
-[[https://prismml.com/news/bonsai-image-4b][Bonsai Image 4B]] rodando localmente na RTX 3050 6GB via gemlite + CUDA. Load-and-unload — gera imagem e libera VRAM.
+Pipeline próprio de geração de imagem rodando na RTX 3050 6GB. Load-and-unload: gera e libera VRAM.
 
 - **Diretório**: =diffuse/=
 - **CLI**: =diffuse generate -p "prompt"= (symlink em =~/.local/bin/diffuse=)
 - **Comandos**: =diffuse setup=, =diffuse download=, =diffuse generate=, =diffuse evict=, =diffuse status=
-- **Modelos**: binary-gemlite (1-bit), ternary-gemlite (1.58-bit, recomendado)
-- **Workflow**: Evict LLM → load pipeline → generate → unload
+- **Workflow**: evict LLM → load pipeline → generate → unload
 
 Ver documentação completa em =diffuse/README.md=.
 
-* magenta-rt — Geração de Música Local
+* music3 — MiniMax Music 3
 
-[[https://github.com/magenta/magenta-realtime][Magenta RealTime 2]] rodando localmente na RTX 3050 via JAX + CUDA. Offline inference (streaming em tempo real requer Apple Silicon).
+Geração de música local com MiniMax Music 3 via diffusers.
+
+- **Diretório**: =music3/=
+- **CLI**: =music3/music3= (wrapper)
+- **Arquivos**: =generate.py=, =encoders_progress_patch.py=
+
+Ver documentação completa em =music3/README.md=.
+
+* magenta-rt — Magenta RealTime 2
+
+[[https://github.com/magenta/magenta-realtime][Magenta RealTime 2]] local via JAX + CUDA. Offline inference (streaming em tempo real requer Apple Silicon).
 
 - **Diretório**: =magenta-rt/=
-- **CLI**: =magenta-rt generate -p "disco funk"= (symlink em =~/.local/bin/magenta-rt=)
-- **Comandos**: =magenta-rt setup=, =magenta-rt download=, =magenta-rt generate=, =magenta-rt evict=, =magenta-rt status=
-- **Modelos**: mrt2_small (230M, recomendado RTX 3050), mrt2_base (2.4B)
-- **Workflow**: Evict LLM → load model → generate audio → unload
+- **CLI**: =magenta-rt generate -p "disco funk"=
+- **Modelos**: mrt2_small (230M), mrt2_base (2.4B)
 - **Saída**: WAV 48kHz stereo
 
 Ver documentação completa em =magenta-rt/README.md=.
@@ -200,126 +323,109 @@ Ver documentação completa em =magenta-rt/README.md=.
 
 Ver documentação completa em =parakeet-stt/README.md=.
 
-* llama-swap — Serviço de Modelos GGUF Locais
+* llama-swap — Frota de Modelos GGUF Locais
 
-Configuração do [[https://github.com/nathan-nfx/llama-swap][llama-swap]] para servir múltiplos modelos GGUF com swap automático na RTX 3050 6GB.
+Configuração do llama-swap para servir múltiplos modelos GGUF com swap automático na RTX 3050 6GB.
 
 - **Diretório**: =llama-swap/=
-- **Arquivos**: =config.yaml= (config gerado — *não editar diretamente*), =config-base.yaml= + =config-footer.yaml= + =models/= (fontes fragmentadas), =build-config.py= (assembler), =download-models.sh= (script de download), =llama-swap-cli= (CLI helper), =testchat/= (script de teste).
-- **Workflow**: Editar fragmentos em =models/= → =python3 build-config.py= → config regenerado e sincronizado automaticamente. Ver [[llama-swap/ARCHITECTURE.md][ARCHITECTURE.md]] para detalhes.
-- **Dual-binary**: Usa dois backends — =llama.cpp= (upstream) para modelos densos e [[https://github.com/ikawrakow/ik_llama.cpp][ik_llama.cpp]] para modelos MoE, com =--fit= ativado e tamanhos de fit diferentes por backend (ik suporta contextos maiores para MoE).
+- **Arquivos**: =config.yaml= (gerado — *não editar*), =config-base.yaml= + =config-footer.yaml= + =models/= (fragmentos), =build-config.py= (assembler), =download-models.sh=, =llama-swap-cli=, =testchat/=
+- **Workflow**: editar fragmentos em =models/= → =python3 build-config.py= → config regenerado. Ver [[llama-swap/ARCHITECTURE.md][ARCHITECTURE.md]].
+- **Dual-binary**: =llama.cpp= (upstream) para densos e [[https://github.com/ikawrakow/ik_llama.cpp][ik_llama.cpp]] para MoE, com =--fit= e tamanhos diferentes por backend.
 
 ** Comandos Principais
 
 #+BEGIN_SRC bash
-# Download de modelos
 cd llama-swap
 ./download-models.sh qwopus-4b    # Modelo específico
-./download-models.sh all           # Baixar todos
+./download-models.sh all          # Baixar todos
 
-# Iniciar serviço
 systemctl --user restart llama-swap
 curl http://127.0.0.1:12434/v1/models
 #+END_SRC
 
 Ver documentação completa em =llama-swap/README.md=.
 
-** vscode — VSCode Language Model Providers
+* llama-android — Frota no Android
 
-- **Ferramenta**: [[https://code.visualstudio.com/][Visual Studio Code]] — editor com suporte a Language Models via API.
-- **Diretório**: =configs/vscode/=
-- **Arquivos**: =chatLanguageModels.json= — providers customizados (Llama-Swap local, Ollama Cloud) com todos os modelos que suportam tool calling.
-- **Destino**: =~/.config/Code/User/chatLanguageModels.json=
-- **Sync**:
-  #+BEGIN_SRC bash
-  cp ~/git/ai-dotfiles/configs/vscode/chatLanguageModels.json ~/.config/Code/User/chatLanguageModels.json
-  #+END_SRC
+Subconjunto da frota para rodar em Termux no celular: =config.yaml= + =models/= (lfm2.5-2.6b,
+qwen3.5-2b, qwen3.5-4b e outros pequenos).
+
+* sisyphus — Deploy do Raspberry Pi
+
+Serviços sempre-ligados no RPi 4.
+
+- **Arquivos**: =docker-compose.yml=, =llama-swap-config.yml=, =homepage-services.yaml=, =PLAN.md=
+- **Papel**: Forgejo (espelho automático dos repos), backups diários, dashboard
+
+* openscience — OpenScience em Docker
+
+[[https://github.com/synthetic-sciences/openscience][OpenScience]] — workbench open-source para pesquisa científica, containerizado.
+
+- **Arquivos**: =Dockerfile=, =docker-compose.yml=, =.env.example=
+- Ver =openscience/README.md=
+
+* ming — Recorte/edição com prompts
+
+CLI + prompts (=prompts/cutout.md=) para recorte e edição guiada por texto.
 
 * Ollama Modelfiles
 
 A pasta =modelfiles/= contém arquivos =.modelfile= e um =Makefile= para criar modelos especializados no Ollama.
 
 #+BEGIN_SRC bash
-# Criar todos os modelos essenciais
-make -C modelfiles essentials
-
-# Criar modelo específico
-make -C modelfiles qwen3.5-4b
-
-# Baixar modelos cloud
-make -C modelfiles cloud-models
+make -C modelfiles essentials      # modelos essenciais
+make -C modelfiles qwen3.5-4b      # modelo específico
+make -C modelfiles cloud-models    # modelos cloud
 #+END_SRC
 
-* scripts/ (DEPRECATED)
+* scripts/
 
-A pasta =scripts/= contém apenas o script =ask-ai.py=, que está **obsoleto** e não será mais mantido. Está presente apenas como registro histórico. O projeto [[https://github.com/luksamuk/sprachspiel][Sprachspiel]] (anteriormente ask-ai-rs) é a alternativa ativa.
+- **=install/=** — kits de instalação/reinstalação de lanes que dependem de pesos:
+  =h3-restore.sh=, =h3-uninstall-pesos.sh=, =reinstall-h3*.sh=, =h3_manifest_*.json=
+- **=deprecated/=** — =ask-ai.py=, obsoleto, mantido só como registro histórico
 
 * Tabela de Sincronização Rápida
 
-| Dir Config              | Destino                            | Arquivos                           |
-|-------------------------+------------------------------------+-------------------------------------|
-| =codex/=                | =~/.codex/=                        | =config.toml=                       |
-| =crush/=                | =~/.local/share/crush/=            | =crush.json=                        |
-| =droid/=                | =~/.factory/=                      | =settings.json=, =mcp.json=         |
-| =goose/=                | =~/.config/goose/=                 | =config.yaml=                       |
-| =opencode/=             | =~/.config/opencode/=              | =opencode.json=, =tui.json=         |
-| =pi/=                   | =~/.pi/agent/=                     | =settings.json=, =mcp.json=, =models.json= |
-| =vscode/=                | =~/.config/Code/User/=             | =chatLanguageModels.json=            |
+| Dir Config        | Destino                        | Arquivos                                   |
+|-------------------+--------------------------------+--------------------------------------------|
+| =codex/=          | =~/.codex/=                    | =config.toml=                               |
+| =crush/=          | =~/.local/share/crush/=        | =crush.json=                                |
+| =droid/=          | =~/.factory/=                  | =settings.json=, =mcp.json=                 |
+| =goose/=          | =~/.config/goose/=             | =config.yaml=                               |
+| =opencode/=       | =~/.config/opencode/=          | =opencode.json=, =tui.json=                 |
+| =pi/=             | =~/.pi/agent/=                 | =settings.json=, =mcp.json=, =models.json=  |
+| =vscode/=         | =~/.config/Code/User/=         | =chatLanguageModels.json=                   |
+| =zed/=            | =~/.config/zed/=               | =settings.json=                             |
+| =omp/=            | =~/.omp/agent/=                | =config.yml=, =models.yml=, =mcp.json=      |
+| =nanocoder/=      | =~/.config/nanocoder/=         | =agents.config.json=, =.mcp.json=           |
 
-** TODO Sincronizar tudo de uma vez
+** Sincronizar tudo de uma vez
 
 #+BEGIN_SRC bash
 #!/bin/bash
-# sync.sh — Sincroniza todas as configs para seus destinos
-
 DOTFILES=~/git/ai-dotfiles
 
-# Codex
-cp "$DOTFILES/configs/codex/config.toml" ~/.codex/config.toml
-
-# Crush
-cp "$DOTFILES/configs/crush/crush.json" ~/.local/share/crush/crush.json
-
-# Droid
-cp "$DOTFILES/configs/droid/settings.json" ~/.factory/settings.json
-cp "$DOTFILES/configs/droid/mcp.json" ~/.factory/mcp.json
-
-# Goose
-cp "$DOTFILES/configs/goose/config.yaml" ~/.config/goose/config.yaml
-
-# Nanocoder
+cp "$DOTFILES/configs/codex/config.toml"            ~/.codex/config.toml
+cp "$DOTFILES/configs/crush/crush.json"             ~/.local/share/crush/crush.json
+cp "$DOTFILES/configs/droid/settings.json"          ~/.factory/settings.json
+cp "$DOTFILES/configs/droid/mcp.json"               ~/.factory/mcp.json
+cp "$DOTFILES/configs/goose/config.yaml"            ~/.config/goose/config.yaml
 cp "$DOTFILES/configs/nanocoder/agents.config.json" ~/.config/nanocoder/agents.config.json
-
-# OMP
-cp "$DOTFILES/configs/omp/config.yml" ~/.omp/agent/config.yml
-cp "$DOTFILES/configs/omp/models.yml" ~/.omp/agent/models.yml
-
-# OpenCode (máquina pessoal)
-cp "$DOTFILES/configs/opencode/config.json" ~/.config/opencode/opencode.json
-cp "$DOTFILES/configs/opencode/tui.json" ~/.config/opencode/tui.json
-
-# Pi (máquina pessoal)
-cp "$DOTFILES/configs/pi/settings.json" ~/.pi/agent/settings.json
-cp "$DOTFILES/configs/pi/mcp.json" ~/.pi/agent/mcp.json
-cp "$DOTFILES/configs/pi/models.json" ~/.pi/agent/models.json
-
-# Sprachspiel
-cp "$DOTFILES/configs/sprachspiel/config.toml" ~/.config/sprachspiel/config.toml
-cp "$DOTFILES/configs/sprachspiel/models.toml" ~/.config/sprachspiel/models.toml
-cp "$DOTFILES/configs/sprachspiel/tools.toml" ~/.config/sprachspiel/tools.toml
-
-# VSCode
+cp "$DOTFILES/configs/omp/config.yml"               ~/.omp/agent/config.yml
+cp "$DOTFILES/configs/omp/models.yml"               ~/.omp/agent/models.yml
+cp "$DOTFILES/configs/opencode/opencode.json"       ~/.config/opencode/opencode.json
+cp "$DOTFILES/configs/opencode/tui.json"            ~/.config/opencode/tui.json
+cp "$DOTFILES/configs/pi/settings.json"             ~/.pi/agent/settings.json
+cp "$DOTFILES/configs/pi/mcp.json"                  ~/.pi/agent/mcp.json
+cp "$DOTFILES/configs/pi/models.json"               ~/.pi/agent/models.json
+cp "$DOTFILES/configs/sprachspiel/config.toml"      ~/.config/sprachspiel/config.toml
+cp "$DOTFILES/configs/sprachspiel/models.toml"      ~/.config/sprachspiel/models.toml
+cp "$DOTFILES/configs/sprachspiel/tools.toml"       ~/.config/sprachspiel/tools.toml
 cp "$DOTFILES/configs/vscode/chatLanguageModels.json" ~/.config/Code/User/chatLanguageModels.json
+cp "$DOTFILES/configs/zed/settings.json"            ~/.config/zed/settings.json
 
-# Zed
-cp "$DOTFILES/configs/zed/settings.json" ~/.config/zed/settings.json
-
-echo "✓ Sincronização concluída!"
+echo "Sincronização concluída."
 #+END_SRC
-
-* Licença
-
-Este trabalho está licenciado sob a licença WTFPL (Do What The Fuck You Want To Public License).
 
 * Linear MCP — Issue Tracking em Todos os Harnesses
 
@@ -336,17 +442,21 @@ O Linear MCP server (=https://mcp.linear.app/mcp=) usa *OAuth 2.1* com Dynamic C
 | Droid       | =configs/droid/mcp.json=          | stdio via =mcp-remote=          |
 | Codex       | =configs/codex/config.toml=       | =mcp_servers.linear= (rmcp)     |
 | Crush       | =configs/crush/crush.json=        | stdio via =mcp-remote=          |
-| OpenCode    | =configs/opencode/config.json=    | stdio via =mcp-remote=          |
-| Goose       | =configs/goose/config.yaml=        | stdio via =mcp-remote=          |
-| Nanocoder   | =configs/nanocoder/.mcp.json=      | stdio via =mcp-remote=          |
-| OMP         | =configs/omp/mcp.json=             | stdio via =mcp-remote=          |
+| OpenCode    | =configs/opencode/opencode.json=  | stdio via =mcp-remote=          |
+| Goose       | =configs/goose/config.yaml=       | stdio via =mcp-remote=          |
+| Nanocoder   | =configs/nanocoder/.mcp.json=     | stdio via =mcp-remote=          |
+| OMP         | =configs/omp/mcp.json=            | stdio via =mcp-remote=          |
 | Cline       | =configs/cline/cline_mcp_settings.json= | stdio via =mcp-remote=   |
-| Zed         | =configs/zed/settings.json=        | =context_servers= via =mcp-remote= |
-| Pi          | *(plugin nativo — não MCP)*       | Plugin linear@factory            |
+| Zed         | =configs/zed/settings.json=       | =context_servers= via =mcp-remote= |
+| Pi          | *(plugin nativo — não MCP)*       | Plugin linear@factory           |
 
 ** Notas
 
-- *Droid*: Usa =npx -y mcp-remote https://mcp.linear.app/mcp= via stdio (mesmo método dos demais harnesses não listados nativamente pelo Linear). Autenticar via =/mcp= → "Add from Registry" → Linear, ou o OAuth flow abre automaticamente na primeira execução.
-- *Codex*: Requer =experimental_use_rmcp_client = true= em =[features]=.
-- *Demais harnesses*: Usam =npx -y mcp-remote https://mcp.linear.app/mcp= como bridge stdio→HTTP.
+- *Droid*: usa =npx -y mcp-remote https://mcp.linear.app/mcp= via stdio. Autenticar via =/mcp= → "Add from Registry" → Linear.
+- *Codex*: requer =experimental_use_rmcp_client = true= em =[features]=.
+- *Demais harnesses*: usam =npx -y mcp-remote https://mcp.linear.app/mcp= como bridge stdio→HTTP.
 - *Limpar auth*: =rm -rf ~/.mcp-auth= se houver erro de internal server.
+
+* Licença
+
+Este trabalho está licenciado sob a licença WTFPL (Do What The Fuck You Want To Public License).
