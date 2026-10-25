@@ -355,6 +355,24 @@
 | **Status** | Experimental — issue #1 do ai-dotfiles (kassane). Awaiting: merge da arch no ikawrakow main; Q4_K_M (~21 GB) como upgrade |
 | **Known issues** | RAM @131K roza o limite (28/31 GB — fechar apps); alias "base" sem enable_thinking:false PENSA (template default high) |
 
+### 19. qwen38-27b-defiance (+-fast) — Qwen3.8 27B Defiance (regular + lane MTP)
+
+| Parameter | Value |
+|-----------|-------|
+| **Source** | ttindall/Qwen3.8-27B-Defiance-Uncensored-MTP-GGUF (pesos HauhauCS uncensored + template Defiance; base Qwen/Qwen3.8-27B) |
+| **Quant** | IQ4_XS (15.71 GB, SHA256 d48cdb6e) — 2 lanes apontando o MESMO GGUF |
+| **Backend** | ${ik_llama_server} (both) |
+| **KV cache** | q8_0/q8_0 fixo (DeltaNet hybrid: KV O(1) p/ a maioria; só 1/4 dos layers full-attention) + `-ctx-ckpt 0` (snapshots consomem VRAM por slot) |
+| **Load** | regular: ngl 10 @130.816, sem MTP (3.2 t/s) / fast: ngl 10 @98.304 + `--spec-type mtp:n_max=8` (4.3 t/s, aceitação 54-61%) |
+| **VRAM/RAM** | ~4.8-5.2 GB VRAM (ngl 10) + resto em RAM (mmap); MTP acima do teto = init passa e o PRIMEIRO decode SIGABRT (cudaGraphLaunch OOM, ggml-cuda.cu:4798) |
+| **Context** | 130.816 regular / 98.304 fast (262.144 nativo; IQ3_M abriria 131k+MTP a custo de -40% t/s — rejeitado) |
+| **Thinking** | dual-mode (enable_thinking por setParamsByID); samplers oficiais por modo: instruct temp 0.7/top_p 0.80/presence 1.5; think temp 1.0/top_p 0.95/presence 0 |
+| **Template** | EMBUTIDA do Defiance (--jinja; 40 modos via reasoning_effort) — NUNCA chat-template-file externo |
+| **Tool calling** | ✅ validado ao vivo 25/10 (finish tool_calls, calc com argumentos corretos) |
+| **Vision** | ❌ sem mmproj no repo |
+| **Régua** | 25/10/2026: llama-cli seed 42, prompt fixo, 220 tokens — IQ4_XS 4.33 c/ MTP vs 3.16; Q5_K_M UD 3.80/2.48; IQ3_M 2.78/1.77 (i-quant compute-bound na CPU = rejeitar) |
+| **Status** | ATIVO 25/out/2026 (re-entrada da família aposentada ago/26 como qw38 1-bit "too slow") — speed MTP > piso do GSQ (3.6) que derrubou o q38g |
+
 ---
 
 ## Disabled Models
