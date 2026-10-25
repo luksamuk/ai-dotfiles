@@ -85,4 +85,7 @@ qwen38-27b-defiance:
     context_length: 262144
     embedding_length: 5120
     quantization: IQ4_XS
+    efforts: [xhigh, medium, low, ultra, xomni, xdeeptree, xhyper, xsocrates, xlogic, xeinstein, xspoon, omni, deeptree, hyper, socrates, logic, einstein, spoon, holodeck, prompt, pkd, musk, joker, vader, quinn, joe, neo, curie, brainstorm, comedy, business, story, teacher, "007", coder, stark, matlock, house, help]
+    default_effort: xhigh
+    effort_note: "modos via reasoning_effort no corpo da requisicao (OpenAI-style); think default xhigh, instruct default medium; template embutida aplica solo"
     note: "Familia tinha aposentadoria em ago/26 (qw38, 1-bit, 'too slow') — re-entrada 25/10/2026 com MTP medido. Régua: baseline 3.2 t/s, com MTP 4.3 t/s (seed e prompt idênticos). Template EMBUTIDO do Defiance (40 modos via reasoning_effort) — NAO usar chat-template-file externo. Uncensored (pesos HauhauCS, sem recusas). Text-only: sem mmproj no repo. -ctx-ckpt 0: snapshots de estado do ik consomem VRAM por slot em ctx alto; medir antes de reabilitar. 131072 cheio nao cabe (faltam ~120MB no compute buffer)."
