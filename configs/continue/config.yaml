@@ -1,0 +1,145 @@
+# Continue — modelos do llama-swap local (Hermes, 24/out; caps 25/out)
+# Fonte: GET :12434/v1/models (tags meta.llamaswap.features) — tool_use/vision declarados
+# conforme a frota. :think onde existe variante. Sem default. Embeds eg2/lfmemb.
+name: Local llama-swap Fleet
+version: 1.0.0
+schema: v1
+models:
+- name: LFM 2.5 24B A2B
+  provider: openai
+  model: lfm2.5-24b-a2b
+  apiBase: http://localhost:12434/v1
+  apiKey: llama-swap
+  roles:
+  - chat
+  - edit
+  capabilities:
+  - tool_use
+- name: LFM 2.5 24B A2B (fast)
+  provider: openai
+  model: lfm2.5-24b-a2b-fast
+  apiBase: http://localhost:12434/v1
+  apiKey: llama-swap
+  roles:
+  - chat
+  - edit
+  capabilities:
+  - tool_use
+- name: LFM2.5-VL 3B
+  provider: openai
+  model: lfm2.5-vl-3b
+  apiBase: http://localhost:12434/v1
+  apiKey: llama-swap
+  roles:
+  - chat
+  - edit
+  capabilities:
+  - image_input
+- name: MiniCPM-V 4.7 35B-A3B
+  provider: openai
+  model: minicpm-v-4.7-35b:think
+  apiBase: http://localhost:12434/v1
+  apiKey: llama-swap
+  roles:
+  - chat
+  - edit
+  capabilities:
+  - tool_use
+  - image_input
+- name: Nemotron 3.5 Bolt E4B
+  provider: openai
+  model: nemotron-bolt-e4b:think
+  apiBase: http://localhost:12434/v1
+  apiKey: llama-swap
+  roles:
+  - chat
+  - edit
+  capabilities:
+  - tool_use
+- name: Ornith 1.5 35B Heretic
+  provider: openai
+  model: ornith-1.5-35b-heretic:think
+  apiBase: http://localhost:12434/v1
+  apiKey: llama-swap
+  roles:
+  - chat
+  - edit
+  capabilities:
+  - tool_use
+  - image_input
+- name: Ornith 1.5 35B Heretic (fast)
+  provider: openai
+  model: ornith-1.5-35b-heretic-fast:think
+  apiBase: http://localhost:12434/v1
+  apiKey: llama-swap
+  roles:
+  - chat
+  - edit
+  capabilities:
+  - tool_use
+  - image_input
+- name: Qwen 3.6 35B Heretic
+  provider: openai
+  model: qwen3.6-35b-a3b-heretic:think
+  apiBase: http://localhost:12434/v1
+  apiKey: llama-swap
+  roles:
+  - chat
+  - edit
+  capabilities:
+  - tool_use
+  - image_input
+- name: Qwen 3.6 35B Heretic (fast)
+  provider: openai
+  model: qwen3.6-35b-a3b-heretic-fast:think
+  apiBase: http://localhost:12434/v1
+  apiKey: llama-swap
+  roles:
+  - chat
+  - edit
+  capabilities:
+  - tool_use
+  - image_input
+- name: Spark X2.6 4B
+  provider: openai
+  model: spark-x2.6-4b:think
+  apiBase: http://localhost:12434/v1
+  apiKey: llama-swap
+  roles:
+  - chat
+  - edit
+  capabilities:
+  - tool_use
+- name: Qwen2.5 Coder 1.5B
+  provider: openai
+  model: qwen2.5-coder-1.5b-pollard
+  apiBase: http://localhost:12434/v1
+  apiKey: llama-swap
+  roles:
+  - autocomplete
+  capabilities: []
+- name: EmbeddingGemma 2
+  provider: openai
+  model: embeddinggemma-2
+  apiBase: http://localhost:12434/v1
+  apiKey: llama-swap
+  roles:
+  - embed
+  capabilities: []
+- name: LFM2.5 Embed 350M
+  provider: openai
+  model: lfm2.5-embedding-350m
+  apiBase: http://localhost:12434/v1
+  apiKey: llama-swap
+  roles:
+    - embed
+  capabilities: []
+
+# MCP remoto do Sisyphus (RPi4) — SearXNG + leitor de URL; Bearer local (não é segredo, LAN)
+mcpServers:
+- name: SearXNG
+  url: http://192.168.3.8:8899/mcp
+  type: streamable-http
+  requestOptions:
+    headers:
+      Authorization: Bearer e4876fe82efab0b43298c76f7680fa2f72e7ec117eb0d2fe07fba7897b44ea96
