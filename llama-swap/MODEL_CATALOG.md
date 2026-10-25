@@ -371,7 +371,7 @@
 | **Tool calling** | ✅ validado ao vivo 25/10 (finish tool_calls, calc com argumentos corretos) |
 | **Vision** | ❌ sem mmproj no repo |
 | **Régua** | 25/10/2026: llama-cli seed 42, prompt fixo, 220 tokens — IQ4_XS 4.33 c/ MTP vs 3.16; Q5_K_M UD 3.80/2.48; IQ3_M 2.78/1.77 (i-quant compute-bound na CPU = rejeitar) |
-| **Status** | ATIVO 25/out/2026 (re-entrada da família aposentada ago/26 como qw38 1-bit "too slow") — speed MTP > piso do GSQ (3.6) que derrubou o q38g |
+| **Status** | RETIRADO C/ HONRAS 25/out/2026 — testchat do dono: 4.3 t/s (fast) / 3.2 (regular) sofrível pro uso real; 2ª aposentadoria da família (1ª: ago/26, 1-bit "too slow"). GGUF deletado; restore em `~/.llama-models/defiance/REINSTALAR-DEFIANCE-2026-10-25.md` |
 
 ---
 
