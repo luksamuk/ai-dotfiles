@@ -89,7 +89,7 @@ ornith-1.5-35b-heretic-fast:
     context: 131072
     vram_usage: ~5 GB VRAM
     source: SC117/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-GGUF (I-Compact, sha256 37f67861...e0e7)
-    kv_cache: q4_0 + attn_rot + hadamard (herdado do orn15; validar)
+    kv_cache: q4_0/q4_0 + hadamard
     features:
       completion: true
       tools: true
@@ -108,4 +108,7 @@ ornith-1.5-35b-heretic-fast:
       Heretic KL 0.0105 (moderado, sem eval público) + Sharp v22.5.0 externo (GGUF
       embutido NAO é sharp) + MTP graft shisa (nextn=1 verificado). Handle ''ornith-1.5-35b-heretic''
       é TEMPORÁRIO de teste: se a régua de sanidade passar, vira o substituto de orn15+q36hc;
-      se falhar, fragmento vai pra _disabled/ sem drama.'
+      se falhar, fragmento vai pra _disabled/ sem drama. KV validado 25/10 contra o
+      cmd real: ctk/ctv q4_0 (large_cache_k/v) + hadamard K/V, backend ik — o attn_rot
+      antigo era herança errada do orn15 (nunca existiu flag aqui). Sha256 do GGUF
+      re-verificado pós reinstalação 24/10: 37f67861...e0e7 OK.'
