@@ -1528,7 +1528,7 @@ models:
       context: 131072
       vram_usage: ~5 GB VRAM
       source: SC117/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-GGUF (I-Compact, sha256 37f67861...e0e7)
-      kv_cache: q4_0 + attn_rot + hadamard (herdado do orn15; validar)
+      kv_cache: q4_0/q4_0 + hadamard
       features:
         completion: true
         tools: true
@@ -1543,7 +1543,7 @@ models:
       context_length: 262144
       embedding_length: 2048
       quantization: APEX I-Compact
-      note: 'vram detalhe: ~4.6-5GB VRAM estimado (mesma arch do orn15; medir no smoke) Heretic KL 0.0105 (moderado, sem eval público) + Sharp v22.5.0 externo (GGUF embutido NAO é sharp) + MTP graft shisa (nextn=1 verificado). Handle ''ornith-1.5-35b-heretic'' é TEMPORÁRIO de teste: se a régua de sanidade passar, vira o substituto de orn15+q36hc; se falhar, fragmento vai pra _disabled/ sem drama.'
+      note: 'vram detalhe: ~4.6-5GB VRAM estimado (mesma arch do orn15; medir no smoke) Heretic KL 0.0105 (moderado, sem eval público) + Sharp v22.5.0 externo (GGUF embutido NAO é sharp) + MTP graft shisa (nextn=1 verificado). Handle ''ornith-1.5-35b-heretic'' é TEMPORÁRIO de teste: se a régua de sanidade passar, vira o substituto de orn15+q36hc; se falhar, fragmento vai pra _disabled/ sem drama. KV validado 25/10 contra o cmd real: ctk/ctv q4_0 (large_cache_k/v) + hadamard K/V, backend ik — o attn_rot antigo era herança errada do orn15 (nunca existiu flag aqui). Sha256 do GGUF re-verificado pós reinstalação 24/10: 37f67861...e0e7 OK.'
   phonon-40m-multilingual:
     name: Phonon 40M Multilingual
     description: "Phonon Multilingual is a 40M text-to-speech model from Gradium that speaks English, French, German, Spanish and Portuguese from one set of weights, built on a flow-matching language model over Mimi audio latents. Made for low-latency on-device speech, it streams audio as it generates and draws its voices from a shared multilingual catalog."
@@ -1792,6 +1792,184 @@ models:
       embedding_length: 2048
       quantization: APEX I-Mini
       note: 'vram detalhe: ~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34) APEX I-Mini quant do mudler (base llmfan46 heretic TPE, -2.7 GB vs prod). Sep 24: experimental. O mesmo heretic TPE do prod em quant APEX-I-Mini (14.32 GB). MTP off (sem nextn tail). Se andar bem, substitui o prod.'
+  qwen38-27b-defiance:
+    name: Qwen3.8 27B Defiance
+    description: Qwen3.8 27B dense (qwen35, DeltaNet hybrid), iq4_xs. Uncensored repack Defiance; template embutido com modos por reasoning_effort.
+    cmd: '${ik_llama_server} --port ${PORT}
+
+      --model ${models_dir}/defiance/Qwen3.8-27B-Defiance-Uncensored-IQ4_XS.gguf
+
+      -ngl 10
+
+      -b 256
+
+      -ub 256
+
+      --ctx-size 130816
+
+      --cache-type-k q8_0
+
+      --cache-type-v q8_0
+
+      -fa auto
+
+      -ctx-ckpt 0
+
+      --jinja
+
+      --parallel 1
+
+      --reasoning on
+
+      --reasoning-budget 8192
+
+      --temp 0.7
+
+      --top-p 0.80
+
+      --top-k 20
+
+      --presence-penalty 1.5
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p, presence_penalty
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.80
+          presence_penalty: 1.5
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          presence_penalty: 0.0
+    ttl: 0
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 130816
+    metadata:
+      size: ~15.71 GB (IQ4_XS)
+      context: 130816
+      vram_usage: ~4.8-5.2 GB VRAM (medido ngl 10)
+      source: ttindall/Qwen3.8-27B-Defiance-Uncensored-MTP-GGUF (sha256 d48cdb6e627b...f2f, validado)
+      kv_cache: q8_0/q8_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 27000000000
+      context_length: 262144
+      embedding_length: 5120
+      quantization: IQ4_XS
+      note: "Familia tinha aposentadoria em ago/26 (qw38, 1-bit, 'too slow') — re-entrada 25/10/2026 com MTP medido. Régua: baseline 3.2 t/s, com MTP 4.3 t/s (seed e prompt idênticos). Template EMBUTIDO do Defiance (40 modos via reasoning_effort) — NAO usar chat-template-file externo. Uncensored (pesos HauhauCS, sem recusas). Text-only: sem mmproj no repo. -ctx-ckpt 0: snapshots de estado do ik consomem VRAM por slot em ctx alto; medir antes de reabilitar. 131072 cheio nao cabe (faltam ~120MB no compute buffer)."
+  qwen38-27b-defiance-fast:
+    name: Qwen3.8 27B Defiance (fast)
+    description: Lane MTP (speculative) da 27B — ctx 96k, decode acelerado; mesmo GGUF do regular.
+    cmd: '${ik_llama_server} --port ${PORT}
+
+      --model ${models_dir}/defiance/Qwen3.8-27B-Defiance-Uncensored-IQ4_XS.gguf
+
+      -ngl 10
+
+      -b 256
+
+      -ub 256
+
+      --ctx-size 98304
+
+      --cache-type-k q8_0
+
+      --cache-type-v q8_0
+
+      -fa auto
+
+      --jinja
+
+      --parallel 1
+
+      --reasoning on
+
+      --reasoning-budget 8192
+
+      --spec-type mtp:n_max=8,p_min=0.0
+
+      -ctx-ckpt 0
+
+      --temp 0.7
+
+      --top-p 0.80
+
+      --top-k 20
+
+      --presence-penalty 1.5
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p, presence_penalty
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.80
+          presence_penalty: 1.5
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          presence_penalty: 0.0
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 98304
+    metadata:
+      size: ~15.71 GB (IQ4_XS)
+      context: 98304
+      vram_usage: ~4.7-5.1 GB VRAM (medido ngl 10 + MTP; acima disso o primeiro decode aborta)
+      source: ttindall/Qwen3.8-27B-Defiance-Uncensored-MTP-GGUF (sha256 d48cdb6e627b...f2f, validado)
+      kv_cache: q8_0/q8_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 27000000000
+      context_length: 262144
+      embedding_length: 5120
+      quantization: IQ4_XS
+      note: "Lane MTP (cauda nextn embutida no GGUF), n_max=8; régua 25/10: 4.33 t/s com MTP vs 3.16 baseline no mesmo contexto (aceitação ~54-61%). Teto: acima de 98.304 o init passa mas o PRIMEIRO decode aborta (SIGABRT, cudaGraphLaunch OOM — ik aborta hard; core dumps em /var/lib/systemd/coredump). Sem MTP o mesmo GGUF vai a 130.816 (lane qw38d). -ctx-ckpt 0: snapshots de checkpoint consomem VRAM por slot; medir antes de reabilitar. UNCENSORED. Text-only."
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
@@ -1929,6 +2107,8 @@ matrix:
     # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
     orn35: ornith-1.5-35b-heretic  # 35B-A3B heretic — papel code do sprach (enable_thinking por handle)
     orn35f: ornith-1.5-35b-heretic-fast  # reativado 24/out 2026 — challenger ik (MTP + defer/prefetch); fora dos sets, igual ao lfm24f/qwen-fast
+    qw38d: qwen38-27b-defiance  # re-entrada da 27B 25/out/2026 — lane regular 130k sem MTP (familia aposentada ago/26 'too slow'; MTP medido justifica)
+    qw38df: qwen38-27b-defiance-fast  # lane MTP 96k (4.3 t/s); fora dos sets, padrão lfm24f/orn35f
     bs2: bonsai2-9b  # ternary Prism 9B, always-think — papel query do sprach (precisa de set próprio: sem set o solver trata como exclusivo)
     # g4: gemma4-e2b  # REMOVED Sep 10 2026 — GGUF QAT deleted (maturidade em outros modelos); fragment em _removed/
     # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
@@ -2011,7 +2191,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(lfm24 | mcv35 | orn35 | q36) & (lfmcol | eg2) & qpfim"  # 21/out 2026: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim (regressão: o rewrite derrubou o FIM do heavy; ping-pong coder<->35B medido no journal — restauro da intenção 16/out documentada no small_embed)
+    heavy: "(lfm24 | mcv35 | orn35 | q36 | qw38d) & (lfmcol | eg2) & qpfim"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim (regressão: o rewrite derrubou o FIM do heavy; ping-pong coder<->35B medido no journal — restauro da intenção 16/out documentada no small_embed) | 25/out tarde: +qw38d (5º pesado, dense 27B)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -2066,6 +2246,8 @@ matrix:
     lfm24: 6  # LFM 24B: experts ~13.7GB RAM no -cmoe = reload caro (q4_k_xl lento de remmap); acima do k2p(7) abaixo do heavy 9? medio-alto
     orn35: 9  # 35B-A3B MoE (17GB) — recarregar é caro
     orn35f: 9  # o fast/challenger ik — mesmo GGUF, mesmo custo de reload
+    qw38d: 7  # dense 27B IQ4_XS 15.7GB (25/out) — re-entrada; custo de reload médio (mmap remap rápido)
+    qw38df: 7  # lane MTP do mesmo GGUF — mesmo custo
     bs2: 4  # ternary 9B + fork Prism; reload médio
     # lfm24f: 6  # (o fast/challenger ik — mesmo custo de reload; fora dos sets, vivendo só no A/B)
     twp: 2

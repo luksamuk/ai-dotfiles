@@ -67,6 +67,8 @@ matrix:
     # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
     orn35: ornith-1.5-35b-heretic  # 35B-A3B heretic — papel code do sprach (enable_thinking por handle)
     orn35f: ornith-1.5-35b-heretic-fast  # reativado 24/out 2026 — challenger ik (MTP + defer/prefetch); fora dos sets, igual ao lfm24f/qwen-fast
+    qw38d: qwen38-27b-defiance  # re-entrada da 27B 25/out/2026 — lane regular 130k sem MTP (familia aposentada ago/26 'too slow'; MTP medido justifica)
+    qw38df: qwen38-27b-defiance-fast  # lane MTP 96k (4.3 t/s); fora dos sets, padrão lfm24f/orn35f
     bs2: bonsai2-9b  # ternary Prism 9B, always-think — papel query do sprach (precisa de set próprio: sem set o solver trata como exclusivo)
     # g4: gemma4-e2b  # REMOVED Sep 10 2026 — GGUF QAT deleted (maturidade em outros modelos); fragment em _removed/
     # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
@@ -149,7 +151,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(lfm24 | mcv35 | orn35 | q36) & (lfmcol | eg2) & qpfim"  # 21/out 2026: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim (regressão: o rewrite derrubou o FIM do heavy; ping-pong coder<->35B medido no journal — restauro da intenção 16/out documentada no small_embed)
+    heavy: "(lfm24 | mcv35 | orn35 | q36 | qw38d) & (lfmcol | eg2) & qpfim"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim (regressão: o rewrite derrubou o FIM do heavy; ping-pong coder<->35B medido no journal — restauro da intenção 16/out documentada no small_embed) | 25/out tarde: +qw38d (5º pesado, dense 27B)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -204,6 +206,8 @@ matrix:
     lfm24: 6  # LFM 24B: experts ~13.7GB RAM no -cmoe = reload caro (q4_k_xl lento de remmap); acima do k2p(7) abaixo do heavy 9? medio-alto
     orn35: 9  # 35B-A3B MoE (17GB) — recarregar é caro
     orn35f: 9  # o fast/challenger ik — mesmo GGUF, mesmo custo de reload
+    qw38d: 7  # dense 27B IQ4_XS 15.7GB (25/out) — re-entrada; custo de reload médio (mmap remap rápido)
+    qw38df: 7  # lane MTP do mesmo GGUF — mesmo custo
     bs2: 4  # ternary 9B + fork Prism; reload médio
     # lfm24f: 6  # (o fast/challenger ik — mesmo custo de reload; fora dos sets, vivendo só no A/B)
     twp: 2
