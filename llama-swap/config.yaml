@@ -1439,6 +1439,111 @@ models:
       embedding_length: 2048
       quantization: APEX I-Compact
       note: 'vram detalhe: ~4.9 GB VRAM + ~4.7 GB RAM used | experts em page cache file-backed evictável via -cmoe (a RAM usada é cache — evictável quando o sistema pede) vram detalhe: MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s 0.74 05/10/2026: -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap 24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly. Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K).'
+  ornith-1.5-35b-heretic-fast:
+    name: Ornith 1.5 35B Heretic Fast
+    description: Ornith-1.5-35B com heretic (SC117 trial 62, KL 0.0105) + MTP graft shisa + template Sharp v22.5.0 (o Tiel da casa). Substituto de orn15+q36hc. Visão via mmproj BF16. APEX I-Compact 17.3GB.
+    cmd: '${ik_llama_server} --port ${PORT}
+
+      --model ${models_dir}/ornith-heretic/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-I-Compact.gguf
+
+      --mmproj ${models_dir}/ornith-heretic/mmproj-Ornith-1.5-35B-A3B-Heretic-MTP-BF16.gguf
+
+      --no-mmproj-offload
+
+      --fit
+
+      --fit-margin 2048
+
+      --ctx-size 131072
+
+      --temp 0.6
+
+      --top-p 0.95
+
+      --top-k 20
+
+      --min-p ${code_min_p}
+
+      --repeat-penalty ${code_repeat_penalty}
+
+      --reasoning on
+
+      --reasoning-budget 8192
+
+      --reasoning-budget-message "Let me conclude my reasoning and provide the answer."
+
+      --jinja
+
+      --chat-template-file ${templates_dir}/sharp_chat_template.jinja
+
+      --parallel 1
+
+      --parallel-tool-calls
+
+      --cache-type-k ${large_cache_k}
+
+      --cache-type-v ${large_cache_v}
+
+      --k-cache-hadamard
+
+      --v-cache-hadamard
+
+      --flash-attn auto
+
+      --defer-experts
+
+      --prefetch-experts
+
+      --spec-type mtp:n_max=1,p_min=0.0
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.95
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.95
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~17.33 GB (APEX I-Compact) + 0.9 GB mmproj BF16
+      context: 131072
+      vram_usage: ~5 GB VRAM
+      source: SC117/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-GGUF (I-Compact, sha256 37f67861...e0e7)
+      kv_cache: q4_0 + attn_rot + hadamard (herdado do orn15; validar)
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 35000000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: APEX I-Compact
+      note: 'vram detalhe: ~4.6-5GB VRAM estimado (mesma arch do orn15; medir no smoke) Heretic KL 0.0105 (moderado, sem eval público) + Sharp v22.5.0 externo (GGUF embutido NAO é sharp) + MTP graft shisa (nextn=1 verificado). Handle ''ornith-1.5-35b-heretic'' é TEMPORÁRIO de teste: se a régua de sanidade passar, vira o substituto de orn15+q36hc; se falhar, fragmento vai pra _disabled/ sem drama.'
   phonon-40m-multilingual:
     name: Phonon 40M Multilingual
     description: "Phonon Multilingual is a 40M text-to-speech model from Gradium that speaks English, French, German, Spanish and Portuguese from one set of weights, built on a flow-matching language model over Mimi audio latents. Made for low-latency on-device speech, it streams audio as it generates and draws its voices from a shared multilingual catalog."
@@ -1823,6 +1928,7 @@ matrix:
     lfm24f: lfm2.5-24b-a2b-fast  # o challenger ik (-ot exps CPU) — A/B pós-smoke do cafe
     # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
     orn35: ornith-1.5-35b-heretic  # 35B-A3B heretic — papel code do sprach (enable_thinking por handle)
+    orn35f: ornith-1.5-35b-heretic-fast  # reativado 24/out 2026 — challenger ik (MTP + defer/prefetch); fora dos sets, igual ao lfm24f/qwen-fast
     bs2: bonsai2-9b  # ternary Prism 9B, always-think — papel query do sprach (precisa de set próprio: sem set o solver trata como exclusivo)
     # g4: gemma4-e2b  # REMOVED Sep 10 2026 — GGUF QAT deleted (maturidade em outros modelos); fragment em _removed/
     # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
@@ -1959,6 +2065,7 @@ matrix:
     # lfm26: 2  # APOSENTADO 21/out 2026
     lfm24: 6  # LFM 24B: experts ~13.7GB RAM no -cmoe = reload caro (q4_k_xl lento de remmap); acima do k2p(7) abaixo do heavy 9? medio-alto
     orn35: 9  # 35B-A3B MoE (17GB) — recarregar é caro
+    orn35f: 9  # o fast/challenger ik — mesmo GGUF, mesmo custo de reload
     bs2: 4  # ternary 9B + fork Prism; reload médio
     # lfm24f: 6  # (o fast/challenger ik — mesmo custo de reload; fora dos sets, vivendo só no A/B)
     twp: 2
