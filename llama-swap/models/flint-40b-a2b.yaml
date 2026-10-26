@@ -1,0 +1,85 @@
+flint-40b-a2b:
+  name: Flint 40B A2.5B
+  description: "Flint Preview 40B MoE A2.5B (256 experts top-6 + 2 shared, 49 blocos,
+    2 dense leading). Lane NON-FAST no cafe (quimmedes) — runtime vanilla #30928
+    chegou via merge upstream d92b99ba7 (26/10). Reasoning nativo sempre-on, sem
+    toggle. cafe-llama.cpp backend (-cmoe experts RAM page-cache)."
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
+    --model ${models_dir}/flint-40b-a2b/Flint-APEX-I-Compact.gguf
+
+    --jinja
+
+    --parallel 1
+
+    --ctx-size 131072
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -cmoe
+
+    -ngl 99
+
+    --temp 1.0
+
+    --top-k 20
+
+    --top-p 0.95
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        temperature: 1.0
+        top_k: 20
+        top_p: 0.95
+  ttl: 0
+  health_check_timeout: 600
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: ~18.42 GB (APEX I-Compact)
+    context: 131072
+    vram_usage: "a calibrar no primeiro load do cafe (ik mediu 5.46 GB pico @112K; -cmoe manda experts pra RAM page-cache)"
+    source: mudler/flint-APEX-GGUF (APEX I-Compact, 18424602016 bytes exatos)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: flint
+    parameters: 40000000000
+    active: 2500000000
+    embedding_length: 2048
+    context_length: 131072
+    quantization: APEX I-Compact
+    note: >-
+      Lane non-fast no cafe (pedido 26/10; rebase d92b99ba7 confirmou Flint
+      #30928). SMOKE 26/10 OK (cafe b12252-d92b99ba7): decode 36,3 t/s @112K
+      (first token 0,51s), tool calling OK (finish=tool_calls, get_weather
+      cidade=Diamantina com args JSON corretos), reasoning always-on via
+      reasoning_content. SWA-513 IMPLEMENTADO no runtime vanilla
+      (build_attn_inp_kv_iswa; ik NAO tinha) — 131K cabecou com pico 4,87GB;
+      o ik pedia 5,46GB @112K — cafe ~1,1GB mais leve. ctx final 131072.
+      --parallel-tool-calls NAO existe no cafe (flag ik) — remover de
+      futuros updates. Samplers embutidos no GGUF: temp 1.0 / top_k 20 /
+      top_p 0.95. -cmoe (experts RAM page-cache) = receita cafe do lfm24.
+      GGUF em ~/.llama-models/flint-40b-a2b/.

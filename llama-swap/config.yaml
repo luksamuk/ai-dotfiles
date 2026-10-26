@@ -1080,6 +1080,88 @@ models:
       embedding_length: 1024
       quantization: Q8_0
       note: 'FIX 08/10: -b/-ub 4096 (a imagem lain = 2584 vision tokens > batch 512/2048 default = "input too large" 500). Decision model 600M — text+image ou text+audio (audio via encoder LFM2.5 350M no mmproj). Edge/Jetson class. SEM chat_template no GGUF nem no repo fonte (só via prompt.py próprio) — testar se o llama-server aplica default da família lfm2. Candidate para decision audio. NOT a chat model.'
+  flint-40b-a2b:
+    name: Flint 40B A2.5B
+    description: "Flint Preview 40B MoE A2.5B (256 experts top-6 + 2 shared, 49 blocos, 2 dense leading). Lane NON-FAST no cafe (quimmedes) — runtime vanilla #30928 chegou via merge upstream d92b99ba7 (26/10). Reasoning nativo sempre-on, sem toggle. cafe-llama.cpp backend (-cmoe experts RAM page-cache)."
+    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
+      --model ${models_dir}/flint-40b-a2b/Flint-APEX-I-Compact.gguf
+
+      --jinja
+
+      --parallel 1
+
+      --ctx-size 131072
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --flash-attn on
+
+      -cmoe
+
+      -ngl 99
+
+      --temp 1.0
+
+      --top-k 20
+
+      --top-p 0.95
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          temperature: 1.0
+          top_k: 20
+          top_p: 0.95
+    ttl: 0
+    health_check_timeout: 600
+    capabilities:
+      in:
+        - text
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~18.42 GB (APEX I-Compact)
+      context: 131072
+      vram_usage: "a calibrar no primeiro load do cafe (ik mediu 5.46 GB pico @112K; -cmoe manda experts pra RAM page-cache)"
+      source: mudler/flint-APEX-GGUF (APEX I-Compact, 18424602016 bytes exatos)
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: flint
+      parameters: 40000000000
+      active: 2500000000
+      embedding_length: 2048
+      context_length: 131072
+      quantization: APEX I-Compact
+      note: >-
+        Lane non-fast no cafe (pedido 26/10; rebase d92b99ba7 confirmou Flint
+        #30928). SMOKE 26/10 OK (cafe b12252-d92b99ba7): decode 36,3 t/s @112K
+        (first token 0,51s), tool calling OK (finish=tool_calls, get_weather
+        cidade=Diamantina com args JSON corretos), reasoning always-on via
+        reasoning_content. SWA-513 IMPLEMENTADO no runtime vanilla
+        (build_attn_inp_kv_iswa; ik NAO tinha) — 131K cabecou com pico 4,87GB;
+        o ik pedia 5,46GB @112K — cafe ~1,1GB mais leve. ctx final 131072.
+        --parallel-tool-calls NAO existe no cafe (flag ik) — remover de
+        futuros updates. Samplers embutidos no GGUF: temp 1.0 / top_k 20 /
+        top_p 0.95. -cmoe (experts RAM page-cache) = receita cafe do lfm24.
+        GGUF em ~/.llama-models/flint-40b-a2b/.
   flint-40b-a2b-fast:
     name: Flint 40B A2.5B (fast)
     description: "Flint Preview 40B MoE A2.5B ativo (256 experts top-6 + 2 shared, 49 blocos, 2 dense leading). Atencao hibrida full+SWA(513) com GQA 4 KV heads; ik aloca KV full nas 49 camadas (SWA do Flint ainda nao aproveitado) - 131K estoura a 3050, lane em 112K (validado 25/10; margem igual ao k2 131K em producao). Reasoning nativo sempre-on, sem toggle. ik_llama.cpp backend."
@@ -2003,6 +2085,7 @@ matrix:
     orn35: ornith-1.5-35b-heretic  # 35B-A3B heretic — papel code do sprach (enable_thinking por handle)
     orn35f: ornith-1.5-35b-heretic-fast  # reativado 24/out 2026 — challenger ik (MTP + defer/prefetch); fora dos sets, igual ao lfm24f/qwen-fast
     flintf: flint-40b-a2b-fast  # Flint 40B-A2.5B APEX I-Compact no ik (runtime #2725, 22/out); fast challenger — quando o cafe rebasar, a lane non-fast pega o alias flint
+    flint: flint-40b-a2b  # lane NON-FAST no cafe (merge upstream d92b99ba7 26/10, Flint #30928) — reserva vira realidade
     # qw38d: qwen38-27b-defiance  # RETIRADO 25/out/2026 c/ honras — testchat: 3.2 t/s sofrivel; 2ª aposentadoria da família (1ª ago/26 'too slow'); GGUF deletado (REINSTALAR-DEFIANCE-2026-10-25.md)
     # qw38df: qwen38-27b-defiance-fast  # RETIRADO junto — MTP 4.3 t/s não salvou na régua do dono; fragment em _disabled/
     bs2: bonsai2-9b  # ternary Prism 9B, always-think — papel query do sprach (precisa de set próprio: sem set o solver trata como exclusivo)
@@ -2143,6 +2226,7 @@ matrix:
     orn35: 9  # 35B-A3B MoE (17GB) — recarregar é caro
     orn35f: 9  # o fast/challenger ik — mesmo GGUF, mesmo custo de reload
     flintf: 9  # 40B-A2.5B MoE 18.4GB, 16.1GB pinned no load — reload carissimo
+    flint: 9  # lane cafe do mesmo GGUF — mesmo custo de reload
     # qw38d: 7  # RETIRADO 25/out/2026
     # qw38df: 7  # RETIRADO 25/out/2026
     bs2: 4  # ternary 9B + fork Prism; reload médio
