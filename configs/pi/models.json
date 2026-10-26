@@ -207,6 +207,21 @@
           }
         },
         {
+          "id": "flint-40b-a2b",
+          "name": "Flint 40B A2.5B (café)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 1.0,
+            "top_k": 20,
+            "top_p": 0.95
+          }
+        },
+        {
           "id": "lfm2.5-24b-a2b",
           "name": "LFM 2.5 24B A2B",
           "reasoning": true,
@@ -328,6 +343,38 @@
           ],
           "contextWindow": 200000,
           "maxTokens": 32768
+        },
+        {
+          "id": "ornith-1.5-35b-heretic-fast",
+          "name": "Ornith 1.5 35B Heretic Fast",
+          "reasoning": false,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20
+          }
+        },
+        {
+          "id": "ornith-1.5-35b-heretic-fast:think",
+          "name": "Ornith 1.5 35B Heretic Fast",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20
+          }
         },
         {
           "id": "qwen2.5-coder-1.5b-pollard",
