@@ -80,6 +80,10 @@ flint-40b-a2b:
       (build_attn_inp_kv_iswa; ik NAO tinha) — 131K cabecou com pico 4,87GB;
       o ik pedia 5,46GB @112K — cafe ~1,1GB mais leve. ctx final 131072.
       --parallel-tool-calls NAO existe no cafe (flag ik) — remover de
-      futuros updates. Samplers embutidos no GGUF: temp 1.0 / top_k 20 /
+      futuros updates. PARSER DEDICADO flint.cpp 26/10 (commit local
+      5d261b305 no fork): tool call DENTRO do think (bug visto a 67K no
+      Kilo, 17:28) agora parseia — reasoning termina no think-close OU
+      no call-start; whitespace tolerado. Probe deterministico em
+      tests/flint-parser-probe.cpp (canned do leak real). Samplers embutidos no GGUF: temp 1.0 / top_k 20 /
       top_p 0.95. -cmoe (experts RAM page-cache) = receita cafe do lfm24.
       GGUF em ~/.llama-models/flint-40b-a2b/.
