@@ -106,7 +106,12 @@ groot-65b-a6b:
       DEFAULT-ENABLED (PLE do qwen4 streama do SSD nativamente do fork — o thrash
       de PLE projetado NAO aplica enquanto o ngram-ssd funciona). GGUF Q2_K
       (mradermacher, 56335871168) + mmproj-Q8_0 (616703296) baixados e integros em
-      ~/.llama-models/groot-65b-a6b/ — MANTIDOS no disco; re-teste quando o path
-      -ssd do cafe (ou um patch local) aceitar o arch. Header do GGUF oficial
+      ~/.llama-models/groot-65b-a6b/; re-teste quando o path
+      -ssd do cafe (ou um patch local) aceitar o arch. GGUFs (Q2_K 56335871168 +
+      mmproj-Q8_0 616703296) DELETADOS 27/out pelo dono — ~52.5 GB de volta ao disco;
+      re-download de mradermacher/Groot-65B-A6B-261023-GGUF:
+      hf download mradermacher/Groot-65B-A6B-261023-GGUF Groot-65B-A6B-261023.Q2_K.gguf
+      --local-dir ~/.llama-models/groot-65b-a6b/ (+ mmproj-Q8_0.gguf). LANE UNLISTED
+      ATE SEGUNDA ORDEM (dono, 27/out). Header do GGUF oficial
       GrootTeam declara tensor_count=1 (anomalo) — mradermacher parseia normal
       (tc=1256). ctx no fragmento segue 65536 para o promeiro teste que funcionar.'
