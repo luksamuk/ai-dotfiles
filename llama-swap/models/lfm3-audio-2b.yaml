@@ -84,4 +84,10 @@ lfm3-audio-2b:
       voice) em breve do upstream. Audio sampling params do card original
       embutidos no GGUF. Quirk de idioma da familia: respondendo matematica
       pura em italiano a pergunta PT; ASR e QA audio ficam no idioma certo.
-      GGUF em ~/.llama-models/lfm3-audio-2b/.'
+      VOZ PT = SOTAQUE INGLES — VEREDICTO FECHADO 27/10: e o CHECKPOINT, nao
+      a stack. Testado (a) instrucao de idioma no user turn (receita oficial da
+      doc Liquid), (b) patch set_lang/codec_language ate o gen (server-realtime
+      do fork), (c) rota /tts com lang pt — todos sem efeito audivel. A demo
+      OFICIAL deles (hugging-apps/lfm3-audio-2b, transformers de referencia)
+      produz o mesmo: texto PT lido com voz EN. NAO re-investigar. GGUF em
+      ~/.llama-models/lfm3-audio-2b/.'
