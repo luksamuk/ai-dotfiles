@@ -4,7 +4,7 @@ lfm3-omni-2b:
     son e audio (16 kHz), responde em texto ou fala. Musica no contrato (fala/musica/
     son ambiente/eventos). Ideal p/ ASR, QA de musica e julgamento de clipes H3
     (ve e ouve juntos)."
-  tags: [vis, think, tools]
+  tags: [vis, tools]
   cmd: '${llama_server} --port ${PORT}
 
     --model ${models_dir}/lfm3-omni-2b/LFM3-Omni-2B-Q8_0.gguf
@@ -42,11 +42,6 @@ lfm3-omni-2b:
       ${MODEL_ID}:
         temperature: 0.6
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -69,7 +64,7 @@ lfm3-omni-2b:
     features:
       completion: true
       tools: true
-      thinking: true
+      thinking: false
       vision: true
       embedding: false
       insert: false
@@ -90,6 +85,12 @@ lfm3-omni-2b:
       audio IN 16kHz mono (fidelidade harmonica limitada), fala OUT 24kHz com
       audio_temperature 0.4 quando pedido. Video: ve e ouve JUNTOS (2fps, soundtrack
       incluso) — candidato a juiz de clipes H3 (aprovado, testar com clipe real).
-      Text benchmarks do vendor usam greedy; lane pina 0.6/0.95 (chat sane). ctx 32K
-      (input+output, card). Embeddings/mmproj F16 mantidos (peso irrelevante,
-      fidelidade visual prioritaria). GGUF em ~/.llama-models/lfm3-omni-2b/.'
+      Text benchmarks do vendor usam greedy; lane pina 0.6/0.95 (chat sane). 
+      NAO-THINKING (verificado 27/out por A/B do dono): template TEM enable_thinking
+      (3 refs) mas o modelo NAO emite reasoning_content nem default nem com o kwarg
+      true/false (respostas identicas) — :think RETIRADO de acordo com o standard
+      2b (handle fantasma proibido); dual-mode e do 1.7B apenas. Quirk: pequenos
+      slips de idioma (respondeu em italiano a pergunta PT); system prompt de
+      idioma resolve. ctx 32K (input+output, card). Embeddings/mmproj F16 mantidos
+      (peso irrelevante, fidelidade visual prioritaria). GGUF em
+      ~/.llama-models/lfm3-omni-2b/.'
