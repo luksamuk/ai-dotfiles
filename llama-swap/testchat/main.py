@@ -2125,22 +2125,18 @@ Variáveis de ambiente:
     """)
 
 
-def run_duplex_session():
-    """Modo duplex voz→voz para lanes de áudio do fleet (features.audio).
-
-    Fluxo por turno: pw-record no mic padrão → Enter para → WAV →
-    POST /upstream/<lane>/v1/tasks/run (task s2s do audio.cpp, single-request
-    audio→audio) → texto no display + resposta falada tocada via pw-play.
-    Ctrl+C sai. Convenção do id s2s interno: f"<lane_id>-s2s"
-    (documentada no fragment lfm2.5-audio). Para lanes llama.cpp (omni) o
-    transporte muda quando o upstream wired áudio-saída no /v1/realtime.
+def run_duplex_session(start_model=None):
+    """Modo duplex voz→voz. Dois transportes, pela lane:
+      1. LLAMA.CPP (features.audio + completion — lfm3-audio/omni): sessão
+         WebSocket /v1/realtime (PR #31269) persistente, conversa contínua
+         no server, streaming bidirecional (protocolo do
+         examples/realtime_client.py oficial).
+      2. AUDIO.CPP (features.audio sem chat — lfm2.5-audio): task s2s via
+         /upstream/<id>/v1/tasks/run (single-request audio→audio).
     """
+    import asyncio as _asyncio
     import json as _json
-    import subprocess as _subprocess
-    import urllib.error as _urlerror
     import urllib.request as _urlrequest
-    import base64 as _base64
-    import os as _os
 
     try:
         response = requests.get(f"{BASE_URL}/models", timeout=5)
@@ -2149,47 +2145,192 @@ def run_duplex_session():
         console.print(f"[red]Erro ao buscar modelos: {e}[/]")
         return
 
-    audio_lanes = []
+    rt_lanes, s2s_lanes = [], []
     for model in data.get("data", []):
         mid = model.get("id", "")
-        # Pula variantes :think e ids internos de task (-s2s/-tts/-asr)
         if ":" in mid or mid.endswith(("-s2s", "-tts", "-asr")):
             continue
         llamaswap = (model.get("meta") or {}).get("llamaswap") or {}
         features = llamaswap.get("features") or {}
-        # Elegível: entrada de áudio, SEM rota de chat e SEM ser embedding
-        # (embeddinggemma-2 tem features.audio true — é entrada p/ embeddings,
-        # não conversa). As de chat entram pelo picker normal; o duplex delas
-        # entra quando o upstream wired áudio-saída no /v1/realtime
-        if (features.get("audio") and not features.get("completion")
-                and not features.get("embedding")):
-            audio_lanes.append(model)
+        if not features.get("audio") or features.get("embedding"):
+            continue
+        if features.get("completion"):
+            rt_lanes.append(model)      # llama.cpp: realtime WS disponível
+        else:
+            s2s_lanes.append(model)     # audio.cpp: tasks/run s2s
 
-    if not audio_lanes:
-        console.print("[yellow]Nenhuma lane de áudio no fleet (features.audio sem chat).[/]")
+    lanes = rt_lanes + s2s_lanes
+    if not lanes:
+        console.print("[yellow]Nenhuma lane de áudio no fleet.[/]")
         return
 
-    if len(audio_lanes) == 1:
-        lane = audio_lanes[0]
-    else:
-        try:
-            choices = [questionary.Choice(title=m.get("name", m["id"]), value=m)
-                       for m in audio_lanes]
-            lane = questionary.select("Lane de áudio:", choices=choices).ask()
-        except KeyboardInterrupt:
-            return
-        except Exception as e:
-            # sem tty (não-interativo) ou falha de UI: pega a primeira e segue
-            console.print(f"[dim]Seletor indisponível ({str(e)[:60]}) — usando {audio_lanes[0]['id']}.[/]")
-            lane = audio_lanes[0]
+    lane = None
+    if start_model:
+        lane = next((m for m in lanes if m["id"] == start_model), None)
+    if lane is None:
+        if len(lanes) == 1:
+            lane = lanes[0]
+        else:
+            try:
+                choices = [questionary.Choice(title=m.get("name", m["id"]), value=m)
+                           for m in lanes]
+                lane = questionary.select("Lane de áudio:", choices=choices).ask()
+            except KeyboardInterrupt:
+                return
+            except Exception as e:
+                console.print(f"[dim]Seletor indisponível ({str(e)[:60]}) — usando {lanes[0]['id']}.[/]")
+                lane = lanes[0]
         if not lane:
             return
 
     lane_id = lane["id"]
+    is_rt = lane in rt_lanes
+    console.print(f"[bold cyan]🎙 Modo duplex — {lane.get('name', lane_id)}[/]")
+    console.print("[dim]Fale no microfone padrão. Enter envia o turno. Ctrl+C sai.[/]")
+
+    if is_rt:
+        try:
+            # llama-swap ainda NÃO proxéia /v1/realtime (issue pendente). Padrão
+            # da casa (era systemone): spawn pela swap → porta dinâmica em
+            # /running → WS direto no llama-server.
+            _urlrequest.urlopen(_urlrequest.Request(
+                f"{BASE_URL}/chat/completions", data=_json.dumps(
+                {"model": lane_id, "messages": [{"role": "system", "content": "ping"}],
+                 "max_tokens": 1}).encode(),
+                headers={"Content-Type": "application/json"}), timeout=300)
+            running = _json.loads(_urlrequest.urlopen(f"{BASE_URL[:-len('/v1')]}/running",
+                                  timeout=10).read().decode())["running"]
+            entry = next((m for m in running if m.get("model") == lane_id), None)
+            if entry is None:
+                raise RuntimeError(f"lane {lane_id} não apareceu em /running")
+            from urllib.parse import urlparse as _uparse
+            port = _uparse(entry.get("proxy") or "").port
+            if port is None:
+                raise RuntimeError(f"sem porta em /running para {lane_id}")
+            _asyncio.run(_duplex_realtime_loop(lane_id, f"ws://127.0.0.1:{port}/v1"))
+            console.print("[dim]Modo duplex encerrado.[/]")
+            return
+        except KeyboardInterrupt:
+            console.print("[dim]Modo duplex encerrado.[/]")
+            return
+        except Exception as e:
+            console.print(f"[yellow]Realtime indisponível ({str(e)[:120]}) — caindo pro s2s.[/]")
+
+    run_duplex_s2s_loop(lane_id)
+
+
+async def _duplex_realtime_loop(lane_id, swap_ws):
+    """Sessão WebSocket /v1/realtime persistente: uma conexão, conversa contínua.
+
+    Protocolo idêntico ao examples/realtime_client.py do upstream (PR #31269):
+    session.update com instructions interleave; pergunta = chunks PCM16 via
+    input_audio_buffer.append no rate do modelo; resposta = response.output_
+    text.delta + response.output_audio.delta até response.done — áudio tocado
+    em pedaços no pw-play.
+    """
+    import base64 as _base64
+    import wave as _wave
+    import subprocess as _subprocess
+    import array as _array
+    import os as _os
+    from openai import AsyncOpenAI
+
+    client = AsyncOpenAI(base_url=swap_ws, api_key="none",
+                         websocket_base_url=swap_ws.replace("http", "ws", 1))
+    # porta dinâmica: o server é single-model, o id esperado é "default"
+    async with client.realtime.connect(model="default") as conn:
+        ev = await conn.recv()
+        if ev.type == "error":
+            console.print(f"[red]{ev.error.message}[/]"); return
+        session_info = ev.model_dump(warnings=False)["session"]
+        in_rate = (session_info["audio"]["input"]["format"]["rate"])
+        await conn.session.update(session={
+            "type": "realtime",
+            "instructions": "Respond with interleaved text and audio.",
+            "output_modalities": ["text", "audio"],
+        })
+        ev = await conn.recv()
+        if ev.type == "error":
+            console.print(f"[red]{ev.error.message}[/]"); return
+
+        wav_in = "/tmp/testchat_duplex_in.wav"
+        turn = 0
+        while True:
+            turn += 1
+            console.print()
+            console.print("[green]🎙 Gravando... (Enter para enviar)[/]")
+            rec = _subprocess.Popen(["pw-record", wav_in])
+            try:
+                input()
+            except EOFError:
+                rec.terminate()
+                console.print("[dim]stdin fechado — encerrando modo duplex.[/]")
+                return
+            rec.terminate()
+            try:
+                rec.wait(timeout=5)
+            except _subprocess.TimeoutExpired:
+                rec.kill()
+
+            if not _os.path.exists(wav_in) or _os.path.getsize(wav_in) < 2048:
+                console.print("[yellow]Gravação vazia — fale perto do microfone.[/]")
+                continue
+            try:
+                pcm = _subprocess.run(["ffmpeg", "-v", "error", "-i", wav_in,
+                                       "-ar", str(in_rate), "-ac", "1",
+                                       "-f", "s16le", "-"],
+                                      capture_output=True, check=True).stdout
+            except _subprocess.CalledProcessError as e:
+                console.print(f"[red]ffmpeg falhou: {e.stderr[:120]}[/]")
+                continue
+            smp = _array.array("h")
+            smp.frombytes(pcm)
+            step = in_rate // 10
+            console.print(f"[dim]Enviando {len(smp)/in_rate:.1f}s de fala...[/]")
+
+            async def _send():
+                for j in range(0, len(smp), step):
+                    await conn.input_audio_buffer.append(
+                        audio=_base64.b64encode(smp[j:j+step].tobytes()).decode())
+                    await _asyncio.sleep(len(smp[j:j+step]) / in_rate)
+            sender = _asyncio.create_task(_send())
+
+            text_buf, audio_buf = [], []
+            async for ev in conn:
+                if ev.type == "response.output_text.delta":
+                    text_buf.append(ev.delta)
+                elif ev.type == "response.output_audio.delta":
+                    audio_buf.append(base64.b64decode(ev.delta))
+                elif ev.type == "response.done":
+                    break
+                elif ev.type == "error":
+                    console.print(f"[red]ws error: {ev.error.message}[/]")
+                    return
+            await sender
+            console.print(f"[bold]📝 {''.join(text_buf)}[/]")
+            if audio_buf:
+                audio = b"".join(audio_buf)
+                out = f"/tmp/testchat_duplex_out_{turn}.wav"
+                with _wave.open(out, "wb") as f:
+                    f.setnchannels(1); f.setsampwidth(2); f.setframerate(24000)
+                    f.writeframes(audio)
+                console.print(f"[dim]🔊 {len(audio)/(24000*2):.1f}s -> {out}[/]")
+                _subprocess.run(["pw-play", out])
+
+
+def run_duplex_s2s_loop(lane_id):
+    """Fallback (audio.cpp): task s2s single-request por turno."""
+    import json as _json
+    import subprocess as _subprocess
+    import urllib.error as _urlerror
+    import urllib.request as _urlrequest
+    import base64 as _base64
+    import os as _os
+    console.print("[dim]Transporte audio.cpp (tasks/run s2s).[/]")
     s2s_id = f"{lane_id}-s2s"
     # BASE_URL termina em /v1; /upstream é rota RAIZ da swap (sem /v1)
     swap_root = BASE_URL[: -len("/v1")] if BASE_URL.endswith("/v1") else BASE_URL
-    console.print(f"[bold cyan]🎙 Modo duplex — {lane.get('name', lane_id)}[/]")
+    console.print(f"[bold cyan]🎙 Modo duplex — {lane_id}[/]")
     console.print("[dim]Fale no microfone padrão. Enter envia. Ctrl+C sai.[/]")
 
     wav_in = "/tmp/testchat_duplex_in.wav"
