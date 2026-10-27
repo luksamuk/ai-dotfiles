@@ -2214,7 +2214,7 @@ def run_duplex_session(start_model=None):
             console.print("[dim]Modo duplex encerrado.[/]")
             return
         except Exception as e:
-            console.print(f"[yellow]Realtime indisponível ({str(e)[:120]}).[/]")
+            console.print(f"[yellow]Realtime indisponível ({type(e).__name__}: {str(e)[:100]}).[/]")
             if lane in rt_lanes:
                 run_duplex_chat_tts_loop(lane_id)   # llama.cpp: dois passes
             else:
@@ -2285,7 +2285,7 @@ def run_duplex_chat_tts_loop(lane_id):
             chat_text = (r["choices"][0]["message"].get("content") or "").strip()
             console.print(f"[bold]📝 {chat_text}[/]")
             console.print("[dim]Passe 2: voz...[/]")
-            req = _urlrequest.Request(f"{http_base}/tts",
+            req = _urlrequest.Request(f"http://127.0.0.1:{port}/tts",
                 data=_json.dumps({"input": chat_text, "voice": "female"}).encode(),
                 headers={"Content-Type":"application/json"})
             r2 = _urlrequest.urlopen(req, timeout=600)
@@ -2379,17 +2379,11 @@ async def _duplex_realtime_loop(lane_id, swap_ws):
                         audio=_base64.b64encode(smp[j:j+step].tobytes()).decode())
                     await _asyncio.sleep(len(smp[j:j+step]) / in_rate)
             sender = _asyncio.create_task(_send())
-            await sender   # chunks entram (o server pode responder em paralelo)
+            await sender   # input completo em chunks
+            await conn.response.create()   # turno determinístico (sem guard/cancel)
 
             text_buf, audio_buf = [], []
-            aiter = conn.__aiter__()
-            try:
-                # guard 3s: sem primeiro evento, destrava com response.create
-                ev = await _asyncio.wait_for(aiter.__anext__(), timeout=3.0)
-            except _asyncio.TimeoutError:
-                await conn.response.create()
-                ev = await aiter.__anext__()
-            while True:
+            async for ev in conn:
                 if ev.type == "response.output_text.delta":
                     text_buf.append(ev.delta)
                 elif ev.type == "response.output_audio.delta":
@@ -2399,7 +2393,6 @@ async def _duplex_realtime_loop(lane_id, swap_ws):
                 elif ev.type == "error":
                     console.print(f"[red]ws error: {ev.error.message}[/]")
                     return
-                ev = await aiter.__anext__()
             console.print(f"[bold]📝 {''.join(text_buf)}[/]")
             if audio_buf:
                 audio = b"".join(audio_buf)
