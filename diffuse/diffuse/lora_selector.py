@@ -40,7 +40,7 @@ class SelectorCfg:
     selector: str = "llm"          # "llm" | "decision"
     decision_model: str = "d1-3b"
     decision_threshold: float = 0.5
-    decision_max: int = 4
+    decision_max: int = 2          # 25/out: 4 empilhados derreteram (caso qwen21 radiancechrome+slider); teto 2
 
 
 # ── config: CLI > env > yaml > default ──────────────────────────────────────
@@ -94,7 +94,7 @@ def load_selector_cfg(args) -> SelectorCfg:
         mx = env("decision_max", int) if env("decision_max", int) is not None else None
     if mx is None:
         mx = yml("decision_max", int)
-    mx = 4 if mx is None else int(mx)
+    mx = 2 if mx is None else int(mx)
 
     return SelectorCfg(selector=sel, decision_model=model,
                        decision_threshold=th, decision_max=max(1, min(mx, 8)))
@@ -170,7 +170,20 @@ def _decision_select(prompt: str, entries, cfg: SelectorCfg):
         p = v.get("noul") if isinstance(v, dict) else None
         scores[str(k).replace("lora_", "")] = float(p) if isinstance(p, (int, float)) else 0.0
     rank = sorted(scores.items(), key=lambda x: -x[1])
-    sel = [i for i, p in rank if p >= cfg.decision_threshold][:cfg.decision_max]
+    # guarda anti-redundância (25/out, caso aio x thesealpacas): no máximo 1 LoRA
+    # por categoria — duas AIO da MESMA categoria em cima das mesmas camadas
+    # (0.8+1.0) derreteram o render. Especialista + estilo de outro nicho segue ok.
+    cat_by_id = {str(e["id"]): (e.get("categoria") or "") for e in entries}
+    sel = []
+    vistos = set()
+    for i, p in rank:
+        if p < cfg.decision_threshold or len(sel) >= cfg.decision_max:
+            break
+        c = cat_by_id.get(i, "")
+        if c and c in vistos:
+            continue
+        vistos.add(c)
+        sel.append(i)
     return sel, rank
 
 

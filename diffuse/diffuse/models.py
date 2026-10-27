@@ -235,6 +235,23 @@ MODELS: dict[str, dict] = {
             {"name": "flux2_small_decoder_bf16.safetensors (VAE)", "path": "Wan2GP/ckpts/moss_image/flux2_small_decoder_bf16.safetensors", "size_gb": 0.06},
         ],
     },
+    "moss-image-photoreal": {
+        "backend_id": "moss-image-photoreal-wan2gp",
+        "dir": "moss-image-photoreal",
+        "backend_type": "moss_wan2gp",
+        "lora_root": "moss_image",
+        "category": "image",
+        "bits": "INT8 ConvRot (kimrf / Civitai 3021669 — merge sobre o SFT, layout Comfy-Org qkv fundido)",
+        "description": "MOSS Photographic Realism — merge da comunidade (kimrf) sobre o MOSS-Image SFT com foco photo/lighting; BF16 norm/TE bit-identicos ao SFT da casa, delta de camada ~1.5-2.5% (régua SFT-Base). Mesma arch/TE/VAE/pipeline do SFT, via Wan2GP. Fonte Civitai: baixada à mão (auto-download do wgp não funciona).",
+        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_type": "moss",
+        "default_size": (1024, 1024),
+        "components": [
+            {"name": "moss_image_photoreal_int8_convrot.safetensors (DiT)", "path": "Wan2GP/ckpts/moss_image_photoreal_int8_convrot.safetensors", "size_gb": 5.41},
+            {"name": "qwen3_5_9b_text_int8_convrot.safetensors (text encoder)", "path": "Wan2GP/ckpts/Qwen3.5-9B/qwen3_5_9b_text_int8_convrot.safetensors", "size_gb": 8.96},
+            {"name": "flux2_small_decoder_bf16.safetensors (VAE)", "path": "Wan2GP/ckpts/moss_image/flux2_small_decoder_bf16.safetensors", "size_gb": 0.06},
+        ],
+    },
     "fibo2-edit-turbo": {
         "backend_id": "fibo2-sdcpp",
         "dir": "fibo2",

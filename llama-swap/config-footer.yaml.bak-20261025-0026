@@ -1,0 +1,226 @@
+# Hooks: ações na inicialização do llama-swap
+# preload: carrega modelos síncronamente antes de aceitar requests
+# Ideal para vLLM (startup lento = 30-90s sem warm-up)
+# NOTA: preloads desabilitados temporariamente — ocupam GPU e bloqueiam swap pra SGLang
+# Para reabilitar: descomente as linhas preload abaixo
+hooks:
+  on_startup:
+    preload: []
+      # - "qwen3.5-0.8b-vllm"
+      # - "lfm2.5-1.2b-vllm"
+
+# ============================================
+# SWAP MATRIX (v202+)
+# ============================================
+# O solver determina automaticamente qual combinação de modelos
+# pode rodar simultaneamente e quais descarregar quando necessário.
+#
+# ⚠️ REGRA CRÍTICA DE COEXISTÊNCIA:
+# Embedding e reranker (nomic, lfmemb, lfmcol) são CPU-only (~0.5GB total)
+# e NÃO consomem VRAM. Devem coexistir com QUALQUER LLM — leve ou pesado.
+# Todos os sets que agrupam LLMs DEVEM incluir as vars de embedding/reranker
+# no & (AND). Se uma var de embedding falta de um set, o solver trata
+# o embedding e o LLM como mutuamente exclusivos, causando ping-pong
+# de eviction (embedding evicta LLM cost 9+, LLM evicta embedding cost 1).
+#
+# Exemplo: heavy: "(qw36 | orn35) & (nomic | lfmemb | lfmcol)"
+# Veja references/new-model-workflow.md §6 para detalhes completos.
+# ============================================
+
+matrix:
+  vars:
+    # Modelos pequenos
+    # q4: qwen3.5-4b  # removed Oct 11 2026 — qwen3.5-4b aposentado por decreto user (agents-a1-4b assume como padrão); handle órfão crasha config
+    # a1: agents-a1-4b  # OUTROU em Oct 12 2026 — régua disk N=5 fechada 124.4 (std 12.66; 03 zerado 1x, 01 tool_use 0 nas 5) — neohorse assumiu o trono 4B com dados (137.8)
+    # neo4: neohorse-1-4b  # APOSENTADO 21/out 2026 — sem uso na fleet; GGUF deletado, fragment em _removed/. (voltou 1x em Oct 12 e não pegou)
+    # q4x: qwen3.5-4b-262k  # disabled Sep 20 2026 — user: cafe fica pros MoEs, 4B segue no prod upstream/ik; ctx alto não importa nesse modelo
+    # m5a: minicpm5-1b-agentic  # disabled
+    # lfm8: lfm2.5-8b-a1b  # REMOVED Sep 10 2026 — GGUF deleted (bench 16/105, user confia no 2.6b); fragment em _removed/
+    # lfm26: lfm2.5-2.6b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/
+    # nb42: nanbeige4.2-3b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/
+    # Especialista logica formal (webAI, base Granite 4.2-3B da IBM) — lane nova, nao substitui
+    twp: twil-lm3-pro
+    # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
+    # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
+    qpfim: qwen2.5-coder-1.5b-pollard  # reativado 16/out — FIM CPU-only (k2fim/k2p/k2 _disabled: GGUFs deletados no aperto SSD; restore: mv _disabled → models + vars)
+    # k2fim: k2-horizon-3.7b-pollard-fim  # _disabled 16/out — pesos deletados (aperto SSD)
+    # k2p: k2-horizon-3.7b-pollard  # _disabled 16/out — idem
+    # k2: k2-horizon-36b  # _disabled 16/out — pasta k2-horizon-36b deletada
+    # g12p: gemma4-12b-pollard  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%); restore: mv _disabled/ → models/
+    # GPT-2 124M — museum piece (2019 original, completion-only, ctx 1024)
+    # gpt2: gpt-2-124m  # desativado 17/09 (disk; restore: _disabled)
+    # gpt2xl: gpt-2-xl  # DISABLED Oct 3 2026 - GGUF deleted (pedido user); fragment em _disabled/; restore: descomentar + mv fragment
+    # Manacá 1B Instruct — PT-BR do zero (LNCC × NII/LLM-jp), pesquisa experimental
+    # man1: manaca-1b-instruct  # DISABLED Oct 3 2026 - GGUF deleted (pedido user); fragment em _disabled/; restore: descomentar + mv fragment
+    # inst: instella-moe-16b  # disabled
+    # Vision
+    ocr: glm-ocr
+    # uocr: unlimited-ocr  # disabled Aug 2026 — unused
+    # qwvl: qwen3-vl-4b  # REMOVED Sep 10 2026 — GGUF deleted (A/B lfm2.5-vl-3b pendente pro enhance do H3); fragment em _removed/
+    lfmvl3: lfm2.5-vl-3b
+    # MiniCPM-V 4.7 (out/2026): denso 1B (Q8_0, ~2.2GB VRAM) + MoE 35B-A3B (mix oficial, experts RAM)
+    # PR #29416 (M-RoPE rope.section_order): cafe v0.76 (13/Out) mergeou; ik ainda sem
+    # mcv1: minicpm-v-4.7-1b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/; o 35b (mcv35) fica
+    mcv35: minicpm-v-4.7-35b  # ATIVO Oct 13 2026 noite: GGUF re-baixado (mix 15.5GB + mmproj 4x 0.91GB) + cafe v0.76 (ad57e28a1) mergeou #29416 (M-RoPE OK) — backend cafe
+    lfm24: lfm2.5-24b-a2b  # ATIVO Oct 13 2026 — flag-ship LiquidAI MoE 24B/2.45B ativo (LiveClaw 48.09 > qwen3.6-35b 38.19), UD-Q4_K_XL 14.9GB, -cmoe receita laguna. Sem :think (always-think native). Régua N=5 na fila
+    lfm24f: lfm2.5-24b-a2b-fast  # o challenger ik (-ot exps CPU) — A/B pós-smoke do cafe
+    # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
+    orn35: ornith-1.5-35b-heretic  # 35B-A3B heretic — papel code do sprach (enable_thinking por handle)
+    orn35f: ornith-1.5-35b-heretic-fast  # reativado 24/out 2026 — challenger ik (MTP + defer/prefetch); fora dos sets, igual ao lfm24f/qwen-fast
+    bs2: bonsai2-9b  # ternary Prism 9B, always-think — papel query do sprach (precisa de set próprio: sem set o solver trata como exclusivo)
+    # g4: gemma4-e2b  # REMOVED Sep 10 2026 — GGUF QAT deleted (maturidade em outros modelos); fragment em _removed/
+    # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
+    # Pesados (offload)
+    # aw: agentworld-35b  # disabled Aug 2026
+    # orn15: MERGED no heretic 05/10 (fragment em _disabled/ornith-1.5-35b-onyx-old.yaml; GGUF deletado)
+    # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
+    q36: qwen3.6-35b-a3b-heretic  # REATIVADO 20/out 2026 — melhor prompter que o ornith nos enhance (user); pesos re-baixados (APEX-I-Mini, mudler)
+    # Baseline de codigo APEX I-Compact (sem heretic, sem MTP) + variante cafe; Oct 1 2026
+    # qc30/qc30f: REMOVED Oct 06 2026 — qwen3-coder aposentado (cafe + fast; GGUF 14.7GB deleted).
+    # N=5 canônico: 118.0/155 (piso 106). Fragments em _removed/
+    # q36hc: MERGED em q36 05/10 (o "-cafe" virou o heretic oficial; o ik é -fast em _disabled/)
+    # occ: occamy-1.0  # REMOVED Sep 27 2026 — bench 141.4±4.4 N=5, abaixo do ornith; GGUF deleted 15.4GB; fragment em _removed/
+    # lag: laguna-xs-2.1  # APOSENTADO 21/out 2026 "com honras" — 18.9 GiB; default do sprach virou lfm24; restore = re-download Q4_K_M oficial + fragment de _removed/
+    # k2: k2-horizon-36b  # _disabled 16/out — pasta k2-horizon-36b deletada; NORMAL era cafe 0.75 @131K
+    # k2h: k2-horizon-7b  # REMOVED Sep 16 2026 — errático em chat (idioma/identidade, tool-loop instável); GGUF a decidir; fragment em _removed/
+    # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
+    # Bonsai 1-bit disabled Aug 2026 — user request
+    # bonsai1: bonsai-27b-1bit
+    # neo4: neohorse-1-4b  # removed Oct 11 2026 — neohorse aposentado + GGUF fora; handle órfão crasha o config (matrix refs unknown model)
+    # Qwen3.8-27B dense 1-bit disabled Aug 2026 — too slow, user never uses
+    # qw38: qwen3.8-27b
+    # qw38p: qwen3.8-27b-pollard  # removed Aug 30 2026 — 2.75 tok/s, superseded by bonsai-27b (10x faster, same class)
+    # Qwen3.8-27B GSQ-RCO IQ2_S-mtp removed Sep 20 2026 — 3.6 t/s ainda lento demais pro uso; GGUF deleted; fragment em _disabled/
+    # q38g: qwen3.8-27b-gsq
+    # Bonsai removed Sep 20 2026 — user nunca usa; GGUF deleted; fragment em _disabled/
+    # bonsai: bonsai-27b
+    # Tradução
+    tg: translategemma-4b
+    # Português jurídico (Qwen3.5-9B LoRA, instruct)
+    # athenas: athenas-symbiote-9b  # disabled
+    # Audio
+    # asr: qwen3-asr-0.6b  # disabled
+    ttsext: qwen3-tts
+    # Embedding
+    # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
+    lfmemb: lfm2.5-embedding-350m
+    # nemb: nemotron-3-embed-1b  # APOSENTADO 21/out 2026 — sprach migrou p/ eg2 em 06/10; GGUF deletado, fragment em _removed/
+    # Multimodal embedding (Google, 740M, texto+img+audio+video, 768d MRL, Apache 2.0)
+    eg2: embeddinggemma-2
+    # Reranker (late-interaction, CPU-only)
+    lfmcol: lfm2.5-colbert-350m
+    # Decision models (System One scorers, /v1/systemone) — exclusive no
+    # matrix (fora de sets); judge do laya-snake; routing #1195 pending
+    # laya: DESINSTALADO 20/out/2026 — recall@3 21% no harness do seletor
+    #   (4 falsos no controle negativo, prior fixo) e ruído ~0.5 como juiz do
+    #   snake; julia-1 cobre o posto com 400x mais discriminação. Fragment em
+    #   _disabled/ + laya.HELPER.md; pesos apagados (805MB, ggml-org re-download)
+    julia: julia-1
+    sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
+    nbe4: nemotron-bolt-e4b  # NVIDIA Bolt E4B (Gemma 4 E4B pos-treino), 64K em Q4 por escolha do dono
+
+  sets:
+    # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
+    small_vision: "(twp | lfm24) & (lfmcol | eg2)"
+
+    # LLM pequeno + Embedding (sem vision)
+    # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
+    # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
+    small_embed: "(twp | lfm24 | sp26 | nbe4) & (lfmcol | eg2) & qpfim"
+
+    # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
+    small_only: "twp | lfm24 | sp26 | nbe4"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados); twp + lfm24 restam
+
+    # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
+    # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
+
+    # Vision models (sozinhos ou com embedding/reranker)
+    vision_only: "ocr | lfmvl3 | mcv35"
+    vision_embed: "(ocr | lfmvl3 | mcv35) & (lfmcol | eg2)"
+
+    # Modelos médios + Embedding/Reranker
+    # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
+    # medium: REMOVIDO 21/out 2026 — a lane existia só para o laguna; com ele fora, o heavy cobre (lfm24 é MoE 24B/2.45B ativo, não precisa de lane "média"). Para ressuscitar: descomentar
+    # medium: "(lfm24) & (lfmcol | eg2)" # k2 _disabled 16/out (pesos deletados); q36 REMOVED Oct 8 2026 — aposentado (user decision); qc30 REMOVED Oct 6 2026 — coder aposentado; g12p REMOVED Oct 1 — disk
+
+    # Modelos pesados (offload) + Embedding/Reranker + CPU completion
+    # qw38 removed Aug 2026 — model disabled
+    # bonsai1 removed Aug 2026 — user request (reactivated as bonsai, Sep 2026)
+    # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
+    # glm removed Sep 09 2026 — see vars note
+    # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
+    heavy: "(lfm24 | mcv35 | orn35 | q36) & (lfmcol | eg2)"  # 21/out 2026: os 4 pesados declarados juntos (pedido do dono) — laguna fora
+
+    # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
+    # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
+    bs2_embed: "bs2 & (lfmcol | eg2)" # k2/k2p/k2fim _disabled 16/out (pesos deletados); q36 REMOVED Oct 8 2026 — aposentado; orn15 merged no heretic
+
+    # Tradução (leve, cabe com embedding/reranker)
+    # translate_embed removed (hmt uninstalled)
+    translate_only: "tg"
+
+    # External TTS (separate process, same GPU)
+    tts_external: "ttsext"
+
+    # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
+    # AND entre todos os CPU-only: coexistem (zero VRAM) — OR evitaria em ping-pong
+    embed_only: "lfmemb & lfmcol & eg2"
+
+    # Reranker sozinho (late-interaction reranking, CPU-only)
+    rerank_only: "lfmcol"
+
+    # Reranker + Embedding (two-stage retrieval: dense → rerank)
+    rerank_embed: "lfmcol & (lfmemb | eg2)"
+
+  # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
+  evict_costs:
+    # MiniCPM-V 4.7: barato de recarregar (1B 2.2GB GPU; 35B MoE ~11GB RAM, page cache)
+    mcv35: 4
+    # orn15: 9  # merged no heretic 05/10
+    # glm: 9  # REMOVED Sep 09 2026 — model deleted
+    q36: 9  # REATIVADO 20/out 2026
+    # k2: 9  # _disabled 16/out (pesos deletados)
+    # qc30: 7  # REMOVED Oct 06 2026
+    # occ: 9  # REMOVED Sep 27 2026 — model deleted
+    # lag: 9  # APOSENTADO 21/out 2026
+    # nex25: 9  # REMOVED Sep 10 2026
+    # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed
+    # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
+    # q38g: 8  # removed Sep 20 2026
+    # bonsai: 8  # removed Sep 20 2026
+    # bonsai2: 9  # re-instalado Oct 10 2026 — handle inativo até bench; 27B denso denso = caro de recarregar
+    # neo4: 2  # APOSENTADO 21/out 2026
+    # a1: 2  # OUTDO Oct 12 2026 (régua disk fechada 124.4)
+    # g4: 3  # REMOVED Sep 10 2026 — model deleted
+    ttsext: 4
+    ocr: 3
+    # qwvl: 3  # REMOVED Sep 10 2026
+    lfmvl3: 3
+    # q4: 2  # removed Oct 11 2026 junto do modelo (aposentadoria qwen3.5-4b)
+    # a1: 2  # OUTDO Oct 12 2026 — régua disk 124.4 fechada; neohorse retomou
+    # q4x: 2  # disabled Sep 20 2026
+    # lfm8: 2  # REMOVED Sep 10 2026
+    # lfm26: 2  # APOSENTADO 21/out 2026
+    lfm24: 6  # LFM 24B: experts ~13.7GB RAM no -cmoe = reload caro (q4_k_xl lento de remmap); acima do k2p(7) abaixo do heavy 9? medio-alto
+    orn35: 9  # 35B-A3B MoE (17GB) — recarregar é caro
+    orn35f: 9  # o fast/challenger ik — mesmo GGUF, mesmo custo de reload
+    bs2: 4  # ternary 9B + fork Prism; reload médio
+    # lfm24f: 6  # (o fast/challenger ik — mesmo custo de reload; fora dos sets, vivendo só no A/B)
+    twp: 2
+    # eq2: 2  # REMOVED Sep 10 2026
+    # eq4: 3  # REMOVED Sep 10 2026
+    qpfim: 1
+    # g12p: 3  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%)
+    # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
+    # gpt2xl: 3  # DISABLED Oct 3 2026 - gpt2xl removido
+    # nomic: 1  # REMOVED Sep 10 2026
+    lfmemb: 1
+    # nemb: 1  # APOSENTADO 21/out 2026
+    eg2: 1
+    lfmcol: 1
+    tg: 2
+    # Decision models (juizes /v1/systemone) - recarregam em ~2s, evictam primeiro
+    # laya: 1  # DESINSTALADO 20/out/2026
+    julia: 1
+    sp26: 2  # 3,54 GB denso — reload barato
+    nbe4: 3  # 5,06 GB denso — reload medio

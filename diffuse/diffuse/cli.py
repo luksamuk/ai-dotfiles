@@ -1431,11 +1431,14 @@ def _run_qwen21_turbo_wan2gp_image(
         cfg = load_selector_cfg(args)
         _manual_tag = bool(lora_tags)  # tags manuais vencem o seletor (decreto)
 
-        if is_edit and getattr(args, "enhance_edit_with", None):
-            edit_model = args.enhance_edit_with
+        if is_edit:
+            # EDIT MULTI-REF: --enhance em edição SEMPRE usa o caminho vision (refs
+            # no VLM, doutrina de refs numeradas). O enhancer text-only re-descreve
+            # a cena do zero e MATA a identidade das refs (bug do iany, 2025) —
+            # sem modelo vision = prompt CRU (refs fazem o trabalho), jamais re-descrição.
+            edit_model = getattr(args, "enhance_edit_with", None) or enhance_model
             if not _check_model_vision(edit_model):
-                print(f"  ⚠️  {edit_model} não tem visão — caindo pro enhance text-only")
-                enhanced, raw_response = enhance_qwen21_prompt(prompt, edit_model, nsfw=args.nsfw)
+                print(f"  ⚠️  EDIT: {edit_model} sem visão — enhance SKIPADO: refs só existem pros olhos do diffusion; use --enhance-edit-with <modelo-vision> para o VLM ver as refs")
             else:
                 print(f"\n  👁️✨ {edit_model} analisa a referência e refina a instrução (one-shot)...")
                 if cfg.selector == "llm" and not _manual_tag:
@@ -1624,11 +1627,14 @@ def _run_qwen21_wan2gp_image(
         cfg = load_selector_cfg(args)
         _manual_tag = bool(lora_tags)  # tags manuais vencem o seletor (decreto)
 
-        if is_edit and getattr(args, "enhance_edit_with", None):
-            edit_model = args.enhance_edit_with
+        if is_edit:
+            # EDIT MULTI-REF: --enhance em edição SEMPRE usa o caminho vision (refs
+            # no VLM, doutrina de refs numeradas). O enhancer text-only re-descreve
+            # a cena do zero e MATA a identidade das refs (bug do iany, 2025) —
+            # sem modelo vision = prompt CRU (refs fazem o trabalho), jamais re-descrição.
+            edit_model = getattr(args, "enhance_edit_with", None) or enhance_model
             if not _check_model_vision(edit_model):
-                print(f"  ⚠️  {edit_model} não tem visão — caindo pro enhance text-only")
-                enhanced, raw_response = enhance_qwen21_prompt(prompt, edit_model, nsfw=args.nsfw)
+                print(f"  ⚠️  EDIT: {edit_model} sem visão — enhance SKIPADO: refs só existem pros olhos do diffusion; use --enhance-edit-with <modelo-vision> para o VLM ver as refs")
             else:
                 print(f"\n  👁️✨ {edit_model} analisa a referência e refina a instrução (one-shot)...")
                 if cfg.selector == "llm" and not _manual_tag:

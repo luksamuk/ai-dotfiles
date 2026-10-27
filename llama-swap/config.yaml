@@ -476,82 +476,6 @@ models:
       embedding_length: 2048
       quantization: APEX I-Compact
       note: 'vram detalhe: ~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe) | turbo4 KV; hmoe experts pinned Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused (IK TurboQuant); source do mmproj: unsloth Q8.'
-  lfm2.5-vl-3b:
-    name: LFM2.5-VL 3B
-    description: Liquid AI VLM with native grounding, OCR with layout annotation, and SigLIP2 NaFlex vision. 3B params, 32K context, 16 languages.
-    tags:
-      - vision
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/lfm2.5-vl-3b/LFM2.5-VL-3B-Q6_K.gguf
-
-      --mmproj ${models_dir}/lfm2.5-vl-3b/mmproj-LFM2.5-VL-3B-Q8_0.gguf
-
-      --media-path ${media_path}
-
-      --jinja
-
-      --fit on
-
-      --fit-target ${vram_margin}
-
-      --fit-ctx 8192
-
-      --ctx-size 32768
-
-      --parallel 1
-
-      --temp 0.3
-
-      --top-p 0.9
-
-      --top-k 40
-
-      --min-p 0.0
-
-      --repeat-penalty 1.1
-
-      --cache-type-k ${small_cache_k}
-
-      --cache-type-v ${small_cache_v}
-
-      --flash-attn on
-
-      --metrics
-
-      '
-    ttl: 60
-    health_check_timeout: 300
-    capabilities:
-      in:
-        - text
-        - image
-      out:
-        - text
-      tools: false
-      reranker: false
-      context: 32768
-    metadata:
-      size: ~2.22 GB (Q6_K) + 583 MB mmproj (Q8_0)
-      context: 32768
-      vram_usage: ~3.5 GB VRAM
-      source: LiquidAI/LFM2.5-VL-3B-GGUF (Q6_K + mmproj Q8_0)
-      kv_cache: q8_0
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: lfm2_vl
-      parameters: 3000000000
-      context_length: 32768
-      embedding_length: 2048
-      quantization: Q6_K
-      note: 'vram detalhe: ~3.5 GB (model 2.22GB + mmproj 583MB + cache + compute) | model 2.22GB Q6_K + mmproj 583MB + cache + compute VLM with SigLIP2 NaFlex (native resolution, 512x512 patches + thumbnail). Better grounding + OCR with layout than 1.6B. Single-turn high-throughput: object detection, OCR, translation. 16 languages incl Portuguese.'
   twil-lm3-pro:
     name: TwIL-LM3-Pro
     description: Twil LM3 Pro is webAI's 3.66B dense reasoning specialist, built on IBM Granite 4.2-3B. It targets formal logic and mathematical reasoning, with a 131K context window.
@@ -1002,243 +926,6 @@ models:
       embedding_length: 2048
       quantization: Q4_K_M
       note: 'Base LFM2.5-VL 3B (vision via SigLIP2 mmproj). Decision model (choices/scores/noul) with temperature calibration per choice type (config.json temperatures). Base LFM2.5-VL 3B. Real-time decisions: classifier + image understanding. Candidate to judge systemone (laya-snake). mmproj 583MB gives SigLIP2 vision. NOT a chat model: structured decision output.'
-  d1-omni-600m:
-    name: Liquid d1-omni 600M
-    description: d1-omni is a 600M decision model from Liquid AI, accepting text with either images or audio and outputting choices and scores.
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/d1-omni-600M/d1-omni-600M-Q8_0.gguf
-
-      --mmproj ${models_dir}/d1-omni-600M/mmproj-d1-omni-600M-Q8_0.gguf
-
-      --media-path ${media_path}
-
-      --jinja
-
-      --fit on
-
-      --fit-target ${vram_margin}
-
-      --fit-ctx 4096
-
-      --ctx-size 16384
-
-      --parallel 1
-
-      --temp 1.0
-
-      --top-p 0.9
-
-      --top-k 40
-
-      --min-p 0.0
-
-      -b 4096
-
-      -ub 4096
-
-      --cache-type-k ${small_cache_k}
-
-      --cache-type-v ${small_cache_v}
-
-      --flash-attn on
-
-      --metrics
-
-      '
-    ttl: 60
-    health_check_timeout: 300
-    capabilities:
-      in:
-        - text
-        - image
-        - audio
-      out:
-        - text
-      tools: false
-      reranker: false
-      context: 16384
-    metadata:
-      size: ~407 MB (Q8_0) + 263 MB mmproj (Q8_0)
-      context: 16384
-      vram_usage: ~1.5 GB VRAM
-      source: LiquidAI/d1-omni-600M-GGUF (Q8_0 + mmproj Q8_0)
-      kv_cache: q8_0
-      features:
-        decision: true
-        completion: true
-        tools: false
-        thinking: false
-        vision: true
-        embedding: false
-        insert: false
-        audio: true
-        image: false
-      architecture: lfm2
-      parameters: 600000000
-      context_length: 16384
-      embedding_length: 1024
-      quantization: Q8_0
-      note: 'FIX 08/10: -b/-ub 4096 (a imagem lain = 2584 vision tokens > batch 512/2048 default = "input too large" 500). Decision model 600M — text+image ou text+audio (audio via encoder LFM2.5 350M no mmproj). Edge/Jetson class. SEM chat_template no GGUF nem no repo fonte (só via prompt.py próprio) — testar se o llama-server aplica default da família lfm2. Candidate para decision audio. NOT a chat model.'
-  flint-40b-a2b:
-    name: Flint 40B A2.5B
-    description: "Flint Preview 40B MoE A2.5B (256 experts top-6 + 2 shared, 49 blocos, 2 dense leading). Lane NON-FAST no cafe (quimmedes) — runtime vanilla #30928 chegou via merge upstream d92b99ba7 (26/10). Reasoning nativo sempre-on, sem toggle. cafe-llama.cpp backend (-cmoe experts RAM page-cache)."
-    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
-
-      --model ${models_dir}/flint-40b-a2b/Flint-APEX-I-Compact.gguf
-
-      --jinja
-
-      --parallel 1
-
-      --ctx-size 131072
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --flash-attn on
-
-      -cmoe
-
-      -ngl 99
-
-      --temp 1.0
-
-      --top-k 20
-
-      --top-p 0.95
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          temperature: 1.0
-          top_k: 20
-          top_p: 0.95
-    ttl: 0
-    health_check_timeout: 600
-    capabilities:
-      in:
-        - text
-      out:
-        - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~18.42 GB (APEX I-Compact)
-      context: 131072
-      vram_usage: "a calibrar no primeiro load do cafe (ik mediu 5.46 GB pico @112K; -cmoe manda experts pra RAM page-cache)"
-      source: mudler/flint-APEX-GGUF (APEX I-Compact, 18424602016 bytes exatos)
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: flint
-      parameters: 40000000000
-      active: 2500000000
-      embedding_length: 2048
-      context_length: 131072
-      quantization: APEX I-Compact
-      note: >-
-        Lane non-fast no cafe (pedido 26/10; rebase d92b99ba7 confirmou Flint
-        #30928). SMOKE 26/10 OK (cafe b12252-d92b99ba7): decode 36,3 t/s @112K
-        (first token 0,51s), tool calling OK (finish=tool_calls, get_weather
-        cidade=Diamantina com args JSON corretos), reasoning always-on via
-        reasoning_content. SWA-513 IMPLEMENTADO no runtime vanilla
-        (build_attn_inp_kv_iswa; ik NAO tinha) — 131K cabecou com pico 4,87GB;
-        o ik pedia 5,46GB @112K — cafe ~1,1GB mais leve. ctx final 131072.
-        --parallel-tool-calls NAO existe no cafe (flag ik) — remover de
-        futuros updates. PARSER DEDICADO flint.cpp 26/10 (commit local
-        5d261b305 no fork): tool call DENTRO do think (bug visto a 67K no
-        Kilo, 17:28) agora parseia — reasoning termina no think-close OU
-        no call-start; whitespace tolerado. Probe deterministico em
-        tests/flint-parser-probe.cpp (canned do leak real). Samplers embutidos no GGUF: temp 1.0 / top_k 20 /
-        top_p 0.95. -cmoe (experts RAM page-cache) = receita cafe do lfm24.
-        GGUF em ~/.llama-models/flint-40b-a2b/.
-  flint-40b-a2b-fast:
-    name: Flint 40B A2.5B (fast)
-    description: "Flint Preview 40B MoE A2.5B ativo (256 experts top-6 + 2 shared, 49 blocos, 2 dense leading). Atencao hibrida full+SWA(513) com GQA 4 KV heads; ik aloca KV full nas 49 camadas (SWA do Flint ainda nao aproveitado) - 131K estoura a 3050, lane em 112K (validado 25/10; margem igual ao k2 131K em producao). Reasoning nativo sempre-on, sem toggle. ik_llama.cpp backend."
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/flint-40b-a2b/Flint-APEX-I-Compact.gguf
-
-      --jinja
-
-      -ot "blk\.([2-9]|1[0-9]|2[0-9]|3[0-9]|4[0-8])\.ffn_(gate|up|down)_exps=CPU"
-
-      -ngl 99
-
-      --ctx-size 114688
-
-      --parallel 1
-
-      --parallel-tool-calls
-
-      --temp 1.0
-
-      --top-k 20
-
-      --top-p 0.95
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --flash-attn on
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          temperature: 1.0
-          top_k: 20
-          top_p: 0.95
-    ttl: 0
-    health_check_timeout: 600
-    capabilities:
-      in:
-        - text
-      out:
-        - text
-      tools: true
-      reranker: false
-      context: 114688
-    metadata:
-      size: ~18.42 GB (APEX I-Compact)
-      context: 114688
-      vram_usage: "~5.46 GB VRAM pico @112K (pesos 1.07 + KV 3.0) + ~16.1 GB RAM pinned (experts)"
-      source: mudler/flint-APEX-GGUF (APEX I-Compact, 18424602016 bytes exatos)
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: flint
-      parameters: 40000000000
-      active: 2500000000
-      embedding_length: 2048
-      context_length: 114688
-      quantization: APEX I-Compact
-      note: 'Smoke 25/10 (ik 804ee29c, Flint runtime #2725 mergeado 22/10): load ~6s mmap, decode 47 t/s @64K (igual ao 16K), prompt 74 t/s @64K (117 @16K), pico VRAM 4137 MiB, RAM pinned 16.1 GiB. Tool calling NATIVO validado: get_weather com args JSON corretos, finish tool_calls. Reasoning sempre-on via reasoning_content (template sem toggle de thinking) - ID unico, sem :think. 131K NAO cabe na 3050: KV CUDA 3528 MiB @131K (KV full nas 49 camadas, SWA-513 nao implementado no ik) + pesos 1075 MiB + desktop ~800 = cudaMalloc OOM no compute buffer. Escada de ctx medida 25/10 (pico VRAM, folga na 3050 de 6GB c/ ~800MB desktop): 64K=4137MiB, 96K=5015, 112K=5455 (folga ~690MB, MESMA margem do k2 131K @88.7% em producao - escolhido), 120K=5675 (folga ~470MB, raspando demais), 131K=falha. Sem MTP head (0 tensores nextn) - nao ligar spec decode. Samplers embutidos no GGUF: temp 1.0, top_k 20, top_p 0.95. Cafe aguarda rebase upstream (Flint vanilla #30928 mergeado 21/10) para a lane non-fast. GGUF em ~/.llama-models/flint-40b-a2b/.'
   glm-ocr:
     name: GLM-OCR
     description: GLM's vision-language OCR model for complex document understanding and text extraction.
@@ -1273,6 +960,201 @@ models:
         audio: false
         image: false
       note: 'vram detalhe: ~2GB (model + mmproj + cache) | GLM OCR multimodal: model 0.95GB + mmproj 0.48GB + cache; Q8_0 Specialized OCR model — use prompts like ''OCR'', ''OCR markdown'', ''Table Recognition:''. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.'
+  groot-19b-a3b:
+    name: Groot 19B A3B
+    description: "MoE 19B-A3B do GrootTeam (destilado da linhagem Qwen3.6) via ik, hibrido 10 full-attn + 30 linear-attn, multimodal, 262K de contexto nativo, dual-mode de raciocinio e parallel tool calls nativos (-ptc)."
+    cmd: '${ik_llama_server} --port ${PORT}
+
+      --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf
+
+      --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf
+
+      --no-mmproj-offload
+
+      --no-graph-reuse
+
+      -ngl 99
+
+      --n-cpu-moe 34
+
+      --ctx-size 262144
+
+      --reasoning on
+
+      --jinja
+
+      --parallel 1
+
+      --parallel-tool-calls
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --k-cache-hadamard
+
+      --v-cache-hadamard
+
+      --flash-attn auto
+
+      --defer-experts
+
+      --prefetch-experts
+
+      -b 512
+
+      -ub 128
+
+      --temp 1.0
+
+      --top-k 20
+
+      --top-p 0.95
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.8
+          top_k: 20
+          presence_penalty: 1.5
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 20
+          presence_penalty: 1.5
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 262144
+    metadata:
+      size: ~11.66 GB (Q4_K_M) + 0.86 GB mmproj
+      context: 262144
+      vram_usage: "~5.06 GB VRAM pico @262K (folga ~1.1GB) + ~14 GB RAM (experts n-cpu-moe 34)"
+      source: GrootTeam/Groot-19B-A3B-261023-GGUF (Q4_K_M, 11657618560 bytes exatos) + mmproj-BF16 (902822016 bytes)
+      kv_cache: q4_0/q4_0 + hadamard
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 19000000000
+      active: 3000000000
+      embedding_length: 2048
+      context_length: 262144
+      quantization: Q4_K_M
+      note: 'Smoke 27/10 (ik 804ee29c): escada de tuning medida — n-cpu-moe 40 @131K = 2.89GB/36.4 t/s; n-cpu-moe 32 @262K = 5.53GB (90%, raspa)/38+ t/s; ESCOLHIDO n-cpu-moe 34 @262144 = pico 5.06GB (82%, folga ~1.1GB) e MESMOS 37.4-37.9 t/s (plain e think). 1.5x mais rapido que a lane cafe (24.2 t/s think). Parallel tool calls NATIVO (-ptc): 4 get_weather/get_local_time simultaneos, JSON limpo, finish=tool_calls — com template embedded (sem --chat-template-file da casa). Dual-mode via enable_thinking, reasoning_content OK, 17*23=391. Mesmo peso e mmproj da lane cafe (um download serve as duas). Hadamard KV = TurboQuant ik. GGUF em ~/.llama-models/groot-19b-a3b/.'
+  groot-65b-a6b:
+    name: Groot 65B A6B
+    description: "EXPERIMENTO Dormammu (27/out): MoE 65B-A6B do GrootTeam (distill do Qwen3.8-Flash-Next) com tabela n-gram PLE de 51B params em host + experts roteados streamados do SSD no cafe. Espera-se lentidao; lane para medir tradeoffs, nao para producao."
+    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
+      --model ${models_dir}/groot-65b-a6b/groot-65b-a6b-261023.Q2_K.gguf
+
+      --mmproj ${models_dir}/groot-65b-a6b/mmproj-Q8_0.gguf
+
+      --ctx-size 65536
+
+      --jinja
+
+      --parallel 1
+
+      --no-mmproj-offload
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --flash-attn on
+
+      -ssd
+
+      -ngl 99
+
+      -b 512
+
+      -ub 128
+
+      --temp 1.0
+
+      --top-k 20
+
+      --top-p 0.95
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.8
+          top_k: 20
+          presence_penalty: 1.5
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 20
+          presence_penalty: 0.0
+    ttl: 0
+    health_check_timeout: 1200
+    unlisted: true
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 65536
+    metadata:
+      size: ~52.46 GB (Q2_K) + 0.58 GB mmproj
+      context: 65536
+      vram_usage: "a medir no smoke — backbone ~2 GB na GPU + KV leve (12 sparse-attn layers) + PLE 25 GB em host (mmap, thrash esperado)"
+      source: mradermacher/Groot-65B-A6B-261023-GGUF (Q2_K, 56335871168 bytes exatos) + mmproj-Q8_0 (616703296 bytes)
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen4exp
+      parameters: 65000000000
+      active: 6000000000
+      embedding_length: 2560
+      context_length: 262144
+      quantization: Q2_K
+      note: 'EXPERIMENTO 27/out — BLOQUEADO no build atual do cafe (02dda80a9 + merges 26/10): o expert streaming nao carrega o Groot-65B. Fatos medidos: (1) flag correta e -ssd (-ssd-streaming e parse invalido, "-ssd"+"-streaming"); (2) load com -ssd ABORTA em ggml-backend.cpp:383 get_usage(NULL) ("GGML_ASSERT(buffer) failed") ~50s no load, thread llama_row_pool no dump — repetido em 3 variantes (default ngram-ssd, --no-ngram-ssd, --ssd-streaming-cache-experts 8GB explicito) → bug do path -ssd com qwen4exp, nao interplay com PLE nem orcamento de cache; (3) sem -ssd, experts somam ~26 GB e -ngl 99 tenta CUDA direto ("unable to allocate CUDA0"); (4) -cmoe (experts RAM 26GB) > RAM disponivel da casa e Gyro-S (mesma familia, engine dedicado TQ1_0) ja fechou 97% RAM em 24/10 — nada do lado dos runtimes encaixa hoje. Descoberta util: cafe tem --ngram-ssd DEFAULT-ENABLED (PLE do qwen4 streama do SSD nativamente do fork — o thrash de PLE projetado NAO aplica enquanto o ngram-ssd funciona). GGUF Q2_K (mradermacher, 56335871168) + mmproj-Q8_0 (616703296) baixados e integros em ~/.llama-models/groot-65b-a6b/; re-teste quando o path -ssd do cafe (ou um patch local) aceitar o arch. GGUFs (Q2_K 56335871168 + mmproj-Q8_0 616703296) DELETADOS 27/out pelo dono — ~52.5 GB de volta ao disco; re-download de mradermacher/Groot-65B-A6B-261023-GGUF: hf download mradermacher/Groot-65B-A6B-261023-GGUF Groot-65B-A6B-261023.Q2_K.gguf --local-dir ~/.llama-models/groot-65b-a6b/ (+ mmproj-Q8_0.gguf). LANE UNLISTED ATE SEGUNDA ORDEM (dono, 27/out). Header do GGUF oficial GrootTeam declara tensor_count=1 (anomalo) — mradermacher parseia normal (tc=1256). ctx no fragmento segue 65536 para o promeiro teste que funcionar.'
   lfm2.5-24b-a2b:
     name: LFM 2.5 24B A2B
     description: "LiquidAI flagship agentic MoE: 24B total / 2.45B active (64 experts, top-4 routing, 30 shortconv + 10 GQA layers). 131K context, 128K vocab, native reasoning. Agent-focused training (36T tokens); knowledge-heavy tasks need retrieval."
@@ -1422,6 +1304,7 @@ models:
       - vis
       - think
       - tools
+    unlisted: true
     cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
       --model ${models_dir}/minicpm-v-4.7-35b/MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf
@@ -2078,7 +1961,7 @@ matrix:
     ocr: glm-ocr
     # uocr: unlimited-ocr  # disabled Aug 2026 — unused
     # qwvl: qwen3-vl-4b  # REMOVED Sep 10 2026 — GGUF deleted (A/B lfm2.5-vl-3b pendente pro enhance do H3); fragment em _removed/
-    lfmvl3: lfm2.5-vl-3b
+    # lfmvl3: lfm2.5-vl-3b  # APOSENTADO 27/out/2026 a pedido do dono — fragment em _disabled/; A/B p/ enhance do H3 cancelado junto
     # MiniCPM-V 4.7 (out/2026): denso 1B (Q8_0, ~2.2GB VRAM) + MoE 35B-A3B (mix oficial, experts RAM)
     # PR #29416 (M-RoPE rope.section_order): cafe v0.76 (13/Out) mergeou; ik ainda sem
     # mcv1: minicpm-v-4.7-1b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/; o 35b (mcv35) fica
@@ -2088,8 +1971,11 @@ matrix:
     # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
     orn35: ornith-1.5-35b-heretic  # 35B-A3B heretic — papel code do sprach (enable_thinking por handle)
     orn35f: ornith-1.5-35b-heretic-fast  # reativado 24/out 2026 — challenger ik (MTP + defer/prefetch); fora dos sets, igual ao lfm24f/qwen-fast
-    flintf: flint-40b-a2b-fast  # Flint 40B-A2.5B APEX I-Compact no ik (runtime #2725, 22/out); fast challenger — quando o cafe rebasar, a lane non-fast pega o alias flint
-    flint: flint-40b-a2b  # lane NON-FAST no cafe (merge upstream d92b99ba7 26/10, Flint #30928) — reserva vira realidade
+    # flintf: flint-40b-a2b-fast  # APOSENTADO 27/out/2026 pelo dono ("nao vale vs resto") — lanes desativadas; fragment em _disabled/; rm do GGUF pendente de OK (destrava disco pro Groot 65B)
+    # flint: flint-40b-a2b  # APOSENTADO junto 27/out/2026
+    # groot: groot-19b-a3b  # REMOVIDO 27/out/2026 — lane cafe -cmoe lenta demais na regua do dono; fragment em _removed/
+    # grootf: (fundido no groot 27/out/2026 — o dono pediu id sem sufixo; unico backend ativo e o ik)
+    groot: groot-19b-a3b  # id limpo (sem -fast, pedido 27/out) — ik, 37.9 t/s @262K, tool calls nativos
     # qw38d: qwen38-27b-defiance  # RETIRADO 25/out/2026 c/ honras — testchat: 3.2 t/s sofrivel; 2ª aposentadoria da família (1ª ago/26 'too slow'); GGUF deletado (REINSTALAR-DEFIANCE-2026-10-25.md)
     # qw38df: qwen38-27b-defiance-fast  # RETIRADO junto — MTP 4.3 t/s não salvou na régua do dono; fragment em _disabled/
     bs2: bonsai2-9b  # ternary Prism 9B, always-think — papel query do sprach (precisa de set próprio: sem set o solver trata como exclusivo)
@@ -2229,8 +2115,9 @@ matrix:
     lfm24: 6  # LFM 24B: experts ~13.7GB RAM no -cmoe = reload caro (q4_k_xl lento de remmap); acima do k2p(7) abaixo do heavy 9? medio-alto
     orn35: 9  # 35B-A3B MoE (17GB) — recarregar é caro
     orn35f: 9  # o fast/challenger ik — mesmo GGUF, mesmo custo de reload
-    flintf: 9  # 40B-A2.5B MoE 18.4GB, 16.1GB pinned no load — reload carissimo
-    flint: 9  # lane cafe do mesmo GGUF — mesmo custo de reload
+    # flintf: 9  # APOSENTADO 27/out/2026
+    # flint: 9  # APOSENTADO 27/out/2026
+    groot: 7  # ~14GB experts RAM no ik (n-cpu-moe 34) — mesmo GGUF das lanes anteriores
     # qw38d: 7  # RETIRADO 25/out/2026
     # qw38df: 7  # RETIRADO 25/out/2026
     bs2: 4  # ternary 9B + fork Prism; reload médio
