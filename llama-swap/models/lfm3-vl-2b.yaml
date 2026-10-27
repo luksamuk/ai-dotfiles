@@ -1,0 +1,91 @@
+lfm3-vl-2b:
+  name: LFM3 VL 2B
+  description: "VLM 2B da LiquidAI (tri-hybrid nova geracao): documentos, charts,
+    video, app screens e raciocinio espacial. Pensa por default (dual-mode real
+    via enable_thinking). Competitive com Gemma 4 12B sendo 6x menor, pelo card
+    do vendor. NAO e para coding/multi-turn longo (card)."
+  tags: [vis, think, tools]
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/lfm3-vl-2b/LFM3-VL-2B-Q8_0.gguf
+
+    --mmproj ${models_dir}/lfm3-vl-2b/mmproj-F16.gguf
+
+    --ctx-size 131072
+
+    --jinja
+
+    --parallel 1
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -ngl 99
+
+    -b 512
+
+    -ub 128
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.95
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: ~1.85 GB (Q8_0) + 0.38 GB mmproj-F16
+    context: 131072
+    vram_usage: "~4.18 GB VRAM pico @131K (KV q4_0, desktop incluso)"
+    source: LiquidAI/LFM3-VL-2B-GGUF (Q8_0, 1846238496 bytes exatos) + mmproj-F16
+      (378996032 bytes)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: lfm3
+    parameters: 2200000000
+    embedding_length: 2048
+    context_length: 131072
+    quantization: Q8_0
+    note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb, merges #31252/#31257 do dia):
+      ctx 128K nativo deployado (131072; card diz 128K tokens input+output), VRAM
+      pico 4.18GB. DUAL-MODE REAL verificado por A/B: default pensa (reasoning
+      1242 chars) e o budget de max_tokens PRECISA contar o think (IMG probe com
+      250 tok = content vazio, finish=length — o think comeu tudo); think via
+      enable_thinking: reasoning 1358; off: reasoning 0 e resposta DIRETA 2.4s
+      (74 t/s classe). Tool calling 4/4 simultaneos, JSON limpo, finish=
+      tool_calls. Card do vendor: doc/charts/video/spatial e "nao recomendado
+      para coding, multi-turn ou raciocinio complexo" — papel OCR/VLM-QA da casa
+      (candidato ao trono do lfm2.5-vl-3b aposentado e a substituicao do espaco
+      funcional do gemma4-12b removido em Sep). Samplers do card: evals deles
+      0.6/0.95; lane pina por handle. GGUF em ~/.llama-models/lfm3-vl-2b/.'

@@ -1,0 +1,85 @@
+lfm3-audio-2b:
+  name: LFM3 Audio 2B
+  description: "Audio 2B da LiquidAI: voz e audio ENTRADA nativa (16 kHz mono) com
+    ASR, translate, QA de recordings (speech/sounds/events) e fala-saída.
+    Texto em 18 idiomas; NAO pensa (verificado). TTS offline via llama-tts;
+    /v1/realtime em breve do upstream."
+  tags: [tools, audio]
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/lfm3-audio-2b/LFM3-Audio-2B-Q8_0.gguf
+
+    --mmproj ${models_dir}/lfm3-audio-2b/mmproj-F16.gguf
+
+    --ctx-size 32768
+
+    --jinja
+
+    --parallel 1
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -ngl 99
+
+    -b 512
+
+    -ub 128
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    - audio
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 32768
+  metadata:
+    size: ~1.85 GB (Q8_0) + 0.57 GB mmproj-F16 (audio encoder)
+    context: 32768
+    vram_usage: "~4.3 GB VRAM pico @32K estimado (KV q4_0)"
+    source: LiquidAI/LFM3-Audio-2B-GGUF (Q8_0, 1846236704 bytes exatos) + mmproj-F16
+      (570846400 bytes)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: true
+      image: false
+    architecture: lfm3
+    parameters: 2200000000
+    embedding_length: 2048
+    context_length: 32768
+    quantization: Q8_0
+    note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb, merges #31252/#31257 do dia):
+      ASR impecável — voz real PT de 2021 (45s ogg convertido wav 16kHz mono)
+      transcrita com fidelidade, 2.2s / 77 t/s. Music QA: responde estilo/
+      instrumentos (funk pro theme 8-bit — o Omni julgou melhor: house). NAO
+      THINKING (A/B: reasoning 0 nas 3 condicoes — o card fala "reason before
+      answering" pro TEXT path, mas o llama.cpp server nao expõe toggle e o
+      kwarg enable_thinking nao muda nada). ASR via system prompt "Perform ASR."
+      (idioma auto). Fala-SAIDA: via llama-tts CLI (--tts-lang/--tts-voice);
+      rota chat do server ainda sem receita de speech-out; /v1/realtime (WebSocket
+      voice) em breve do upstream. Audio sampling params do card original
+      embutidos no GGUF. Quirk de idioma da familia: respondendo matematica
+      pura em italiano a pergunta PT; ASR e QA audio ficam no idioma certo.
+      GGUF em ~/.llama-models/lfm3-audio-2b/.'
