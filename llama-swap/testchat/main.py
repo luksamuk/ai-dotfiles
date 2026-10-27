@@ -2331,7 +2331,7 @@ async def _duplex_realtime_loop(lane_id, swap_ws):
         in_rate = (session_info["audio"]["input"]["format"]["rate"])
         await conn.session.update(session={
             "type": "realtime",
-            "instructions": "Respond with interleaved text and audio. Always respond in Brazilian Portuguese.",
+            "instructions": "Respond with interleaved text and audio.",
             "output_modalities": ["text", "audio"],
         })
         ev = await conn.recv()
