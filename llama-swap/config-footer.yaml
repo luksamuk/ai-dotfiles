@@ -142,8 +142,8 @@ matrix:
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr | lfmvl3 | mcv35"
-    vision_embed: "(ocr | lfmvl3 | mcv35) & (lfmcol | eg2)"
+    vision_only: "ocr | mcv35"
+    vision_embed: "(ocr | mcv35) & (lfmcol | eg2)"
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -202,7 +202,7 @@ matrix:
     ttsext: 4
     ocr: 3
     # qwvl: 3  # REMOVED Sep 10 2026
-    lfmvl3: 3
+    # lfmvl3: 3  # APOSENTADO 27/out/2026
     # q4: 2  # removed Oct 11 2026 junto do modelo (aposentadoria qwen3.5-4b)
     # a1: 2  # OUTDO Oct 12 2026 — régua disk 124.4 fechada; neohorse retomou
     # q4x: 2  # disabled Sep 20 2026
