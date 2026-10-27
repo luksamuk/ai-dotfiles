@@ -1,0 +1,75 @@
+d1-2b:
+  name: Liquid d1-2B
+  description: "System One decision model da LiquidAI (2B, familia lfm3, com encoder
+    de visao). Serves POST /v1/systemone com respostas tipadas (choice/noul/score
+    + probabilities). Substituto em teste do d1-3b (seletor de LoRA do diffuse)
+    e candidato a juiz do laya-snake. CPU-only."
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/lfm3-d1-2b/d1-2B-Q8_0.gguf
+
+    --mmproj ${models_dir}/lfm3-d1-2b/mmproj-Q8_0.gguf
+
+    --ctx-size 8192
+
+    --batch-size 512
+
+    --ubatch-size 512
+
+    --parallel 1
+
+    --no-webui
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p, top_k, min_p, repeat_penalty
+  ttl: 3600
+  health_check_timeout: 90
+  unlisted: true
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: false
+    reranker: false
+    context: 8192
+  metadata:
+    size: "~2.05 GB (Q8_0: backbone 1.85 + mmproj 0.19)"
+    context: 8192
+    vram_usage: "~0 GB VRAM (CPU-only, doutrina decision da casa)"
+    source: LiquidAI/d1-2B-GGUF (Q8_0, backbone 1846240576 + mmproj 203031584 bytes; PR
+      ggml-org/llama.cpp #31275)
+    kv_cache: n/a
+    features:
+      decision: true
+      completion: false
+      tools: false
+      thinking: false
+      vision: true
+      image: false
+      embedding: false
+      insert: false
+      audio: false
+    architecture: lfm3
+    parameters: 2200000000
+    context_length: 8192
+    embedding_length: 2048
+    quantization: Q8_0
+    note: >-
+      INSTALADO 27/out (PR #31275 buildado localmente no branch fleet-liquid antes
+      do merge upstream — tracker vigia o merge). SMOKE VERIFICADO: /v1/systemone
+      com o payload real do laya-snake em 0.10s — respostas tipadas choice
+      (turn_right 0.696 + probabilities {straight 0.200, turn_left 0.104}) e noul
+      0.320 (+ usage). Server detecta decision type lfm3-d1 automaticamente.
+      Vision encoder incluso (mmproj) — decisões visual possiveis, AINDA nao
+      validadas. UNLISTED de proposito: d1-3b (seletor LoRA do diffuse) e julia-1
+      (juiz do snake) sao os validados em producao; este entra so depois de
+      re-rodar o harness selecao_nway.py (skill llama-snake-decision-models) no
+      caso do seletor e do testchat de juiz no caso do snake — um juiz ruim
+      selecionavel e armadilha ativa, conforme doutrina. CPU-only (doutrina
+      decision da casa; GPU 0.10s e CPU = mesmo resultado bit a bit). Pesos em
+      ~/.llama-models/lfm3-d1-2b/ (backbone + mmproj Q8_0).
