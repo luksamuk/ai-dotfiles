@@ -1,0 +1,115 @@
+groot-19b-a3b-fast:
+  name: Groot 19B A3B (fast)
+  description: "Challenger ik do Groot 19B-A3B: mesmo peso, experts 34 camadas CPU,
+    262K nativo, parallel tool calls nativo (-ptc). Ideal p/ agente rapido e teste
+    de velocidade contra a lane cafe."
+  cmd: '${ik_llama_server} --port ${PORT}
+
+    --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf
+
+    --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf
+
+    --no-mmproj-offload
+
+    --no-graph-reuse
+
+    -ngl 99
+
+    --n-cpu-moe 34
+
+    --ctx-size 262144
+
+    --reasoning on
+
+    --jinja
+
+    --parallel 1
+
+    --parallel-tool-calls
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --k-cache-hadamard
+
+    --v-cache-hadamard
+
+    --flash-attn auto
+
+    --defer-experts
+
+    --prefetch-experts
+
+    -b 512
+
+    -ub 128
+
+    --temp 1.0
+
+    --top-k 20
+
+    --top-p 0.95
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.8
+        top_k: 20
+        presence_penalty: 1.5
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 20
+        presence_penalty: 1.5
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 262144
+  metadata:
+    size: ~11.66 GB (Q4_K_M) + 0.86 GB mmproj
+    context: 262144
+    vram_usage: "~5.06 GB VRAM pico @262K (folga ~1.1GB) + ~14 GB RAM (experts n-cpu-moe 34)"
+    source: GrootTeam/Groot-19B-A3B-261023-GGUF (Q4_K_M, 11657618560 bytes exatos)
+      + mmproj-BF16 (902822016 bytes)
+    kv_cache: q4_0/q4_0 + hadamard
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 19000000000
+    active: 3000000000
+    embedding_length: 2048
+    context_length: 262144
+    quantization: Q4_K_M
+    note: 'Smoke 27/10 (ik 804ee29c): escada de tuning medida — n-cpu-moe 40 @131K =
+      2.89GB/36.4 t/s; n-cpu-moe 32 @262K = 5.53GB (90%, raspa)/38+ t/s; ESCOLHIDO
+      n-cpu-moe 34 @262144 = pico 5.06GB (82%, folga ~1.1GB) e MESMOS 37.4-37.9 t/s
+      (plain e think). 1.5x mais rapido que a lane cafe (24.2 t/s think). Parallel
+      tool calls NATIVO (-ptc): 4 get_weather/get_local_time simultaneos, JSON limpo,
+      finish=tool_calls — com template embedded (sem --chat-template-file da casa).
+      Dual-mode via enable_thinking, reasoning_content OK, 17*23=391. Mesmo peso e
+      mmproj da lane cafe (um download serve as duas). Hadamard KV = TurboQuant ik.
+      GGUF em ~/.llama-models/groot-19b-a3b/.'

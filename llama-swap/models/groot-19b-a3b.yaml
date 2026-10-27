@@ -1,0 +1,105 @@
+groot-19b-a3b:
+  name: Groot 19B A3B
+  description: "MoE 19B-A3B do GrootTeam (destilado da linhagem Qwen3.6), hibrido
+    10 full-attn + 30 linear-attn, multimodal (mmproj nativo), 262K de contexto nativo,
+    dual-mode de raciocinio (think on/off)."
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
+    --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf
+
+    --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf
+
+    --ctx-size 262144
+
+    --jinja
+
+    --parallel 1
+
+    --no-mmproj-offload
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -cmoe
+
+    -ngl 99
+
+    -b 512
+
+    -ub 128
+
+    --temp 1.0
+
+    --top-k 20
+
+    --top-p 0.95
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.8
+        top_k: 20
+        presence_penalty: 1.5
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 20
+        presence_penalty: 1.5
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 262144
+  metadata:
+    size: ~11.66 GB (Q4_K_M) + 0.86 GB mmproj
+    context: 262144
+    vram_usage: "~4.10 GB VRAM pico @262K (folga ~1.6GB) + ~12 GB RAM (experts -cmoe)"
+    source: GrootTeam/Groot-19B-A3B-261023-GGUF (Q4_K_M, 11657618560 bytes exatos)
+      + mmproj-BF16 (902822016 bytes)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 19000000000
+    active: 3000000000
+    embedding_length: 2048
+    context_length: 262144
+    quantization: Q4_K_M
+    note: 'Smoke 27/10 (cafe b-d92b99ba7, build de 26/10): load ~15s, ctx NATIVO 262144
+      deployado (escada: 262K=pico 4.10GB/folga ~1.6GB com desktop ~500MB; prefill+decode
+      verificados). Decode 12.9 t/s prompt 17 t/s instrutivo / 24.2 t/s think (primeiro
+      request tem warm-up: conte sempre o segundo). Tool calling NATIVO com template
+      embedded do GGUF (SEM --chat-template-file da casa): 4 tool calls
+      simultaneos get_weather x2 + get_local_time x2, JSON limpo, finish=tool_calls.
+      Dual-mode real via chat_template_kwargs enable_thinking (plain sem reasoning,
+      :think com reasoning_content preenchido, 17*23=391 correto). Samplers do fabricante
+      por handle: instruct 0.7/0.8/20/1.5 presence / think 1.0/0.95/20/1.5 presence
+      (presence_penalty via setParamsByID, min_p 0 e repetition 1.0 sao default do server).
+      Hibrido: 10 full-attn + 30 linear-attn (DeltaNet), KV leve — 262K cabe onde
+      famílias dense estouram. Linhagem: post-training e data distill do Qwen3.6-35B-A3B.
+      GGUF em ~/.llama-models/groot-19b-a3b/.'
