@@ -1297,6 +1297,396 @@ models:
       context_length: 131072
       quantization: APEX I-Compact
       note: 'Backend ik. -ot parcial gpu7: experts dos blocos 0-6 na GPU (7-39 na CPU) — A/B 13/out: baseline (todos CPU) 33.3 t/s, gpu7 36.3 t/s (+9%) @400 tokens, ambos prompt único/temp 0.1 (VRAM 65% vs 37%, RAM -3.5 GB). GGML_CUDA_NO_PINNED=1 PROIBIDO: pinned obrigatório (sem ele: load trava 13.3 GiB alloc + decode 0.63 t/s). Pinned exige RAM folgada no load. -cmoe é EXCLUSIVO do cafe. Ik binary pull 3dbc2c9f (Oct 13) inclui lfm2moe runtime #2530 e spec decode LFM2 #2652 (CPU checkpoint). tok_embd fica NA GPU (o vocab 128K embd em CPU mataria o decode; o -ot tok_embd do k2 NÃO se aplica aqui). -nkvo OFF (a arch shortconv híbrida: o teste decide o KV residency — se OOM @32K: -nkvo como o k2). Smoke pending (pós-N=5 do minicpm5). GGUF em ~/.llama-models/lfm25-24b-a2b/.'
+  lfm25-audio:
+    name: LFM2.5 Audio (s2s)
+    aliases:
+      - lfm25-audio-s2s
+      - lfm25-audio-tts
+      - lfm25-audio-asr
+    description: "LFM2.5-Audio-1.5B da LiquidAI no audio.cpp — a chamada unica de audio PARA audio: PCM/stream de voz entra, fala sai, uma requisicao so (task s2s). Tambem ASR (/v1/audio/transcriptions) e TTS (/v1/audio/speech). Geracao anterior do LFM3-Omni (sem visao), ingles do checkpoint."
+    tags:
+      - audio
+      - tts
+      - tools
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: '${env.HOME}/git/audio.cpp/build/linux-cuda-release/bin/audiocpp_server
+
+      --config ${env.HOME}/git/audio.cpp/server-lfm25audio.json
+
+      --model-spec-override ${env.HOME}/git/audio.cpp/model_specs
+
+      --port ${PORT} --host 127.0.0.1
+
+      '
+    cmdStop: pkill -f server-lfm25audio.json
+    health_check_timeout: 600
+    ttl: 900
+    capabilities:
+      in:
+        - text
+        - audio
+      out:
+        - text
+        - audio
+      tools: false
+      reranker: false
+      context: 32768
+    metadata:
+      size: "~1.83 GB (Q8_0: backbone 1.25 + mmproj 0.29 + vocoder 0.21 + tokenizer 0.08)"
+      context: 32768
+      vram_usage: "~1.9 GB por modelo carregado (lazy_load; Q4_0 guarda embedding como Q6_K e o CUDA mantem copia F16 de 256 MB)"
+      source: >-
+        LiquidAI/LFM2.5-Audio-1.5B-GGUF (Q8_0, 4 arquivos: backbone
+        1246253280, mmproj 293443936, vocoder 205742272, tokenizer 76957632 bytes)
+      kv_cache: interno (LFM2 hibrido 10 short-conv + 6 GQA)
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: true
+        image: false
+      architecture: lfm2_audio
+      parameters: 1500000000
+      embedding_length: 2048
+      context_length: 32768
+      quantization: Q8_0
+      note: >-
+        EXPERIMENTO 27/out. O unico single-request audio->audio funcional na casa.
+        Rotas do audio.cpp por entrada do config: ASR em /v1/audio/transcriptions
+        (multipart), TTS em /v1/audio/speech (JSON; vozes us_male/us_female/
+        uk_male/uk_female), S2S em /v1/tasks/run com body contendo model
+        lfm25-audio-s2s e request com audio em path local — a resposta traz
+        text e audio em b64 wav 24kHz; /v1/tasks/stream para streaming SSE.
+        Live duplex continuo em /v1/audio/speech/live (chunked PCM in, audio out
+        simultaneo; cada request e primeiro turno — conversas multi-turn via
+        tasks run/stream com cache de ~4 conversas). Audio IN aceita WAV de
+        qualquer sample rate (resample 16 kHz mono). Familia lfm2_audio (NeMo
+        log-mel + FastConformer canary-180m-flash + LFM2 hibrido 10 conv 6 GQA +
+        depthformer detokenizer ISTFT). S2S: texto greedy, audio temp 1.0 top_k 4,
+        frames de 80 ms alternando 6 text tokens e 12 frames de audio. SO o
+        checkpoint en (transcreve/fala/conversa em ingles) — o checkpoint japonês
+        LFM2.5-Audio-1.5B-JP e outro download. Voice-presets do audio.cpp NAO
+        aplicaveis: s2s usa a voz propria do checkpoint e TTS tem vozes builtin,
+        sem clonagem. Config audiocpp em ~/git/audio.cpp/server-lfm25audio.json
+        (lazy_load, backend cuda), pesos em ~/.llama-models/lfm25-audio/.
+        Peso nao e MoE: dense 1.5B carrega voando. Substituicao natural quando
+        o audio.cpp absorver o LFM3-Audio/Omni (repo ativo, rebasa rapido).
+  lfm3-1.7b:
+    name: LFM3 1.7B
+    description: "LiquidAI LFM3 1.7B, gerico edge da nova geracao tri-hybrid (13 short-conv + 5 SWA + 6 global attn), 256K de contexto nativo, raciocinio dual-mode. Candidato a prompter/enhance da casa e alternativa ao LFM2.5-2.6B."
+    tags:
+      - think
+      - tools
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/lfm3-1.7b/LFM3-1.7B-Q8_0.gguf
+
+      --ctx-size 262144
+
+      --jinja
+
+      --parallel 1
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --flash-attn on
+
+      -ngl 99
+
+      -b 512
+
+      -ub 128
+
+      --temp 0.1
+
+      --top-k 50
+
+      --repeat-penalty 1.1
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.1
+          top_k: 50
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.1
+          top_k: 50
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 262144
+    metadata:
+      size: ~1.85 GB (Q8_0)
+      context: 262144
+      vram_usage: "~4.1 GB VRAM pico @262K (KV q4_0 ~1.5GB; f16 = 3.0GB e reprovado)"
+      source: LiquidAI/LFM3-1.7B-GGUF (Q8_0, 1846238496 bytes exatos)
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm3
+      parameters: 1900000000
+      embedding_length: 2048
+      context_length: 262144
+      quantization: Q8_0
+      note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb; LFM3 chegou HOJE via merges #31252/#31257 — pull + rebuild local). ctx NATIVO 262144 deployado (escada: f16 KV @262K = 3.0GB CUDA OOM; q4_0 = pico 4.14GB com folga). Decode 75 t/s, prompt 631 t/s (Q8_0, GPU sozinha). Tool calling: 4 get_weather/ get_local_time simultaneos, JSON limpo, finish=tool_calls, template embedded (--jinja, sem template da casa). DUAL-MODE REAL do vendor: o modelo pensa SEMPRE e o template tem toggle enable_thinking — plain pino false (respondera direto, reasoning 0 verificado), :think pin true; raciocinio nativo estilo distill ("We need to..." — PT OK direto no plain). Samplers do fabricante (chat geral): temp 0.1 / top_k 50 / repetition_penalty 1.1 (math usa 1.0/0.95/20 na mao do client). Escorregada factual tipica de 1.7B (SP/Minas numa frase) — papel prompter/enhance, nao enciclopedia. GGUF em ~/.llama-models/lfm3-1.7b/. Substituição candidata do lfm2.5-2.6b (régua maison 67.0) — re-discussão de aposentadorias pendente os resultados.'
+  lfm3-audio-2b:
+    name: LFM3 Audio 2B
+    description: "Audio 2B da LiquidAI: voz e audio ENTRADA nativa (16 kHz mono) com ASR, translate, QA de recordings (speech/sounds/events) e fala-saída. Texto em 18 idiomas; NAO pensa (verificado). TTS offline via llama-tts; /v1/realtime em breve do upstream."
+    tags:
+      - tools
+      - audio
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/lfm3-audio-2b/LFM3-Audio-2B-Q8_0.gguf
+
+      --mmproj ${models_dir}/lfm3-audio-2b/mmproj-F16.gguf
+
+      --ctx-size 32768
+
+      --jinja
+
+      --parallel 1
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --flash-attn on
+
+      -ngl 99
+
+      -b 512
+
+      -ub 128
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          temperature: 0.6
+          top_p: 0.95
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+        - audio
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 32768
+    metadata:
+      size: ~1.85 GB (Q8_0) + 0.57 GB mmproj-F16 (audio encoder)
+      context: 32768
+      vram_usage: "~4.3 GB VRAM pico @32K estimado (KV q4_0)"
+      source: LiquidAI/LFM3-Audio-2B-GGUF (Q8_0, 1846236704 bytes exatos) + mmproj-F16 (570846400 bytes)
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: true
+        image: false
+      architecture: lfm3
+      parameters: 2200000000
+      embedding_length: 2048
+      context_length: 32768
+      quantization: Q8_0
+      note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb, merges #31252/#31257 do dia): ASR impecável — voz real PT de 2021 (45s ogg convertido wav 16kHz mono) transcrita com fidelidade, 2.2s / 77 t/s. Music QA: responde estilo/ instrumentos (funk pro theme 8-bit — o Omni julgou melhor: house). NAO THINKING (A/B: reasoning 0 nas 3 condicoes — o card fala "reason before answering" pro TEXT path, mas o llama.cpp server nao expõe toggle e o kwarg enable_thinking nao muda nada). ASR via system prompt "Perform ASR." (idioma auto). Fala-SAIDA: via llama-tts CLI (--tts-lang/--tts-voice); rota chat do server ainda sem receita de speech-out; /v1/realtime (WebSocket voice) em breve do upstream. Audio sampling params do card original embutidos no GGUF. Quirk de idioma da familia: respondendo matematica pura em italiano a pergunta PT; ASR e QA audio ficam no idioma certo. GGUF em ~/.llama-models/lfm3-audio-2b/.'
+  lfm3-omni-2b:
+    name: LFM3 Omni 2B
+    description: "Omni-modal 2B da LiquidAI: entende texto, imagem, video COM trilha son e audio (16 kHz), responde em texto ou fala. Musica no contrato (fala/musica/ son ambiente/eventos). Ideal p/ ASR, QA de musica e julgamento de clipes H3 (ve e ouve juntos)."
+    tags:
+      - vis
+      - tools
+      - audio
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/lfm3-omni-2b/LFM3-Omni-2B-Q8_0.gguf
+
+      --mmproj ${models_dir}/lfm3-omni-2b/mmproj-F16.gguf
+
+      --ctx-size 32768
+
+      --jinja
+
+      --parallel 1
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --flash-attn on
+
+      -ngl 99
+
+      -b 512
+
+      -ub 128
+
+      --temp 0.6
+
+      --top-p 0.95
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          temperature: 0.6
+          top_p: 0.95
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+        - image
+        - audio
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 32768
+    metadata:
+      size: ~1.85 GB (Q8_0) + 0.90 GB mmproj-F16
+      context: 32768
+      vram_usage: "~4-5 GB VRAM pico @32K medido no smoke (KV q4_0 na lane)"
+      source: LiquidAI/LFM3-Omni-2B-GGUF (Q8_0, 1846240768 bytes exatos) + mmproj-F16 (949841248 bytes)
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: true
+        image: false
+      architecture: lfm3
+      parameters: 2200000000
+      embedding_length: 2048
+      context_length: 32768
+      quantization: Q8_0
+      note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb, merges #31252/#31257 do dia): MUSICA VERIFICADA — leu main-theme.mp3 (clipe 86s, input_audio base64 via /v1/chat/ completions, 16kHz mono) e devolveu estilo (eletronico/house), instrumentos (synth lead/bateria/bass/pad/arpejo), mood e estrutura em 1.9s / 78 t/s; o card documenta audio understanding p/ speech, music, background sounds e events. Tool calling: 4 get_weather/get_local_time simultaneos, JSON limpo, finish=tool_calls em 1.0s. Substitui num modelo so: ASR+VLM+LLM+TTS (card); audio IN 16kHz mono (fidelidade harmonica limitada), fala OUT 24kHz com audio_temperature 0.4 quando pedido. Video: ve e ouve JUNTOS (2fps, soundtrack incluso) — candidato a juiz de clipes H3 (aprovado, testar com clipe real). Text benchmarks do vendor usam greedy; lane pina 0.6/0.95 (chat sane). NAO-THINKING (verificado 27/out por A/B do dono): template TEM enable_thinking (3 refs) mas o modelo NAO emite reasoning_content nem default nem com o kwarg true/false (respostas identicas) — :think RETIRADO de acordo com o standard 2b (handle fantasma proibido); dual-mode e do 1.7B apenas. Quirk: pequenos slips de idioma (respondeu em italiano a pergunta PT); system prompt de idioma resolve. QUIRK ABERTO (dono, 27/out): descrição de IMAGEM entra em doom loop (repeat até o fim) — investigar mtmd do lfm3 (merge recém do #31257); ASR/music QA sane. ctx 32K (input+output, card). Embeddings/mmproj F16 mantidos (peso irrelevante, fidelidade visual prioritaria). GGUF em ~/.llama-models/lfm3-omni-2b/.'
+  lfm3-vl-2b:
+    name: LFM3 VL 2B
+    description: "VLM 2B da LiquidAI (tri-hybrid nova geracao): documentos, charts, video, app screens e raciocinio espacial. Pensa por default (dual-mode real via enable_thinking). Competitive com Gemma 4 12B sendo 6x menor, pelo card do vendor. NAO e para coding/multi-turn longo (card)."
+    tags:
+      - vis
+      - think
+      - tools
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/lfm3-vl-2b/LFM3-VL-2B-Q8_0.gguf
+
+      --mmproj ${models_dir}/lfm3-vl-2b/mmproj-F16.gguf
+
+      --ctx-size 131072
+
+      --jinja
+
+      --parallel 1
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --flash-attn on
+
+      -ngl 99
+
+      -b 512
+
+      -ub 128
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.6
+          top_p: 0.95
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.95
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~1.85 GB (Q8_0) + 0.38 GB mmproj-F16
+      context: 131072
+      vram_usage: "~4.18 GB VRAM pico @131K (KV q4_0, desktop incluso)"
+      source: LiquidAI/LFM3-VL-2B-GGUF (Q8_0, 1846238496 bytes exatos) + mmproj-F16 (378996032 bytes)
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm3
+      parameters: 2200000000
+      embedding_length: 2048
+      context_length: 131072
+      quantization: Q8_0
+      note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb, merges #31252/#31257 do dia): ctx 128K nativo deployado (131072; card diz 128K tokens input+output), VRAM pico 4.18GB. DUAL-MODE REAL verificado por A/B: default pensa (reasoning 1242 chars) e o budget de max_tokens PRECISA contar o think (IMG probe com 250 tok = content vazio, finish=length — o think comeu tudo); think via enable_thinking: reasoning 1358; off: reasoning 0 e resposta DIRETA 2.4s (74 t/s classe). Tool calling 4/4 simultaneos, JSON limpo, finish= tool_calls. Card do vendor: doc/charts/video/spatial e "nao recomendado para coding, multi-turn ou raciocinio complexo" — papel OCR/VLM-QA da casa (candidato ao trono do lfm2.5-vl-3b aposentado e a substituicao do espaco funcional do gemma4-12b removido em Sep). Samplers do card: evals deles 0.6/0.95; lane pina por handle. GGUF em ~/.llama-models/lfm3-vl-2b/.'
   "minicpm-v-4.7-35b":
     name: MiniCPM-V 4.7 35B-A3B
     description: "OpenBMB MiniCPM-V 4.7 35B-A3B - first MoE visual model of the series: multi-image, video and OCR with early token compression. 131K context, native reasoning, tool-calling."
