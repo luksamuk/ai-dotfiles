@@ -2187,6 +2187,8 @@ def run_duplex_session():
 
     lane_id = lane["id"]
     s2s_id = f"{lane_id}-s2s"
+    # BASE_URL termina em /v1; /upstream é rota RAIZ da swap (sem /v1)
+    swap_root = BASE_URL[: -len("/v1")] if BASE_URL.endswith("/v1") else BASE_URL
     console.print(f"[bold cyan]🎙 Modo duplex — {lane.get('name', lane_id)}[/]")
     console.print("[dim]Fale no microfone padrão. Enter envia. Ctrl+C sai.[/]")
 
@@ -2212,7 +2214,7 @@ def run_duplex_session():
             continue
         try:
             req = _urlrequest.Request(
-                f"{BASE_URL}/upstream/{lane_id}/v1/tasks/run",
+                f"{swap_root}/upstream/{lane_id}/v1/tasks/run",
                 data=_json.dumps({"model": s2s_id,
                                   "request": {"audio": wav_in}}).encode(),
                 headers={"Content-Type": "application/json"})
