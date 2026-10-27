@@ -1297,17 +1297,16 @@ models:
       context_length: 131072
       quantization: APEX I-Compact
       note: 'Backend ik. -ot parcial gpu7: experts dos blocos 0-6 na GPU (7-39 na CPU) — A/B 13/out: baseline (todos CPU) 33.3 t/s, gpu7 36.3 t/s (+9%) @400 tokens, ambos prompt único/temp 0.1 (VRAM 65% vs 37%, RAM -3.5 GB). GGML_CUDA_NO_PINNED=1 PROIBIDO: pinned obrigatório (sem ele: load trava 13.3 GiB alloc + decode 0.63 t/s). Pinned exige RAM folgada no load. -cmoe é EXCLUSIVO do cafe. Ik binary pull 3dbc2c9f (Oct 13) inclui lfm2moe runtime #2530 e spec decode LFM2 #2652 (CPU checkpoint). tok_embd fica NA GPU (o vocab 128K embd em CPU mataria o decode; o -ot tok_embd do k2 NÃO se aplica aqui). -nkvo OFF (a arch shortconv híbrida: o teste decide o KV residency — se OOM @32K: -nkvo como o k2). Smoke pending (pós-N=5 do minicpm5). GGUF em ~/.llama-models/lfm25-24b-a2b/.'
-  lfm25-audio:
+  lfm2.5-audio:
     name: LFM2.5 Audio (s2s)
     aliases:
-      - lfm25-audio-s2s
-      - lfm25-audio-tts
-      - lfm25-audio-asr
-    description: "LFM2.5-Audio-1.5B da LiquidAI no audio.cpp — a chamada unica de audio PARA audio: PCM/stream de voz entra, fala sai, uma requisicao so (task s2s). Tambem ASR (/v1/audio/transcriptions) e TTS (/v1/audio/speech). Geracao anterior do LFM3-Omni (sem visao), ingles do checkpoint."
+      - lfm2.5-audio-s2s
+      - lfm2.5-audio-tts
+      - lfm2.5-audio-asr
+    description: "LFM2.5-Audio-1.5B da LiquidAI no audio.cpp — a chamada unica de audio PARA audio: audio entra, texto+fala saem, uma requisicao so (task s2s). Tambem ASR (/v1/audio/transcriptions) e TTS (/v1/audio/speech). Geracao anterior do LFM3-Omni (sem visao), ingles do checkpoint. Sem rota de chat: aparece nos dashboards de speech/transcription da swap, nao no picker de chat."
     tags:
       - audio
       - tts
-      - tools
     proxy: http://127.0.0.1:${PORT}
     checkEndpoint: /health
     cmd: '${env.HOME}/git/audio.cpp/build/linux-cuda-release/bin/audiocpp_server
@@ -1339,9 +1338,9 @@ models:
       source: >-
         LiquidAI/LFM2.5-Audio-1.5B-GGUF (Q8_0, 4 arquivos: backbone
         1246253280, mmproj 293443936, vocoder 205742272, tokenizer 76957632 bytes)
-      kv_cache: interno (LFM2 hibrido 10 short-conv + 6 GQA)
+      kv_cache: interno
       features:
-        completion: true
+        completion: false
         tools: false
         thinking: false
         vision: false
@@ -1356,25 +1355,33 @@ models:
       quantization: Q8_0
       note: >-
         EXPERIMENTO 27/out. O unico single-request audio->audio funcional na casa.
-        Rotas do audio.cpp por entrada do config: ASR em /v1/audio/transcriptions
-        (multipart), TTS em /v1/audio/speech (JSON; vozes us_male/us_female/
-        uk_male/uk_female), S2S em /v1/tasks/run com body contendo model
-        lfm25-audio-s2s e request com audio em path local — a resposta traz
-        text e audio em b64 wav 24kHz; /v1/tasks/stream para streaming SSE.
-        Live duplex continuo em /v1/audio/speech/live (chunked PCM in, audio out
-        simultaneo; cada request e primeiro turno — conversas multi-turn via
-        tasks run/stream com cache de ~4 conversas). Audio IN aceita WAV de
-        qualquer sample rate (resample 16 kHz mono). Familia lfm2_audio (NeMo
-        log-mel + FastConformer canary-180m-flash + LFM2 hibrido 10 conv 6 GQA +
-        depthformer detokenizer ISTFT). S2S: texto greedy, audio temp 1.0 top_k 4,
-        frames de 80 ms alternando 6 text tokens e 12 frames de audio. SO o
-        checkpoint en (transcreve/fala/conversa em ingles) — o checkpoint japonês
+        Rotas por entrada do config (ids internos COM pontos, iguais aos alias):
+        ASR em /v1/audio/transcriptions (multipart, model lfm2.5-audio-asr),
+        TTS em /v1/audio/speech (JSON, model lfm2.5-audio-tts; vozes us_male/
+        us_female/uk_male/uk_female), S2S em
+        /upstream/lfm2.5-audio/v1/tasks/run com body model lfm2.5-audio-s2s e
+        request com audio em path local — resposta traz text e audio em b64 wav
+        24kHz (single-request audio->audio VERIFICADO: voz PT de 45s entra,
+        text+audio saem em 1.0s); /v1/tasks/stream para streaming SSE. Live duplex
+        continuo em /v1/audio/speech/live (chunked PCM in, audio out simultaneo;
+        cada request e primeiro turno — conversas multi-turn via tasks run/stream
+        com cache de ~4 conversas). Audio IN aceita WAV de qualquer sample rate
+        (resample 16 kHz mono). Familia lfm2_audio (NeMo log-mel + FastConformer
+        canary-180m-flash + LFM2 hibrido 10 conv 6 GQA + depthformer detokenizer
+        ISTFT). S2S: texto greedy, audio temp 1.0 top_k 4, frames de 80 ms
+        alternando 6 text tokens e 12 frames de audio. SO o checkpoint en
+        (transcreve/fala/conversa em ingles) — o checkpoint japones
         LFM2.5-Audio-1.5B-JP e outro download. Voice-presets do audio.cpp NAO
         aplicaveis: s2s usa a voz propria do checkpoint e TTS tem vozes builtin,
-        sem clonagem. Config audiocpp em ~/git/audio.cpp/server-lfm25audio.json
-        (lazy_load, backend cuda), pesos em ~/.llama-models/lfm25-audio/.
-        Peso nao e MoE: dense 1.5B carrega voando. Substituicao natural quando
-        o audio.cpp absorver o LFM3-Audio/Omni (repo ativo, rebasa rapido).
+        sem clonagem. SEM /v1/chat/completions no audiocpp (completion false
+        honesto) — o testchat esconde por design (classificador non-chat); a
+        entrada do duplex no testchat entra pelo features.audio na fase do modo
+        RT. Config audiocpp em ~/git/audio.cpp/server-lfm25audio.json (lazy_load,
+        backend cuda), pesos em ~/.llama-models/lfm2.5-audio/. Dense 1.5B carrega
+        voando. Substituicao natural quando o audio.cpp absorver o
+        LFM3-Audio/Omni (repo ativo, rebasa rapido). ALIASES NECESSARIOS: o
+        audiocpp registra um id por task (s2s/tts/asr) — tag nao roteia e o
+        swap forwarda o body verbatim, por isso 3 alias em vez de 1.
   lfm3-1.7b:
     name: LFM3 1.7B
     description: "LiquidAI LFM3 1.7B, gerico edge da nova geracao tri-hybrid (13 short-conv + 5 SWA + 6 global attn), 256K de contexto nativo, raciocinio dual-mode. Candidato a prompter/enhance da casa e alternativa ao LFM2.5-2.6B."
