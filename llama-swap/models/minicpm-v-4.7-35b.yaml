@@ -4,6 +4,7 @@
     multi-image, video and OCR with early token compression. 131K context, native
     reasoning, tool-calling."
   tags: [vis, think, tools]
+  unlisted: true
   cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
     --model ${models_dir}/minicpm-v-4.7-35b/MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf
@@ -85,4 +86,7 @@
     context_length: 131072
     embedding_length: 2048
     quantization: Q3_K exps / Q4_K base
-    note: "Linha MiniCPM-V 4.7 out/2026: card declara vence Qwen3.6-35B-A3B (score+tempo) — a liga disk 35B da casa é ornith 143.6 > occamy 141.4 > qwen3.8-distill 141.0, e a comparação declarada deles é vs a geração física anterior. mix_q3gud_im = recomendação OFICIAL do cookbook (experts Q3_K c/ imatrix sobre base Q4_K_M = 15.5GB 'matches Q4_K_M on benchmarks'); Q4_K_M puro = 21.17GB. -ot ffn_*_exps=CPU = rota de laguna/ornith (3B ativos, experts na RAM). M-RoPE canvas: PR #29416 (rope.section_order) — cafe v0.76 (ad57e28a1, 13/Out) MERGEADO e suporta; ik SEM #29416 ainda (fragment usa cafe). tools: true = card diz tool-calling nativo (SGLang/vLLM/llama.cpp/ollama); smoke valida. mmproj 4x = mais detalhe; 16x alternativa mais rápida. health 600s = MoE 15.5GB + mmproj cold start longo. Sampling: card oficial temp 0.7/top-p 0.9/top-k 100/rp 1.05 (regra da série). LES (Lookahead Expert Scheduling) e DSpark NÃO fazem parte: são do fork tc-mb/llama.cpp-omni (13-17 t/s no iPhone é o cenário experts-no-SSD; nossa rota experts-na-RAM não usa)."
+    note: "Linha MiniCPM-V 4.7 out/2026: card declara vence Qwen3.6-35B-A3B (score+tempo) — a liga disk 35B da casa é ornith 143.6 > occamy 141.4 > qwen3.8-distill 141.0, e a comparação declarada deles é vs a geração física anterior. mix_q3gud_im = recomendação OFICIAL do cookbook (experts Q3_K c/ imatrix sobre base Q4_K_M = 15.5GB 'matches Q4_K_M on benchmarks'); Q4_K_M puro = 21.17GB. -ot ffn_*_exps=CPU = rota de laguna/ornith (3B ativos, experts na RAM). M-RoPE canvas: PR #29416 (rope.section_order) — cafe v0.76 (ad57e28a1, 13/Out) MERGEADO e suporta; ik SEM #29416 ainda (fragment usa cafe). tools: true = card diz tool-calling nativo (SGLang/vLLM/llama.cpp/ollama); smoke valida. mmproj 4x = mais detalhe; 16x alternativa mais rápida. health 600s = MoE 15.5GB + mmproj cold start longo. Sampling: card oficial temp 0.7/top-p 0.9/top-k 100/rp 1.05 (regra da série). LES (Lookahead Expert Scheduling) e DSpark NÃO fazem parte: são do fork tc-mb/llama.cpp-omni (13-17 t/s no iPhone é o cenário experts-no-SSD; nossa rota experts-na-RAM não usa)."# APOSENTADO COM HONRAS 27/out/2026: lane ativa no fleet mas unlisted (modus operandi
+# 'aposentar com honras' — fica endereçável, não lista em /v1/models). Peso principal
+# (MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf, 15.5GB) deletado pelo dono no mesmo dia;
+# mmproj-model-f16-4x.gguf permanece. Re-download e retirar 'unlisted: true' p/ reativar.
