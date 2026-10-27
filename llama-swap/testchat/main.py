@@ -2214,9 +2214,93 @@ def run_duplex_session(start_model=None):
             console.print("[dim]Modo duplex encerrado.[/]")
             return
         except Exception as e:
-            console.print(f"[yellow]Realtime indisponível ({str(e)[:120]}) — caindo pro s2s.[/]")
+            console.print(f"[yellow]Realtime indisponível ({str(e)[:120]}).[/]")
+            if lane in rt_lanes:
+                run_duplex_chat_tts_loop(lane_id)   # llama.cpp: dois passes
+            else:
+                run_duplex_s2s_loop(lane_id)        # audio.cpp: s2s single
 
-    run_duplex_s2s_loop(lane_id)
+
+def run_duplex_chat_tts_loop(lane_id):
+    """Fallback llama.cpp (sem realtime): dois passes por turno.
+    1. chat completions (audio-in) -> texto
+    2. /tts (texto) -> fala 24 kHz -> pw-play
+    """
+    import json as _json
+    import subprocess as _subprocess
+    import urllib.error as _urlerror
+    import urllib.request as _urlrequest
+    import base64 as _base64
+    import os as _os
+    console.print("[dim]Transporte llama.cpp (chat + /tts, dois passes).[/]")
+    _urlrequest.urlopen(_urlrequest.Request(
+        f"{BASE_URL}/chat/completions", data=_json.dumps(
+        {"model": lane_id, "messages": [{"role": "system", "content": "ping"}],
+         "max_tokens": 1}).encode(),
+        headers={"Content-Type": "application/json"}), timeout=300)
+    running = _json.loads(_urlrequest.urlopen(f"{BASE_URL[:-len('/v1')]}/running",
+                          timeout=10).read().decode())["running"]
+    entry = next((m for m in running if m.get("model") == lane_id), None)
+    if entry is None:
+        console.print("[red]lane não está em /running.[/]")
+        return
+    from urllib.parse import urlparse as _uparse
+    port = _uparse(entry.get("proxy") or "").port
+    http_base = f"http://127.0.0.1:{port}/v1"
+    wav_in = "/tmp/testchat_duplex_in.wav"
+    while True:
+        console.print()
+        console.print("[green]🎙 Gravando... (Enter para enviar)[/]")
+        rec = _subprocess.Popen(["pw-record", wav_in])
+        try:
+            input()
+        except EOFError:
+            rec.terminate()
+            console.print("[dim]stdin fechado — encerrando duplex.[/]")
+            return
+        except KeyboardInterrupt:
+            rec.terminate()
+            console.print("[dim]Modo duplex encerrado (Ctrl+C).[/]")
+            return
+        rec.terminate()
+        try:
+            rec.wait(timeout=5)
+        except _subprocess.TimeoutExpired:
+            rec.kill()
+        if not _os.path.exists(wav_in) or _os.path.getsize(wav_in) < 1024:
+            console.print("[yellow]Gravação vazia.[/]")
+            continue
+        b64 = _base64.b64encode(open(wav_in, "rb").read()).decode()
+        console.print("[dim]Passe 1: transcrição/resposta...[/]")
+        try:
+            req = _urlrequest.Request(f"{http_base}/chat/completions",
+                data=_json.dumps({"model":"default","messages":[
+                    {"role":"system","content":"Respond in text."},
+                    {"role":"user","content":[
+                        {"type":"input_audio","input_audio":{"data":b64,"format":"wav"}},
+                        {"type":"text","text":"O que eu disse? Responda em uma frase."}]}],
+                    "max_tokens":300}).encode(),
+                headers={"Content-Type":"application/json"})
+            r = _json.loads(_urlrequest.urlopen(req, timeout=600).read().decode())
+            chat_text = (r["choices"][0]["message"].get("content") or "").strip()
+            console.print(f"[bold]📝 {chat_text}[/]")
+            console.print("[dim]Passe 2: voz...[/]")
+            req = _urlrequest.Request(f"{http_base}/tts",
+                data=_json.dumps({"input": chat_text, "voice": "female"}).encode(),
+                headers={"Content-Type":"application/json"})
+            r2 = _urlrequest.urlopen(req, timeout=600)
+            wav_out = r2.read()
+            out = "/tmp/testchat_duplex_reply.wav"
+            open(out, "wb").write(wav_out)
+            _subprocess.run(["pw-play", out])
+            console.print(f"[dim]🔊 {len(wav_out)/48000:.1f}s tocados.[/]")
+        except _urlerror.HTTPError as e:
+            console.print(f"[red]HTTP {e.code}: {e.read()[:200]}[/]")
+        except KeyboardInterrupt:
+            console.print("[dim]Modo duplex encerrado.[/]")
+            return
+        except Exception as e:
+            console.print(f"[red]Erro no turno duplex: {str(e)[:200]}[/]")
 
 
 async def _duplex_realtime_loop(lane_id, swap_ws):
@@ -2233,6 +2317,7 @@ async def _duplex_realtime_loop(lane_id, swap_ws):
     import subprocess as _subprocess
     import array as _array
     import os as _os
+    import asyncio as _asyncio
     from openai import AsyncOpenAI
 
     client = AsyncOpenAI(base_url=swap_ws, api_key="none",
