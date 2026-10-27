@@ -5,6 +5,8 @@ lfm3-audio-2b:
     Texto em 18 idiomas; NAO pensa (verificado). TTS offline via llama-tts;
     /v1/realtime em breve do upstream."
   tags: [tools, audio]
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
   cmd: '${llama_server} --port ${PORT}
 
     --model ${models_dir}/lfm3-audio-2b/LFM3-Audio-2B-Q8_0.gguf

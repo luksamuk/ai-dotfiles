@@ -4,7 +4,9 @@ lfm3-omni-2b:
     son e audio (16 kHz), responde em texto ou fala. Musica no contrato (fala/musica/
     son ambiente/eventos). Ideal p/ ASR, QA de musica e julgamento de clipes H3
     (ve e ouve juntos)."
-  tags: [vis, tools]
+  tags: [vis, tools, audio]
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
   cmd: '${llama_server} --port ${PORT}
 
     --model ${models_dir}/lfm3-omni-2b/LFM3-Omni-2B-Q8_0.gguf
