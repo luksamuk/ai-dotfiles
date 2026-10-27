@@ -2207,7 +2207,7 @@ def run_duplex_session(start_model=None):
             port = _uparse(entry.get("proxy") or "").port
             if port is None:
                 raise RuntimeError(f"sem porta em /running para {lane_id}")
-            _asyncio.run(_duplex_realtime_loop(lane_id, f"ws://127.0.0.1:{port}/v1"))
+            _asyncio.run(_duplex_realtime_loop(lane_id, f"http://127.0.0.1:{port}/v1"))
             console.print("[dim]Modo duplex encerrado.[/]")
             return
         except KeyboardInterrupt:
