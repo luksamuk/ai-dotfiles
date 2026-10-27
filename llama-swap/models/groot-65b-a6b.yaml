@@ -24,7 +24,7 @@ groot-65b-a6b:
 
     --flash-attn on
 
-    -ssd-streaming
+    -ssd
 
     -ngl 99
 
@@ -92,15 +92,21 @@ groot-65b-a6b:
     embedding_length: 2560
     context_length: 262144
     quantization: Q2_K
-    note: 'EXPERIMENTO 27/out: o GGUF OFICIAL do GrootTeam 65B declara tensor_count=1
-      (header anomalo) — deploy usa a conversao padrao da mradermacher (header normal,
-      tc=1256, parseado por mim). Matematica do header lida: PLE per_layer_token_embd
-      51.2B params em Q4_0 = ~25 GB em host (NAO streama via -ssd-streaming, que so
-      pega experts roteados ~26 GB -> SSD), backbone ~2 GB GPU. Precedente: Gyro-S
-      (mesma familia qwen3.8-flash-next, engine dedicado) fechou 97% RAM / teto 16K
-      em 24/10 — aqui a expectativa e decode 2-5 t/s (SSD-bound) e prefill pior
-      (thrash aleatorio na PLE). Benchmarks do vendor valem regime Q4/FP8; Q2_K de
-      modelo agentic pode degradar tool call primeiro. ctx 64K (piso da casa) no
-      lugar do 262K nativo — experimento inicial, sem chegar em 131K a principio
-      (pedido do dono). Promover a listed SOMENTE apos smoke meu com numeros reais
-      (load, prefill, decode, RAM, VRAM). GGUF em ~/.llama-models/groot-65b-a6b/.'
+    note: 'EXPERIMENTO 27/out — BLOQUEADO no build atual do cafe (02dda80a9 + merges
+      26/10): o expert streaming nao carrega o Groot-65B. Fatos medidos: (1) flag
+      correta e -ssd (-ssd-streaming e parse invalido, "-ssd"+"-streaming"); (2)
+      load com -ssd ABORTA em ggml-backend.cpp:383 get_usage(NULL) ("GGML_ASSERT(buffer)
+      failed") ~50s no load, thread llama_row_pool no dump — repetido em 3 variantes
+      (default ngram-ssd, --no-ngram-ssd, --ssd-streaming-cache-experts 8GB explicito)
+      → bug do path -ssd com qwen4exp, nao interplay com PLE nem orcamento de cache;
+      (3) sem -ssd, experts somam ~26 GB e -ngl 99 tenta CUDA direto ("unable to
+      allocate CUDA0"); (4) -cmoe (experts RAM 26GB) > RAM disponivel da casa e
+      Gyro-S (mesma familia, engine dedicado TQ1_0) ja fechou 97% RAM em 24/10 —
+      nada do lado dos runtimes encaixa hoje. Descoberta util: cafe tem --ngram-ssd
+      DEFAULT-ENABLED (PLE do qwen4 streama do SSD nativamente do fork — o thrash
+      de PLE projetado NAO aplica enquanto o ngram-ssd funciona). GGUF Q2_K
+      (mradermacher, 56335871168) + mmproj-Q8_0 (616703296) baixados e integros em
+      ~/.llama-models/groot-65b-a6b/ — MANTIDOS no disco; re-teste quando o path
+      -ssd do cafe (ou um patch local) aceitar o arch. Header do GGUF oficial
+      GrootTeam declara tensor_count=1 (anomalo) — mradermacher parseia normal
+      (tc=1256). ctx no fragmento segue 65536 para o promeiro teste que funcionar.'
