@@ -851,6 +851,77 @@ models:
           top_p: 0.95
           top_k: 20
           presence_penalty: 1.0
+  d1-2b:
+    name: Liquid d1-2B
+    description: "System One decision model da LiquidAI (2B, familia lfm3, com encoder de visao). Serves POST /v1/systemone com respostas tipadas (choice/noul/score + probabilities). Substituto em teste do d1-3b (seletor de LoRA do diffuse) e candidato a juiz do laya-snake. CPU-only."
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/lfm3-d1-2b/d1-2B-Q8_0.gguf
+
+      --mmproj ${models_dir}/lfm3-d1-2b/mmproj-Q8_0.gguf
+
+      --ctx-size 8192
+
+      --batch-size 512
+
+      --ubatch-size 512
+
+      --parallel 1
+
+      --no-webui
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p, top_k, min_p, repeat_penalty
+    ttl: 3600
+    health_check_timeout: 90
+    unlisted: true
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: false
+      reranker: false
+      context: 8192
+    metadata:
+      size: "~2.05 GB (Q8_0: backbone 1.85 + mmproj 0.19)"
+      context: 8192
+      vram_usage: "~0 GB VRAM (CPU-only, doutrina decision da casa)"
+      source: LiquidAI/d1-2B-GGUF (Q8_0, backbone 1846240576 + mmproj 203031584 bytes; PR ggml-org/llama.cpp
+      kv_cache: n/a
+      features:
+        decision: true
+        completion: false
+        tools: false
+        thinking: false
+        vision: true
+        image: false
+        embedding: false
+        insert: false
+        audio: false
+      architecture: lfm3
+      parameters: 2200000000
+      context_length: 8192
+      embedding_length: 2048
+      quantization: Q8_0
+      note: >-
+        INSTALADO 27/out (PR #31275 buildado localmente no branch fleet-liquid antes
+        do merge upstream — tracker vigia o merge). SMOKE VERIFICADO: /v1/systemone
+        com o payload real do laya-snake em 0.10s — respostas tipadas choice
+        (turn_right 0.696 + probabilities {straight 0.200, turn_left 0.104}) e noul
+        0.320 (+ usage). Server detecta decision type lfm3-d1 automaticamente.
+        Vision encoder incluso (mmproj) — decisões visual possiveis, AINDA nao
+        validadas. UNLISTED de proposito: d1-3b (seletor LoRA do diffuse) e julia-1
+        (juiz do snake) sao os validados em producao; este entra so depois de
+        re-rodar o harness selecao_nway.py (skill llama-snake-decision-models) no
+        caso do seletor e do testchat de juiz no caso do snake — um juiz ruim
+        selecionavel e armadilha ativa, conforme doutrina. CPU-only (doutrina
+        decision da casa; GPU 0.10s e CPU = mesmo resultado bit a bit). Pesos em
+        ~/.llama-models/lfm3-d1-2b/ (backbone + mmproj Q8_0).
   d1-3b:
     name: Liquid d1-3B
     description: d1 is a 3B decision model from Liquid AI, built on LFM2 with SigLIP2 vision. It outputs choices and scores with calibrated per-type temperatures.
@@ -1297,91 +1368,6 @@ models:
       context_length: 131072
       quantization: APEX I-Compact
       note: 'Backend ik. -ot parcial gpu7: experts dos blocos 0-6 na GPU (7-39 na CPU) — A/B 13/out: baseline (todos CPU) 33.3 t/s, gpu7 36.3 t/s (+9%) @400 tokens, ambos prompt único/temp 0.1 (VRAM 65% vs 37%, RAM -3.5 GB). GGML_CUDA_NO_PINNED=1 PROIBIDO: pinned obrigatório (sem ele: load trava 13.3 GiB alloc + decode 0.63 t/s). Pinned exige RAM folgada no load. -cmoe é EXCLUSIVO do cafe. Ik binary pull 3dbc2c9f (Oct 13) inclui lfm2moe runtime #2530 e spec decode LFM2 #2652 (CPU checkpoint). tok_embd fica NA GPU (o vocab 128K embd em CPU mataria o decode; o -ot tok_embd do k2 NÃO se aplica aqui). -nkvo OFF (a arch shortconv híbrida: o teste decide o KV residency — se OOM @32K: -nkvo como o k2). Smoke pending (pós-N=5 do minicpm5). GGUF em ~/.llama-models/lfm25-24b-a2b/.'
-  lfm2.5-audio:
-    name: LFM2.5 Audio (s2s)
-    aliases:
-      - lfm2.5-audio-s2s
-      - lfm2.5-audio-tts
-      - lfm2.5-audio-asr
-    description: "LFM2.5-Audio-1.5B da LiquidAI no audio.cpp — a chamada unica de audio PARA audio: audio entra, texto+fala saem, uma requisicao so (task s2s). Tambem ASR (/v1/audio/transcriptions) e TTS (/v1/audio/speech). Geracao anterior do LFM3-Omni (sem visao), ingles do checkpoint. Sem rota de chat: aparece nos dashboards de speech/transcription da swap, nao no picker de chat."
-    tags:
-      - audio
-      - tts
-    proxy: http://127.0.0.1:${PORT}
-    checkEndpoint: /health
-    cmd: '${env.HOME}/git/audio.cpp/build/linux-cuda-release/bin/audiocpp_server
-
-      --config ${env.HOME}/git/audio.cpp/server-lfm25audio.json
-
-      --model-spec-override ${env.HOME}/git/audio.cpp/model_specs
-
-      --port ${PORT} --host 127.0.0.1
-
-      '
-    cmdStop: pkill -f server-lfm25audio.json
-    health_check_timeout: 600
-    ttl: 900
-    capabilities:
-      in:
-        - text
-        - audio
-      out:
-        - text
-        - audio
-      tools: false
-      reranker: false
-      context: 32768
-    metadata:
-      size: "~1.83 GB (Q8_0: backbone 1.25 + mmproj 0.29 + vocoder 0.21 + tokenizer 0.08)"
-      context: 32768
-      vram_usage: "~1.9 GB por modelo carregado (lazy_load; Q4_0 guarda embedding como Q6_K e o CUDA mantem copia F16 de 256 MB)"
-      source: >-
-        LiquidAI/LFM2.5-Audio-1.5B-GGUF (Q8_0, 4 arquivos: backbone
-        1246253280, mmproj 293443936, vocoder 205742272, tokenizer 76957632 bytes)
-      kv_cache: interno
-      features:
-        completion: false
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-        insert: false
-        audio: true
-        image: false
-      architecture: lfm2_audio
-      parameters: 1500000000
-      embedding_length: 2048
-      context_length: 32768
-      quantization: Q8_0
-      note: >-
-        EXPERIMENTO 27/out. O unico single-request audio->audio funcional na casa.
-        Rotas por entrada do config (ids internos COM pontos, iguais aos alias):
-        ASR em /v1/audio/transcriptions (multipart, model lfm2.5-audio-asr),
-        TTS em /v1/audio/speech (JSON, model lfm2.5-audio-tts; vozes us_male/
-        us_female/uk_male/uk_female), S2S em
-        /upstream/lfm2.5-audio/v1/tasks/run com body model lfm2.5-audio-s2s e
-        request com audio em path local — resposta traz text e audio em b64 wav
-        24kHz (single-request audio->audio VERIFICADO: voz PT de 45s entra,
-        text+audio saem em 1.0s); /v1/tasks/stream para streaming SSE. Live duplex
-        continuo em /v1/audio/speech/live (chunked PCM in, audio out simultaneo;
-        cada request e primeiro turno — conversas multi-turn via tasks run/stream
-        com cache de ~4 conversas). Audio IN aceita WAV de qualquer sample rate
-        (resample 16 kHz mono). Familia lfm2_audio (NeMo log-mel + FastConformer
-        canary-180m-flash + LFM2 hibrido 10 conv 6 GQA + depthformer detokenizer
-        ISTFT). S2S: texto greedy, audio temp 1.0 top_k 4, frames de 80 ms
-        alternando 6 text tokens e 12 frames de audio. SO o checkpoint en
-        (transcreve/fala/conversa em ingles) — o checkpoint japones
-        LFM2.5-Audio-1.5B-JP e outro download. Voice-presets do audio.cpp NAO
-        aplicaveis: s2s usa a voz propria do checkpoint e TTS tem vozes builtin,
-        sem clonagem. SEM /v1/chat/completions no audiocpp (completion false
-        honesto) — o testchat esconde por design (classificador non-chat); a
-        entrada do duplex no testchat entra pelo features.audio na fase do modo
-        RT. Config audiocpp em ~/git/audio.cpp/server-lfm25audio.json (lazy_load,
-        backend cuda), pesos em ~/.llama-models/lfm2.5-audio/. Dense 1.5B carrega
-        voando. Substituicao natural quando o audio.cpp absorver o
-        LFM3-Audio/Omni (repo ativo, rebasa rapido). ALIASES NECESSARIOS: o
-        audiocpp registra um id por task (s2s/tts/asr) — tag nao roteia e o
-        swap forwarda o body verbatim, por isso 3 alias em vez de 1.
   lfm3-1.7b:
     name: LFM3 1.7B
     description: "LiquidAI LFM3 1.7B, gerico edge da nova geracao tri-hybrid (13 short-conv + 5 SWA + 6 global attn), 256K de contexto nativo, raciocinio dual-mode. Candidato a prompter/enhance da casa e alternativa ao LFM2.5-2.6B."
