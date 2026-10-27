@@ -1,0 +1,75 @@
+lfm25-audio:
+  name: LFM2.5 Audio (s2s)
+  description: "LFM2.5-Audio-1.5B da LiquidAI no audio.cpp — a chamada unica de
+    audio PARA audio: PCM/stream de voz entra, fala sai, uma requisicao so
+    (task s2s). Tambem ASR (/v1/audio/transcriptions) e TTS (/v1/audio/speech).
+    Geracao anterior do LFM3-Omni (sem visao), ingles do checkpoint."
+  tags: [audio, tts, tools]
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: '${env.HOME}/git/audio.cpp/build/linux-cuda-release/bin/audiocpp_server
+
+    --config ${env.HOME}/git/audio.cpp/server-lfm25audio.json
+
+    --model-spec-override ${env.HOME}/git/audio.cpp/model_specs
+
+    --port ${PORT} --host 127.0.0.1
+
+    '
+  cmdStop: pkill -f server-lfm25audio.json
+  health_check_timeout: 600
+  ttl: 900
+  capabilities:
+    in:
+    - text
+    - audio
+    out:
+    - text
+    - audio
+    tools: false
+    reranker: false
+    context: 32768
+  metadata:
+    size: "~1.83 GB (Q8_0: backbone 1.25 + mmproj 0.29 + vocoder 0.21 + tokenizer 0.08)"
+    context: 32768
+    vram_usage: "~1.9 GB por modelo carregado (lazy_load; Q4_0 guarda embedding
+      como Q6_K e o CUDA mantem copia F16 de 256 MB)"
+    source: >-
+      LiquidAI/LFM2.5-Audio-1.5B-GGUF (Q8_0, 4 arquivos: backbone
+      1246253280, mmproj 293443936, vocoder 205742272, tokenizer 76957632 bytes)
+    kv_cache: interno (LFM2 hibrido 10 short-conv + 6 GQA)
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: true
+      image: false
+    architecture: lfm2_audio
+    parameters: 1500000000
+    embedding_length: 2048
+    context_length: 32768
+    quantization: Q8_0
+    note: >-
+      EXPERIMENTO 27/out. O unico single-request audio->audio funcional na casa.
+      Rotas do audio.cpp por entrada do config: ASR em /v1/audio/transcriptions
+      (multipart), TTS em /v1/audio/speech (JSON; vozes us_male/us_female/
+      uk_male/uk_female), S2S em /v1/tasks/run com body contendo model
+      lfm25-audio-s2s e request com audio em path local — a resposta traz
+      text e audio em b64 wav 24kHz; /v1/tasks/stream para streaming SSE.
+      Live duplex continuo em /v1/audio/speech/live (chunked PCM in, audio out
+      simultaneo; cada request e primeiro turno — conversas multi-turn via
+      tasks run/stream com cache de ~4 conversas). Audio IN aceita WAV de
+      qualquer sample rate (resample 16 kHz mono). Familia lfm2_audio (NeMo
+      log-mel + FastConformer canary-180m-flash + LFM2 hibrido 10 conv 6 GQA +
+      depthformer detokenizer ISTFT). S2S: texto greedy, audio temp 1.0 top_k 4,
+      frames de 80 ms alternando 6 text tokens e 12 frames de audio. SO o
+      checkpoint en (transcreve/fala/conversa em ingles) — o checkpoint japonês
+      LFM2.5-Audio-1.5B-JP e outro download. Voice-presets do audio.cpp NAO
+      aplicaveis: s2s usa a voz propria do checkpoint e TTS tem vozes builtin,
+      sem clonagem. Config audiocpp em ~/git/audio.cpp/server-lfm25audio.json
+      (lazy_load, backend cuda), pesos em ~/.llama-models/lfm25-audio/.
+      Peso nao e MoE: dense 1.5B carrega voando. Substituicao natural quando
+      o audio.cpp absorver o LFM3-Audio/Omni (repo ativo, rebasa rapido).
