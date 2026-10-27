@@ -2275,7 +2275,7 @@ def run_duplex_chat_tts_loop(lane_id):
         try:
             req = _urlrequest.Request(f"{http_base}/chat/completions",
                 data=_json.dumps({"model":"default","messages":[
-                    {"role":"system","content":"Respond in text."},
+                    {"role":"system","content":"Respond in text. Always respond in Brazilian Portuguese."},
                     {"role":"user","content":[
                         {"type":"input_audio","input_audio":{"data":b64,"format":"wav"}},
                         {"type":"text","text":"O que eu disse? Responda em uma frase."}]}],
@@ -2331,7 +2331,7 @@ async def _duplex_realtime_loop(lane_id, swap_ws):
         in_rate = (session_info["audio"]["input"]["format"]["rate"])
         await conn.session.update(session={
             "type": "realtime",
-            "instructions": "Respond with interleaved text and audio.",
+            "instructions": "Respond with interleaved text and audio. Always respond in Brazilian Portuguese.",
             "output_modalities": ["text", "audio"],
         })
         ev = await conn.recv()
