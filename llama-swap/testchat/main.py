@@ -2379,9 +2379,17 @@ async def _duplex_realtime_loop(lane_id, swap_ws):
                         audio=_base64.b64encode(smp[j:j+step].tobytes()).decode())
                     await _asyncio.sleep(len(smp[j:j+step]) / in_rate)
             sender = _asyncio.create_task(_send())
+            await sender   # chunks entram (o server pode responder em paralelo)
 
             text_buf, audio_buf = [], []
-            async for ev in conn:
+            aiter = conn.__aiter__()
+            try:
+                # guard 3s: sem primeiro evento, destrava com response.create
+                ev = await _asyncio.wait_for(aiter.__anext__(), timeout=3.0)
+            except _asyncio.TimeoutError:
+                await conn.response.create()
+                ev = await aiter.__anext__()
+            while True:
                 if ev.type == "response.output_text.delta":
                     text_buf.append(ev.delta)
                 elif ev.type == "response.output_audio.delta":
@@ -2391,7 +2399,7 @@ async def _duplex_realtime_loop(lane_id, swap_ws):
                 elif ev.type == "error":
                     console.print(f"[red]ws error: {ev.error.message}[/]")
                     return
-            await sender
+                ev = await aiter.__anext__()
             console.print(f"[bold]📝 {''.join(text_buf)}[/]")
             if audio_buf:
                 audio = b"".join(audio_buf)
