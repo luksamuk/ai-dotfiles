@@ -900,6 +900,11 @@ class StreamingChat:
             # "sem sufixo" na renderização, mas continua bloqueando a seleção.
             # disabled="" é falsy em Python e deixaria o item selecionável.
             choices.append(questionary.Choice(title=footer, value=None, disabled=True))
+
+        # Modo duplex (voz→voz) — lanes de áudio do fleet (lfm2.5-audio etc).
+        # Lanes com features.audio ficam fora do picker de chat por design
+        # (classificador non-chat); esta opção abre a sessão de voz delas.
+        choices.append(questionary.Choice(title="🎙 Modo duplex (voz→voz)", value="__duplex__"))
         
         # Cabeçalho com instruções
         console.print("[bold cyan]🤖 Selecione o modelo para o chat[/]")
@@ -927,6 +932,11 @@ class StreamingChat:
             sys.exit(0)
         if selected is None:
             console.print("[dim]Saindo...[/]")
+            sys.exit(0)
+        if selected == "__duplex__":
+            # Sessão duplex voz→voz; ao sair (Ctrl+C), encerra o testchat
+            run_duplex_session()
+            console.print("[dim]Modo duplex encerrado.[/]")
             sys.exit(0)
         
         # Extrai o model_id pelo índice (o rodapé disabled nunca é retornado)
@@ -2115,6 +2125,114 @@ Variáveis de ambiente:
     """)
 
 
+def run_duplex_session():
+    """Modo duplex voz→voz para lanes de áudio do fleet (features.audio).
+
+    Fluxo por turno: pw-record no mic padrão → Enter para → WAV →
+    POST /upstream/<lane>/v1/tasks/run (task s2s do audio.cpp, single-request
+    audio→audio) → texto no display + resposta falada tocada via pw-play.
+    Ctrl+C sai. Convenção do id s2s interno: f"<lane_id>-s2s"
+    (documentada no fragment lfm2.5-audio). Para lanes llama.cpp (omni) o
+    transporte muda quando o upstream wired áudio-saída no /v1/realtime.
+    """
+    import json as _json
+    import subprocess as _subprocess
+    import urllib.error as _urlerror
+    import urllib.request as _urlrequest
+    import base64 as _base64
+    import os as _os
+
+    try:
+        response = requests.get(f"{BASE_URL}/models", timeout=5)
+        data = response.json()
+    except Exception as e:
+        console.print(f"[red]Erro ao buscar modelos: {e}[/]")
+        return
+
+    audio_lanes = []
+    for model in data.get("data", []):
+        mid = model.get("id", "")
+        # Pula variantes :think e ids internos de task (-s2s/-tts/-asr)
+        if ":" in mid or mid.endswith(("-s2s", "-tts", "-asr")):
+            continue
+        llamaswap = (model.get("meta") or {}).get("llamaswap") or {}
+        features = llamaswap.get("features") or {}
+        # Elegível: entrada de áudio, SEM rota de chat e SEM ser embedding
+        # (embeddinggemma-2 tem features.audio true — é entrada p/ embeddings,
+        # não conversa). As de chat entram pelo picker normal; o duplex delas
+        # entra quando o upstream wired áudio-saída no /v1/realtime
+        if (features.get("audio") and not features.get("completion")
+                and not features.get("embedding")):
+            audio_lanes.append(model)
+
+    if not audio_lanes:
+        console.print("[yellow]Nenhuma lane de áudio no fleet (features.audio sem chat).[/]")
+        return
+
+    if len(audio_lanes) == 1:
+        lane = audio_lanes[0]
+    else:
+        try:
+            choices = [questionary.Choice(title=m.get("name", m["id"]), value=m)
+                       for m in audio_lanes]
+            lane = questionary.select("Lane de áudio:", choices=choices).ask()
+        except KeyboardInterrupt:
+            return
+        except Exception as e:
+            # sem tty (não-interativo) ou falha de UI: pega a primeira e segue
+            console.print(f"[dim]Seletor indisponível ({str(e)[:60]}) — usando {audio_lanes[0]['id']}.[/]")
+            lane = audio_lanes[0]
+        if not lane:
+            return
+
+    lane_id = lane["id"]
+    s2s_id = f"{lane_id}-s2s"
+    console.print(f"[bold cyan]🎙 Modo duplex — {lane.get('name', lane_id)}[/]")
+    console.print("[dim]Fale no microfone padrão. Enter envia. Ctrl+C sai.[/]")
+
+    wav_in = "/tmp/testchat_duplex_in.wav"
+    while True:
+        console.print()
+        console.print("[green]🎙 Gravando... (Enter para enviar)[/]")
+        rec = _subprocess.Popen(["pw-record", wav_in])
+        try:
+            input()
+        except EOFError:
+            # stdin fechado (não-interativo): sai da sessão em vez de girar
+            rec.terminate()
+            console.print("[dim]stdin fechado — encerrando modo duplex.[/]")
+            return
+        rec.terminate()
+        try:
+            rec.wait(timeout=5)
+        except _subprocess.TimeoutExpired:
+            rec.kill()
+        if not _os.path.exists(wav_in) or _os.path.getsize(wav_in) < 1024:
+            console.print("[yellow]Gravação vazia — fale perto do microfone.[/]")
+            continue
+        try:
+            req = _urlrequest.Request(
+                f"{BASE_URL}/upstream/{lane_id}/v1/tasks/run",
+                data=_json.dumps({"model": s2s_id,
+                                  "request": {"audio": wav_in}}).encode(),
+                headers={"Content-Type": "application/json"})
+            t0 = time.time()
+            result = _json.loads(_urlrequest.urlopen(req, timeout=600).read().decode())
+            text = (result.get("text") or "").strip()
+            console.print(f"[bold]📝 {text}[/] [dim]({time.time()-t0:.1f}s)[/]")
+            if result.get("audio"):
+                out = "/tmp/testchat_duplex_reply.wav"
+                open(out, "wb").write(_base64.b64decode(result["audio"]))
+                _subprocess.run(["pw-play", out])
+        except _urlerror.HTTPError as e:
+            console.print(f"[red]HTTP {e.code}: {e.read()[:200]}[/]")
+        except KeyboardInterrupt:
+            console.print("[dim]Modo duplex encerrado.[/]")
+            return
+        except Exception as e:
+            console.print(f"[red]Erro no turno duplex: {str(e)[:200]}[/]")
+
+
 def main():
     """Entry point."""
     # CLI args: --raw / --no-system / --system "text" / --template / --no-history
@@ -2145,6 +2263,13 @@ def main():
     if "--template" in argv:
         CLI_SHOW_TEMPLATE = True
         argv.remove("--template")
+    if "--duplex" in argv:
+        argv.remove("--duplex")
+        if argv:
+            print(f"Argumentos não reconhecidos com --duplex: {argv}")
+            sys.exit(1)
+        run_duplex_session()
+        sys.exit(0)
     if argv:
         print(f"Argumentos não reconhecidos: {argv}")
         print("Use --help para ver as opções disponíveis.")
