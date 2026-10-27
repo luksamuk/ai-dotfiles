@@ -1,0 +1,95 @@
+lfm3-omni-2b:
+  name: LFM3 Omni 2B
+  description: "Omni-modal 2B da LiquidAI: entende texto, imagem, video COM trilha
+    son e audio (16 kHz), responde em texto ou fala. Musica no contrato (fala/musica/
+    son ambiente/eventos). Ideal p/ ASR, QA de musica e julgamento de clipes H3
+    (ve e ouve juntos)."
+  tags: [vis, think, tools]
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/lfm3-omni-2b/LFM3-Omni-2B-Q8_0.gguf
+
+    --mmproj ${models_dir}/lfm3-omni-2b/mmproj-F16.gguf
+
+    --ctx-size 32768
+
+    --jinja
+
+    --parallel 1
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -ngl 99
+
+    -b 512
+
+    -ub 128
+
+    --temp 0.6
+
+    --top-p 0.95
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        temperature: 0.6
+        top_p: 0.95
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    - image
+    - audio
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 32768
+  metadata:
+    size: ~1.85 GB (Q8_0) + 0.90 GB mmproj-F16
+    context: 32768
+    vram_usage: "~4-5 GB VRAM pico @32K medido no smoke (KV q4_0 na lane)"
+    source: LiquidAI/LFM3-Omni-2B-GGUF (Q8_0, 1846240768 bytes exatos) + mmproj-F16
+      (949841248 bytes)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: true
+      image: false
+    architecture: lfm3
+    parameters: 2200000000
+    embedding_length: 2048
+    context_length: 32768
+    quantization: Q8_0
+    note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb, merges #31252/#31257 do dia): MUSICA
+      VERIFICADA — leu main-theme.mp3 (clipe 86s, input_audio base64 via /v1/chat/
+      completions, 16kHz mono) e devolveu estilo (eletronico/house), instrumentos
+      (synth lead/bateria/bass/pad/arpejo), mood e estrutura em 1.9s / 78 t/s;
+      o card documenta audio understanding p/ speech, music, background sounds e
+      events. Tool calling: 4 get_weather/get_local_time simultaneos, JSON limpo,
+      finish=tool_calls em 1.0s. Substitui num modelo so: ASR+VLM+LLM+TTS (card);
+      audio IN 16kHz mono (fidelidade harmonica limitada), fala OUT 24kHz com
+      audio_temperature 0.4 quando pedido. Video: ve e ouve JUNTOS (2fps, soundtrack
+      incluso) — candidato a juiz de clipes H3 (aprovado, testar com clipe real).
+      Text benchmarks do vendor usam greedy; lane pina 0.6/0.95 (chat sane). ctx 32K
+      (input+output, card). Embeddings/mmproj F16 mantidos (peso irrelevante,
+      fidelidade visual prioritaria). GGUF em ~/.llama-models/lfm3-omni-2b/.'

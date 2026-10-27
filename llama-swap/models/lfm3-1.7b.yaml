@@ -1,0 +1,96 @@
+lfm3-1.7b:
+  name: LFM3 1.7B
+  description: "LiquidAI LFM3 1.7B, gerico edge da nova geracao tri-hybrid (13
+    short-conv + 5 SWA + 6 global attn), 256K de contexto nativo, raciocinio
+    dual-mode. Candidato a prompter/enhance da casa e alternativa ao
+    LFM2.5-2.6B."
+  tags: [think, tools]
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/lfm3-1.7b/LFM3-1.7B-Q8_0.gguf
+
+    --ctx-size 262144
+
+    --jinja
+
+    --parallel 1
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -ngl 99
+
+    -b 512
+
+    -ub 128
+
+    --temp 0.1
+
+    --top-k 50
+
+    --repeat-penalty 1.1
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.1
+        top_k: 50
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.1
+        top_k: 50
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 262144
+  metadata:
+    size: ~1.85 GB (Q8_0)
+    context: 262144
+    vram_usage: "~4.1 GB VRAM pico @262K (KV q4_0 ~1.5GB; f16 = 3.0GB e reprovado)"
+    source: LiquidAI/LFM3-1.7B-GGUF (Q8_0, 1846238496 bytes exatos)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: lfm3
+    parameters: 1900000000
+    embedding_length: 2048
+    context_length: 262144
+    quantization: Q8_0
+    note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb; LFM3 chegou HOJE via merges
+      #31252/#31257 — pull + rebuild local). ctx NATIVO 262144 deployado (escada:
+      f16 KV @262K = 3.0GB CUDA OOM; q4_0 = pico 4.14GB com folga). Decode 75
+      t/s, prompt 631 t/s (Q8_0, GPU sozinha). Tool calling: 4 get_weather/
+      get_local_time simultaneos, JSON limpo, finish=tool_calls, template
+      embedded (--jinja, sem template da casa). DUAL-MODE REAL do vendor: o
+      modelo pensa SEMPRE e o template tem toggle enable_thinking — plain pino
+      false (respondera direto, reasoning 0 verificado), :think pin true;
+      raciocinio nativo estilo distill ("We need to..." — PT OK direto no
+      plain). Samplers do fabricante (chat geral): temp 0.1 / top_k 50 /
+      repetition_penalty 1.1 (math usa 1.0/0.95/20 na mao do client). Escorregada
+      factual tipica de 1.7B (SP/Minas numa frase) — papel prompter/enhance,
+      nao enciclopedia. GGUF em ~/.llama-models/lfm3-1.7b/. Substituição
+      candidata do lfm2.5-2.6b (régua maison 67.0) — re-discussão de
+      aposentadorias pendente os resultados.'
