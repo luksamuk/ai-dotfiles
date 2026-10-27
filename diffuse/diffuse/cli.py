@@ -130,6 +130,8 @@ def print_list() -> None:
                 return (wgp / "kromoss_int8_convrot.safetensors").exists()
             if info.get("dir") == "moss-imagine":
                 return (wgp / "moss_imagine_int8_convrot.safetensors").exists()
+            if info.get("dir") == "moss-image-photoreal":
+                return (wgp / "moss_image_photoreal_int8_convrot.safetensors").exists()
             return (wgp / "moss_image_sft_int8_convrot.safetensors").exists()
         elif backend == "qwen21_turbo_wan2gp":
             wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
@@ -1146,9 +1148,9 @@ def _run_flux3_wan2gp_image(
     if args.enhance or args.enhance_with:
         enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
         if is_edit and _check_model_vision(enhance_model):
-            print(f"\n  \U0001f441\ufe0f\u2728 {enhance_model} analyzes the reference and refines the edit instruction...")
+            print(f"\n  \U0001f441\ufe0f\u2728 {enhance_model} analyzes the reference(s) and refines the edit instruction...")
             enhanced, raw_response = analyze_and_enhance_edit(
-                ref_image_paths[0], prompt, enhance_model, nsfw=args.nsfw
+                ref_image_paths, prompt, enhance_model, nsfw=args.nsfw
             )
         else:
             print(f"\n  \u2728 Enhancing prompt via {enhance_model} (vision mode)...")
@@ -1227,10 +1229,17 @@ def _run_moss_wan2gp_image(
     variant = ("moss_image" if model_name == "moss-image-base"
                else "moss_image_kromoss" if model_name == "moss-image-kromoss"
                else "moss_image_imagine" if model_name == "moss-imagine"
+               else "moss_image_photoreal" if model_name == "moss-image-photoreal"
                else "moss_image_sft")
     steps = args.steps if args.steps is not None else 50
     guidance = args.cfg if args.cfg is not None else 3.0
     negative = None if args.nsfw else "nsfw, worst quality, bad anatomy, watermark, jpeg artifact"
+    if args.nsfw and model_name == "moss-image-photoreal":
+        # Default NSFW da casa p/ photoreal (ladder 27/out, seed fixa, medido com
+        # user OK): clausula anti-quente = degrau FULL do A/B (saturacao de pele
+        # -14%, R-ratio -3.5% vs controle; LIGHT sozinho = no-op, ORANGE = no-op
+        # sobre FULL). Conceitos a suprimir APENAS — doutrina Round 3 SFT.
+        negative = "skin redness, flushed cheeks, sunburn, tan, bronze skin, warm undertone"
 
     # --turbo: DMD 8-step distillation LoRA @1.0 + cfg 1.0, nativa por variante
     # (o arquivo que o card de cada variante embarca): SFT -> moss_dmd_8step
@@ -1253,6 +1262,8 @@ def _run_moss_wan2gp_image(
                                    "DMD-Base 8-step (a LoRA que o proprio card do Kromoss embarca, sha f0e6cd07)"),
             "moss_image_imagine": ("moss_dmd_8step.safetensors",
                                    "DMD-SFT 8-step (Imagine e derivada do SFT; compat do merge rank-32 = probe)"),
+            "moss_image_photoreal": ("moss_dmd_8step.safetensors",
+                                     "DMD-SFT 8-step (Photoreal e merge sobre o SFT — mesmo DMD do SFT)"),
         }
         _dmd_file, _dmd_label = _dmd_native[variant]
         if "<lora:moss_dmd_8step:" in prompt or "<lora:moss_dmd_8step_base:" in prompt:
@@ -1293,7 +1304,8 @@ def _run_moss_wan2gp_image(
     # (base/sft: proj.q/k/v separados; kromoss: qkv fundido — keymap do wgp cobre,
     # provado no V-MOSS; o compat por variante fica pronto pra quando discriminar)
     _variant_moss = {"moss-image": "sft", "moss-image-base": "base",
-                     "moss-image-kromoss": "kromoss", "moss-imagine": "imagine"}.get(model_name, "*")
+                     "moss-image-kromoss": "kromoss", "moss-imagine": "imagine",
+                     "moss-image-photoreal": "photoreal"}.get(model_name, "*")
     if args.enhance or args.enhance_with:
         enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
         print(f"\n  ✨ Enhancing prompt via {enhance_model} (moss doctrine)...")
@@ -1320,8 +1332,10 @@ def _run_moss_wan2gp_image(
     if lora_tags:
         prompt = _reapply_lora_tags(prompt, lora_tags)
 
-    # seleção decision (pós-enhance, sobre o texto final) — novo no moss
-    if _cfg.selector == "decision" and "<lora:" not in prompt and (args.enhance or args.enhance_with):
+    # seleção decision (sobre o texto final) — roda SEM --enhance e SEM --nsfw:
+    # o decision não precisa de LLM enhance (julga o prompt cru) e o catálogo
+    # tem LoRA estilo não-NSFW (ids 2/3/4/5/10) que merece seleção em prompt comum
+    if _cfg.selector == "decision" and "<lora:" not in prompt:
         _pre_moss = prompt
         prompt, _res, _info = select_loras(
             prompt, root="moss_image", nsfw=bool(args.nsfw), variant=_variant_moss, cfg=_cfg)
@@ -1426,7 +1440,7 @@ def _run_qwen21_turbo_wan2gp_image(
                 print(f"\n  👁️✨ {edit_model} analisa a referência e refina a instrução (one-shot)...")
                 if cfg.selector == "llm" and not _manual_tag:
                     def _edit_fn(p, m, nsfw, extra_system):
-                        return analyze_and_enhance_edit(ref_image_paths[0], p, m,
+                        return analyze_and_enhance_edit(ref_image_paths, p, m,
                                                         nsfw=nsfw, extra_system=extra_system)
                     prompt, _res, info = select_loras(
                         prompt, root="qwen21", nsfw=bool(getattr(args, "nsfw", False)),
@@ -1440,7 +1454,7 @@ def _run_qwen21_turbo_wan2gp_image(
                         print(f"     ────────────────────────────")
                 else:
                     enhanced, raw_response = analyze_and_enhance_edit(
-                        ref_image_paths[0], prompt, edit_model, nsfw=args.nsfw)
+                        ref_image_paths, prompt, edit_model, nsfw=args.nsfw)
         elif enhance_type == "qwen21":
             if getattr(args, "nsfw", False) and cfg.selector == "llm":
                 pass  # --nsfw + llm: UMA call só no post-bloco (fluxo histórico)
@@ -1479,7 +1493,7 @@ def _run_qwen21_turbo_wan2gp_image(
         _nsfw = bool(getattr(args, "nsfw", False))
         _did_enhance = bool(args.enhance or args.enhance_with or getattr(args, "enhance_edit_with", None))
         _pre_sel = prompt
-        if _cfg.selector == "decision" and (_did_enhance or _nsfw):
+        if _cfg.selector == "decision":   # sempre: estilo não-NSFW também merece seleção
             prompt, _res, _info = select_loras(
                 prompt, root="qwen21", nsfw=_nsfw, variant="*", cfg=_cfg)
         elif _nsfw and _cfg.selector == "llm" and _did_enhance:
@@ -1619,7 +1633,7 @@ def _run_qwen21_wan2gp_image(
                 print(f"\n  👁️✨ {edit_model} analisa a referência e refina a instrução (one-shot)...")
                 if cfg.selector == "llm" and not _manual_tag:
                     def _edit_fn(p, m, nsfw, extra_system):
-                        return analyze_and_enhance_edit(ref_image_paths[0], p, m,
+                        return analyze_and_enhance_edit(ref_image_paths, p, m,
                                                         nsfw=nsfw, extra_system=extra_system)
                     prompt, _res, info = select_loras(
                         prompt, root="qwen21", nsfw=bool(getattr(args, "nsfw", False)),
@@ -1635,7 +1649,7 @@ def _run_qwen21_wan2gp_image(
                     # decision (ou tag manual): enhance de edição puro; a seleção
                     # decision roda depois, sobre o texto final (post-bloco abaixo)
                     enhanced, raw_response = analyze_and_enhance_edit(
-                        ref_image_paths[0], prompt, edit_model, nsfw=args.nsfw)
+                        ref_image_paths, prompt, edit_model, nsfw=args.nsfw)
         elif enhance_type == "qwen21":
             if getattr(args, "nsfw", False) and cfg.selector == "llm":
                 pass  # --nsfw + llm: UMA call só no post-bloco (fluxo histórico)
@@ -1678,7 +1692,7 @@ def _run_qwen21_wan2gp_image(
         _nsfw = bool(getattr(args, "nsfw", False))
         _did_enhance = bool(args.enhance or args.enhance_with or getattr(args, "enhance_edit_with", None))
         _pre_sel = prompt
-        if _cfg.selector == "decision" and (_did_enhance or _nsfw):
+        if _cfg.selector == "decision":   # sempre: estilo não-NSFW também merece seleção
             # decision: independe do enhance; julga o texto (cru ou expandido)
             prompt, _res, _info = select_loras(
                 prompt, root="qwen21", nsfw=_nsfw, variant="*", cfg=_cfg)

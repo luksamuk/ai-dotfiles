@@ -647,9 +647,13 @@ def _check_model_vision(model: str) -> bool:
 
 
 # ── Image analysis ─────────────────────────────────────────────────────────
-def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str, nsfw: bool = False, extra_system: str = "") -> tuple:
-    """One-shot vision + edit enhancement: send image + instruction to a
-    vision-capable model and get a refined edit prompt back.
+def analyze_and_enhance_edit(image_path, user_prompt: str, model: str, nsfw: bool = False, extra_system: str = "") -> tuple:
+    """One-shot vision + edit enhancement: send reference image(s) + instruction
+    to a vision-capable model and get a refined edit prompt back.
+
+    image_path: str | list[str] — single reference (legacy) or MULTI-REFERENCE
+    (all imgs sent to the VLM, labeled "Image 1..N" in order; the refined
+    instruction must cite which image each element comes from).
 
     Used when the enhance model already has vision capability (e.g. minicpm-v-4.6),
     avoiding two separate LLM calls (analyze then enhance).
@@ -669,33 +673,43 @@ def analyze_and_enhance_edit(image_path: str, user_prompt: str, model: str, nsfw
 
     log.info("One-shot vision+edit enhancement via %s", model)
 
-    # Read and base64-encode the image
-    img_data = _Path(image_path).read_bytes()
-    b64 = base64.b64encode(img_data).decode("ascii")
-
-    ext = _Path(image_path).suffix.lower()
+    paths = [image_path] if isinstance(image_path, str) else list(image_path)
     mime_map = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
                 ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp"}
-    mime = mime_map.get(ext, "image/jpeg")
 
-    system = get_edit_vision_prompt(nsfw=nsfw)
+    img_parts = []
+    for p in paths:
+        b64 = base64.b64encode(_Path(p).read_bytes()).decode("ascii")
+        mime = mime_map.get(_Path(p).suffix.lower(), "image/jpeg")
+        img_parts.append({"type": "image_url", "image_url": {"url": "data:" + mime + ";base64," + b64}})
+
+    if len(paths) == 1:
+        user_text = (
+            "I want to edit this image. My edit instruction: " + user_prompt
+            + "\n\nLook at the image carefully, describe the relevant elements you see, "
+            "and write a refined edit instruction that combines what you see with what I want changed."
+        )
+    else:
+        user_text = (
+            f"I want to edit an image using multiple reference images. You are given {len(paths)} "
+            "reference images, labeled Image 1 to Image %d in the order provided." % len(paths)
+            + " My edit instruction: " + user_prompt
+            + "\n\nLook at every image carefully and state which elements you take from which image, "
+            "then write a refined edit instruction that combines them. Refer to the images explicitly "
+            "as 'Image 1', 'Image 2' etc. whenever the instruction depends on which reference an element "
+            "comes from."
+        )
+
+    system = get_edit_vision_prompt(nsfw=nsfw, multi=(len(paths) > 1))
     if extra_system:
         system = system + "\n\n" + extra_system
-    user_text = (
-        "I want to edit this image. My edit instruction: " + user_prompt
-        + "\n\nLook at the image carefully, describe the relevant elements you see, "
-        "and write a refined edit instruction that combines what you see with what I want changed."
-    )
 
     def _build_payload():
         return json.dumps({
             "model": _enhance_model,
             "messages": [
                 {"role": "system", "content": system},
-                {"role": "user", "content": [
-                    {"type": "image_url", "image_url": {"url": "data:" + mime + ";base64," + b64}},
-                    {"type": "text", "text": user_text},
-                ]},
+                {"role": "user", "content": img_parts + [{"type": "text", "text": user_text}]},
             ],
             "temperature": 0.5,
             "max_tokens": 16384,

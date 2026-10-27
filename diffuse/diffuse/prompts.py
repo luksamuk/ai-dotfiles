@@ -16,6 +16,7 @@ _PROMPT_FILES: dict[str, str] = {
     "moss_enhance": "moss_enhance.yaml",
     "fibo_enhance": "fibo_enhance.yaml",
     "edit_vision": "edit_vision.yaml",
+    "edit_vision_multi": "edit_vision_multi.yaml",
     "vision_analysis": "vision_analysis.yaml",
 }
 
@@ -105,7 +106,9 @@ def get_moss_enhance_prompt(nsfw: bool = False) -> str:
 
 
 
-def get_edit_vision_prompt(nsfw: bool = False) -> str:
+def get_edit_vision_prompt(nsfw: bool = False, multi: bool = False) -> str:
+    if multi:
+        return _toggle_safety_rules(_load_prompt("edit_vision_multi"), nsfw)
     return _toggle_safety_rules(_load_prompt("edit_vision"), nsfw)
 
 
