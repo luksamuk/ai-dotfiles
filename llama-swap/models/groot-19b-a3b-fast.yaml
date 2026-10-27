@@ -1,8 +1,8 @@
 groot-19b-a3b-fast:
   name: Groot 19B A3B (fast)
-  description: "Challenger ik do Groot 19B-A3B: mesmo peso, experts 34 camadas CPU,
-    262K nativo, parallel tool calls nativo (-ptc). Ideal p/ agente rapido e teste
-    de velocidade contra a lane cafe."
+  description: "MoE 19B-A3B do GrootTeam (destilado da linhagem Qwen3.6) via ik, hibrido
+    10 full-attn + 30 linear-attn, multimodal, 262K de contexto nativo, dual-mode de
+    raciocinio e parallel tool calls nativos (-ptc)."
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf

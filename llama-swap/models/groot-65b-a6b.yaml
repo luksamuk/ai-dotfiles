@@ -1,0 +1,106 @@
+groot-65b-a6b:
+  name: Groot 65B A6B
+  description: "EXPERIMENTO Dormammu (27/out): MoE 65B-A6B do GrootTeam (distill do
+    Qwen3.8-Flash-Next) com tabela n-gram PLE de 51B params em host + experts roteados
+    streamados do SSD no cafe. Espera-se lentidao; lane para medir tradeoffs, nao para
+    producao."
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
+    --model ${models_dir}/groot-65b-a6b/groot-65b-a6b-261023.Q2_K.gguf
+
+    --mmproj ${models_dir}/groot-65b-a6b/mmproj-Q8_0.gguf
+
+    --ctx-size 65536
+
+    --jinja
+
+    --parallel 1
+
+    --no-mmproj-offload
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -ssd-streaming
+
+    -ngl 99
+
+    -b 512
+
+    -ub 128
+
+    --temp 1.0
+
+    --top-k 20
+
+    --top-p 0.95
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.7
+        top_p: 0.8
+        top_k: 20
+        presence_penalty: 1.5
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 20
+        presence_penalty: 0.0
+  ttl: 0
+  health_check_timeout: 1200
+  unlisted: true
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 65536
+  metadata:
+    size: ~52.46 GB (Q2_K) + 0.58 GB mmproj
+    context: 65536
+    vram_usage: "a medir no smoke — backbone ~2 GB na GPU + KV leve (12 sparse-attn layers) + PLE 25 GB em host (mmap, thrash esperado)"
+    source: mradermacher/Groot-65B-A6B-261023-GGUF (Q2_K, 56335871168 bytes exatos)
+      + mmproj-Q8_0 (616703296 bytes)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen4exp
+    parameters: 65000000000
+    active: 6000000000
+    embedding_length: 2560
+    context_length: 262144
+    quantization: Q2_K
+    note: 'EXPERIMENTO 27/out: o GGUF OFICIAL do GrootTeam 65B declara tensor_count=1
+      (header anomalo) — deploy usa a conversao padrao da mradermacher (header normal,
+      tc=1256, parseado por mim). Matematica do header lida: PLE per_layer_token_embd
+      51.2B params em Q4_0 = ~25 GB em host (NAO streama via -ssd-streaming, que so
+      pega experts roteados ~26 GB -> SSD), backbone ~2 GB GPU. Precedente: Gyro-S
+      (mesma familia qwen3.8-flash-next, engine dedicado) fechou 97% RAM / teto 16K
+      em 24/10 — aqui a expectativa e decode 2-5 t/s (SSD-bound) e prefill pior
+      (thrash aleatorio na PLE). Benchmarks do vendor valem regime Q4/FP8; Q2_K de
+      modelo agentic pode degradar tool call primeiro. ctx 64K (piso da casa) no
+      lugar do 262K nativo — experimento inicial, sem chegar em 131K a principio
+      (pedido do dono). Promover a listed SOMENTE apos smoke meu com numeros reais
+      (load, prefill, decode, RAM, VRAM). GGUF em ~/.llama-models/groot-65b-a6b/.'
