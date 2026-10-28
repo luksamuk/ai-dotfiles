@@ -714,7 +714,7 @@ def analyze_and_enhance_edit(image_path, user_prompt: str, model: str, nsfw: boo
                 {"role": "user", "content": img_parts + [{"type": "text", "text": user_text}]},
             ],
             "temperature": 0.5,
-            "max_tokens": 16384,
+            "max_tokens": 65536,  # teto p/ :think (o budget de 16384 esvaziava o content)
         }).encode("utf-8")
 
     t0 = time.perf_counter()
