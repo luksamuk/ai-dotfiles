@@ -134,10 +134,12 @@ def enhance_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
 
     # max_tokens must be generous for thinking models — reasoning tokens
     # consume most of the budget before the JSON answer is emitted.
-    # qwen3.6-35b-a3b:think uses ~15-25k tokens on reasoning alone.
-    # 16384 is the minimum that works reliably; 8192 causes empty content
-    # because the model exhausts the budget during the thinking phase.
-    max_tokens_val = 16384
+    # qwen3.6-35b-a3b:think uses ~15-25k tokens on reasoning alone, and the
+    # measured ceiling in production was 25k+ (empty content at 16384).
+    # 65536 = teto (mesmo do h3). max_tokens é só um CAP: modelo sem :think
+    # para no finish_reason dele, não gasta o budget. Só a variante :think
+    # queima o resto.
+    max_tokens_val = 65536
 
     _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
     payload = json.dumps({
@@ -239,7 +241,7 @@ def enhance_qwen21_prompt(prompt: str, model: str, nsfw: bool = False, extra_sys
     log.info("Qwen-Image 2.1 enhancing prompt via %s", model)
     t0 = time.perf_counter()
 
-    max_tokens_val = 16384
+    max_tokens_val = 65536
 
     _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
     payload = json.dumps({
@@ -315,7 +317,7 @@ def enhance_moss_prompt(prompt: str, model: str, nsfw: bool = False, extra_syste
     log.info("MOSS-Image enhancing prompt via %s", model)
     t0 = time.perf_counter()
 
-    max_tokens_val = 4096
+    max_tokens_val = 65536  # Moss: teto p/ thinking (era 4096 — esvazrava com :think)
 
     _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
     payload = json.dumps({
@@ -391,7 +393,7 @@ def enhance_fibo_prompt(prompt: str, model: str, nsfw: bool = False, extra_syste
     log.info("FIBO enhancing prompt via %s", model)
     t0 = time.perf_counter()
 
-    max_tokens_val = 8192  # caption VGL passa facil de 1k palavras
+    max_tokens_val = 65536  # caption VGL passa facil de 1k palavras; teto p/ thinking
 
     _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
     payload = json.dumps({
@@ -481,7 +483,7 @@ def enhance_vision_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     t0 = time.perf_counter()
 
     # Same reasoning as ideogram enhance: thinking models need more tokens
-    max_tokens_val = 16384
+    max_tokens_val = 65536
 
     _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
     payload = json.dumps({
@@ -553,7 +555,7 @@ def enhance_agate_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     t0 = time.perf_counter()
 
     # Same reasoning as the other enhance modes: thinking models need a large budget
-    max_tokens_val = 16384
+    max_tokens_val = 65536
 
     _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
     payload = json.dumps({

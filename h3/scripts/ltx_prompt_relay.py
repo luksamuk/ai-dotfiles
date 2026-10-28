@@ -74,7 +74,7 @@ def describe_image_vlm(path: str, model: str, nsfw: bool) -> str:
     payload = json.dumps({
         "model": model,
         "messages": [{"role": "user", "content": content}],
-        "max_tokens": 1024,
+        "max_tokens": 65536,
         "temperature": 0.2,
     }).encode()
     req = urllib.request.Request(f"{LLAMA_SWAP_URL}/v1/chat/completions", data=payload,
@@ -130,7 +130,7 @@ def main():
                 {"role": "user", "content": content},
             ],
             "temperature": 0.7,
-            "max_tokens": 2048,
+            "max_tokens": 65536,
         }
         raw = True
     elif images:
@@ -153,7 +153,7 @@ def main():
                 {"role": "user", "content": args.prompt},
             ],
             "temperature": 0.7,
-            "max_tokens": 2048,
+            "max_tokens": 65536,
         }
         raw = False
     else:
@@ -164,7 +164,7 @@ def main():
                 {"role": "user", "content": args.prompt},
             ],
             "temperature": 0.7,
-            "max_tokens": 2048,
+            "max_tokens": 65536,
         }
         raw = False
 
@@ -174,6 +174,17 @@ def main():
         with urllib.request.urlopen(req, timeout=300) as resp:
             d = json.loads(resp.read())
         content_text = clean_output((d["choices"][0]["message"].get("content") or "").strip())
+        # Content vazio + reasoning presente = o budget morreu dentro do thinking.
+        # Sem este aviso o enhance falhava em silêncio (prompt cru saia como se fosse o enhance).
+        if not content_text:
+            reasoning = d["choices"][0]["message"].get("reasoning_content") or ""
+            if reasoning:
+                print(f"[WARN] enhance vazio com {len(reasoning)} chars de reasoning "
+                      f"(max_tokens esgotado no thinking?) — usando prompt original", file=sys.stderr)
+                content_text = args.prompt
+            else:
+                print("[WARN] enhance devolveu vazio — usando prompt original", file=sys.stderr)
+                content_text = args.prompt
         if args.show_enhanced:
             print("── Enhanced prompt ──", file=sys.stderr)
             print(content_text, file=sys.stderr)
