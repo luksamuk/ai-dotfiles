@@ -114,6 +114,8 @@ ORIGINAL_ORDER = [
     # Decision models (System One, /v1/systemone #29818; llama-swap routing PENDING #1195)
     # "laya",                   # REMOVED 20/out/2026 — juiz ruído (snake) + seletor 21% (diffuse); julia-1 cobre
     "julia-1",                  # ✅ Juiz leve (ModernBERT 144M BF16)
+    "minicpm-ocr-1.0",          # ✅ Doc parse OCR (arch qwen35, mmproj 4x downsampler + DSpark draft acoplado) 28/out
+    "minicpm-ocr-jev",          # ✅ OCR Jev scorer (decision CPU-only, arch qwen35 + pooling 3) 28/out
     "parakeet-tdt-0.6b-v3",     # ✅ ASR CPU-only (NVIDIA Parakeet TDT 0.6B v3) p/ o dicta do Kilo Code
 ]
 

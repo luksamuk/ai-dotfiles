@@ -1,0 +1,73 @@
+# -------------------------------------------
+# MiniCPM-OCR 1.0 (OpenBMB) - upstream llama.cpp
+# Doc parsing OCR (text/table/formula/chart/seal), EN+zh. Prompts fixos:
+# "Text Recognition:" / "Table Recognition:" / "Formula Recognition:"
+# arch qwen35 (752M backbone) + mmproj F16 com downsample 4x (444M, scale_factor 2,
+# max_slice_nums 9 - mmproj 4x ONLY, nao existe 16x). ctx nativo 262K.
+# DSpark draft (297M, arch dflash) acoplado: speculative decoding draft-dspark,
+# block_size 15. Draft nao carrega standalone (precisa do output projection do
+# target) - para A/B de velocidade, remova as 3 linhas --model-draft/--spec-type/--ngld.
+# Smoke 28/out/2026 (Q8_0, build fleet-liquid c207abe30): health ok, model loaded.
+# -------------------------------------------
+minicpm-ocr-1.0:
+  name: "MiniCPM-OCR 1.0"
+  description: "OpenBMB's 1.3B document parsing model - text, tables, formulas, charts and seals for EN/zh documents and PDFs via fixed prompts (Text/Table/Formula Recognition:)."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/minicpm-ocr-1.0/MiniCPM-OCR-1_0-Q8_0.gguf
+    --mmproj ${models_dir}/minicpm-ocr-1.0/mmproj-model-f16-4x.gguf
+    --model-draft ${models_dir}/minicpm-ocr-dspark/dspark-MiniCPM-OCR-1_0-Q8_0.gguf
+    --spec-type draft-dspark
+    -ngld 99
+    --jinja
+    --no-webui
+    --fit on
+    # 3072 (e nao ${vram_margin}): o fit NAO mede o draft dflash ("dflash requires
+    # ctx_other" — warning normal durante fitting) e planeja a VRAM so do principal;
+    # com margem padrao, o draft (-ngld 99) estoura e o boot morre em OOM de
+    # compute buffers. 3 GB de margem deixam o espaco do draft dentro do plano,
+    # boot medido OK em ~0.9 GB VRAM total usada (28/out/2026).
+    --fit-target 3072
+    --fit-ctx ${small_model_min_ctx}
+    --ctx-size ${small_model_max_ctx}
+    --temp 0
+    --cache-type-k f16
+    --cache-type-v f16
+    --flash-attn on
+    --metrics
+  ttl: 60
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: false
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~0.81 GB backbone (Q8_0) + ~0.90 GB mmproj (F16) + ~0.33 GB DSpark draft (Q8_0)"
+    context: "64K-128K (fit dinamico; nativo 262K)"
+    vram_usage: "~3.5 GB (backbone + mmproj + draft + cache f16)"
+    source: "openbmb/MiniCPM-OCR-1.0-gguf + openbmb/MiniCPM-OCR-1.0-DSpark-gguf"
+    kv_cache: f16
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 752000000
+    context_length: 262144
+    embedding_length: 1024
+    quantization: Q8_0
+    note: >-
+      Thinking ja vem desabilitado no chat template embutido do GGUF (enable_thinking
+      nao reativa; conversion propria exige --chat-template-kwargs enable_thinking:false).
+      llama-mtmd-cli nao aceita draft - draft-dspark so com llama-cli ou llama-server.
+      Para PDFs/pipeline completo, a SDK deles (minicpmvocr parse) encadeia layout +
+      recon + Jev + DSpark; aqui fica o elemento isolado por decisao do dono.

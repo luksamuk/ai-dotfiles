@@ -1,0 +1,78 @@
+# -------------------------------------------
+# MiniCPM-OCR-Jev (OpenBMB) - upstream llama.cpp
+# Scorer estilo Jev: avalia candidatos OCR (texto/formula/tabela) comparando a
+# imagem fonte com a render, 0-1 em UMA passada, 2 scores de classe via pooled
+# output. Arch qwen35 (1.9B, embedding 2048) + qwen35.pooling_type=3 +
+# qwen35.decision.type=openbmb-minicpm-ocr-jev.
+# CPU-only (doutrina decision da casa - video d1-2b e julia-1).
+# O server detecta o decision type sozinho (embedding mode, pooling UNSPECIFIED).
+# Contrato: responde EXATAMENTE UMA pergunta fixa - prompt inteiro no chat template
+# embutido do GGUF; "instructions" podem ser omitidas na request; rota /v1/systemone.
+# Cada request carrega 2 imagens (original, depois render). Nao tem LM head -
+# endpoints de text generation indisponiveis (features.completion=false).
+# ctx 16K com cache q8_0 (~1.6 GB RAM): card usa 32K no venv deles; 16K cobre
+# crops com folga e mantem o footprint de RAM domado. Warning de load: se
+# precisao de imagem pequena estranhar, --image-min-tokens 1024.
+# Smoke 28/out/2026 (Q8_0, build fleet-liquid c207abe30): health ok +
+# "decision model reads the embeddings output" detectado automaticamente.
+# -------------------------------------------
+minicpm-ocr-jev:
+  name: "MiniCPM-OCR Jev"
+  description: "OpenBMB's 2B OCR quality scorer (Jev-style decision model) - scores text/formula/table OCR candidates 0-1 in a single pass by comparing the source image with the render."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/minicpm-ocr-jev/MiniCPM-OCR-Jev-Q8_0.gguf
+    --mmproj ${models_dir}/minicpm-ocr-jev/mmproj-model-f16.gguf
+    --ctx-size 16384
+    --batch-size 512
+    --ubatch-size 512
+    --parallel 1
+    --no-webui
+    --cache-type-k q8_0
+    --cache-type-v q8_0
+    --metrics
+  filters:
+    stripParams: temperature, top_p, top_k, min_p, repeat_penalty
+  ttl: 3600
+  health_check_timeout: 90
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: false
+    reranker: false
+    context: 16384
+  metadata:
+    size: "~2.01 GB (Q8_0) + 0.67 GB mmproj (F16)"
+    context: 16384
+    vram_usage: "~0 GB VRAM (CPU-only, doutrina decision da casa); ~3 GB RAM"
+    source: "openbmb/MiniCPM-OCR-Jev-gguf"
+    kv_cache: q8_0
+    features:
+      decision: true
+      completion: false
+      tools: false
+      thinking: false
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 1900000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: Q8_0
+    note: >-
+      Decision exclusivo, FORA dos sets (padrao julia) - nao disputa VRAM.
+      Scoring = um forward pass so, sem geracao de tokens. Contrato da request
+      (/v1/systemone): "state" = STRING com o texto OCR reconhecido da regiao
+      (nao objeto); "questions" = UMA pergunta fixa, so "choice" com criteria
+      exatamente {"0": null, "1": null} ou "noul" (scores de 0-1 saem do modelo,
+      as opcoes sao nomeadas 0=reprovado/1=aprovado pelo template do GGUF); as
+      duas imagens vao em "images" (alias "files") como data URLs
+      (data:image/...;base64,...), ordem: original primeiro, depois a render.
+      O harness do pipeline OCR (layout -> recon -> Jev) fica na SDK/cript do
+      dono - aqui o elemento fica separado no fleet de proposito.

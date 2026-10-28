@@ -55,6 +55,9 @@ matrix:
     # inst: instella-moe-16b  # disabled
     # Vision
     ocr: glm-ocr
+    # MiniCPM-OCR 1.0 (OpenBMB out/2026, arch qwen35) — doc parse (text/table/formula)
+    # DSpark draft (arch dflash) acoplado no cmd (nao carrega standalone)
+    mocr: minicpm-ocr-1.0
     # uocr: unlimited-ocr  # disabled Aug 2026 — unused
     # qwvl: qwen3-vl-4b  # REMOVED Sep 10 2026 — GGUF deleted (A/B lfm2.5-vl-3b pendente pro enhance do H3); fragment em _removed/
     # lfmvl3: lfm2.5-vl-3b  # APOSENTADO 27/out/2026 a pedido do dono — fragment em _disabled/; A/B p/ enhance do H3 cancelado junto
@@ -71,7 +74,7 @@ matrix:
     # flint: flint-40b-a2b  # APOSENTADO junto 27/out/2026
     # groot: groot-19b-a3b  # REMOVIDO 27/out/2026 — lane cafe -cmoe lenta demais na regua do dono; fragment em _removed/
     # grootf: (fundido no groot 27/out/2026 — o dono pediu id sem sufixo; unico backend ativo e o ik)
-    groot: groot-19b-a3b  # id limpo (sem -fast, pedido 27/out) — ik, 37.9 t/s @262K, tool calls nativos
+    # groot: groot-19b-a3b  # APOSENTADO 28/out/2026 pelo dono — bug de re-serialização do parser de tool calls do ik; fragment em _disabled/; GGUF deletado (re-download via HF, fonte no fragment)
     # qw38d: qwen38-27b-defiance  # RETIRADO 25/out/2026 c/ honras — testchat: 3.2 t/s sofrivel; 2ª aposentadoria da família (1ª ago/26 'too slow'); GGUF deletado (REINSTALAR-DEFIANCE-2026-10-25.md)
     # qw38df: qwen38-27b-defiance-fast  # RETIRADO junto — MTP 4.3 t/s não salvou na régua do dono; fragment em _disabled/
     bs2: bonsai2-9b  # ternary Prism 9B, always-think — papel query do sprach (precisa de set próprio: sem set o solver trata como exclusivo)
@@ -128,6 +131,10 @@ matrix:
     #   snake; julia-1 cobre o posto com 400x mais discriminação. Fragment em
     #   _disabled/ + laya.HELPER.md; pesos apagados (805MB, ggml-org re-download)
     julia: julia-1
+    # MiniCPM-OCR-Jev (OpenBMB) — scorer 0-1 de qualidade de candidatos OCR
+    # (2 scores via pooled output, UMA passada). CPU-only (doutrina decision).
+    # Uma pergunta fixa (prompt no template do GGUF), rota /v1/systemone.
+    mojev: minicpm-ocr-jev
     sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
     nbe4: nemotron-bolt-e4b  # NVIDIA Bolt E4B (Gemma 4 E4B pos-treino), 64K em Q4 por escolha do dono
 
@@ -147,8 +154,8 @@ matrix:
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr | mcv35"
-    vision_embed: "(ocr | mcv35) & (lfmcol | eg2) & pkstt"
+    vision_only: "ocr | mcv35 | mocr"
+    vision_embed: "(ocr | mcv35 | mocr) & (lfmcol | eg2) & pkstt"
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -209,6 +216,8 @@ matrix:
     # a ser evictado se ainda assim houver conflito de coexistencia.
     pkstt: 1
     ocr: 3
+    mocr: 3  # backbone 752M Q8_0 + mmproj 444M + draft 297M — reload barato-medio
+    mojev: 1  # decision CPU-only, 2GB RAM — reload em ~2s
     # qwvl: 3  # REMOVED Sep 10 2026
     # lfmvl3: 3  # APOSENTADO 27/out/2026
     # q4: 2  # removed Oct 11 2026 junto do modelo (aposentadoria qwen3.5-4b)
@@ -221,7 +230,7 @@ matrix:
     orn35f: 9  # o fast/challenger ik — mesmo GGUF, mesmo custo de reload
     # flintf: 9  # APOSENTADO 27/out/2026
     # flint: 9  # APOSENTADO 27/out/2026
-    groot: 7  # ~14GB experts RAM no ik (n-cpu-moe 34) — mesmo GGUF das lanes anteriores
+    # groot: 7  # APOSENTADO 28/out/2026 pelo dono — bug de re-serialização do parser de tool calls do ik (args unescape, quebrava agêntico no Kilo); fragment em _disabled/; GGUF deletado
     # qw38d: 7  # RETIRADO 25/out/2026
     # qw38df: 7  # RETIRADO 25/out/2026
     bs2: 4  # ternary 9B + fork Prism; reload médio

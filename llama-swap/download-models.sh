@@ -36,6 +36,9 @@
 #   qwopus-coder-9b       - Qwopus3.5-9B-Coder Q4_K_M (~5.63 GB) + mmproj - agentic coding + tools
 #   [REMOVED Sep 2026] qwen3.5-4b-abliterated — user request
 #   glm-ocr               - GLM-OCR Q8_0 (~0.95 GB + 0.48 GB mmproj) - OCR/document specialist
+#   minicpm-ocr-1.0       - MiniCPM-OCR 1.0 Q8_0 (~0.81 GB + 0.90 GB mmproj) - doc parse OCR EN/zh (text/table/formula)
+#   minicpm-ocr-jev       - MiniCPM-OCR-Jev Q8_0 (~2.01 GB + 0.67 GB mmproj) - OCR candidate quality scorer (decision model, CPU-only)
+#   minicpm-ocr-dspark    - MiniCPM-OCR DSpark draft Q8_0 (~0.33 GB) - speculative draft for minicpm-ocr-1.0 (not standalone)
 #   nomic-embed-text-v2-moe - Nomic Embed v2 MoE Q4_K_M (~0.33 GB) - embedding, RAG/search
 #   nemotron-3-embed-1b - Nemotron 3 Embed 1B Q8_0 (~1.2 GB) - embedding, RAG/search (MANUAL CONVERSION)
 #   embeddinggemma-2    - EmbeddingGemma 2 Q8_0 (~0.31 GB + 0.55 GB mmproj) - embedding multimodal (texto+img+audio), RAG/search
@@ -206,6 +209,15 @@ declare -A MODELS=(
   # #1 on OmniDocBench V1.5 (94.62). Complements LFM2.5-VL-450M.
   # Q8_0 model + Q8_0 mmproj from official ggml-org release
   ["glm-ocr"]="ggml-org/GLM-OCR-GGUF GLM-OCR-Q8_0.gguf"
+  # MiniCPM-OCR 1.0 -- OpenBMB doc parsing (text/table/formula, EN+zh), arch qwen35
+  # backbone 752M Q8_0 (812 MB) + mmproj F16 4x-downsample (901 MB, scale_factor 2)
+  ["minicpm-ocr-1.0"]="openbmb/MiniCPM-OCR-1.0-gguf MiniCPM-OCR-1_0-Q8_0.gguf minicpm-ocr-1.0/MiniCPM-OCR-1_0-Q8_0.gguf"
+  # MiniCPM-OCR-Jev -- OpenBMB OCR candidate quality scorer (decision, CPU-only)
+  # backbone 1.9B Q8_0 (2.01 GB) + mmproj F16 (671 MB)
+  ["minicpm-ocr-jev"]="openbmb/MiniCPM-OCR-Jev-gguf MiniCPM-OCR-Jev-Q8_0.gguf minicpm-ocr-jev/MiniCPM-OCR-Jev-Q8_0.gguf"
+  # MiniCPM-OCR DSpark draft -- speculative draft head (arch dflash, block_size 15)
+  # paired with minicpm-ocr-1.0 via --spec-type draft-dspark; not standalone
+  ["minicpm-ocr-dspark"]="openbmb/MiniCPM-OCR-1.0-DSpark-gguf dspark-MiniCPM-OCR-1_0-Q8_0.gguf minicpm-ocr-dspark/dspark-MiniCPM-OCR-1_0-Q8_0.gguf"
   # Nomic Embed v2 MoE -- embedding model for RAG/semantic search/similarity
   # 475M params (305M active), 768-dim with Matryoshka, 100+ languages
   # Q4_K_M only 328MB -- runs via /v1/embeddings with --embeddings --pooling mean
@@ -294,6 +306,11 @@ declare -A MMPROJ=(
   ["smolvlm2-500m-video"]="ggml-org/SmolVLM2-500M-Video-Instruct-GGUF mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf"
   # Qwopus3.5-9B-Coder — vision model, mmproj renamed for clarity
   ["qwopus-coder-9b"]="Jackrong/Qwopus3.5-9B-Coder-GGUF mmproj.gguf mmproj-Qwopus3.5-9B-coder-F16.gguf"
+  # MiniCPM-OCR 1.0 mmproj -- F16 vision projector, 4x downsample ONLY (no 16x variant)
+  ["minicpm-ocr-1.0"]="openbmb/MiniCPM-OCR-1.0-gguf mmproj-model-f16-4x.gguf minicpm-ocr-1.0/mmproj-model-f16-4x.gguf"
+  # MiniCPM-OCR-Jev mmproj -- F16 vision projector (671 MB)
+  ["minicpm-ocr-jev"]="openbmb/MiniCPM-OCR-Jev-gguf mmproj-model-f16.gguf minicpm-ocr-jev/mmproj-model-f16.gguf"
+  # DSpark draft has NO mmproj (uses the minicpm-ocr-1.0 projector; draft-only repo)
   # GLM-OCR mmproj -- Q8_0 vision projection model
   ["glm-ocr"]="ggml-org/GLM-OCR-GGUF mmproj-GLM-OCR-Q8_0.gguf"
   # [REMOVED] nemotron-omni-30b mmproj — model replaced by AgentWorld (no vision)
@@ -322,7 +339,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
+    echo "Available: qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, minicpm-ocr-1.0, minicpm-ocr-jev, minicpm-ocr-dspark, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
     return 1
   fi
   
@@ -421,6 +438,8 @@ show_sizes() {
   echo "  [REMOVED] qwen3.5-9b-ace — worse perplexity, no imatrix quant"
   echo "  qwopus-coder-9b      ~5.63 GB  (Q4_K_M) + mmproj - Dense 9B, agentic coding + tools"
   echo "  glm-ocr             ~0.95 GB  (Q8_0) + 0.48 GB mmproj - OCR/document specialist"
+  echo "  minicpm-ocr-1.0     ~0.81 GB  (Q8_0) + 0.90 GB mmproj - doc parse OCR EN/zh + DSpark draft paired"
+  echo "  minicpm-ocr-jev     ~2.01 GB  (Q8_0) + 0.67 GB mmproj - OCR quality scorer (decision, CPU-only)"
   echo "  nomic-embed-text-v2-moe  ~0.33 GB  (Q4_K_M) - Embedding, RAG/search/similarity"
   echo "  nemotron-3-embed-1b      ~1.2 GB   (Q8_0)   - Embedding, multilingual RAG (MANUAL CONVERSION)"
   echo "  nanbeige4.2-3b       ~2.40 GB  (Q4_K_M) - Looped Transformer 3B, thinking + XML tools (nanbeige fork)"
