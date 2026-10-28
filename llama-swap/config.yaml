@@ -715,6 +715,51 @@ models:
       embedding_length: 384
       quantization: BF16
       note: 'vram detalhe: ~0.3 GB VRAM (model 303MB + compute) | model 303MB BF16 + compute Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Lightest judge: 144M, sub-5ms per question expected on GPU.'
+  parakeet-tdt-0.6b-v3:
+    name: Parakeet TDT 0.6B v3
+    description: "NVIDIA Parakeet TDT 0.6B v3: speech-to-text multilíngue, 25 idiomas incluindo português brasileiro. Transcreve a voz do Kilo Code e devolve o texto; converte o áudio recebido para WAV antes de transcrever."
+    tags:
+      - asr
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: '${env.HOME}/git/ai-dotfiles/parakeet-stt/stt-bridge --port ${PORT}'
+    cmdStop: pkill -f "parakeet-stt/stt-bridge"
+    health_check_timeout: 120
+    ttl: 900
+    capabilities:
+      in:
+        - audio
+      out:
+        - text
+      tools: false
+      reranker: false
+      context: 0
+    metadata:
+      size: 644 MB (tdt-0.6b-v3-q4_k.gguf)
+      context: 0
+      vram_usage: 0 (CPU-only)
+      source: mudler/parakeet-cpp-gguf (tdt-0.6b-v3-q4_k)
+      kv_cache: n/a
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: true
+        image: false
+      architecture: parakeet
+      parameters: 627090582
+      context_length: 0
+      embedding_length: 0
+      quantization: Q3_K
+      note: 'ASR puro, CPU-only, sem VRAM - convive com qualquer LLM da frota (a matrix o coloca em grupo AND proprio, igual embedding/colbert, para nunca evictar nem ser evictado). Backend stt-bridge (Python stdlib, versionado em ~/git/ai-dotfiles/parakeet-stt/stt-bridge): HTTP OpenAI-compatible POST /v1/audio/transcriptions + GET /health, e o unico processo (sem binario separado). POR QUE EXISTE O BRIDGE: o Kilo Code grava a voz em .m4a (AAC 24k, 16 kHz mono) e manda multipart; nem o mtmd do llama.cpp (so reconhece WAV/MP3/FLAC pelo header) nem o parakeet-server (so aceita WAV) decodificam m4a - ambos devolvem HTTP 400. O bridge converte via ffmpeg (stdin->stdout) para WAV 16 kHz mono antes de transcrever. HIGIENE DE DISCO: temporarios so em /dev/shm (tmpfs = RAM), nunca no disco; o WAV de cada request e apagado no finally e o workdir sai limpo no encerramento - nenhum audio do usuario fica persistido. Medido 28/out: m4a real do Kilo transcrito em 0.8 s (CPU, 8 threads). Acerto de PT: So um minutinho que eu ja vou ai (o lfm3-audio-2b errava o mesmo trecho como So me do tique). nao e TTS e nao serve /v1/audio/speech.'
+      caveats:
+        - Só o contrato OpenAI de transcrição (multipart field 'file'; response_format json|text)
+        - Converte o upload com ffmpeg - sem ffmpeg no PATH a transcrição falha com 500
+        - Não é TTS e não serve /v1/audio/speech
+        - CPU-only por desenho (a VRAM da casa é escassa, 6 GB) - troque PARAKEET_DEVICE=cuda se quiser
   bonsai2-9b:
     name: Ternary Bonsai 9B
     description: Ternary Bonsai 9B is a 9B ternary (1.71-bit) model from PrismML, built on the Qwen3.5 base with native vision and a 131K context window. Always-thinking — it targets long-horizon work, document analysis, and quality-sensitive coding.
@@ -877,7 +922,6 @@ models:
       stripParams: temperature, top_p, top_k, min_p, repeat_penalty
     ttl: 3600
     health_check_timeout: 90
-    unlisted: true
     capabilities:
       in:
         - text
@@ -915,15 +959,16 @@ models:
         (turn_right 0.696 + probabilities {straight 0.200, turn_left 0.104}) e noul
         0.320 (+ usage). Server detecta decision type lfm3-d1 automaticamente.
         Vision encoder incluso (mmproj) — decisões visual possiveis, AINDA nao
-        validadas. UNLISTED de proposito: d1-3b (seletor LoRA do diffuse) e julia-1
-        (juiz do snake) sao os validados em producao; este entra so depois de
-        re-rodar o harness selecao_nway.py (skill llama-snake-decision-models) no
-        caso do seletor e do testchat de juiz no caso do snake — um juiz ruim
-        selecionavel e armadilha ativa, conforme doutrina. CPU-only (doutrina
+        UNLISTED até segunda ordem — d1-3b (seletor LoRA do diffuse) e julia-1 (juiz do
+        snake) são os validados em produção. Este entra só depois de re-rodar o harness
+        selecao_nway.py (skill llama-snake-decision-models) no caso do seletor e do
+        testchat de juiz no caso do snake — um juiz ruim selecionável é armadilha
+        ativa, conforme doutrina.
         decision da casa; GPU 0.10s e CPU = mesmo resultado bit a bit). Pesos em
         ~/.llama-models/lfm3-d1-2b/ (backbone + mmproj Q8_0).
   d1-3b:
     name: Liquid d1-3B
+    unlisted: true
     description: d1 is a 3B decision model from Liquid AI, built on LFM2 with SigLIP2 vision. It outputs choices and scores with calibrated per-type temperatures.
     cmd: '${llama_server} --port ${PORT}
 
@@ -1521,7 +1566,7 @@ models:
       embedding_length: 2048
       context_length: 32768
       quantization: Q8_0
-      note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb, merges #31252/#31257 do dia): ASR impecável — voz real PT de 2021 (45s ogg convertido wav 16kHz mono) transcrita com fidelidade, 2.2s / 77 t/s. Music QA: responde estilo/ instrumentos (funk pro theme 8-bit — o Omni julgou melhor: house). NAO THINKING (A/B: reasoning 0 nas 3 condicoes — o card fala "reason before answering" pro TEXT path, mas o llama.cpp server nao expõe toggle e o kwarg enable_thinking nao muda nada). ASR via system prompt "Perform ASR." (idioma auto). Fala-SAIDA: via llama-tts CLI (--tts-lang/--tts-voice); rota chat do server ainda sem receita de speech-out; /v1/realtime (WebSocket voice) em breve do upstream. Audio sampling params do card original embutidos no GGUF. Quirk de idioma da familia: respondendo matematica pura em italiano a pergunta PT; ASR e QA audio ficam no idioma certo. GGUF em ~/.llama-models/lfm3-audio-2b/.'
+      note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb, merges #31252/#31257 do dia): ASR impecável — voz real PT de 2021 (45s ogg convertido wav 16kHz mono) transcrita com fidelidade, 2.2s / 77 t/s. Music QA: responde estilo/ instrumentos (funk pro theme 8-bit — o Omni julgou melhor: house). NAO THINKING (A/B: reasoning 0 nas 3 condicoes — o card fala "reason before answering" pro TEXT path, mas o llama.cpp server nao expõe toggle e o kwarg enable_thinking nao muda nada). ASR via system prompt "Perform ASR." (idioma auto). Fala-SAIDA: via llama-tts CLI (--tts-lang/--tts-voice); rota chat do server ainda sem receita de speech-out; /v1/realtime (WebSocket voice) em breve do upstream. Audio sampling params do card original embutidos no GGUF. Quirk de idioma da familia: respondendo matematica pura em italiano a pergunta PT; ASR e QA audio ficam no idioma certo. VOZ PT = SOTAQUE INGLES — VEREDICTO FECHADO 27/10: e o CHECKPOINT, nao a stack. Testado (a) instrucao de idioma no user turn (receita oficial da doc Liquid), (b) patch set_lang/codec_language ate o gen (server-realtime do fork), (c) rota /tts com lang pt — todos sem efeito audivel. A demo OFICIAL deles (hugging-apps/lfm3-audio-2b, transformers de referencia) produz o mesmo: texto PT lido com voz EN. NAO re-investigar. GGUF em ~/.llama-models/lfm3-audio-2b/.'
   lfm3-omni-2b:
     name: LFM3 Omni 2B
     description: "Omni-modal 2B da LiquidAI: entende texto, imagem, video COM trilha son e audio (16 kHz), responde em texto ou fala. Musica no contrato (fala/musica/ son ambiente/eventos). Ideal p/ ASR, QA de musica e julgamento de clipes H3 (ve e ouve juntos)."
@@ -2395,6 +2440,11 @@ matrix:
     # Audio
     # asr: qwen3-asr-0.6b  # disabled
     ttsext: qwen3-tts
+    # ASR (speech-to-text) do Kilo Code — CPU-only, 0 VRAM. Fica em grupo AND
+    # PROPRIO em todos os sets (ver as sets abaixo): assim ele nunca evicta um
+    # LLM vivo e nunca e evictado por um. Diferente do grupo OR (lfmcol|eg2),
+    # onde os dois embeddings sao alternativas um do outro.
+    pkstt: parakeet-tdt-0.6b-v3
     # Embedding
     # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
     lfmemb: lfm2.5-embedding-350m
@@ -2415,22 +2465,22 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(twp | lfm24) & (lfmcol | eg2)"
+    small_vision: "(twp | lfm24) & (lfmcol | eg2) & pkstt"
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(twp | lfm24 | sp26 | nbe4) & (lfmcol | eg2) & qpfim"
+    small_embed: "(twp | lfm24 | sp26 | nbe4) & (lfmcol | eg2) & qpfim & pkstt"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "twp | lfm24 | sp26 | nbe4"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados); twp + lfm24 restam
+    small_only: "(twp | lfm24 | sp26 | nbe4) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados); twp + lfm24 restam
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "ocr | mcv35"
-    vision_embed: "(ocr | mcv35) & (lfmcol | eg2)"
+    vision_embed: "(ocr | mcv35) & (lfmcol | eg2) & pkstt"
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -2443,11 +2493,11 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(lfm24 | mcv35 | orn35 | q36) & (lfmcol | eg2) & qpfim"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim (regressão: o rewrite derrubou o FIM do heavy; ping-pong coder<->35B medido no journal — restauro da intenção 16/out documentada no small_embed) | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4)
+    heavy: "(lfm24 | mcv35 | orn35 | q36) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim (regressão: o rewrite derrubou o FIM do heavy; ping-pong coder<->35B medido no journal — restauro da intenção 16/out documentada no small_embed) | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
-    bs2_embed: "bs2 & (lfmcol | eg2)" # k2/k2p/k2fim _disabled 16/out (pesos deletados); q36 REMOVED Oct 8 2026 — aposentado; orn15 merged no heretic
+    bs2_embed: "bs2 & (lfmcol | eg2) & pkstt" # k2/k2p/k2fim _disabled 16/out (pesos deletados); q36 REMOVED Oct 8 2026 — aposentado; orn15 merged no heretic
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -2458,13 +2508,13 @@ matrix:
 
     # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
     # AND entre todos os CPU-only: coexistem (zero VRAM) — OR evitaria em ping-pong
-    embed_only: "lfmemb & lfmcol & eg2"
+    embed_only: "lfmemb & lfmcol & eg2 & pkstt"
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
 
     # Reranker + Embedding (two-stage retrieval: dense → rerank)
-    rerank_embed: "lfmcol & (lfmemb | eg2)"
+    rerank_embed: "lfmcol & (lfmemb | eg2) & pkstt"
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
@@ -2487,6 +2537,9 @@ matrix:
     # a1: 2  # OUTDO Oct 12 2026 (régua disk fechada 124.4)
     # g4: 3  # REMOVED Sep 10 2026 — model deleted
     ttsext: 4
+    # ASR do Kilo: CPU-only, 0 VRAM, ~1 s pra subir. Custo 1 = e o primeiro
+    # a ser evictado se ainda assim houver conflito de coexistencia.
+    pkstt: 1
     ocr: 3
     # qwvl: 3  # REMOVED Sep 10 2026
     # lfmvl3: 3  # APOSENTADO 27/out/2026
