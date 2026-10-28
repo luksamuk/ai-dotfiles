@@ -1,0 +1,238 @@
+#!/usr/bin/env python3
+"""stt-bridge — OpenAI-compatible /v1/audio/transcriptions sobre parakeet.cpp.
+
+POR QUE EXISTE
+O Kilo Code grava a voz em .m4a (AAC 24k, 16 kHz mono) e envia o arquivo como
+multipart em POST /v1/audio/transcriptions. Nem o mtmd do llama.cpp (que so
+reconhece WAV/MP3/FLAC pelo header) nem o parakeet-server (que so aceita WAV)
+decodificam m4a — ambos respondem HTTP 400. Este bridge converte qualquer
+formato para WAV 16 kHz mono via ffmpeg antes de transcrever.
+
+HIGIENE DE DISCO
+Os arquivos temporarios vao para TMPDIR (default /dev/shm = tmpfs em RAM).
+NUNCA tocam o disco: nem o upload cru nem o WAV convertido. Ambos sao apagados
+no `finally`, inclusive quando a transcricao falha. O audio do usuario nao
+fica persistido em lugar nenhum. Um diretorio dedicado por processo permite
+sweep do que sobrou de um crash anterior.
+
+BACKEND
+parakeet.cpp (NVIDIA Parakeet TDT 0.6B v3, multilingual, PT-BR ok), chamado
+via parakeet-cli. CPU-only por padrao (o modelo e' leve e a VRAM da casa e'
+escassa: 6 GB). A inferencia e' serializada por lock — um processo ggml por
+requisicao, sem concorrencia.
+
+ROTAS
+  GET  /health                  -> {"status":"ok"}
+  POST /v1/audio/transcriptions -> OpenAI shape: {"text": "..."}
+
+VARIAVEIS DE AMBIENTE
+  PARAKEET_MODEL    GGUF do modelo (default ~/.parakeet-models/tdt-0.6b-v3-q4_k.gguf)
+  PARAKEET_CLI      binario parakeet-cli (default ~/git/parakeet.cpp/build/examples/cli/parakeet-cli)
+  PARAKEET_DEVICE   cuda | cpu (default cpu)
+  PARAKEET_THREADS  threads do backend (default 8)
+  STT_TMPDIR        diretorio de temporarios (default /dev/shm)
+  PORT              porta (default 8080)
+"""
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+MODEL = os.environ.get("PARAKEET_MODEL",
+                       os.path.expanduser("~/.parakeet-models/tdt-0.6b-v3-q4_k.gguf"))
+CLI = os.environ.get("PARAKEET_CLI",
+                     os.path.expanduser("~/git/parakeet.cpp/build/examples/cli/parakeet-cli"))
+DEVICE = os.environ.get("PARAKEET_DEVICE", "cpu")
+THREADS = os.environ.get("PARAKEET_THREADS", "8")
+TMPDIR = os.environ.get("STT_TMPDIR", "/dev/shm")
+PORT = int(os.environ.get("PORT", "8080"))
+
+
+def _parse_args(argv):
+    """Aceita --port N (o llama-swap injeta a porta na linha de comando)."""
+    global PORT
+    i = 0
+    while i < len(argv):
+        if argv[i] == "--port" and i + 1 < len(argv):
+            PORT = int(argv[i + 1])
+            i += 2
+            continue
+        if argv[i].startswith("--port="):
+            PORT = int(argv[i].split("=", 1)[1])
+            i += 1
+            continue
+        i += 1
+
+_INFER_LOCK = threading.Lock()
+_WORKDIR = os.path.join(TMPDIR, f"stt-bridge-{os.getpid()}")
+
+
+def parse_multipart(body: bytes, content_type: str):
+    """Extrai os campos e o arquivo 'file' de um multipart/form-data."""
+    boundary = None
+    for part in content_type.split(";"):
+        part = part.strip()
+        if part.startswith("boundary="):
+            boundary = part[len("boundary="):].strip().strip('"')
+    if not boundary:
+        return {}, b""
+    sep = ("--" + boundary).encode()
+    fields, filedata = {}, b""
+    for chunk in body.split(sep):
+        if not chunk or chunk in (b"--\r\n", b"--"):
+            continue
+        chunk = chunk.lstrip(b"\r\n")
+        if b"\r\n\r\n" not in chunk:
+            continue
+        head, data = chunk.split(b"\r\n\r\n", 1)
+        if data.endswith(b"\r\n"):
+            data = data[:-2]
+        name = None
+        for line in head.decode("utf8", "replace").split("\r\n"):
+            if line.lower().startswith("content-disposition"):
+                for tok in line.split(";"):
+                    tok = tok.strip()
+                    if tok.startswith("name="):
+                        name = tok[len("name="):].strip('"')
+        if name == "file":
+            filedata = data
+        elif name:
+            fields[name] = data.decode("utf8", "replace")
+    return fields, filedata
+
+
+def to_wav(data: bytes) -> str:
+    """Converte o upload (m4a/mp3/webm/wav/ogg...) em WAV 16 kHz mono.
+
+    O upload cru entra por stdin (nada em disco) e o WAV convertido sai por
+    stdout; so o WAV final precisa de um path seekable para o dr_wav do
+    parakeet-cli, e ele vive no tmpfs do WORKDIR.
+    """
+    conv = subprocess.run(
+        ["ffmpeg", "-y", "-i", "pipe:0", "-ar", "16000", "-ac", "1",
+         "-c:a", "pcm_s16le", "-f", "wav", "pipe:1"],
+        input=data, capture_output=True)
+    if conv.returncode != 0 or not conv.stdout:
+        raise RuntimeError("ffmpeg: " + conv.stderr.decode("utf8", "replace")[-300:])
+    fd, path = tempfile.mkstemp(suffix=".wav", dir=_WORKDIR)
+    with os.fdopen(fd, "wb") as f:
+        f.write(conv.stdout)
+    return path
+
+
+def transcribe(wav: str) -> str:
+    env = dict(os.environ)
+    if DEVICE == "cpu":
+        env["PARAKEET_DEVICE"] = "cpu"
+    r = subprocess.run([CLI, "transcribe", "--model", MODEL, "--input", wav,
+                        "--threads", THREADS],
+                       capture_output=True, text=True, env=env)
+    if r.returncode != 0:
+        raise RuntimeError("parakeet: " + r.stderr[-300:])
+    return "\n".join(
+        line for line in r.stdout.splitlines()
+        if not line.startswith("ggml_") and not line.startswith("[parakeet]")
+    ).strip()
+
+
+class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
+    def _json(self, code: int, obj: dict):
+        payload = json.dumps(obj).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def do_GET(self):
+        if self.path == "/health":
+            self._json(200, {"status": "ok"})
+        else:
+            self._json(404, {"error": {"message": "not found"}})
+
+    def do_POST(self):
+        if self.path != "/v1/audio/transcriptions":
+            self._json(404, {"error": {"message": "not found"}})
+            return
+        wav = None
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            fields, filedata = parse_multipart(
+                self.rfile.read(length), self.headers.get("Content-Type", ""))
+            if not filedata:
+                self._json(400, {"error": {"message": "missing required field 'file'"}})
+                return
+            wav = to_wav(filedata)
+            with _INFER_LOCK:
+                text = transcribe(wav)
+            if fields.get("response_format", "json") == "text":
+                payload = text.encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+            else:
+                self._json(200, {"text": text})
+        except Exception as exc:  # noqa: BLE001
+            self._json(500, {"error": {"message": str(exc), "type": "server_error"}})
+        finally:
+            if wav:
+                try:
+                    os.unlink(wav)
+                except OSError:
+                    pass
+
+    def log_message(self, fmt, *args):
+        sys.stderr.write("[stt-bridge] " + (fmt % args) + "\n")
+
+
+def _sweep_stale():
+    """Remove dirs de processos stt-bridge mortos (crash anterior).
+
+    Nunca toca no proprio dir nem no de um processo vivo — o teste de vida
+    (os.kill pid 0) e' o que distingue "morto" de "em uso".
+    """
+    try:
+        for name in os.listdir(TMPDIR):
+            if not name.startswith("stt-bridge-"):
+                continue
+            path = os.path.join(TMPDIR, name)
+            pid = name.rsplit("-", 1)[-1]
+            if pid.isdigit():
+                pid = int(pid)
+                if pid == os.getpid():
+                    continue  # nosso proprio dir
+                try:
+                    os.kill(pid, 0)
+                    continue  # processo vivo: nao mexe
+                except OSError:
+                    pass
+            shutil.rmtree(path, ignore_errors=True)
+    except OSError:
+        pass
+
+
+if __name__ == "__main__":
+    _parse_args(sys.argv[1:])
+    if not os.path.exists(MODEL):
+        sys.exit(f"stt-bridge: modelo nao encontrado: {MODEL}")
+    if not os.path.exists(CLI):
+        sys.exit(f"stt-bridge: parakeet-cli nao encontrado: {CLI}")
+    os.makedirs(_WORKDIR, exist_ok=True)
+    _sweep_stale()
+    print(f"[stt-bridge] model={MODEL} device={DEVICE} threads={THREADS} "
+          f"tmp={_WORKDIR} porta={PORT}", flush=True)
+    try:
+        ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
+    finally:
+        # O workdir e' tmpfs (RAM) e ja esta vazio — cada request apaga o
+        # proprio WAV no finally. Esta limpeza e' so a rede de seguranca
+        # contra um crash antes do primeiro request.
+        shutil.rmtree(_WORKDIR, ignore_errors=True)

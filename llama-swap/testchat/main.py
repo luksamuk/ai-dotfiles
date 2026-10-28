@@ -476,7 +476,7 @@ def _classify_non_chat(model: dict) -> str | None:
     """Classifica um modelo como não-selecionável no chat, ou None se é chat.
 
     O /v1/models do llama-swap carrega tudo que precisa — não é preciso
-    adivinhar pelo nome. Três categorias não-chat no fleet:
+    adivinhar pelo nome. Quatro categorias não-chat no fleet:
 
       "tts"       — text->audio (phonon-40m-*, qwen3-tts).
                      Sinais: meta.llamaswap.features.tts,
@@ -490,11 +490,16 @@ def _classify_non_chat(model: dict) -> str | None:
       "decision"  — judge de /v1/systemone, sem chat (julia-1).
                      Sinal: features.decision E features.completion != true.
 
+      "asr"       — audio->text, sem chat (parakeet-tdt-0.6b-v3).
+                     Sinal: capabilities.audio_transcriptionS E
+                     features.completion != true.
+                     Serve /v1/audio/transcriptions, não /v1/chat/completions.
+
     NÃO confunda feature "audio" (áudio de ENTRADA) com TTS: d1-omni e
     embeddinggemma aceitam áudio e respondem texto.
 
     Decision models COM completion (d1-3b, d1-omni-600m) são chat de verdade
-    (servidos com --jinja/chat template) — ficam no picker.
+    (servados com --jinja/chat template) — ficam no picker.
     """
     if not model:
         return None
@@ -509,6 +514,10 @@ def _classify_non_chat(model: dict) -> str | None:
     # Embedding / reranker
     if features.get("embedding"):
         return "embedding"
+
+    # ASR: audio->text sem chat (só /v1/audio/transcriptions)
+    if caps.get("audio_transcriptions") and not features.get("completion"):
+        return "asr"
 
     # Decision sem completion (judge do /v1/systemone)
     if features.get("decision") and not features.get("completion"):
@@ -810,9 +819,10 @@ class StreamingChat:
             "embedding": "embedding",
             "tts": "tts",
             "decision": "decision",
+            "asr": "asr",
         }
         parts = []
-        for cat in ("embedding", "tts", "decision"):
+        for cat in ("embedding", "tts", "decision", "asr"):
             ids = hidden.get(cat)
             if ids:
                 parts.append(f"{len(ids)} {labels[cat]}")

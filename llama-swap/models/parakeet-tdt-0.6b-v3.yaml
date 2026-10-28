@@ -1,0 +1,45 @@
+parakeet-tdt-0.6b-v3:
+  name: Parakeet TDT 0.6B v3
+  description: "NVIDIA Parakeet TDT 0.6B v3: speech-to-text multilíngue, 25 idiomas incluindo português brasileiro. Transcreve a voz do Kilo Code e devolve o texto; converte o áudio recebido para WAV antes de transcrever."
+  tags:
+  - asr
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: '${env.HOME}/git/ai-dotfiles/parakeet-stt/stt-bridge --port ${PORT}'
+  cmdStop: pkill -f "parakeet-stt/stt-bridge"
+  health_check_timeout: 120
+  ttl: 900
+  capabilities:
+    in:
+    - audio
+    out:
+    - text
+    tools: false
+    reranker: false
+    context: 0
+  metadata:
+    size: 644 MB (tdt-0.6b-v3-q4_k.gguf)
+    context: 0
+    vram_usage: 0 (CPU-only)
+    source: mudler/parakeet-cpp-gguf (tdt-0.6b-v3-q4_k)
+    kv_cache: n/a
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: true
+      image: false
+    architecture: parakeet
+    parameters: 627090582
+    context_length: 0
+    embedding_length: 0
+    quantization: Q3_K
+    note: 'ASR puro, CPU-only, sem VRAM - convive com qualquer LLM da frota (a matrix o coloca em grupo AND proprio, igual embedding/colbert, para nunca evictar nem ser evictado). Backend stt-bridge (Python stdlib, versionado em ~/git/ai-dotfiles/parakeet-stt/stt-bridge): HTTP OpenAI-compatible POST /v1/audio/transcriptions + GET /health, e o unico processo (sem binario separado). POR QUE EXISTE O BRIDGE: o Kilo Code grava a voz em .m4a (AAC 24k, 16 kHz mono) e manda multipart; nem o mtmd do llama.cpp (so reconhece WAV/MP3/FLAC pelo header) nem o parakeet-server (so aceita WAV) decodificam m4a - ambos devolvem HTTP 400. O bridge converte via ffmpeg (stdin->stdout) para WAV 16 kHz mono antes de transcrever. HIGIENE DE DISCO: temporarios so em /dev/shm (tmpfs = RAM), nunca no disco; o WAV de cada request e apagado no finally e o workdir sai limpo no encerramento - nenhum audio do usuario fica persistido. Medido 28/out: m4a real do Kilo transcrito em 0.8 s (CPU, 8 threads). Acerto de PT: So um minutinho que eu ja vou ai (o lfm3-audio-2b errava o mesmo trecho como So me do tique). nao e TTS e nao serve /v1/audio/speech.'
+    caveats:
+    - Só o contrato OpenAI de transcrição (multipart field 'file'; response_format json|text)
+    - Converte o upload com ffmpeg - sem ffmpeg no PATH a transcrição falha com 500
+    - Não é TTS e não serve /v1/audio/speech
+    - CPU-only por desenho (a VRAM da casa é escassa, 6 GB) - troque PARAKEET_DEVICE=cuda se quiser

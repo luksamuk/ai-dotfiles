@@ -108,6 +108,11 @@ matrix:
     # Audio
     # asr: qwen3-asr-0.6b  # disabled
     ttsext: qwen3-tts
+    # ASR (speech-to-text) do Kilo Code — CPU-only, 0 VRAM. Fica em grupo AND
+    # PROPRIO em todos os sets (ver as sets abaixo): assim ele nunca evicta um
+    # LLM vivo e nunca e evictado por um. Diferente do grupo OR (lfmcol|eg2),
+    # onde os dois embeddings sao alternativas um do outro.
+    pkstt: parakeet-tdt-0.6b-v3
     # Embedding
     # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
     lfmemb: lfm2.5-embedding-350m
@@ -128,22 +133,22 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(twp | lfm24) & (lfmcol | eg2)"
+    small_vision: "(twp | lfm24) & (lfmcol | eg2) & pkstt"
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(twp | lfm24 | sp26 | nbe4) & (lfmcol | eg2) & qpfim"
+    small_embed: "(twp | lfm24 | sp26 | nbe4) & (lfmcol | eg2) & qpfim & pkstt"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "twp | lfm24 | sp26 | nbe4"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados); twp + lfm24 restam
+    small_only: "(twp | lfm24 | sp26 | nbe4) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados); twp + lfm24 restam
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "ocr | mcv35"
-    vision_embed: "(ocr | mcv35) & (lfmcol | eg2)"
+    vision_embed: "(ocr | mcv35) & (lfmcol | eg2) & pkstt"
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -156,11 +161,11 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(lfm24 | mcv35 | orn35 | q36) & (lfmcol | eg2) & qpfim"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim (regressão: o rewrite derrubou o FIM do heavy; ping-pong coder<->35B medido no journal — restauro da intenção 16/out documentada no small_embed) | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4)
+    heavy: "(lfm24 | mcv35 | orn35 | q36) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim (regressão: o rewrite derrubou o FIM do heavy; ping-pong coder<->35B medido no journal — restauro da intenção 16/out documentada no small_embed) | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
-    bs2_embed: "bs2 & (lfmcol | eg2)" # k2/k2p/k2fim _disabled 16/out (pesos deletados); q36 REMOVED Oct 8 2026 — aposentado; orn15 merged no heretic
+    bs2_embed: "bs2 & (lfmcol | eg2) & pkstt" # k2/k2p/k2fim _disabled 16/out (pesos deletados); q36 REMOVED Oct 8 2026 — aposentado; orn15 merged no heretic
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -171,13 +176,13 @@ matrix:
 
     # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
     # AND entre todos os CPU-only: coexistem (zero VRAM) — OR evitaria em ping-pong
-    embed_only: "lfmemb & lfmcol & eg2"
+    embed_only: "lfmemb & lfmcol & eg2 & pkstt"
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
 
     # Reranker + Embedding (two-stage retrieval: dense → rerank)
-    rerank_embed: "lfmcol & (lfmemb | eg2)"
+    rerank_embed: "lfmcol & (lfmemb | eg2) & pkstt"
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
@@ -200,6 +205,9 @@ matrix:
     # a1: 2  # OUTDO Oct 12 2026 (régua disk fechada 124.4)
     # g4: 3  # REMOVED Sep 10 2026 — model deleted
     ttsext: 4
+    # ASR do Kilo: CPU-only, 0 VRAM, ~1 s pra subir. Custo 1 = e o primeiro
+    # a ser evictado se ainda assim houver conflito de coexistencia.
+    pkstt: 1
     ocr: 3
     # qwvl: 3  # REMOVED Sep 10 2026
     # lfmvl3: 3  # APOSENTADO 27/out/2026
