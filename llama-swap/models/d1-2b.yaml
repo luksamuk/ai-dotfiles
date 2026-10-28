@@ -27,7 +27,6 @@ d1-2b:
     stripParams: temperature, top_p, top_k, min_p, repeat_penalty
   ttl: 3600
   health_check_timeout: 90
-  unlisted: true
   capabilities:
     in:
     - text
@@ -66,10 +65,10 @@ d1-2b:
       (turn_right 0.696 + probabilities {straight 0.200, turn_left 0.104}) e noul
       0.320 (+ usage). Server detecta decision type lfm3-d1 automaticamente.
       Vision encoder incluso (mmproj) — decisões visual possiveis, AINDA nao
-      validadas. UNLISTED de proposito: d1-3b (seletor LoRA do diffuse) e julia-1
-      (juiz do snake) sao os validados em producao; este entra so depois de
-      re-rodar o harness selecao_nway.py (skill llama-snake-decision-models) no
-      caso do seletor e do testchat de juiz no caso do snake — um juiz ruim
-      selecionavel e armadilha ativa, conforme doutrina. CPU-only (doutrina
+      UNLISTED até segunda ordem — d1-3b (seletor LoRA do diffuse) e julia-1 (juiz do
+      snake) são os validados em produção. Este entra só depois de re-rodar o harness
+      selecao_nway.py (skill llama-snake-decision-models) no caso do seletor e do
+      testchat de juiz no caso do snake — um juiz ruim selecionável é armadilha
+      ativa, conforme doutrina.
       decision da casa; GPU 0.10s e CPU = mesmo resultado bit a bit). Pesos em
       ~/.llama-models/lfm3-d1-2b/ (backbone + mmproj Q8_0).
