@@ -36,6 +36,7 @@ VARIAVEIS DE AMBIENTE
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -229,8 +230,20 @@ if __name__ == "__main__":
     _sweep_stale()
     print(f"[stt-bridge] model={MODEL} device={DEVICE} threads={THREADS} "
           f"tmp={_WORKDIR} porta={PORT}", flush=True)
+    server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    # O cmdStop do llama-swap e um pkill (SIGTERM): sem handler, o SIGTERM
+    # mata o processo sem passar pelo finally e o workdir sobra no tmpfs.
+    # Com o handler, o shutdown roda o finally e limpa o dir.
+    #
+    # shutdown() PRECISA rodar em outra thread: ele espera o serve_forever
+    # encerrar, e o handler roda na MESMA thread do serve_forever — chamar
+    # direto trava o processo no signal handler.
+    def _shutdown(signum, frame):
+        threading.Thread(target=server.shutdown, daemon=True).start()
+    signal.signal(signal.SIGTERM, _shutdown)
+    signal.signal(signal.SIGINT, _shutdown)
     try:
-        ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
+        server.serve_forever()
     finally:
         # O workdir e' tmpfs (RAM) e ja esta vazio — cada request apaga o
         # proprio WAV no finally. Esta limpeza e' so a rede de seguranca
