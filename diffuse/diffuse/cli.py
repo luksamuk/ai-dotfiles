@@ -437,6 +437,50 @@ def get_prompt_interactive() -> str:
 
 
 # ── Main ────────────────────────────────────────────────────────────────────
+def _load_enhance_config(model_info: dict | None = None) -> str:
+    """Resolve o modelo de enhance via config externa da frota.
+
+    Ordem: chave 'diffuse' em enhance-models.yaml → fallback declarado →
+    registry (enhance_model do models.py) → qwen3.5-4b. Valida os handles
+    contra /v1/models do llama-swap (evita o 404 silencioso do episódio
+    f210454). Fail-open se o swap estiver fora (aceita o primeiro).
+
+    Módulo-level (não aninhada) de propósito: os runners por modelo
+    (_run_qwen21_*, _run_moss_*, etc.) precisam do MESMO handle resolvido
+    pela config — inclusive o sufixo :think. Quando esta função vivia
+    aninhada em main(), cada runner re-resolvia do models.py e o :think
+    do fleet se perdia no payload.
+    """
+    cfg_path = os.path.expanduser("~/.local/share/fleet/enhance-models.yaml")
+    candidates: list[str] = []
+    try:
+        import yaml as _yaml
+        cfg = _yaml.safe_load(open(cfg_path)) or {}
+        entry = cfg.get("diffuse") or {}
+        if entry.get("model"):
+            candidates.append(entry["model"])
+        if entry.get("fallback"):
+            candidates.append(entry["fallback"])
+    except Exception:
+        pass
+    if model_info:
+        candidates.append(model_info.get("enhance_model", ""))
+    candidates.append("qwen3.5-4b")
+
+    live: set = set()
+    try:
+        from diffuse.paths import LLAMA_SWAP_URL
+        with urllib.request.urlopen(f"{LLAMA_SWAP_URL}/v1/models", timeout=3) as r:
+            live = {m["id"] for m in json.load(r).get("data", [])}
+    except Exception:
+        live = set()
+
+    for cand in candidates:
+        if cand and (not live or cand in live or (cand + ":think") in live):
+            return cand
+    return "qwen3.5-4b"
+
+
 def main() -> None:
     args = parse_args()
 
@@ -578,43 +622,6 @@ def main() -> None:
         print()
 
     # ── Fleet enhance config (~/.local/share/fleet/enhance-models.yaml) ─────
-    def _load_enhance_config() -> str:
-        """Resolve o modelo de enhance via config externa da frota.
-
-        Ordem: chave 'diffuse' em enhance-models.yaml → fallback declarado →
-        registry (enhance_model do models.py) → qwen3.5-4b. Valida os handles
-        contra /v1/models do llama-swap (evita o 404 silencioso do episódio
-        f210454). Fail-open se o swap estiver fora (aceita o primeiro).
-        """
-        cfg_path = os.path.expanduser("~/.local/share/fleet/enhance-models.yaml")
-        candidates: list[str] = []
-        try:
-            import yaml as _yaml
-            cfg = _yaml.safe_load(open(cfg_path)) or {}
-            entry = cfg.get("diffuse") or {}
-            if entry.get("model"):
-                candidates.append(entry["model"])
-            if entry.get("fallback"):
-                candidates.append(entry["fallback"])
-        except Exception:
-            pass
-        if model_info:
-            candidates.append(model_info.get("enhance_model", ""))
-        candidates.append("qwen3.5-4b")
-
-        live: set = set()
-        try:
-            from diffuse.paths import LLAMA_SWAP_URL
-            with urllib.request.urlopen(f"{LLAMA_SWAP_URL}/v1/models", timeout=3) as r:
-                live = {m["id"] for m in json.load(r).get("data", [])}
-        except Exception:
-            live = set()
-
-        for cand in candidates:
-            if cand and (not live or cand in live or (cand + ":think") in live):
-                return cand
-        return "qwen3.5-4b"
-
     # ── Prompt enhancement ──
     enhanced_prompt = None
     enhance_model: str = ""
@@ -952,7 +959,9 @@ def _run_bonsai_image(
         prompt, lora_tags = _extract_lora_tags(prompt)
     enhanced = None
     if args.enhance or args.enhance_with:
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b")
+        # Resolve pela CONFIG DO FLEET (pode trazer :think). Antes esta linha
+        # re-resolvia do models.py e o :think do fleet se perdia no payload.
+        enhance_model = args.enhance_with or _load_enhance_config(model_info)
         enhance_type = model_info.get("enhance_type", "vision")
 
         if enhance_type == "vision":
@@ -1044,7 +1053,9 @@ def _run_fibo_sdcpp_image(
         prompt, lora_tags = _extract_lora_tags(prompt)
     enhanced = None
     if args.enhance or args.enhance_with:
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
+        # Resolve pela CONFIG DO FLEET (pode trazer :think). Antes esta linha
+        # re-resolvia do models.py e o :think do fleet se perdia no payload.
+        enhance_model = args.enhance_with or _load_enhance_config(model_info)
         enhance_type = model_info.get("enhance_type", "qwen21")
         if enhance_type == "fibo":
             print(f"\n  ✨ Enhancing prompt via {enhance_model} (FIBO VGL JSON caption)...")
@@ -1146,7 +1157,9 @@ def _run_flux3_wan2gp_image(
     # Without refs, standard T2I vision enhancement.
     enhanced = None
     if args.enhance or args.enhance_with:
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
+        # Resolve pela CONFIG DO FLEET (pode trazer :think). Antes esta linha
+        # re-resolvia do models.py e o :think do fleet se perdia no payload.
+        enhance_model = args.enhance_with or _load_enhance_config(model_info)
         if is_edit and _check_model_vision(enhance_model):
             print(f"\n  \U0001f441\ufe0f\u2728 {enhance_model} analyzes the reference(s) and refines the edit instruction...")
             enhanced, raw_response = analyze_and_enhance_edit(
@@ -1307,7 +1320,9 @@ def _run_moss_wan2gp_image(
                      "moss-image-kromoss": "kromoss", "moss-imagine": "imagine",
                      "moss-image-photoreal": "photoreal"}.get(model_name, "*")
     if args.enhance or args.enhance_with:
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
+        # Resolve pela CONFIG DO FLEET (pode trazer :think). Antes esta linha
+        # re-resolvia do models.py e o :think do fleet se perdia no payload.
+        enhance_model = args.enhance_with or _load_enhance_config(model_info)
         print(f"\n  ✨ Enhancing prompt via {enhance_model} (moss doctrine)...")
         if _cfg.selector == "llm" and "<lora:" not in prompt:
             # uma call: enhance + seleção juntos (fluxo histórico do moss)
@@ -1425,7 +1440,9 @@ def _run_qwen21_turbo_wan2gp_image(
         prompt, lora_tags = _extract_lora_tags(prompt)
     enhanced = None
     if args.enhance or args.enhance_with or getattr(args, "enhance_edit_with", None):
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
+        # Resolve pela CONFIG DO FLEET (pode trazer :think). Antes esta linha
+        # re-resolvia do models.py e o :think do fleet se perdia no payload.
+        enhance_model = args.enhance_with or _load_enhance_config(model_info)
         enhance_type = model_info.get("enhance_type", "qwen21")
         from diffuse.lora_selector import select_loras, load_selector_cfg
         cfg = load_selector_cfg(args)
@@ -1621,7 +1638,9 @@ def _run_qwen21_wan2gp_image(
         evict_llm()
     enhanced = None
     if args.enhance or args.enhance_with or getattr(args, "enhance_edit_with", None):
-        enhance_model = args.enhance_with or model_info.get("enhance_model", "qwen3.6-35b-a3b-heretic")
+        # Resolve pela CONFIG DO FLEET (pode trazer :think). Antes esta linha
+        # re-resolvia do models.py e o :think do fleet se perdia no payload.
+        enhance_model = args.enhance_with or _load_enhance_config(model_info)
         enhance_type = model_info.get("enhance_type", "qwen21")
         from diffuse.lora_selector import select_loras, load_selector_cfg
         cfg = load_selector_cfg(args)
