@@ -1,0 +1,125 @@
+#!/bin/bash
+# ffmpeg-shim-wav — wrapper de ffmpeg para o STT do Kilo Code (Linux).
+#
+# POR QUE EXISTE (bug do Kilo, nao do microfone nem do modelo)
+# O Kilo captura o microfone assim (extension.js: pipeProcess + ffmpegPipeArgs):
+#
+#   pw-record --format s16 --rate 16000 --channels 1 -  |  \
+#     ffmpeg -y -f s16le -ar 16000 -ac 1 -i pipe:0 -c:a aac -b:a 24k \
+#             -ar 16000 -ac 1 -movflags +faststart saida.m4a
+#
+# O pw-record em STDOUT nao emite PCM cru: emite um container AU (magic
+# ".snd", header de 24 bytes). O ffmpeg do Kilo forca "-f s16le" e le esse
+# header como se fosse sample de audio — o sinal chega deslocado e
+# saturado. Medido: mean_volume -4.8 dB, max 0.0 dB, 5.6% de samples
+# clipados, espectro plano (ruido, sem formantes de fala) -> o parakeet
+# devolve {"text": ""}.
+#
+# Gravando direto em ARQUIVO, o pw-record emite um WAV valido (magic "RIFF")
+# e funciona: -19.5 dB, sem clipping, transcricao perfeita.
+#
+# O conserto e deixar o ffmpeg DETECTAR o container em vez de forcar o
+# formato. Detalhe: "-ar"/"-ac" so valem como opcoes de ENTRADA quando ha
+# um "-f" antes; sem "-f", o ffmpeg os interpreta como opcoes de saida e
+# falha com "Option sample_rate not found". Por isso o shim remove o
+# "-f <raw>" e move os "-ar"/"-ac" de entrada para DEPOIS do "-i".
+#
+# Resultado medido com o shim: -22.8 dB (pico -9.8 dB) e o parakeet
+# transcreve a voz normalmente.
+#
+# USO (no ambiente que abre o VS Code):
+#   export KILO_FFMPEG_PATH=/home/alchemist/.local/bin/ffmpeg-shim-wav
+#
+# Nao altera: filtros, codec de saida, bitrate, container de saida, nome do
+# arquivo de saida. So mexe na leitura do container do pipe.
+set -euo pipefail
+
+REAL_FFMPEG="${KILO_REAL_FFMPEG:-/usr/bin/ffmpeg}"
+
+# Chamadas de consulta (-version etc.) repassa direto: o Kilo valida o
+# binario com "-version" e nao deve ver nada diferente.
+for a in "$@"; do
+  case "$a" in
+    -version|-formats|-encoders|-decoders|-filters|-buildconf|-hide_banner)
+      exec "$REAL_FFMPEG" "$@"
+      ;;
+  esac
+done
+
+raw_re='^(s16le|s16be|u8|u16le|u16be|f32le|f32be|s32le|s32be)$'
+
+# Passe unico: percorre os args uma vez e classifica cada um.
+#   - antes do "-i": opcoes de ENTRADA
+#   - depois do "-i": opcoes de SAIDA
+# A "-f <raw>" de entrada e descartada (auto-deteccao do container) e os
+# "-ar"/"-ac" de entrada migram para a saida.
+out=()          # args finais, na ordem original
+moved=()        # -ar/-ac migrados da entrada para a saida
+seen_input=0
+i=1
+n=$#
+while [ "$i" -le "$n" ]; do
+  a="${!i}"
+
+  if [ "$seen_input" -eq 0 ] && [ "$a" = "-f" ] && [ $((i+1)) -lt "$n" ]; then
+    j=$((i+1))
+    fmt="${!j}"
+    if [[ "$fmt" =~ $raw_re ]]; then
+      # RAW: descarta o "-f <fmt>" (deixa o ffmpeg detectar o container).
+      i=$((i+2))
+      continue
+    fi
+    out+=("$a" "$fmt")
+    i=$((i+2))
+    continue
+  fi
+
+  if [ "$seen_input" -eq 0 ] && { [ "$a" = "-ar" ] || [ "$a" = "-ac" ]; } && [ $((i+1)) -lt "$n" ]; then
+    # -ar/-ac de ENTRADA -> opcoes de SAIDA (coladas depois do -i).
+    j=$((i+1))
+    moved+=("$a" "${!j}")
+    i=$((i+2))
+    continue
+  fi
+
+  out+=("$a")
+  if [ "$a" = "-i" ]; then
+    seen_input=1
+    # o arg do input (o arquivo) vem logo depois
+    j=$((i+1))
+    if [ "$j" -lt "$n" ]; then
+      out+=("${!j}")
+      i=$((j+1))
+      continue
+    fi
+  fi
+  i=$((i+1))
+done
+
+# Insere as opcoes migradas logo apos o bloco de entrada. O ponto de
+# insercao e depois do PAR "-c:a <codec>" (o codec e' o primeiro par de
+# opcao de saida); se nao houver "-c:a", insere no fim.
+if [ ${#moved[@]} -gt 0 ]; then
+  final=()
+  inserted=0
+  i=0
+  m=${#out[@]}
+  while [ "$i" -lt "$m" ]; do
+    x="${out[$i]}"
+    final+=("$x")
+    if [ "$inserted" -eq 0 ] && [ "$x" = "-c:a" ] && [ $((i+1)) -lt "$m" ]; then
+      final+=("${out[$((i+1))]}")
+      final+=("${moved[@]}")
+      inserted=1
+      i=$((i+2))
+      continue
+    fi
+    i=$((i+1))
+  done
+  if [ "$inserted" -eq 0 ]; then
+    final+=("${moved[@]}")
+  fi
+  out=("${final[@]}")
+fi
+
+exec "$REAL_FFMPEG" "${out[@]}"
