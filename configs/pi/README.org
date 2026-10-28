@@ -59,27 +59,38 @@ Notas:
 | =nemotron-3-nano:30b-cloud=    | Nemotron 3 Nano 30B 1M     |      1M  | não   |
 | =qwen3.5:cloud=                | Qwen 3.5 397B              |    262K  | sim   |
 
-** Modelo Locais (llama-swap) — 9 modelos base + 6 variantes :think
+** Modelos Locais (llama-swap) — 17 modelos base + 9 variantes :think
 Todos os modelos do fleet estão disponíveis no Pi (exceção: modelo de embedding excluído).
 Modelos com raciocínio têm variante =:think= que ativa modo de thinking.
 
 | Model ID | Nome | Contexto | Input | :think |
 |--------------------------------+-------------------------------+----------+----------------+--------|
-| =granite-4.2-8b= | Granite 4.2 8B |  128K | text            |   -    |
-| =granite-4.2-8b:high= | Granite 4.2 8B (Thinking) |  128K | text            |   -    |
-| =granite-4.2-8b:low= | Granite 4.2 8B (Low Effort) |  128K | text            |   -    |
-| =lfm2.5-2.6b= | LFM 2.5 2.6B |  128K | text            |   -    |
-| =lfm2.5-2.6b:think= | LFM 2.5 2.6B (Thinking) |  128K | text            |  sim   |
-| =ornith-1.5-35b= | Ornith 1.5 35B |  128K | text            |   -    |
-| =ornith-1.5-35b:think= | Ornith 1.5 35B (Thinking) |  128K | text            |  sim   |
-| =bonsai-27b= | Bonsai 27B 1-bit |  256K | text            |   -    |
-| =bonsai-27b:think= | Bonsai 27B 1-bit (Thinking) |  256K | text            |  sim   |
-| =qwen3.5-4b= | Qwen3.5 4B |  128K | text            |   -    |
-| =qwen3.5-4b:think= | Qwen3.5 4B (Thinking) |  128K | text            |  sim   |
-| =minicpm5-2b= | MiniCPM5 2B |  128K | text            |   -    |
-| =minicpm5-2b:think= | MiniCPM5 2B (Thinking) |  128K | text            |  sim   |
-| =qwen3.6-35b-a3b-heretic= | Qwen 3.6 35B Heretic |  131K | text +image     |   -    |
-| =qwen3.6-35b-a3b-heretic:think= | Qwen 3.6 35B Heretic (Thinking) |  131K | text +image     |  sim   |
+| =bonsai2-9b= | Ternary Bonsai 9B | 128K | text +image |   -    |
+| =bonsai2-9b-fast= | Ternary Bonsai 9B (fast) | 64K | text +image |   -    |
+| =flint-40b-a2b= | Flint 40B A2.5B (café) | 128K | text |   -    |
+| =lfm2.5-24b-a2b= | LFM 2.5 24B A2B | 128K | text |   -    |
+| =lfm2.5-24b-a2b-fast= | LFM 2.5 24B A2B (fast) | 128K | text |   -    |
+| =lfm2.5-vl-3b= | LFM2.5-VL 3B | 32K | text +image |   -    |
+| =lfm3-1.7b= | LFM3 1.7B | 256K | text |   -    |
+| =lfm3-1.7b:think= | LFM3 1.7B (Thinking) (Thinking) | 256K | text |  sim  |
+| =minicpm-v-4.7-35b= | MiniCPM-V 4.7 35B-A3B | 128K | text +image |   -    |
+| =minicpm-v-4.7-35b:think= | MiniCPM-V 4.7 35B-A3B (Thinking) | 128K | text +image |  sim  |
+| =nemotron-bolt-e4b= | Nemotron 3.5 Bolt E4B | 48K | text |   -    |
+| =nemotron-bolt-e4b:think= | Nemotron 3.5 Bolt E4B (Thinking) | 48K | text |  sim  |
+| =ornith-1.5-35b-heretic= | Ornith 1.5 35B Heretic | 195K | text +image |   -    |
+| =ornith-1.5-35b-heretic:think= | Ornith 1.5 35B Heretic (Thinking) | 195K | text +image |  sim  |
+| =ornith-1.5-35b-heretic-fast= | Ornith 1.5 35B Heretic Fast | 128K | text +image |   -    |
+| =ornith-1.5-35b-heretic-fast:think= | Ornith 1.5 35B Heretic Fast (Thinking) | 128K | text +image |  sim  |
+| =qwen2.5-coder-1.5b-pollard= | Qwen2.5 Coder 1.5B Pollard | 32K | text |   -    |
+| =qwen3.6-35b-a3b-heretic= | Qwen 3.6 35B Heretic | 128K | text +image |   -    |
+| =qwen3.6-35b-a3b-heretic:think= | Qwen 3.6 35B Heretic (Thinking) | 128K | text +image |  sim  |
+| =qwen3.6-35b-a3b-heretic-fast= | Qwen 3.6 35B Heretic Fast | 100K | text +image |   -    |
+| =qwen3.6-35b-a3b-heretic-fast:think= | Qwen 3.6 35B Heretic Fast (Thinking) | 100K | text +image |  sim  |
+| =spark-x2.6-4b= | Spark X2.6 4B | 128K | text |   -    |
+| =spark-x2.6-4b:think= | Spark X2.6 4B (Thinking) | 128K | text |  sim  |
+| =translategemma-4b= | TranslateGemma 4B | 128K | text |   -    |
+| =twil-lm3-pro= | TwIL-LM3-Pro | 128K | text |   -    |
+| =twil-lm3-pro:think= | TwIL-LM3-Pro (Thinking) | 128K | text |  sim  |
 
 ** Modelos Edge (Sisyphus) — 3 modelos
 

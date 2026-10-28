@@ -263,6 +263,36 @@
           "maxTokens": 32768
         },
         {
+          "id": "lfm3-1.7b",
+          "name": "LFM3 1.7B",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.1,
+            "top_k": 50,
+            "repetition_penalty": 1.1
+          }
+        },
+        {
+          "id": "lfm3-1.7b:think",
+          "name": "LFM3 1.7B (Thinking)",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 32768,
+          "samplingParams": {
+            "temperature": 0.1,
+            "top_k": 50,
+            "repetition_penalty": 1.1
+          }
+        },
+        {
           "id": "minicpm-v-4.7-35b",
           "name": "MiniCPM-V 4.7 35B-A3B",
           "reasoning": false,
