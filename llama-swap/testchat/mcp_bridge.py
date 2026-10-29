@@ -29,6 +29,36 @@ _SESSION_ID_HEADER = "Mcp-Session-Id"
 _MAX_RESULT_CHARS = 4000  # tool result truncado: 2B + context budget
 
 
+def _sanitize_args(schema: dict, args: dict) -> dict:
+    """Modelos 2B inventam parametro (ou mandam tipo errado — 'pageno': '1'
+    quando o schema pede integer) e o server MCP derruba TUDO por isso.
+    O bridge defende: descarta chave fora do schema, converte tipo pelo
+    schema e dropa valor fora de enum. Required faltando deixa o server
+    reclamar (erro mais util que descartar a chamada inteira)."""
+    props = (schema or {}).get("properties") or {}
+    out = {}
+    for k, v in (args or {}).items():
+        spec = props.get(k)
+        if spec is None:
+            continue
+        try:
+            t = spec.get("type")
+            if t == "integer":
+                out[k] = int(float(str(v).strip()))
+            elif t == "number":
+                out[k] = float(str(v).strip())
+            elif t == "string":
+                out[k] = v if isinstance(v, str) else str(v)
+            else:
+                out[k] = v
+            enum = spec.get("enum")
+            if enum and out[k] not in enum:
+                del out[k]
+        except (ValueError, TypeError):
+            continue
+    return out
+
+
 def _env_file_value(path: str, key: str):
     """Le KEY=VALUE de um arquivo .env (ex: o env do MCP searxng do Hermes)."""
     p = os.path.expanduser(path)
@@ -170,6 +200,7 @@ class McpBridge:
 
     def execute(self, name: str, args: dict) -> str:
         srv, tool = self.by_name[name]
+        args = _sanitize_args(tool.get("inputSchema") or {}, args)
         try:
             return srv.call_tool(name, args)
         except Exception as e:  # noqa: BLE001 — tool call nunca derruba o chat
