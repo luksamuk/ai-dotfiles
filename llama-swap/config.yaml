@@ -715,6 +715,157 @@ models:
       embedding_length: 384
       quantization: BF16
       note: 'vram detalhe: ~0.3 GB VRAM (model 303MB + compute) | model 303MB BF16 + compute Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Lightest judge: 144M, sub-5ms per question expected on GPU.'
+# -------------------------------------------
+# MiniCPM-OCR 1.0 (OpenBMB) - upstream llama.cpp
+# Doc parsing OCR (text/table/formula/chart/seal), EN+zh. Prompts fixos:
+# "Text Recognition:" / "Table Recognition:" / "Formula Recognition:"
+# arch qwen35 (752M backbone) + mmproj F16 com downsample 4x (444M, scale_factor 2,
+# max_slice_nums 9 - mmproj 4x ONLY, nao existe 16x). ctx nativo 262K.
+# DSpark draft (297M, arch dflash) acoplado: speculative decoding draft-dspark,
+# block_size 15. Draft nao carrega standalone (precisa do output projection do
+# target) - para A/B de velocidade, remova as 3 linhas --model-draft/--spec-type/--ngld.
+# Smoke 28/out/2026 (Q8_0, build fleet-liquid c207abe30): health ok, model loaded.
+# -------------------------------------------
+  minicpm-ocr-1.0:
+    name: "MiniCPM-OCR 1.0"
+    description: "OpenBMB's 1.3B document parsing model - text, tables, formulas, charts and seals for EN/zh documents and PDFs via fixed prompts (Text/Table/Formula Recognition:)."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/minicpm-ocr-1.0/MiniCPM-OCR-1_0-Q8_0.gguf
+      --mmproj ${models_dir}/minicpm-ocr-1.0/mmproj-model-f16-4x.gguf
+      --model-draft ${models_dir}/minicpm-ocr-dspark/dspark-MiniCPM-OCR-1_0-Q8_0.gguf
+      --spec-type draft-dspark
+      -ngld 99
+      --jinja
+      --no-webui
+      --fit on
+      # 3072 (e nao ${vram_margin}): o fit NAO mede o draft dflash ("dflash requires
+      # ctx_other" — warning normal durante fitting) e planeja a VRAM so do principal;
+      # com margem padrao, o draft (-ngld 99) estoura e o boot morre em OOM de
+      # compute buffers. 3 GB de margem deixam o espaco do draft dentro do plano,
+      # boot medido OK em ~0.9 GB VRAM total usada (28/out/2026).
+      --fit-target 3072
+      --fit-ctx ${small_model_min_ctx}
+      --ctx-size ${small_model_max_ctx}
+      --temp 0
+      --cache-type-k f16
+      --cache-type-v f16
+      --flash-attn on
+      --metrics
+    ttl: 60
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: false
+      reranker: false
+      context: 131072
+    metadata:
+      size: "~0.81 GB backbone (Q8_0) + ~0.90 GB mmproj (F16) + ~0.33 GB DSpark draft (Q8_0)"
+      context: "64K-128K (fit dinamico; nativo 262K)"
+      vram_usage: "~3.5 GB (backbone + mmproj + draft + cache f16)"
+      source: "openbmb/MiniCPM-OCR-1.0-gguf + openbmb/MiniCPM-OCR-1.0-DSpark-gguf"
+      kv_cache: f16
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 752000000
+      context_length: 262144
+      embedding_length: 1024
+      quantization: Q8_0
+      note: >-
+        Thinking ja vem desabilitado no chat template embutido do GGUF (enable_thinking
+        nao reativa; conversion propria exige --chat-template-kwargs enable_thinking:false).
+        llama-mtmd-cli nao aceita draft - draft-dspark so com llama-cli ou llama-server.
+        Para PDFs/pipeline completo, a SDK deles (minicpmvocr parse) encadeia layout +
+        recon + Jev + DSpark; aqui fica o elemento isolado por decisao do dono.
+# -------------------------------------------
+# MiniCPM-OCR-Jev (OpenBMB) - upstream llama.cpp
+# Scorer estilo Jev: avalia candidatos OCR (texto/formula/tabela) comparando a
+# imagem fonte com a render, 0-1 em UMA passada, 2 scores de classe via pooled
+# output. Arch qwen35 (1.9B, embedding 2048) + qwen35.pooling_type=3 +
+# qwen35.decision.type=openbmb-minicpm-ocr-jev.
+# CPU-only (doutrina decision da casa - video d1-2b e julia-1).
+# O server detecta o decision type sozinho (embedding mode, pooling UNSPECIFIED).
+# Contrato: responde EXATAMENTE UMA pergunta fixa - prompt inteiro no chat template
+# embutido do GGUF; "instructions" podem ser omitidas na request; rota /v1/systemone.
+# Cada request carrega 2 imagens (original, depois render). Nao tem LM head -
+# endpoints de text generation indisponiveis (features.completion=false).
+# ctx 16K com cache q8_0 (~1.6 GB RAM): card usa 32K no venv deles; 16K cobre
+# crops com folga e mantem o footprint de RAM domado. Warning de load: se
+# precisao de imagem pequena estranhar, --image-min-tokens 1024.
+# Smoke 28/out/2026 (Q8_0, build fleet-liquid c207abe30): health ok +
+# "decision model reads the embeddings output" detectado automaticamente.
+# -------------------------------------------
+  minicpm-ocr-jev:
+    name: "MiniCPM-OCR Jev"
+    description: "OpenBMB's 2B OCR quality scorer (Jev-style decision model) - scores text/formula/table OCR candidates 0-1 in a single pass by comparing the source image with the render."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/minicpm-ocr-jev/MiniCPM-OCR-Jev-Q8_0.gguf
+      --mmproj ${models_dir}/minicpm-ocr-jev/mmproj-model-f16.gguf
+      --ctx-size 16384
+      --batch-size 512
+      --ubatch-size 512
+      --parallel 1
+      --no-webui
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --metrics
+    filters:
+      stripParams: temperature, top_p, top_k, min_p, repeat_penalty
+    ttl: 3600
+    health_check_timeout: 90
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: false
+      reranker: false
+      context: 16384
+    metadata:
+      size: "~2.01 GB (Q8_0) + 0.67 GB mmproj (F16)"
+      context: 16384
+      vram_usage: "~0 GB VRAM (CPU-only, doutrina decision da casa); ~3 GB RAM"
+      source: "openbmb/MiniCPM-OCR-Jev-gguf"
+      kv_cache: q8_0
+      features:
+        decision: true
+        completion: false
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 1900000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: Q8_0
+      note: >-
+        Decision exclusivo, FORA dos sets (padrao julia) - nao disputa VRAM.
+        Scoring = um forward pass so, sem geracao de tokens. Contrato da request
+        (/v1/systemone): "state" = STRING com o texto OCR reconhecido da regiao
+        (nao objeto); "questions" = UMA pergunta fixa, so "choice" com criteria
+        exatamente {"0": null, "1": null} ou "noul" (scores de 0-1 saem do modelo,
+        as opcoes sao nomeadas 0=reprovado/1=aprovado pelo template do GGUF); as
+        duas imagens vao em "images" (alias "files") como data URLs
+        (data:image/...;base64,...), ordem: original primeiro, depois a render.
+        O harness do pipeline OCR (layout -> recon -> Jev) fica na SDK/cript do
+        dono - aqui o elemento fica separado no fleet de proposito.
   parakeet-tdt-0.6b-v3:
     name: Parakeet TDT 0.6B v3
     description: "NVIDIA Parakeet TDT 0.6B v3: speech-to-text multilíngue, 25 idiomas incluindo português brasileiro. Transcreve a voz do Kilo Code e devolve o texto; converte o áudio recebido para WAV antes de transcrever."
@@ -1076,110 +1227,6 @@ models:
         audio: false
         image: false
       note: 'vram detalhe: ~2GB (model + mmproj + cache) | GLM OCR multimodal: model 0.95GB + mmproj 0.48GB + cache; Q8_0 Specialized OCR model — use prompts like ''OCR'', ''OCR markdown'', ''Table Recognition:''. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.'
-  groot-19b-a3b:
-    name: Groot 19B A3B
-    description: "MoE 19B-A3B do GrootTeam (destilado da linhagem Qwen3.6) via ik, hibrido 10 full-attn + 30 linear-attn, multimodal, 262K de contexto nativo, dual-mode de raciocinio e parallel tool calls nativos (-ptc)."
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf
-
-      --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf
-
-      --no-mmproj-offload
-
-      --no-graph-reuse
-
-      -ngl 99
-
-      --n-cpu-moe 34
-
-      --ctx-size 262144
-
-      --reasoning on
-
-      --jinja
-
-      --parallel 1
-
-      --parallel-tool-calls
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --k-cache-hadamard
-
-      --v-cache-hadamard
-
-      --flash-attn auto
-
-      --defer-experts
-
-      --prefetch-experts
-
-      -b 512
-
-      -ub 128
-
-      --temp 1.0
-
-      --top-k 20
-
-      --top-p 0.95
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.8
-          top_k: 20
-          presence_penalty: 1.5
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-          top_k: 20
-          presence_penalty: 1.5
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - text
-        - image
-      out:
-        - text
-      tools: true
-      reranker: false
-      context: 262144
-    metadata:
-      size: ~11.66 GB (Q4_K_M) + 0.86 GB mmproj
-      context: 262144
-      vram_usage: "~5.06 GB VRAM pico @262K (folga ~1.1GB) + ~14 GB RAM (experts n-cpu-moe 34)"
-      source: GrootTeam/Groot-19B-A3B-261023-GGUF (Q4_K_M, 11657618560 bytes exatos) + mmproj-BF16 (902822016 bytes)
-      kv_cache: q4_0/q4_0 + hadamard
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 19000000000
-      active: 3000000000
-      embedding_length: 2048
-      context_length: 262144
-      quantization: Q4_K_M
-      note: 'Smoke 27/10 (ik 804ee29c): escada de tuning medida — n-cpu-moe 40 @131K = 2.89GB/36.4 t/s; n-cpu-moe 32 @262K = 5.53GB (90%, raspa)/38+ t/s; ESCOLHIDO n-cpu-moe 34 @262144 = pico 5.06GB (82%, folga ~1.1GB) e MESMOS 37.4-37.9 t/s (plain e think). 1.5x mais rapido que a lane cafe (24.2 t/s think). Parallel tool calls NATIVO (-ptc): 4 get_weather/get_local_time simultaneos, JSON limpo, finish=tool_calls — com template embedded (sem --chat-template-file da casa). Dual-mode via enable_thinking, reasoning_content OK, 17*23=391. Mesmo peso e mmproj da lane cafe (um download serve as duas). Hadamard KV = TurboQuant ik. GGUF em ~/.llama-models/groot-19b-a3b/.'
   groot-65b-a6b:
     name: Groot 65B A6B
     description: "EXPERIMENTO Dormammu (27/out): MoE 65B-A6B do GrootTeam (distill do Qwen3.8-Flash-Next) com tabela n-gram PLE de 51B params em host + experts roteados streamados do SSD no cafe. Espera-se lentidao; lane para medir tradeoffs, nao para producao."
@@ -1423,11 +1470,11 @@ models:
 
       --model ${models_dir}/lfm3-1.7b/LFM3-1.7B-Q8_0.gguf
 
-      --ctx-size 262144
+      --ctx-size 327680
 
       --jinja
 
-      --parallel 1
+      --parallel 5
 
       --cache-type-k q4_0
 
@@ -1437,9 +1484,9 @@ models:
 
       -ngl 99
 
-      -b 512
+      -b 2048
 
-      -ub 128
+      -ub 1024
 
       --temp 0.1
 
@@ -1472,11 +1519,11 @@ models:
         - text
       tools: true
       reranker: false
-      context: 262144
+      context: 65536
     metadata:
       size: ~1.85 GB (Q8_0)
-      context: 262144
-      vram_usage: "~4.1 GB VRAM pico @262K (KV q4_0 ~1.5GB; f16 = 3.0GB e reprovado)"
+      context: "65536 por slot x 5 slots (327680 total)"
+      vram_usage: "~4.1 GB VRAM pico @262K slot unico; @5x64K est. ~4.4GB (KV q4_0 ~1.35GB)"
       source: LiquidAI/LFM3-1.7B-GGUF (Q8_0, 1846238496 bytes exatos)
       kv_cache: q4_0/q4_0
       features:
@@ -1493,7 +1540,7 @@ models:
       embedding_length: 2048
       context_length: 262144
       quantization: Q8_0
-      note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb; LFM3 chegou HOJE via merges #31252/#31257 — pull + rebuild local). ctx NATIVO 262144 deployado (escada: f16 KV @262K = 3.0GB CUDA OOM; q4_0 = pico 4.14GB com folga). Decode 75 t/s, prompt 631 t/s (Q8_0, GPU sozinha). Tool calling: 4 get_weather/ get_local_time simultaneos, JSON limpo, finish=tool_calls, template embedded (--jinja, sem template da casa). DUAL-MODE REAL do vendor: o modelo pensa SEMPRE e o template tem toggle enable_thinking — plain pino false (respondera direto, reasoning 0 verificado), :think pin true; raciocinio nativo estilo distill ("We need to..." — PT OK direto no plain). Samplers do fabricante (chat geral): temp 0.1 / top_k 50 / repetition_penalty 1.1 (math usa 1.0/0.95/20 na mao do client). Escorregada factual tipica de 1.7B (SP/Minas numa frase) — papel prompter/enhance, nao enciclopedia. GGUF em ~/.llama-models/lfm3-1.7b/. Substituição candidata do lfm2.5-2.6b (régua maison 67.0) — re-discussão de aposentadorias pendente os resultados.'
+      note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb; LFM3 chegou HOJE via merges #31252/#31257 — pull + rebuild local). ctx NATIVO 262144 deployado (escada: f16 KV @262K = 3.0GB CUDA OOM; q4_0 = pico 4.14GB com folga). Decode 75 t/s, prompt 631 t/s (Q8_0, GPU sozinha). Tool calling: 4 get_weather/ get_local_time simultaneos, JSON limpo, finish=tool_calls, template embedded (--jinja, sem template da casa). DUAL-MODE REAL do vendor: o modelo pensa SEMPRE e o template tem toggle enable_thinking — plain pino false (respondera direto, reasoning 0 verificado), :think pin true; raciocinio nativo estilo distill ("We need to..." — PT OK direto no plain). Samplers do fabricante (chat geral): temp 0.1 / top_k 50 / repetition_penalty 1.1 (math usa 1.0/0.95/20 na mao do client). Escorregada factual tipica de 1.7B (SP/Minas numa frase) — papel prompter/enhance, nao enciclopedia. GGUF em ~/.llama-models/lfm3-1.7b/. Substituição candidata do lfm2.5-2.6b (régua maison 67.0) — re-discussão de aposentadorias pendente os resultados. 29/10: slots 5x64K (-parallel 5, -c 327680, KV q4_0 mantido, -b/-ub do paralelo) para multi-agentes — 5x64K est. ~4.4GB dentro dos 4.8GB livres da 3050; smoke slots 29/10 OK (spawn saudavel, pico ~4.8GB usados/1058 MiB livres, 5 reqs paralelas atendidas em batch 0.2s wall).'
   lfm3-audio-2b:
     name: LFM3 Audio 2B
     description: "Audio 2B da LiquidAI: voz e audio ENTRADA nativa (16 kHz mono) com ASR, translate, QA de recordings (speech/sounds/events) e fala-saída. Texto em 18 idiomas; NAO pensa (verificado). TTS offline via llama-tts; /v1/realtime em breve do upstream."
@@ -2387,6 +2434,9 @@ matrix:
     # inst: instella-moe-16b  # disabled
     # Vision
     ocr: glm-ocr
+    # MiniCPM-OCR 1.0 (OpenBMB out/2026, arch qwen35) — doc parse (text/table/formula)
+    # DSpark draft (arch dflash) acoplado no cmd (nao carrega standalone)
+    mocr: minicpm-ocr-1.0
     # uocr: unlimited-ocr  # disabled Aug 2026 — unused
     # qwvl: qwen3-vl-4b  # REMOVED Sep 10 2026 — GGUF deleted (A/B lfm2.5-vl-3b pendente pro enhance do H3); fragment em _removed/
     # lfmvl3: lfm2.5-vl-3b  # APOSENTADO 27/out/2026 a pedido do dono — fragment em _disabled/; A/B p/ enhance do H3 cancelado junto
@@ -2403,7 +2453,7 @@ matrix:
     # flint: flint-40b-a2b  # APOSENTADO junto 27/out/2026
     # groot: groot-19b-a3b  # REMOVIDO 27/out/2026 — lane cafe -cmoe lenta demais na regua do dono; fragment em _removed/
     # grootf: (fundido no groot 27/out/2026 — o dono pediu id sem sufixo; unico backend ativo e o ik)
-    groot: groot-19b-a3b  # id limpo (sem -fast, pedido 27/out) — ik, 37.9 t/s @262K, tool calls nativos
+    # groot: groot-19b-a3b  # APOSENTADO 28/out/2026 pelo dono — bug de re-serialização do parser de tool calls do ik; fragment em _disabled/; GGUF deletado (re-download via HF, fonte no fragment)
     # qw38d: qwen38-27b-defiance  # RETIRADO 25/out/2026 c/ honras — testchat: 3.2 t/s sofrivel; 2ª aposentadoria da família (1ª ago/26 'too slow'); GGUF deletado (REINSTALAR-DEFIANCE-2026-10-25.md)
     # qw38df: qwen38-27b-defiance-fast  # RETIRADO junto — MTP 4.3 t/s não salvou na régua do dono; fragment em _disabled/
     bs2: bonsai2-9b  # ternary Prism 9B, always-think — papel query do sprach (precisa de set próprio: sem set o solver trata como exclusivo)
@@ -2460,6 +2510,10 @@ matrix:
     #   snake; julia-1 cobre o posto com 400x mais discriminação. Fragment em
     #   _disabled/ + laya.HELPER.md; pesos apagados (805MB, ggml-org re-download)
     julia: julia-1
+    # MiniCPM-OCR-Jev (OpenBMB) — scorer 0-1 de qualidade de candidatos OCR
+    # (2 scores via pooled output, UMA passada). CPU-only (doutrina decision).
+    # Uma pergunta fixa (prompt no template do GGUF), rota /v1/systemone.
+    mojev: minicpm-ocr-jev
     sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
     nbe4: nemotron-bolt-e4b  # NVIDIA Bolt E4B (Gemma 4 E4B pos-treino), 64K em Q4 por escolha do dono
 
@@ -2479,8 +2533,8 @@ matrix:
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr | mcv35"
-    vision_embed: "(ocr | mcv35) & (lfmcol | eg2) & pkstt"
+    vision_only: "ocr | mcv35 | mocr"
+    vision_embed: "(ocr | mcv35 | mocr) & (lfmcol | eg2) & pkstt"
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -2541,6 +2595,8 @@ matrix:
     # a ser evictado se ainda assim houver conflito de coexistencia.
     pkstt: 1
     ocr: 3
+    mocr: 3  # backbone 752M Q8_0 + mmproj 444M + draft 297M — reload barato-medio
+    mojev: 1  # decision CPU-only, 2GB RAM — reload em ~2s
     # qwvl: 3  # REMOVED Sep 10 2026
     # lfmvl3: 3  # APOSENTADO 27/out/2026
     # q4: 2  # removed Oct 11 2026 junto do modelo (aposentadoria qwen3.5-4b)
@@ -2553,7 +2609,7 @@ matrix:
     orn35f: 9  # o fast/challenger ik — mesmo GGUF, mesmo custo de reload
     # flintf: 9  # APOSENTADO 27/out/2026
     # flint: 9  # APOSENTADO 27/out/2026
-    groot: 7  # ~14GB experts RAM no ik (n-cpu-moe 34) — mesmo GGUF das lanes anteriores
+    # groot: 7  # APOSENTADO 28/out/2026 pelo dono — bug de re-serialização do parser de tool calls do ik (args unescape, quebrava agêntico no Kilo); fragment em _disabled/; GGUF deletado
     # qw38d: 7  # RETIRADO 25/out/2026
     # qw38df: 7  # RETIRADO 25/out/2026
     bs2: 4  # ternary 9B + fork Prism; reload médio
