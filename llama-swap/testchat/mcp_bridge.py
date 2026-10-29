@@ -187,34 +187,9 @@ def load_tools() -> list:
     return MOCK_TOOLS + BRIDGE.tools
 
 
-# Tools BUILTIN do harness (nao-mock, nao-MCP): executam aqui, antes do
-# fallback de mock. O fluxo do switch_language: o modelo ANUNCIA a troca
-# em fala, chama a tool, e o RETORNO viaja como user item (instrucao
-# in-context; session.update com novas instrucoes e REJEITADO pelo server
-# realtime apos a primeira fala/mensagem, server-realtime.cpp:443).
-_LANG_NAMES = {"pt": "Portuguese (pt)", "en": "English (en)",
-               "es": "Spanish (es)"}
-
-
-def _builtin_switch_language(args: dict) -> str:
-    lang = str(args.get("lang", "")).strip().lower()
-    if lang not in _LANG_NAMES:
-        return (f"switch_language error: unknown lang '{lang}'. "
-                f"Valid: {', '.join(_LANG_NAMES)}")
-    return (f"[Language switch acknowledged. From now on, speak and write "
-            f"in {_LANG_NAMES[lang]}. Acknowledge and continue naturally; "
-            f"do not call switch_language again unless the language changes "
-            f"again.]")
-
-
-BUILTIN_TOOLS = {"switch_language": _builtin_switch_language}
-
-
 def execute_tool(name: str, args: dict):
-    """Executor unificado: builtin do harness, depois MCP, depois mocks —
-    mesma assinatura do get_mock_response."""
-    if name in BUILTIN_TOOLS:
-        return BUILTIN_TOOLS[name](args)
+    """Executor unificado: MCP primeiro (quando a tool veio de lá),
+    mocks como fallback — mesma assinatura do get_mock_response."""
     if BRIDGE.is_mcp_tool(name):
         return BRIDGE.execute(name, args)
     from tools import get_mock_response

@@ -15,24 +15,6 @@ MOCK_TOOLS = [
     {
         "type": "function",
         "function": {
-            "name": "switch_language",
-            "description": "Switch the conversation language mid-conversation. Call this BEFORE switching languages when the user changes language (e.g. user speaks Portuguese while the session is set to English); announce the switch in natural speech first, then call, then continue in the target language. Same for switching back.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "lang": {
-                        "type": "string",
-                        "enum": ["pt", "en", "es"],
-                        "description": "Target language code: 'pt' Portuguese, 'en' English, 'es' Spanish"
-                    }
-                },
-                "required": ["lang"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
             "name": "get_weather",
             "description": "Get the current weather for a given city. Returns temperature, conditions, and humidity.",
             "parameters": {
