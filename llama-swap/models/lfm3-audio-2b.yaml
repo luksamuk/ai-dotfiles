@@ -3,7 +3,8 @@ lfm3-audio-2b:
   description: "Audio 2B da LiquidAI: voz e audio ENTRADA nativa (16 kHz mono) com
     ASR, translate, QA de recordings (speech/sounds/events) e fala-saída.
     Texto em 18 idiomas; NAO pensa (verificado). TTS offline via llama-tts;
-    /v1/realtime em breve do upstream."
+    /v1/realtime OFICIAL no upstream desde llama.cpp v0.8.0/b11960+ (card GGUF
+    27/10/26, incl. tool calls); llama-swap ainda não proxeia (issue pendente)."
   tags: [tools, audio]
   proxy: http://127.0.0.1:${PORT}
   checkEndpoint: /health
@@ -81,7 +82,9 @@ lfm3-audio-2b:
       kwarg enable_thinking nao muda nada). ASR via system prompt "Perform ASR."
       (idioma auto). Fala-SAIDA: via llama-tts CLI (--tts-lang/--tts-voice);
       rota chat do server ainda sem receita de speech-out; /v1/realtime (WebSocket
-      voice) em breve do upstream. Audio sampling params do card original
+      voice, incl. tool calls) oficial upstream desde llama.cpp v0.8.0/b11960+
+      (card GGUF 27/10/26); llama-swap ainda não proxeia a rota (issue pendente).
+      Audio sampling params do card original
       embutidos no GGUF. Quirk de idioma da familia: respondendo matematica
       pura em italiano a pergunta PT; ASR e QA audio ficam no idioma certo.
       VOZ PT = SOTAQUE INGLES — VEREDICTO FECHADO 27/10: e o CHECKPOINT, nao
