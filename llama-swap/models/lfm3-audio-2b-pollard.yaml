@@ -103,7 +103,8 @@ lfm3-audio-2b-pollard:
       oficial da lane lfm3-audio-2b. Contexto 32K mantido = limite de
       arquitetura do card, nao estendido. Ganhos esperados: ~0.4 GB VRAM
       de coexistencia no fleet + cold-start menor; ganho de decode marginal
-      (2B ja offloada integral nos 6 GB). Baixar peso:
+      (2B ja offloada integral nos 6 GB). Baixar peso (huggingface-cli APOSENTADO,
+      o CLI atual e hf):
       hf download PollardWeights/LFM3-Audio-2B-Pollard
       --include LFM3-Audio-2B-Pollard-Q6_K.gguf --local-dir
       ~/.llama-models/lfm3-audio-2b-pollard/'
