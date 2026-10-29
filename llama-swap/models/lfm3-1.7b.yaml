@@ -9,11 +9,11 @@ lfm3-1.7b:
 
     --model ${models_dir}/lfm3-1.7b/LFM3-1.7B-Q8_0.gguf
 
-    --ctx-size 262144
+    --ctx-size 327680
 
     --jinja
 
-    --parallel 1
+    --parallel 5
 
     --cache-type-k q4_0
 
@@ -23,9 +23,9 @@ lfm3-1.7b:
 
     -ngl 99
 
-    -b 512
+    -b 2048
 
-    -ub 128
+    -ub 1024
 
     --temp 0.1
 
@@ -58,11 +58,11 @@ lfm3-1.7b:
     - text
     tools: true
     reranker: false
-    context: 262144
+    context: 65536
   metadata:
     size: ~1.85 GB (Q8_0)
-    context: 262144
-    vram_usage: "~4.1 GB VRAM pico @262K (KV q4_0 ~1.5GB; f16 = 3.0GB e reprovado)"
+    context: "65536 por slot x 5 slots (327680 total)"
+    vram_usage: "~4.1 GB VRAM pico @262K slot unico; @5x64K est. ~4.4GB (KV q4_0 ~1.35GB)"
     source: LiquidAI/LFM3-1.7B-GGUF (Q8_0, 1846238496 bytes exatos)
     kv_cache: q4_0/q4_0
     features:
@@ -93,4 +93,8 @@ lfm3-1.7b:
       factual tipica de 1.7B (SP/Minas numa frase) — papel prompter/enhance,
       nao enciclopedia. GGUF em ~/.llama-models/lfm3-1.7b/. Substituição
       candidata do lfm2.5-2.6b (régua maison 67.0) — re-discussão de
-      aposentadorias pendente os resultados.'
+      aposentadorias pendente os resultados. 29/10: slots 5x64K (-parallel 5,
+      -c 327680, KV q4_0 mantido, -b/-ub do paralelo) para multi-agentes —
+      5x64K est. ~4.4GB dentro dos 4.8GB livres da 3050; smoke slots 29/10 OK
+      (spawn saudavel, pico ~4.8GB usados/1058 MiB livres, 5 reqs paralelas
+      atendidas em batch 0.2s wall).'
