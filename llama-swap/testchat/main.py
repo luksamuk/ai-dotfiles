@@ -106,6 +106,13 @@ PEPE_TURBO_SYSTEM = (
 # Tool calling mock definitions
 from tools import MOCK_TOOLS, get_mock_response
 
+import mcp_bridge
+
+# MCP opcional (testchat/mcp.json): injeta tools externas no MESMO registro
+# dos mocks. Falha de rede/ausencia de config = MCP off, chat segue normal.
+mcp_bridge.BRIDGE.load()
+TOOL_PAYLOAD = MOCK_TOOLS + mcp_bridge.BRIDGE.tools
+
 # Endpoint — use LLAMA_SWAP_HOST para acessar remotamente (ex: Termux via Tailscale)
 # Default: localhost (rode direto na máquina)
 
@@ -216,7 +223,8 @@ console = Console()
 # sliding window + tools de teste. Injecao direta (sem import circular).
 import duplex as _duplex
 _duplex.configure(console=console, base_url=BASE_URL,
-                   tools=MOCK_TOOLS, mock_response=get_mock_response)
+                   tools=TOOL_PAYLOAD,
+                   mock_response=mcp_bridge.execute_tool)
 
 
 def parse_media_paths(prompt: str) -> tuple[str, list[str], list[str], list[str]]:
@@ -1629,7 +1637,8 @@ class StreamingChat:
             except json.JSONDecodeError as e:
                 mock_result = f"Error: Invalid JSON in arguments. {e}. Your arguments were: '{func_args}'. Please ensure all arguments are valid JSON."
             else:
-                mock_result = get_mock_response(func_name, args_dict)
+                # Executor unificado: tools MCP reais primeiro, mocks depois
+                mock_result = mcp_bridge.execute_tool(func_name, args_dict)
             
             # Special didactic feedback for common mistakes
             if isinstance(mock_result, dict):
@@ -1753,7 +1762,7 @@ class StreamingChat:
         if _cap_system:
             _demo_messages.append({"role": "system", "content": _cap_system})
         _demo_messages.append({"role": "user", "content": "<sua pergunta aqui>"})
-        _demo_tools = None if CLI_RAW else (MOCK_TOOLS if self.supports_tools else None)
+        _demo_tools = None if CLI_RAW else (TOOL_PAYLOAD if self.supports_tools else None)
         _resumo_tools = [
             {"name": t["function"]["name"], "description": t["function"]["description"]}
             for t in _demo_tools
@@ -1898,7 +1907,7 @@ class StreamingChat:
                 if CLI_RAW:
                     tools_payload = None
                 else:
-                    tools_payload = MOCK_TOOLS if self.supports_tools else None
+                    tools_payload = TOOL_PAYLOAD if self.supports_tools else None
                 self._last_tools = tools_payload  # preserved for tool round-trip turn
                 self._tool_round_depth = 0  # reset per prompt (loop guard in handle_tool_calls)
                 # Novo turno: reseta TUDO que é por-turno (round-trips de tool
