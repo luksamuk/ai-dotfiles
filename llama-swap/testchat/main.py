@@ -54,6 +54,7 @@ CLI_RAW = False
 CLI_SYSTEM = None
 CLI_SHOW_TEMPLATE = False
 CLI_NO_HISTORY = False
+CLI_DUPLEX_TTS = False  # --duplex-tts: forçar transporte chat+TTS no modo duplex
 
 # Easter egg: Pepe system prompts (injeção condicional por modelo).
 # Nível de módulo p/ que a tela de capabilities consiga exibir o texto efetivo.
@@ -210,6 +211,12 @@ MIME_MAP = {
 }
 
 console = Console()
+
+# Modo duplex (transporte chat+TTS): implementacao em duplex.py com
+# sliding window + tools de teste. Injecao direta (sem import circular).
+import duplex as _duplex
+_duplex.configure(console=console, base_url=BASE_URL,
+                   tools=MOCK_TOOLS, mock_response=get_mock_response)
 
 
 def parse_media_paths(prompt: str) -> tuple[str, list[str], list[str], list[str]]:
@@ -2126,6 +2133,11 @@ Opções:
                         selecionar o modelo (oculto por padrão)
     --no-history        histórico de prompts só na sessão
                         (não grava em ~/.rich_chat_history)
+    --duplex            modo duplex voz→voz (mic padrão, lanes de áudio)
+    --duplex-tts        com --duplex: força o transporte chat+TTS (dois
+                        passes) — histórico local com sliding window;
+                        o realtime WS tem tools (round-trip via parse
+                        cliente) mas contexto server-side
 
 Variáveis de ambiente:
     LLAMA_SWAP_HOST     host do servidor (default: 127.0.0.1)
@@ -2197,6 +2209,12 @@ def run_duplex_session(start_model=None):
     is_rt = lane in rt_lanes
     console.print(f"[bold cyan]🎙 Modo duplex — {lane.get('name', lane_id)}[/]")
     console.print("[dim]Fale no microfone padrão. Enter envia o turno. Ctrl+C sai.[/]")
+    _duplex.print_tools_summary(active=is_rt)
+
+    if is_rt and CLI_DUPLEX_TTS:
+        # --duplex-tts: pula o realtime WS (contexto server-side, sem tools)
+        _duplex.run_chat_tts_loop(lane_id)
+        return
 
     if is_rt:
         try:
@@ -2226,91 +2244,9 @@ def run_duplex_session(start_model=None):
         except Exception as e:
             console.print(f"[yellow]Realtime indisponível ({type(e).__name__}: {str(e)[:100]}).[/]")
             if lane in rt_lanes:
-                run_duplex_chat_tts_loop(lane_id)   # llama.cpp: dois passes
+                _duplex.run_chat_tts_loop(lane_id)   # llama.cpp: dois passes
             else:
                 run_duplex_s2s_loop(lane_id)        # audio.cpp: s2s single
-
-
-def run_duplex_chat_tts_loop(lane_id):
-    """Fallback llama.cpp (sem realtime): dois passes por turno.
-    1. chat completions (audio-in) -> texto
-    2. /tts (texto) -> fala 24 kHz -> pw-play
-    """
-    import json as _json
-    import subprocess as _subprocess
-    import urllib.error as _urlerror
-    import urllib.request as _urlrequest
-    import base64 as _base64
-    import os as _os
-    console.print("[dim]Transporte llama.cpp (chat + /tts, dois passes).[/]")
-    _urlrequest.urlopen(_urlrequest.Request(
-        f"{BASE_URL}/chat/completions", data=_json.dumps(
-        {"model": lane_id, "messages": [{"role": "system", "content": "ping"}],
-         "max_tokens": 1}).encode(),
-        headers={"Content-Type": "application/json"}), timeout=300)
-    running = _json.loads(_urlrequest.urlopen(f"{BASE_URL[:-len('/v1')]}/running",
-                          timeout=10).read().decode())["running"]
-    entry = next((m for m in running if m.get("model") == lane_id), None)
-    if entry is None:
-        console.print("[red]lane não está em /running.[/]")
-        return
-    from urllib.parse import urlparse as _uparse
-    port = _uparse(entry.get("proxy") or "").port
-    http_base = f"http://127.0.0.1:{port}/v1"
-    wav_in = "/tmp/testchat_duplex_in.wav"
-    while True:
-        console.print()
-        console.print("[green]🎙 Gravando... (Enter para enviar)[/]")
-        rec = _subprocess.Popen(["pw-record", wav_in])
-        try:
-            input()
-        except EOFError:
-            rec.terminate()
-            console.print("[dim]stdin fechado — encerrando duplex.[/]")
-            return
-        except KeyboardInterrupt:
-            rec.terminate()
-            console.print("[dim]Modo duplex encerrado (Ctrl+C).[/]")
-            return
-        rec.terminate()
-        try:
-            rec.wait(timeout=5)
-        except _subprocess.TimeoutExpired:
-            rec.kill()
-        if not _os.path.exists(wav_in) or _os.path.getsize(wav_in) < 1024:
-            console.print("[yellow]Gravação vazia.[/]")
-            continue
-        b64 = _base64.b64encode(open(wav_in, "rb").read()).decode()
-        console.print("[dim]Passe 1: transcrição/resposta...[/]")
-        try:
-            req = _urlrequest.Request(f"{http_base}/chat/completions",
-                data=_json.dumps({"model":"default","messages":[
-                    {"role":"system","content":"Respond in text. Always respond in Brazilian Portuguese."},
-                    {"role":"user","content":[
-                        {"type":"input_audio","input_audio":{"data":b64,"format":"wav"}},
-                        {"type":"text","text":"O que eu disse? Responda em uma frase."}]}],
-                    "max_tokens":300}).encode(),
-                headers={"Content-Type":"application/json"})
-            r = _json.loads(_urlrequest.urlopen(req, timeout=600).read().decode())
-            chat_text = (r["choices"][0]["message"].get("content") or "").strip()
-            console.print(f"[bold]📝 {chat_text}[/]")
-            console.print("[dim]Passe 2: voz...[/]")
-            req = _urlrequest.Request(f"http://127.0.0.1:{port}/tts",
-                data=_json.dumps({"input": chat_text, "voice": "female"}).encode(),
-                headers={"Content-Type":"application/json"})
-            r2 = _urlrequest.urlopen(req, timeout=600)
-            wav_out = r2.read()
-            out = "/tmp/testchat_duplex_reply.wav"
-            open(out, "wb").write(wav_out)
-            _subprocess.run(["pw-play", out])
-            console.print(f"[dim]🔊 {len(wav_out)/48000:.1f}s tocados.[/]")
-        except _urlerror.HTTPError as e:
-            console.print(f"[red]HTTP {e.code}: {e.read()[:200]}[/]")
-        except KeyboardInterrupt:
-            console.print("[dim]Modo duplex encerrado.[/]")
-            return
-        except Exception as e:
-            console.print(f"[red]Erro no turno duplex: {str(e)[:200]}[/]")
 
 
 async def _duplex_realtime_loop(lane_id, swap_ws):
@@ -2341,7 +2277,10 @@ async def _duplex_realtime_loop(lane_id, swap_ws):
         in_rate = (session_info["audio"]["input"]["format"]["rate"])
         await conn.session.update(session={
             "type": "realtime",
-            "instructions": "Respond with interleaved text and audio.",
+            # Receita oficial de spoken tool calling do LFM3 (doc Tool Use):
+            # modo interleaved + lista de tools no system prompt. O server WS
+            # nao emite eventos de tool call - o parse e' no cliente.
+            "instructions": _duplex.tools_instructions(),
             "output_modalities": ["text", "audio"],
         })
         ev = await conn.recv()
@@ -2392,26 +2331,47 @@ async def _duplex_realtime_loop(lane_id, swap_ws):
             await sender   # input completo em chunks
             await conn.response.create()   # turno determinístico (sem guard/cancel)
 
-            text_buf, audio_buf = [], []
-            async for ev in conn:
-                if ev.type == "response.output_text.delta":
-                    text_buf.append(ev.delta)
-                elif ev.type == "response.output_audio.delta":
-                    audio_buf.append(base64.b64decode(ev.delta))
-                elif ev.type == "response.done":
-                    break
-                elif ev.type == "error":
-                    console.print(f"[red]ws error: {ev.error.message}[/]")
-                    return
-            console.print(f"[bold]📝 {''.join(text_buf)}[/]")
-            if audio_buf:
-                audio = b"".join(audio_buf)
-                out = f"/tmp/testchat_duplex_out_{turn}.wav"
-                with _wave.open(out, "wb") as f:
-                    f.setnchannels(1); f.setsampwidth(2); f.setframerate(24000)
-                    f.writeframes(audio)
-                console.print(f"[dim]🔊 {len(audio)/(24000*2):.1f}s -> {out}[/]")
-                _subprocess.run(["pw-play", out])
+            tool_rounds = 0
+            while True:
+                text_buf, audio_buf = [], []
+                async for ev in conn:
+                    if ev.type == "response.output_text.delta":
+                        text_buf.append(ev.delta)
+                    elif ev.type == "response.output_audio.delta":
+                        audio_buf.append(base64.b64decode(ev.delta))
+                    elif ev.type == "response.done":
+                        break
+                    elif ev.type == "error":
+                        console.print(f"[red]ws error: {ev.error.message}[/]")
+                        return
+                answer_text = "".join(text_buf)
+                console.print(f"[bold]📝 {answer_text}[/]")
+                if audio_buf:
+                    audio = b"".join(audio_buf)
+                    out = f"/tmp/testchat_duplex_out_{turn}_{tool_rounds}.wav"
+                    with _wave.open(out, "wb") as f:
+                        f.setnchannels(1); f.setsampwidth(2); f.setframerate(24000)
+                        f.writeframes(audio)
+                    console.print(f"[dim]🔊 {len(audio)/(24000*2):.1f}s -> {out}[/]")
+                    _subprocess.run(["pw-play", out])
+                # Tool round-trip: blocos de tool call no texto -> executa mock
+                # e devolve o resultado como user item (PR #31269 so aceita
+                # role user) -> nova resposta.
+                tcs = _duplex.parse_tool_calls(answer_text)
+                if tcs and tool_rounds < _duplex.DUPLEX_MAX_TOOL_ROUNDS:
+                    tool_rounds += 1
+                    for c in tcs:
+                        console.print(f"[magenta]Tool call: {c['name']}"
+                                      f"({json.dumps(c['arguments'], ensure_ascii=False)})[/]")
+                    result_text = _duplex.tool_result_user_text(tcs)
+                    await conn.conversation.item.create(item={
+                        "type": "message", "role": "user",
+                        "content": [{"type": "input_text", "text": result_text}]})
+                    await conn.response.create()
+                    continue
+                if tcs:
+                    console.print("[yellow]Máximo de rodadas de tool call atingido.[/]")
+                break
 
 
 def run_duplex_s2s_loop(lane_id):
@@ -2475,7 +2435,7 @@ def run_duplex_s2s_loop(lane_id):
 def main():
     """Entry point."""
     # CLI args: --raw / --no-system / --system "text" / --template / --no-history
-    global CLI_NO_SYSTEM, CLI_RAW, CLI_SYSTEM, CLI_SHOW_TEMPLATE, CLI_NO_HISTORY
+    global CLI_NO_SYSTEM, CLI_RAW, CLI_SYSTEM, CLI_SHOW_TEMPLATE, CLI_NO_HISTORY, CLI_DUPLEX_TTS
     argv = sys.argv[1:]
     if "-h" in argv or "--help" in argv:
         _print_help()
@@ -2502,6 +2462,9 @@ def main():
     if "--template" in argv:
         CLI_SHOW_TEMPLATE = True
         argv.remove("--template")
+    if "--duplex-tts" in argv:
+        CLI_DUPLEX_TTS = True
+        argv.remove("--duplex-tts")
     if "--duplex" in argv:
         argv.remove("--duplex")
         if argv:
