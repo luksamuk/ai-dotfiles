@@ -33,6 +33,9 @@ _LFM3_TC_CLOSE = "</" + "tool_" + "call" + ">"
 _TOOL_BLOCK_RE = re.compile(re.escape(_LFM3_TC_OPEN) + r"\s*(.*?)\s*"
                             + re.escape(_LFM3_TC_CLOSE), re.S)
 
+# Cap do resultado de tool que volta como user item (duplex): fala falada.
+_TOOL_RESULT_MAX_CHARS = 2500
+
 _cfg = {}
 
 
@@ -147,17 +150,37 @@ def parse_tool_calls(text: str) -> list:
     return calls
 
 
+def strip_tool_blocks(text: str) -> str:
+    """Remove os blocos de tool call do texto EXIBIDO (e, portanto, da fala
+    transcrita): o round-trip ja mostra 'Tool call: name(args)' separado."""
+    return _TOOL_BLOCK_RE.sub("", text or "")
+
+
 def tool_result_user_text(calls: list) -> str:
-    """Executa as tools mockadas e empacota os resultados como texto de
-    user item - o protocolo realtime do llama.cpp (PR #31269) so aceita
+    """Executa as tools e empacota os resultados como texto de user item --
+    o protocolo realtime do llama.cpp (PR #31269) so aceita
     conversation.item.create de role user, entao o resultado da tool
-    viaja como texto do 'usuario' (harness de teste: aceitavel)."""
+    viaja como texto do 'usuario' (harness de teste: aceitavel).
+
+    Cabecalho explicito + delimitador entre chamadas: sem isso o 2B
+    ecoa o resultado verbatim no fim da resposta, colado na ultima palavra.
+    Cap por resultado: fala falada nao consome 4KB de texto. """
     mock_response = _cfg["mock_response"]
     parts = []
     for c in calls:
         result = mock_response(c["name"], c["arguments"])
-        parts.append(f"TOOL RESULT for {c['name']}: {result}")
-    return "\n".join(parts)
+        if not isinstance(result, str):
+            result = json.dumps(result, ensure_ascii=False)
+        result = result.strip()
+        if len(result) > _TOOL_RESULT_MAX_CHARS:
+            result = result[:_TOOL_RESULT_MAX_CHARS] + "\n[... truncated]"
+        parts.append(f'>>> tool: {c["name"]}\narguments: '
+                     f'{json.dumps(c["arguments"], ensure_ascii=False)}\n'
+                     f'result:\n{result}\n<<<')
+    header = ("[Tool results below, delimited by >>> tool: / <<<. Use them as "
+              "context to answer. Do NOT repeat them verbatim in your speech; "
+              "answer naturally, briefly.]\n\n")
+    return header + "\n\n".join(parts)
 
 
 def run_chat_tts_loop(lane_id):
@@ -270,7 +293,7 @@ def run_chat_tts_loop(lane_id):
                                          "tool_call_id": tc.get("id") or "call_0",
                                          "content": result})
                     continue  # devolve os resultados ao modelo
-                chat_text = (msg.get("content") or "").strip()
+                chat_text = strip_tool_blocks((msg.get("content") or "")).strip()
                 if not tool_calls:
                     _warn_unparsed_tool_xml(console, chat_text)
                 break

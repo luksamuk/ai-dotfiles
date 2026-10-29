@@ -2354,7 +2354,8 @@ async def _duplex_realtime_loop(lane_id, swap_ws):
                         console.print(f"[red]ws error: {ev.error.message}[/]")
                         return
                 answer_text = "".join(text_buf)
-                console.print(f"[bold]📝 {answer_text}[/]")
+                shown = _duplex.strip_tool_blocks(answer_text).strip()
+                console.print(f"[bold]📝 {shown or '(tool call)'}[/]")
                 if audio_buf:
                     audio = b"".join(audio_buf)
                     out = f"/tmp/testchat_duplex_out_{turn}_{tool_rounds}.wav"
