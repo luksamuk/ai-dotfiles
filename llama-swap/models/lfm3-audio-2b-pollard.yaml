@@ -10,7 +10,7 @@ lfm3-audio-2b-pollard:
   checkEndpoint: /health
   cmd: '${llama_server} --port ${PORT}
 
-    --model ${models_dir}/lfm3-audio-2b-pollard/LFM3-Audio-2B-Pollard-Q6_K.gguf
+    --model ${models_dir}/lfm3-audio-2b-pollard/LFM3-Audio-2B-Pollard-IQ4_XS.gguf
 
     --mmproj ${models_dir}/lfm3-audio-2b/mmproj-F16.gguf
 
@@ -53,11 +53,11 @@ lfm3-audio-2b-pollard:
     reranker: false
     context: 32768
   metadata:
-    size: ~1.43 GB (Q6_K Pollard) + 0.57 GB mmproj-F16 (audio encoder,
+    size: ~1.07 GB (IQ4_XS Pollard) + 0.57 GB mmproj-F16 (audio encoder,
       compartilhado com a lane lfm3-audio-2b)
     context: 32768
     vram_usage: "~3.9 GB VRAM pico @32K estimado (KV q4_0)"
-    source: PollardWeights/LFM3-Audio-2B-Pollard (Q6_K) + mmproj-F16 oficial
+    source: PollardWeights/LFM3-Audio-2B-Pollard (IQ4_XS) + mmproj-F16 oficial
       LiquidAI (570846400 bytes, mesmo arquivo da lane lfm3-audio-2b)
     kv_cache: q4_0/q4_0
     features:
@@ -73,7 +73,7 @@ lfm3-audio-2b-pollard:
     parameters: 2200000000
     embedding_length: 2048
     context_length: 32768
-    quantization: Q6_K
+    quantization: IQ4_XS
     note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb, merges #31252/#31257 do dia):
       ASR impecável — voz real PT de 2021 (45s ogg convertido wav 16kHz mono)
       transcrita com fidelidade, 2.2s / 77 t/s. Music QA: responde estilo/
@@ -98,7 +98,9 @@ lfm3-audio-2b-pollard:
     pollard_note: 'Pollard build (repo 29/10/26): pesos IGUAIS ao f16, bits
       alocados por sensibilidade medida por camada, imatrix + pollard-verify
       gate. Rung Q6_K: PPL 3.4089, KLD 0.0043, top-1 97.6%, tool-ready 98.2%
-      (CI 94-100). Rung alternativo: IQ4_XS 1.07 GB (retention tool 100%).
+      (CI 94-100). ATIVO: IQ4_XS (29/10, rung menor; A/B de voz do dono decide
+      vs Q6_K — card: IQ4_XS top-1 93.2%, KLD 0.0437, tool-ready 100%).
+      Q6_K segue NO DISCO (rollback instantaneo, uma linha no fragment).
       O repo Pollard NAO inclui mmproj: este lane REUSA o mmproj-F16
       oficial da lane lfm3-audio-2b. Contexto 32K mantido = limite de
       arquitetura do card, nao estendido. Ganhos esperados: ~0.4 GB VRAM
