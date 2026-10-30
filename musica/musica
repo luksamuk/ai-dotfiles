@@ -18,13 +18,14 @@
 set -o pipefail
 
 # ---------- caminhos ----------
+# Override de model_specs é OBRIGATÓRIO para ace_step (o spec stock do upstream
+# exige dit_base_* que não existe no repo oficial). Default: specs/ versionado
+# junto do wrapper; MUSICA_SPECS sobrepõe. Só é aplicado quando existe o JSON
+# daquela família (o CLI procura <familia>.json dentro do dir de override).
 MUSICA_HOME="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 AUDIOCPP_HOME="${AUDIOCPP_HOME:-$HOME/git/audio.cpp}"
 BIN="$AUDIOCPP_HOME/build/linux-cuda-release/bin/audiocpp_cli"
 OUT_DIR="${MUSICA_OUT_DIR:-$PWD}"
-# Override de model_specs é OBRIGATÓRIO para ace_step (o spec stock do upstream
-# exige dit_base_* que não existe no repo oficial). Default: specs/ versionado
-# junto do wrapper; MUSICA_SPECS sobrepõe.
 SPECS_OVERRIDE="${MUSICA_SPECS:-$MUSICA_HOME/specs}"
 
 # ---------- defaults ----------
@@ -44,6 +45,8 @@ IDIOMA="pt"
 INSTRUMENTAL=0
 OUT=""
 DRY_RUN=0
+ENHANCE=0
+ENHANCE_MODEL=""
 EXTRA=()
 
 # ---------- tabela de famílias ----------
@@ -103,6 +106,7 @@ Uso:
   musica --instrumental --legenda-file C.txt --modelo ace --dur 60
   musica --instrumental --legenda "lo-fi, chuva, piano" --modelo stable --dur 30
   musica list                          # famílias: instalado/ausente + tamanho
+  musica --enhance-only "desc"         # só mostra a legenda enhanced, nada gera
   musica ... --dry-run                 # imprime o comando e encerra
 
 Famílias (--modelo):
@@ -126,8 +130,12 @@ Flags:
   --bpm/--tom/--compasso  controle simbólico (só ACE-Step; ex: --tom "D minor")
   --idioma LING        idioma do vocal (default: pt)
   --instrumental       sem voz (ace/heart: injeta [Instrumental]; stable: já é)
-  --out|-o CAMINHO     arquivo WAV de saída
+  --out|-o CAMINHO     arquivo WAV de saída (default sem sobrepor: musica_{modelo}_{ts}_seed{seed})
   --out-dir DIR        diretório de saída (default: $PWD; env MUSICA_OUT_DIR)
+  --enhance            LLM da frota reescreve a LEGENDA (lyrics = contexto somente-leitura)
+  --enhance-with M     handle do modelo de enhance (default: fleet cfg, secao musica)
+  --enhance-only       roda só o enhance e encerra (mostra a legenda final)
+  --show-enhanced      no-op (compat com h3/ltx; o enhance sempre mostra)
   --specs DIR          override de model_specs (env MUSICA_SPECS)
   --list/--lista       estado das famílias em disco
   --dry-run            valida e mostra o comando sem executar
@@ -162,6 +170,10 @@ while [[ $# -gt 0 ]]; do
     --instrumental)   INSTRUMENTAL=1; shift ;;
     --out|-o)         OUT="$2"; shift 2 ;;
     --out-dir)        OUT_DIR="$2"; shift 2 ;;
+    --enhance)        ENHANCE=1; shift ;;
+    --enhance-with)   ENHANCE=1; ENHANCE_MODEL="$2"; shift 2 ;;
+    --enhance-only)   ENHANCE=1; DRY_RUN=1; shift ;;
+    --show-enhanced)  shift ;;  # enhance sempre mostra; flag mantida por compat com h3/ltx
     --specs)          SPECS_OVERRIDE="$2"; shift 2 ;;
     --dry-run)        DRY_RUN=1; shift ;;
     --lista|--list|list) musica_list; exit 0 ;;
@@ -193,6 +205,32 @@ if [ "$INSTRUMENTAL" = "1" ] && [ "$FAMILIA" != "stable_audio" ]; then
   LETRA="[Instrumental]"
 fi
 
+# ---------- enhance (LLM da frota reescreve a legenda) ----------
+if [ "$ENHANCE" = "1" ] && [ -n "$LEGENDA" ]; then
+  echo "=== musica — enhance via frota (llama-swap) ==="
+  EH_ARGS=(--prompt "$LEGENDA")
+  [ -n "$LETRA" ] && EH_ARGS+=(--lyrics "$LETRA")
+  [ -n "$ENHANCE_MODEL" ] && EH_ARGS+=(--model "$ENHANCE_MODEL")
+  if EH_JSON="$(env -u PYTHONPATH python3 "$MUSICA_HOME/enhance_music.py" "${EH_ARGS[@]}")"; then
+    NEW_LEGENDA="$(printf '%s' "$EH_JSON" | env -u PYTHONPATH python3 -c 'import json,sys; print(json.load(sys.stdin)["caption"])')"
+    [ -n "$NEW_LEGENDA" ] && LEGENDA="$NEW_LEGENDA"
+    if [ "$FAMILIA" = "ace_step" ] && [ -z "$BPM" ] && [ "$DRY_RUN" = "0" ]; then
+      DEC_BPM="$(printf '%s' "$EH_JSON" | env -u PYTHONPATH python3 -c 'import json,sys; print((json.load(sys.stdin).get("params") or {}).get("bpm") or "")')"
+      [ -n "$DEC_BPM" ] && {
+        BPM="$DEC_BPM"
+        echo "  bpm (d1 assumiu): $BPM"
+      }
+    fi
+    echo
+  else
+    echo "aviso: enhance falhou — seguindo com a legenda crua" >&2
+  fi
+  echo "  legenda final: $LEGENDA"
+  echo
+  # LLM residente briga pelos mesmos 6GB que o modelo de música: desembaçar
+  llama-swap-cli unload >/dev/null 2>&1 || true
+fi
+
 # Stable Audio não tem letra — não exigir; demais famílias exigem
 if [ "$USA_LETRA" = "sim" ] && [ -z "$LETRA" ]; then
   echo "erro: sem letra. use --letra ou --letra-file (ou --instrumental)" >&2
@@ -204,12 +242,17 @@ if [ -z "$LEGENDA" ]; then
 fi
 
 # ---------- nome de saída ----------
-[ -z "$OUT" ] && OUT="$OUT_DIR/${FAMILIA}_${MODELO}_s${SEED}_${DUR}s.wav"
+# Mesmo esquema do diffuse: {tool}_{model}_{ts}_seed{seed}.{ext} — nunca sobrepõe.
+TS=$(date +%Y%m%d_%H%M%S)
+[ -z "$OUT" ] && OUT="$OUT_DIR/musica_${MODELO}_${TS}_seed${SEED}.wav"
 MDIR_ABS="$AUDIOCPP_HOME/$MDIR_REL"
+
 
 # ---------- montar comando ----------
 CMD=("$BIN" --task gen --family "$FAMILIA" --model "$MDIR_ABS" --backend cuda)
-[ -n "$SPECS_OVERRIDE" ] && CMD+=(--model-spec-override "$SPECS_OVERRIDE")
+# só passa override se o JSON da família existir no dir (ace_step.json ✓, stable/heart ✗)
+[ -n "$SPECS_OVERRIDE" ] && [ -e "$SPECS_OVERRIDE/$FAMILIA.json" ] && \
+  CMD+=(--model-spec-override "$SPECS_OVERRIDE")
 
 case "$FAMILIA" in
   ace_step)
@@ -262,6 +305,10 @@ fi
 # Unified memory e' o que faz os modelos maiores caberem em 6GB.
 # NAO remover sem testar: sem UMA, ACE-Step nao passa da alocacao do DiT.
 export GGML_CUDA_ENABLE_UNIFIED_MEMORY=1
+
+# LLM residente (baseline ~1GB) briga com o spike do DiT (~94% VRAM no pico):
+# desfogar ANTES da geracao, sempre. llama-swap recarrega num request novo.
+llama-swap-cli unload >/dev/null 2>&1 || true
 
 mkdir -p "$(dirname "$OUT")"
 START=$(date +%s)

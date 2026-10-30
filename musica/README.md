@@ -58,9 +58,28 @@ musica ... --dry-run
 | `--bpm` / `--tom` / `--compasso` | — | controle simbólico (ACE-Step) |
 | `--idioma` | pt | idioma do vocal |
 | `--instrumental` | off | sem voz |
-| `--out` / `--out-dir` | `$PWD` (env `MUSICA_OUT_DIR`) | caminho de saída |
+| `--out` / `--out-dir` | `musica_{modelo}_{ts}_seed{seed}` em `$PWD` (env `MUSICA_OUT_DIR`) | caminho de saída — nunca sobrepõe |
+| `--enhance` | off | LLM da frota reescreve a LEGENDA (config: fleet cfg, secao `musica:`) |
+| `--enhance-with` | do fleet cfg | handle alternativo de enhance |
+| `--enhance-only` | — | roda só enhance e encerra |
 | `--specs` | `specs/` do wrapper (env `MUSICA_SPECS`) | override de model_specs |
 | `--dry-run` | off | imprime o comando e encerra |
+
+## Enhance e decisão de parâmetros (30/10/2026)
+
+- `--enhance` reescreve **só a legenda** via frota (`localhost:12434/v1/chat/completions`,
+  handle da seção `musica:` em `~/.local/share/fleet/enhance-models.yaml`, sem
+  `max_tokens`). A letra entra como **contexto somente-leitura** — o prompt é
+  explícito: proibido reescrever/ecoar lyrics.
+- **BPM do ace_step** fica com `decision_model` (d1-2b) via `/v1/systemone`
+  (N julgamentos `noul` binários, doutrina do snake — NUNCA `choice` com N
+  opções, colapsa na posição). BPMs sugeridos pelo caption enhanced viram
+  candidatos; corte cru em `decision_threshold`. Abaixo do corte: descarta e
+  o motor usa o default. `--bpm` explícito na CLI pula a decisão inteira.
+- Após o enhance o wrapper desembaça a frota (`llama-swap-cli unload`) — o
+  LLM residente briga pelos mesmos 6GB.
+- Backup do fleet config versionado em `llama-swap/enhance-models.yaml`
+  (arquivo vivo: `~/.local/share/fleet/enhance-models.yaml` — sem PII).
 
 ## Regras operacionais (aprendidas na marra)
 

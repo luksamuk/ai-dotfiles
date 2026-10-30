@@ -1,0 +1,58 @@
+# Configuração de modelos padrão de enhance — frota llama-swap
+#
+# Cada ferramenta (diffuse, h3, ltx) tem sua chave; o valor é o handle do
+# modelo de enhance. Alterar aqui NÃO exige tocar no código dos tools:
+# diffuse lê este arquivo no clique de --enhance; h3/ltx na carga do script.
+#
+# Campos:
+#   model:   handle principal (novo default da frota)
+#   fallback: handle secundário — só usado se o primary não estiver na frota
+#
+# Mudanças:
+#   2026-10-05: default = ornith-1.5-35b-heretic (cafe 0.74 -cmoe, 200K ctx,
+#               RAM evictável). fallback = qwen3.6-35b-a3b-heretic (131K).
+#               ONYX (ornith-1.5-35b) desativado — GGUF deletado.
+#   2026-10-08: qwen3.6-35b-a3b-heretic REMOVED (aposentado, GGUF deletado) —
+#               fallbacks viram k2-horizon-36b (200K, vision via mmproj).
+#   2026-10-20: qwen3.6-35b-a3b-heretic REATIVADO e de volta como default de
+#               prompting (user: melhor prompter que o ornith; tem vision via
+#               mmproj, serve os edits igual ao ornith). Fallback volta pro
+#               ornith-1.5-35b-heretic — o k2-horizon-36b estava _disabled
+#               desde 16/out, então era um fallback morto.
+diffuse:
+  model: qwen3.6-35b-a3b-heretic:think
+  fallback: ornith-1.5-35b-heretic:think
+  # seleção de LoRA (F1, 20/out/2026): llm = rerank ColBERT + LLM escolhe (histórico);
+  # decision = modelo de decisão via /v1/systemone (d1-2b validado 27/out: recall@3
+  # 100%, 6/6 casos OK, 0 falsos no controle — IDENTICO ao d1-3b no mesmo harness).
+  # Override por CLI: --lora-selector/--decision-model/--decision-threshold/--decision-max
+  lora_selector: decision
+  decision_model: d1-2b
+  decision_threshold: 0.5
+  decision_max: 2           # 25/out: teto 2 (pedido do user) — 4 empilhados derreteram o render
+h3:
+  model: qwen3.6-35b-a3b-heretic:think
+  fallback: ornith-1.5-35b-heretic:think
+  # 21/out/2026: seleção de LoRA herdada do diffuse (mesmo schema e mesmos valores).
+  # Medido no harness do H3 (14 casos, catálogo de 18): decision d1-3b = recall@4 100%,
+  # 3/3 negativos limpos, 0,7s. llm (heretic) = 77%, 1 falso positivo, 14,7s.
+  # 27/out: d1-3b -> d1-2b (mesma régua, resultado idêntico no harness de 27/out).
+  lora_selector: decision
+  decision_model: d1-2b
+  decision_threshold: 0.5    # 22/out: mantido em 0.5 — o falso positivo foi resolvido na descricao, nao no limiar
+  decision_max: 3          # 22/out: teto 3 (pedido do user); turbo conta separado
+  lora_selector: decision   # llm | decision — espelha a chave do diffuse. decision: o LLM so escreve o prompt
+ltx:
+  model: qwen3.6-35b-a3b-heretic:think
+  fallback: ornith-1.5-35b-heretic:think
+musica:
+  model: qwen3.6-35b-a3b-heretic:think
+  fallback: ornith-1.5-35b-heretic:think
+  # 30/out/2026: musica entra na frota de enhance (wrapper do ai-dotfiles/musica).
+  # O LLM so reescreve a LEgendA (structured caption); lyrics são contexto
+  # somente-leitura. Params de console (bpm p/ ace_step) ficam com o decision:
+  # d1-2b via /v1/systemone, N julgamentos noul binários (doutrina do snake),
+  # corte cru — abaixo do threshold o parametro e descartado (usa default);
+  # se o user passou explicito na CLI, o decision nem roda.
+  decision_model: d1-2b
+  decision_threshold: 0.5
