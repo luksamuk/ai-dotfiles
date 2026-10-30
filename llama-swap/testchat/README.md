@@ -135,6 +135,7 @@ uv run main.py --no-history               # histórico de prompts só na sessão
 | `--system "texto"` | Injeta o texto como system prompt (no lugar dos built-ins Pepe/portal-core) |
 | `--template` | Mostra o prompt renderizado via POST `/apply-template` na tela de capabilities. Sem a flag, o painel não é exibido (o painel azul "Payload JSON" aparece sempre) |
 | `--no-history` | Prompts não são persistidos em `~/.rich_chat_history` — ↑/↓ funciona só dentro da sessão. Combinável com qualquer modo |
+| `--no-mcp` | Não conecta aos servidores MCP do `mcp.json` (o load roda no import; a flag é checada antes). Só as mock tools ficam no payload. Env equivalente: `TESTCHAT_NO_MCP=1` |
 | `-h`, `--help` | Mostra a ajuda com todas as opções e sai |
 
 O modo ativo aparece no header da TUI (`[RAW — sem system, sem tools]`, `[SYSTEM customizado]`, `[sem system]`, `[template]`, `[no-history]`).
