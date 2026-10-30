@@ -64,13 +64,16 @@ wait
 Medido a **8-11 MB/s** (~10GB em ~20 min baixando os 4 em paralelo). O `hf` CLI
 trava no protocolo Xet nessa rota — usar curl.
 
-### 3. Override de spec (obrigatório)
+### 3. Override de spec (obrigatório) — JÁ EMBUTIDO NO WRAPPER
 
 O `model_specs/ace_step.json` do upstream exige dois artefatos que o repo
-oficial não tem. Sem o override o carregador não sobe.
+oficial não tem. Sem o override o carregador não sobe (erro:
+`missing model package file 'dit_base_config'`).
 
-O override pronto está versionado junto do projeto da campanha:
-`~/projects/ai/canteiros/specs/ace_step.json`. Ele remove:
+**O wrapper já defaulta**: `musica` aponta `--model-spec-override` pro
+`specs/` versionado junto dele (`ai-dotfiles/musica/specs/ace_step.json`,
+idêntico à cópia histórica em `~/projects/ai/canteiros/specs/`). Só passe
+`--specs`/`MUSICA_SPECS` se precisar de override diferente. Ele remove:
 - `dit_base_config`, `dit_base_weights`, `dit_base_silence_latent` — o DiT
   `base` não existe no repo oficial (nem consta como opcional na doc upstream)
 
@@ -83,7 +86,18 @@ d = torch.load('.../acestep-v15-turbo/silence_latent.pt', map_location='cpu', we
 save_file({'silence_latent': d}, '.../acestep-v15-turbo/silence_latent.safetensors')
 ```
 
-Passar com `--model-spec-override <dir>` (ou `--specs` no wrapper).
+Passar com `--model-spec-override <dir>` (ou `--specs` no wrapper) — **obsoleto:
+o wrapper já defaulta, ver acima.**
+
+### 3b. Pesos do Stable Audio 3 (small)
+
+Instalado em `~/.llama-models/audio/Stable-Audio-3-Small-Music-GGUF/`
+(`stable-audio-3-small-music-q8_0.gguf`, 1,6G). O pacote oficial do spec é
+`stable_audio_3_small_music_q8_0` (`model_specs/stable_audio.json`), servido
+pelo repo de pacotes `audio-cpp/audio.cpp-gguf` — o que está quebrado no CDN
+(lento, mas funciona aos trancos; conferir o tamanho do arquivo ao fim).
+**NÃO renomear o diretório**: o nome `Stable-Audio-3-Small-Music-GGUF` é o
+`target_directory` do spec e é o que o wrapper usa.
 
 ### 4. Variável de ambiente crítica
 
