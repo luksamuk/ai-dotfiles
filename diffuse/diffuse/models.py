@@ -274,4 +274,98 @@ MODELS: dict[str, dict] = {
     # CFG 5) contra 39s do edit-turbo (4 passos, CFG 1) — qualidade igual ou melhor no turbo,
     # so perdendo aderencia literal ao campo lighting. Transformer de 8,4 GB deletado.
     # Unica vantagem do dev seria negative prompt (CFG 1 desliga guidance); se precisar, rebaixar.
+
+    # Anima (CircleStone Labs × Comfy Org, 30/10/2026) — 2B T2I anime/illustration.
+    # sd-cpp arch nativa; pesos em ~/.llama-models/anima (layout de frota — um jogo
+    # de pesos serve o diffuse sd-cli E os fragments sd-server do llama-swap).
+    # Uncensored por default (tier "Unbound" no wiki uncensored-image-gen; os safety
+    # tags booru DIRIGEM, não bloqueiam). Receitas do card do criador: turbo CFG 1
+    # @8-12 steps; base/aesthetic/preview 30-50 steps CFG 4-6 (aesthetic melhor no 3).
+    # Resoluções 512²-1536². Sampler default: er_sde (neutro, flat, sharp).
+
+    "anima-turbo-v1.1": {
+        "backend_id": "anima-sdcpp",
+        "dir": "anima-turbo-v1.1",
+        "backend_type": "anima_sdcpp",
+        "category": "image",
+        "bits": "BF16 (turbo-v1.1, sem quant GGUF upstream)",
+        "description": "Anima Turbo v1.1 — 2B anime T2I CircleStone×Comfy; distilled 10 steps CFG 1, er_sde; uncensored (Unbound). RECOMENDADO p/ começar",
+        "default_size": (832, 1216),
+        "cfg_scale": 1.0,
+        "sample_steps": 10,
+        "sampler": "er_sde",
+        "weights_subdir": "turbo-v1.1",
+        "diffusion_file": "anima-turbo-v1.1.safetensors",
+        "te_file": "common/te/Qwen3-0.6B-Base.Q8_0.gguf",
+        "vae_file": "common/vae/qwen_image_vae.safetensors",
+        "components": [
+            {"name": "anima-turbo-v1.1.safetensors (DiT 2B Turbo v1.1)", "path": "~/.llama-models/anima/turbo-v1.1/anima-turbo-v1.1.safetensors", "size_gb": 4.18},
+            {"name": "qwen3-0.6B-base TE Q8_0 [shared]", "path": "~/.llama-models/anima/common/te/Qwen3-0.6B-Base.Q8_0.gguf", "size_gb": 0.64},
+            {"name": "qwen_image VAE [shared]", "path": "~/.llama-models/anima/common/vae/qwen_image_vae.safetensors", "size_gb": 0.25},
+        ],
+    },
+    "anima-aesthetic-v1.1": {
+        "backend_id": "anima-sdcpp",
+        "dir": "anima-aesthetic-v1.1",
+        "backend_type": "anima_sdcpp",
+        "category": "image",
+        "bits": "BF16 (aesthetic-v1.1, sem quant GGUF upstream)",
+        "description": "Anima Aesthetic v1.1 — 2B anime fine-tune de consistência; 40 steps CFG 3, er_sde; melhor default art style",
+        "default_size": (832, 1216),
+        "cfg_scale": 3.0,
+        "sample_steps": 40,
+        "sampler": "er_sde",
+        "weights_subdir": "aesthetic-v1.1",
+        "diffusion_file": "anima-aesthetic-v1.1.safetensors",
+        "te_file": "common/te/Qwen3-0.6B-Base.Q8_0.gguf",
+        "vae_file": "common/vae/qwen_image_vae.safetensors",
+        "components": [
+            {"name": "anima-aesthetic-v1.1.safetensors (DiT 2B Aesthetic v1.1)", "path": "~/.llama-models/anima/aesthetic-v1.1/anima-aesthetic-v1.1.safetensors", "size_gb": 4.18},
+            {"name": "qwen3-0.6B-base TE Q8_0 [shared]", "path": "~/.llama-models/anima/common/te/Qwen3-0.6B-Base.Q8_0.gguf", "size_gb": 0.64},
+            {"name": "qwen_image VAE [shared]", "path": "~/.llama-models/anima/common/vae/qwen_image_vae.safetensors", "size_gb": 0.25},
+        ],
+    },
+    "anima-base-v1.0": {
+        "backend_id": "anima-sdcpp",
+        "dir": "anima-base-v1.0",
+        "backend_type": "anima_sdcpp",
+        "category": "image",
+        "bits": "GGUF Q8_0 (Abiray)",
+        "description": "Anima Base v1.0 — base máxima flexibilidade/diversidade, 40 steps CFG 5, er_sde; O CANVAS PRA TREINAR LoRA",
+        "default_size": (832, 1216),
+        "cfg_scale": 5.0,
+        "sample_steps": 40,
+        "sampler": "er_sde",
+        "weights_subdir": "base-v1.0",
+        "diffusion_file": "anima-base-v1.0-Q8_0.gguf",
+        "te_file": "common/te/Qwen3-0.6B-Base.Q8_0.gguf",
+        "vae_file": "common/vae/qwen_image_vae.safetensors",
+        "components": [
+            {"name": "anima-base-v1.0-Q8_0.gguf (DiT 2B Base v1.0)", "path": "~/.llama-models/anima/base-v1.0/anima-base-v1.0-Q8_0.gguf", "size_gb": 2.24},
+            {"name": "qwen3-0.6B-base TE Q8_0 [shared]", "path": "~/.llama-models/anima/common/te/Qwen3-0.6B-Base.Q8_0.gguf", "size_gb": 0.64},
+            {"name": "qwen_image VAE [shared]", "path": "~/.llama-models/anima/common/vae/qwen_image_vae.safetensors", "size_gb": 0.25},
+        ],
+    },
+    "anima-preview3": {
+        "backend_id": "anima-sdcpp",
+        "dir": "anima-preview3",
+        "backend_type": "anima_sdcpp",
+        "category": "image",
+        "bits": "GGUF Q8_0 (Bedovyy)",
+        "description": "Anima Preview3-base — próxima geração (modelo do workflow Preview oficial da Comfy); 40 steps CFG 5, er_sde",
+        "default_size": (832, 1216),
+        "cfg_scale": 5.0,
+        "sample_steps": 40,
+        "sampler": "er_sde",
+        "weights_subdir": "preview3",
+        "diffusion_file": "anima-preview3-base-Q8_0.gguf",
+        "te_file": "common/te/Qwen3-0.6B-Base.Q8_0.gguf",
+        "vae_file": "common/vae/qwen_image_vae.safetensors",
+        "components": [
+            {"name": "anima-preview3-base-Q8_0.gguf (DiT 2B Preview3-base)", "path": "~/.llama-models/anima/preview3/anima-preview3-base-Q8_0.gguf", "size_gb": 2.28},
+            {"name": "qwen3-0.6B-base TE Q8_0 [shared]", "path": "~/.llama-models/anima/common/te/Qwen3-0.6B-Base.Q8_0.gguf", "size_gb": 0.64},
+            {"name": "qwen_image VAE [shared]", "path": "~/.llama-models/anima/common/vae/qwen_image_vae.safetensors", "size_gb": 0.25},
+        ],
+    }
+
 }

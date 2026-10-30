@@ -4,7 +4,7 @@ Diffusion generation CLI for NVIDIA GPUs. Wan2GP is the canonical image backend 
 
 > **Hardware Target:** NVIDIA RTX 3050 Laptop (6GB VRAM)
 
-## Fleet (9 models)
+## Fleet (16 entries)
 
 | Model | Type | Backend | Highlights |
 |-------|------|---------|-----------|
@@ -14,6 +14,10 @@ Diffusion generation CLI for NVIDIA GPUs. Wan2GP is the canonical image backend 
 | **flux-3** | T2I + editing (SFW) | Wan2GP | FLUX 3 Klein, best text render |
 | **agate-preview-001/-003** | T2I | native python | 260M FCDM, seconds/image, fixed 256² / multi-res 512² |
 | **ternary-gemlite** | T2I | gemlite (Bonsai) | 1.58-bit fast drafts, 512×512 |
+| **anima-turbo-v1.1** | T2I (anime) | sd.cpp | **30/10 — 2B CircleStone×Comfy; distilled 10 steps CFG 1, er_sde; uncensored (Unbound) — recomendado pra começar; primeira família de imagem TAMBÉM na frota llama-swap (sd-server) |
+| **anima-aesthetic-v1.1** | T2I (anime) | sd.cpp | fine-tune de consistência, 40 steps CFG 3 — o melhor default art style |
+| **anima-base-v1.0** | T2I (anime) | sd.cpp | Q8; base pra treinar LoRA da Anima; 40 steps CFG 5 |
+| **anima-preview3** | T2I (anime) | sd.cpp | Q8; próxima geração (preview public na HF; Civitai ainda não lista) |
 
 ## Quick Start
 
@@ -71,7 +75,7 @@ diffuse/
 ├── pyproject.toml
 ├── diffuse/                # Python package
 │   ├── cli.py              # CLI — parsing, dispatch, runners
-│   ├── models.py           # Model registry (9 entries)
+│   ├── models.py           # Model registry (16 entries)
 │   ├── lora_selector.py    # Unified LoRA selection (llm | decision)
 │   ├── paths.py            # Path constants
 │   ├── backends/           # wan2gp.py (canonical), gemlite, agate, bonsai, framepack

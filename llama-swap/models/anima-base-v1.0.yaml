@@ -1,0 +1,51 @@
+anima-base-v1.0:
+  name: Anima Base v1.0
+  description: "Anima Base v1.0 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. Maxima flexibilidade e diversidade; base oficial para treinamento de LoRA."
+  tags:
+  - image
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /sdcpp/v1/capabilities
+  cmd: '${sd_server}
+    --diffusion-model ${models_dir}/anima/base-v1.0/anima-base-v1.0-Q8_0.gguf
+    --llm ${models_dir}/anima/common/te/Qwen3-0.6B-Base.Q8_0.gguf
+    --vae ${models_dir}/anima/common/vae/qwen_image_vae.safetensors
+    --offload-to-cpu
+    --listen-port ${PORT} --listen-ip 127.0.0.1
+    '
+  cmdStop: pkill -f 'sd-server.*anima-base-v1.0-Q8_0'
+  health_check_timeout: 300
+  ttl: 1200
+  capabilities:
+    in:
+    - text
+    out:
+    - image
+    tools: false
+    reranker: false
+    context: 0
+  metadata:
+    size: 2.24 GB DiT (GGUF Q8_0) + 0.64 GB TE (Qwen3-0.6B Q8_0) + 0.25 GB VAE qwen_image — TE/VAE compartilhados
+    context: 0
+    vram_usage: ~3.1 GB residente (GGUF Q8 + TE + VAE) - o mais folgado da familia na 6GB
+    source: Abiray/Anima-base-v1.0-GGUF (quant sobre os pesos oficiais circlestone-labs/Anima)
+    kv_cache: n/a
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      tts: false
+      image: true
+    architecture: anima
+    parameters: 2000000000
+    context_length: 0
+    embedding_length: 0
+    quantization: q8_0
+    note: >-
+      40 steps CFG 5 (receita do criador). Uncensored tier Unbound. Instalado 30/10/2026.
+    caveats:
+      - 'LoRA da Anima devem ser treinados na Base (guia do criador)'
+      - 'Q8_0: -4% velocidade vs BF16 (bench Bedovyy @5090), qualidade praticamente identica'

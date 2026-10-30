@@ -58,6 +58,11 @@ macros:
   # Build local em ~/git/cafe-llama.cpp/build/bin/llama-server (commit 0fbc13f, set/2026)
   "cafe_server": "${env.HOME}/git/cafe-llama.cpp/build/bin/llama-server"
 
+  # Caminho para o sd-server do stable-diffusion.cpp (Anima — 30/10/2026)
+  # OpenAI-compatible /v1/images/generations; arch anima nativa no build
+  # Build local em ~/git/stable-diffusion.cpp/build/bin/sd-server
+  "sd_server": "${env.HOME}/git/stable-diffusion.cpp/build/bin/sd-server"
+
   # Caminho para o llama-server do fork PrismML (Bonsai-2 ternary, runtime Hadamard)
   # Binário prebuilt em ~/git/prism-llama.cpp/llama-prism-b10685-7dffb15/
   "prism_llama_server": "${env.HOME}/git/prism-llama.cpp/llama-prism-b10685-7dffb15/llama-server"
@@ -911,6 +916,185 @@ models:
         - Converte o upload com ffmpeg - sem ffmpeg no PATH a transcrição falha com 500
         - Não é TTS e não serve /v1/audio/speech
         - CPU-only por desenho (a VRAM da casa é escassa, 6 GB) - troque PARAKEET_DEVICE=cuda se quiser
+  anima-aesthetic-v1.1:
+    name: Anima Aesthetic v1.1
+    description: "Anima Aesthetic v1.1 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. Fine-tune de consistencia; o melhor default art style da familia."
+    tags:
+      - image
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /sdcpp/v1/capabilities
+    cmd: '${sd_server} --diffusion-model ${models_dir}/anima/aesthetic-v1.1/anima-aesthetic-v1.1.safetensors --llm ${models_dir}/anima/common/te/Qwen3-0.6B-Base.Q8_0.gguf --vae ${models_dir}/anima/common/vae/qwen_image_vae.safetensors --offload-to-cpu --listen-port ${PORT} --listen-ip 127.0.0.1 '
+    cmdStop: pkill -f 'sd-server.*anima-aesthetic-v1.1.safetensors'
+    health_check_timeout: 300
+    ttl: 1200
+    capabilities:
+      in:
+        - text
+      out:
+        - image
+      tools: false
+      reranker: false
+      context: 0
+    metadata:
+      size: 4.18 GB DiT (BF16) + 0.64 GB TE (Qwen3-0.6B Q8_0) + 0.25 GB VAE qwen_image — TE/VAE compartilhados
+      context: 0
+      vram_usage: ~5.1 GB residente (DiT+TE+VAE; --offload-to-cpu absorve o pico na 6GB)
+      source: circlestone-labs/Anima (HF split_files) — sem GGUF upstream para o aesthetic
+      kv_cache: n/a
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        tts: false
+        image: true
+      architecture: anima
+      parameters: 2000000000
+      context_length: 0
+      embedding_length: 0
+      quantization: bf16
+      note: >-
+        40 steps CFG 3 (o criador: aesthetic tolera CFG 3 e frequentemente fica melhor). Sampler er_sde. Uncensored tier Unbound. Instalado 30/10/2026.
+      caveats:
+        - '40 steps = mais lento que o turbo (usar para take final, nao para iterar)'
+  anima-base-v1.0:
+    name: Anima Base v1.0
+    description: "Anima Base v1.0 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. Maxima flexibilidade e diversidade; base oficial para treinamento de LoRA."
+    tags:
+      - image
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /sdcpp/v1/capabilities
+    cmd: '${sd_server} --diffusion-model ${models_dir}/anima/base-v1.0/anima-base-v1.0-Q8_0.gguf --llm ${models_dir}/anima/common/te/Qwen3-0.6B-Base.Q8_0.gguf --vae ${models_dir}/anima/common/vae/qwen_image_vae.safetensors --offload-to-cpu --listen-port ${PORT} --listen-ip 127.0.0.1 '
+    cmdStop: pkill -f 'sd-server.*anima-base-v1.0-Q8_0'
+    health_check_timeout: 300
+    ttl: 1200
+    capabilities:
+      in:
+        - text
+      out:
+        - image
+      tools: false
+      reranker: false
+      context: 0
+    metadata:
+      size: 2.24 GB DiT (GGUF Q8_0) + 0.64 GB TE (Qwen3-0.6B Q8_0) + 0.25 GB VAE qwen_image — TE/VAE compartilhados
+      context: 0
+      vram_usage: ~3.1 GB residente (GGUF Q8 + TE + VAE) - o mais folgado da familia na 6GB
+      source: Abiray/Anima-base-v1.0-GGUF (quant sobre os pesos oficiais circlestone-labs/Anima)
+      kv_cache: n/a
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        tts: false
+        image: true
+      architecture: anima
+      parameters: 2000000000
+      context_length: 0
+      embedding_length: 0
+      quantization: q8_0
+      note: >-
+        40 steps CFG 5 (receita do criador). Uncensored tier Unbound. Instalado 30/10/2026.
+      caveats:
+        - 'LoRA da Anima devem ser treinados na Base (guia do criador)'
+        - 'Q8_0: -4% velocidade vs BF16 (bench Bedovyy @5090), qualidade praticamente identica'
+  anima-preview3:
+    name: Anima Preview3-base
+    description: "Anima Preview3-base — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. Proxima geracao: o modelo oficial do workflow Anima Preview da Comfy."
+    tags:
+      - image
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /sdcpp/v1/capabilities
+    cmd: '${sd_server} --diffusion-model ${models_dir}/anima/preview3/anima-preview3-base-Q8_0.gguf --llm ${models_dir}/anima/common/te/Qwen3-0.6B-Base.Q8_0.gguf --vae ${models_dir}/anima/common/vae/qwen_image_vae.safetensors --offload-to-cpu --listen-port ${PORT} --listen-ip 127.0.0.1 '
+    cmdStop: pkill -f 'sd-server.*anima-preview3-base-Q8_0'
+    health_check_timeout: 300
+    ttl: 1200
+    capabilities:
+      in:
+        - text
+      out:
+        - image
+      tools: false
+      reranker: false
+      context: 0
+    metadata:
+      size: 2.28 GB DiT (GGUF Q8_0) + 0.64 GB TE (Qwen3-0.6B Q8_0) + 0.25 GB VAE qwen_image — TE/VAE compartilhados
+      context: 0
+      vram_usage: ~3.1 GB residente (GGUF Q8 + TE + VAE) - o mais folgado da familia na 6GB
+      source: Bedovyy/Anima-GGUF (preview3-base, quant sobre circlestone-labs/Anima)
+      kv_cache: n/a
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        tts: false
+        image: true
+      architecture: anima
+      parameters: 2000000000
+      context_length: 0
+      embedding_length: 0
+      quantization: q8_0
+      note: >-
+        40 steps CFG 5 (receita de family base; ajustar a gosto - e preview). GGUF do Bedovyy. Instalado 30/10/2026. A HF da circlestone anda ACIMA do Civitai: preview2/preview3 publicos quando o Civitai ainda apontava turbo-v1.1 como latest.
+      caveats:
+        - 'Checkpoint de PREVIEW: comportamento pode mudar entre revisoes'
+        - 'O nome preview NAO e o turbo - sao variantes distintas da familia'
+  anima-turbo-v1.1:
+    name: Anima Turbo v1.1
+    description: "Anima Turbo v1.1 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. RECOMENDADO para comecar: distilled, 10 steps CFG 1 (receita do criador), rapido."
+    tags:
+      - image
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /sdcpp/v1/capabilities
+    cmd: '${sd_server} --diffusion-model ${models_dir}/anima/turbo-v1.1/anima-turbo-v1.1.safetensors --llm ${models_dir}/anima/common/te/Qwen3-0.6B-Base.Q8_0.gguf --vae ${models_dir}/anima/common/vae/qwen_image_vae.safetensors --offload-to-cpu --listen-port ${PORT} --listen-ip 127.0.0.1 '
+    cmdStop: pkill -f 'sd-server.*anima-turbo-v1.1.safetensors'
+    health_check_timeout: 300
+    ttl: 1200
+    capabilities:
+      in:
+        - text
+      out:
+        - image
+      tools: false
+      reranker: false
+      context: 0
+    metadata:
+      size: 4.18 GB DiT (BF16) + 0.64 GB TE (Qwen3-0.6B Q8_0) + 0.25 GB VAE qwen_image — TE/VAE compartilhados
+      context: 0
+      vram_usage: ~5.1 GB residente (DiT+TE+VAE; --offload-to-cpu absorve o pico na 6GB)
+      source: circlestone-labs/Anima (HF split_files) — sem GGUF upstream para o turbo
+      kv_cache: n/a
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        tts: false
+        image: true
+      architecture: anima
+      parameters: 2000000000
+      context_length: 0
+      embedding_length: 0
+      quantization: bf16
+      note: >-
+        Distilled do criador (CFG 1, 8-12 steps — registry usa 10/er_sde). Turbo v1.1 = latest do Civitai #2458426. Uncensored tier Unbound (wiki uncensored-image-gen). Instalado 30/10/2026, pesos em ~/.llama-models/anima/ (layout de frota).
+      caveats:
+        - 'T2I puro - sem edit/im2img na rota CLI da casa'
+        - 'Sem realism: so anime/illustration (by design do modelo)'
   bonsai2-9b:
     name: Ternary Bonsai 9B
     description: Ternary Bonsai 9B is a 9B ternary (1.71-bit) model from PrismML, built on the Qwen3.5 base with native vision and a 131K context window. Always-thinking — it targets long-horizon work, document analysis, and quality-sensitive coding.
@@ -1462,13 +1646,13 @@ models:
       note: 'Backend ik. -ot parcial gpu7: experts dos blocos 0-6 na GPU (7-39 na CPU) — A/B 13/out: baseline (todos CPU) 33.3 t/s, gpu7 36.3 t/s (+9%) @400 tokens, ambos prompt único/temp 0.1 (VRAM 65% vs 37%, RAM -3.5 GB). GGML_CUDA_NO_PINNED=1 PROIBIDO: pinned obrigatório (sem ele: load trava 13.3 GiB alloc + decode 0.63 t/s). Pinned exige RAM folgada no load. -cmoe é EXCLUSIVO do cafe. Ik binary pull 3dbc2c9f (Oct 13) inclui lfm2moe runtime #2530 e spec decode LFM2 #2652 (CPU checkpoint). tok_embd fica NA GPU (o vocab 128K embd em CPU mataria o decode; o -ot tok_embd do k2 NÃO se aplica aqui). -nkvo OFF (a arch shortconv híbrida: o teste decide o KV residency — se OOM @32K: -nkvo como o k2). Smoke pending (pós-N=5 do minicpm5). GGUF em ~/.llama-models/lfm25-24b-a2b/.'
   lfm3-1.7b:
     name: LFM3 1.7B
-    description: "LiquidAI LFM3 1.7B, gerico edge da nova geracao tri-hybrid (13 short-conv + 5 SWA + 6 global attn), 256K de contexto nativo, raciocinio dual-mode. Candidato a prompter/enhance da casa e alternativa ao LFM2.5-2.6B."
+    description: "LiquidAI LFM3 1.7B descensurado (Heretic, KL 0.0094 / refusals 3-100 vs 92-100 do original — par KL+recusas verificado), gerico edge da nova geracao tri-hybrid (13 short-conv + 5 SWA + 6 global attn), 256K de contexto nativo, raciocinio dual-mode. Substituto drop-in do GGUF oficial (mesmo tamanho/quant)."
     tags:
       - think
       - tools
     cmd: '${llama_server} --port ${PORT}
 
-      --model ${models_dir}/lfm3-1.7b/LFM3-1.7B-Q8_0.gguf
+      --model ${models_dir}/lfm3-1.7b/LFM3-1.7B-Heretic-Abliterated-Q8_0.gguf
 
       --ctx-size 327680
 
@@ -1524,7 +1708,7 @@ models:
       size: ~1.85 GB (Q8_0)
       context: "65536 por slot x 5 slots (327680 total)"
       vram_usage: "~4.1 GB VRAM pico @262K slot unico; @5x64K est. ~4.4GB (KV q4_0 ~1.35GB)"
-      source: LiquidAI/LFM3-1.7B-GGUF (Q8_0, 1846238496 bytes exatos)
+      source: Vortecks/LFM3-1.7B-Heretic-Abliterated-GGUF (static, sem imatrix; Q8_0, 1846237728 bytes exatos; upstream safetensors BF16 do mesmo repo)
       kv_cache: q4_0/q4_0
       features:
         completion: true
@@ -1540,7 +1724,7 @@ models:
       embedding_length: 2048
       context_length: 262144
       quantization: Q8_0
-      note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb; LFM3 chegou HOJE via merges #31252/#31257 — pull + rebuild local). ctx NATIVO 262144 deployado (escada: f16 KV @262K = 3.0GB CUDA OOM; q4_0 = pico 4.14GB com folga). Decode 75 t/s, prompt 631 t/s (Q8_0, GPU sozinha). Tool calling: 4 get_weather/ get_local_time simultaneos, JSON limpo, finish=tool_calls, template embedded (--jinja, sem template da casa). DUAL-MODE REAL do vendor: o modelo pensa SEMPRE e o template tem toggle enable_thinking — plain pino false (respondera direto, reasoning 0 verificado), :think pin true; raciocinio nativo estilo distill ("We need to..." — PT OK direto no plain). Samplers do fabricante (chat geral): temp 0.1 / top_k 50 / repetition_penalty 1.1 (math usa 1.0/0.95/20 na mao do client). Escorregada factual tipica de 1.7B (SP/Minas numa frase) — papel prompter/enhance, nao enciclopedia. GGUF em ~/.llama-models/lfm3-1.7b/. Substituição candidata do lfm2.5-2.6b (régua maison 67.0) — re-discussão de aposentadorias pendente os resultados. 29/10: slots 5x64K (-parallel 5, -c 327680, KV q4_0 mantido, -b/-ub do paralelo) para multi-agentes — 5x64K est. ~4.4GB dentro dos 4.8GB livres da 3050; smoke slots 29/10 OK (spawn saudavel, pico ~4.8GB usados/1058 MiB livres, 5 reqs paralelas atendidas em batch 0.2s wall).'
+      note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb; LFM3 chegou HOJE via merges #31252/#31257 — pull + rebuild local). ctx NATIVO 262144 deployado (escada: f16 KV @262K = 3.0GB CUDA OOM; q4_0 = pico 4.14GB com folga). Decode 75 t/s, prompt 631 t/s (Q8_0, GPU sozinha). Tool calling: 4 get_weather/ get_local_time simultaneos, JSON limpo, finish=tool_calls, template embedded (--jinja, sem template da casa). DUAL-MODE REAL do vendor: o modelo pensa SEMPRE e o template tem toggle enable_thinking — plain pino false (respondera direto, reasoning 0 verificado), :think pin true; raciocinio nativo estilo distill ("We need to..." — PT OK direto no plain). Samplers do fabricante (chat geral): temp 0.1 / top_k 50 / repetition_penalty 1.1 (math usa 1.0/0.95/20 na mao do client). Escorregada factual tipica de 1.7B (SP/Minas numa frase) — papel prompter/enhance, nao enciclopedia. GGUF em ~/.llama-models/lfm3-1.7b/. Substituição candidata do lfm2.5-2.6b (régua maison 67.0) — re-discussão de aposentadorias pendente os resultados. 29/10: slots 5x64K (-parallel 5, -c 327680, KV q4_0 mantido, -b/-ub do paralelo) para multi-agentes — 5x64K est. ~4.4GB dentro dos 4.8GB livres da 3050; smoke slots 29/10 OK (spawn saudavel, pico ~4.8GB usados/1058 MiB livres, 5 reqs paralelas atendidas em batch 0.2s wall). 30/10: SWAP p/ GGUF Heretic-Abliterated (static, Vortecks) — pedido do usuario, drop-in Q8_0->Q8_0. KL 0.0094 + refusals 3/100 (par completo, KL baixo SOZINHO nao vale). GGUF oficial LFM3-1.7B-Q8_0.gguf mantido no dir p/ rollback imediato.'
   lfm3-audio-2b:
     name: LFM3 Audio 2B
     description: "Audio 2B da LiquidAI: voz e audio ENTRADA nativa (16 kHz mono) com ASR, translate, QA de recordings (speech/sounds/events) e fala-saída. Texto em 18 idiomas; NAO pensa (verificado). TTS offline via llama-tts; /v1/realtime OFICIAL no upstream desde llama.cpp v0.8.0/b11960+ (card GGUF 27/10/26, incl. tool calls); llama-swap ainda não proxeia (issue pendente)."

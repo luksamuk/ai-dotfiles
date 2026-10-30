@@ -136,6 +136,9 @@ def print_list() -> None:
         elif backend == "qwen21_turbo_wan2gp":
             wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
             return (wgp / "qwen_image_21_turbo_7B_int8_convrot.safetensors").exists()
+        elif backend == "anima_sdcpp":
+            # Layout de frota: pesos em ~/.llama-models/anima/<sub>/<file>
+            return (Path.home() / ".llama-models" / "anima" / info["weights_subdir"] / info["diffusion_file"]).exists()
         else:
             p = MODELS_DIR / model_dir
         return p.exists() and any(p.iterdir()) if p.exists() else False
@@ -500,7 +503,7 @@ def main() -> None:
     backend_type = model_info.get("backend_type", "gemlite")
 
     # ── Defaults per backend ──
-    # Steps: bonsai=4, qwen21-turbo=8, flux3=16, moss=50, qwen21=40, agate=50
+    # Steps: bonsai=4, qwen21-turbo=8, flux3=16, moss=50, qwen21=40, agate=50, anima=do registry
     if args.steps is None:
         if backend_type == "qwen21_turbo_wan2gp":
             args.steps = 8           # official Alibaba turbo (distilled)
@@ -514,6 +517,8 @@ def main() -> None:
             args.steps = 50
         elif backend_type == "fibo_sdcpp":
             args.steps = 4 if "turbo" in model_name else 20   # turbo: 4 passos (distill BRIA); dev: default do sd.cpp
+        elif backend_type == "anima_sdcpp":
+            args.steps = model_info.get("sample_steps", 10)   # receita do criador por variante (registry)
         else:
             args.steps = 4
 
@@ -544,6 +549,10 @@ def main() -> None:
     # Pre-flight
     if backend_type in ("flux3_wan2gp", "qwen21_wan2gp", "qwen21_turbo_wan2gp", "moss_wan2gp"):
         # Weights live in the WanGP ckpts/ tree; backends/wan2gp verifies per-file
+        pass
+    elif backend_type == "anima_sdcpp":
+        # Weights live in ~/.llama-models/anima (layout de frota); o runner
+        # anima valida os 3 componentes (DiT/TE/VAE) e levanta erro claro.
         pass
     else:
         require_model_dir(model_name)
@@ -605,6 +614,11 @@ def main() -> None:
     # ── Fibo 2.0 via sd.cpp (T2I + edição por referência) ──
     if backend_type == "fibo_sdcpp":
         _run_fibo_sdcpp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
+        return
+
+    # ── Anima (CircleStone×Comfy, 2B anime) via sd.cpp — T2I puro ──
+    if backend_type == "anima_sdcpp":
+        _run_anima_image(args, model_name, model_info, prompt, original_prompt, seed, width, height)
         return
 
     # ── LLM eviction (free VRAM for diffusion) ──
@@ -1101,6 +1115,91 @@ def _run_fibo_sdcpp_image(
 
     print(f"  [3/3] Done.")
 
+    save_metadata(
+        model_name, prompt, seed, width, height, steps,
+        cfg, 0.0, wall_time, 0.0, output_path,
+        enhanced_prompt=enhanced,
+    )
+    print_debrief(
+        model_name, model_info, prompt, seed,
+        width, height, steps, cfg,
+        0.0, wall_time, 0.0, output_path,
+        enhanced_prompt=enhanced,
+        original_prompt=original_prompt,
+    )
+
+
+def _run_anima_image(
+    args,
+    model_name: str,
+    model_info: dict,
+    prompt: str,
+    original_prompt: str,
+    seed: int,
+    width: int,
+    height: int,
+) -> None:
+    """Anima (CircleStone×Comfy, 2B) via sd.cpp — T2I puro.
+
+    Pesos em ~/.llama-models/anima (layout de frota). T2I apenas: o sd-cpp
+    da Anima não expõe edit/im2img na CLI da casa — edição é terreno da
+    Aesthetic+ComfyUI ou de outro modelo. Receita por variante vive no
+    registry (sample_steps/cfg_scale/sampler do card do criador).
+    """
+    from diffuse.backends.anima_sdcpp import generate_image_anima
+
+    steps = args.steps if args.steps is not None else model_info.get("sample_steps", 10)
+    cfg = model_info.get("cfg_scale", 1.0)
+
+    print(f"  🎨 Anima T2I: {width}×{height}, {steps} steps, cfg={cfg}, "
+          f"sampler={model_info.get('sampler', 'er_sde')}, seed={seed}")
+
+    # Pesos ficam fora do repo (frota); a checagem padrão do diffuse/models
+    # não se aplica — o backend valida os 3 componentes e levanta erro claro.
+    from diffuse.backends.anima_sdcpp import anima_paths
+    anima_paths(model_name)
+
+    # ── Prompt enhancement (mesma frota dos irmãos) ──
+    lora_tags = ""
+    if "<lora:" in prompt:
+        prompt, lora_tags = _extract_lora_tags(prompt)
+    enhanced = None
+    if args.enhance or args.enhance_with:
+        enhance_model = args.enhance_with or _load_enhance_config(model_info)
+        print(f"\n  ✨ Enhancing prompt via {enhance_model}...")
+        enhanced, _ = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
+        if enhanced and enhanced != prompt:
+            enhanced = _reapply_lora_tags(enhanced, lora_tags)
+            print(f"     Expanded to ({len(enhanced)} chars)")
+            _show_enhanced_if_requested(args, enhanced)
+            prompt = enhanced
+
+    # Evict LLMs antes de carregar (DiT + TE juntos ≈ 5GB na 3050)
+    running = llama_swap_running_models()
+    if running:
+        print(f"  🔄 Evicting LLM models: {', '.join(running)}")
+        evict_llm()
+        print(f"     VRAM freed for image generation")
+
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+
+    print(f"  [1/2] Rodando sd-cli ({model_info['bits']})...")
+    try:
+        output_path, wall_time = generate_image_anima(
+            model_name=model_name,
+            prompt=prompt,
+            seed=seed,
+            steps=steps,
+            width=width,
+            height=height,
+            output_path=output_path,
+        )
+    except (RuntimeError, FileNotFoundError) as exc:
+        print(f"\n  ✗ {exc}")
+        sys.exit(1)
+
+    print(f"  [2/2] Done.")
     save_metadata(
         model_name, prompt, seed, width, height, steps,
         cfg, 0.0, wall_time, 0.0, output_path,
