@@ -110,7 +110,14 @@ import mcp_bridge
 
 # MCP opcional (testchat/mcp.json): injeta tools externas no MESMO registro
 # dos mocks. Falha de rede/ausencia de config = MCP off, chat segue normal.
-mcp_bridge.BRIDGE.load()
+# --no-mcp (ou TESTCHAT_NO_MCP=1): pula as conexões MCP por completo —
+# precisa ser checado AQUI no top-level (argv já está disponível e o load
+# roda no import, antes de main() existir).
+NO_MCP = ("--no-mcp" in sys.argv[1:]) or (os.environ.get("TESTCHAT_NO_MCP") == "1")
+if NO_MCP:
+    mcp_bridge.BRIDGE.status = "desligado (--no-mcp)"
+else:
+    mcp_bridge.BRIDGE.load()
 TOOL_PAYLOAD = MOCK_TOOLS + mcp_bridge.BRIDGE.tools
 
 # Endpoint — use LLAMA_SWAP_HOST para acessar remotamente (ex: Termux via Tailscale)
@@ -2142,6 +2149,9 @@ Opções:
                         selecionar o modelo (oculto por padrão)
     --no-history        histórico de prompts só na sessão
                         (não grava em ~/.rich_chat_history)
+    --no-mcp            não conecta aos servidores MCP (mcp.json é
+                        ignorado; só as mock tools ficam disponíveis).
+                        Env equivalente: TESTCHAT_NO_MCP=1
     --duplex            modo duplex voz→voz (mic padrão, lanes de áudio)
     --duplex-tts        com --duplex: força o transporte chat+TTS (dois
                         passes) — histórico local com sliding window;
@@ -2469,6 +2479,10 @@ def main():
     if "--no-history" in argv:
         CLI_NO_HISTORY = True
         argv.remove("--no-history")
+    if "--no-mcp" in argv:
+        # consumido no import (guarda NO_MCP logo acima); aqui só remove
+        # pra não cair no "Argumentos não reconhecidos"
+        argv.remove("--no-mcp")
     if "--template" in argv:
         CLI_SHOW_TEMPLATE = True
         argv.remove("--template")
