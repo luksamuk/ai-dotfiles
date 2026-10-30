@@ -203,6 +203,9 @@ LOAD_OPT=()
 [ -n "$LETRA_FILE" ] && LETRA="$(cat "$LETRA_FILE")"
 [ -n "$LEGENDA_FILE" ] && LEGENDA="$(cat "$LEGENDA_FILE")"
 
+# letra ORIGINAL preservada p/ contexto do enhancer (o [Instrumental] é só
+# pro motor — o enhancer deve ver a letra real mesmo em run instrumental)
+LETRA_CTX="$LETRA"
 if [ "$INSTRUMENTAL" = "1" ] && [ "$FAMILIA" != "stable_audio" ]; then
   LETRA="[Instrumental]"
 fi
@@ -211,11 +214,14 @@ fi
 if [ "$ENHANCE" = "1" ] && [ -n "$LEGENDA" ]; then
   echo "=== musica — enhance via frota (llama-swap) ==="
   EH_ARGS=(--prompt "$LEGENDA")
-  [ -n "$LETRA" ] && EH_ARGS+=(--lyrics "$LETRA")
+  [ -n "$LETRA_CTX" ] && EH_ARGS+=(--lyrics "$LETRA_CTX")
   [ -n "$ENHANCE_MODEL" ] && EH_ARGS+=(--model "$ENHANCE_MODEL")
   if EH_JSON="$(env -u PYTHONPATH python3 "$MUSICA_HOME/enhance_music.py" "${EH_ARGS[@]}")"; then
     NEW_LEGENDA="$(printf '%s' "$EH_JSON" | env -u PYTHONPATH python3 -c 'import json,sys; print(json.load(sys.stdin)["caption"])')"
-    [ -n "$NEW_LEGENDA" ] && LEGENDA="$NEW_LEGENDA"
+    if [ -n "$NEW_LEGENDA" ]; then
+      LEGENDA="$NEW_LEGENDA"
+      [ -n "$LETRA_CTX" ] && echo "  letra: (${#LETRA_CTX} chars) passada ao enhancer como contexto"
+    fi
     if [ "$FAMILIA" = "ace_step" ] && [ -z "$BPM" ] && [ "$DRY_RUN" = "0" ]; then
       DEC_BPM="$(printf '%s' "$EH_JSON" | env -u PYTHONPATH python3 -c 'import json,sys; print((json.load(sys.stdin).get("params") or {}).get("bpm") or "")')"
       [ -n "$DEC_BPM" ] && {

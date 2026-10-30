@@ -198,7 +198,8 @@ def main() -> int:
         print("erro: sem handle de enhance (fleet cfg sem secao musica?)", file=sys.stderr)
         return 1
 
-    out: dict = {"model": model, "decision_model": d_model}
+    out: dict = {"model": model, "decision_model": d_model,
+                 "lyrics_ctx_chars": len(a.lyrics)}
     out["caption"] = enhance(a.prompt, a.lyrics, model)
     if not a.no_params:
         out["params"] = decide_bpm(out["caption"], d_model, threshold)
