@@ -539,6 +539,88 @@ def enhance_vision_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     return enhanced, enhanced
 
 
+def enhance_anima_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
+    """Danbooru-tag enhancement para a Anima (CircleStone×Comfy).
+
+    A Anima é danbooru-trained: o idioma nativo é a STRING DE TAGS. Medido
+    (30/10/2026): o enhance JSON/prosa da casa perde atributos (silver hair
+    saiu castanho); em tags o atributo sobrevive. Este enhancer converte
+    QUALQUER entrada (ideia crua, JSON, prosa, PT) em uma linha de tags.
+    Returns (enhanced_prompt, raw_response); falha = prompt original.
+    """
+    import urllib.request
+    import urllib.error
+    import time as _time
+    import json as _json
+
+    from diffuse.prompts import get_anima_enhance_prompt
+    system = get_anima_enhance_prompt(nsfw=nsfw)
+
+    log.info("Anima (danbooru tags)-enhancing prompt via %s", model)
+    t0 = _time.perf_counter()
+
+    _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
+    payload = _json.dumps({
+        "model": _enhance_model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.35,   # conversão a tags: pouco de criatividade
+        "max_tokens": 65536,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        f"{_enhance_url}/v1/chat/completions",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    max_retries = 12
+    enhanced = ""
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=None) as resp:
+                data = _json.loads(resp.read())
+                msg = data["choices"][0]["message"]
+                enhanced = msg.get("content", "").strip()
+                reasoning = msg.get("reasoning_content", "")
+                if not enhanced and reasoning:
+                    log.warning("Anima-enhance: content vazio com %d chars de reasoning", len(reasoning))
+                    return prompt, reasoning
+                break
+        except urllib.error.HTTPError as e:
+            if e.code == 400 and attempt < max_retries - 1:
+                log.info("Modelo carregando (attempt %d/%d), retry em 10s...", attempt + 1, max_retries)
+                _time.sleep(10)
+                continue
+            log.error("Anima-enhancement falhou: %s — usando prompt cru", e)
+            return prompt, str(e)
+        except (urllib.error.URLError, OSError, KeyError, _json.JSONDecodeError) as e:
+            log.error("Anima-enhancement falhou: %s — usando prompt cru", e)
+            return prompt, str(e)
+
+    elapsed = _time.perf_counter() - t0
+    log.info("Anima-enhancement completou em %.1fs", elapsed)
+
+    # higiene: modelos teimosos cercam em ``` ou explicam antes da linha de tags
+    enhanced = enhanced.strip()
+    if enhanced.startswith("```"):
+        enhanced = enhanced.strip("`")
+        enhanced = enhanced.split("\n", 1)[-1] if "\n" in enhanced else enhanced
+    # se veio multi-linha, fica a última linha não-vazia com >10 tags
+    lines = [l.strip() for l in enhanced.split("\n") if l.strip()]
+    tag_lines = [l for l in lines if l.count(",") >= 8]
+    if tag_lines:
+        enhanced = tag_lines[-1]
+    elif lines:
+        enhanced = lines[-1]
+    if not enhanced:
+        return prompt, enhanced
+    return enhanced, enhanced
+
+
 def enhance_agate_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
     """Use an LLM via llama-swap to rewrite a prompt for Agate (260M, fixed 256px).
 

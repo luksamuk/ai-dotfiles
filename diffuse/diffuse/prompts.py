@@ -15,6 +15,7 @@ _PROMPT_FILES: dict[str, str] = {
     "agate_enhance": "agate_enhance.yaml",
     "moss_enhance": "moss_enhance.yaml",
     "fibo_enhance": "fibo_enhance.yaml",
+    "anima_enhance": "anima_enhance.yaml",
     "edit_vision": "edit_vision.yaml",
     "edit_vision_multi": "edit_vision_multi.yaml",
     "vision_analysis": "vision_analysis.yaml",
@@ -103,6 +104,13 @@ def get_moss_enhance_prompt(nsfw: bool = False) -> str:
     filter", OpenMOSS tech report) — no safety-avoidance rewrite; blunt vocab
     and explicit content are in-distribution."""
     return _load_prompt("moss_enhance")
+
+
+def get_anima_enhance_prompt(nsfw: bool = False) -> str:
+    """Anima é danbooru-trainado e uncensored por default (tier "Unbound") —
+    sem rewrite de segurança; o idioma nativo é a string de tags (medido:
+    atributos de cor/objeto sobrevivem em tags e se perdem em JSON/prosa)."""
+    return _load_prompt("anima_enhance")
 
 
 

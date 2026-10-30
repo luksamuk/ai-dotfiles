@@ -1166,8 +1166,13 @@ def _run_anima_image(
     enhanced = None
     if args.enhance or args.enhance_with:
         enhance_model = args.enhance_with or _load_enhance_config(model_info)
-        print(f"\n  ✨ Enhancing prompt via {enhance_model}...")
-        enhanced, _ = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
+        if model_info.get("enhance_type", "anima") == "anima":
+            print(f"\n  ✨ Enhancing prompt via {enhance_model} (danbooru tags)...")
+            from diffuse.enhance import enhance_anima_prompt
+            enhanced, _ = enhance_anima_prompt(prompt, enhance_model, nsfw=args.nsfw)
+        else:
+            print(f"\n  ✨ Enhancing prompt via {enhance_model}...")
+            enhanced, _ = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
         if enhanced and enhanced != prompt:
             enhanced = _reapply_lora_tags(enhanced, lora_tags)
             print(f"     Expanded to ({len(enhanced)} chars)")
