@@ -47,6 +47,7 @@ OUT=""
 DRY_RUN=0
 ENHANCE=0
 ENHANCE_MODEL=""
+SEED_EXPLICIT=0
 EXTRA=()
 
 # ---------- tabela de famílias ----------
@@ -124,7 +125,8 @@ Flags:
   --legenda TEXTO      descrição do som (inline)
   --legenda-file PATH  descrição do som de arquivo
   --dur N              duração alvo em segundos (default: 30)
-  --seed N             semente reprodutível (default: 42)
+  --seed N             semente — default ALEATÓRIA a cada run;
+                       passe --seed pra reprodutibilidade (seed safari)
   --steps N            passos de denoise (default por família: ace 8, base 50)
   --guidance N         guidance scale (familias que aceitam)
   --bpm/--tom/--compasso  controle simbólico (só ACE-Step; ex: --tom "D minor")
@@ -160,7 +162,7 @@ while [[ $# -gt 0 ]]; do
     --legenda)        LEGENDA="$2"; shift 2 ;;
     --legenda-file)   LEGENDA_FILE="$2"; shift 2 ;;
     --dur|--duration) DUR="$2"; shift 2 ;;
-    --seed)           SEED="$2"; shift 2 ;;
+    --seed)           SEED="$2"; SEED_EXPLICIT=1; shift 2 ;;
     --steps)          STEPS="$2"; shift 2 ;;
     --guidance)       GUIDANCE="$2"; shift 2 ;;
     --bpm)            BPM="$2"; shift 2 ;;
@@ -239,6 +241,12 @@ fi
 if [ -z "$LEGENDA" ]; then
   echo "erro: sem legenda. use --legenda ou --legenda-file" >&2
   exit 1
+fi
+
+# ---------- seed aleatória quando não pedida explicitly ----------
+# combina dois RANDOMs: seed nova a cada run, sem --seed
+if [ "$SEED_EXPLICIT" = "0" ]; then
+  SEED=$(( (RANDOM * 32768 + RANDOM) % 900000000 + 1 ))
 fi
 
 # ---------- nome de saída ----------
