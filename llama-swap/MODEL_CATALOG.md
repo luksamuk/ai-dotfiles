@@ -390,7 +390,8 @@
 | **Tool calling** | ✅ probeado 31/out pela rota do swap (finish=tool_calls, get_weather, args JSON válidos) |
 | **Vision** | ❌ text-only (mmproj existe no repo annelo — follow-up do dono) |
 | **Velocidade** | 16,2 t/s decode / 59 t/s prompt @16K (full-offload) |
-| **Deploy** | 31/out/2026. Fragment `models/sensenova-loop-9b.yaml`; régua em `sn9-ladder.sh`/`sn9-bench.sh` |
+| **Deploy** | 31/out/2026. Fragment `models/sensenova-loop-9b.yaml`; régua em `sn9-ladder.sh` (git 004ff85) |
+| **Status** | **RETIRADO 31/out/2026 pelo dono** ("broxou": lento em offload parcial, vocabulário não é o forte) — fragment movido pra `models/_disabled/`, GGUF deletado (~15 GB), fork buildados deletados; restore completo no header do fragment `_disabled/sensenova-loop-9b.yaml` |
 
 ---
 
@@ -410,6 +411,7 @@
 | **Vision** | ✅ PROBEADO 31/out: circle-red ("The circle is red.", finish=stop), manga.jpg real (reconheceu Death Note, página PT-BR; nomes de autores escorregam — 9B) |
 | **Velocidade** | 5.0-5.4 t/s decode (26/56 layers GPU, resto CPU); prompt+imagem ~30s ponta a ponta |
 | **Deploy** | 31/out/2026, handle `sn9v`. Fragment `models/sensenova-loop-9b-vision.yaml`. FORMATO INCOMPATÍVEL com o single-block do guideboard (keys/expec divergem) — por isso o main gordo |
+| **Status** | **RETIRADO 31/out/2026 junto do sn9** — fragment movido pra `models/_disabled/`, GGUFs deletados (~9,1 GB: main FAT + mmproj), builds deletados; restore completo (patches, SHAs, build) no header do fragment `_disabled/sensenova-loop-9b-vision.yaml` |
 
 ---
 

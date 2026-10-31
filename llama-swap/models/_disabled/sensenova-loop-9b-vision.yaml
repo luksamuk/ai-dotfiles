@@ -1,3 +1,13 @@
+# RETIRADO 31/out/2026 pelo dono junto do sn9 ("broxou": 5 t/s com offload parcial + vocabulario limitado pro uso).
+# RESTORE: (1) fragment de volta pra models/; (2) re-add refs sn9v no config-footer (vars+evict);
+# (3) rebuild do runtime comunidade: git clone https://github.com/ggml-org/llama.cpp && git fetch origin ff0d396e3dda0f33e7ce5ad4267fce4f7690cfb1 --depth=1 && git checkout FETCH_HEAD;
+#     patches em ordem: runtime/01-clover-pr31306.patch (rev 4838ffb0c) + runtime/02-sensenova-loop-native.patch — ambos em
+#     hf.co/notfakerv/SenseNova-Loop-9B-Preview-GGUF (runtime/); NAO aplicar o 03 (converter-only, mmproj ja convertido).
+#     cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON && cmake --build build --target llama-server llama-cli -j20
+# (4) GGUFs: hf download annelo/SenseNova-Loop-9B-Preview-Q4_K_M-Vision-GGUF 'SenseNova-Loop-9B-Preview-Q4_K_M.gguf' 'mmproj-SenseNova-Loop-F16.gguf' --local-dir ~/.llama-models/sensenova-loop-9b/
+#     SHA: main b3f8cd84dbd10aaff71eb9631ca8bae66a919d022178b106c1d142e0687c7708 | mmproj 3c94fcbb770173d499919458b5f3a650cdc31d1ab6cc063dd345f9b195097563
+#     (renomear main pro nome do cmd, ou ajustar o cmd)
+# NUMEROS NO RETIRO: 5,0-5,4 t/s decode @16K (ngl 26/56 GPU) | visao probeada: circle+manga Death Note OK, nomes de autor escorregam | tools probeado OK.
 sensenova-loop-9b-vision:
   name: SenseNova Loop 9B (vision)
   description: "O mesmo 9B looped+mHC do SenseTime, no GGUF da comunidade com torre visual incluida (mmproj F16 0.9GB, caminho qwen3vl; runtime comunitario notfakerv/annelo: clover PR 31306 + native). Ve imagens: description, OCR leve, analise de composicao e design. 8K contexto local, ~5 t/s."

@@ -1,3 +1,11 @@
+# RETIRADO 31/out/2026 pelo dono ("broxou": lento em offload parcial e vocabulario nao e o forte).
+# RESTORE: (1) fragment de volta pra models/; (2) re-add refs sn9/sn9v no config-footer (vars+evict);
+# (3) build do fork guideboardlabs (Vulkan): git clone https://github.com/GuideboardLabs/llama.cpp-sensenova-loop -b sensenova-loop
+#     + cmake -B build -DGGML_VULKAN=ON -DCMAKE_PREFIX_PATH=<diretorio com Vulkan-Headers+SPIRV-Headers>
+#     (headers: /tmp/vksdk apaga-se — reinstalar Vulkan-Headers v1.4.316 + SPIRV-Headers via cmake --install)
+# (4) GGUF: hf download guideboardlabs/SenseNova-Loop-9B-Preview-GGUF SenseNova-Loop-9B-Preview-Q4_0.gguf
+#     (SHA256 753998a3e0071c153d1b9528bce9040bbeb2dcece531b39748fe089fd4fb28e0) --local-dir ~/.llama-models/sensenova-loop-9b/
+# NUMEROS NO MOMENTO DO RETIRO: 16,2 t/s @16K full-offload; ladder/régua em sn9-ladder.sh (git 004ff85).
 sensenova-loop-9b:
   name: SenseNova Loop 9B
   description: "SenseTime/DeepSeek lineage experimental: 9B looped multimodal transformer (32 layers, middle block executed twice with shared weights + two-stream mHC with Sinkhorn routing). Community GGUF + guideboardlabs fork runtime. Text-only, 16K local window (nativo 262K)."
