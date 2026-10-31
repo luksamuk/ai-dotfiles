@@ -2236,10 +2236,11 @@ def run_duplex_session(start_model=None):
         return
 
     if is_rt:
-        try:
-            # llama-swap ainda NÃO proxéia /v1/realtime (issue pendente). Padrão
-            # da casa (era systemone): spawn pela swap → porta dinâmica em
-            # /running → WS direto no llama-server.
+        def _spawn_rt():
+            """Spawn da lane pela swap (chat ping de 1 token) -> porta dinâmica
+            do llama-server. Chamado a CADA sessão realtime: se a sessão caiu
+            (TTL da swap deu unload da lane, evicção por matrix, rede), a
+            próxima sessão ressurge a lane e devolve a porta nova."""
             _urlrequest.urlopen(_urlrequest.Request(
                 f"{BASE_URL}/chat/completions", data=_json.dumps(
                 {"model": lane_id, "messages": [{"role": "system", "content": "ping"}],
@@ -2254,7 +2255,9 @@ def run_duplex_session(start_model=None):
             port = _uparse(entry.get("proxy") or "").port
             if port is None:
                 raise RuntimeError(f"sem porta em /running para {lane_id}")
-            _asyncio.run(_duplex_realtime_loop(lane_id, f"http://127.0.0.1:{port}/v1"))
+            return f"http://127.0.0.1:{port}/v1"
+        try:
+            _asyncio.run(_duplex_realtime_loop(lane_id, _spawn_rt))
             console.print("[dim]Modo duplex encerrado.[/]")
             return
         except KeyboardInterrupt:
@@ -2268,7 +2271,7 @@ def run_duplex_session(start_model=None):
                 run_duplex_s2s_loop(lane_id)        # audio.cpp: s2s single
 
 
-async def _duplex_realtime_loop(lane_id, swap_ws):
+async def _duplex_realtime_loop(lane_id, swap_fn):
     """Sessão WebSocket /v1/realtime persistente: uma conexão, conversa contínua.
 
     Protocolo idêntico ao examples/realtime_client.py do upstream (PR #31269):
@@ -2276,6 +2279,21 @@ async def _duplex_realtime_loop(lane_id, swap_ws):
     input_audio_buffer.append no rate do modelo; resposta = response.output_
     text.delta + response.output_audio.delta até response.done — áudio tocado
     em pedaços no pw-play.
+
+    swap_fn é o spawn da lane pela swap (chat ping -> /running -> porta) e é
+    chamado a cada sessão: o llama-swap ainda não proxéia a rota e o WS vai
+    DIRETO ao llama-server na porta dinâmica (padrão da casa).
+
+    Resiliência (a sessão não morre mais de primeira): a conversa vive NO
+    SERVER e o realtime NÃO trunca contexto — encheu o ctx da lane, é um
+    evento de erro ("the conversation does not fit in the context") e o WS
+    fecha (server-realtime.cpp: fail + conn.close()). O cliente acompanha o
+    orçamento estimado da conversa e REABRE a sessão limpa antes do estouro
+    (e reage ao mesmo erro do server): o histórico da sessão anterior se
+    perde no reset, e isso é avisado no console. Queda na horizontal (TTL da
+    swap dando unload, evicção, rede) refaz o spawn e sobe a lane de
+    novo. Três resets seguidos sem nenhum turno bem-sucedido encerram o modo
+    duplex (evita loop infinito).
     """
     import base64 as _base64
     import wave as _wave
@@ -2285,113 +2303,178 @@ async def _duplex_realtime_loop(lane_id, swap_ws):
     import asyncio as _asyncio
     from openai import AsyncOpenAI
 
-    client = AsyncOpenAI(base_url=swap_ws, api_key="none",
-                         websocket_base_url=swap_ws.replace("http", "ws", 1))
-    # porta dinâmica: o server é single-model, o id esperado é "default"
-    async with client.realtime.connect(model="default") as conn:
-        ev = await conn.recv()
-        if ev.type == "error":
-            console.print(f"[red]{ev.error.message}[/]"); return
-        session_info = ev.model_dump(warnings=False)["session"]
-        in_rate = (session_info["audio"]["input"]["format"]["rate"])
-        await conn.session.update(session={
-            "type": "realtime",
-            # Receita oficial de spoken tool calling do LFM3 (doc Tool Use):
-            # modo interleaved + lista de tools no system prompt. O server WS
-            # nao emite eventos de tool call - o parse e' no cliente.
-            "instructions": _duplex.tools_instructions(),
-            "output_modalities": ["text", "audio"],
-        })
-        ev = await conn.recv()
-        if ev.type == "error":
-            console.print(f"[red]{ev.error.message}[/]"); return
+    wav_in = "/tmp/testchat_duplex_in.wav"
+    fails = 0  # resets seguidos sem nenhum turno bem-sucedido
 
-        wav_in = "/tmp/testchat_duplex_in.wav"
-        turn = 0
-        while True:
-            turn += 1
-            console.print()
-            console.print("[green]🎙 Gravando... (Enter para enviar)[/]")
-            rec = _subprocess.Popen(["pw-record", wav_in])
-            try:
-                input()
-            except EOFError:
-                rec.terminate()
-                console.print("[dim]stdin fechado — encerrando modo duplex.[/]")
-                return
-            rec.terminate()
-            try:
-                rec.wait(timeout=5)
-            except _subprocess.TimeoutExpired:
-                rec.kill()
+    while True:  # sessão: a conversa (history) vive e morre com a conexão
+        try:
+            swap_ws = swap_fn()
+            client = AsyncOpenAI(base_url=swap_ws, api_key="none",
+                                 websocket_base_url=swap_ws.replace("http", "ws", 1))
+            async with client.realtime.connect(model="default") as conn:
+                ev = await conn.recv()
+                if ev.type == "error":
+                    console.print(f"[red]{ev.error.message}[/]"); return
+                session_info = ev.model_dump(warnings=False)["session"]
+                in_rate = (session_info["audio"]["input"]["format"]["rate"])
+                await conn.session.update(session={
+                    "type": "realtime",
+                    # Receita oficial de spoken tool calling do LFM3 (doc Tool Use):
+                    # modo interleaved + lista de tools no system prompt. O server WS
+                    # nao emite eventos de tool call - o parse e' no cliente.
+                    "instructions": _duplex.tools_instructions(),
+                    "output_modalities": ["text", "audio"],
+                })
+                ev = await conn.recv()
+                if ev.type == "error":
+                    console.print(f"[red]{ev.error.message}[/]"); return
 
-            if not _os.path.exists(wav_in) or _os.path.getsize(wav_in) < 2048:
-                console.print("[yellow]Gravação vazia — fale perto do microfone.[/]")
-                continue
-            try:
-                pcm = _subprocess.run(["ffmpeg", "-v", "error", "-i", wav_in,
-                                       "-ar", str(in_rate), "-ac", "1",
-                                       "-f", "s16le", "-"],
-                                      capture_output=True, check=True).stdout
-            except _subprocess.CalledProcessError as e:
-                console.print(f"[red]ffmpeg falhou: {e.stderr[:120]}[/]")
-                continue
-            smp = _array.array("h")
-            smp.frombytes(pcm)
-            step = in_rate // 10
-            console.print(f"[dim]Enviando {len(smp)/in_rate:.1f}s de fala...[/]")
-
-            async def _send():
-                for j in range(0, len(smp), step):
-                    await conn.input_audio_buffer.append(
-                        audio=_base64.b64encode(smp[j:j+step].tobytes()).decode())
-                    await _asyncio.sleep(len(smp[j:j+step]) / in_rate)
-            sender = _asyncio.create_task(_send())
-            await sender   # input completo em chunks
-            await conn.response.create()   # turno determinístico (sem guard/cancel)
-
-            tool_rounds = 0
-            while True:
-                text_buf, audio_buf = [], []
-                async for ev in conn:
-                    if ev.type == "response.output_text.delta":
-                        text_buf.append(ev.delta)
-                    elif ev.type == "response.output_audio.delta":
-                        audio_buf.append(base64.b64decode(ev.delta))
-                    elif ev.type == "response.done":
-                        break
-                    elif ev.type == "error":
-                        console.print(f"[red]ws error: {ev.error.message}[/]")
+                turn = 0
+                used_tok = 0   # orçamento estimado da CONVERSA desta sessão
+                session_ok = False
+                while not session_ok:  # turnos dentro desta sessão
+                    turn += 1
+                    console.print()
+                    console.print(f"[green]🎙 Gravando... (Enter para enviar)[/] "
+                                  f"[dim]sessão ~{used_tok}/{_duplex.DUPLEX_RT_CTX_BUDGET} tok[/]")
+                    rec = _subprocess.Popen(["pw-record", wav_in])
+                    try:
+                        input()
+                    except EOFError:
+                        rec.terminate()
+                        console.print("[dim]stdin fechado — encerrando modo duplex.[/]")
                         return
-                answer_text = "".join(text_buf)
-                shown = _duplex.strip_tool_blocks(answer_text).strip()
-                console.print(f"[bold]📝 {shown or '(tool call)'}[/]")
-                if audio_buf:
-                    audio = b"".join(audio_buf)
-                    out = f"/tmp/testchat_duplex_out_{turn}_{tool_rounds}.wav"
-                    with _wave.open(out, "wb") as f:
-                        f.setnchannels(1); f.setsampwidth(2); f.setframerate(24000)
-                        f.writeframes(audio)
-                    console.print(f"[dim]🔊 {len(audio)/(24000*2):.1f}s -> {out}[/]")
-                    _subprocess.run(["pw-play", out])
-                # Tool round-trip: blocos de tool call no texto -> executa mock
-                # e devolve o resultado como user item (PR #31269 so aceita
-                # role user) -> nova resposta.
-                tcs = _duplex.parse_tool_calls(answer_text)
-                if tcs and tool_rounds < _duplex.DUPLEX_MAX_TOOL_ROUNDS:
-                    tool_rounds += 1
-                    for c in tcs:
-                        console.print(f"[magenta]Tool call: {c['name']}"
-                                      f"({json.dumps(c['arguments'], ensure_ascii=False)})[/]")
-                    result_text = _duplex.tool_result_user_text(tcs)
-                    await conn.conversation.item.create(item={
-                        "type": "message", "role": "user",
-                        "content": [{"type": "input_text", "text": result_text}]})
-                    await conn.response.create()
-                    continue
-                if tcs:
-                    console.print("[yellow]Máximo de rodadas de tool call atingido.[/]")
-                break
+                    rec.terminate()
+                    try:
+                        rec.wait(timeout=5)
+                    except _subprocess.TimeoutExpired:
+                        rec.kill()
+
+                    if not _os.path.exists(wav_in) or _os.path.getsize(wav_in) < 2048:
+                        console.print("[yellow]Gravação vazia — fale perto do microfone.[/]")
+                        continue
+                    try:
+                        pcm = _subprocess.run(["ffmpeg", "-v", "error", "-i", wav_in,
+                                               "-ar", str(in_rate), "-ac", "1",
+                                               "-f", "s16le", "-"],
+                                              capture_output=True, check=True).stdout
+                    except _subprocess.CalledProcessError as e:
+                        console.print(f"[red]ffmpeg falhou: {e.stderr[:120]}[/]")
+                        continue
+                    smp = _array.array("h")
+                    smp.frombytes(pcm)
+                    step = in_rate // 10
+                    in_secs = len(smp) / in_rate
+                    console.print(f"[dim]Enviando {in_secs:.1f}s de fala...[/]")
+                    in_tok = int(in_secs * _duplex.DUPLEX_AUDIO_TOK_PER_SEC)
+
+                    # Reset DE PODA (não é falha): abriu e a conversa já não cabe.
+                    # Verificação antes do envio — não jogamos o turno num server cheio.
+                    if used_tok + in_tok > _duplex.DUPLEX_RT_CTX_BUDGET:
+                        console.print("[yellow]Contexto da sessão cheio "
+                                      f"(~{used_tok}/{_duplex.DUPLEX_RT_CTX_BUDGET} tok) — "
+                                      "reabrindo sessão limpa; a conversa anterior se perde.[/]")
+                        break  # reset: sai da sessão sem falha (fails=0, turno saudável)
+
+                    async def _send():
+                        for j in range(0, len(smp), step):
+                            await conn.input_audio_buffer.append(
+                                audio=_base64.b64encode(smp[j:j+step].tobytes()).decode())
+                            await _asyncio.sleep(len(smp[j:j+step]) / in_rate)
+                    sender = _asyncio.create_task(_send())
+                    await sender   # input completo em chunks
+                    await conn.response.create()   # turno determinístico (sem guard/cancel)
+                    used_tok += in_tok
+
+                    fatal = False
+                    turn_ok = False
+                    tool_rounds = 0
+                    while not fatal:  # resposta (+ rodadas de tool call)
+                        text_buf, audio_buf = [], []
+                        done = False
+                        async for ev in conn:
+                            if ev.type == "response.output_text.delta":
+                                text_buf.append(ev.delta)
+                            elif ev.type == "response.output_audio.delta":
+                                audio_buf.append(_base64.b64decode(ev.delta))
+                            elif ev.type == "response.done":
+                                done = True
+                                u = getattr(ev, "usage", None)
+                                if u is not None:
+                                    used_tok += int(getattr(u, "output_tokens", 0) or 0)
+                                break
+                            elif ev.type == "error":
+                                console.print(f"[red]ws error: {ev.error.message}[/]")
+                                fatal = True
+                                break
+                        if not (done or fatal):
+                            break  # conexão fechada sem evento (ex.: lane unload)
+                        turn_ok = turn_ok or bool(done)
+                        fails = 0 if turn_ok else fails
+                        answer_text = "".join(text_buf)
+                        shown = _duplex.strip_tool_blocks(answer_text).strip()
+                        console.print(f"[bold]📝 {shown or '(tool call)'}[/]")
+                        if audio_buf:
+                            audio = b"".join(audio_buf)
+                            out = f"/tmp/testchat_duplex_out_{turn}_{tool_rounds}.wav"
+                            with _wave.open(out, "wb") as f:
+                                f.setnchannels(1); f.setsampwidth(2); f.setframerate(24000)
+                                f.writeframes(audio)
+                            console.print(f"[dim]🔊 {len(audio)/(24000*2):.1f}s -> {out}[/]")
+                            _subprocess.run(["pw-play", out])
+                        if fatal:
+                            break
+                        # Tool round-trip: blocos de tool call no texto -> executa mock
+                        # e devolve o resultado como user item (PR #31269 so aceita
+                        # role user) -> nova resposta.
+                        tcs = _duplex.parse_tool_calls(answer_text)
+                        if tcs and tool_rounds < _duplex.DUPLEX_MAX_TOOL_ROUNDS:
+                            tool_rounds += 1
+                            for c in tcs:
+                                console.print(f"[magenta]Tool call: {c['name']}"
+                                              f"({json.dumps(c['arguments'], ensure_ascii=False)})[/]")
+                            result_text = _duplex.tool_result_user_text(tcs)
+                            used_tok += len(result_text) // 3
+                            await conn.conversation.item.create(item={
+                                "type": "message", "role": "user",
+                                "content": [{"type": "input_text", "text": result_text}]})
+                            await conn.response.create()
+                            continue
+                        if tcs:
+                            console.print("[yellow]Máximo de rodadas de tool call atingido.[/]")
+                        break  # resposta completa
+
+                    if not fatal and used_tok > _duplex.DUPLEX_RT_CTX_BUDGET:
+                        console.print(f"[yellow]Contexto da sessão no limite "
+                                      f"(~{used_tok}/{_duplex.DUPLEX_RT_CTX_BUDGET} tok) — "
+                                      "reabrindo sessão limpa; a conversa anterior se perde.[/]")
+                        fatal = True  # reset preventivo (turno saudável: fails=0)
+                        fails = 0
+                    if fatal:
+                        if not turn_ok:
+                            fails += 1
+                            if fails >= 3:
+                                console.print("[red]Três resets seguidos sem resposta — "
+                                              "encerrando o modo duplex.[/]")
+                                return
+                        else:
+                            fails = 0
+                        session_ok = True  # sai do async-with -> reconnect limpo
+        except _asyncio.CancelledError:
+            raise
+        except KeyboardInterrupt:
+            console.print("[dim]Modo duplex encerrado.[/]")
+            return
+        except Exception as e:
+            # conexão derrubada sem evento (ex.: lane saiu da swap, rede):
+            # tratar como reset de sessão, não como morte do modo duplex.
+            console.print(f"[yellow]Sessão caiu ({type(e).__name__}: {str(e)[:120]}) — "
+                          "reabrindo sessão limpa.[/]")
+            fails += 1
+            if fails >= 3:
+                console.print("[red]Três quedas seguidas sem resposta — "
+                              "encerrando o modo duplex.[/]")
+                return
 
 
 def run_duplex_s2s_loop(lane_id):

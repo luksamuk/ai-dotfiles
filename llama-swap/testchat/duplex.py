@@ -22,6 +22,9 @@ import wave
 DUPLEX_WINDOW_TOKENS = 24000     # orcamento do historico (32K de contexto - folga p/ tools/saida)
 DUPLEX_AUDIO_TOK_PER_SEC = 150   # LiquidCodec: 12 tokens / 80 ms (conservador p/ entrada)
 DUPLEX_MAX_TOOL_ROUNDS = 4
+DUPLEX_RT_CTX_BUDGET = 28800     # orcamento da CONVERSA server-side da sessao realtime
+                                 # (lane 32K - folga p/ resposta do turno em curso e
+                                 #  margem da estimativa; estourou -> reset da sessao)
 
 # Tag de tool call do LFM3 - montada por partes (nao emitir o literal
 # completo em texto de agente: quebra o stream). Na rota chat/completions o
