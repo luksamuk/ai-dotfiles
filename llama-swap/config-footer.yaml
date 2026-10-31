@@ -137,6 +137,7 @@ matrix:
     mojev: minicpm-ocr-jev
     sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
     nbe4: nemotron-bolt-e4b  # NVIDIA Bolt E4B (Gemma 4 E4B pos-treino), 64K em Q4 por escolha do dono
+    lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + :think), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despejava (ping-pong cravado no journal 30/out 14:53)
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
@@ -145,10 +146,10 @@ matrix:
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(twp | lfm24 | sp26 | nbe4) & (lfmcol | eg2) & qpfim & pkstt"
+    small_embed: "(twp | lfm24 | sp26 | nbe4 | lfm317) & (lfmcol | eg2) & qpfim & pkstt"
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "(twp | lfm24 | sp26 | nbe4) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados); twp + lfm24 restam
+    small_only: "(twp | lfm24 | sp26 | nbe4 | lfm317) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados); twp + lfm24 restam | 30/out: +lfm317 (sem set = exclusivo no solver)
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
@@ -239,6 +240,7 @@ matrix:
     # eq2: 2  # REMOVED Sep 10 2026
     # eq4: 3  # REMOVED Sep 10 2026
     qpfim: 1
+    lfm317: 2  # 1.7B Q8 ~2GB GPU — reload rápido; num conflito real o pollard (cost 1) sai antes
     # g12p: 3  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%)
     # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
     # gpt2xl: 3  # DISABLED Oct 3 2026 - gpt2xl removido
