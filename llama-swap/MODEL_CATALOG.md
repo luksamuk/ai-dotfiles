@@ -394,6 +394,25 @@
 
 ---
 
+### 21. sensenova-loop-9b-vision — SenseNova Loop 9B com visão (experimental)
+
+| Parameter | Value |
+|-----------|-------| 
+| **Source** | annelo/SenseNova-Loop-9B-Preview-Q4_K_M-Vision-GGUF (Q4_K_M b3f8cd84 + mmproj F16 3c94fcbb, SHA verificados) |
+| **Quant** | Q4_K_M ~8.21 GB main (bloco de loop ARMazenado duplicado: 937 tensors vs 523 do single-block) + ~0.88 GB mmproj (arch clip, caminho qwen3vl) |
+| **Backend** | `${sensenova_vision_server}` — runtime comunitário notfakerv/annelo: upstream `ff0d396e3` + patch 01 (clover PR 31306 rev 4838ffb0c) + patch 02 (sensenova_loop na classe llama_model_qwen35, mHC + Sinkhorn puro-ggml), build CUDA |
+| **KV cache** | q4_0/q4_0 (-fa on) |
+| **Load** | `-ngl 26 --ctx-size 16384` + `--no-mmproj-offload` (mmproj na CPU: ViT embute na CPU, segundos por imagem) + `GGML_VK_DISABLE_HOST_VISIBLE_VIDMEM=1` |
+| **VRAM** | pico medido 5708 MiB card @16K = ~93% da 3050; OOM com mmproj em GPU (core dump: a flag --no-mmproj-offload resolve) |
+| **Context** | 16K (8K mais folgado; acima disso o KV aperta) |
+| **Thinking** | ✅ always-thinking (plain direto via enable_thinking=false, :think liga; budget ~1500+) |
+| **Tool calling** | ✅ probeado NESTE runtime (finish=tool_calls, get_weather, JSON válido) |
+| **Vision** | ✅ PROBEADO 31/out: circle-red ("The circle is red.", finish=stop), manga.jpg real (reconheceu Death Note, página PT-BR; nomes de autores escorregam — 9B) |
+| **Velocidade** | 5.0-5.4 t/s decode (26/56 layers GPU, resto CPU); prompt+imagem ~30s ponta a ponta |
+| **Deploy** | 31/out/2026, handle `sn9v`. Fragment `models/sensenova-loop-9b-vision.yaml`. FORMATO INCOMPATÍVEL com o single-block do guideboard (keys/expec divergem) — por isso o main gordo |
+
+---
+
 ## Disabled Models
 
 Configs preserved in `models/_disabled/` (GGUF deleted, can be re-downloaded):

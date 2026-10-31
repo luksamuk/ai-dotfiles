@@ -72,6 +72,11 @@ macros:
   # NVIDIA serve via Vulkan igualmente. Upstream ggml-org ainda SEM o arch (PR pendente).
   # Build local em ~/git/llama.cpp-sensenova-loop/build/bin/llama-server (31/out/2026)
   "sensenova_server": "${env.HOME}/git/llama.cpp-sensenova-loop/build/bin/llama-server"
+
+  # Caminho para o llama-server do runtime COMUNITARIO com visao (sensenova_loop via
+  # classe qwen35 + mHC + patches notfakerv/annelo: clover PR 31306 + native, base ff0d396e3)
+  # Build CUDA; o mmproj ride a maquinaria qwen3vl do upstream. Visao verificada 31/out.
+  "sensenova_vision_server": "${env.HOME}/git/llama.cpp-sn-vision/build/bin/llama-server"
   # Caminho para o vLLM (installed in ~/.vllm venv)
   "vllm_bin": "${env.HOME}/.vllm/bin/vllm"
   

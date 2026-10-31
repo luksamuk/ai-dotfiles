@@ -1,0 +1,110 @@
+sensenova-loop-9b-vision:
+  name: SenseNova Loop 9B (vision)
+  description: "O mesmo 9B looped+mHC do SenseTime, no GGUF da comunidade com torre visual incluida (mmproj F16 0.9GB, caminho qwen3vl; runtime comunitario notfakerv/annelo: clover PR 31306 + native). Ve imagens: description, OCR leve, analise de composicao e design. 8K contexto local, ~5 t/s."
+  tags:
+    - llm
+    - vis
+    - thinking
+    - experimental
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: 'env GGML_VK_DISABLE_HOST_VISIBLE_VIDMEM=1 ${sensenova_vision_server}
+
+    --port ${PORT}
+
+    -m ${models_dir}/sensenova-loop-9b/SenseNova-Loop-9B-Preview-Q4_K_M-Vision.gguf
+
+    --mmproj ${models_dir}/sensenova-loop-9b/mmproj-SenseNova-Loop-F16.gguf
+
+    --jinja
+
+    --parallel 1
+
+    -ngl 26
+
+    --ctx-size 16384
+
+    -fa on
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    -b 512
+
+    -ub 256
+
+    -t 10
+
+    --no-webui
+
+    --no-mmproj-offload
+
+    --metrics
+
+    '
+  cmdStop: pkill -f 'llama.cpp-sn-vision/build/bin/llama-server'
+  ttl: 900
+  health_check_timeout: 300
+  filters:
+    stripParams: temperature, top_p, top_k
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.6
+        top_p: 0.95
+        top_k: 20
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+        top_k: 20
+  capabilities:
+    in:
+      - text
+      - image
+    out:
+      - text
+    tools: true
+    reranker: false
+    context: 16384
+  metadata:
+    size: "~8.21 GB main (Q4_K_M, bloco de loop armazenado DUPLICADO no arquivo: 937 tensors vs 523 do single-block) + ~0.88 GB mmproj (F16, arch clip)"
+    context: 16384
+    vram_usage: "pico medido 5708 MiB card total @16K (ngl 26: ~26/56 layers GPU) = 93% da 3050; mmproj na CPU (--no-mmproj-offload: ViT embute na CPU, segundos por imagem)"
+    source: "annelo/SenseNova-Loop-9B-Preview-Q4_K_M-Vision-GGUF (Q4_K_M b3f8cd84 + mmproj F16 3c94fcbb, SHA verificados) — base sensenova/SenseNova-Loop-9B-Preview (Apache 2.0)"
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: sensenova_loop
+    parameters: 19000000000
+    context_length: 262144
+    embedding_length: 4096
+    quantization: Q4_K_M
+    note: >-
+      LANE 31/out/2026 — EXPERIMENTO (pedido do dono): a rota de VISAO do sensenova.
+      Runtime = llama.cpp upstream ff0d396e3 + patch 01 (clover PR 31306 rev 4838ffb0c)
+      + patch 02 (sensenova_loop mapeado na classe llama_model_qwen35: loop no grafo + mHC
+      read/merge com Sinkhorn puro-ggml); build CUDA. NAO usar patches 03 (converter-only,
+      desnecessario: mmproj ja convertido). INCOMPATIBILIDADE DE FORMATO VERIFICADA: o
+      GGUF single-block do guideboard (523 tensors, keys mhc.layer_kinds) NAO carrega
+      neste runtime (exige 56 blocos com keys loop_*; 937 tensors) — por isso o main
+      gordo. Medido na 3050 6GB: ngl 26 @16K carga ok, pico 5708; VISAO PROBEADA (circle
+      red probe: "The circle is red." finish=stop) + imagem real (manga.jpg: reconheceu
+      pagina PT-BR, Death Note, estrutura organizada; 161s / 500 tokens com ViT CPU);
+      decode 5.0-5.4 t/s (26/56 layers GPU, resto CPU; mmproj CPU-resident). Tool calling
+      PROBEADO neste runtime (finish=tool_calls, get_weather, JSON valido). Always-thinking:
+      plain pin enable_thinking=false, :think pin true; think budget ~1500+ (ramble em PT
+      abstrato). Vision e MTP: MTP NAO implementado no export. O crash de core dump visto
+      no primeiro teste de mmproj foi simplesmente OOM de CUDA0 (mmproj em GPU por default):
+      --no-mmproj-offload resolve. Contexto: 16K escolhido (8K tb roda com mais folga;
+      acima disso o KV q4_0 aperta o pico).

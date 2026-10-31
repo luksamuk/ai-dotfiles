@@ -139,6 +139,7 @@ matrix:
     nbe4: nemotron-bolt-e4b  # NVIDIA Bolt E4B (Gemma 4 E4B pos-treino), 64K em Q4 por escolha do dono
     lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + :think), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despejava (ping-pong cravado no journal 30/out 14:53)
     sn9: sensenova-loop-9b  # EXPERIMENTO 31/out — looped+mHC (fork guideboardlabs), 16K @16,2 t/s full-offload; always-thinking (plain direto, :think liga); fora dos sets até segunda ordem (dono)
+    sn9v: sensenova-loop-9b-vision  # EXPERIMENTO 31/out — a mesma família com TORRE VISUAL (runtime comunidade + mmproj); 16K @5 t/s; ver fragment
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
@@ -243,6 +244,7 @@ matrix:
     qpfim: 1
     lfm317: 2  # 1.7B Q8 ~2GB GPU — reload rápido; num conflito real o pollard (cost 1) sai antes
     sn9: 4  # 5GB Q4_0 looped — reload médio-alto; fora dos sets, sem disputa
+    sn9v: 4  # 8.2GB Q4_K_M looped + mmproj 0.9GB — reload médio-alto; fora dos sets, sem disputa
     # g12p: 3  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%)
     # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
     # gpt2xl: 3  # DISABLED Oct 3 2026 - gpt2xl removido
