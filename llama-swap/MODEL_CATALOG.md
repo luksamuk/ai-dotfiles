@@ -375,6 +375,25 @@
 
 ---
 
+### 20. sensenova-loop-9b — SenseNova Loop 9B (experimental, fork guideboardlabs)
+
+| Parameter | Value |
+|-----------|-------|
+| **Source** | guideboardlabs/SenseNova-Loop-9B-Preview-GGUF (Q4_0, SHA256 verificado) sobre sensenova/SenseNova-Loop-9B-Preview (Apache 2.0, SenseTime 30/10/2026) |
+| **Quant** | Q4_0 (~5.08 GB; routers mHC/conv/norm preservados F32) |
+| **Backend** | `${sensenova_server}` — fork guideboardlabs (3 commits sobre upstream aa588a3): arch `sensenova_loop` + ops fundidas `ggml_mhc_route`/`ggml_mhc_merge`, build **Vulkan** |
+| **KV cache** | q4_0/q4_0 (--fa on) |
+| **Load** | `-ngl 88 --ctx-size 16384 -t 10` + `env GGML_VK_DISABLE_HOST_VISIBLE_VIDMEM=1` obrigatória (small-BAR; sem ela prompt cai 10x) |
+| **VRAM** | pico medido 5815 MiB card (server ~4.7 GB) @16K = 94,7% da 3050 |
+| **Context** | 16K (escolha: mesmo t/s do 4K com 4x ctx; nativo 262K não roda: 24K+ OOM no rs cache de 352 MiB; 32K = 10,9 t/s; 64K = 4,6 t/s) |
+| **Thinking** | ✅ always-thinking: plain pin enable_thinking=false (direto), `:think` pin true (orçamento ~1500+ tokens; PT abstrato ramifica) |
+| **Tool calling** | ✅ probeado 31/out pela rota do swap (finish=tool_calls, get_weather, args JSON válidos) |
+| **Vision** | ❌ text-only (mmproj existe no repo annelo — follow-up do dono) |
+| **Velocidade** | 16,2 t/s decode / 59 t/s prompt @16K (full-offload) |
+| **Deploy** | 31/out/2026. Fragment `models/sensenova-loop-9b.yaml`; régua em `sn9-ladder.sh`/`sn9-bench.sh` |
+
+---
+
 ## Disabled Models
 
 Configs preserved in `models/_disabled/` (GGUF deleted, can be re-downloaded):

@@ -66,6 +66,12 @@ macros:
   # Caminho para o llama-server do fork PrismML (Bonsai-2 ternary, runtime Hadamard)
   # Binário prebuilt em ~/git/prism-llama.cpp/llama-prism-b10685-7dffb15/
   "prism_llama_server": "${env.HOME}/git/prism-llama.cpp/llama-prism-b10685-7dffb15/llama-server"
+
+  # Caminho para o llama-server do fork guideboardlabs (sensenova_loop + mHC fundido)
+  # Build VULKAN (o fork implementa ggml_mhc_route/merge em CPU e Vulkan — sem CUDA);
+  # NVIDIA serve via Vulkan igualmente. Upstream ggml-org ainda SEM o arch (PR pendente).
+  # Build local em ~/git/llama.cpp-sensenova-loop/build/bin/llama-server (31/out/2026)
+  "sensenova_server": "${env.HOME}/git/llama.cpp-sensenova-loop/build/bin/llama-server"
   # Caminho para o vLLM (installed in ~/.vllm venv)
   "vllm_bin": "${env.HOME}/.vllm/bin/vllm"
   
