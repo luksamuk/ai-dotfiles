@@ -1,11 +1,10 @@
 laguna-xs-2.1:
   name: Laguna XS 2.1
-  description: "Poolside's 33B/3B MoE agentic coding model with mixed SWA+global attention
-    and native interleaved reasoning. RESURREICAO 01/11 via APEX I-Compact do mudler
-    (hipotese do dono: a trava de set-prompt de Sep era sintoma do spike de RAM
-    do ik-era — o cafe de hoje (rebase 26/10) carrega por mmap page-cache
-    evictavel, sem o populate agressivo do ik). 131K context, -cmoe expert
-    offload, ngram-mod spec."
+  description: "Poolside 33B-A3B MoE coding model, atencao hibrida SWA(512)+global,
+    131K de contexto, -cmoe (experts em page-cache evictavel), spec ngram-mod.
+    Quant: APEX I-Compact (mudler, 14.69 GiB) reavaliada 01/11/2026 apos a
+    reforma do backend cafe. Dual-mode de reasoning: desligado no handle base
+    (temp 0.3), ligado no handle :think (temp 0.7)."
   cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
     --port ${PORT}
 
@@ -97,7 +96,7 @@ laguna-xs-2.1:
     context_length: 131072
     embedding_length: 2048
     quantization: APEX I-Compact
-    note: 'RESSURREICAO 01/11/2026 — lane verbatim da era prod (Sep/Out — 34.6-35.1
+    note: 'Reactivated 01/11/2026 — lane reproduz a config de producao da era Set-Out (Sep/Out — 34.6-35.1
       t/s, 31.8 t/s @131K, -cmoe 3.9GB VRAM + ~18GB page-cache EVICTAVEL, ngram-mod
       spec n_match 24/p_min 48, samplers 0.3/0.85/top_k 40/min_p 0.02/rep 1.12,
       thinking false no base + :think 0.7, template EMBUTIDO via --jinja) com a
