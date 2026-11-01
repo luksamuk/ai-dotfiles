@@ -12,7 +12,6 @@ macros:
   media_path: ${env.HOME}/testfiles/vision
   templates_dir: ${env.HOME}/git/ai-dotfiles/llama-swap/templates
   llama_server: ${env.HOME}/git/llama.cpp/build/bin/llama-server
-  fork_server: ${env.HOME}/git/xhtoken-llama.cpp/build-cuda/bin/llama-server
   ik_llama_server: ${env.HOME}/git/ik_llama.cpp/build/bin/llama-server
   ik2_llama_server: ${env.HOME}/git/kassane-ik_llama.cpp/build/bin/llama-server
   cafe_server: ${env.HOME}/git/cafe-llama.cpp/build/bin/llama-server
@@ -51,28 +50,16 @@ macros:
 models:
   spark-x2.6-4b:
     name: Spark X2.6 4B
-    description: 'XHToken 4B denso na arch Spark 2.5 com spec-decode DSpark (draft Q8_0 no binario FORK xhtoken): 135 t/s de decode @32K medidos (3,3x do baseline 41 t/s, aceitacao 94,9%, mean 7,50/8) + o prefill king da frota. Thinking budget controlavel (template enable_thinking). Lane @64K: o draft custa ~0.63 GB+KV e @131K nao cabe de jeito nenhum.'
-    cmd: '${fork_server} --port ${PORT}
+    description: Spark-X2.6-4B is XHToken's 4B dense model on the Spark 2.5 architecture, with controllable thinking budget (none/low/high), 1M native context and strong agentic/tool-calling gains over X2.5.
+    cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/spark-x2.6-4b/Spark-X2.6-4B-Q4_K_M.gguf
-
-      -md ${models_dir}/spark-x2.6-4b/Spark-X2.6-4B-DSpark-Q8_0.gguf
-
-      --spec-type draft-dspark
-
-      --spec-draft-sampling greedy
-
-      --spec-draft-n-max 7
-
-      --spec-draft-p-min 0
-
-      -ngld 999
 
       --jinja
 
       --parallel 1
 
-      --ctx-size 65536
+      --ctx-size 131072
 
       -ngl 99
 
@@ -119,13 +106,13 @@ models:
       - text
       tools: true
       reranker: false
-      context: 65536
+      context: 131072
     metadata:
-      size: ~3.54 GB (Q4_K_M) + 0.63 GB draft DSpark (Q8_0; o BF16 1.2 GB foi descartado — OOM de pp buffer na 6GB com desktop)
-      context: 65536
-      vram_usage: '~5.7 GB pico ESTIMADO @64K (A/B 01/11 @32K mediu 5322 MiB TOTAL com desktop 1070 — a lane ~4.2 GB; SEM --fit: OOM se o desktop engordar)'
-      source: XHToken/Spark-X2.6-4B-GGUF (Q4_K_M) + XHToken/Spark-X2.6-4B-DSpark-GGUF (draft; Q8_0 quantizado local com llama-quantize --pure, 01/11)
-      kv_cache: q4_0 + q4_0; draft f16 ~20MB fixo (SWA 512)
+      size: ~3.54 GB (Q4_K_M)
+      context: 131072
+      vram_usage: ~5.4 GB pico medido 5449 MiB = 88,7% da 3050 (ctx 131K, KV q4_0, -b 256 -ub 64)
+      source: XHToken/Spark-X2.6-4B-GGUF (Q4_K_M, repo oficial)
+      kv_cache: q4_0 + q4_0
       features:
         completion: true
         tools: true
@@ -140,8 +127,7 @@ models:
       context_length: 1048576
       embedding_length: 2560
       quantization: Q4_K_M
-      note: 'ADOTADO 01/11/2026: lane spec-decode @64K no binario FORK xhtoken (macro fork_server = ~/git/xhtoken-llama.cpp/build-cuda/bin/llama-server, build 01/11 com patch local de uma linha: #include <algorithm> em src/llama-context.cpp — bug de compile do fork). A/B @32K: 135.0/136.0 t/s vs 41.0/40.7 baseline = 3.3x (o card reclama 2x mas mediu com sampling probabilistico; este teste e greedy/temp 0); acceptance 0.9485 (221/233), mean len 7.50/8 no teto. BF16 draft = CRASH pp buffers (descartado). Prefill king intacto (1607 t/s @30K era o X2.5; este 4B herda a arch). GATE DE VOLTA pro upstream: PR ggml-org/llama.cpp#31372 (Septend-fun, DSpark draft tensor support, OPEN, up 31/10) MERGEADO => trocar ${fork_server} por ${llama_server} no cmd (o tracker Spark vigia o PR; o ctx fica 64K — com draft, @131K nao cabe de jeito nenhum). HISTORICO: smoke 24/10 @131K sem draft: 41,9-43,0 t/s, tool calling OK, funcao Python OK; smoke via llama-swap: 36-38 t/s pico 88,9%. X2.6 = post-training do X2.5 (agentico, tool use); o irmao X2.5 REPROVADO (snake v2 colisao + timeout bench agentico 03) — regua pendente pro X2.6 tb. Base E :think SAO AMBOS thinking-ON (24/10: thinking-none respondeu EM CHINES a uma saudacao curta — o default do vendor eh ligado e o none nao serve). Samplers do proprio GGUF (temp 1.0, top_p 0.95, top_k -1, repeat 1.0) — hardcoded, nao usar macro.'
-      fork_note: 'FORK ISOLADO (doutrina fork): ~/git/xhtoken-llama.cpp = upstream + PR #31372 (ainda nao mergeado; master 22c0ae1 de 30/10). O binario NUNCA substitui a frota; mas o checkout vive PROPOSITADAMENTE (a lane prod aponta pra ele) ate o merge do 31372, quando: flip ${fork_server} -> ${llama_server} + APAGAR o checkout inteiro (o build-cuda vira lixo). Se ficar vivo semanas, re-syncar com o upstream master (fork master base de 30/10 envelhece).'
+      note: 'Smoke 24/10/2026 (upstream, arch spark2_5 presente no llama.cpp e no cafe; ausente no ik). Medido @131K: 41,9-43,0 t/s, tool calling OK (finish=tool_calls com argumento certo), funcao Python OK. @65K fica em 77,6% e 42-44 t/s. Acima de 131K nao cabe: KV q8_0 estoura a 3050. Samplers do proprio GGUF (temp 1.0, top_p 0.95, top_k -1, repeat 1.0) — hardcoded, nao usar macro. Thinking: template enable_thinking. BASE E :think SAO AMBOS thinking-ON (24/10): o modo thinking-none respondeu em CHINES a uma saudacao curta, nao chamou ferramenta (finish=stop sem tool_calls) e errou 17x23 numa amostra — o default do vendor eh thinking ligado e o "none" nao serve. Smoke via llama-swap: 36-38 t/s, tool calling OK, pico 88,9% (5461 MiB). X2.6 mantem a arch do X2.5: os ganhos sao de pos-treino (agentico, tool use, contexto longo). Irmon X2.5 reprovou snake v2 (bug de colisao) e estourou o bench agentico 03 — regua pendente.'
   qwen2.5-coder-1.5b-pollard:
     name: Qwen2.5 Coder 1.5B Pollard
     description: Qwen2.5-Coder-1.5B-Instruct memory-fit for code completion. FIM native, CPU-only serving with zero VRAM.
@@ -1436,7 +1422,7 @@ models:
       embedding_length: 2048
       context_length: 32768
       quantization: Q6_K
-      pollard_note: 'Pollard (repo 31/10/26): pesos iguais ao f16, bits alocados por sensibilidade por camada, imatrix + pollard-verify gate. Rung Q6_K escolhido: mesmo rung provado do Audio-2B Pollard (KLD 0.0043, tool-ready 98.2 percent, CI 94-100); IQ3_S/IQ4_XS presentes no repo mas NAO ligados — o audio 2B mostrou que rung agressivo quebra emissao de tokens especiais (tool wrapper) e o duplex PARSEIA tool call no cliente. SMOKE 01/11/2026 (fleet-liquid 69e4242ca + swap v269, realtime por passthrough /upstream): TUDO VERDE — spawn+chat PT OK (24 tok, 46 t/s eff); realtime WS voz JFK -> texto interleaved + 8.2s de fala (par Q6_K + mmproj-BF16 do repo Pollard PROVADO); ASR HTTP wav/mp3 verbatim; ogg 400 (miniaudio, igual ao stock); tool call + MCP searxng REAL dentro do WS (round-trip OK; slip factual do 2B interpretando o result — comportamento do modelo, nao do quant). VRAM pico medido 4224 MiB TOTAL (desktop 999 + lane ~3.2 @32K) — abaixo do estimado 3.6-4.6; coexistencia melhor que a da lane Q8_0. O rung IQ4_XS do omni NAO herda o veredicto do audio automaticamente, mas a cautela segue: testar so se o dono pedir explicitamente. mmproj — o repo Pollard inclui mmproj-LiquidAI__LFM3-Omni-2B-BF16.gguf (949841248 bytes, MESMO TAMANHO do mmproj-F16 oficial 949841248 mas sha256 DIVERGE — a9938f9f vs 361bc951, par testado do criador); lane usa o par do repo, o stock (Q8_0+mmproj F16) aposentado a seco. Heranca de quirks da lane stock (nota la): voz PT = sotaque EN (checkpoint, fechado); doom loop na descricao de IMAGEM (aberto 27/10); nao-thinking; pequenos slips de idioma.'
+      pollard_note: 'Pollard (repo 31/10/26): pesos iguais ao f16, bits alocados por sensibilidade por camada, imatrix + pollard-verify gate. Rung Q6_K escolhido: mesmo rung provado do Audio-2B Pollard (KLD 0.0043, tool-ready 98.2 percent, CI 94-100); IQ3_S/IQ4_XS presentes no repo mas NAO ligados — o audio 2B mostrou que rung agressivo quebra emissao de tokens especiais (tool wrapper) e o duplex PARSEIA tool call no cliente. SMOKE PENDENTE (GPU — janela do dono apos renders 31/10): a lane entra listed; conferir no smoke o spawn, tool call XML no realtime, ASR/music QA sane vs lane stock. O rung IQ4_XS do omni NAO herda o veredicto do audio automaticamente, mas a cautela segue: testar so se o dono pedir explicitamente. mmproj — o repo Pollard inclui mmproj-LiquidAI__LFM3-Omni-2B-BF16.gguf (949841248 bytes, MESMO TAMANHO do mmproj-F16 oficial 949841248 mas sha256 DIVERGE — a9938f9f vs 361bc951, par testado do criador); lane usa o par do repo, o stock (Q8_0+mmproj F16) aposentado a seco. Heranca de quirks da lane stock (nota la): voz PT = sotaque EN (checkpoint, fechado); doom loop na descricao de IMAGEM (aberto 27/10); nao-thinking; pequenos slips de idioma.'
   lfm3-vl-2b:
     name: LFM3 VL 2B
     description: 'VLM 2B da LiquidAI (tri-hybrid nova geracao): documentos, charts, video, app screens e raciocinio espacial. Pensa por default (dual-mode real via enable_thinking). Competitive com Gemma 4 12B sendo 6x menor, pelo card do vendor. NAO e para coding/multi-turn longo (card).'

@@ -40,12 +40,6 @@ macros:
   # Caminho para o llama-server compilado com CUDA (--fit disponível)
   # Build local em ~/git/llama.cpp/build/bin/llama-server
   "llama_server": "${env.HOME}/git/llama.cpp/build/bin/llama-server"
-
-  # FORK ISOLADO (doutrina fork — nunca substitui o llama_server):
-  # xhtoken/llama.cpp (upstream + PR DSpark draft #31372 não mergeado)
-  # Usado APENAS pela lane spark-x2.6-4b (spec decode); flip pra ${llama_server}
-  # quando o 31372 mergear + apagar o checkout em ~/git/xhtoken-llama.cpp/
-  "fork_server": "${env.HOME}/git/xhtoken-llama.cpp/build-cuda/bin/llama-server"
   
   # Caminho para ik_llama.cpp — fork otimizado para MoE (pinned memory, faster expert offload)
   # Build local em ~/git/ik_llama.cpp/build/bin/llama-server
