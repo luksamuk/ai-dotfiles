@@ -506,7 +506,8 @@ def _classify_non_chat(model: dict) -> str | None:
 
       "embedding" — embedding/reranker (lfm2.5-embedding-350m,
                      lfm2.5-colbert-350m, embeddinggemma-2).
-                     Sinal: meta.llamaswap.features.embedding.
+                     Sinal: capabilities.embeddings (flag nativa, swap v269+)
+                     com fallback meta.llamaswap.features.embedding.
                      Não têm /v1/chat/completions — só /v1/embeddings.
 
       "decision"  — judge de /v1/systemone, sem chat (julia-1).
@@ -533,8 +534,9 @@ def _classify_non_chat(model: dict) -> str | None:
     if features.get("tts") or caps.get("audio_speech") or "audio" in out_modalities:
         return "tts"
 
-    # Embedding / reranker
-    if features.get("embedding"):
+    # Embedding / reranker: flag nativa da swap (v269+) com fallback nos
+    # tags da casa (features.embedding sobrevive a clientes sem v269)
+    if features.get("embedding") or caps.get("embeddings"):
         return "embedding"
 
     # ASR: audio->text sem chat (só /v1/audio/transcriptions)
@@ -2236,28 +2238,19 @@ def run_duplex_session(start_model=None):
         return
 
     if is_rt:
-        def _spawn_rt():
-            """Spawn da lane pela swap (chat ping de 1 token) -> porta dinâmica
-            do llama-server. Chamado a CADA sessão realtime: se a sessão caiu
-            (TTL da swap deu unload da lane, evicção por matrix, rede), a
-            próxima sessão ressurge a lane e devolve a porta nova."""
-            _urlrequest.urlopen(_urlrequest.Request(
-                f"{BASE_URL}/chat/completions", data=_json.dumps(
-                {"model": lane_id, "messages": [{"role": "system", "content": "ping"}],
-                 "max_tokens": 1}).encode(),
-                headers={"Content-Type": "application/json"}), timeout=300)
-            running = _json.loads(_urlrequest.urlopen(f"{BASE_URL[:-len('/v1')]}/running",
-                                  timeout=10).read().decode())["running"]
-            entry = next((m for m in running if m.get("model") == lane_id), None)
-            if entry is None:
-                raise RuntimeError(f"lane {lane_id} não apareceu em /running")
-            from urllib.parse import urlparse as _uparse
-            port = _uparse(entry.get("proxy") or "").port
-            if port is None:
-                raise RuntimeError(f"sem porta em /running para {lane_id}")
-            return f"http://127.0.0.1:{port}/v1"
+        def _rt_urls():
+            """Passthrough WS da swap (v269+): /upstream/<lane>/v1/realtime.
+            O passthrough sobe a lane ON DEMAND no handshake (verificado 31/10
+            com probe: sem lane rodando, o request WS spawnou o modelo e
+            devolveu session.created) — sem ping de 1 token, sem /running,
+            sem porta dinâmica. E o tráfego passa PELA swap, então o TTL da
+            lane vê atividade real da sessão."""
+            root = BASE_URL[:-len("/v1")] if BASE_URL.endswith("/v1") else BASE_URL
+            http_base = f"{root}/upstream/{lane_id}/v1"
+            ws_url = http_base.replace("http", "ws", 1)
+            return http_base, ws_url
         try:
-            _asyncio.run(_duplex_realtime_loop(lane_id, _spawn_rt))
+            _asyncio.run(_duplex_realtime_loop(lane_id, _rt_urls))
             console.print("[dim]Modo duplex encerrado.[/]")
             return
         except KeyboardInterrupt:
@@ -2280,9 +2273,9 @@ async def _duplex_realtime_loop(lane_id, swap_fn):
     text.delta + response.output_audio.delta até response.done — áudio tocado
     em pedaços no pw-play.
 
-    swap_fn é o spawn da lane pela swap (chat ping -> /running -> porta) e é
-    chamado a cada sessão: o llama-swap ainda não proxéia a rota e o WS vai
-    DIRETO ao llama-server na porta dinâmica (padrão da casa).
+    swap_fn devolve (http_base, ws_url) do passthrough da swap
+    (/upstream/<lane>/v1 — WS vai pra .../v1/realtime): a swap v269 sobe a
+    lane on demand no handshake, então nem ping nem /running se precisa.
 
     Resiliência (a sessão não morre mais de primeira): a conversa vive NO
     SERVER e o realtime NÃO trunca contexto — encheu o ctx da lane, é um
@@ -2308,9 +2301,9 @@ async def _duplex_realtime_loop(lane_id, swap_fn):
 
     while True:  # sessão: a conversa (history) vive e morre com a conexão
         try:
-            swap_ws = swap_fn()
-            client = AsyncOpenAI(base_url=swap_ws, api_key="none",
-                                 websocket_base_url=swap_ws.replace("http", "ws", 1))
+            http_base, ws_url = swap_fn()
+            client = AsyncOpenAI(base_url=http_base, api_key="none",
+                                 websocket_base_url=ws_url)
             async with client.realtime.connect(model="default") as conn:
                 ev = await conn.recv()
                 if ev.type == "error":
