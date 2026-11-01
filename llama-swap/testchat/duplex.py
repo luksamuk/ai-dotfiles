@@ -49,15 +49,30 @@ def configure(console, base_url, tools, mock_response):
 
 
 def print_tools_summary(active):
-    """Resumo (em ingles, idioma do system prompt do modelo de voz) das
-    ferramentas de teste na entrada do modo duplex."""
+    """Resumo das FERRAMENTAS REAIS da sessão (o que o modelo ESCUTA no
+    instructions): nomes derivados do registro de boot (mocks + MCP), nada
+    hardcoded. MCP fora do boot aparece com aviso — era silente e o modelo
+    dizia "I only have three tools" sem o usuário saber por quê."""
     c = _cfg["console"]
+    try:
+        import mcp_bridge as _mb
+    except ImportError:
+        _mb = None
+    mocks, mcp_names = [], []
+    for t in _cfg.get("tools") or []:
+        n = t["function"]["name"]
+        (mcp_names if (_mb and _mb.BRIDGE.is_mcp_tool(n)) else mocks).append(n)
     c.print("[cyan]Test tools available:[/]")
-    c.print("[dim]   get_weather  - current weather by city[/]")
-    c.print("[dim]   calculator   - math expressions[/]")
-    c.print("[dim]   get_time     - date/time by timezone[/]")
+    if mcp_names:
+        c.print(f"[dim]   real (MCP searxng): {', '.join(mcp_names)}[/]")
+    if mocks:
+        c.print(f"[dim]   mocks de teste: {', '.join(mocks)}[/]")
+    if not mcp_names:
+        c.print("[yellow]   MCP INATIVO neste boot (server MCP não respondeu na "
+                "conexão inicial) — reinicie o testchat, sem MCP o que se pede "
+                "de busca não executa.[/]")
     if active:
-        c.print("[dim]   Responses are mocked - just ask by voice (PT or English).[/]")
+        c.print("[dim]   Real tools answer for real - just ask by voice (PT or English).[/]")
     else:
         c.print("[dim]   (Not executed on this transport - use --duplex-tts for the chat+TTS lane.)[/]")
 

@@ -20,6 +20,7 @@ KEY=VALUE, chave auth_key). O arquivo do searxng e o mesmo do Hermes.
 import json
 import os
 import re
+import time
 from pathlib import Path
 
 import requests
@@ -165,13 +166,26 @@ class McpBridge:
         for name, scfg in (cfg.get("mcpServers") or {}).items():
             if not scfg.get("enabled", True):
                 continue
-            try:
-                srv = McpHttpServer(name, scfg)
-                srv.initialize()
-                tools = srv.list_tools()
-            except Exception as e:  # noqa: BLE001 — MCP é opcional por design
-                self.status = f"server '{name}' inacessivel ({str(e)[:60]})"
+            # Boot com o server MCP acordando (RPi/Sisyphus na rede, server
+            # em restart): 3 tentativas com 2s de intervalo antes de
+            # desistir — senão o boot "corrida com azar" degrada o chat
+            # para mocks SEM aviso visível.
+            tools = None
+            srv = None
+            for attempt in range(3):
+                try:
+                    srv = McpHttpServer(name, scfg)
+                    srv.initialize()
+                    tools = srv.list_tools()
+                    break
+                except Exception:  # noqa: BLE001 — opcional por design
+                    srv = None
+                    if attempt < 2:
+                        time.sleep(2)
+            if tools is None or srv is None:
+                self.status = f"server '{name}' inacessivel (3 tentativas)"
                 continue
+            assert srv is not None
             self.servers.append(srv)
             for t in tools:
                 name_t = t.get("name", "")
