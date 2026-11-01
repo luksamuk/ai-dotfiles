@@ -14,7 +14,7 @@ lfm3-1.7b:
 
     --jinja
 
-    --parallel 5
+    --parallel 3
 
     --cache-type-k q4_0
 
@@ -97,7 +97,7 @@ lfm3-1.7b:
       candidata do lfm2.5-2.6b (régua maison 67.0) — re-discussão de
       aposentadorias pendente os resultados. 29/10: slots 5x64K (-parallel 5,
       -c 327680, KV q4_0 mantido, -b/-ub do paralelo) para multi-agentes —
-      5x64K est. ~4.4GB dentro dos 4.8GB livres da 3050; smoke slots 29/10 OK
+      slots 5x64K est. ~4.4GB dentro dos 4.8GB livres da 3050 | 01/11: REDUZIDO a 3 slots a pedido do dono (3x~107K por agente; o KV total 327680 nao muda); smoke slots 29/10 (da era 5) OK
       (spawn saudavel, pico ~4.8GB usados/1058 MiB livres, 5 reqs paralelas
       atendidas em batch 0.2s wall). 30/10: SWAP p/ GGUF Heretic-Abliterated
       (static, Vortecks) — pedido do usuario, drop-in Q8_0->Q8_0. KL 0.0094 +
