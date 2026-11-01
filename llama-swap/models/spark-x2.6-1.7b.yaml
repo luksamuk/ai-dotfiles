@@ -1,27 +1,15 @@
 spark-x2.6-1.7b:
   name: Spark X2.6 1.7B
-  description: "XHToken 1.7B denso na arch Spark 2.5 COM spec-decode DSpark (draft
-    BF16 345M/696MB do vendor, NAO quantizado): 1M de contexto nativo, agentic
-    forte pro porte (BFCL-V4 55.2, tau2 85.3, SWE-V 59.8 no card vendor, thinking
-    HIGH). Lane instalada 01/11 SEM SMOKE — GPU do dono ocupada (renders); o
-    primeiro spawn confirma o ctx efetivo do --fit. Gate = PR #31372 (draft
-    tensor support, OPEN) — enquanto nao mergear, RODA NO FORK xhtoken."
+  description: "XHToken 1.7B denso na arch Spark 2.5 (plain, sem draft): 1M de
+    contexto nativo, agentic forte pro porte (BFCL-V4 55.2, tau2 85.3, SWE-V
+    59.8 no card vendor, thinking HIGH). Lane @262K via --fit (1M no papel).
+    O DSpark draft foi JULGADO E REPROVADO para chat: aceitacao 17-21% no
+    template = neutro/negativo (57 t/s vs 60.1 do plain); so ganha em
+    continuacao crua (3x, 184 t/s). Draft parked; gate = PR #31372."
   tags: [think, tools]
-  cmd: '${fork_server} --port ${PORT}
+  cmd: '${llama_server} --port ${PORT}
 
     --model ${models_dir}/spark-x2.6-1.7b/Spark-X2.6-1.7B-Q8_0.gguf
-
-    -md ${models_dir}/spark-x2.6-1.7b/Spark-X2.6-1.7B-DSpark.gguf
-
-    --spec-type draft-dspark
-
-    --spec-draft-sampling greedy
-
-    --spec-draft-n-max 7
-
-    --spec-draft-p-min 0
-
-    -ngld 999
 
     --jinja
 
@@ -29,7 +17,7 @@ spark-x2.6-1.7b:
 
     --ctx-size 262144
 
-    --fit
+    --fit on
 
     -ngl 99
 
@@ -77,12 +65,10 @@ spark-x2.6-1.7b:
     context: 262144
   metadata:
     size: ~1.82 GB (Q8_0 — Q4_K_M tinha so 50MB a menos, Q8 vence em hybrid) +
-      0.69 GB draft DSpark BF16 (NAO quantizado, pedido do dono)
+      0.69 GB draft DSpark BF16 (PARKED no dir, NAO usado pela lane)
     context: 262144
-    vram_usage: "NAO MEDIDO (smoke pendente) — aritmetica: modelo 1.82 + draft
-      0.70 + buffers ~0.35 + KV@262K ~1.1-1.8 GB (SWA 3:1, KV q4_0) + desktop
-      ~1.1 = 5.1-5.8 GB pico estimado; --fit derruba o ctx se apertar. O ctx
-      EFETIVO so sai no primeiro spawn (medir e atualizar este campo)."
+    vram_usage: "~4.6 GB TOTAL medido (plain @262K: 4631 MiB TOTAL c/ desktop
+      1187; a lane ~3.4 GB; o --fit manteve os 262K inteiros)"
     source: XHToken/Spark-X2.6-1.7B-GGUF (Q8_0) + XHToken/Spark-X2.6-1.7B-DSpark-GGUF
       (draft BF16 345M, repo oficial)
     kv_cache: q4_0 + q4_0; draft f16 (SWA 512)
@@ -100,21 +86,20 @@ spark-x2.6-1.7b:
     context_length: 1048576
     embedding_length: 2048
     quantization: Q8_0
-    note: 'INSTALACAO 01/11/2026 — SMOKE PENDENTE (GPU ocupada por renders do
-      dono). Samplers do card vendor: temp 1.0, top_p 0.95, top_k -1/0 (thinking
-      HIGH nos evals oficiais). Draft DSpark: acceptance do card vendor (greedy
-      T0) media 4.32/8; T1+High+Prob 3.58/8 — E A LIÇÃO DO 4B VALE: raw cru
-      (sem template) aceitou 95%, no template de chat caiu p/ 26% (2.6/8) —
-      esperar o MESMO comportamento aqui ate medido; ganho real em chat
-      provavelmente +25-45% sobre o baseline sem draft (como no 4B), NAO 2x.
-      Benchmarks vendor (thinking HIGH): Average 49.6, BFCL-V4 55.2, tau2 85.3,
-      SWE-V 59.8, SWE-Multi 57.3, IFEval 89.4, GPQA-D 56.1, AIME 70.1, MRCR
-      v2 256k-512k 56.1, Graphwalks 1M 25.7. Vs LFM3-1.7B (card liquid): SWE-V
-      43.4, SWE-Multi 23.0, GPQA-D 63.37, HLE-no-tools 7.17 (spark 8.7),
-      ClawEval 51.4 (spark 66.9), LiveCodeBench v6 73.46, tau3-4dom 68.01
-      (nao comparavel ao tau3 do spark: dominios distintos). HARNESSES
-      DIFERENTES entre vendors: comparar com pinca. Local LFM3-1.7B (Heretic
-      Q8_0): decode 75 t/s GPU solo, prompt 631; 320K deployado, slots 5x64K.
-      FORK: roda no fork_server (PR #31372 open) — flip pro llama_server no
-      merge; re-testar acceptance no template depois do merge. GGUFs em
-      ~/.llama-models/spark-x2.6-1.7b/.'
+    note: 'SMOKE 01/11/2026 (completo): spawn via swap OK; o --fit manteve os
+      262K inteiros (VRAM 5484 total c/ draft, 4631 plain). Veredicto do
+      DSpark draft (medido com counters): chat (template, temp 1.0, think
+      ON) = 57.1 t/s / aceitacao 16.8% / 1.16 tok/verif — vs baseline plain
+      60.1 t/s = NEUTRO/NEGATIVO (o passe do draft custa ~21ms + alvo 16.6 =
+      37.6ms/verif; preciso de >2.27 tok/verif pra vencer — o template mata
+      a aceitacao, mesmo bug do 4B). Cru (temp 0, sem template) = 178-187
+      t/s com 92% de aceitacao = 3x REAL — porem nenhum uso real da frota e
+      continuacao crua. LANE = PLAIN (sem draft, binario da frota, sem fork).
+      Draft BF16 696MB parked no dir (re-teste se o 31372 corrigir a
+      aceitacao no template e mergear). Benchmarks vendor (thinking HIGH):
+      Average 49.6, BFCL-V4 55.2, tau2 85.3, SWE-V 59.8, SWE-Multi 57.3, IFEval
+      89.4, GPQA-D 56.1, AIME 70.1, MRCR 256k 56.1, Graphwalks 1M 25.7. Vs
+      LFM3-1.7B local (75 t/s, 320K, slots 5x64K): o LFM3 vence decode e
+      flexibilidade de slots; o Spark vence no ctx maximo (262K vs 320K? o
+      LFM3 deploya 320K) e no agentic do card. Samplers do card vendor (temp
+      1.0, top_p 0.95, top_k -1/0). GGUFs em ~/.llama-models/spark-x2.6-1.7b/.'
