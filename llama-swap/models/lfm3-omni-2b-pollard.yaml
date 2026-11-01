@@ -1,0 +1,103 @@
+lfm3-omni-2b-pollard:
+  name: LFM3 Omni 2B Pollard
+  description: "Omni-modal 2B da LiquidAI quantizado Pollard (IQ ladder, imatrix +
+    pollard-verify gate): texto/imagem/video COM trilha sonora + audio (16 kHz)
+    entra, texto ou fala sai. Musica no contrato (fala/musica/son ambiente/
+    eventos). RUNG ATIVO: Q6_K (no Audio-2B: KLD 0.0043, top-1 97.6%,
+    tool-ready 98.2%; IQ4_XS REPROVADO empiricamente no Audio-2B 29/10 — emite
+    tool call SEM o wrapper XML, parser cliente nao acha, loop de re-anuncio).
+    Substituto direto da lane lfm3-omni-2b (Q8_0 aposentada)."
+  tags: [vis, tools, audio]
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/lfm3-omni-2b-pollard/LFM3-Omni-2B-Pollard-Q6_K.gguf
+
+    --mmproj ${models_dir}/lfm3-omni-2b-pollard/mmproj-LiquidAI__LFM3-Omni-2B-BF16.gguf
+
+    --ctx-size 32768
+
+    --jinja
+
+    --parallel 1
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -ngl 99
+
+    -b 512
+
+    -ub 128
+
+    --temp 0.6
+
+    --top-p 0.95
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    - image
+    - audio
+    out:
+    - text
+    tools: true
+    reranker: false
+    embeddings: false
+    context: 32768
+  metadata:
+    size: ~1.43 GB (Q6_K Pollard) + 0.90 GB mmproj-BF16 (do repo Pollard, par
+      testado do criador)
+    context: 32768
+    vram_usage: "~3.6-4.6 GB VRAM pico @32K estimado (KV q4_0; o Q8_0 media
+      ~4-5 GB)"
+    source: PollardWeights/LFM3-Omni-2B-Pollard (Q6_K, 1427640832 bytes;
+      mmproj-LiquidAI__LFM3-Omni-2B-BF16.gguf, 949841248 bytes)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: false
+      vision: true
+      embedding: false
+      insert: false
+      audio: true
+      image: false
+    architecture: lfm3
+    parameters: 2200000000
+    embedding_length: 2048
+    context_length: 32768
+    quantization: Q6_K
+    pollard_note: 'Pollard (repo 31/10/26): pesos iguais ao f16, bits alocados
+      por sensibilidade por camada, imatrix + pollard-verify gate. Rung Q6_K
+      escolhido: mesmo rung provado do Audio-2B Pollard (KLD 0.0043,
+      tool-ready 98.2 percent, CI 94-100); IQ3_S/IQ4_XS presentes no repo mas
+      NAO ligados — o audio 2B mostrou que rung agressivo quebra emissao de
+      tokens especiais (tool wrapper) e o duplex PARSEIA tool call no
+      cliente. SMOKE PENDENTE (GPU — janela do dono apos renders 31/10): a
+      lane entra listed; conferir no smoke o spawn, tool call XML no
+      realtime, ASR/music QA sane vs lane stock. O rung IQ4_XS do omni NAO
+      herda o veredicto do audio automaticamente, mas a cautela segue:
+      testar so se o dono pedir explicitamente. mmproj — o repo Pollard
+      inclui mmproj-LiquidAI__LFM3-Omni-2B-BF16.gguf (949841248 bytes, MESMO
+      TAMANHO do mmproj-F16 oficial 949841248 mas sha256 DIVERGE —
+      a9938f9f vs 361bc951, par testado do criador); lane usa o par do
+      repo, o stock (Q8_0+mmproj F16) aposentado a seco. Heranca de quirks
+      da lane stock (nota la): voz PT = sotaque EN (checkpoint, fechado);
+      doom loop na descricao de IMAGEM (aberto 27/10); nao-thinking;
+      pequenos slips de idioma.'

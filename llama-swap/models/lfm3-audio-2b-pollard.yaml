@@ -12,7 +12,7 @@ lfm3-audio-2b-pollard:
 
     --model ${models_dir}/lfm3-audio-2b-pollard/LFM3-Audio-2B-Pollard-Q6_K.gguf
 
-    --mmproj ${models_dir}/lfm3-audio-2b/mmproj-F16.gguf
+    --mmproj ${models_dir}/lfm3-audio-2b-pollard/mmproj-F16.gguf
 
     --ctx-size 32768
 
@@ -54,11 +54,12 @@ lfm3-audio-2b-pollard:
     context: 32768
   metadata:
     size: ~1.43 GB (Q6_K Pollard) + 0.57 GB mmproj-F16 (audio encoder,
-      compartilhado com a lane lfm3-audio-2b)
+      movido p/ este dir 31/10 com a aposentadoria da lane stock)
     context: 32768
     vram_usage: "~3.9 GB VRAM pico @32K estimado (KV q4_0)"
     source: PollardWeights/LFM3-Audio-2B-Pollard (Q6_K) + mmproj-F16 oficial
-      LiquidAI (570846400 bytes, mesmo arquivo da lane lfm3-audio-2b)
+      LiquidAI (570846400 bytes; era da lane lfm3-audio-2b, MOVIDO p/ cá
+      31/10 na aposentadoria do stock)
     kv_cache: q4_0/q4_0
     features:
       completion: true
@@ -103,8 +104,9 @@ lfm3-audio-2b-pollard:
       cliente nao acha bloco, a tool nunca executa e o modelo re-anuncia em
       loop — dano de quant agressiva na emissao de tokens especiais do
       template. Q6_K = rung ativo; teste do dono pendente.
-      O repo Pollard NAO inclui mmproj: este lane REUSA o mmproj-F16
-      oficial da lane lfm3-audio-2b. Contexto 32K mantido = limite de
+      O repo Pollard NAO inclui mmproj: este lane usa o mmproj-F16 oficial
+      da LiquidAI MOVIDO pra este dir (570846400 bytes, ex- lane stock
+      aposentada 31/10). Contexto 32K mantido = limite de
       arquitetura do card, nao estendido. Ganhos esperados: ~0.4 GB VRAM
       de coexistencia no fleet + cold-start menor; ganho de decode marginal
       (2B ja offloada integral nos 6 GB). Baixar peso (huggingface-cli APOSENTADO,
