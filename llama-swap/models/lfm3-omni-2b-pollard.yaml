@@ -89,9 +89,15 @@ lfm3-omni-2b-pollard:
       tool-ready 98.2 percent, CI 94-100); IQ3_S/IQ4_XS presentes no repo mas
       NAO ligados — o audio 2B mostrou que rung agressivo quebra emissao de
       tokens especiais (tool wrapper) e o duplex PARSEIA tool call no
-      cliente. SMOKE PENDENTE (GPU — janela do dono apos renders 31/10): a
-      lane entra listed; conferir no smoke o spawn, tool call XML no
-      realtime, ASR/music QA sane vs lane stock. O rung IQ4_XS do omni NAO
+      cliente. SMOKE 01/11/2026 (fleet-liquid 69e4242ca + swap v269, realtime
+      por passthrough /upstream): TUDO VERDE — spawn+chat PT OK (24 tok, 46 t/s
+      eff); realtime WS voz JFK -> texto interleaved + 8.2s de fala (par Q6_K +
+      mmproj-BF16 do repo Pollard PROVADO); ASR HTTP wav/mp3 verbatim; ogg 400
+      (miniaudio, igual ao stock); tool call + MCP searxng REAL dentro do WS
+      (round-trip OK; slip factual do 2B interpretando o result — comportamento
+      do modelo, nao do quant). VRAM pico medido 4224 MiB TOTAL (desktop 999 +
+      lane ~3.2 @32K) — abaixo do estimado 3.6-4.6; coexistencia melhor que a
+      da lane Q8_0. O rung IQ4_XS do omni NAO
       herda o veredicto do audio automaticamente, mas a cautela segue:
       testar so se o dono pedir explicitamente. mmproj — o repo Pollard
       inclui mmproj-LiquidAI__LFM3-Omni-2B-BF16.gguf (949841248 bytes, MESMO
