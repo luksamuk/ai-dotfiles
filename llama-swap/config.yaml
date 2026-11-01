@@ -300,7 +300,7 @@ models:
       note: 'vram detalhe: ~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe) | turbo4 KV; hmoe experts pinned Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused (IK TurboQuant); source do mmproj: unsloth Q8.'
   laguna-xs-2.1:
     name: Laguna XS 2.1
-    description: 'Poolside 33B-A3B MoE coding model, atencao hibrida SWA(512)+global, 131K de contexto, -cmoe (experts em page-cache evictavel), spec ngram-mod. Quant: APEX I-Compact (mudler, 14.69 GiB) reavaliada 01/11/2026 apos a reforma do backend cafe. Dual-mode de reasoning: desligado no handle base (temp 0.3), ligado no handle :think (temp 0.7).'
+    description: 'Poolside 33B-A3B MoE coding model, atencao hibrida SWA(512)+global, 131K de contexto, -cmoe (experts em page-cache evictavel), spec ngram-mod. Quant: APEX I-Compact (mudler, 14.69 GiB) reavaliada 01/11/2026 apos a reforma do backend cafe. Reasoning ALWAYS-ON no handle unico (padrao 2b-ter; samplers frios para reduzir o fechamento precoce do think); handle :think aposentado 01/11/2026.'
     cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
       --model ${models_dir}/laguna-xs-2.1/Laguna-XS-2.1-APEX-I-Compact.gguf
@@ -350,14 +350,11 @@ models:
       setParamsByID:
         ${MODEL_ID}:
           chat_template_kwargs:
-            enable_thinking: false
+            enable_thinking: true
           temperature: 0.3
           top_p: 0.85
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.9
+          top_k: 40
+          min_p: 0.02
     ttl: 0
     health_check_timeout: 300
     capabilities:
@@ -388,7 +385,7 @@ models:
       context_length: 131072
       embedding_length: 2048
       quantization: APEX I-Compact
-      note: 'Reactivated 01/11/2026 — lane reproduz a config de producao da era Set-Out (Sep/Out — 34.6-35.1 t/s, 31.8 t/s @131K, -cmoe 3.9GB VRAM + ~18GB page-cache EVICTAVEL, ngram-mod spec n_match 24/p_min 48, samplers 0.3/0.85/top_k 40/min_p 0.02/rep 1.12, thinking false no base + :think 0.7, template EMBUTIDO via --jinja) com a troca do modelo por APEX I-Compact. HISTORICO: o APEX travou com system prompt na era prod; SMOKE 01/11 CONFIRMOU A HIPOTESE DO DONO — NENHUMA trava em cafe saudavel: spawn 14s (HTTP 200), probe COM system prompt = 200 em 3.4s com codigo correto (linked list reversal), RAM pico 13.9 GiB (vs 31 do ik-era: era estado de RAM, NAO bug do quant). REGUAS: decodificado 30.2 t/s em chat c/ system (vs 34.6-35.1 do Q4_K_M oficial: -11%, i-quant kernel) @320 tok; VRAM loaded 4564-4672 MiB total. ngram-mod ENGATA: YAML repetitivo 600 tok em 6 verifs, 81.7% aceitacao (312/382), pos 0-2 6/6. BUGS CONHECIDOS DO CAFE (re-documentar quando surgirem): grammar limita 1 tool call/round e suprime thinking com tools no request; turbo4/turbo2 corrompem a SWA hibrida (teto 131K q4_0). PLANO B (Q4_K_M oficial, receita em models/_removed/). O QUE FALTA: re-teste de tool calling (grammar 1-call) e o soak do dono.'
+      note: 'Reactivated 01/11/2026 — lane reproduz a config de producao da era Set-Out (Sep/Out — 34.6-35.1 t/s, 31.8 t/s @131K, -cmoe 3.9GB VRAM + ~18GB page-cache EVICTAVEL, ngram-mod spec n_match 24/p_min 48, samplers 0.3/0.85/top_k 40/min_p 0.02/rep 1.12 com reasoning ALWAYS-ON (01/11: thinking true no handle unico, temp 0.3 fria p/ reduzir o fechar-precoce; handle :think aposentado no padrao 2b-ter), template EMBUTIDO via --jinja) com a troca do modelo por APEX I-Compact. HISTORICO: o APEX travou com system prompt na era prod; SMOKE 01/11 CONFIRMOU A HIPOTESE DO DONO — NENHUMA trava em cafe saudavel: spawn 14s (HTTP 200), probe COM system prompt = 200 em 3.4s com codigo correto (linked list reversal), RAM pico 13.9 GiB (vs 31 do ik-era: era estado de RAM, NAO bug do quant). REGUAS: decodificado 30.2 t/s em chat c/ system (vs 34.6-35.1 do Q4_K_M oficial: -11%, i-quant kernel) @320 tok; VRAM loaded 4564-4672 MiB total. ngram-mod ENGATA: YAML repetitivo 600 tok em 6 verifs, 81.7% aceitacao (312/382), pos 0-2 6/6. BUGS CONHECIDOS DO CAFE (re-documentar quando surgirem): grammar limita 1 tool call/round e suprime thinking com tools no request; turbo4/turbo2 corrompem a SWA hibrida (teto 131K q4_0). PLANO B (Q4_K_M oficial, receita em models/_removed/). O QUE FALTA: re-teste de tool calling (grammar 1-call) e o soak do dono.'
       resurrect_note: Restore completo do oficial — models/_removed/laguna-xs-2.1.yaml (git mv de volta + baixar Laguna-XS-2.1-Q4_K_M.gguf do poolside + descomentar footer).
   lfm2.5-colbert-350m:
     name: LFM2.5 ColBERT 350M
