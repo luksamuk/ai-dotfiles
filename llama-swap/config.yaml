@@ -12,6 +12,7 @@ macros:
   media_path: ${env.HOME}/testfiles/vision
   templates_dir: ${env.HOME}/git/ai-dotfiles/llama-swap/templates
   llama_server: ${env.HOME}/git/llama.cpp/build/bin/llama-server
+  fork_server: ${env.HOME}/git/xhtoken-llama.cpp/build-cuda/bin/llama-server
   ik_llama_server: ${env.HOME}/git/ik_llama.cpp/build/bin/llama-server
   ik2_llama_server: ${env.HOME}/git/kassane-ik_llama.cpp/build/bin/llama-server
   cafe_server: ${env.HOME}/git/cafe-llama.cpp/build/bin/llama-server
@@ -797,9 +798,9 @@ models:
 
       --ctx-size 8192
 
-      --batch-size 512
+      --batch-size 2048
 
-      --ubatch-size 512
+      --ubatch-size 2048
 
       --parallel 1
 
@@ -2039,6 +2040,101 @@ models:
       embedding_length: 2048
       quantization: APEX I-Mini
       note: 'vram detalhe: ~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34) APEX I-Mini quant do mudler (base llmfan46 heretic TPE, -2.7 GB vs prod). Sep 24: experimental. O mesmo heretic TPE do prod em quant APEX-I-Mini (14.32 GB). MTP off (sem nextn tail). Se andar bem, substitui o prod.'
+  spark-x2.6-1.7b:
+    name: Spark X2.6 1.7B
+    description: 'XHToken 1.7B denso na arch Spark 2.5 COM spec-decode DSpark (draft BF16 345M/696MB do vendor, NAO quantizado): 1M de contexto nativo, agentic forte pro porte (BFCL-V4 55.2, tau2 85.3, SWE-V 59.8 no card vendor, thinking HIGH). Lane instalada 01/11 SEM SMOKE — GPU do dono ocupada (renders); o primeiro spawn confirma o ctx efetivo do --fit. Gate = PR #31372 (draft tensor support, OPEN) — enquanto nao mergear, RODA NO FORK xhtoken.'
+    tags:
+    - think
+    - tools
+    cmd: '${fork_server} --port ${PORT}
+
+      --model ${models_dir}/spark-x2.6-1.7b/Spark-X2.6-1.7B-Q8_0.gguf
+
+      -md ${models_dir}/spark-x2.6-1.7b/Spark-X2.6-1.7B-DSpark.gguf
+
+      --spec-type draft-dspark
+
+      --spec-draft-sampling greedy
+
+      --spec-draft-n-max 7
+
+      --spec-draft-p-min 0
+
+      -ngld 999
+
+      --jinja
+
+      --parallel 1
+
+      --ctx-size 262144
+
+      --fit
+
+      -ngl 99
+
+      -b 512 -ub 128
+
+      --flash-attn on
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --temp 1.0
+
+      --top-p 0.95
+
+      --top-k 0
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p, top_k
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 0
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 0
+    ttl: 900
+    health_check_timeout: 600
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 262144
+    metadata:
+      size: ~1.82 GB (Q8_0 — Q4_K_M tinha so 50MB a menos, Q8 vence em hybrid) + 0.69 GB draft DSpark BF16 (NAO quantizado, pedido do dono)
+      context: 262144
+      vram_usage: 'NAO MEDIDO (smoke pendente) — aritmetica: modelo 1.82 + draft 0.70 + buffers ~0.35 + KV@262K ~1.1-1.8 GB (SWA 3:1, KV q4_0) + desktop ~1.1 = 5.1-5.8 GB pico estimado; --fit derruba o ctx se apertar. O ctx EFETIVO so sai no primeiro spawn (medir e atualizar este campo).'
+      source: XHToken/Spark-X2.6-1.7B-GGUF (Q8_0) + XHToken/Spark-X2.6-1.7B-DSpark-GGUF (draft BF16 345M, repo oficial)
+      kv_cache: q4_0 + q4_0; draft f16 (SWA 512)
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: spark2_5
+      parameters: 1700000000
+      context_length: 1048576
+      embedding_length: 2048
+      quantization: Q8_0
+      note: 'INSTALACAO 01/11/2026 — SMOKE PENDENTE (GPU ocupada por renders do dono). Samplers do card vendor: temp 1.0, top_p 0.95, top_k -1/0 (thinking HIGH nos evals oficiais). Draft DSpark: acceptance do card vendor (greedy T0) media 4.32/8; T1+High+Prob 3.58/8 — E A LIÇÃO DO 4B VALE: raw cru (sem template) aceitou 95%, no template de chat caiu p/ 26% (2.6/8) — esperar o MESMO comportamento aqui ate medido; ganho real em chat provavelmente +25-45% sobre o baseline sem draft (como no 4B), NAO 2x. Benchmarks vendor (thinking HIGH): Average 49.6, BFCL-V4 55.2, tau2 85.3, SWE-V 59.8, SWE-Multi 57.3, IFEval 89.4, GPQA-D 56.1, AIME 70.1, MRCR v2 256k-512k 56.1, Graphwalks 1M 25.7. Vs LFM3-1.7B (card liquid): SWE-V 43.4, SWE-Multi 23.0, GPQA-D 63.37, HLE-no-tools 7.17 (spark 8.7), ClawEval 51.4 (spark 66.9), LiveCodeBench v6 73.46, tau3-4dom 68.01 (nao comparavel ao tau3 do spark: dominios distintos). HARNESSES DIFERENTES entre vendors: comparar com pinca. Local LFM3-1.7B (Heretic Q8_0): decode 75 t/s GPU solo, prompt 631; 320K deployado, slots 5x64K. FORK: roda no fork_server (PR #31372 open) — flip pro llama_server no merge; re-testar acceptance no template depois do merge. GGUFs em ~/.llama-models/spark-x2.6-1.7b/.'
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
