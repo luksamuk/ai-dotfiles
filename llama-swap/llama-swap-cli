@@ -50,9 +50,10 @@ feat_tag() {
   # v269: o feats já chega com as capabilities NATIVAS da swap merjadas
   # (embeddings/function_calling/audio_speech via jq no caller) — as chaves
   # nativas casam aqui como OR, e as casas-only (decision/thinking/insert)
-  # seguem nos features da casa.
+  # seguem nos features da casa. Decision nativa = out: ["decisions"] (#1219).
   local feats="$1" tags=""
-  echo "$feats" | grep -qiP '"decision"\s*:\s*true'       && tags="${tags}+dec"
+  echo "$feats" | grep -qiP '"decision"\s*:\s*true'         && tags="${tags}+dec"
+  echo "$feats" | grep -qF '"decisions"'                    && tags="${tags}+dec"
   echo "$feats" | grep -qiP '"embedding"\s*:\s*true' || echo "$feats" | grep -qiP '"embeddings"\s*:\s*true' && tags="${tags}+emb"
   echo "$feats" | grep -qiP '"vision"\s*:\s*true'         && tags="${tags}+vis"
   echo "$feats" | grep -qiP '"thinking"\s*:\s*true'       && tags="${tags}+think"
@@ -61,7 +62,9 @@ feat_tag() {
   echo "$feats" | grep -qiP '"tts"\s*:\s*true' || echo "$feats" | grep -qiP '"audio_speech"\s*:\s*true' && tags="${tags}+tts"
   echo "$feats" | grep -qiP '"audio"\s*:\s*true'          && tags="${tags}+audio"
   echo "$feats" | grep -qiP '"image_generation"\s*:\s*true' || echo "$feats" | grep -qiP '"image"\s*:\s*true' && tags="${tags}+img"
+  # dedupe (casa + nativo podem casar o mesmo tag — ex. +dec duas vezes)
   tags="${tags#+}"
+  tags=$(echo "$tags" | tr '+' '\n' | awk '!seen[$0]++' | paste -sd+ -)
   # completion=true and nothing else → chat
   [[ -z "$tags" ]] && tags="chat"
   echo "$tags"
@@ -70,7 +73,8 @@ feat_tag() {
 feat_emoji() {
   # Ollama-style capabilities → emoji tags
   local feats="$1" emojis=""
-  echo "$feats" | grep -qiP '"decision"\s*:\s*true'       && emojis="${emojis}⚖"
+  echo "$feats" | grep -qiP '"decision"\s*:\s*true'         && emojis="${emojis}⚖"
+  echo "$feats" | grep -qF '"decisions"'                    && emojis="${emojis}⚖"
   echo "$feats" | grep -qiP '"embedding"\s*:\s*true' || echo "$feats" | grep -qiP '"embeddings"\s*:\s*true' && emojis="${emojis}🔢"
   echo "$feats" | grep -qiP '"vision"\s*:\s*true'         && emojis="${emojis}👁"
   echo "$feats" | grep -qiP '"thinking"\s*:\s*true'       && emojis="${emojis}🤔"
@@ -79,6 +83,7 @@ feat_emoji() {
   echo "$feats" | grep -qiP '"tts"\s*:\s*true' || echo "$feats" | grep -qiP '"audio_speech"\s*:\s*true' && emojis="${emojis}🗣"
   echo "$feats" | grep -qiP '"audio"\s*:\s*true'          && emojis="${emojis}🔊"
   echo "$feats" | grep -qiP '"image_generation"\s*:\s*true' || echo "$feats" | grep -qiP '"image"\s*:\s*true' && emojis="${emojis}🖼"
+  emojis=$(echo "$emojis" | sed 's/./&\n/g' | awk '!seen[$0]++' | tr -d '\n')
   [[ -z "$emojis" ]] && emojis="💬"
   echo "$emojis"
 }
@@ -324,7 +329,7 @@ cmd_list() {
         quant: (.meta.llamaswap.quantization // "-"),
         size: (.meta.llamaswap.size // "-"),
         kv_cache: (.meta.llamaswap.kv_cache // "-"),
-        features: ((.meta.llamaswap.features // {}) * {embeddings: (.capabilities.embeddings // false), function_calling: (.capabilities.function_calling // false), audio_speech: (.capabilities.audio_speech // false), image_generation: (.capabilities.image_generation // false)} | tostring),
+        features: (((.meta.llamaswap.features // {}) * {embeddings: (.capabilities.embeddings // false), function_calling: (.capabilities.function_calling // false), audio_speech: (.capabilities.audio_speech // false), image_generation: (.capabilities.image_generation // false)} | tostring) + " out:" + ((.architecture.output_modalities // []) | tostring)),
         vision: (.meta.llamaswap.features.vision // false)
       } | [.id, .arch, (.params | tostring), (.ctx | tostring), (.embed | tostring), .quant, .size, .kv_cache, .features, .vision] | @tsv
     ' | while IFS=$'\t' read -r id arch params ctx embed quant size kv_cache features vision; do
@@ -395,7 +400,7 @@ cmd_ps() {
 
     # Features from metadata + capabilities nativas da swap (v269 merge)
     local features="{}" tags=""
-    features=$(echo "$models_data" | jq -r --arg id "$id" '.data[] | select(.id == $id) | ((.meta.llamaswap.features // {}) * {embeddings: (.capabilities.embeddings // false), function_calling: (.capabilities.function_calling // false), audio_speech: (.capabilities.audio_speech // false), image_generation: (.capabilities.image_generation // false)}) | tostring' 2>/dev/null || echo "{}")
+    features=$(echo "$models_data" | jq -r --arg id "$id" '.data[] | select(.id == $id) | (((.meta.llamaswap.features // {}) * {embeddings: (.capabilities.embeddings // false), function_calling: (.capabilities.function_calling // false), audio_speech: (.capabilities.audio_speech // false), image_generation: (.capabilities.image_generation // false)}) | tostring) + " out:" + ((.architecture.output_modalities // []) | tostring)' 2>/dev/null || echo "{}")
     if [[ -n "$PRETTY" ]]; then
       tags=$(feat_emoji "$features")
     else

@@ -544,7 +544,9 @@ def _classify_non_chat(model: dict) -> str | None:
         return "asr"
 
     # Decision sem completion (judge do /v1/systemone)
-    if features.get("decision") and not features.get("completion"):
+    # nativo da swap (#1219, v264+): out: [decisions] é a forma canônica
+    if ("decisions" in out_modalities and not features.get("completion")) or (
+            features.get("decision") and not features.get("completion")):
         return "decision"
 
     return None
