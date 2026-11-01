@@ -68,9 +68,14 @@ def print_tools_summary(active):
     if mocks:
         c.print(f"[dim]   mocks de teste: {', '.join(mocks)}[/]")
     if not mcp_names:
-        c.print("[yellow]   MCP INATIVO neste boot (server MCP não respondeu na "
-                "conexão inicial) — reinicie o testchat, sem MCP o que se pede "
-                "de busca não executa.[/]")
+        status = (_mb.BRIDGE.status if _mb else "") or ""
+        if "desligado" in status:
+            c.print("[yellow]   MCP DESLIGADO no boot (--no-mcp / TESTCHAT_NO_MCP=1) — "
+                    "a busca não executa; rode sem a flag.[/]")
+        else:
+            c.print("[yellow]   MCP INATIVO neste boot (server MCP não respondeu na "
+                    "conexão inicial) — reinicie o testchat, sem MCP o que se pede "
+                    "de busca não executa.[/]")
     if active:
         c.print("[dim]   Real tools answer for real - just ask by voice (PT or English).[/]")
     else:
