@@ -68,7 +68,7 @@ ORIGINAL_ORDER = [
     "gemma4-e2b",            # ✅
     "lfm2.5-1.2b",           # ✅
     "spark-x2.6-4b",        # ✅ upstream (arch spark2_5), 131K @88,7% — 24/out
-    "nemotron-bolt-e4b",    # ✅ upstream (arch gemma4), 64K Q4 @82,3% — 24/out
+    # "nemotron-bolt-e4b",  # APOSENTADO 31/10/2026 (dono) — _disabled/ + HELPER; re-download unsloth UD-Q4_K_XL
     "lfm2.5-2.6b",           # ✅ Dense hybrid, agentic RL, on-device
     "qwen2.5-coder-1.5b-pollard",  # ✅ Pollard Coder IQ4_XS CPU-only (FIM, imatrix, coexists with GPU MoE)
     "gemma4-12b-pollard",    # ✅ Pollard IQ4_XS dense 12B multimodal (measured-allocation; ativo Sep 20)
@@ -103,11 +103,11 @@ ORIGINAL_ORDER = [
     "athenas-symbiote-9b",  # ✅ Qwen3.5-9B LoRA PT-BR legal (OAB/ENEM)
     "nanbeige4.2-3b",        # ✅ Nanbeige 4.2 3B — Looped Transformer; ik @131K Oct 15 2026 (nativo 262K, KV q4_0 na RAM via -nkvo, PR ik #2590)
     "nemotron-bolt-74b",     # EXPERIMENTO Oct 15 2026 — Nemotron 3.5 Bolt 74B-A9B IQ2 QAT, vanilla server + -ncmoe 88 (tweet-referência 24 t/s em 3060 12GB); criterio <10 t/s ou OOM = delete
-    "twil-lm3-pro",          # Oct 15 2026 — smoke pendente (user: "não agrega mas precisa smoke")
+    # "twil-lm3-pro",      # APOSENTADO 31/10/2026 (dono) — _disabled/ + HELPER; re-download webAI Q6_K
     # "mellum2-12b-thinking",   # DISABLED: tool calling broken (no chat_template in GGUF, --tool-call-parser hermes is vLLM-only). Awaiting community GGUF.
     # "ornstein-36-35b",        # DISABLED: Q4_K_M too large (21.7GB) — needs APEX I-Compact conversion (~16.1GB)
     "nomic-embed-text-v2-moe",  # ✅ Embedding (CPU-only, Q4_K_M)
-    "lfm2.5-embedding-350m",    # ✅ Embedding (CPU-only, Q8_0)
+    # "lfm2.5-embedding-350m",  # APOSENTADO 31/10/2026 (dono) — _disabled + HELPER; colbert/eg2 cobrem embed
     "lfm2.5-colbert-350m",      # ✅ Reranker (CPU-only, Q8_0)
     "nemotron-3-embed-1b",      # ✅ Embedding (CPU-only, Q8_0, converted from BF16)
     "embeddinggemma-2",         # ✅ Embedding multimodal (CPU-only, Q8_0, texto+img+audio, 768d MRL, 06/10/2026)

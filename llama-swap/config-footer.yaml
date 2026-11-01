@@ -39,7 +39,7 @@ matrix:
     # lfm26: lfm2.5-2.6b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/
     # nb42: nanbeige4.2-3b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/
     # Especialista logica formal (webAI, base Granite 4.2-3B da IBM) — lane nova, nao substitui
-    twp: twil-lm3-pro
+    # twp: twil-lm3-pro  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER; restore: re-download webAI Q6_K + mv fragment
     # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
     qpfim: qwen2.5-coder-1.5b-pollard  # reativado 16/out — FIM CPU-only (k2fim/k2p/k2 _disabled: GGUFs deletados no aperto SSD; restore: mv _disabled → models + vars)
@@ -77,7 +77,7 @@ matrix:
     # groot: groot-19b-a3b  # APOSENTADO 28/out/2026 pelo dono — bug de re-serialização do parser de tool calls do ik; fragment em _disabled/; GGUF deletado (re-download via HF, fonte no fragment)
     # qw38d: qwen38-27b-defiance  # RETIRADO 25/out/2026 c/ honras — testchat: 3.2 t/s sofrivel; 2ª aposentadoria da família (1ª ago/26 'too slow'); GGUF deletado (REINSTALAR-DEFIANCE-2026-10-25.md)
     # qw38df: qwen38-27b-defiance-fast  # RETIRADO junto — MTP 4.3 t/s não salvou na régua do dono; fragment em _disabled/
-    bs2: bonsai2-9b  # ternary Prism 9B, always-think — papel query do sprach (precisa de set próprio: sem set o solver trata como exclusivo)
+    # bs2: bonsai2-9b  # APOSENTADO 31/10/2026 (dono) — GGUFs (PTQ1_0 + PQ2_0-MTP + mmproj) deletados, fragments _disabled/; papel query do sprach morre com ele
     # g4: gemma4-e2b  # REMOVED Sep 10 2026 — GGUF QAT deleted (maturidade em outros modelos); fragment em _removed/
     # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
     # Pesados (offload)
@@ -118,7 +118,7 @@ matrix:
     pkstt: parakeet-tdt-0.6b-v3
     # Embedding
     # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
-    lfmemb: lfm2.5-embedding-350m
+    # lfmemb: lfm2.5-embedding-350m  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER (nome corrigido p/ "LFM2.5 Embedding 350M"); colbert+eg2 cobrem embed
     # nemb: nemotron-3-embed-1b  # APOSENTADO 21/out 2026 — sprach migrou p/ eg2 em 06/10; GGUF deletado, fragment em _removed/
     # Multimodal embedding (Google, 740M, texto+img+audio+video, 768d MRL, Apache 2.0)
     eg2: embeddinggemma-2
@@ -136,22 +136,22 @@ matrix:
     # Uma pergunta fixa (prompt no template do GGUF), rota /v1/systemone.
     mojev: minicpm-ocr-jev
     sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
-    nbe4: nemotron-bolt-e4b  # NVIDIA Bolt E4B (Gemma 4 E4B pos-treino), 64K em Q4 por escolha do dono
+    # nbe4: nemotron-bolt-e4b  # APOSENTADO 31/10/2026 (dono) — GGUFs (UD-Q4_K_XL 5.1G + dflash draft) deletados, fragment _disabled/; restore: re-download unsloth (GATED)
     lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + :think), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despejava (ping-pong cravado no journal 30/out 14:53)
     # sn9: sensenova-loop-9b  # RETIRADO 31/out/2026 (fragment em _disabled/, restore no header do fragment)
     # sn9v: sensenova-loop-9b-vision  # RETIRADO junto # fragment em _disabled/
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(twp | lfm24) & (lfmcol | eg2) & pkstt"
+    small_vision: "lfm24 & (lfmcol | eg2) & pkstt"  # 31/10: twp aposentado (single member, expressão reescrita)
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(twp | lfm24 | sp26 | nbe4 | lfm317) & (lfmcol | eg2) & qpfim & pkstt"
+    small_embed: "(lfm24 | sp26 | lfm317) & (lfmcol | eg2) & qpfim & pkstt"  # 31/10: twp + nbe4 aposentados
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "(twp | lfm24 | sp26 | nbe4 | lfm317) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados); twp + lfm24 restam | 30/out: +lfm317 (sem set = exclusivo no solver)
+    small_only: "(lfm24 | sp26 | lfm317) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
@@ -175,7 +175,7 @@ matrix:
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
-    bs2_embed: "bs2 & (lfmcol | eg2) & pkstt" # k2/k2p/k2fim _disabled 16/out (pesos deletados); q36 REMOVED Oct 8 2026 — aposentado; orn15 merged no heretic
+    # bs2_embed: "bs2 & (lfmcol | eg2) & pkstt"  # APOSENTADO 31/10/2026 junto do bs2 (papel query do sprach); k2/k2p/k2fim _disabled 16/out; q36 REMOVED Oct 8; orn15 merged no heretic
 
     # Tradução (leve, cabe com embedding/reranker)
     # translate_embed removed (hmt uninstalled)
@@ -186,13 +186,13 @@ matrix:
 
     # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
     # AND entre todos os CPU-only: coexistem (zero VRAM) — OR evitaria em ping-pong
-    embed_only: "lfmemb & lfmcol & eg2 & pkstt"
+    embed_only: "lfmcol & eg2 & pkstt"  # 31/10: lfmemb aposentado
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
 
     # Reranker + Embedding (two-stage retrieval: dense → rerank)
-    rerank_embed: "lfmcol & (lfmemb | eg2) & pkstt"
+    rerank_embed: "lfmcol & eg2 & pkstt"  # 31/10: lfmemb aposentado (OR vira single member)
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
@@ -236,9 +236,9 @@ matrix:
     # groot: 7  # APOSENTADO 28/out/2026 pelo dono — bug de re-serialização do parser de tool calls do ik (args unescape, quebrava agêntico no Kilo); fragment em _disabled/; GGUF deletado
     # qw38d: 7  # RETIRADO 25/out/2026
     # qw38df: 7  # RETIRADO 25/out/2026
-    bs2: 4  # ternary 9B + fork Prism; reload médio
+    # bs2: 4  # APOSENTADO 31/10/2026 junto do modelo (ternary 9B + fork Prism; reload médio)
     # lfm24f: 6  # (o fast/challenger ik — mesmo custo de reload; fora dos sets, vivendo só no A/B)
-    twp: 2
+    # twp: 2  # APOSENTADO 31/10/2026 junto do modelo
     # eq2: 2  # REMOVED Sep 10 2026
     # eq4: 3  # REMOVED Sep 10 2026
     qpfim: 1
@@ -249,7 +249,7 @@ matrix:
     # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
     # gpt2xl: 3  # DISABLED Oct 3 2026 - gpt2xl removido
     # nomic: 1  # REMOVED Sep 10 2026
-    lfmemb: 1
+    # lfmemb: 1  # APOSENTADO 31/10/2026 junto do modelo
     # nemb: 1  # APOSENTADO 21/out 2026
     eg2: 1
     lfmcol: 1
@@ -258,4 +258,4 @@ matrix:
     # laya: 1  # DESINSTALADO 20/out/2026
     julia: 1
     sp26: 2  # 3,54 GB denso — reload barato
-    nbe4: 3  # 5,06 GB denso — reload medio
+    # nbe4: 3  # APOSENTADO 31/10/2026 junto do modelo (5,06 GB denso — reload medio)

@@ -17,6 +17,10 @@
 # "decision model reads the embeddings output" detectado automaticamente.
 # -------------------------------------------
 minicpm-ocr-jev:
+  # APOSENTADO COM HONRAS + SACRIFICIO DE DISCO 31/10/2026 (dono): Q8_0 + mmproj
+  # DELETADOS (~2.5G) — restore: remover 'unlisted: true' e:
+  #   hf download openbmb/MiniCPM-OCR-Jev-gguf MiniCPM-OCR-Jev-Q8_0.gguf mmproj-model-f16.gguf --local-dir ~/.llama-models/minicpm-ocr-jev/
+  unlisted: true
   name: "MiniCPM-OCR Jev"
   description: "OpenBMB's 2B OCR quality scorer (Jev-style decision model) - scores text/formula/table OCR candidates 0-1 in a single pass by comparing the source image with the render."
   cmd: |

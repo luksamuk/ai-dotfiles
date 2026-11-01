@@ -10,6 +10,11 @@
 # Smoke 28/out/2026 (Q8_0, build fleet-liquid c207abe30): health ok, model loaded.
 # -------------------------------------------
 minicpm-ocr-1.0:
+  # APOSENTADO COM HONRAS + SACRIFICIO DE DISCO 31/10/2026 (dono): Q8_0 + mmproj
+  # + draft DSpark DELETADOS (~1.9G) — restore: remover 'unlisted: true' e:
+  #   hf download openbmb/MiniCPM-OCR-1.0-gguf MiniCPM-OCR-1_0-Q8_0.gguf mmproj-model-f16-4x.gguf --local-dir ~/.llama-models/minicpm-ocr-1.0/
+  #   hf download openbmb/MiniCPM-OCR-1.0-DSpark-gguf dspark-MiniCPM-OCR-1_0-Q8_0.gguf --local-dir ~/.llama-models/minicpm-ocr-dspark/   (draft, se for usar spec)
+  unlisted: true
   name: "MiniCPM-OCR 1.0"
   description: "OpenBMB's 1.3B document parsing model - text, tables, formulas, charts and seals for EN/zh documents and PDFs via fixed prompts (Text/Table/Formula Recognition:)."
   cmd: |
