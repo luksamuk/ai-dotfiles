@@ -59,7 +59,7 @@ models:
 
       --parallel 1
 
-      --ctx-size 131072
+      --ctx-size 114688
 
       -ngl 99
 
@@ -106,11 +106,11 @@ models:
       - text
       tools: true
       reranker: false
-      context: 131072
+      context: 114688
     metadata:
       size: ~3.54 GB (Q4_K_M)
-      context: 131072
-      vram_usage: ~5.4 GB pico medido 5449 MiB = 88,7% da 3050 (ctx 131K, KV q4_0, -b 256 -ub 64)
+      context: 114688
+      vram_usage: '~5.6 GB @112K com desktop+netflix (01/11: OOM @131K nos compute buffers 535 MiB — era 5449 MiB @131K em 24/10; o novo build cresceu VRAM)'
       source: XHToken/Spark-X2.6-4B-GGUF (Q4_K_M, repo oficial)
       kv_cache: q4_0 + q4_0
       features:
