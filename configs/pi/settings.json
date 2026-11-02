@@ -3,7 +3,6 @@
   "defaultProvider": "llama-swap",
   "lastChangelogVersion": "1.4.0",
   "packages": [
-    "npm:pi-mcp-adapter",
     "npm:pi-acp",
     "npm:@alasano/pi-linear",
     "npm:pi-llama-cpp",
@@ -18,7 +17,7 @@
   "httpIdleTimeoutMs": 0,
   "theme": "dark",
   "extensions": [
-    "-builtin:mcp"
+    "-builtin:llama.cpp"
   ],
   "llamaSettings": {
     "servers": [
@@ -26,11 +25,6 @@
         "url": "http://127.0.0.1:12434",
         "id": "llama-swap",
         "name": "Frota Navi"
-      },
-      {
-        "url": "http://192.168.3.8:8081",
-        "id": "sisyphus",
-        "name": "Frota Sisyphus (RPi)"
       }
     ],
     "reactToModelSelect": true,
