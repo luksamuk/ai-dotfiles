@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# mkv2mp4 — MKV (perde FFV1+FLAC do Wan2GP) → MP4 compatível com WhatsApp/Instagram
+# Fórmula: libx264 (crf/preset configurável) + yuv420p + AAC 192k + faststart (moov no início)
+# Uso: mkv2mp4 [-crf N] [-preset NOME] [-f] arquivo.mkv [mais.mkv ...]
+#   -crf N        qualidade (default 18; menor = melhor/maior — 14 é praticamente visualmente sem perda)
+#   -preset NOME  speed do encode (default slow)
+#   -f            sobrescreve o .mp4 de destino se existir
+set -euo pipefail
+
+CRF=18
+PRESET=slow
+FORCE=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -crf) CRF="$2"; shift 2 ;;
+    -preset) PRESET="$2"; shift 2 ;;
+    -f) FORCE=1; shift ;;
+    -h|--help) sed -n '2,6p' "$0"; exit 0 ;;
+    -*) echo "opção desconhecida: $1" >&2; exit 1 ;;
+    *) break ;;
+  esac
+done
+[[ $# -ge 1 ]] || { echo "uso: mkv2mp4 [-crf N] [-preset NOME] [-f] file.mkv [mais.mkv ...]" >&2; exit 1; }
+command -v ffprobe >/dev/null || { echo "ffmpeg/ffprobe não encontrados no PATH" >&2; exit 1; }
+
+RC=0
+for f in "$@"; do
+  if [[ ! -f "$f" ]]; then
+    echo "× não existe: $f" >&2; RC=1; continue
+  fi
+  out="${f%.*}.mp4"
+  if [[ -f "$out" && "$FORCE" -ne 1 ]]; then
+    echo "→ $out já existe, pulando (use -f para sobrescrever)"; continue
+  fi
+  echo "== $f → $out"
+  ffmpeg -hide_banner -loglevel error -y -i "$f" \
+    -c:v libx264 -crf "$CRF" -preset "$PRESET" -pix_fmt yuv420p -profile:v high \
+    -c:a aac -b:a 192k -movflags +faststart "$out"
+  # validação honesta: codec de vídeo + pix_fmt + presença de áudio
+  vcodec=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nk=1:nw=1 "$out")
+  pix=$(ffprobe -v error -select_streams v:0 -show_entries stream=pix_fmt -of default=nk=1:nw=1 "$out")
+  dim=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 "$out" | tr 'x,' 'x')
+  acodec=$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nk=1:nw=1 "$out")
+  info="h264-check: $vcodec/$pix ${dim:-?} áudio:${acodec:-AUSENTE}"
+  echo "   ✓ $info"
+  if [[ "$info" != h264* ]]; then echo "   × vídeo não saiu h264!" >&2; RC=1; fi
+  if [[ "$info" != *yuv420p* ]]; then echo "   × pix_fmt não é yuv420p (players de rede social recusam)" >&2; RC=1; fi
+done
+exit "$RC"
