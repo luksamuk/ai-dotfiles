@@ -46,7 +46,17 @@ out, faltando, usados = [], [], set()
 # Fora do catalogo (nao sao LoRA de estilo; o seletor nunca deve escolher):
 #  - facial-realism: empurra textura de poro e derrete rosto a poucos steps (22/out)
 #  - *_turbo_*: aceleradoras de step, carregadas explicitamente com --turbo-file/--lora
-NAO_CATALOGAR = {"minimax-h3-facial-realism-closeup-cp2000.safetensors"}
+#  - Acc-8Step: mesma funcao turbo, mas o nome nao casa o padrao "_turbo_" (03/nov)
+#  - polyhedron: overtrained (aviso do AUTOR), a 8-step turbo substitui o sujeito pelo
+#    dataset dela (loira) e o trigger em lingua natural ("perfe8ct, perfect skin...") e
+#    FALADO pelo modelo (gate de descricao nao segurou o d1-2b — prova 02/nov #2)
+#  - VBVR: utilidade manual (decreto user 03/nov: "--vbvr na seleção automática é ruim —
+#    eu uso quando preciso seguir roteiro mais incisivamente"). Seletor nunca escolhe.
+NAO_CATALOGAR = {"minimax-h3-facial-realism-closeup-cp2000.safetensors",
+                 "MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors",
+                 "MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors",
+                 "h3_polyhedron_eyes_skin_v3278036.safetensors",
+                 "VBVR-H3-Pro-attn.safetensors"}
 
 for nome in disk:
     if nome in NAO_CATALOGAR or "_turbo_" in nome:

@@ -2249,8 +2249,13 @@ if os.environ.get('H3_NAFASP') == 'true':
 if os.environ.get('H3_LORAS_JSON') and os.environ['H3_LORAS_JSON'] != '[]':
     ex_loras = json.loads(os.environ['H3_LORAS_JSON'])
     ex_mults = json.loads(os.environ.get('H3_LORAS_MULTS_JSON', '[]'))
+    _vbvr_on_x = os.environ.get('H3_VBVR') == 'true'
     for i, fname in enumerate(ex_loras):
         fname_full = fname if fname.endswith('.safetensors') else fname + '.safetensors'
+        # attn x attn com VBVR: facial cede (mesma regra do loop NSFW — 03/nov)
+        if _vbvr_on_x and fname_full in ('natural_face_speech_h3_lora_v1_500.safetensors', 'minimax-h3-facial-realism-closeup-cp2000.safetensors'):
+            print('=== [VBVR] attn conflict: ' + fname_full + ' removida (nunca empilhar attn-attn) ===')
+            continue
         if fname_full not in activated_loras:
             activated_loras.append(fname_full)
             loras_multipliers.append(float(ex_mults[i]) if i < len(ex_mults) else 1.0)
