@@ -126,6 +126,8 @@ def eligible(entries, nsfw: bool, variant: str):
     """Filtra por conteúdo, compatibilidade de variante e destilados."""
     out = []
     for e in entries or []:
+        if e.get("ref_only"):
+            continue  # LoRA de controle (só com --ref-image): nunca é candidata de escolha
         if _DISTILL.search(e.get("safetensors", "")):
             continue
         if e.get("nsfw") and not nsfw:
@@ -242,6 +244,15 @@ def select_loras(prompt: str, *, root: str, nsfw: bool, variant: str,
             # rank=None = seletor indisponível (rede/API); rank=list = corte vazio honesto
             info["reason"] = ("seletor decision indisponível" if rank is None
                               else "nenhuma acima do corte")
+            if rank is not None:
+                # ausência definitiva = logar com o ranking (sintoma comum: user acha
+                # que o seletor não rodou; o evict do d1 residente confunde mais)
+                top = rank[0]
+                nome_top = next((e["safetensors"] for e in entries if str(e["id"]) == top[0]),
+                                f"id {top[0]}")
+                print(f"  🎯 decision ({cfg.decision_model}): {len(entries)} candidatas, "
+                      f"nenhuma acima do corte {cfg.decision_threshold} — "
+                      f"top: {nome_top} {top[1]:.3f}")
             return prompt, [], info
         resolved = resolve_ids(entries, ids)
         print(f"  \U0001f3af decision ({cfg.decision_model}) escolheu {len(ids)} LoRA(s): "

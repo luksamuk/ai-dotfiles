@@ -700,16 +700,30 @@ def _check_model_vision(model: str) -> bool:
 
     llama-swap is the default: its /v1/models lists a per-model `features` map
     that says whether vision is enabled. An "ollama:<name>" prefix routes to the
-    Ollama daemon instead, which does not expose that map — there we infer
-    capability from the model name, matching the common vision naming.
+    Ollama daemon, which DOES expose native capabilities (/api/show → "vision")
+    — perguntar ao daemon primeiro; heurística de nome só cai quando o daemon
+    não responde (modelos cloud proxied, daemon fora, versões antigas).
     """
     import urllib.request
     import urllib.error
 
     if model.startswith("ollama:"):
-        # Ollama does not publish a vision flag; fall back to name heuristics.
-        name = model[len("ollama:"):].lower()
-        return any(tag in name for tag in ("vl", "vision", "llava", "gemma4", "minicpm-v", "qwen3-vl", "qwen3.6", "ornith"))
+        name = model[len("ollama:"):]
+        # Ollama /api/show publica capabilities; glm-4.5v/glm-5.3-flash etc. são
+        # multimodais sem nada de "vl" no nome — adivinhar pelo nome falso-negativo.
+        try:
+            req = urllib.request.Request(
+                f"{OLLAMA_URL}/api/show",
+                data=json.dumps({"model": name}).encode(),
+                headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                caps = (json.loads(resp.read()) or {}).get("capabilities") or []
+            return "vision" in [str(c).lower() for c in caps]
+        except Exception as e:
+            log.warning("ollama /api/show indisponível para %s (%s); heurística de nome", name, e)
+        # fallback: heurística de nome (daemon fora / versão sem /api/show)
+        low = name.lower()
+        return any(tag in low for tag in ("vl", "vision", "llava", "gemma4", "minicpm-v", "qwen3-vl", "qwen3.6", "ornith"))
 
     base_model = model.split(":")[0]
     try:

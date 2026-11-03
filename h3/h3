@@ -46,7 +46,7 @@ ENHANCE=false
 ENHANCE_MODEL=""
 # Fleet config: default de enhance vem de ~/.local/share/fleet/enhance-models.yaml
 # (chave h3: model + fallback; vira ornith-1.5-35b-heretic). Parser awk puro
-# (sem yq); sem o arquivo, cai pro fallback inline (qwen3.6-35b-a3b-heretic).
+# (sem yq); sem o arquivo, cai pro fallback inline (ornith-1.5-35b-heretic).
 H3_FLEET_CFG="$HOME/.local/share/fleet/enhance-models.yaml"
 read_fleet_h3() { # $1=campo → imprime valor
   awk -v field="$1" '
@@ -56,9 +56,9 @@ read_fleet_h3() { # $1=campo → imprime valor
   ' "$H3_FLEET_CFG" 2>/dev/null
 }
 ENHANCE_DEFAULT="$(read_fleet_h3 model)"
-[[ -z "$ENHANCE_DEFAULT" ]] && ENHANCE_DEFAULT="qwen3.6-35b-a3b-heretic"
+[[ -z "$ENHANCE_DEFAULT" ]] && ENHANCE_DEFAULT="ornith-1.5-35b-heretic"
 H3_ENHANCE_FALLBACK="$(read_fleet_h3 fallback)"
-[[ -z "$H3_ENHANCE_FALLBACK" ]] && H3_ENHANCE_FALLBACK="qwen3.6-35b-a3b-heretic"
+[[ -z "$H3_ENHANCE_FALLBACK" ]] && H3_ENHANCE_FALLBACK="ornith-1.5-35b-heretic"
 # Quem escolhe as LoRAs: espelha a chave `lora_selector` do diffuse (llm | decision).
 # decision (default): o LLM escreve o prompt, o seletor decide. llm: modo antigo, o LLM
 # emite a linha LORAS: e o seletor nao opina. O gate/eixo de papel so existem no decision.
@@ -105,10 +105,10 @@ TURBO_STEPS=8                       # decreto user 22/out: 8 no FL2VA/T2V (o A/B
 H3_PROFILE=5                        # Profile Wan2GP (5=VeryLowRAM_LowVRAM block-by-block; 4=grupos maiores, 2=RAM cache)
 SIDNEY=false
 SIDNEY_FILE="MM-H3 - Sydney Sweeney.safetensors"  # easter egg: ator de referência
-TURBO_STRENGTH="0.5"                # 0.5 = default do Wan2GP ("1.0 seems too strong" — docs/CHANGELOG.md). Decreto user 21/out: usar SEMPRE o recomendado
+TURBO_STRENGTH="1.8"                # decreto user 02/nov/2026: 1.8 (Acc-8Step pós-testes; o 0.5 era da lane lightx2v antiga)
 # Único turbo compatível com o pruned Q4 (full-rank = MOSAICO — doutrina 30/09):
 TURBO_FILE_OVERRIDE=""
-TURBO_FILE="minimax_h3_fl2v_turbo_8step_v1.1_768p_bf16.safetensors"   # lightx2v: LoRA pura, carrega na geometria pruned
+TURBO_FILE="MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors"   # decreto 02/nov/2026: Kijai Acc-8Step pruned (final_layer head-banks strippado p/ int8_convrot; orig .orig-final_layer-raw)
 
 # Facial Realism LoRA (close-up de rosto — textura de pele, micro-expressões)
 # prithivMLmods/MiniMax-H3-Facial-Realism-CloseUp, cp2000, rank 16, trigger "Facial Realism"
@@ -182,8 +182,8 @@ resolve_lora() {
   case "$key" in
     nafasp|nafasp_v1|natural-face-speech|natural_face_speech) echo "natural_face_speech_h3_lora_v1_500"; return 0 ;;
     facial|facial-realism|facial_realism|cp2000) echo "minimax-h3-facial-realism-closeup-cp2000"; return 0 ;;
-    turbo-fl2v|turbo8) echo "minimax_h3_fl2v_lightx2v_turbo_8step_v1.0_resized_avg_rank_24_bf16"; return 0 ;;
-    turbo-ref|turbo4) echo "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_resized_avg_rank_21_bf16"; return 0 ;;
+    turbo-fl2v|turbo8) echo "MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy"; return 0 ;;  # aposentado 02/nov: rank24
+    turbo-ref|turbo4) echo "MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy"; return 0 ;;  # aposentado 02/nov: 4step21
     pdd-fl2v) echo "minimax_h3_fl2va_pdd_8step_lora_bf16"; return 0 ;;
     pdd-ref) echo "minimax_h3_ref2va_pdd_8step_lora_bf16"; return 0 ;;
   esac
@@ -223,8 +223,8 @@ lora_desc() {
     natural_face_speech_h3_lora_v1_500) echo "NAFASP: fala natural + dinâmica facial [OFF por padrão; --nafasp liga @0.6]" ;;
     minimax-h3-facial-realism-closeup-cp2000) echo "Facial Realism cp2000: poros/textura de pele em close-up humano [use --facial]" ;;
     h3_character_swap_pro4500_1000) echo "CHARACTER SWAP: troca personagem do ref-video pela ref-img [use --replace]" ;;
-    minimax_h3_fl2v_lightx2v_turbo_8step_v1.0_resized_avg_rank_24_bf16) echo "TURBO FL2VA 8-step [prefira --turbo]" ;;
-    minimax_h3_ref2v_turbo_4step_v0.1_comfyui_resized_avg_rank_21_bf16) echo "TURBO Ref2VA 4-step [prefira --turbo]" ;;
+    MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors) echo "TURBO FL2VA Acc-8Step (decreto 02/nov, força 1.8)" ;;
+    MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors) echo "TURBO Ref2VA Acc-8Step (decreto 02/nov)" ;;
     minimax_h3_fl2va_pdd_8step_lora_bf16) echo "PDD FL2VA 8-step [prefira --pdd]" ;;
     minimax_h3_ref2va_pdd_8step_lora_bf16) echo "PDD Ref2VA 8-step [prefira --pdd]" ;;
     *) echo "" ;;
@@ -703,7 +703,7 @@ elif [[ "$W4A8" == true ]]; then
     echo "Erro: --w4a8 hoje só cobre Ref2VA (FL2VA w4a8 existe no Kijai mas não baixado)."
     exit 1
   fi
-elif [[ "${H3_GGUF:-1}" == "1" ]]; then
+elif [[ "${H3_GGUF:-0}" == "1" ]]; then
   # Stack GGUF enxuta (29/09): Q4_K unsloth + TE Q3 abliterated + VAEs Abiray
   MODEL_FILE="$CKPTS_DIR/minimax_h3_ref2va_pruned-Q4_K.gguf"
   [[ "$REF2VA_MODE" != true ]] && MODEL_FILE="$CKPTS_DIR/minimax_h3_fl2va_pruned-Q4_K.gguf"
@@ -712,13 +712,16 @@ elif [[ "${H3_GGUF:-1}" == "1" ]]; then
   AUDIO_VAE="$CKPTS_DIR/MiniMax-H3-audio_vae_fp32.safetensors"
 elif [[ "$REF2VA_MODE" == true ]]; then
   MODEL_FILE="$CKPTS_DIR/MiniMax-H3-Ref2VA-pruned_int8_convrot.safetensors"
+  TEXT_ENCODER="$CKPTS_DIR/Qwen3-VL-32B-Instruct/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf"
+  VIDEO_VAE="$CKPTS_DIR/MiniMax-H3-video_vae_fp16.safetensors"
+  AUDIO_VAE="$CKPTS_DIR/MiniMax-H3-audio_vae_fp32.safetensors"
 else
   MODEL_FILE="$CKPTS_DIR/MiniMax-H3-FL2VA-pruned_int8_convrot.safetensors"
   TEXT_ENCODER="$CKPTS_DIR/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf"
   VIDEO_VAE="$CKPTS_DIR/MiniMax-H3-video_vae_fp16.safetensors"
   AUDIO_VAE="$CKPTS_DIR/MiniMax-H3-audio_vae_fp32.safetensors"
 fi
-if [[ "${H3_GGUF:-1}" == "1" ]]; then :; fi
+if [[ "${H3_GGUF:-0}" == "1" ]]; then :; fi
 # (GGUF branch seta TEXT_ENCODER/VAEs completos; int8 legacy path idem)
 
 # Veda Sparse (21/out/2026): SO existe pareado com int8_convrot — o predictor segue a
@@ -754,8 +757,8 @@ done
 # ── Construir prompt types e model_type ──────────────────────────────────
 if [[ "$REF2VA_MODE" == true ]]; then
   MODEL_TYPE="minimax_h3_ref2va_pruned"
-[[ "${H3_GGUF:-1}" == "1" ]] && MODEL_TYPE="minimax_h3_ref2va_gguf"
-[[ "$SINGULARITY" == true ]] && MODEL_TYPE="minimax_h3_ref2va_sing"   # default: stack GGUF enxuta (H3_GGUF=0 volta pro int8)
+[[ "${H3_GGUF:-0}" == "1" ]] && MODEL_TYPE="minimax_h3_ref2va_gguf"
+[[ "$SINGULARITY" == true ]] && MODEL_TYPE="minimax_h3_ref2va_sing"   # default: int8+VEDA (H3_GGUF=1 fora da casa; stack GGUF aposentada)
   TASK_TYPE="ref2va"
   # Soundtrack implícito no --replace (cravado ANTES do bloco AUDIO_PROMPT_TYPE do
   # ref2va — a ordem importa; o patch tardio no gate do replace era no-op p/ o type).
@@ -793,7 +796,7 @@ if [[ "$REF2VA_MODE" == true ]]; then
   IMAGE_PROMPT_TYPE=""
 elif [[ "$FL2VA_MODE" == true ]]; then
   MODEL_TYPE="minimax_h3_fl2va_pruned"
-  [[ "${H3_GGUF:-1}" == "1" ]] && MODEL_TYPE="minimax_h3_fl2va_gguf"
+  [[ "${H3_GGUF:-0}" == "1" ]] && MODEL_TYPE="minimax_h3_fl2va_gguf"
   [[ "$SINGULARITY" == true ]] && MODEL_TYPE="minimax_h3_fl2va_sing"
   TASK_TYPE="i2v"
   IMAGE_PROMPT_TYPE=""
@@ -803,7 +806,7 @@ elif [[ "$FL2VA_MODE" == true ]]; then
   AUDIO_PROMPT_TYPE=""
 else
   MODEL_TYPE="minimax_h3_fl2va_pruned"
-  [[ "${H3_GGUF:-1}" == "1" ]] && MODEL_TYPE="minimax_h3_fl2va_gguf"
+  [[ "${H3_GGUF:-0}" == "1" ]] && MODEL_TYPE="minimax_h3_fl2va_gguf"
   [[ "$SINGULARITY" == true ]] && MODEL_TYPE="minimax_h3_fl2va_sing"
   TASK_TYPE="t2v"
   IMAGE_PROMPT_TYPE=""
@@ -940,7 +943,7 @@ if [[ "$ENHANCE" == true ]]; then
       ENHANCE_MODEL="$H3_ENHANCE_FALLBACK"
       echo "=== Fleet: '$ENHANCE_DEFAULT' indisponível — fallback '$H3_ENHANCE_FALLBACK' ==="
     fi
-    [[ -z "$ENHANCE_MODEL" ]] && ENHANCE_MODEL="qwen3.6-35b-a3b-heretic"
+    [[ -z "$ENHANCE_MODEL" ]] && ENHANCE_MODEL="ornith-1.5-35b-heretic"
   fi
 
   # Detectar prefixo ollama: e trocar endpoint
@@ -1905,10 +1908,7 @@ if [[ "$REPLACE" == true ]]; then
 fi
 
 # ── Turbo: validar e forçar steps ─────────────────────────────────────────
-if [[ "$TURBO" == true && "$REF2VA_MODE" == true && "${TURBO_EXPLICIT:-false}" != "true" ]]; then
-  TURBO=false
-  echo "=== Turbo: desligado em Ref2VA (nao ha aceleradora resized rank_21 pra ref2v; use --turbo-file ou 30 steps)" >&2
-fi
+# (kill-switch do turbo em Ref2VA removido 02/nov/2026 — o Acc-8Step_ref2va cobre; decredo pelo user)
 if [[ "$TURBO" == true ]]; then
   # Auto-seleção por modo (2026-08-28): Ref2VA usa o LoRA 4-step v0.1 (único Ref2VA
   # da família); FL2VA/T2V usam o FL2V 8-step v1.0 (lightx2v, treinado p/ 8 steps,
@@ -1920,9 +1920,9 @@ if [[ "$TURBO" == true ]]; then
     # Sao as unicas feitas PARA a base pruned (sufixo _pruned_) e fixam 8 steps.
     # As 4-step e as lightx2v full-rank 768p foram apagadas do disco.
     if [[ "$REF2VA_MODE" == true ]]; then
-      TURBO_FILE="minimax_h3_ref2v_turbo_8step_v1.1_768p_bf16.safetensors"; TURBO_STEPS=8
+      TURBO_FILE="MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors"; TURBO_STEPS=8   # decreto 02/nov/2026
     else
-      TURBO_FILE="minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors"; TURBO_STEPS=8
+      TURBO_FILE="MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors"; TURBO_STEPS=8   # decreto 02/nov/2026 (era lightx2v 4step @8)
     fi
   else
     TURBO_FILE="$TURBO_FILE_OVERRIDE"
@@ -1930,7 +1930,7 @@ if [[ "$TURBO" == true ]]; then
   TURBO_FILE_PATH="$WAN2GP_DIR/loras/minimax_h3/${TURBO_FILE}"
   if [[ ! -f "$TURBO_FILE_PATH" ]]; then
     echo "Erro: LoRA Turbo não encontrado: $TURBO_FILE_PATH"
-    echo "Baixe com: hf download lightx2v/Minimax-h3-Turbo minimax_h3_ref2v_turbo_4step_v0.1_bf16.safetensors --local-dir ~/git/Wan2GP/loras/minimax_h3/"
+    echo "Baixe com: hf download Kijai/MiniMax-H3-experimental <Acc-8Step_pruned_comfy.safetensors> --local-dir ~/git/Wan2GP/loras/minimax_h3/ (final_layer strippado na casa)"
     exit 1
   fi
   # Turbo requer 4-8 steps — auto por modalidade (ref2v8=8/shift6, PDMD fl2v=4/shift12;
@@ -2139,7 +2139,7 @@ if os.environ.get('H3_NSFW') == 'true':
 
 # Turbo LoRA (destilação)
 if os.environ.get('H3_TURBO') == 'true':
-    turbo_file = os.environ.get('H3_TURBO_FILE', 'minimax_h3_ref2v_turbo_4step_v0.1_bf16.safetensors')
+    turbo_file = os.environ.get('H3_TURBO_FILE', 'MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors')
     turbo_strength = float(os.environ.get('H3_TURBO_STRENGTH', '0.5'))
     activated_loras.append(turbo_file)
     loras_multipliers.append(turbo_strength)

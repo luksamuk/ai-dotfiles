@@ -57,7 +57,7 @@ matrix:
     ocr: glm-ocr
     # MiniCPM-OCR 1.0 (OpenBMB out/2026, arch qwen35) — doc parse (text/table/formula)
     # DSpark draft (arch dflash) acoplado no cmd (nao carrega standalone)
-    mocr: minicpm-ocr-1.0
+    # mocr: minicpm-ocr-1.0  # _disabled 02/nov 2026 (pesos off disk; fragment em _disabled/)
     # uocr: unlimited-ocr  # disabled Aug 2026 — unused
     # qwvl: qwen3-vl-4b  # REMOVED Sep 10 2026 — GGUF deleted (A/B lfm2.5-vl-3b pendente pro enhance do H3); fragment em _removed/
     # lfmvl3: lfm2.5-vl-3b  # APOSENTADO 27/out/2026 a pedido do dono — fragment em _disabled/; A/B p/ enhance do H3 cancelado junto
@@ -84,7 +84,7 @@ matrix:
     # aw: agentworld-35b  # disabled Aug 2026
     # orn15: MERGED no heretic 05/10 (fragment em _disabled/ornith-1.5-35b-onyx-old.yaml; GGUF deletado)
     # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
-    q36: qwen3.6-35b-a3b-heretic  # REATIVADO 20/out 2026 — melhor prompter que o ornith nos enhance (user); pesos re-baixados (APEX-I-Mini, mudler)
+    # q36: qwen3.6-35b-a3b-heretic  # APOSENTADO 02/nov 2026 (dono) — vocab identico ao ornith (248.320, headers GGUF); GGUFs deletados; fragment em _removed/; reinstall: HF Qwen/Qwen3.6-35B-A3B + quant APEX-I-Mini (mudler/positron)
     # Baseline de codigo APEX I-Compact (sem heretic, sem MTP) + variante cafe; Oct 1 2026
     # qc30/qc30f: REMOVED Oct 06 2026 — qwen3-coder aposentado (cafe + fast; GGUF 14.7GB deleted).
     # N=5 canônico: 118.0/155 (piso 106). Fragments em _removed/
@@ -134,7 +134,7 @@ matrix:
     # MiniCPM-OCR-Jev (OpenBMB) — scorer 0-1 de qualidade de candidatos OCR
     # (2 scores via pooled output, UMA passada). CPU-only (doutrina decision).
     # Uma pergunta fixa (prompt no template do GGUF), rota /v1/systemone.
-    mojev: minicpm-ocr-jev
+    # mojev: minicpm-ocr-jev  # _disabled 02/nov 2026 (pesos off disk; fragment em _disabled/)
     sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
     # nbe4: nemotron-bolt-e4b  # APOSENTADO 31/10/2026 (dono) — GGUFs (UD-Q4_K_XL 5.1G + dflash draft) deletados, fragment _disabled/; restore: re-download unsloth (GATED)
     lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + :think), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despejava (ping-pong cravado no journal 30/out 14:53)
@@ -157,8 +157,8 @@ matrix:
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr | mcv35 | mocr"
-    vision_embed: "(ocr | mcv35 | mocr) & (lfmcol | eg2) & pkstt"
+    vision_only: "ocr | mcv35"  # mocr _disabled 02/nov 2026
+    vision_embed: "(ocr | mcv35) & (lfmcol | eg2) & pkstt"  # mocr _disabled 02/nov 2026
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -171,7 +171,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(lfm24 | mcv35 | orn35 | q36) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim (regressão: o rewrite derrubou o FIM do heavy; ping-pong coder<->35B medido no journal — restauro da intenção 16/out documentada no small_embed) | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4)
+    heavy: "(lfm24 | mcv35 | orn35) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim (regressão: o rewrite derrubou o FIM do heavy; ping-pong coder<->35B medido no journal — restauro da intenção 16/out documentada no small_embed) | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -200,7 +200,7 @@ matrix:
     mcv35: 4
     # orn15: 9  # merged no heretic 05/10
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
-    q36: 9  # REATIVADO 20/out 2026
+    # q36: 9  # APOSENTADO 02/nov 2026
     # k2: 9  # _disabled 16/out (pesos deletados)
     # qc30: 7  # REMOVED Oct 06 2026
     # occ: 9  # REMOVED Sep 27 2026 — model deleted
@@ -219,8 +219,8 @@ matrix:
     # a ser evictado se ainda assim houver conflito de coexistencia.
     pkstt: 1
     ocr: 3
-    mocr: 3  # backbone 752M Q8_0 + mmproj 444M + draft 297M — reload barato-medio
-    mojev: 1  # decision CPU-only, 2GB RAM — reload em ~2s
+    # mocr: 3  # _disabled 02/nov 2026
+    # mojev: 1  # _disabled 02/nov 2026
     # qwvl: 3  # REMOVED Sep 10 2026
     # lfmvl3: 3  # APOSENTADO 27/out/2026
     # q4: 2  # removed Oct 11 2026 junto do modelo (aposentadoria qwen3.5-4b)

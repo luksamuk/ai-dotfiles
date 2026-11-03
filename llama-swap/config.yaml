@@ -207,97 +207,6 @@ models:
       embedding_length: 1536
       quantization: Pollard IQ4_XS
       note: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE. ngram-mod enabled.
-  qwen3.6-35b-a3b-heretic:
-    name: Qwen 3.6 35B Heretic
-    description: Qwen's 35B-A3B MoE generalist, abliterated (heretic TPE). 131K context, single slot.
-    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
-
-      --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
-
-      --mmproj ${models_dir}/qwen36-heretic-apex-mini/mmproj.gguf
-
-      --ctx-size 131072
-
-      --jinja
-
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-
-      --parallel 1
-
-      --no-mmproj-offload
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --flash-attn on
-
-      -cmoe
-
-      -ngl 99
-
-      -b 512
-
-      -ub 128
-
-      --temp ${code_temp}
-
-      --top-p ${code_top_p}
-
-      --top-k ${code_top_k}
-
-      --min-p ${code_min_p}
-
-      --repeat-penalty ${code_repeat_penalty}
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.95
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      - image
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~14.66 GB (APEX-I-Compact, heretic)
-      context: 131072
-      vram_usage: ~5.1 GB VRAM + ~15 GB RAM pinned
-      source: SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth Q8
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 34660000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: APEX I-Compact
-      note: 'vram detalhe: ~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe) | turbo4 KV; hmoe experts pinned Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused (IK TurboQuant); source do mmproj: unsloth Q8.'
   laguna-xs-2.1:
     name: Laguna XS 2.1
     description: 'Poolside 33B-A3B MoE coding model, atencao hibrida SWA(512)+global, 131K de contexto, -cmoe (experts em page-cache evictavel), spec ngram-mod. Quant: APEX I-Compact (mudler, 14.69 GiB) reavaliada 01/11/2026 apos a reforma do backend cafe. Reasoning ALWAYS-ON no handle unico (padrao 2b-ter; samplers frios para reduzir o fechamento precoce do think); handle :think aposentado 01/11/2026.'
@@ -513,148 +422,6 @@ models:
       embedding_length: 384
       quantization: BF16
       note: 'vram detalhe: ~0.3 GB VRAM (model 303MB + compute) | model 303MB BF16 + compute Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Lightest judge: 144M, sub-5ms per question expected on GPU.'
-  minicpm-ocr-1.0:
-    unlisted: true
-    name: MiniCPM-OCR 1.0
-    description: OpenBMB's 1.3B document parsing model - text, tables, formulas, charts and seals for EN/zh documents and PDFs via fixed prompts (Text/Table/Formula Recognition:).
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/minicpm-ocr-1.0/MiniCPM-OCR-1_0-Q8_0.gguf
-
-      --mmproj ${models_dir}/minicpm-ocr-1.0/mmproj-model-f16-4x.gguf
-
-      --model-draft ${models_dir}/minicpm-ocr-dspark/dspark-MiniCPM-OCR-1_0-Q8_0.gguf
-
-      --spec-type draft-dspark
-
-      -ngld 99
-
-      --jinja
-
-      --no-webui
-
-      --fit on
-
-      # 3072 (e nao ${vram_margin}): o fit NAO mede o draft dflash ("dflash requires
-
-      # ctx_other" — warning normal durante fitting) e planeja a VRAM so do principal;
-
-      # com margem padrao, o draft (-ngld 99) estoura e o boot morre em OOM de
-
-      # compute buffers. 3 GB de margem deixam o espaco do draft dentro do plano,
-
-      # boot medido OK em ~0.9 GB VRAM total usada (28/out/2026).
-
-      --fit-target 3072
-
-      --fit-ctx ${small_model_min_ctx}
-
-      --ctx-size ${small_model_max_ctx}
-
-      --temp 0
-
-      --cache-type-k f16
-
-      --cache-type-v f16
-
-      --flash-attn on
-
-      --metrics
-
-      '
-    ttl: 60
-    capabilities:
-      in:
-      - text
-      - image
-      out:
-      - text
-      tools: false
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~0.81 GB backbone (Q8_0) + ~0.90 GB mmproj (F16) + ~0.33 GB DSpark draft (Q8_0)
-      context: 64K-128K (fit dinamico; nativo 262K)
-      vram_usage: ~3.5 GB (backbone + mmproj + draft + cache f16)
-      source: openbmb/MiniCPM-OCR-1.0-gguf + openbmb/MiniCPM-OCR-1.0-DSpark-gguf
-      kv_cache: f16
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 752000000
-      context_length: 262144
-      embedding_length: 1024
-      quantization: Q8_0
-      note: Thinking ja vem desabilitado no chat template embutido do GGUF (enable_thinking nao reativa; conversion propria exige --chat-template-kwargs enable_thinking:false). llama-mtmd-cli nao aceita draft - draft-dspark so com llama-cli ou llama-server. Para PDFs/pipeline completo, a SDK deles (minicpmvocr parse) encadeia layout + recon + Jev + DSpark; aqui fica o elemento isolado por decisao do dono.
-  minicpm-ocr-jev:
-    unlisted: true
-    name: MiniCPM-OCR Jev
-    description: OpenBMB's 2B OCR quality scorer (Jev-style decision model) - scores text/formula/table OCR candidates 0-1 in a single pass by comparing the source image with the render.
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/minicpm-ocr-jev/MiniCPM-OCR-Jev-Q8_0.gguf
-
-      --mmproj ${models_dir}/minicpm-ocr-jev/mmproj-model-f16.gguf
-
-      --ctx-size 16384
-
-      --batch-size 512
-
-      --ubatch-size 512
-
-      --parallel 1
-
-      --no-webui
-
-      --cache-type-k q8_0
-
-      --cache-type-v q8_0
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p, top_k, min_p, repeat_penalty
-    ttl: 3600
-    health_check_timeout: 90
-    capabilities:
-      in:
-      - text
-      - image
-      out:
-      - text
-      tools: false
-      reranker: false
-      context: 16384
-    metadata:
-      size: ~2.01 GB (Q8_0) + 0.67 GB mmproj (F16)
-      context: 16384
-      vram_usage: ~0 GB VRAM (CPU-only, doutrina decision da casa); ~3 GB RAM
-      source: openbmb/MiniCPM-OCR-Jev-gguf
-      kv_cache: q8_0
-      features:
-        decision: true
-        completion: false
-        tools: false
-        thinking: false
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 1900000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: Q8_0
-      note: 'Decision exclusivo, FORA dos sets (padrao julia) - nao disputa VRAM. Scoring = um forward pass so, sem geracao de tokens. Contrato da request (/v1/systemone): "state" = STRING com o texto OCR reconhecido da regiao (nao objeto); "questions" = UMA pergunta fixa, so "choice" com criteria exatamente {"0": null, "1": null} ou "noul" (scores de 0-1 saem do modelo, as opcoes sao nomeadas 0=reprovado/1=aprovado pelo template do GGUF); as duas imagens vao em "images" (alias "files") como data URLs (data:image/...;base64,...), ordem: original primeiro, depois a render. O harness do pipeline OCR (layout -> recon -> Jev) fica na SDK/cript do dono - aqui o elemento fica separado no fleet de proposito.'
   parakeet-tdt-0.6b-v3:
     name: Parakeet TDT 0.6B v3
     description: 'NVIDIA Parakeet TDT 0.6B v3: speech-to-text multilíngue, 25 idiomas incluindo português brasileiro. Transcreve a voz do Kilo Code e devolve o texto; converte o áudio recebido para WAV antes de transcrever.'
@@ -787,50 +554,6 @@ models:
       caveats:
       - LoRA da Anima devem ser treinados na Base (guia do criador)
       - 'Q8_0: -4% velocidade vs BF16 (bench Bedovyy @5090), qualidade praticamente identica'
-  anima-preview3:
-    name: Anima Preview3-base
-    description: 'Anima Preview3-base — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. Proxima geracao: o modelo oficial do workflow Anima Preview da Comfy.'
-    tags:
-    - image
-    proxy: http://127.0.0.1:${PORT}
-    checkEndpoint: /sdcpp/v1/capabilities
-    cmd: '${sd_server} --diffusion-model ${models_dir}/anima/preview3/anima-preview3-base-Q8_0.gguf --llm ${models_dir}/anima/common/te/Qwen3-0.6B-Base.Q8_0.gguf --vae ${models_dir}/anima/common/vae/qwen_image_vae.safetensors --offload-to-cpu --listen-port ${PORT} --listen-ip 127.0.0.1 '
-    cmdStop: pkill -f 'sd-server.*anima-preview3-base-Q8_0'
-    health_check_timeout: 300
-    ttl: 1200
-    capabilities:
-      in:
-      - text
-      out:
-      - image
-      tools: false
-      reranker: false
-      context: 0
-    metadata:
-      size: 2.28 GB DiT (GGUF Q8_0) + 0.64 GB TE (Qwen3-0.6B Q8_0) + 0.25 GB VAE qwen_image — TE/VAE compartilhados
-      context: 0
-      vram_usage: ~3.1 GB residente (GGUF Q8 + TE + VAE) - o mais folgado da familia na 6GB
-      source: Bedovyy/Anima-GGUF (preview3-base, quant sobre circlestone-labs/Anima)
-      kv_cache: n/a
-      features:
-        completion: false
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        tts: false
-        image: true
-      architecture: anima
-      parameters: 2000000000
-      context_length: 0
-      embedding_length: 0
-      quantization: q8_0
-      note: '40 steps CFG 5 (receita de family base; ajustar a gosto - e preview). GGUF do Bedovyy. Instalado 30/10/2026. A HF da circlestone anda ACIMA do Civitai: preview2/preview3 publicos quando o Civitai ainda apontava turbo-v1.1 como latest.'
-      caveats:
-      - 'Checkpoint de PREVIEW: comportamento pode mudar entre revisoes'
-      - O nome preview NAO e o turbo - sao variantes distintas da familia
   anima-turbo-v1.1:
     name: Anima Turbo v1.1
     description: 'Anima Turbo v1.1 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. RECOMENDADO para comecar: distilled, 10 steps CFG 1 (receita do criador), rapido.'
@@ -932,82 +655,6 @@ models:
       embedding_length: 2048
       quantization: Q8_0
       note: 'INSTALADO 27/out (PR #31275 buildado localmente no branch fleet-liquid antes do merge upstream — tracker vigia o merge). SMOKE VERIFICADO: /v1/systemone com o payload real do laya-snake em 0.10s — respostas tipadas choice (turn_right 0.696 + probabilities {straight 0.200, turn_left 0.104}) e noul 0.320 (+ usage). Server detecta decision type lfm3-d1 automaticamente. Vision encoder incluso (mmproj) — decisões visual possiveis, AINDA nao UNLISTED até segunda ordem — d1-3b (seletor LoRA do diffuse) e julia-1 (juiz do snake) são os validados em produção. Este entra só depois de re-rodar o harness selecao_nway.py (skill llama-snake-decision-models) no caso do seletor e do testchat de juiz no caso do snake — um juiz ruim selecionável é armadilha ativa, conforme doutrina. decision da casa; GPU 0.10s e CPU = mesmo resultado bit a bit). Pesos em ~/.llama-models/lfm3-d1-2b/ (backbone + mmproj Q8_0).'
-  d1-3b:
-    name: Liquid d1-3B
-    unlisted: true
-    description: d1 is a 3B decision model from Liquid AI, built on LFM2 with SigLIP2 vision. It outputs choices and scores with calibrated per-type temperatures.
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/d1-3B/d1-3B-Q4_K_M.gguf
-
-      --mmproj ${models_dir}/d1-3B/mmproj-d1-3B-Q8_0.gguf
-
-      --chat-template-file ${models_dir}/d1-3B/chat_template.jinja
-
-      --media-path ${media_path}
-
-      --jinja
-
-      --fit on
-
-      --fit-target ${vram_margin}
-
-      --fit-ctx 8192
-
-      --ctx-size 32768
-
-      --parallel 1
-
-      --temp 1.0
-
-      --top-p 0.9
-
-      --top-k 40
-
-      --min-p 0.0
-
-      --cache-type-k ${small_cache_k}
-
-      --cache-type-v ${small_cache_v}
-
-      --flash-attn on
-
-      --metrics
-
-      '
-    ttl: 60
-    health_check_timeout: 300
-    capabilities:
-      in:
-      - text
-      - image
-      out:
-      - text
-      tools: false
-      reranker: false
-      context: 32768
-    metadata:
-      size: ~1.67 GB (Q4_K_M) + 583 MB mmproj (Q8_0)
-      context: 32768
-      vram_usage: ~3.2 GB VRAM
-      source: LiquidAI/d1-3B-GGUF (Q4_K_M + mmproj Q8_0)
-      kv_cache: q8_0
-      features:
-        decision: true
-        completion: true
-        tools: false
-        thinking: false
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: lfm2
-      parameters: 3000000000
-      context_length: 32768
-      embedding_length: 2048
-      quantization: Q4_K_M
-      note: 'Base LFM2.5-VL 3B (vision via SigLIP2 mmproj). Decision model (choices/scores/noul) with temperature calibration per choice type (config.json temperatures). Base LFM2.5-VL 3B. Real-time decisions: classifier + image understanding. Candidate to judge systemone (laya-snake). mmproj 583MB gives SigLIP2 vision. NOT a chat model: structured decision output.'
   glm-ocr:
     name: GLM-OCR
     description: GLM's vision-language OCR model for complex document understanding and text extraction.
@@ -2027,107 +1674,6 @@ models:
       - Language codes por nome (portuguese) — NÃO pt-br (pt-br é o código dos modelos de áudio, ex. phonon-40m-pt)
       - server-fleet.json obsoleto (o multi-model num server só não roteia via swap)
       - Voz preset não-existente = fallback do modelo (voz default) — o UI lista só os válidos agora
-  qwen3.6-35b-a3b-heretic-fast:
-    name: Qwen 3.6 35B Heretic Fast
-    description: Assistente de código sem censura (heretic TPE) com visão, em 14 GB — a quant mais compacta da família. Ideal para teste de velocidade e comparação com o prod.
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
-
-      --mmproj ${models_dir}/qwen36-heretic-apex-mini/mmproj.gguf
-
-      --no-mmproj-offload
-
-      --no-graph-reuse
-
-      -ngl 99
-
-      --n-cpu-moe 35
-
-      --ctx-size 102400
-
-      --temp ${code_temp}
-
-      --top-p ${code_top_p}
-
-      --top-k ${code_top_k}
-
-      --min-p ${code_min_p}
-
-      --repeat-penalty ${code_repeat_penalty}
-
-      --reasoning on
-
-      --jinja
-
-      --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
-
-      --parallel 1
-
-      --parallel-tool-calls
-
-      --cache-type-k ${large_cache_k}
-
-      --cache-type-v ${large_cache_v}
-
-      --k-cache-hadamard
-
-      --v-cache-hadamard
-
-      --flash-attn auto
-
-      --defer-experts
-
-      --prefetch-experts
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.6
-          top_p: 0.85
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      - image
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 102400
-    metadata:
-      size: ~14.32 GB (APEX-I-Mini, heretic) + 903 MB mmproj
-      context: 102400
-      vram_usage: ~5.1 GB VRAM + ~14 GB RAM pinned
-      source: mudler/Qwen3.6-35B-A3B-uncensored-heretic-APEX-GGUF (APEX-I-Mini, base llmfan46 heretic TPE)
-      kv_cache: q4_0/q4_0 + hadamard
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 34660000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: APEX I-Mini
-      note: 'vram detalhe: ~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34) APEX I-Mini quant do mudler (base llmfan46 heretic TPE, -2.7 GB vs prod). Sep 24: experimental. O mesmo heretic TPE do prod em quant APEX-I-Mini (14.32 GB). MTP off (sem nextn tail). Se andar bem, substitui o prod.'
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
@@ -2203,13 +1749,11 @@ matrix:
   vars:
     qpfim: qwen2.5-coder-1.5b-pollard
     ocr: glm-ocr
-    mocr: minicpm-ocr-1.0
     mcv35: minicpm-v-4.7-35b
     lfm24: lfm2.5-24b-a2b
     lfm24f: lfm2.5-24b-a2b-fast
     orn35: ornith-1.5-35b-heretic
     orn35f: ornith-1.5-35b-heretic-fast
-    q36: qwen3.6-35b-a3b-heretic
     lag: laguna-xs-2.1
     tg: translategemma-4b
     ttsext: qwen3-tts
@@ -2217,16 +1761,15 @@ matrix:
     eg2: embeddinggemma-2
     lfmcol: lfm2.5-colbert-350m
     julia: julia-1
-    mojev: minicpm-ocr-jev
     sp26: spark-x2.6-4b
     lfm317: lfm3-1.7b
   sets:
     small_vision: lfm24 & (lfmcol | eg2) & pkstt
     small_embed: (lfm24 | sp26 | lfm317) & (lfmcol | eg2) & qpfim & pkstt
     small_only: (lfm24 | sp26 | lfm317) & pkstt
-    vision_only: ocr | mcv35 | mocr
-    vision_embed: (ocr | mcv35 | mocr) & (lfmcol | eg2) & pkstt
-    heavy: (lfm24 | mcv35 | orn35 | q36) & (lfmcol | eg2) & qpfim & pkstt
+    vision_only: ocr | mcv35
+    vision_embed: (ocr | mcv35) & (lfmcol | eg2) & pkstt
+    heavy: (lfm24 | mcv35 | orn35) & (lfmcol | eg2) & qpfim & pkstt
     translate_only: tg
     tts_external: ttsext
     embed_only: lfmcol & eg2 & pkstt
@@ -2234,13 +1777,10 @@ matrix:
     rerank_embed: lfmcol & eg2 & pkstt
   evict_costs:
     mcv35: 4
-    q36: 9
     lag: 9
     ttsext: 4
     pkstt: 1
     ocr: 3
-    mocr: 3
-    mojev: 1
     lfm24: 6
     orn35: 9
     orn35f: 9

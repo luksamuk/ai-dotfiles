@@ -26,7 +26,7 @@ MODELS: dict[str, dict] = {
         "bits": "1.58-bit",
         "description": "Bonsai Image 4B Ternary — 1.58-bit gemlite, 95% of FP16 quality, fast T2I",
         "default_size": (512, 512),
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "vision",
         "components": [
             {"name": "Bonsai 4B Ternary transformer (gemlite int2)", "path": "bonsai-image-4B-ternary-gemlite/transformer-gemlite-int2", "size_gb": 1.5},
@@ -42,7 +42,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (abenzerps UC repack)",
         "description": "Qwen-Image 2.1 7B UNCENSORED — edit/outpaint/RGBA/4K nativos do Wan2GP, TE Qwen3-VL-8B abliterated convrot. --turbo = LoRA distill sobre o base (passada 2)",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "qwen21",
         "default_size": (1024, 1024),
         "components": [
@@ -67,7 +67,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (DDM repack) — official Alibaba turbo checkpoint",
         "description": "Qwen-Image 2.1 Turbo OFICIAL — 8 steps, cfg=1.0, TE Sakura uncensored, T2I + editing via Wan2GP",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "qwen21",
         "default_size": (1024, 1024),
         "components": [
@@ -88,7 +88,7 @@ MODELS: dict[str, dict] = {
         "bits": "BF16 (native, no quant)",
         "description": "Agate 001 — 260M FCDM, fixed 256×256, GenEval 0.550, flat logos/icons + spatial drafts in seconds",
         "default_size": (256, 256),
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "agate",
         "hf_files": [
             {"repo": "Logolabs/agate-preview-001",
@@ -120,7 +120,7 @@ MODELS: dict[str, dict] = {
         "bits": "BF16 (native, no quant)",
         "description": "Agate 003 — 261M FCDM multi-res 512/256, QIB 32.6, flat logos/icons + spatial drafts",
         "default_size": (512, 512),
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "agate",
         "hf_files": [
             {"repo": "Logolabs/agate-preview-003",
@@ -150,7 +150,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (DDM repack)",
         "description": "FLUX 3 Klein — 5.6B destilado (16 steps cfg 1.0), best-in-class text-render, edição c/ até 10 refs, via Wan2GP; SFW",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "vision",
         "default_size": (1024, 1024),
         "components": [
@@ -175,7 +175,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (DDM repack)",
         "description": "MOSS-Image SFT — 5B OpenMOSS, text-render best-in-class, layout JSON, uncensored por doutrina de treino, via Wan2GP",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "moss",
         "default_size": (1024, 1024),
         "components": [
@@ -192,7 +192,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (DDM repack)",
         "description": "MOSS-Image Base — 5B OpenMOSS pre-treino, mesma arch/TE/VAE do SFT (sem o pós-treino de dados curados), via Wan2GP",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "moss",
         "default_size": (1024, 1024),
         "components": [
@@ -209,7 +209,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (repack do lodestones no proprio repo do Kromoss)",
         "description": "Kromoss — full fine-tune do MOSS-Image Base @1024px (fix de blurriness, checkpoint 7000 EMA), mesma arch/TE/VAE/pipeline do SFT, via Wan2GP",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "moss",
         "default_size": (1024, 1024),
         "components": [
@@ -226,7 +226,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (realrebelai, merge rank-32 sobre o SFT)",
         "description": "MOSS-Imagine — adaptacao do SFT com dataset gerado pelo Grok Imagine (look fotografico/cinematografico/editorial), mesma arch/TE/VAE/pipeline do SFT; tensores bf16 bit-identicos ao SFT da casa, qkv fundido (layout Comfy-Org), via Wan2GP",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "moss",
         "default_size": (1024, 1024),
         "components": [
@@ -243,7 +243,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot (kimrf / Civitai 3021669 — merge sobre o SFT, layout Comfy-Org qkv fundido)",
         "description": "MOSS Photographic Realism — merge da comunidade (kimrf) sobre o MOSS-Image SFT com foco photo/lighting; BF16 norm/TE bit-identicos ao SFT da casa, delta de camada ~1.5-2.5% (régua SFT-Base). Mesma arch/TE/VAE/pipeline do SFT, via Wan2GP. Fonte Civitai: baixada à mão (auto-download do wgp não funciona).",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "moss",
         "default_size": (1024, 1024),
         "components": [
@@ -261,7 +261,7 @@ MODELS: dict[str, dict] = {
         "category": "image",
         "bits": "INT8 ConvRot",
         "description": "BRIA Fibo 2.0 Edit Turbo — edicao multi-referencia em 4 passos (CFG 1), TE Qwen3-VL-4B, VAE FLUX.2, via sd.cpp (arch fibo2 nativa)",
-        "enhance_model": "qwen3.6-35b-a3b-heretic",
+        "enhance_model": "ornith-1.5-35b-heretic",
         "enhance_type": "fibo",
         "default_size": (1024, 1024),
         "components": [
@@ -296,6 +296,7 @@ MODELS: dict[str, dict] = {
         "sample_steps": 10,
         "sampler": "er_sde",
         "weights_subdir": "turbo-v1.1",
+        "lora_root": "anima",  # LoRA do base reutilizada via fallback do lora_dir (02/nov/2026)
         "diffusion_file": "anima-turbo-v1.1.safetensors",
         "te_file": "common/te/Qwen3-0.6B-Base.Q8_0.gguf",
         "vae_file": "common/vae/qwen_image_vae.safetensors",
@@ -318,6 +319,7 @@ MODELS: dict[str, dict] = {
         "sample_steps": 40,
         "sampler": "er_sde",
         "weights_subdir": "aesthetic-v1.1",
+        "lora_root": "anima",  # LoRA do base reutilizada via fallback do lora_dir (02/nov/2026)
         "diffusion_file": "anima-aesthetic-v1.1.safetensors",
         "te_file": "common/te/Qwen3-0.6B-Base.Q8_0.gguf",
         "vae_file": "common/vae/qwen_image_vae.safetensors",
@@ -340,6 +342,7 @@ MODELS: dict[str, dict] = {
         "sample_steps": 40,
         "sampler": "er_sde",
         "weights_subdir": "base-v1.0",
+        "lora_root": "anima",
         "diffusion_file": "anima-base-v1.0-Q8_0.gguf",
         "te_file": "common/te/Qwen3-0.6B-Base.Q8_0.gguf",
         "vae_file": "common/vae/qwen_image_vae.safetensors",
