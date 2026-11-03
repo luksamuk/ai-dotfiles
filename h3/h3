@@ -116,6 +116,13 @@ FACIAL=false
 FACIAL_STRENGTH="1.0"
 FACIAL_FILE_OVERRIDE=""
 
+# VBVR — timeline/prompt-following (attn-only: qkv_proj+out_proj)
+# Catálogo #56: "Select ONLY when the prompt carries an EXPLICIT timestamped timeline".
+VBVR=false
+VBVR_STRENGTH="1.0"                 # força do autor (civitai 330613)
+VBVR_FILE="VBVR-H3-Pro-attn.safetensors"
+VBVR_FILE_OVERRIDE=""
+
 # NAFASP — Natural Face & Speech LoRA (vpakarinen): DEFAULT OFF (02/out, pedido do
 # user — suspeita de interferência nos renders). Fala natural + dinâmica facial.
 # A/B mesmo seed/prompt (08/09): turbo+nafasp venceu pra cartoon. Card: peso 0.4-0.8.
@@ -287,6 +294,9 @@ while [[ $# -gt 0 ]]; do
         *)  OUTPUT_DIR="$(readlink -m "$PWD/$2")" ;;
       esac
       shift 2 ;;
+    --vbvr) VBVR=true; shift ;;
+    --vbvr-strength) VBVR=true; VBVR_STRENGTH="$2"; shift 2 ;;
+    --vbvr-file) VBVR=true; VBVR_FILE_OVERRIDE="$2"; shift 2 ;;
     --facial) FACIAL=true; shift ;;
     --facial-strength) FACIAL=true; FACIAL_STRENGTH="$2"; shift 2 ;;
     --facial-file) FACIAL=true; FACIAL_FILE_OVERRIDE="$2"; shift 2 ;;
@@ -1969,6 +1979,23 @@ if [[ "$FACIAL" == true ]]; then
   echo "=== Facial: LoRA '${FACIAL_FILE}' ativo (força $FACIAL_STRENGTH) ==="
 fi
 
+# ── VBVR — timeline/prompt-following (decreto user 02/nov: parâmetro de 1ª classe) ──
+# Só é útil com timestamps/multi-step no prompt (catálogo #56). attn-only (qkv/out):
+# conflito frontal com facial/nafasp — facial cede, seletor não entra com nafasp.
+if [[ "$VBVR" == true ]]; then
+  [[ -n "$VBVR_FILE_OVERRIDE" ]] && VBVR_FILE="$VBVR_FILE_OVERRIDE"
+  VBVR_FILE_PATH="$WAN2GP_DIR/loras/minimax_h3/${VBVR_FILE}"
+  if [[ ! -f "$VBVR_FILE_PATH" ]]; then
+    echo "Erro: LoRA VBVR não encontrada: $VBVR_FILE_PATH"
+    exit 1
+  fi
+  if [[ "$FACIAL" == true ]]; then
+    echo "=== Aviso: --vbvr e --facial atacam os MESMOS módulos attn (qkv/out_proj) — facial cede (nunca empilhar attn-attn) ===" >&2
+    FACIAL=false
+  fi
+  echo "=== VBVR: LoRA '${VBVR_FILE}' ativa (força $VBVR_STRENGTH) — timeline/prompt-following ==="
+fi
+
 # ── PDD 8-step (Parallel Decoding Distillation) ───────────────────────────
 # Wan2GP v12.645: cabeças PDD (+ LoRA auxiliary via model def) substituem o turbo.
 # Constraints do pipeline: exatamente 8 steps, Euler, 1 fase. O LoRA PDD NÃO entra
@@ -2045,6 +2072,9 @@ export H3_TWO_PHASE="$TWO_PHASE"
 export H3_VEDA="$VEDA"
 export H3_FACIAL="$FACIAL"
 export H3_FACIAL_FILE="$FACIAL_FILE"
+export H3_VBVR="$VBVR"
+export H3_VBVR_FILE="$VBVR_FILE"
+export H3_VBVR_STRENGTH="$VBVR_STRENGTH"
 export H3_NAFASP="$NAFASP"
 export H3_NAFASP_FILE="$NAFASP_FILE"
 export H3_NAFASP_STRENGTH="$NAFASP_STRENGTH"
@@ -2132,7 +2162,10 @@ if os.environ.get('H3_REPLACE') == 'true':
 if os.environ.get('H3_NSFW') == 'true':
     nsfw_loras = json.loads(os.environ.get('H3_NSFW_LORAS_JSON', '[]'))
     nsfw_mults = json.loads(os.environ.get('H3_NSFW_MULTS_JSON', '[]'))
+    _vbvr_on = os.environ.get('H3_VBVR') == 'true'
     for i, lora_name in enumerate(nsfw_loras):
+        if _vbvr_on and lora_name in ('natural_face_speech_h3_lora_v1_500', 'minimax-h3-facial-realism-closeup-cp2000'):
+            continue  # VBVR ataca os mesmos módulos attn — explícita vence (doutrina attn-attn)
         activated_loras.append(lora_name + '.safetensors')
         mult = float(nsfw_mults[i]) if i < len(nsfw_mults) else 0.5
         loras_multipliers.append(mult)
@@ -2150,6 +2183,14 @@ if os.environ.get('H3_FACIAL') == 'true':
     facial_strength = float(os.environ.get('H3_FACIAL_STRENGTH', '1.0'))
     activated_loras.append(facial_file)
     loras_multipliers.append(facial_strength)
+
+# VBVR — timeline/prompt-following (decreto 02/nov)
+if os.environ.get('H3_VBVR') == 'true':
+    vbvr_file = os.environ.get('H3_VBVR_FILE', 'VBVR-H3-Pro-attn.safetensors')
+    vbvr_strength = float(os.environ.get('H3_VBVR_STRENGTH', '1.0'))
+    if vbvr_file not in activated_loras:
+        activated_loras.append(vbvr_file)
+        loras_multipliers.append(vbvr_strength)
 
 # NAFASP — Natural Face & Speech (default ON @0.6 desde 2026-09-08)
 if os.environ.get('H3_NAFASP') == 'true':
@@ -2196,6 +2237,9 @@ if [[ "$TURBO" == true ]]; then
 fi
 if [[ "$FACIAL" == true ]]; then
   echo "Facial: $FACIAL_FILE (força $FACIAL_STRENGTH)"
+fi
+if [[ "$VBVR" == true ]]; then
+  echo "VBVR: $VBVR_FILE (força $VBVR_STRENGTH)"
 fi
 if [[ "$NAFASP" == true ]]; then
   echo "NAFASP: $NAFASP_FILE (força $NAFASP_STRENGTH)"
