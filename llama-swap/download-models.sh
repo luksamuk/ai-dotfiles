@@ -3,6 +3,7 @@
 # Usage: ./download-models.sh [model-name]
 #
 # Available models:
+#   qwen38-flash-next-1m - Qwen3.8-Flash-Next UD-IQ1_M split 3 (~74.5 GB) + MTP draft Q4_0 (2.2 GB) - lane experimental cafe, NOT production (dormammu's brother)
 #   qwen3.5-0.8b         - Qwen3.5-0.8B UD-Q3_K_XL (~0.46 GB) + mmproj (~196 MB) - fits in VRAM, vision+text
 #   qwen3.5-4b           - Qwen3.5-4B MoQ-3.75 (~1.92 GB) - fits in VRAM
 #   [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
@@ -113,6 +114,11 @@ declare -A MODELS=(
   # Ling-3.0-tiny - inclusionAI BailingMoE3 hybrid KDA+MLA, 7.9B/1.3B active, 128 experts
   # APEX I-Compact = 3.99 GB, abliterated. ik_llama.cpp backend (PR #2295).
   ["ling-3.0-tiny"]="SC117/Ling-3.0-tiny-abliterated-APEX-GGUF Ling-3.0-tiny-abliterated-APEX-I-Compact.gguf"
+  # Qwen3.8-Flash-Next 125B-A6B "grandão" — lane experimental UD-IQ1_M (~74.5 GiB, split 3)
+  # Fragment: models/qwen38-flash-next-1m.yaml. MTP draft: quimmedes Q4_0 (2.2 GiB).
+  # O download-models baixa a parte 001; partes 002/003 ficam no mesmo dir (baixe junto).
+  ["qwen38-flash-next-1m"]="unsloth/Qwen3.8-Flash-Next-GGUF UD-IQ1_M/Qwen3.8-Flash-Next-UD-IQ1_M-00001-of-00003.gguf qwen38-flash-next-ud-iq1m/UD-IQ1_M/Qwen3.8-Flash-Next-UD-IQ1_M-00001-of-00003.gguf"
+  ["qwen38-flash-next-1m-mtp"]="quimmedes/Qwen3.8-Flash-Next-MTP-GGUF mtp-Qwen3.8-Flash-Next-Q4_0.gguf qwen38-flash-next-ud-iq1m/mtp/mtp-Qwen3.8-Flash-Next-Q4_0.gguf"
   # [REMOVED Sep 2026] qwen3.5-9b — user request
   # [REMOVED] gemma4-e4b — disabled Jul 2026, redundant with E2B (no code use case)
   # ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
@@ -339,7 +345,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, minicpm-ocr-1.0, minicpm-ocr-jev, minicpm-ocr-dspark, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
+    echo "Available: qwen38-flash-next-1m, qwen38-flash-next-1m-mtp, qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, minicpm-ocr-1.0, minicpm-ocr-jev, minicpm-ocr-dspark, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
     return 1
   fi
   
@@ -394,6 +400,7 @@ download_model() {
 show_sizes() {
   echo ""
   echo "Model Sizes (quantization noted):"
+  echo "  qwen38-flash-next-1m  ~74.5 GB (UD-IQ1_M, split 3) + 2.2 GB MTP draft - lane EXPERIMENTAL cafe -cmoe, qwen4exp"
   echo "  qwen3.5-0.8b          ~0.47 GB  (UD-Q3_K_XL) + ~0.20 GB mmproj - Tiny, vision+text"
   echo "  qwen3.5-4b            ~2.80 GB  (UD-Q4_K_XL) - ik_llama + hadamard KV, 131K ctx"
   echo "  gemma4-e4b           ~4.63 GB  (Q4_K_M) - Fits in VRAM + mmproj"
