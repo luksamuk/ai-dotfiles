@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# mkv2mp4 — MKV (perde FFV1+FLAC do Wan2GP) → MP4 compatível com WhatsApp/Instagram
+# vid2mp4 — vídeo (mkv/mov/ts/avi/qualquer container que o ffmpeg leia) → MP4 compatível com redes sociais
 # Fórmula: libx264 (crf/preset configurável) + yuv420p + AAC 192k + faststart (moov no início)
-# Uso: mkv2mp4 [-crf N] [-preset NOME] [-f] arquivo.mkv [mais.mkv ...]
-#   -crf N        qualidade (default 18; menor = melhor/maior — 14 é praticamente visualmente sem perda)
+# Uso: vid2mp4 [-crf N] [-preset NOME] [-f] arquivo-de-video [mais ...]
+#   -crf N        qualidade (default 18; menor = melhor/maior)
 #   -preset NOME  speed do encode (default slow)
 #   -f            sobrescreve o .mp4 de destino se existir
 set -euo pipefail
