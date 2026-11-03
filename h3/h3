@@ -105,10 +105,10 @@ TURBO_STEPS=8                       # decreto user 22/out: 8 no FL2VA/T2V (o A/B
 H3_PROFILE=5                        # Profile Wan2GP (5=VeryLowRAM_LowVRAM block-by-block; 4=grupos maiores, 2=RAM cache)
 SIDNEY=false
 SIDNEY_FILE="MM-H3 - Sydney Sweeney.safetensors"  # easter egg: ator de referência
-TURBO_STRENGTH="1.8"                # decreto user 02/nov/2026: 1.8 (Acc-8Step pós-testes; o 0.5 era da lane lightx2v antiga)
+TURBO_STRENGTH="1.0"                # Decreto user 03/nov/2026: Acc-8Step em força cheia (1.0). (Era 0.5 = default do Wan2GP.)
 # Único turbo compatível com o pruned Q4 (full-rank = MOSAICO — doutrina 30/09):
 TURBO_FILE_OVERRIDE=""
-TURBO_FILE="MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors"   # decreto 02/nov/2026: Kijai Acc-8Step pruned (final_layer head-banks strippado p/ int8_convrot; orig .orig-final_layer-raw)
+TURBO_FILE="MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors"   # Acc-8Step Kijai pruned (decreto 21/out); reatribuído por modo abaixo
 
 # Facial Realism LoRA (close-up de rosto — textura de pele, micro-expressões)
 # prithivMLmods/MiniMax-H3-Facial-Realism-CloseUp, cp2000, rank 16, trigger "Facial Realism"
@@ -117,9 +117,8 @@ FACIAL_STRENGTH="1.0"
 FACIAL_FILE_OVERRIDE=""
 
 # VBVR — timeline/prompt-following (attn-only: qkv_proj+out_proj)
-# Catálogo #56: "Select ONLY when the prompt carries an EXPLICIT timestamped timeline".
 VBVR=false
-VBVR_STRENGTH="1.0"                 # força do autor (civitai 330613)
+VBVR_STRENGTH="1.0"
 VBVR_FILE="VBVR-H3-Pro-attn.safetensors"
 VBVR_FILE_OVERRIDE=""
 
@@ -189,8 +188,8 @@ resolve_lora() {
   case "$key" in
     nafasp|nafasp_v1|natural-face-speech|natural_face_speech) echo "natural_face_speech_h3_lora_v1_500"; return 0 ;;
     facial|facial-realism|facial_realism|cp2000) echo "minimax-h3-facial-realism-closeup-cp2000"; return 0 ;;
-    turbo-fl2v|turbo8) echo "MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy"; return 0 ;;  # aposentado 02/nov: rank24
-    turbo-ref|turbo4) echo "MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy"; return 0 ;;  # aposentado 02/nov: 4step21
+    turbo-fl2v|turbo8) echo "MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy"; return 0 ;;
+    turbo-ref|turbo4) echo "MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy"; return 0 ;;
     pdd-fl2v) echo "minimax_h3_fl2va_pdd_8step_lora_bf16"; return 0 ;;
     pdd-ref) echo "minimax_h3_ref2va_pdd_8step_lora_bf16"; return 0 ;;
   esac
@@ -230,7 +229,7 @@ lora_desc() {
     natural_face_speech_h3_lora_v1_500) echo "NAFASP: fala natural + dinâmica facial [OFF por padrão; --nafasp liga @0.6]" ;;
     minimax-h3-facial-realism-closeup-cp2000) echo "Facial Realism cp2000: poros/textura de pele em close-up humano [use --facial]" ;;
     h3_character_swap_pro4500_1000) echo "CHARACTER SWAP: troca personagem do ref-video pela ref-img [use --replace]" ;;
-    MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors) echo "TURBO FL2VA Acc-8Step (decreto 02/nov, força 1.8)" ;;
+    MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors) echo "TURBO FL2VA Acc-8Step (decreto 02/nov)" ;;
     MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors) echo "TURBO Ref2VA Acc-8Step (decreto 02/nov)" ;;
     minimax_h3_fl2va_pdd_8step_lora_bf16) echo "PDD FL2VA 8-step [prefira --pdd]" ;;
     minimax_h3_ref2va_pdd_8step_lora_bf16) echo "PDD Ref2VA 8-step [prefira --pdd]" ;;
@@ -768,7 +767,7 @@ done
 if [[ "$REF2VA_MODE" == true ]]; then
   MODEL_TYPE="minimax_h3_ref2va_pruned"
 [[ "${H3_GGUF:-0}" == "1" ]] && MODEL_TYPE="minimax_h3_ref2va_gguf"
-[[ "$SINGULARITY" == true ]] && MODEL_TYPE="minimax_h3_ref2va_sing"   # default: int8+VEDA (H3_GGUF=1 fora da casa; stack GGUF aposentada)
+[[ "$SINGULARITY" == true ]] && MODEL_TYPE="minimax_h3_ref2va_sing"   # default: stack GGUF enxuta (H3_GGUF=0 volta pro int8)
   TASK_TYPE="ref2va"
   # Soundtrack implícito no --replace (cravado ANTES do bloco AUDIO_PROMPT_TYPE do
   # ref2va — a ordem importa; o patch tardio no gate do replace era no-op p/ o type).
@@ -938,7 +937,7 @@ if [[ "$ENHANCE_WITH_VISION" == true ]]; then
   [[ "$VISION_DESCRIBE" == false ]] && echo "Aviso: --no-vision-describe redundante com --enhance-with-vision (describe já é pulado)."
 fi
 case "${LORA_SELECTOR:-decision}" in
-  llm|decision) ;;
+  llm|decision|none) ;;   # none = --no-lora-select (03/nov: sem ele o caso *) forçava decision e explodia o seletor com vars vazias)
   reranker) echo "Aviso: lora_selector=reranker nao implementado no H3 — usando decision."; LORA_SELECTOR=decision ;;
   *) echo "Aviso: lora_selector invalido '${LORA_SELECTOR}' — usando decision."; LORA_SELECTOR=decision ;;
 esac
@@ -1042,7 +1041,13 @@ CATBLOCK
     DURATION_SEC=$(python3 -c "print(f'{$FRAMES / 24:.1f}')")
     MEDIA_CONTEXT="[Output duration: ${DURATION_SEC} seconds]"$'\n'
     if [[ "$FL2VA_MODE" == true ]]; then
-      MEDIA_CONTEXT+="[Mode: First-Last Frame to Video]"$'\n'
+      if [[ -n "$IMAGE_START" && -n "$IMAGE_END" ]]; then
+        MEDIA_CONTEXT+="[Mode: First-and-Last-Frame to Video (FL2VA)]"$'\n'
+      elif [[ -n "$IMAGE_START" ]]; then
+        MEDIA_CONTEXT+="[Mode: Image-to-Video (I2VA, first frame only)]"$'\n'
+      else
+        MEDIA_CONTEXT+="[Mode: Last-frame-to-Video (L2VA, last frame only)]"$'\n'
+      fi
       PIC_COUNT=0
       if [[ -n "$IMAGE_START" ]]; then
         ((PIC_COUNT++))
@@ -1078,7 +1083,17 @@ CATBLOCK
   elif [[ "$FL2VA_MODE" == true ]]; then
     # Calcula duração em segundos (24fps)
     DURATION_SEC=$(python3 -c "print(f'{$FRAMES / 24:.1f}')")
-    MEDIA_CONTEXT="[Generation mode: First-Last Frame to Video and Audio (FL2VA)]\n[Output duration: ${DURATION_SEC} seconds ($FRAMES frames at 24fps). All timestamps in the prompt must fall within 0.00–${DURATION_SEC}s.]\n"
+    # Rotulo do modo reflete os anchors REAIS (start-only = I2VA, end-only = L2VA,
+    # ambos = FL2VA). Um rotulo "First-Last" generico enviesava o enhancer a
+    # inventar um <Picture 2> em run so com --image-start (smoke 02/nov/2026).
+    if [[ -n "$IMAGE_START" && -n "$IMAGE_END" ]]; then
+      _MODE_LABEL="First-and-Last-Frame to Video and Audio (FL2VA)"
+    elif [[ -n "$IMAGE_START" ]]; then
+      _MODE_LABEL="Image-to-Video and Audio (I2VA, first frame only)"
+    else
+      _MODE_LABEL="Last-frame-to-Video and Audio (L2VA, last frame only)"
+    fi
+    MEDIA_CONTEXT="[Generation mode: ${_MODE_LABEL}]\n[Output duration: ${DURATION_SEC} seconds ($FRAMES frames at 24fps). All timestamps in the prompt must fall within 0.00–${DURATION_SEC}s.]\n"
     PIC_COUNT=0
     if [[ -n "$IMAGE_START" ]]; then
       ((PIC_COUNT++))
@@ -1331,22 +1346,38 @@ print('\n'.join(descriptions))
     printf '%s\n' "$CATALOG_SYSTEM" > "$CATALOG_FILE"
   fi
   export H3_CATALOG_FILE="$CATALOG_FILE"
-  python3 -c "
+  # Prompt/media-context NUNCA sao interpolados em codigo Python: texto do user
+  # com aspas quebrava o literal '''...''' (bug 03/nov/2026 — "says 'this is
+  # the best spaghetti I've ever had!'" -> '''...had!'''' = SyntaxError, e o
+  # enhance em seguida lia o JSON vazio). Passagem por ARQUIVO (mktemp 0600),
+  # mesmo padrao do catalogo ("env era fragil c/ multiline").
+  H3_PROMPT_FILE=$(mktemp /tmp/h3_prompt_XXXX.txt)
+  H3_MEDIACTX_FILE=$(mktemp /tmp/h3_mediactx_XXXX.txt)
+  printf '%s' "$PROMPT" > "$H3_PROMPT_FILE"
+  printf '%s' "$MEDIA_CONTEXT" > "$H3_MEDIACTX_FILE"
+  H3_PROMPT_FILE="$H3_PROMPT_FILE" H3_MEDIACTX_FILE="$H3_MEDIACTX_FILE" python3 -c "
 import json
 import os
-media_ctx = '''$MEDIA_CONTEXT'''.strip()
-prompt = '''$PROMPT'''
+with open(os.environ['H3_MEDIACTX_FILE']) as f:
+    media_ctx = f.read().strip()
+with open(os.environ['H3_PROMPT_FILE']) as f:
+    prompt = f.read()
 user_msg = media_ctx + '\n\n--- User prompt ---\n' + prompt
 with open('$ENHANCE_USER_FILE', 'w') as f:
     json.dump(user_msg, f)
-"
+" || { echo 'Erro: falha ao montar a mensagem do enhance'; rm -f "$H3_PROMPT_FILE" "$H3_MEDIACTX_FILE"; exit 1; }
+  rm -f "$H3_PROMPT_FILE" "$H3_MEDIACTX_FILE"
   # Imagens base64 pra modo vision (arquivo com lista de data URIs)
   ENHANCE_IMAGES_FILE=""
   if [[ "$ENHANCE_WITH_VISION" == true && "$ENHANCE_IMAGES_JSON" != "[]" ]]; then
     ENHANCE_IMAGES_FILE=$(mktemp /tmp/h3_enhance_imgs_XXXX.json)
-    python3 -c "
+    H3_IMGLIST_FILE=$(mktemp /tmp/h3_imglist_XXXX.json)
+    printf '%s' "$ENHANCE_IMAGES_JSON" > "$H3_IMGLIST_FILE"
+    H3_IMGLIST_FILE="$H3_IMGLIST_FILE" python3 -c "
 import json, base64, os, sys
-paths = json.loads('''$ENHANCE_IMAGES_JSON''')
+
+with open(os.environ['H3_IMGLIST_FILE']) as f:
+    paths = json.load(f)
 out = []
 for p in paths:
     ext = os.path.splitext(p)[1].lower().lstrip('.')
@@ -1356,6 +1387,7 @@ for p in paths:
     out.append(f'data:image/{mime};base64,{b64}')
 json.dump(out, open('$ENHANCE_IMAGES_FILE', 'w'))
 "
+    rm -f "$H3_IMGLIST_FILE"
   fi
 
   # Contexto de janelas (22/out): se a duracao passa do tamanho de janela, o H3 gera em
@@ -1464,6 +1496,22 @@ for attempt in range(max_retries):
   rm -f "$ENHANCE_USER_FILE.err"
   rm -f "$ENHANCE_USER_FILE"
   [[ -n "$ENHANCE_IMAGES_FILE" ]] && rm -f "$ENHANCE_IMAGES_FILE"
+
+  # Guarda sanitizadora (03/nov/2026): o enhancer às vezes envolve falante/diálogo
+  # em backticks (``<Will Smith> (<S1>) says:...``) — backtick NUNCA é intencional
+  # em prompt H3 e vai verbatim pro modelo. Strip incondicional, todos os modos.
+  # Idem tag de fala malformada: `<d>English]` -> `<d>[English]` (o '[' some).
+  # Texto via STDIN, nunca interpolado em codigo (licao do bug das aspas).
+  _PRE_SANIT="$ENHANCED_PROMPT"
+  ENHANCED_PROMPT=$(printf '%s' "$ENHANCED_PROMPT" | python3 -c "
+import sys, re
+t = sys.stdin.read()
+t2 = t.replace(chr(96), '')
+t2 = re.sub(r'<d>\s*\[?\s*([A-Z][a-zA-Z]+)\s*\]', r'<d>[\1]', t2)
+print(t2, end='')
+")
+  [[ "$ENHANCED_PROMPT" != "$_PRE_SANIT" ]] && echo '=== Guarda: prompt expandido sanitizado (backticks/tag <d>) ==='
+  unset _PRE_SANIT
 
   # ── NSFW via seleção LLM (nova rota 29/09): extrair LORAS: do output ──────
   if [[ "$NSFW" == true ]]; then
@@ -1918,7 +1966,7 @@ if [[ "$REPLACE" == true ]]; then
 fi
 
 # ── Turbo: validar e forçar steps ─────────────────────────────────────────
-# (kill-switch do turbo em Ref2VA removido 02/nov/2026 — o Acc-8Step_ref2va cobre; decredo pelo user)
+# (kill-switch de turbo em Ref2VA removido no merge 02/nov — Acc-8Step_ref2va cobre)
 if [[ "$TURBO" == true ]]; then
   # Auto-seleção por modo (2026-08-28): Ref2VA usa o LoRA 4-step v0.1 (único Ref2VA
   # da família); FL2VA/T2V usam o FL2V 8-step v1.0 (lightx2v, treinado p/ 8 steps,
@@ -1930,9 +1978,9 @@ if [[ "$TURBO" == true ]]; then
     # Sao as unicas feitas PARA a base pruned (sufixo _pruned_) e fixam 8 steps.
     # As 4-step e as lightx2v full-rank 768p foram apagadas do disco.
     if [[ "$REF2VA_MODE" == true ]]; then
-      TURBO_FILE="MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors"; TURBO_STEPS=8   # decreto 02/nov/2026
+      TURBO_FILE="MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors"; TURBO_STEPS=8
     else
-      TURBO_FILE="MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors"; TURBO_STEPS=8   # decreto 02/nov/2026 (era lightx2v 4step @8)
+      TURBO_FILE="MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors"; TURBO_STEPS=8
     fi
   else
     TURBO_FILE="$TURBO_FILE_OVERRIDE"
@@ -1940,7 +1988,7 @@ if [[ "$TURBO" == true ]]; then
   TURBO_FILE_PATH="$WAN2GP_DIR/loras/minimax_h3/${TURBO_FILE}"
   if [[ ! -f "$TURBO_FILE_PATH" ]]; then
     echo "Erro: LoRA Turbo não encontrado: $TURBO_FILE_PATH"
-    echo "Baixe com: hf download Kijai/MiniMax-H3-experimental <Acc-8Step_pruned_comfy.safetensors> --local-dir ~/git/Wan2GP/loras/minimax_h3/ (final_layer strippado na casa)"
+    echo "Esperado: Acc-8Step pruned (Kijai) decretado 21/out — restaure de loras/minimax_h3/ ou ajuste --turbo-file."
     exit 1
   fi
   # Turbo requer 4-8 steps — auto por modalidade (ref2v8=8/shift6, PDMD fl2v=4/shift12;
@@ -1979,9 +2027,7 @@ if [[ "$FACIAL" == true ]]; then
   echo "=== Facial: LoRA '${FACIAL_FILE}' ativo (força $FACIAL_STRENGTH) ==="
 fi
 
-# ── VBVR — timeline/prompt-following (decreto user 02/nov: parâmetro de 1ª classe) ──
-# Só é útil com timestamps/multi-step no prompt (catálogo #56). attn-only (qkv/out):
-# conflito frontal com facial/nafasp — facial cede, seletor não entra com nafasp.
+# ── VBVR — timeline/prompt-following (decreto user 02/nov) ──
 if [[ "$VBVR" == true ]]; then
   [[ -n "$VBVR_FILE_OVERRIDE" ]] && VBVR_FILE="$VBVR_FILE_OVERRIDE"
   VBVR_FILE_PATH="$WAN2GP_DIR/loras/minimax_h3/${VBVR_FILE}"
@@ -2165,7 +2211,7 @@ if os.environ.get('H3_NSFW') == 'true':
     _vbvr_on = os.environ.get('H3_VBVR') == 'true'
     for i, lora_name in enumerate(nsfw_loras):
         if _vbvr_on and lora_name in ('natural_face_speech_h3_lora_v1_500', 'minimax-h3-facial-realism-closeup-cp2000'):
-            continue  # VBVR ataca os mesmos módulos attn — explícita vence (doutrina attn-attn)
+            continue
         activated_loras.append(lora_name + '.safetensors')
         mult = float(nsfw_mults[i]) if i < len(nsfw_mults) else 0.5
         loras_multipliers.append(mult)
