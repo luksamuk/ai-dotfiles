@@ -4,7 +4,7 @@ spark-x2.6-4b:
     (none/low/high), 1M native context and strong agentic/tool-calling gains over X2.5.
   cmd: '${llama_server} --port ${PORT}
 
-    --model ${models_dir}/spark-x2.6-4b/Spark-X2.6-4B-Q4_K_M.gguf
+    --model ${models_dir}/spark-x2.6-4b/Spark-X2.6-4B-heretic-Q4_K_M.gguf
 
     --jinja
 
@@ -53,11 +53,11 @@ spark-x2.6-4b:
     reranker: false
     context: 114688
   metadata:
-    size: ~3.54 GB (Q4_K_M)
+    size: ~2.48 GB (Q4_K_M)
     context: 114688
     vram_usage: '~5.6 GB @112K com desktop+netflix (01/11: OOM @131K nos compute buffers 535 MiB — era 5449 MiB @131K em 24/10;
       o novo build cresceu VRAM)'
-    source: XHToken/Spark-X2.6-4B-GGUF (Q4_K_M, repo oficial)
+    source: daydreamwarrior/Spark-X2.6-4B-heretic (self-quant Q4_K_M do BF16 oficial, sha256 0312b17c...; base XHToken/Spark-X2.6-4B)
     kv_cache: q4_0 + q4_0
     features:
       completion: true
@@ -80,11 +80,10 @@ spark-x2.6-4b:
       respondeu em CHINES a uma saudacao curta, nao chamou ferramenta (finish=stop sem tool_calls) e errou 17x23 numa amostra
       — o default do vendor eh thinking ligado e o "none" nao serve. Smoke via llama-swap: 36-38 t/s, tool calling OK, pico
       88,9% (5461 MiB). X2.6 mantem a arch do X2.5: os ganhos sao de pos-treino (agentico, tool use, contexto longo). Irmon
-      X2.5 reprovou snake v2 (bug de colisao) e estourou o bench agentico 03 — regua pendente. DROP-IN HERETIC TENTADO E REVERTIDO
-      05/nov noite (decreto do dono): heretic daydreamwarrior (KL 0.0097 publicado) em Q6_K NAO coube a 114688 (compute buffer
-      Q6 maior — OOM medido); self-quant Q4_K_M da casa (2474 MiB/5.05 BPW, do BF16 oficial) coube e passou nos smokes (chat/tools
-      4/4/efforts), MAS degradou no uso agêntico REAL no dsh (''falhando pra caralho'', relato do dono) — o hiccup do effort
-      low (think-streak de 800 tok sem resposta) foi sinal precoce. Reversao total: vanilla oficial Q4_K_M de volta, heretic
-      fora do disco. Hipoteses nao separadas (medição KL/prova gulosa declined: ''nao vamos arriscar''): ruído do self-quant
-      vs dano real da ablação. LIÇAO: smoke curto nao pega degradação agêntica — o teste do dono no harness real é a régua;
-      e hiccup isolado em self-quant = sinal, não ruído descartável.'
+      X2.5 reprovou snake v2 (bug de colisao) e estourou o bench agentico 03 — regua pendente. DROP-IN HERETIC v2 05/nov (RETRIAL
+      por decreto do dono): a ''degradacao'' que derrubou a v1 era CONFIG DO HARNESS (dsh com web_search quebrado: ''multiple
+      usable web providers'', flails de tool) — nao o quant. Heretic Q4_K_M self-quant refeito (mesma receita: BF16 oficial
+      byte-exato -> llama-quantize, 2474 MiB / 5.05 BPW), ctx 114688 como o deploy. v1: Q6_K do autor nao coube a 114688 (compute
+      buffer Q6, OOM medido). KL do fine-tune 0.0097, refusals 1/100 vs 100/100. Sem branding heretic (decreto: identidade
+      segue ''Spark X2.6 4B''; procedencia aqui e no source). A REGUA AGORA E O USO REAL no dsh com o harness CONSERTADO —
+      o dono e o juiz.'
