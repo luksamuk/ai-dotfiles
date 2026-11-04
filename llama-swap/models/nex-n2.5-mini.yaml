@@ -6,7 +6,7 @@ nex-n2.5-mini:
   - think
   - tools
   - vis
-  cmd: "env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT} --model ${models_dir}/nex-n2.5-mini/Nex-N2.5-mini-APEX-I-Micro.gguf\
+  cmd: "env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT} --model ${models_dir}/nex-n2.5-mini/Nex-N2.5-mini-APEX-Mini.gguf\
     \ --ctx-size 131072 --mmproj ${models_dir}/nex-n2.5-mini/mmproj-Nex-N2.5-mini-Q8_0.gguf\n    --jinja --parallel 1 --cache-type-k\
     \ q4_0 --cache-type-v q4_0 --flash-attn on -cmoe -ngl 99 -b 512 -ub 128 --lazy-mode off --temp 0.7 --top-p 0.8 --top-k\
     \ 20 --repeat-penalty 1.05 --reasoning-budget 8192 --metrics"
@@ -30,7 +30,7 @@ nex-n2.5-mini:
     reranker: false
     context: 131072
   metadata:
-    size: ~10.15 GiB (APEX I-Micro) + 586 MB mmproj Q8_0
+    size: ~12.54 GiB (APEX Mini) + 573 MB mmproj Q8_0
     context: 131072
     vram_usage: ~3.5 GB VRAM + ~13 GB RAM (experts mmap -cmoe)
     source: MrFuzzihead/Nex-N2.5-mini-APEX-GGUF (I-Micro + mmproj Q8_0; base nex-agi/Nex-N2.5-mini)
@@ -52,8 +52,10 @@ nex-n2.5-mini:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX I-Compact
-    note: Computer-use lane com vision. I-Micro 10.15 GiB backbone (maioria dos experts via -cmoe em RAM) + mmproj Q8_0 586
-      MB. APEX I-Compact 15.4 GiB NAO coube com mmproj a 131K (OOM em 6GB VRAM).
+    note: 'Computer-use lane com VISION: APEX Mini (12.54 GiB, experts IQ2_S mid vs IQ1_M do I-Micro que era agressivo demais).
+      Backbone ~1GB VRAM + mmproj 570MB. reasoningEfforts low/medium/high/xhigh/max. Vision probed OK (descreveu imagem verde).
+      I-Compact 15.4G + mmproj OOM na 3050; I-Micro 10.15G cabia mas IQ1_M no meio era comprometido demais (dono: "Q1 no meio
+      é complicado"). Mini = IQ2_S no meio, equilibrio certo.'
   reasoningEfforts:
     low: low
     medium: medium
