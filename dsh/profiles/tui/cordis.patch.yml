@@ -177,13 +177,6 @@
   name: '@deepseek-ai/dsh-web'
   config:
     fetchProvider: http
-- insert:
-    - id: mcp-searxng
-      name: '@deepseek-ai/dsh-mcp-client'
-      config:
-        serverName: searxng
-        transport: streamable-http
-        url: http://100.72.245.16:8899/mcp
-        failOnStartupError: true
-        headers:
-          Authorization: !!js '`Bearer ${process.env.SEARXNG_MCP_TOKEN}`'
+    searchProvider: searxng
+- id: web-deepseek-api
+  disabled: true

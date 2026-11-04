@@ -2,13 +2,15 @@
   "name": "dsh-profile-headless",
   "private": true,
   "dependencies": {
-    "@deepseek-ai/dsh-mcp-client": "0.2.1-rc.3"
+    "@deepseek-ai/dsh-mcp-client": "0.2.1-rc.3",
+    "dsh-web-search-searxng": "0.5.1"
   },
   "dsh": {
     "profile": {
       "bundles": [
         "@deepseek-ai/dsh-base",
-        "@deepseek-ai/dsh-headless"
+        "@deepseek-ai/dsh-headless",
+        "dsh-web-search-searxng"
       ]
     }
   }

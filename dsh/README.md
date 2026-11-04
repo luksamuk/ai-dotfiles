@@ -15,6 +15,7 @@ configurado 100% manual (sem web UI). Espelho dos arquivos vivos de `~/.dsh`.
 - Profiles: `tui` (terminal) e `headless` (one-shot) usam o MESMO catálogo.
 - Versões (política de supply-chain: `min-release-age=7` no ~/.npmrc):
   - dsh `@deepseek-ai/dsh@0.2.1-rc.3`
+  - search `dsh-web-search-searxng@0.5.1`
   - TUI `@deepseek-harness-tui/dsh-tui@0.18.0`
   - MCP `@deepseek-ai/dsh-mcp-client@0.2.1-rc.3`
 - Skill de referência: `llama-swap-fleet` + `deepseek-harness` (Hermes).
