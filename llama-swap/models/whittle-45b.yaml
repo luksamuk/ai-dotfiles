@@ -3,8 +3,7 @@ whittle-45b:
   description: "David Aylward's (logic65) experimental research model. 45B MoE with
     3B active, built from Qwen3.6-35B-A3B in the Qwen3.8-Flash-Next format, with an
     n-gram memory table and 128K context. Healed community checkpoint (28 Oct 2026)
-    targeting long-tail knowledge and long-context reasoning; text only. Handles:
-    plain answers directly; :think adds visible chain-of-thought."
+    targeting long-tail knowledge and long-context reasoning; text only. Handles: thinking on by default; the :think variant is kept as an alias."
   tags:
   - think
   - tools
@@ -18,7 +17,7 @@ whittle-45b:
     setParamsByID:
       ${MODEL_ID}:
         chat_template_kwargs:
-          enable_thinking: false
+          enable_thinking: true
         temperature: 0.7
         top_p: 0.8
       ${MODEL_ID}:think:

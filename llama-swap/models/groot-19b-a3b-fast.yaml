@@ -2,8 +2,7 @@ groot-19b-a3b-fast:
   name: Groot 19B A3B (fast)
   description: "GrootTeam's efficient reasoning MoE on the faster ik_llama.cpp lane.
     19B total with 3B active, built from Qwen3.6-35B-A3B, multimodal with full 262K
-    context and parallel tool calling. Same model as Groot 19B A3B. Handles: plain
-    answers directly; :think adds visible chain-of-thought."
+    context and parallel tool calling. Same model as Groot 19B A3B. Handles: thinking on by default; the :think variant is kept as an alias."
   tags:
   - vis
   - think
@@ -20,9 +19,9 @@ groot-19b-a3b-fast:
     setParamsByID:
       ${MODEL_ID}:
         chat_template_kwargs:
-          enable_thinking: false
-        temperature: 0.7
-        top_p: 0.8
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
         top_k: 20
         presence_penalty: 1.5
       ${MODEL_ID}:think:
