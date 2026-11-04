@@ -11,7 +11,7 @@ groot-19b-a3b:
   cmd: env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
     --port ${PORT} --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf
     --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf
-    --no-mmproj-offload --jinja --parallel 1 --ctx-size 65536 --cache-type-k q4_0
+    --no-mmproj-offload --jinja --parallel 1 --ctx-size 262144 --cache-type-k q4_0
     --cache-type-v q4_0 --flash-attn on -cmoe -ngl 99 -b 512 -ub 128 --temp 1.0
     --top-k 20 --top-p 0.95 --metrics
   filters:
@@ -41,10 +41,10 @@ groot-19b-a3b:
     - text
     tools: true
     reranker: false
-    context: 65536
+    context: 262144
   metadata:
     size: ~11.66 GB (Q4_K_M) + 0.86 GB mmproj
-    context: 65536
+    context: 262144
     vram_usage: ~4.7 GB VRAM + ~10 GB RAM
     source: GrootTeam/Groot-19B-A3B-261023-GGUF (Q4_K_M, 11657618560 bytes exatos)
       + mmproj-BF16 (902822016 bytes)
@@ -83,4 +83,5 @@ groot-19b-a3b:
       aposentada 28/out pelo bug de re-serializacao do parser de tools do ik
       (args unescape), reativada como -fast 04/nov.'
     caveats:
-      - 'ctx 65536 no primeiro ciclo; nativo 262K/KV q4_0 ~10 full layers — subir com medicao'
+      - 'ctx 262144 desde 04/nov noite (decreto do dono: gostou dos 262K; medicao acompanha este
+        flip — KV q4_0, ~10 full layers; fallback da casa = 131072 se OOM em coexistencia)'

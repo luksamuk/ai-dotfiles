@@ -819,7 +819,7 @@ models:
       - vis
       - think
       - tools
-    cmd: env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT} --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf --no-mmproj-offload --jinja --parallel 1 --ctx-size 65536 --cache-type-k q4_0 --cache-type-v q4_0 --flash-attn on -cmoe -ngl 99 -b 512 -ub 128 --temp 1.0 --top-k 20 --top-p 0.95 --metrics
+    cmd: env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT} --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf --no-mmproj-offload --jinja --parallel 1 --ctx-size 262144 --cache-type-k q4_0 --cache-type-v q4_0 --flash-attn on -cmoe -ngl 99 -b 512 -ub 128 --temp 1.0 --top-k 20 --top-p 0.95 --metrics
     filters:
       stripParams: temperature, top_p
       setParamsByID:
@@ -847,10 +847,10 @@ models:
         - text
       tools: true
       reranker: false
-      context: 65536
+      context: 262144
     metadata:
       size: ~11.66 GB (Q4_K_M) + 0.86 GB mmproj
-      context: 65536
+      context: 262144
       vram_usage: ~4.7 GB VRAM + ~10 GB RAM
       source: GrootTeam/Groot-19B-A3B-261023-GGUF (Q4_K_M, 11657618560 bytes exatos) + mmproj-BF16 (902822016 bytes)
       kv_cache: q4_0/q4_0
@@ -875,7 +875,7 @@ models:
       context_length: 262144
       note: 'LANE NORMAL — TESTE -cmoe 04/nov noite (dono decretou mesmo criterio do whittle-45b: pedagio frio do -ssd pos-boot e inaceitavel interativamente). Historico: -cmoe medido 24,2 t/s no build 804ee29c (27/10) vs 33-34 t/s do -ssd+knobs (escada 03-04/nov, ganho real em steady-state mas com pedagio frio ~2min pos-recycle). Aposta: perder t/s, ganhar page cache do SO persistente. Veredito do dono decide: se nao der certo, lane non-fast descartada e o 19B vive so no groot-19b-a3b-fast (ik, 37 t/s). TOOLS PROVADO 04/nov via rota do swap (no -ssd): 4/4 calls paralelos, JSON limpo, finish=tool_calls — tools true. Parallel tool calls do lado do cafe: por request param (parallel_tool_calls: true). MTP/spec NEGATIVO em IO-bound (2x medido) — nao habilitar. KV Hadamard (TurboQuant) e exclusivo do path ik (ver fast); aqui KV q4_0 puro. Historico da lane ik: aposentada 28/out pelo bug de re-serializacao do parser de tools do ik (args unescape), reativada como -fast 04/nov.'
       caveats:
-        - 'ctx 65536 no primeiro ciclo; nativo 262K/KV q4_0 ~10 full layers — subir com medicao'
+        - 'ctx 262144 desde 04/nov noite (decreto do dono: gostou dos 262K; medicao acompanha este flip — KV q4_0, ~10 full layers; fallback da casa = 131072 se OOM em coexistencia)'
   groot-19b-a3b-fast:
     name: Groot 19B A3B (fast)
     description: "GrootTeam's efficient reasoning MoE on the faster ik_llama.cpp lane. 19B total with 3B active, built from Qwen3.6-35B-A3B, multimodal with full 262K context and parallel tool calling. Same model as Groot 19B A3B. Handles: plain answers directly; :think adds visible chain-of-thought."
