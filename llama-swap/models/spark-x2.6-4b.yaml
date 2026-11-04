@@ -4,13 +4,13 @@ spark-x2.6-4b:
     (none/low/high), 1M native context and strong agentic/tool-calling gains over X2.5.
   cmd: '${llama_server} --port ${PORT}
 
-    --model ${models_dir}/spark-x2.6-4b/Spark-X2.6-4B-heretic-Q6_K.gguf
+    --model ${models_dir}/spark-x2.6-4b/Spark-X2.6-4B-heretic-Q4_K_M.gguf
 
     --jinja
 
     --parallel 1
 
-    --ctx-size 81920
+    --ctx-size 114688
 
     -ngl 99
 
@@ -51,13 +51,13 @@ spark-x2.6-4b:
     - text
     tools: true
     reranker: false
-    context: 81920
+    context: 114688
   metadata:
-    size: ~3.4 GB (Q6_K)
-    context: 81920
+    size: ~2.48 GB (Q4_K_M)
+    context: 114688
     vram_usage: '~5.6 GB @112K com desktop+netflix (01/11: OOM @131K nos compute buffers 535 MiB — era 5449 MiB @131K em 24/10;
       o novo build cresceu VRAM)'
-    source: daydreamwarrior/Spark-X2.6-4B-heretic (Q6_K; base XHToken/Spark-X2.6-4B)
+    source: daydreamwarrior/Spark-X2.6-4B-heretic (self-quant Q4_K_M do BF16 oficial; base XHToken/Spark-X2.6-4B)
     kv_cache: q4_0 + q4_0
     features:
       completion: true
@@ -72,7 +72,7 @@ spark-x2.6-4b:
     parameters: 4000000000
     context_length: 1048576
     embedding_length: 2560
-    quantization: Q6_K
+    quantization: Q4_K_M
     note: 'Smoke 24/10/2026 (upstream, arch spark2_5 presente no llama.cpp e no cafe; ausente no ik). Medido @131K: 41,9-43,0
       t/s, tool calling OK (finish=tool_calls com argumento certo), funcao Python OK. @65K fica em 77,6% e 42-44 t/s. Acima
       de 131K nao cabe: KV q8_0 estoura a 3050. Samplers do proprio GGUF (temp 1.0, top_p 0.95, top_k -1, repeat 1.0) — hardcoded,
@@ -85,6 +85,7 @@ spark-x2.6-4b:
       product permanece ''Spark X2.6 4B''; procedencia vive aqui e no source). Card do fine-tune: Heretic v2.0.0.dev0 ARA,
       ablasao so layers 8-19, preserve_good_behavior 0.797, KL 0.0097 (mesmo tier do lfm3-1.7b heretic validado pela casa),
       refusals 1/100 vs 100/100 do vanilla. Template embutido IDEM ao original (probe 04/nov: efforts low/high + enable_thinking
-      intactos, arch spark2_5). Text-only (sem mmproj no repo oficial — nunca teve vision). Pos-drop-in: Q6_K (~3.4 GB GPU
-      full -ngl 99) NAO cabe a 114688 (OOM no compute buffer 491 MB, medido 04/nov); escada da casa desceu pra 81920 (boot
-      limpo standalone) — 80K e folgado pro papel de mini-agente. ContextWindow no dsh segue o /v1/models do swap (auto).'
+      intactos, arch spark2_5). Text-only (sem mmproj no repo oficial — nunca teve vision). Q6_K do autor NAO coube a 114688
+      (compute buffer 491 MB dos kernels Q6, OOM medido) — o dono nao aceitou descer ctx; SELF-QUANT da casa: BF16 oficial
+      (byte-exato) -> llama-quantize Q4_K_M = 2474 MiB / 5.05 BPW (19s) — menor que o Q4_K_M vanilla (3543 MiB) e a 114688
+      como o deploy original. BF16+Q6_K deletados pos-smoke.'
