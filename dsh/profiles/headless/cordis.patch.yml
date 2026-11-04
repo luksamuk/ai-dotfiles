@@ -1,0 +1,179 @@
+
+- id: llm-pi-ai
+  config:
+    providers:
+      llama-swap:
+        api: openai-completions
+        baseURL: http://127.0.0.1:12434/v1
+        compat:
+          supportsDeveloperRole: false
+          maxTokensField: max_tokens
+        models:
+        - id: groot-19b-a3b
+          input:
+          - text
+          - image
+          contextWindow: 262144
+        - id: groot-19b-a3b-fast
+          input:
+          - text
+          - image
+          contextWindow: 262144
+        - id: lfm3-1.7b
+          contextWindow: 65536
+        - id: lfm3-vl-2b
+          input:
+          - text
+          - image
+          contextWindow: 131072
+        - id: lfm3-omni-2b-pollard
+          input:
+          - text
+          - image
+          contextWindow: 32768
+        - id: ornith-1.5-35b-heretic
+          input:
+          - text
+          - image
+          contextWindow: 200000
+        - id: ornith-1.5-35b-heretic-fast
+          input:
+          - text
+          - image
+          contextWindow: 131072
+        - id: spark-x2.6-4b
+          contextWindow: 114688
+          reasoningEfforts:
+            'off': null
+            low: low
+            high: high
+        - id: translategemma-4b
+          contextWindow: 131072
+        - id: qwen2.5-coder-1.5b-pollard
+          contextWindow: 32768
+        - id: glm-ocr
+          input:
+          - text
+          - image
+          contextWindow: 131072
+        - id: whittle-45b
+          contextWindow: 131072
+          reasoningEfforts:
+            'off': null
+            low: low
+            medium: medium
+            xhigh: xhigh
+        apiKeyEnv: LLAMASWAP_LOCAL_KEY
+      ollama-cloud:
+        api: openai-completions
+        baseURL: http://127.0.0.1:11434/v1
+        compat:
+          supportsDeveloperRole: false
+          maxTokensField: max_tokens
+        models:
+        - id: minimax-m3.1-flash:cloud
+        - id: deepseek-v4.1-flash:1017-cloud
+          reasoningEfforts:
+            'off': 'false'
+            low: low
+            high: high
+            max: max
+        - id: beam:cloud
+          reasoningEfforts:
+            'off': null
+            low: low
+            medium: medium
+            high: high
+            xhigh: xhigh
+            max: max
+        - id: muse-spark-open:cloud
+          reasoningEfforts:
+            'off': 'false'
+            low: low
+            medium: medium
+            high: high
+            max: max
+        - id: mistral-large-4:cloud
+        - id: glm-5.3:cloud
+          reasoningEfforts:
+            'off': null
+            low: low
+            high: high
+            max: max
+        - id: glm-5.3-flash:cloud
+          reasoningEfforts:
+            'off': null
+            low: low
+            high: high
+            max: max
+        - id: kimi-k3:cloud
+          reasoningEfforts:
+            'off': 'false'
+            low: low
+            high: high
+            max: max
+        - id: glm-5.2:cloud
+          reasoningEfforts:
+            'off': 'false'
+            high: high
+            max: max
+        - id: kimi-k2.7-code:cloud
+          reasoningEfforts:
+            'off': 'false'
+            high: 'true'
+        - id: nemotron-3-ultra:cloud
+          reasoningEfforts:
+            'off': 'false'
+            high: 'true'
+        - id: minimax-m3:cloud
+        - id: deepseek-v4-pro:cloud
+          reasoningEfforts:
+            'off': 'false'
+            low: low
+            high: high
+            max: max
+        - id: kimi-k2.6:cloud
+          reasoningEfforts:
+            'off': 'false'
+            high: 'true'
+        - id: nemotron-3-nano:30b-cloud
+          reasoningEfforts:
+            'off': 'false'
+            high: 'true'
+        - id: gemma4:31b-cloud
+          reasoningEfforts:
+            'off': 'false'
+            high: 'true'
+        - id: minimax-m2.7:cloud
+          reasoningEfforts:
+            'off': null
+            high: 'true'
+        - id: nemotron-3-super:cloud
+          reasoningEfforts:
+            'off': 'false'
+            high: 'true'
+        apiKeyEnv: OLLAMA_LOCAL_KEY
+- id: agent-default-model
+  config:
+    provider: llama-swap
+    model: whittle-45b
+- id: llm-deepseek
+  disabled: true
+- id: llm-deepseek-account
+  disabled: true
+- id: web-search-deepseek
+  disabled: true
+- id: web
+  name: '@deepseek-ai/dsh-web'
+  config:
+    fetchProvider: http
+- insert:
+  - id: mcp-searxng
+    name: '@deepseek-ai/dsh-mcp-client'
+    config:
+      serverName: searxng
+      transport: streamable-http
+      url: http://100.72.245.16:8899/mcp
+      failOnStartupError: true
+      headers:
+        Authorization: !!js '`Bearer ${process.env.SEARXNG_MCP_TOKEN}`'
