@@ -1,26 +1,18 @@
 whittle-45b:
   name: Whittle Qwen3.8 45B-A3B
-  description: "David Aylward's (logic65) experimental research model. 45B MoE with
-    3B active, built from Qwen3.6-35B-A3B in the Qwen3.8-Flash-Next format, with an
-    n-gram memory table and 128K context. Healed community checkpoint (28 Oct 2026)
-    targeting long-tail knowledge and long-context reasoning; text only. Handles: thinking on by default; the :think variant is kept as an alias."
+  description: 'David Aylward''s (logic65) experimental research model. 45B MoE with 3B active, built from Qwen3.6-35B-A3B
+    in the Qwen3.8-Flash-Next format, with an n-gram memory table and 128K context. Healed community checkpoint (28 Oct 2026)
+    targeting long-tail knowledge and long-context reasoning; text only. Handles: thinking on by default.'
   tags:
   - think
   - tools
-  cmd: env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
-    --port ${PORT} --model ${models_dir}/whittle-45b/Whittle-Qwen-3.8-45B-A3B-Q4_K_M.gguf
-    --ctx-size 131072 --jinja --parallel 1 --cache-type-k q4_0 --cache-type-v q4_0
-    --flash-attn on -cmoe -ngl 99 -b 512 -ub 128 --lazy-mode off --temp 0.7 --top-p
-    0.8 --top-k 20 --repeat-penalty 1.05 --reasoning-budget 8192 --metrics
+  cmd: env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT} --model ${models_dir}/whittle-45b/Whittle-Qwen-3.8-45B-A3B-Q4_K_M.gguf
+    --ctx-size 131072 --jinja --parallel 1 --cache-type-k q4_0 --cache-type-v q4_0 --flash-attn on -cmoe -ngl 99 -b 512 -ub
+    128 --lazy-mode off --temp 0.7 --top-p 0.8 --top-k 20 --repeat-penalty 1.05 --reasoning-budget 8192 --metrics
   filters:
     stripParams: temperature, top_p
     setParamsByID:
       ${MODEL_ID}:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.7
-        top_p: 0.8
-      ${MODEL_ID}:think:
         chat_template_kwargs:
           enable_thinking: true
         temperature: 0.7
@@ -55,36 +47,24 @@ whittle-45b:
     context_length: 262144
     embedding_length: 2048
     quantization: Q4_K_M
-    note: "35B body (Qwen3.6-35B destilado p/ qwen4exp: GDN+FA interval 4,
-      hyper-connections, 180 experts) + os 76 experts podados do Qwen3.6-35B
-      recolocados (256/layer, 8 ativos + shared) + tabela n-gram hashada 10B (8 heads
-      x 4.880.000 rows). Heal 28/out/2026: LoRA rank-16 nos experts 180-255 + rank-8
-      nos attention/SSM output (professor Qwen3.8-27B, 411 steps); ensinou niveis de
-      reasoning-effort (xhigh default / low / medium via kwarg reasoning_effort — low
-      ~18% menos tokens, mesma acuracia GSM8K). Medidas do autor NESSE Q4_K_M:
-      HumanEval/HE+ 75.6/72.6, MBPP+ 65.9, tool-use 96/96, MATH-60 44 com 1690
-      tok/resposta, long-tail 111/252 vs 94 do 35B (p<0.001 — os experts restaurados
-      compram vocabulario); GSM-50 40 vs 44 do 35B (queda real); healed PopQA 77/288
-      vs 54 do splice. Sem MTP (bloco max 39 nos 1022 tensores), sem vision/mmproj.
-      RECEITA ATUAL: -cmoe -ngl 99 --lazy-mode off = receita comprovada da familia
-      (whittle-35b ONYX: 391 ok, 19-23 t/s em 18/out); experts+tabela em page cache
-      file-backed do SO (PERSISTE pos-restart — pedagio de recycle menor que o -ssd).
-      REVERT 04/nov noite (dono): -ssd + knobs (--ssd-predict/--ssd-io-threads 4/
-      --ssd-cache-mb 4096) testado e REJEITADO — pedagio frio de ~137s pos-boot
-      (fill SSD-bound, GPU 6%, fans parados, prompt_tokens 0 ate completar) e
-      prefill de testchat travando 160s+; insuportavel interativamente. MEDIDO NO
-      -cmoe (04/nov, pos-revert): 1a request pos-recycle = 15.5s (page cache do SO
-      aquecido), 2a = 2.7s/40 tok; VRAM 4.03 GiB (66%), RAM 5.8 GiB usada.
-      Numeros do
-      -ssd (historia): boot 94s, 14.6 t/s decode aquecido, TTFT 2.8s, 4/4 tools,
-      think toggle real, sem kpool crash (mesmo build onde o groot-65B mrd crasha —
-      conversao do autor passa). KV q4_0/q4_0 intocado (regra do dono). Tabela
-      n-gram = load-bearing: quantizada junto no Q4_K_M do autor (as medidas do
-      card SAO nesse arquivo); nunca droppar linhas. --lazy-mode off OBRIGATORIO.
-      Sampler da autora: 0.7/0.8/top_k 20/rp 1.05 — greedy decodifica em loop.
-      PRATICA: ping de aquecimento apos todo boot da lane (config reload recicla
-      e cobra o pedagio de novo). ttl 0 = nao desloca sozinha.
-      Lane fast: DECIDIDO CONTRA pelo dono (04/nov noite): RAM pinada do 45B ficaria
-      na boca da banda (~24-25/31) e o dono preferiu nao arriscar — sem lane ik
-      planejada; se um dia reconsiderar, o candidato e Q3_K_M 19.85 GiB com -ot
-      parcial 0-5 (receita whittle-35b-fast em _disabled)."
+    note: '35B body (Qwen3.6-35B destilado p/ qwen4exp: GDN+FA interval 4, hyper-connections, 180 experts) + os 76 experts
+      podados do Qwen3.6-35B recolocados (256/layer, 8 ativos + shared) + tabela n-gram hashada 10B (8 heads x 4.880.000 rows).
+      Heal 28/out/2026: LoRA rank-16 nos experts 180-255 + rank-8 nos attention/SSM output (professor Qwen3.8-27B, 411 steps);
+      ensinou niveis de reasoning-effort (xhigh default / low / medium via kwarg reasoning_effort — low ~18% menos tokens,
+      mesma acuracia GSM8K). Medidas do autor NESSE Q4_K_M: HumanEval/HE+ 75.6/72.6, MBPP+ 65.9, tool-use 96/96, MATH-60 44
+      com 1690 tok/resposta, long-tail 111/252 vs 94 do 35B (p<0.001 — os experts restaurados compram vocabulario); GSM-50
+      40 vs 44 do 35B (queda real); healed PopQA 77/288 vs 54 do splice. Sem MTP (bloco max 39 nos 1022 tensores), sem vision/mmproj.
+      RECEITA ATUAL: -cmoe -ngl 99 --lazy-mode off = receita comprovada da familia (whittle-35b ONYX: 391 ok, 19-23 t/s em
+      18/out); experts+tabela em page cache file-backed do SO (PERSISTE pos-restart — pedagio de recycle menor que o -ssd).
+      REVERT 04/nov noite (dono): -ssd + knobs (--ssd-predict/--ssd-io-threads 4/ --ssd-cache-mb 4096) testado e REJEITADO
+      — pedagio frio de ~137s pos-boot (fill SSD-bound, GPU 6%, fans parados, prompt_tokens 0 ate completar) e prefill de
+      testchat travando 160s+; insuportavel interativamente. MEDIDO NO -cmoe (04/nov, pos-revert): 1a request pos-recycle
+      = 15.5s (page cache do SO aquecido), 2a = 2.7s/40 tok; VRAM 4.03 GiB (66%), RAM 5.8 GiB usada. Numeros do -ssd (historia):
+      boot 94s, 14.6 t/s decode aquecido, TTFT 2.8s, 4/4 tools, think toggle real, sem kpool crash (mesmo build onde o groot-65B
+      mrd crasha — conversao do autor passa). KV q4_0/q4_0 intocado (regra do dono). Tabela n-gram = load-bearing: quantizada
+      junto no Q4_K_M do autor (as medidas do card SAO nesse arquivo); nunca droppar linhas. --lazy-mode off OBRIGATORIO.
+      Sampler da autora: 0.7/0.8/top_k 20/rp 1.05 — greedy decodifica em loop. PRATICA: ping de aquecimento apos todo boot
+      da lane (config reload recicla e cobra o pedagio de novo). ttl 0 = nao desloca sozinha. Lane fast: DECIDIDO CONTRA pelo
+      dono (04/nov noite): RAM pinada do 45B ficaria na boca da banda (~24-25/31) e o dono preferiu nao arriscar — sem lane
+      ik planejada; se um dia reconsiderar, o candidato e Q3_K_M 19.85 GiB com -ot parcial 0-5 (receita whittle-35b-fast em
+      _disabled).'

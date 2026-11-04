@@ -1,11 +1,11 @@
 lfm3-1.7b:
   name: LFM3 1.7B
-  description: "LiquidAI LFM3 1.7B descensurado (Heretic, KL 0.0094 / refusals
-    3-100 vs 92-100 do original — par KL+recusas verificado), gerico edge da nova
-    geracao tri-hybrid (13 short-conv + 5 SWA + 6 global attn), 256K de contexto
-    nativo, raciocinio dual-mode. Substituto drop-in do GGUF oficial (mesmo
-    tamanho/quant)."
-  tags: [think, tools]
+  description: LiquidAI LFM3 1.7B descensurado (Heretic, KL 0.0094 / refusals 3-100 vs 92-100 do original — par KL+recusas
+    verificado), gerico edge da nova geracao tri-hybrid (13 short-conv + 5 SWA + 6 global attn), 256K de contexto nativo,
+    raciocinio dual-mode. Substituto drop-in do GGUF oficial (mesmo tamanho/quant).
+  tags:
+  - think
+  - tools
   cmd: '${llama_server} --port ${PORT}
 
     --model ${models_dir}/lfm3-1.7b/LFM3-1.7B-Heretic-Abliterated-Q8_0.gguf
@@ -45,11 +45,6 @@ lfm3-1.7b:
           enable_thinking: true
         temperature: 0.1
         top_k: 50
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.1
-        top_k: 50
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -62,10 +57,10 @@ lfm3-1.7b:
     context: 65536
   metadata:
     size: ~1.85 GB (Q8_0)
-    context: "65536 por slot x 5 slots (327680 total)"
-    vram_usage: "~4.1 GB VRAM pico @262K slot unico; @5x64K est. ~4.4GB (KV q4_0 ~1.35GB)"
-    source: Vortecks/LFM3-1.7B-Heretic-Abliterated-GGUF (static, sem imatrix;
-      Q8_0, 1846237728 bytes exatos; upstream safetensors BF16 do mesmo repo)
+    context: 65536 por slot x 5 slots (327680 total)
+    vram_usage: ~4.1 GB VRAM pico @262K slot unico; @5x64K est. ~4.4GB (KV q4_0 ~1.35GB)
+    source: Vortecks/LFM3-1.7B-Heretic-Abliterated-GGUF (static, sem imatrix; Q8_0, 1846237728 bytes exatos; upstream safetensors
+      BF16 do mesmo repo)
     kv_cache: q4_0/q4_0
     features:
       completion: true
@@ -81,25 +76,17 @@ lfm3-1.7b:
     embedding_length: 2048
     context_length: 262144
     quantization: Q8_0
-    note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb; LFM3 chegou HOJE via merges
-      #31252/#31257 — pull + rebuild local). ctx NATIVO 262144 deployado (escada:
-      f16 KV @262K = 3.0GB CUDA OOM; q4_0 = pico 4.14GB com folga). Decode 75
-      t/s, prompt 631 t/s (Q8_0, GPU sozinha). Tool calling: 4 get_weather/
-      get_local_time simultaneos, JSON limpo, finish=tool_calls, template
-      embedded (--jinja, sem template da casa). DUAL-MODE REAL do vendor: o
-      modelo pensa SEMPRE e o template tem toggle enable_thinking — plain pino
-      false (respondera direto, reasoning 0 verificado), :think pin true;
-      raciocinio nativo estilo distill ("We need to..." — PT OK direto no
-      plain). Samplers do fabricante (chat geral): temp 0.1 / top_k 50 /
-      repetition_penalty 1.1 (math usa 1.0/0.95/20 na mao do client). Escorregada
-      factual tipica de 1.7B (SP/Minas numa frase) — papel prompter/enhance,
-      nao enciclopedia. GGUF em ~/.llama-models/lfm3-1.7b/. Substituição
-      candidata do lfm2.5-2.6b (régua maison 67.0) — re-discussão de
-      aposentadorias pendente os resultados. 29/10: slots 5x64K (-parallel 5,
-      -c 327680, KV q4_0 mantido, -b/-ub do paralelo) para multi-agentes —
-      slots 5x64K est. ~4.4GB dentro dos 4.8GB livres da 3050 | 01/11: REDUZIDO a 3 slots a pedido do dono (3x~107K por agente; o KV total 327680 nao muda); smoke slots 29/10 (da era 5) OK
-      (spawn saudavel, pico ~4.8GB usados/1058 MiB livres, 5 reqs paralelas
-      atendidas em batch 0.2s wall). 30/10: SWAP p/ GGUF Heretic-Abliterated
-      (static, Vortecks) — pedido do usuario, drop-in Q8_0->Q8_0. KL 0.0094 +
-      refusals 3/100 (par completo, KL baixo SOZINHO nao vale). GGUF oficial
-      LFM3-1.7B-Q8_0.gguf mantido no dir p/ rollback imediato.'
+    note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb; LFM3 chegou HOJE via merges #31252/#31257 — pull + rebuild local). ctx
+      NATIVO 262144 deployado (escada: f16 KV @262K = 3.0GB CUDA OOM; q4_0 = pico 4.14GB com folga). Decode 75 t/s, prompt
+      631 t/s (Q8_0, GPU sozinha). Tool calling: 4 get_weather/ get_local_time simultaneos, JSON limpo, finish=tool_calls,
+      template embedded (--jinja, sem template da casa). DUAL-MODE REAL do vendor: o modelo pensa SEMPRE e o template tem
+      toggle enable_thinking — plain pino false (respondera direto, reasoning 0 verificado), :think pin true; raciocinio nativo
+      estilo distill ("We need to..." — PT OK direto no plain). Samplers do fabricante (chat geral): temp 0.1 / top_k 50 /
+      repetition_penalty 1.1 (math usa 1.0/0.95/20 na mao do client). Escorregada factual tipica de 1.7B (SP/Minas numa frase)
+      — papel prompter/enhance, nao enciclopedia. GGUF em ~/.llama-models/lfm3-1.7b/. Substituição candidata do lfm2.5-2.6b
+      (régua maison 67.0) — re-discussão de aposentadorias pendente os resultados. 29/10: slots 5x64K (-parallel 5, -c 327680,
+      KV q4_0 mantido, -b/-ub do paralelo) para multi-agentes — slots 5x64K est. ~4.4GB dentro dos 4.8GB livres da 3050 |
+      01/11: REDUZIDO a 3 slots a pedido do dono (3x~107K por agente; o KV total 327680 nao muda); smoke slots 29/10 (da era
+      5) OK (spawn saudavel, pico ~4.8GB usados/1058 MiB livres, 5 reqs paralelas atendidas em batch 0.2s wall). 30/10: SWAP
+      p/ GGUF Heretic-Abliterated (static, Vortecks) — pedido do usuario, drop-in Q8_0->Q8_0. KL 0.0094 + refusals 3/100 (par
+      completo, KL baixo SOZINHO nao vale). GGUF oficial LFM3-1.7B-Q8_0.gguf mantido no dir p/ rollback imediato.'

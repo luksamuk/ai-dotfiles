@@ -1,8 +1,7 @@
 ornith-1.5-35b-heretic-fast:
   name: Ornith 1.5 35B Heretic Fast
-  description: Ornith-1.5-35B com heretic (SC117 trial 62, KL 0.0105) + MTP graft
-    shisa + template Sharp v22.5.0 (o Tiel da casa). Substituto de orn15+q36hc. Visão
-    via mmproj BF16. APEX I-Compact 17.3GB.
+  description: Ornith-1.5-35B com heretic (SC117 trial 62, KL 0.0105) + MTP graft shisa + template Sharp v22.5.0 (o Tiel da
+    casa). Substituto de orn15+q36hc. Visão via mmproj BF16. APEX I-Compact 17.3GB.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/ornith-heretic/Ornith-1.5-35B-A3B-Heretic-MTP-APEX-I-Compact.gguf
@@ -68,11 +67,6 @@ ornith-1.5-35b-heretic-fast:
           enable_thinking: true
         temperature: 0.6
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -104,11 +98,9 @@ ornith-1.5-35b-heretic-fast:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX I-Compact
-    note: 'vram detalhe: ~4.6-5GB VRAM estimado (mesma arch do orn15; medir no smoke)
-      Heretic KL 0.0105 (moderado, sem eval público) + Sharp v22.5.0 externo (GGUF
-      embutido NAO é sharp) + MTP graft shisa (nextn=1 verificado). Handle ''ornith-1.5-35b-heretic''
-      é TEMPORÁRIO de teste: se a régua de sanidade passar, vira o substituto de orn15+q36hc;
-      se falhar, fragmento vai pra _disabled/ sem drama. KV validado 25/10 contra o
-      cmd real: ctk/ctv q4_0 (large_cache_k/v) + hadamard K/V, backend ik — o attn_rot
-      antigo era herança errada do orn15 (nunca existiu flag aqui). Sha256 do GGUF
-      re-verificado pós reinstalação 24/10: 37f67861...e0e7 OK.'
+    note: 'vram detalhe: ~4.6-5GB VRAM estimado (mesma arch do orn15; medir no smoke) Heretic KL 0.0105 (moderado, sem eval
+      público) + Sharp v22.5.0 externo (GGUF embutido NAO é sharp) + MTP graft shisa (nextn=1 verificado). Handle ''ornith-1.5-35b-heretic''
+      é TEMPORÁRIO de teste: se a régua de sanidade passar, vira o substituto de orn15+q36hc; se falhar, fragmento vai pra
+      _disabled/ sem drama. KV validado 25/10 contra o cmd real: ctk/ctv q4_0 (large_cache_k/v) + hadamard K/V, backend ik
+      — o attn_rot antigo era herança errada do orn15 (nunca existiu flag aqui). Sha256 do GGUF re-verificado pós reinstalação
+      24/10: 37f67861...e0e7 OK.'

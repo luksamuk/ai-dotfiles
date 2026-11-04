@@ -197,12 +197,6 @@ models:
           temperature: 0.7
           top_p: 0.95
           top_k: 0
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.95
-          top_k: 0
     ttl: 60
     health_check_timeout: 300
     capabilities:
@@ -216,7 +210,7 @@ models:
     metadata:
       size: ~3.54 GB (Q4_K_M)
       context: 114688
-      vram_usage: "~5.6 GB @112K com desktop+netflix (01/11: OOM @131K nos compute buffers 535 MiB — era 5449 MiB @131K em 24/10; o novo build cresceu VRAM)"
+      vram_usage: '~5.6 GB @112K com desktop+netflix (01/11: OOM @131K nos compute buffers 535 MiB — era 5449 MiB @131K em 24/10; o novo build cresceu VRAM)'
       source: XHToken/Spark-X2.6-4B-GGUF (Q4_K_M, repo oficial)
       kv_cache: q4_0 + q4_0
       features:
@@ -814,7 +808,7 @@ models:
       note: 'vram detalhe: ~2GB (model + mmproj + cache) | GLM OCR multimodal: model 0.95GB + mmproj 0.48GB + cache; Q8_0 Specialized OCR model — use prompts like ''OCR'', ''OCR markdown'', ''Table Recognition:''. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.'
   groot-19b-a3b:
     name: Groot 19B A3B
-    description: "GrootTeam's efficient reasoning MoE. 19B total with 3B active, built from Qwen3.6-35B-A3B, multimodal with 64K context on this lane. Targets agentic and tool-using tasks with concise outputs. Handles: thinking on by default; the :think variant is kept as an alias."
+    description: 'GrootTeam''s efficient reasoning MoE. 19B total with 3B active, built from Qwen3.6-35B-A3B, multimodal with 64K context on this lane. Targets agentic and tool-using tasks with concise outputs. Handles: thinking on by default.'
     tags:
       - vis
       - think
@@ -824,13 +818,6 @@ models:
       stripParams: temperature, top_p
       setParamsByID:
         ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-          top_k: 20
-          presence_penalty: 1.5
-        ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
           temperature: 1.0
@@ -866,10 +853,10 @@ models:
       architecture: qwen35moe
       parameters: 19400000000
       active: 3000000000
-      experts: "128 roteados + 1 shared; 8 ativos/token; expert_ff 512"
-      mtp: "1 layer (0.4B) — 4 tensors nextn no GGUF, 271.4 MiB skipped quando MTP nao pedido"
+      experts: 128 roteados + 1 shared; 8 ativos/token; expert_ff 512
+      mtp: 1 layer (0.4B) — 4 tensors nextn no GGUF, 271.4 MiB skipped quando MTP nao pedido
       license: apache-2.0
-      sampling_card: "thinking: 1.0/0.95/top_k 20/presence 1.5 (matches setParamsByID) | non-thinking: 0.7/0.80/top_k 20/presence 1.5 (matches) | precise coding: 0.6/0.95/top_k 20/presence 0.0 (nao wired — handle opcional futura)"
+      sampling_card: 'thinking: 1.0/0.95/top_k 20/presence 1.5 (matches setParamsByID) | non-thinking: 0.7/0.80/top_k 20/presence 1.5 (matches) | precise coding: 0.6/0.95/top_k 20/presence 0.0 (nao wired — handle opcional futura)'
       quantization: Q4_K_M
       embedding_length: 2048
       context_length: 262144
@@ -878,7 +865,7 @@ models:
         - 'ctx 262144 desde 04/nov noite (decreto do dono: gostou dos 262K; medicao acompanha este flip — KV q4_0, ~10 full layers; fallback da casa = 131072 se OOM em coexistencia)'
   groot-19b-a3b-fast:
     name: Groot 19B A3B (fast)
-    description: "GrootTeam's efficient reasoning MoE on the faster ik_llama.cpp lane. 19B total with 3B active, built from Qwen3.6-35B-A3B, multimodal with full 262K context and parallel tool calling. Same model as Groot 19B A3B. Handles: thinking on by default; the :think variant is kept as an alias."
+    description: 'GrootTeam''s efficient reasoning MoE on the faster ik_llama.cpp lane. 19B total with 3B active, built from Qwen3.6-35B-A3B, multimodal with full 262K context and parallel tool calling. Same model as Groot 19B A3B. Handles: thinking on by default.'
     tags:
       - vis
       - think
@@ -888,13 +875,6 @@ models:
       stripParams: temperature, top_p
       setParamsByID:
         ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-          top_k: 20
-          presence_penalty: 1.5
-        ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
           temperature: 1.0
@@ -930,10 +910,10 @@ models:
       architecture: qwen35moe
       parameters: 19400000000
       active: 3000000000
-      experts: "128 roteados + 1 shared; 8 ativos/token; expert_ff 512"
-      mtp: "1 layer (0.4B) — 4 tensors nextn no GGUF, 271.4 MiB skipped quando MTP nao pedido"
+      experts: 128 roteados + 1 shared; 8 ativos/token; expert_ff 512
+      mtp: 1 layer (0.4B) — 4 tensors nextn no GGUF, 271.4 MiB skipped quando MTP nao pedido
       license: apache-2.0
-      sampling_card: "thinking: 1.0/0.95/top_k 20/presence 1.5 (matches setParamsByID) | non-thinking: 0.7/0.80/top_k 20/presence 1.5 (matches) | precise coding: 0.6/0.95/top_k 20/presence 0.0 (nao wired — handle opcional futura)"
+      sampling_card: 'thinking: 1.0/0.95/top_k 20/presence 1.5 (matches setParamsByID) | non-thinking: 0.7/0.80/top_k 20/presence 1.5 (matches) | precise coding: 0.6/0.95/top_k 20/presence 0.0 (nao wired — handle opcional futura)'
       embedding_length: 2048
       context_length: 262144
       quantization: Q4_K_M
@@ -1091,7 +1071,7 @@ models:
       note: 'Backend ik. -ot parcial gpu7: experts dos blocos 0-6 na GPU (7-39 na CPU) — A/B 13/out: baseline (todos CPU) 33.3 t/s, gpu7 36.3 t/s (+9%) @400 tokens, ambos prompt único/temp 0.1 (VRAM 65% vs 37%, RAM -3.5 GB). GGML_CUDA_NO_PINNED=1 PROIBIDO: pinned obrigatório (sem ele: load trava 13.3 GiB alloc + decode 0.63 t/s). Pinned exige RAM folgada no load. -cmoe é EXCLUSIVO do cafe. Ik binary pull 3dbc2c9f (Oct 13) inclui lfm2moe runtime #2530 e spec decode LFM2 #2652 (CPU checkpoint). tok_embd fica NA GPU (o vocab 128K embd em CPU mataria o decode; o -ot tok_embd do k2 NÃO se aplica aqui). -nkvo OFF (a arch shortconv híbrida: o teste decide o KV residency — se OOM @32K: -nkvo como o k2). Smoke pending (pós-N=5 do minicpm5). GGUF em ~/.llama-models/lfm25-24b-a2b/.'
   lfm3-1.7b:
     name: LFM3 1.7B
-    description: "LiquidAI LFM3 1.7B descensurado (Heretic, KL 0.0094 / refusals 3-100 vs 92-100 do original — par KL+recusas verificado), gerico edge da nova geracao tri-hybrid (13 short-conv + 5 SWA + 6 global attn), 256K de contexto nativo, raciocinio dual-mode. Substituto drop-in do GGUF oficial (mesmo tamanho/quant)."
+    description: LiquidAI LFM3 1.7B descensurado (Heretic, KL 0.0094 / refusals 3-100 vs 92-100 do original — par KL+recusas verificado), gerico edge da nova geracao tri-hybrid (13 short-conv + 5 SWA + 6 global attn), 256K de contexto nativo, raciocinio dual-mode. Substituto drop-in do GGUF oficial (mesmo tamanho/quant).
     tags:
       - think
       - tools
@@ -1134,11 +1114,6 @@ models:
             enable_thinking: true
           temperature: 0.1
           top_k: 50
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.1
-          top_k: 50
     ttl: 900
     health_check_timeout: 900
     capabilities:
@@ -1151,8 +1126,8 @@ models:
       context: 65536
     metadata:
       size: ~1.85 GB (Q8_0)
-      context: "65536 por slot x 5 slots (327680 total)"
-      vram_usage: "~4.1 GB VRAM pico @262K slot unico; @5x64K est. ~4.4GB (KV q4_0 ~1.35GB)"
+      context: 65536 por slot x 5 slots (327680 total)
+      vram_usage: ~4.1 GB VRAM pico @262K slot unico; @5x64K est. ~4.4GB (KV q4_0 ~1.35GB)
       source: Vortecks/LFM3-1.7B-Heretic-Abliterated-GGUF (static, sem imatrix; Q8_0, 1846237728 bytes exatos; upstream safetensors BF16 do mesmo repo)
       kv_cache: q4_0/q4_0
       features:
@@ -1326,7 +1301,7 @@ models:
       pollard_note: 'Pollard (repo 31/10/26): pesos iguais ao f16, bits alocados por sensibilidade por camada, imatrix + pollard-verify gate. Rung Q6_K escolhido: mesmo rung provado do Audio-2B Pollard (KLD 0.0043, tool-ready 98.2 percent, CI 94-100); IQ3_S/IQ4_XS presentes no repo mas NAO ligados — o audio 2B mostrou que rung agressivo quebra emissao de tokens especiais (tool wrapper) e o duplex PARSEIA tool call no cliente. SMOKE PENDENTE (GPU — janela do dono apos renders 31/10): a lane entra listed; conferir no smoke o spawn, tool call XML no realtime, ASR/music QA sane vs lane stock. O rung IQ4_XS do omni NAO herda o veredicto do audio automaticamente, mas a cautela segue: testar so se o dono pedir explicitamente. mmproj — o repo Pollard inclui mmproj-LiquidAI__LFM3-Omni-2B-BF16.gguf (949841248 bytes, MESMO TAMANHO do mmproj-F16 oficial 949841248 mas sha256 DIVERGE — a9938f9f vs 361bc951, par testado do criador); lane usa o par do repo, o stock (Q8_0+mmproj F16) aposentado a seco. Heranca de quirks da lane stock (nota la): voz PT = sotaque EN (checkpoint, fechado); doom loop na descricao de IMAGEM (aberto 27/10); nao-thinking; pequenos slips de idioma.'
   lfm3-vl-2b:
     name: LFM3 VL 2B
-    description: "VLM 2B da LiquidAI (tri-hybrid nova geracao): documentos, charts, video, app screens e raciocinio espacial. Pensa por default (dual-mode real via enable_thinking). Competitive com Gemma 4 12B sendo 6x menor, pelo card do vendor. NAO e para coding/multi-turn longo (card)."
+    description: 'VLM 2B da LiquidAI (tri-hybrid nova geracao): documentos, charts, video, app screens e raciocinio espacial. Pensa por default (dual-mode real via enable_thinking). Competitive com Gemma 4 12B sendo 6x menor, pelo card do vendor. NAO e para coding/multi-turn longo (card).'
     tags:
       - vis
       - think
@@ -1366,11 +1341,6 @@ models:
             enable_thinking: true
           temperature: 0.6
           top_p: 0.95
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
     ttl: 900
     health_check_timeout: 900
     capabilities:
@@ -1385,7 +1355,7 @@ models:
     metadata:
       size: ~1.85 GB (Q8_0) + 0.38 GB mmproj-F16
       context: 131072
-      vram_usage: "~4.18 GB VRAM pico @131K (KV q4_0, desktop incluso)"
+      vram_usage: ~4.18 GB VRAM pico @131K (KV q4_0, desktop incluso)
       source: LiquidAI/LFM3-VL-2B-GGUF (Q8_0, 1846238496 bytes exatos) + mmproj-F16 (378996032 bytes)
       kv_cache: q4_0/q4_0
       features:
@@ -1552,9 +1522,6 @@ models:
         ${MODEL_ID}:
           chat_template_kwargs:
             enable_thinking: true
-        ${MODEL_ID}:think:
-          chat_template_kwargs:
-            enable_thinking: true
     ttl: 0
     health_check_timeout: 900
     capabilities:
@@ -1651,11 +1618,6 @@ models:
       stripParams: temperature, top_p
       setParamsByID:
         ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.6
-          top_p: 0.95
-        ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
@@ -2000,7 +1962,7 @@ models:
       note: 'vram detalhe: ~3.5GB (model + cache) | model 2.4GB Q4_K_M + cache + compute Translation model. Sprachspiel translate mode default. 55 languages.'
   whittle-45b:
     name: Whittle Qwen3.8 45B-A3B
-    description: "David Aylward's (logic65) experimental research model. 45B MoE with 3B active, built from Qwen3.6-35B-A3B in the Qwen3.8-Flash-Next format, with an n-gram memory table and 128K context. Healed community checkpoint (28 Oct 2026) targeting long-tail knowledge and long-context reasoning; text only. Handles: thinking on by default; the :think variant is kept as an alias."
+    description: 'David Aylward''s (logic65) experimental research model. 45B MoE with 3B active, built from Qwen3.6-35B-A3B in the Qwen3.8-Flash-Next format, with an n-gram memory table and 128K context. Healed community checkpoint (28 Oct 2026) targeting long-tail knowledge and long-context reasoning; text only. Handles: thinking on by default.'
     tags:
       - think
       - tools
@@ -2009,11 +1971,6 @@ models:
       stripParams: temperature, top_p
       setParamsByID:
         ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.8
-        ${MODEL_ID}:think:
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.7
@@ -2048,7 +2005,7 @@ models:
       context_length: 262144
       embedding_length: 2048
       quantization: Q4_K_M
-      note: "35B body (Qwen3.6-35B destilado p/ qwen4exp: GDN+FA interval 4, hyper-connections, 180 experts) + os 76 experts podados do Qwen3.6-35B recolocados (256/layer, 8 ativos + shared) + tabela n-gram hashada 10B (8 heads x 4.880.000 rows). Heal 28/out/2026: LoRA rank-16 nos experts 180-255 + rank-8 nos attention/SSM output (professor Qwen3.8-27B, 411 steps); ensinou niveis de reasoning-effort (xhigh default / low / medium via kwarg reasoning_effort — low ~18% menos tokens, mesma acuracia GSM8K). Medidas do autor NESSE Q4_K_M: HumanEval/HE+ 75.6/72.6, MBPP+ 65.9, tool-use 96/96, MATH-60 44 com 1690 tok/resposta, long-tail 111/252 vs 94 do 35B (p<0.001 — os experts restaurados compram vocabulario); GSM-50 40 vs 44 do 35B (queda real); healed PopQA 77/288 vs 54 do splice. Sem MTP (bloco max 39 nos 1022 tensores), sem vision/mmproj. RECEITA ATUAL: -cmoe -ngl 99 --lazy-mode off = receita comprovada da familia (whittle-35b ONYX: 391 ok, 19-23 t/s em 18/out); experts+tabela em page cache file-backed do SO (PERSISTE pos-restart — pedagio de recycle menor que o -ssd). REVERT 04/nov noite (dono): -ssd + knobs (--ssd-predict/--ssd-io-threads 4/ --ssd-cache-mb 4096) testado e REJEITADO — pedagio frio de ~137s pos-boot (fill SSD-bound, GPU 6%, fans parados, prompt_tokens 0 ate completar) e prefill de testchat travando 160s+; insuportavel interativamente. MEDIDO NO -cmoe (04/nov, pos-revert): 1a request pos-recycle = 15.5s (page cache do SO aquecido), 2a = 2.7s/40 tok; VRAM 4.03 GiB (66%), RAM 5.8 GiB usada. Numeros do -ssd (historia): boot 94s, 14.6 t/s decode aquecido, TTFT 2.8s, 4/4 tools, think toggle real, sem kpool crash (mesmo build onde o groot-65B mrd crasha — conversao do autor passa). KV q4_0/q4_0 intocado (regra do dono). Tabela n-gram = load-bearing: quantizada junto no Q4_K_M do autor (as medidas do card SAO nesse arquivo); nunca droppar linhas. --lazy-mode off OBRIGATORIO. Sampler da autora: 0.7/0.8/top_k 20/rp 1.05 — greedy decodifica em loop. PRATICA: ping de aquecimento apos todo boot da lane (config reload recicla e cobra o pedagio de novo). ttl 0 = nao desloca sozinha. Lane fast: DECIDIDO CONTRA pelo dono (04/nov noite): RAM pinada do 45B ficaria na boca da banda (~24-25/31) e o dono preferiu nao arriscar — sem lane ik planejada; se um dia reconsiderar, o candidato e Q3_K_M 19.85 GiB com -ot parcial 0-5 (receita whittle-35b-fast em _disabled)."
+      note: '35B body (Qwen3.6-35B destilado p/ qwen4exp: GDN+FA interval 4, hyper-connections, 180 experts) + os 76 experts podados do Qwen3.6-35B recolocados (256/layer, 8 ativos + shared) + tabela n-gram hashada 10B (8 heads x 4.880.000 rows). Heal 28/out/2026: LoRA rank-16 nos experts 180-255 + rank-8 nos attention/SSM output (professor Qwen3.8-27B, 411 steps); ensinou niveis de reasoning-effort (xhigh default / low / medium via kwarg reasoning_effort — low ~18% menos tokens, mesma acuracia GSM8K). Medidas do autor NESSE Q4_K_M: HumanEval/HE+ 75.6/72.6, MBPP+ 65.9, tool-use 96/96, MATH-60 44 com 1690 tok/resposta, long-tail 111/252 vs 94 do 35B (p<0.001 — os experts restaurados compram vocabulario); GSM-50 40 vs 44 do 35B (queda real); healed PopQA 77/288 vs 54 do splice. Sem MTP (bloco max 39 nos 1022 tensores), sem vision/mmproj. RECEITA ATUAL: -cmoe -ngl 99 --lazy-mode off = receita comprovada da familia (whittle-35b ONYX: 391 ok, 19-23 t/s em 18/out); experts+tabela em page cache file-backed do SO (PERSISTE pos-restart — pedagio de recycle menor que o -ssd). REVERT 04/nov noite (dono): -ssd + knobs (--ssd-predict/--ssd-io-threads 4/ --ssd-cache-mb 4096) testado e REJEITADO — pedagio frio de ~137s pos-boot (fill SSD-bound, GPU 6%, fans parados, prompt_tokens 0 ate completar) e prefill de testchat travando 160s+; insuportavel interativamente. MEDIDO NO -cmoe (04/nov, pos-revert): 1a request pos-recycle = 15.5s (page cache do SO aquecido), 2a = 2.7s/40 tok; VRAM 4.03 GiB (66%), RAM 5.8 GiB usada. Numeros do -ssd (historia): boot 94s, 14.6 t/s decode aquecido, TTFT 2.8s, 4/4 tools, think toggle real, sem kpool crash (mesmo build onde o groot-65B mrd crasha — conversao do autor passa). KV q4_0/q4_0 intocado (regra do dono). Tabela n-gram = load-bearing: quantizada junto no Q4_K_M do autor (as medidas do card SAO nesse arquivo); nunca droppar linhas. --lazy-mode off OBRIGATORIO. Sampler da autora: 0.7/0.8/top_k 20/rp 1.05 — greedy decodifica em loop. PRATICA: ping de aquecimento apos todo boot da lane (config reload recicla e cobra o pedagio de novo). ttl 0 = nao desloca sozinha. Lane fast: DECIDIDO CONTRA pelo dono (04/nov noite): RAM pinada do 45B ficaria na boca da banda (~24-25/31) e o dono preferiu nao arriscar — sem lane ik planejada; se um dia reconsiderar, o candidato e Q3_K_M 19.85 GiB com -ot parcial 0-5 (receita whittle-35b-fast em _disabled).'
 # Hooks: ações na inicialização do llama-swap
 # preload: carrega modelos síncronamente antes de aceitar requests
 # Ideal para vLLM (startup lento = 30-90s sem warm-up)
