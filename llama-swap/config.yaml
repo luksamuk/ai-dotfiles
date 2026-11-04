@@ -1497,10 +1497,10 @@ models:
       reranker: false
       context: 131072
     metadata:
-      size: ~12.54 GiB (APEX Mini) + 573 MB mmproj Q8_0
+      size: ~12.54 GiB
       context: 131072
-      vram_usage: ~3.5 GB VRAM + ~13 GB RAM (experts mmap -cmoe)
-      source: MrFuzzihead/Nex-N2.5-mini-APEX-GGUF (I-Micro + mmproj Q8_0; base nex-agi/Nex-N2.5-mini)
+      vram_usage: ~2.5 GB VRAM (backbone) + ~570 MB mmproj Q8_0 + ~10 GB RAM (experts)
+      source: MrFuzzihead/Nex-N2.5-mini-APEX-GGUF (Mini; base nex-agi/Nex-N2.5-mini)
       kv_cache: q4_0/q4_0
       features:
         completion: true
@@ -1518,8 +1518,8 @@ models:
       experts_ff: 2048
       context_length: 262144
       embedding_length: 2048
-      quantization: APEX I-Compact
-      note: 'Computer-use lane com VISION: APEX Mini (12.54 GiB, experts IQ2_S mid vs IQ1_M do I-Micro que era agressivo demais). Backbone ~1GB VRAM + mmproj 570MB. reasoningEfforts low/medium/high/xhigh/max. Vision probed OK (descreveu imagem verde). I-Compact 15.4G + mmproj OOM na 3050; I-Micro 10.15G cabia mas IQ1_M no meio era comprometido demais (dono: "Q1 no meio é complicado"). Mini = IQ2_S no meio, equilibrio certo.'
+      quantization: APEX Mini
+      note: 'Computer-use lane com VISION. APEX Mini 12.54 GiB + mmproj Q8_0 573 MB (experts IQ2_S mid, dono: ''Q1 no meio é complicado'' — I-Micro IQ1_M rejeitado). I-Compact 15.4G + mmproj BF16 906MB OOM na 3050 6GB a 131K; Mini + mmproj Q8_0 570MB = 4.4G VRAM de 6G, folga. reasoningEfforts low/med/high/xhigh/max no wire (medidos: low=9tok, high=117tok). Vision probed: descreveu retângulo verde-limão vibrante. Boot ~3s via cafe -cmoe.'
     reasoningEfforts:
       low: low
       medium: medium
