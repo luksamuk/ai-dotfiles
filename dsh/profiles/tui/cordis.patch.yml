@@ -1,4 +1,3 @@
-
 - id: llm-pi-ai
   config:
     providers:
@@ -49,20 +48,15 @@
             high: high
         - id: translategemma-4b
           contextWindow: 131072
-        - id: qwen2.5-coder-1.5b-pollard
-          contextWindow: 32768
-        - id: glm-ocr
+        - id: nex-n2.5-mini
+          reasoningEfforts:
+            'off': null
+            medium: medium
+            high: high
+          contextWindow: 131072
           input:
           - text
           - image
-          contextWindow: 131072
-        - id: whittle-45b
-          contextWindow: 131072
-          reasoningEfforts:
-            'off': null
-            low: low
-            medium: medium
-            xhigh: xhigh
         apiKeyEnv: LLAMASWAP_LOCAL_KEY
         retryPolicy:
           mode: normal
@@ -82,12 +76,18 @@
           maxTokensField: max_tokens
         models:
         - id: minimax-m3.1-flash:cloud
+          input:
+          - text
+          - image
         - id: deepseek-v4.1-flash:1017-cloud
           reasoningEfforts:
             'off': 'false'
             low: low
             high: high
             max: max
+          input:
+          - text
+          - image
         - id: beam:cloud
           reasoningEfforts:
             'off': null
@@ -103,7 +103,13 @@
             medium: medium
             high: high
             max: max
+          input:
+          - text
+          - image
         - id: mistral-large-4:cloud
+          input:
+          - text
+          - image
         - id: glm-5.3:cloud
           reasoningEfforts:
             'off': null
@@ -116,12 +122,18 @@
             low: low
             high: high
             max: max
+          input:
+          - text
+          - image
         - id: kimi-k3:cloud
           reasoningEfforts:
             'off': 'false'
             low: low
             high: high
             max: max
+          input:
+          - text
+          - image
         - id: glm-5.2:cloud
           reasoningEfforts:
             'off': 'false'
@@ -131,11 +143,17 @@
           reasoningEfforts:
             'off': 'false'
             high: 'true'
+          input:
+          - text
+          - image
         - id: nemotron-3-ultra:cloud
           reasoningEfforts:
             'off': 'false'
             high: 'true'
         - id: minimax-m3:cloud
+          input:
+          - text
+          - image
         - id: deepseek-v4-pro:cloud
           reasoningEfforts:
             'off': 'false'
@@ -146,6 +164,9 @@
           reasoningEfforts:
             'off': 'false'
             high: 'true'
+          input:
+          - text
+          - image
         - id: nemotron-3-nano:30b-cloud
           reasoningEfforts:
             'off': 'false'
@@ -154,6 +175,9 @@
           reasoningEfforts:
             'off': 'false'
             high: 'true'
+          input:
+          - text
+          - image
         - id: minimax-m2.7:cloud
           reasoningEfforts:
             'off': null
