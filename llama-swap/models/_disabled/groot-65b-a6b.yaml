@@ -1,9 +1,20 @@
 groot-65b-a6b:
   name: Groot 65B A6B
-  description: "EXPERIMENTO Dormammu (27/out): MoE 65B-A6B do GrootTeam (distill do
-    Qwen3.8-Flash-Next) com tabela n-gram PLE de 51B params em host + experts roteados
-    streamados do SSD no cafe. Espera-se lentidao; lane para medir tradeoffs, nao para
-    producao."
+  description: "LANE UNICA (sem fast, por fisica) — BLOQUEADO 04/nov no build d33bcfd7e/build
+    12256: o GGUF (mradermacher Q2_K) aborta no warm-up decode em QUALQUER config offload
+    (-ssd com knobs, -ssd puro, -ssd modo slots, -cmoe, e ate -ngl 0 all-CPU): mesmas
+    GGML_ASSERT(buffer) failed, ggml-backend.cpp:383, kpool::set_input (QSA indexer k-pool
+    input sem buffer). O 19B (qwen35moe, sem QSA) e o flash-next 125B (unsloth IQ1_M,
+    mesma build ontem) RODAM -ssd/-cmoe normal: bug confinado ao hybrid-idx (needs_mem_idx
+    = QWEN4EXP-only) x este GGUF/conversao. Bug report a caminho (quimmedes/cafe-llama.cpp).
+    Fatos cravados: starts-from Qwen3.8-Flash-Next (licenca qwen-community-1.0), arch
+    qwen4exp, 48 camadas (12 Qwen Sparse Attention + 36 Gated DeltaNet), experts 256
+    roteados + 1 shared (10 ativos), PLE n-gram 51B em host mmap, multimodal nativo,
+    MTP 1.4B (6 tensors blk.48.nextn no GGUF; MTP_USAGE oficial: opt-in/experimental,
+    NAO lossless e sem speedup prometido — OFF), ctx nativo 262K, template extraido do
+    oficial shard 1 (8.952 chars) e wired local. Decode SSD-bound esperado quando
+    destravar: ~2-4 t/s — assento de raciocinio pesado/consulta esparsa, nao daily
+    driver."
   cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
     --model ${models_dir}/groot-65b-a6b/groot-65b-a6b-261023.Q2_K.gguf
@@ -13,6 +24,8 @@ groot-65b-a6b:
     --ctx-size 65536
 
     --jinja
+
+    --chat-template-file ${models_dir}/groot-65b-a6b/chat_template.jinja
 
     --parallel 1
 
@@ -25,6 +38,12 @@ groot-65b-a6b:
     --flash-attn on
 
     -ssd
+
+    --ssd-predict
+
+    --ssd-io-threads 4
+
+    --ssd-cache-mb 4096
 
     -ngl 99
 
@@ -67,7 +86,7 @@ groot-65b-a6b:
     - image
     out:
     - text
-    tools: true
+    tools: false
     reranker: false
     context: 65536
   metadata:
@@ -79,7 +98,7 @@ groot-65b-a6b:
     kv_cache: q4_0/q4_0
     features:
       completion: true
-      tools: true
+      tools: false
       thinking: true
       vision: true
       embedding: false
@@ -87,12 +106,21 @@ groot-65b-a6b:
       audio: false
       image: false
     architecture: qwen4exp
+    experts: "256 roteados + 1 shared; 10 ativos/token"
+    mtp: "1.4B — 6 tensors blk.48.nextn no GGUF mradermacher (probe 04/11); MTP_USAGE oficial: opt-in/experimental, output especulativo NAO lossless (greedy difere) e sem speedup prometido — OFF"
+    license: qwen-community-1.0 (herdada do Qwen3.8-Flash-Next)
+    note_extra: "chat_template do GGUF mradermacher: ABSENT (quirk de conversao) — template 8.952 chars EXTRAIDO do GGUF oficial (shard 1) em 04/11 e wired via --chat-template-file (casa: padrao minicpm-v)"
     parameters: 65000000000
     active: 6000000000
     embedding_length: 2560
     context_length: 262144
     quantization: Q2_K
-    note: 'EXPERIMENTO 27/out — BLOQUEADO no build atual do cafe (02dda80a9 + merges
+    note: 'EDIT 04/nov 2026: -ssd DESBLOQUEADO no build atual do cafe (build 12256/d33bcfd7e) — o crash
+      nao reproduz (confirmado por 2 fontes: probe direto no 19B mesma arch, e teste noturno flash-next).
+      Knobs do cmd = set vencedor da escada do 19B (--ssd-predict + --ssd-io-threads 4 + --ssd-cache-mb 4096:
+      14.6 → 33-34 t/s la — config emprestada SEM re-teste no proprio 65B; probe pendente do reinstall).
+      MTP negativo medido 2x em regime IO-bound (flash-next e 19B) — nao habilitar spec aqui sem re-teste.
+      HISTORICO do bloqueio no build antigo (02dda80a9 + merges
       26/10): o expert streaming nao carrega o Groot-65B. Fatos medidos: (1) flag
       correta e -ssd (-ssd-streaming e parse invalido, "-ssd"+"-streaming"); (2)
       load com -ssd ABORTA em ggml-backend.cpp:383 get_usage(NULL) ("GGML_ASSERT(buffer)

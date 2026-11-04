@@ -76,7 +76,9 @@ lfm2.5-24b-a2b:
     embedding_length: 2048
     context_length: 131072
     quantization: APEX I-Compact
-    note: 'MoE 64 experts +4 usados/token, 2 dense-lead blocks (header do GGUF cravado).
+    note: 'EDIT 04/nov pos-escadinha-19B: + --ssd-predict/--ssd-io-threads 4/--ssd-cache-mb 4096 no cmd — knobs
+      inertes em -cmoe (sem streaming ativo), ganho possivel de ~+2 t/s (so medido na laguna, N=2=ruido); probe
+      deste modelo pendente do reinstall (pesos fora do disco por decreto do dono). MoE 64 experts +4 usados/token, 2 dense-lead blocks (header do GGUF cravado).
       Reasoning NATIVO (template preserve_thinking — SEM toggle enable_thinking, sempre
       pensa; SEM handle :think de decreto do user 13/out: a variante é desnecessária
       no always-think). ctx 131072

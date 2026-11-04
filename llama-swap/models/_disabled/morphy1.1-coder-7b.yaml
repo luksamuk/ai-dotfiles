@@ -1,0 +1,72 @@
+morphy1.1-coder-7b:
+  name: Morphy1.1 Coder 7B Beta
+  description: "Morphy1.1-Coder-7B (moolvylabs, BETA) — coder denso 7.6B arch qwen2, ChatML com tool markers. Offload parcial na 3050 6GB."
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/morphy/Morphy1.1-Coder-7B.Q8_0.gguf
+
+    --jinja
+
+    --parallel 1
+
+    --ctx-size ${completion_ctx}
+
+    -ngl 16
+
+    -b 256 -ub 64
+
+    --flash-attn on
+
+    --cache-type-k ${small_cache_k}
+
+    --cache-type-v ${small_cache_v}
+
+    --temp 0.2
+
+    --top-p 0.9
+
+    --top-k 40
+
+    --repeat-penalty 1.1
+
+    --no-webui
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p, top_k
+  ttl: 60
+  health_check_timeout: 300
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: false
+    reranker: false
+    context: 32768
+  metadata:
+    size: 8.1 GB (Q8_0)
+    context: 32768
+    vram_usage: "~4.6 GB (-ngl 16: pesos 16/28 camadas + KV q8_0 parcial + overhead CUDA)"
+    source: moolvylabs/Morphy1.1-Coder-Beta-7B-GGUF (quant Unsloth Q8_0)
+    kv_cache: q8_0
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen2
+    parameters: 7600000000
+    context_length: 32768
+    embedding_length: 3584
+    quantization: Q8_0
+    note: "Beta 1.1 da moolvylabs. Header GGUF: arch qwen2 (0 nextn/MTP — sem spec decode), GQA 28/4, head_dim 128, ctx nativo 32k. ChatML, SEM enable_thinking → sem handle think. TOOLS PROBE 03/11/2026: FALHOU (template Tem markers tool_call, mas o modelo emite XML cru no content, finish=stop, sem finish_reason=tool_calls → tools false confirmado, beta do vendor). Warning benigno no load: '</s>' nao control-type (quirk tokenizer). Smoke 03/11/2026: health 200, chat pt-BR correto (~15-20 t/s com -ngl 16, VRAM ~4.8 GB). Release unica Q8_0 no repo. Sem set no matrix = exclusivo no solver. Instalado 03/11/2026."
+    caveats:
+      - "Modelo BETA do vendor — esperado output imperfeito; reportar bugs no Issues do repo"
+      - "-ngl 16 calibrado para coexistir com overhead do desktop; ajustar apos smoke se sobrar VRAM"

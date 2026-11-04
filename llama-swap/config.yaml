@@ -1,52 +1,158 @@
+# llama-swap configuration for RTX 3050 Laptop (6GB VRAM)
+# Configuração otimizada para uso com --fit automático + attn_rot (KV cache quantizado)
+# Dual binary: llama.cpp for dense models, ik_llama.cpp for MoE models (pinned memory, better expert offload)
+#
+# Repositório: ~/git/ai-dotfiles/llama-swap/
+# Modelos: ~/.llama-models/
+# Requer: llama-swap v212+ (Prometheus metrics, SIGHUP reload, reasoning UI, race fix, zstd captures)
+# Requer: llama.cpp build b9563+ (mtmd audio/TTS/video, 6 audio preprocessors: whisper/conformer/granite_speech/gemma4a/gemma4ua/qwen3a, LFM2.5 reasoning fix, Gemma4 MTP, Granite4 Vision, KV cache optimizations)
+# Requer: ik_llama.cpp v4566+ (bf16 graph reduce fix, threads-mtmd, mtmd checkpoint save/restore)
+# Requer: cafe-llama.cpp (fork quimmedes/Ark) — Turbo KV (turbo2/3/4) para contexto longo
+#   (>131K) em MoE, MoE offload (-hmoe pinned RAM / -ssd streaming do NVMe), safetensors
+#   nativo. Substituiu o beellama.cpp (removido Set/2026); upstream já tinha removido o
+#   TurboQuant/TCQ original em v0.4.0 (renomeado KVarN).
+#
+# OTIMIZAÇÕES ik_llama.cpp (modelos MoE e dense offloaded):
+#   --k-cache-hadamard / --v-cache-hadamard (-khad/-vhad): Hadamard transform no K/V cache
+#     antes da quantização → qualidade muito mais próxima do f16 com cache q4_0/q8_0.
+#     Especialmente útil em 6GB VRAM onde q4_0 é necessário para contexto longo.
+#   --flash-attn auto: desliga FA automaticamente em contextos curtos (economia em MoE offloaded)
+#   --defer-experts: defere mmap de experts no Linux → carregamento mais rápido de modelos MoE
+
+# Schema para validação (VS Code)
+
 healthCheckTimeout: 300
 logLevel: info
-logTimeFormat: rfc3339
-logToStdout: proxy
-captureBuffer: 0
+logTimeFormat: "rfc3339"
+logToStdout: "proxy"
+captureBuffer: 0   # capturas OFF (user 31/10: prompts NÃO guardados, privacidade; era 15 em memória — nada ia pra disco sem store.persistCaptures)
 startPort: 10001
 sendLoadingState: false
 includeAliasesInList: true
 globalTTL: 0
+
+# Macros reutilizáveis
 macros:
-  models_dir: ${env.HOME}/.llama-models
-  media_path: ${env.HOME}/testfiles/vision
-  templates_dir: ${env.HOME}/git/ai-dotfiles/llama-swap/templates
-  llama_server: ${env.HOME}/git/llama.cpp/build/bin/llama-server
-  ik_llama_server: ${env.HOME}/git/ik_llama.cpp/build/bin/llama-server
-  ik2_llama_server: ${env.HOME}/git/kassane-ik_llama.cpp/build/bin/llama-server
-  cafe_server: ${env.HOME}/git/cafe-llama.cpp/build/bin/llama-server
-  sd_server: ${env.HOME}/git/stable-diffusion.cpp/build/bin/sd-server
-  prism_llama_server: ${env.HOME}/git/prism-llama.cpp/llama-prism-b10685-7dffb15/llama-server
-  sensenova_server: ${env.HOME}/git/llama.cpp-sensenova-loop/build/bin/llama-server
-  sensenova_vision_server: ${env.HOME}/git/llama.cpp-sn-vision/build/bin/llama-server
-  vllm_bin: ${env.HOME}/.vllm/bin/vllm
-  default_temp: '0.7'
-  default_top_p: '0.9'
-  default_top_k: '20'
-  default_min_p: '0.01'
-  default_repeat_penalty: '1.05'
-  code_temp: '0.6'
-  code_top_p: '0.85'
-  code_top_k: '40'
-  code_min_p: '0.02'
-  code_repeat_penalty: '1.05'
-  think_temp: '0.6'
-  think_top_p: '0.9'
-  think_top_k: '20'
-  think_min_p: '0.0'
-  think_repeat_penalty: '1.0'
-  small_model_min_ctx: '65536'
-  small_model_max_ctx: '131072'
-  completion_ctx: '32768'
-  large_model_min_ctx: '65536'
-  large_model_max_ctx: '131072'
-  vram_margin: '512'
-  small_cache_k: q8_0
-  small_cache_v: q8_0
-  large_cache_k: q4_0
-  large_cache_v: q4_0
-  gemma_cache_k: q4_0
-  gemma_cache_v: q4_0
+  "models_dir": "${env.HOME}/.llama-models"
+  "media_path": "${env.HOME}/testfiles/vision"
+  "templates_dir": "${env.HOME}/git/ai-dotfiles/llama-swap/templates"
+
+  # Caminho para o llama-server compilado com CUDA (--fit disponível)
+  # Build local em ~/git/llama.cpp/build/bin/llama-server
+  "llama_server": "${env.HOME}/git/llama.cpp/build/bin/llama-server"
+    # Build local em ~/git/ik_llama.cpp/build/bin/llama-server
+  "ik_llama_server": "${env.HOME}/git/ik_llama.cpp/build/bin/llama-server"
+
+  # ik_llama.cpp fork do kassane (branch k2-horizon) — suporte a arquitetura k2-horizon
+  # Build local em ~/git/kassane-ik_llama.cpp/build/bin/llama-server
+  "ik2_llama_server": "${env.HOME}/git/kassane-ik_llama.cpp/build/bin/llama-server"
+
+  # bee_server REMOVIDO Sep 20 2026 — fork beellama.cpp deletado; cafe-llama.cpp
+  # (turbo4 KV + hmoe/ssd MoE offload) cobre esse papel daqui em diante (user decision)
+
+  # Caminho para o llama-server do fork cafe-llama.cpp (quimmedes/Ark)
+  # Turbo KV cache (turbo2/3/4, FA-fused), safetensors nativo, -hmoe/-ssd MoE offload
+  # Único backend que carrega qwen35moe @262K ctx na RTX 3050 6GB (turbo4 KV)
+  # Build local em ~/git/cafe-llama.cpp/build/bin/llama-server (commit 0fbc13f, set/2026)
+  "cafe_server": "${env.HOME}/git/cafe-llama.cpp/build/bin/llama-server"
+
+  # Caminho para o sd-server do stable-diffusion.cpp (Anima — 30/10/2026)
+  # OpenAI-compatible /v1/images/generations; arch anima nativa no build
+  # Build local em ~/git/stable-diffusion.cpp/build/bin/sd-server
+  "sd_server": "${env.HOME}/git/stable-diffusion.cpp/build/bin/sd-server"
+
+  # Caminho para o llama-server do fork PrismML (Bonsai-2 ternary, runtime Hadamard)
+  # Binário prebuilt em ~/git/prism-llama.cpp/llama-prism-b10685-7dffb15/
+  "prism_llama_server": "${env.HOME}/git/prism-llama.cpp/llama-prism-b10685-7dffb15/llama-server"
+
+  # Caminho para o llama-server do fork guideboardlabs (sensenova_loop + mHC fundido)
+  # Build VULKAN (o fork implementa ggml_mhc_route/merge em CPU e Vulkan — sem CUDA);
+  # NVIDIA serve via Vulkan igualmente. Upstream ggml-org ainda SEM o arch (PR pendente).
+  # Build local em ~/git/llama.cpp-sensenova-loop/build/bin/llama-server (31/out/2026)
+  "sensenova_server": "${env.HOME}/git/llama.cpp-sensenova-loop/build/bin/llama-server"
+
+  # Caminho para o llama-server do runtime COMUNITARIO com visao (sensenova_loop via
+  # classe qwen35 + mHC + patches notfakerv/annelo: clover PR 31306 + native, base ff0d396e3)
+  # Build CUDA; o mmproj ride a maquinaria qwen3vl do upstream. Visao verificada 31/out.
+  "sensenova_vision_server": "${env.HOME}/git/llama.cpp-sn-vision/build/bin/llama-server"
+  # Caminho para o vLLM (installed in ~/.vllm venv)
+  "vllm_bin": "${env.HOME}/.vllm/bin/vllm"
+
+  # ===========================================
+  # PARÂMETROS DE INFERÊNCIA (baseados no Unsloth)
+  # ===========================================
+  # Qwen3.5: temp 0.6-0.7, top_p 0.8-0.9, top_k 20-40
+
+  # Gemma: temp 0.7, top_p 0.9
+  # Referência: https://unsloth.ai/docs/models/qwen3.5
+  # ===========================================
+  # Parâmetros padrão (uso geral)
+  "default_temp": "0.7"
+  "default_top_p": "0.9"
+  "default_top_k": "20"
+  "default_min_p": "0.01"
+  "default_repeat_penalty": "1.05"
+
+  # Parâmetros para código/tool-calling (mais determinístico)
+  "code_temp": "0.6"
+  "code_top_p": "0.85"
+  "code_top_k": "40"
+  "code_min_p": "0.02"
+  "code_repeat_penalty": "1.05"
+
+  # Parâmetros para thinking/reasoning
+  "think_temp": "0.6"
+  "think_top_p": "0.9"
+  "think_top_k": "20"
+  "think_min_p": "0.0"
+  "think_repeat_penalty": "1.0"
+
+  # Qwen3.8-27B samplers removed Aug 2026 — model disabled
+  # Contexto para modelos pequenos (cabem inteiros na VRAM)
+  # fit-ctx: mínimo garantido, ctx-size: máximo teto
+  "small_model_min_ctx": "65536"   # 64K mínimo (tool-calling/agentes)
+  "small_model_max_ctx": "131072"  # 128K máximo
+  # Contexto para completion models (sem agente, sem tool-calling)
+  "completion_ctx": "32768"      # 32K — code completion não precisa de mais
+  # Contexto para modelos grandes (requerem offload)
+  "large_model_min_ctx": "65536"   # 64K mínimo (tool-calling/agentes)
+  "large_model_max_ctx": "131072"  # 128K máximo
+  # Margem de segurança para VRAM (MiB) - usada pelo --fit-target
+  "vram_margin": "512"
+
+  # ===========================================
+  # KV CACHE QUANTIZADO + ATTN_ROT
+  # ===========================================
+  # attn_rot é ativado AUTOMATICAMENTE quando o cache é quantizado
+  # (q4_0/q8_0) e n_embd_head % 64 == 0
+  # Reduz degradação de velocidade em contextos longos (~37% → ~10%)
+  # NOTA: Gemma4 iSWA attn_rot bug FIXED (commit 4eb19514d, b8815+). q4_0 cache works now!
+  # ===========================================
+  #
+  # Compatibilidade attn_rot por modelo:
+  #   Qwen3.5-4B/9B   ✅ head_k=256 (256%64==0)
+  #   Qwen3-14B        ✅ head_k=128 (128%64==0)
+  #   Qwen3.6-35B-A3B  ✅ head_k=128
+    #   Nemotron-3-Nano  ✅ head_k=128 (REMOVED — poor quality)
+  #   Nemotron-Omni-30B ✅ head_k=128 (NOT added — ik_llama lacks nemotron_h_moe arch, NOT i-quants. ik_llama supports IQ2_XXS/IQ3_XXS/IQ4_XS natively)
+  #   Gemma-4 E2B/E4B  ✅ head_k=256, iSWA attn_rot fixed (b8815+)
+  #   Gemma-4 26B-MoE  ✅ head_k=256, iSWA attn_rot fixed (b8815+)
+  #   LFM2.5-1.2B       ✅ head_k=64 (64%64==0) — dense hybrid
+  #   LFM2-24B-A2B     ✅ head_k=128 (128%64==0) — MoE hybrid
+  #   LFM2.5-VL-450M   ❌ vision model, manter f16
+  #
+  # Tipos de cache:
+  #   q8_0: ~47% economia vs f16, perda mínima
+  #   q4_0: ~72% economia vs f16, mais compressão
+  #
+  # Escolha: modelos pequenos (fit VRAM) usam q8_0 (saldo perf/mem)
+  #          modelos grandes (offload) usam q4_0 (maximizar contexto)
+  "small_cache_k": "q8_0"
+  "small_cache_v": "q8_0"
+  "large_cache_k": "q4_0"
+  "large_cache_v": "q4_0"
+  "gemma_cache_k": "q4_0"
+  "gemma_cache_v": "q4_0"
 models:
   spark-x2.6-4b:
     name: Spark X2.6 4B
@@ -101,16 +207,16 @@ models:
     health_check_timeout: 300
     capabilities:
       in:
-      - text
+        - text
       out:
-      - text
+        - text
       tools: true
       reranker: false
       context: 114688
     metadata:
       size: ~3.54 GB (Q4_K_M)
       context: 114688
-      vram_usage: '~5.6 GB @112K com desktop+netflix (01/11: OOM @131K nos compute buffers 535 MiB — era 5449 MiB @131K em 24/10; o novo build cresceu VRAM)'
+      vram_usage: "~5.6 GB @112K com desktop+netflix (01/11: OOM @131K nos compute buffers 535 MiB — era 5449 MiB @131K em 24/10; o novo build cresceu VRAM)"
       source: XHToken/Spark-X2.6-4B-GGUF (Q4_K_M, repo oficial)
       kv_cache: q4_0 + q4_0
       features:
@@ -173,16 +279,16 @@ models:
 
       '
     env:
-    - CUDA_VISIBLE_DEVICES=
+      - CUDA_VISIBLE_DEVICES=
     filters:
       stripParams: temperature, top_p
     ttl: 60
     health_check_timeout: 300
     capabilities:
       in:
-      - text
+        - text
       out:
-      - text
+        - text
       tools: false
       reranker: false
       context: 32768
@@ -209,7 +315,7 @@ models:
       note: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE. ngram-mod enabled.
   laguna-xs-2.1:
     name: Laguna XS 2.1
-    description: 'Poolside 33B-A3B MoE coding model, atencao hibrida SWA(512)+global, 131K de contexto, -cmoe (experts em page-cache evictavel), spec ngram-mod. Quant: APEX I-Compact (mudler, 14.69 GiB) reavaliada 01/11/2026 apos a reforma do backend cafe. Reasoning ALWAYS-ON no handle unico (padrao 2b-ter; samplers frios para reduzir o fechamento precoce do think); handle :think aposentado 01/11/2026.'
+    description: "APOSENTADO COM HONRAS 04/nov/2026 (pesos deletados por decreto do dono para abrir espaço pro Groot-65B; lane fica unlisted, fragment + receita intactos). Poolside 33B-A3B MoE coding model, atencao hibrida SWA(512)+global, 131K de contexto, -cmoe (experts em page-cache evictavel), spec ngram-mod. Quant: APEX I-Compact (mudler, 14.69 GiB) reavaliada 01/11/2026 apos a reforma do backend cafe. Reasoning ALWAYS-ON no handle unico (padrao 2b-ter; samplers frios para reduzir o fechamento precoce do think); handle :think aposentado 01/11/2026."
     cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
       --model ${models_dir}/laguna-xs-2.1/Laguna-XS-2.1-APEX-I-Compact.gguf
@@ -255,7 +361,7 @@ models:
       stripParams: temperature, top_p
       setParams:
         stop:
-        - </assistant>
+          - </assistant>
       setParamsByID:
         ${MODEL_ID}:
           chat_template_kwargs:
@@ -266,18 +372,19 @@ models:
           min_p: 0.02
     ttl: 0
     health_check_timeout: 300
+    unlisted: true
     capabilities:
       in:
-      - text
+        - text
       out:
-      - text
+        - text
       tools: true
       reranker: false
       context: 131072
     metadata:
       size: ~15.8 GB (APEX I-Compact)
       context: 131072
-      vram_usage: ~3.4 GB lane (4564-4672 MiB TOTAL c/ desktop 1.1 GB, smoke 01/11)
+      vram_usage: "~3.4 GB lane (4564-4672 MiB TOTAL c/ desktop 1.1 GB, smoke 01/11)"
       source: mudler/Laguna-XS-2.1-APEX-GGUF (APEX I-Compact) — plano B registrado no HELPER (poolside Q4_K_M oficial)
       kv_cache: q4_0/q4_0
       features:
@@ -294,18 +401,18 @@ models:
       context_length: 131072
       embedding_length: 2048
       quantization: APEX I-Compact
-      note: 'Reactivated 01/11/2026 — lane reproduz a config de producao da era Set-Out (Sep/Out — 34.6-35.1 t/s, 31.8 t/s @131K, -cmoe 3.9GB VRAM + ~18GB page-cache EVICTAVEL, ngram-mod spec n_match 24/p_min 48, samplers 0.3/0.85/top_k 40/min_p 0.02/rep 1.12 com reasoning ALWAYS-ON (01/11: thinking true no handle unico, temp 0.3 fria p/ reduzir o fechar-precoce; handle :think aposentado no padrao 2b-ter), template EMBUTIDO via --jinja) com a troca do modelo por APEX I-Compact. HISTORICO: o APEX travou com system prompt na era prod; SMOKE 01/11 CONFIRMOU A HIPOTESE DO DONO — NENHUMA trava em cafe saudavel: spawn 14s (HTTP 200), probe COM system prompt = 200 em 3.4s com codigo correto (linked list reversal), RAM pico 13.9 GiB (vs 31 do ik-era: era estado de RAM, NAO bug do quant). REGUAS: decodificado 30.2 t/s em chat c/ system (vs 34.6-35.1 do Q4_K_M oficial: -11%, i-quant kernel) @320 tok; VRAM loaded 4564-4672 MiB total. ngram-mod ENGATA: YAML repetitivo 600 tok em 6 verifs, 81.7% aceitacao (312/382), pos 0-2 6/6. BUGS CONHECIDOS DO CAFE (re-documentar quando surgirem): grammar limita 1 tool call/round e suprime thinking com tools no request; turbo4/turbo2 corrompem a SWA hibrida (teto 131K q4_0). PLANO B (Q4_K_M oficial, receita em models/_removed/). O QUE FALTA: re-teste de tool calling (grammar 1-call) e o soak do dono.'
-      resurrect_note: Restore completo do oficial — models/_removed/laguna-xs-2.1.yaml (git mv de volta + baixar Laguna-XS-2.1-Q4_K_M.gguf do poolside + descomentar footer).
+      note: 'EDIT 04/nov pos-escadinha-19B: + --ssd-predict/--ssd-io-threads 4/--ssd-cache-mb 4096 no cmd. Piloto aqui: knobs INERTES em -cmoe (zero linha de streaming no log — nao ha o que streamar); delta medido ~+2 t/s (25.5/27.0 → 27.1-29.0/29.5-30.3, N=2, dentro do ruido). moe-cache-mib 1024: NEGATIVO (-4 t/s, +1GB VRAM). Reactivated 01/11/2026 — lane reproduz a config de producao da era Set-Out (Sep/Out — 34.6-35.1 t/s, 31.8 t/s @131K, -cmoe 3.9GB VRAM + ~18GB page-cache EVICTAVEL, ngram-mod spec n_match 24/p_min 48, samplers 0.3/0.85/top_k 40/min_p 0.02/rep 1.12 com reasoning ALWAYS-ON (01/11: thinking true no handle unico, temp 0.3 fria p/ reduzir o fechar-precoce; handle :think aposentado no padrao 2b-ter), template EMBUTIDO via --jinja) com a troca do modelo por APEX I-Compact. HISTORICO: o APEX travou com system prompt na era prod; SMOKE 01/11 CONFIRMOU A HIPOTESE DO DONO — NENHUMA trava em cafe saudavel: spawn 14s (HTTP 200), probe COM system prompt = 200 em 3.4s com codigo correto (linked list reversal), RAM pico 13.9 GiB (vs 31 do ik-era: era estado de RAM, NAO bug do quant). REGUAS: decodificado 30.2 t/s em chat c/ system (vs 34.6-35.1 do Q4_K_M oficial: -11%, i-quant kernel) @320 tok; VRAM loaded 4564-4672 MiB total. ngram-mod ENGATA: YAML repetitivo 600 tok em 6 verifs, 81.7% aceitacao (312/382), pos 0-2 6/6. BUGS CONHECIDOS DO CAFE (re-documentar quando surgirem): grammar limita 1 tool call/round e suprime thinking com tools no request; turbo4/turbo2 corrompem a SWA hibrida (teto 131K q4_0). PLANO B (Q4_K_M oficial, receita em models/_removed/). O QUE FALTA: re-teste de tool calling (grammar 1-call) e o soak do dono.'
+      resurrect_note: 'Restore completo do oficial — models/_removed/laguna-xs-2.1.yaml (git mv de volta + baixar Laguna-XS-2.1-Q4_K_M.gguf do poolside + descomentar footer).'
   lfm2.5-colbert-350m:
     name: LFM2.5 ColBERT 350M
     description: Liquid AI ColBERT reranker for RAG retrieval pipelines. CPU-only serving.
     env:
-    - CUDA_VISIBLE_DEVICES=
+      - CUDA_VISIBLE_DEVICES=
     cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/lfm2.5-embed/LFM2.5-ColBERT-350M-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 4096\n--cont-batching\n--parallel 1\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
     ttl: 300
     capabilities:
       in:
-      - text
+        - text
       out: []
       tools: false
       reranker: true
@@ -335,14 +442,14 @@ models:
     name: EmbeddingGemma 2
     description: EmbeddingGemma 2 is Google DeepMind's 740M multimodal embedding model, mapping text, images, audio, and video into a single 768-dimension space. It supports 100+ languages with MRL flexible dimensions.
     env:
-    - CUDA_VISIBLE_DEVICES=
+      - CUDA_VISIBLE_DEVICES=
     cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/embeddinggemma-2/embeddinggemma-2-Q8_0.gguf\n--mmproj ${models_dir}/embeddinggemma-2/mmproj-embeddinggemma-2-Q8_0.gguf\n--embeddings\n--pooling mean\n--ctx-size 8192\n--cont-batching\n--parallel 1\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
     ttl: 300
     capabilities:
       in:
-      - text
-      - image
-      - audio
+        - text
+        - image
+        - audio
       out: []
       tools: false
       reranker: false
@@ -394,9 +501,9 @@ models:
     health_check_timeout: 60
     capabilities:
       in:
-      - text
+        - text
       out:
-      - decisions
+        - decisions
       tools: false
       reranker: false
       context: 8192
@@ -424,20 +531,20 @@ models:
       note: 'vram detalhe: ~0.3 GB VRAM (model 303MB + compute) | model 303MB BF16 + compute Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Lightest judge: 144M, sub-5ms per question expected on GPU.'
   parakeet-tdt-0.6b-v3:
     name: Parakeet TDT 0.6B v3
-    description: 'NVIDIA Parakeet TDT 0.6B v3: speech-to-text multilíngue, 25 idiomas incluindo português brasileiro. Transcreve a voz do Kilo Code e devolve o texto; converte o áudio recebido para WAV antes de transcrever.'
+    description: "NVIDIA Parakeet TDT 0.6B v3: speech-to-text multilíngue, 25 idiomas incluindo português brasileiro. Transcreve a voz do Kilo Code e devolve o texto; converte o áudio recebido para WAV antes de transcrever."
     tags:
-    - asr
+      - asr
     proxy: http://127.0.0.1:${PORT}
     checkEndpoint: /health
-    cmd: ${env.HOME}/git/ai-dotfiles/parakeet-stt/stt-bridge --port ${PORT}
+    cmd: '${env.HOME}/git/ai-dotfiles/parakeet-stt/stt-bridge --port ${PORT}'
     cmdStop: pkill -f "parakeet-stt/stt-bridge"
     health_check_timeout: 120
     ttl: 900
     capabilities:
       in:
-      - audio
+        - audio
       out:
-      - text
+        - text
       tools: false
       reranker: false
       context: 0
@@ -463,15 +570,15 @@ models:
       quantization: Q3_K
       note: 'ASR puro, CPU-only, sem VRAM - convive com qualquer LLM da frota (a matrix o coloca em grupo AND proprio, igual embedding/colbert, para nunca evictar nem ser evictado). Backend stt-bridge (Python stdlib, versionado em ~/git/ai-dotfiles/parakeet-stt/stt-bridge): HTTP OpenAI-compatible POST /v1/audio/transcriptions + GET /health, e o unico processo (sem binario separado). POR QUE EXISTE O BRIDGE: o Kilo Code grava a voz em .m4a (AAC 24k, 16 kHz mono) e manda multipart; nem o mtmd do llama.cpp (so reconhece WAV/MP3/FLAC pelo header) nem o parakeet-server (so aceita WAV) decodificam m4a - ambos devolvem HTTP 400. O bridge converte via ffmpeg (stdin->stdout) para WAV 16 kHz mono antes de transcrever. HIGIENE DE DISCO: temporarios so em /dev/shm (tmpfs = RAM), nunca no disco; o WAV de cada request e apagado no finally e o workdir sai limpo no encerramento - nenhum audio do usuario fica persistido. Medido 28/out: m4a real do Kilo transcrito em 0.8 s (CPU, 8 threads). Acerto de PT: So um minutinho que eu ja vou ai (o lfm3-audio-2b errava o mesmo trecho como So me do tique). nao e TTS e nao serve /v1/audio/speech.'
       caveats:
-      - Só o contrato OpenAI de transcrição (multipart field 'file'; response_format json|text)
-      - Converte o upload com ffmpeg - sem ffmpeg no PATH a transcrição falha com 500
-      - Não é TTS e não serve /v1/audio/speech
-      - CPU-only por desenho (a VRAM da casa é escassa, 6 GB) - troque PARAKEET_DEVICE=cuda se quiser
+        - Só o contrato OpenAI de transcrição (multipart field 'file'; response_format json|text)
+        - Converte o upload com ffmpeg - sem ffmpeg no PATH a transcrição falha com 500
+        - Não é TTS e não serve /v1/audio/speech
+        - CPU-only por desenho (a VRAM da casa é escassa, 6 GB) - troque PARAKEET_DEVICE=cuda se quiser
   anima-aesthetic-v1.1:
     name: Anima Aesthetic v1.1
-    description: Anima Aesthetic v1.1 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. Fine-tune de consistencia; o melhor default art style da familia.
+    description: "Anima Aesthetic v1.1 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. Fine-tune de consistencia; o melhor default art style da familia."
     tags:
-    - image
+      - image
     proxy: http://127.0.0.1:${PORT}
     checkEndpoint: /sdcpp/v1/capabilities
     cmd: '${sd_server} --diffusion-model ${models_dir}/anima/aesthetic-v1.1/anima-aesthetic-v1.1.safetensors --llm ${models_dir}/anima/common/te/Qwen3-0.6B-Base.Q8_0.gguf --vae ${models_dir}/anima/common/vae/qwen_image_vae.safetensors --offload-to-cpu --listen-port ${PORT} --listen-ip 127.0.0.1 '
@@ -480,9 +587,9 @@ models:
     ttl: 1200
     capabilities:
       in:
-      - text
+        - text
       out:
-      - image
+        - image
       tools: false
       reranker: false
       context: 0
@@ -507,14 +614,15 @@ models:
       context_length: 0
       embedding_length: 0
       quantization: bf16
-      note: '40 steps CFG 3 (o criador: aesthetic tolera CFG 3 e frequentemente fica melhor). Sampler er_sde. Uncensored tier Unbound. Instalado 30/10/2026.'
+      note: >-
+        40 steps CFG 3 (o criador: aesthetic tolera CFG 3 e frequentemente fica melhor). Sampler er_sde. Uncensored tier Unbound. Instalado 30/10/2026.
       caveats:
-      - 40 steps = mais lento que o turbo (usar para take final, nao para iterar)
+        - '40 steps = mais lento que o turbo (usar para take final, nao para iterar)'
   anima-base-v1.0:
     name: Anima Base v1.0
-    description: Anima Base v1.0 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. Maxima flexibilidade e diversidade; base oficial para treinamento de LoRA.
+    description: "Anima Base v1.0 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. Maxima flexibilidade e diversidade; base oficial para treinamento de LoRA."
     tags:
-    - image
+      - image
     proxy: http://127.0.0.1:${PORT}
     checkEndpoint: /sdcpp/v1/capabilities
     cmd: '${sd_server} --diffusion-model ${models_dir}/anima/base-v1.0/anima-base-v1.0-Q8_0.gguf --llm ${models_dir}/anima/common/te/Qwen3-0.6B-Base.Q8_0.gguf --vae ${models_dir}/anima/common/vae/qwen_image_vae.safetensors --offload-to-cpu --listen-port ${PORT} --listen-ip 127.0.0.1 '
@@ -523,9 +631,9 @@ models:
     ttl: 1200
     capabilities:
       in:
-      - text
+        - text
       out:
-      - image
+        - image
       tools: false
       reranker: false
       context: 0
@@ -550,15 +658,16 @@ models:
       context_length: 0
       embedding_length: 0
       quantization: q8_0
-      note: 40 steps CFG 5 (receita do criador). Uncensored tier Unbound. Instalado 30/10/2026.
+      note: >-
+        40 steps CFG 5 (receita do criador). Uncensored tier Unbound. Instalado 30/10/2026.
       caveats:
-      - LoRA da Anima devem ser treinados na Base (guia do criador)
-      - 'Q8_0: -4% velocidade vs BF16 (bench Bedovyy @5090), qualidade praticamente identica'
+        - 'LoRA da Anima devem ser treinados na Base (guia do criador)'
+        - 'Q8_0: -4% velocidade vs BF16 (bench Bedovyy @5090), qualidade praticamente identica'
   anima-turbo-v1.1:
     name: Anima Turbo v1.1
-    description: 'Anima Turbo v1.1 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. RECOMENDADO para comecar: distilled, 10 steps CFG 1 (receita do criador), rapido.'
+    description: "Anima Turbo v1.1 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. RECOMENDADO para comecar: distilled, 10 steps CFG 1 (receita do criador), rapido."
     tags:
-    - image
+      - image
     proxy: http://127.0.0.1:${PORT}
     checkEndpoint: /sdcpp/v1/capabilities
     cmd: '${sd_server} --diffusion-model ${models_dir}/anima/turbo-v1.1/anima-turbo-v1.1.safetensors --llm ${models_dir}/anima/common/te/Qwen3-0.6B-Base.Q8_0.gguf --vae ${models_dir}/anima/common/vae/qwen_image_vae.safetensors --offload-to-cpu --listen-port ${PORT} --listen-ip 127.0.0.1 '
@@ -567,9 +676,9 @@ models:
     ttl: 1200
     capabilities:
       in:
-      - text
+        - text
       out:
-      - image
+        - image
       tools: false
       reranker: false
       context: 0
@@ -594,13 +703,14 @@ models:
       context_length: 0
       embedding_length: 0
       quantization: bf16
-      note: 'Distilled do criador (CFG 1, 8-12 steps — registry usa 10/er_sde). Turbo v1.1 = latest do Civitai #2458426. Uncensored tier Unbound (wiki uncensored-image-gen). Instalado 30/10/2026, pesos em ~/.llama-models/anima/ (layout de frota).'
+      note: >-
+        Distilled do criador (CFG 1, 8-12 steps — registry usa 10/er_sde). Turbo v1.1 = latest do Civitai #2458426. Uncensored tier Unbound (wiki uncensored-image-gen). Instalado 30/10/2026, pesos em ~/.llama-models/anima/ (layout de frota).
       caveats:
-      - T2I puro - sem edit/im2img na rota CLI da casa
-      - 'Sem realism: so anime/illustration (by design do modelo)'
+        - 'T2I puro - sem edit/im2img na rota CLI da casa'
+        - 'Sem realism: so anime/illustration (by design do modelo)'
   d1-2b:
     name: Liquid d1-2B
-    description: System One decision model da LiquidAI (2B, familia lfm3, com encoder de visao). Serves POST /v1/systemone com respostas tipadas (choice/noul/score + probabilities). Substituto em teste do d1-3b (seletor de LoRA do diffuse) e candidato a juiz do laya-snake. CPU-only.
+    description: "System One decision model da LiquidAI (2B, familia lfm3, com encoder de visao). Serves POST /v1/systemone com respostas tipadas (choice/noul/score + probabilities). Substituto em teste do d1-3b (seletor de LoRA do diffuse) e candidato a juiz do laya-snake. CPU-only."
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/lfm3-d1-2b/d1-2B-Q8_0.gguf
@@ -626,17 +736,17 @@ models:
     health_check_timeout: 90
     capabilities:
       in:
-      - text
-      - image
+        - text
+        - image
       out:
-      - decisions
+        - decisions
       tools: false
       reranker: false
       context: 8192
     metadata:
-      size: '~2.05 GB (Q8_0: backbone 1.85 + mmproj 0.19)'
+      size: "~2.05 GB (Q8_0: backbone 1.85 + mmproj 0.19)"
       context: 8192
-      vram_usage: ~0 GB VRAM (CPU-only, doutrina decision da casa)
+      vram_usage: "~0 GB VRAM (CPU-only, doutrina decision da casa)"
       source: LiquidAI/d1-2B-GGUF (Q8_0, backbone 1846240576 + mmproj 203031584 bytes; PR ggml-org/llama.cpp
       kv_cache: n/a
       features:
@@ -654,7 +764,20 @@ models:
       context_length: 8192
       embedding_length: 2048
       quantization: Q8_0
-      note: 'INSTALADO 27/out (PR #31275 buildado localmente no branch fleet-liquid antes do merge upstream — tracker vigia o merge). SMOKE VERIFICADO: /v1/systemone com o payload real do laya-snake em 0.10s — respostas tipadas choice (turn_right 0.696 + probabilities {straight 0.200, turn_left 0.104}) e noul 0.320 (+ usage). Server detecta decision type lfm3-d1 automaticamente. Vision encoder incluso (mmproj) — decisões visual possiveis, AINDA nao UNLISTED até segunda ordem — d1-3b (seletor LoRA do diffuse) e julia-1 (juiz do snake) são os validados em produção. Este entra só depois de re-rodar o harness selecao_nway.py (skill llama-snake-decision-models) no caso do seletor e do testchat de juiz no caso do snake — um juiz ruim selecionável é armadilha ativa, conforme doutrina. decision da casa; GPU 0.10s e CPU = mesmo resultado bit a bit). Pesos em ~/.llama-models/lfm3-d1-2b/ (backbone + mmproj Q8_0).'
+      note: >-
+        INSTALADO 27/out (PR #31275 buildado localmente no branch fleet-liquid antes
+        do merge upstream — tracker vigia o merge). SMOKE VERIFICADO: /v1/systemone
+        com o payload real do laya-snake em 0.10s — respostas tipadas choice
+        (turn_right 0.696 + probabilities {straight 0.200, turn_left 0.104}) e noul
+        0.320 (+ usage). Server detecta decision type lfm3-d1 automaticamente.
+        Vision encoder incluso (mmproj) — decisões visual possiveis, AINDA nao
+        UNLISTED até segunda ordem — d1-3b (seletor LoRA do diffuse) e julia-1 (juiz do
+        snake) são os validados em produção. Este entra só depois de re-rodar o harness
+        selecao_nway.py (skill llama-snake-decision-models) no caso do seletor e do
+        testchat de juiz no caso do snake — um juiz ruim selecionável é armadilha
+        ativa, conforme doutrina.
+        decision da casa; GPU 0.10s e CPU = mesmo resultado bit a bit). Pesos em
+        ~/.llama-models/lfm3-d1-2b/ (backbone + mmproj Q8_0).
   glm-ocr:
     name: GLM-OCR
     description: GLM's vision-language OCR model for complex document understanding and text extraction.
@@ -662,10 +785,10 @@ models:
     ttl: 60
     capabilities:
       in:
-      - text
-      - image
+        - text
+        - image
       out:
-      - text
+        - text
       tools: false
       reranker: false
       context: 131072
@@ -689,46 +812,14 @@ models:
         audio: false
         image: false
       note: 'vram detalhe: ~2GB (model + mmproj + cache) | GLM OCR multimodal: model 0.95GB + mmproj 0.48GB + cache; Q8_0 Specialized OCR model — use prompts like ''OCR'', ''OCR markdown'', ''Table Recognition:''. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.'
-  groot-65b-a6b:
-    name: Groot 65B A6B
-    description: 'EXPERIMENTO Dormammu (27/out): MoE 65B-A6B do GrootTeam (distill do Qwen3.8-Flash-Next) com tabela n-gram PLE de 51B params em host + experts roteados streamados do SSD no cafe. Espera-se lentidao; lane para medir tradeoffs, nao para producao.'
-    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
-
-      --model ${models_dir}/groot-65b-a6b/groot-65b-a6b-261023.Q2_K.gguf
-
-      --mmproj ${models_dir}/groot-65b-a6b/mmproj-Q8_0.gguf
-
-      --ctx-size 65536
-
-      --jinja
-
-      --parallel 1
-
-      --no-mmproj-offload
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --flash-attn on
-
-      -ssd
-
-      -ngl 99
-
-      -b 512
-
-      -ub 128
-
-      --temp 1.0
-
-      --top-k 20
-
-      --top-p 0.95
-
-      --metrics
-
-      '
+  groot-19b-a3b:
+    name: Groot 19B A3B
+    description: "GrootTeam's efficient reasoning MoE. 19B total with 3B active, built from Qwen3.6-35B-A3B, multimodal with 64K context on this lane. Targets agentic and tool-using tasks with concise outputs. Handles: plain answers directly; :think adds visible chain-of-thought."
+    tags:
+      - vis
+      - think
+      - tools
+    cmd: env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT} --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf --no-mmproj-offload --jinja --parallel 1 --ctx-size 65536 --cache-type-k q4_0 --cache-type-v q4_0 --flash-attn on -ssd --ssd-predict --ssd-io-threads 4 --ssd-cache-mb 4096 -ngl 99 -b 512 -ub 128 --temp 1.0 --top-k 20 --top-p 0.95 --metrics
     filters:
       stripParams: temperature, top_p
       setParamsByID:
@@ -745,24 +836,23 @@ models:
           temperature: 1.0
           top_p: 0.95
           top_k: 20
-          presence_penalty: 0.0
-    ttl: 0
-    health_check_timeout: 1200
-    unlisted: true
+          presence_penalty: 1.5
+    ttl: 900
+    health_check_timeout: 300
     capabilities:
       in:
-      - text
-      - image
+        - text
+        - image
       out:
-      - text
+        - text
       tools: true
       reranker: false
       context: 65536
     metadata:
-      size: ~52.46 GB (Q2_K) + 0.58 GB mmproj
+      size: ~11.66 GB (Q4_K_M) + 0.86 GB mmproj
       context: 65536
-      vram_usage: a medir no smoke — backbone ~2 GB na GPU + KV leve (12 sparse-attn layers) + PLE 25 GB em host (mmap, thrash esperado)
-      source: mradermacher/Groot-65B-A6B-261023-GGUF (Q2_K, 56335871168 bytes exatos) + mmproj-Q8_0 (616703296 bytes)
+      vram_usage: ~4.7 GB VRAM + ~10 GB RAM
+      source: GrootTeam/Groot-19B-A3B-261023-GGUF (Q4_K_M, 11657618560 bytes exatos) + mmproj-BF16 (902822016 bytes)
       kv_cache: q4_0/q4_0
       features:
         completion: true
@@ -773,17 +863,89 @@ models:
         insert: false
         audio: false
         image: false
-      architecture: qwen4exp
-      parameters: 65000000000
-      active: 6000000000
-      embedding_length: 2560
+      architecture: qwen35moe
+      parameters: 19400000000
+      active: 3000000000
+      experts: "128 roteados + 1 shared; 8 ativos/token; expert_ff 512"
+      mtp: "1 layer (0.4B) — 4 tensors nextn no GGUF, 271.4 MiB skipped quando MTP nao pedido"
+      license: apache-2.0
+      sampling_card: "thinking: 1.0/0.95/top_k 20/presence 1.5 (matches setParamsByID) | non-thinking: 0.7/0.80/top_k 20/presence 1.5 (matches) | precise coding: 0.6/0.95/top_k 20/presence 0.0 (nao wired — handle opcional futura)"
+      quantization: Q4_K_M
+      embedding_length: 2048
       context_length: 262144
-      quantization: Q2_K
-      note: 'EXPERIMENTO 27/out — BLOQUEADO no build atual do cafe (02dda80a9 + merges 26/10): o expert streaming nao carrega o Groot-65B. Fatos medidos: (1) flag correta e -ssd (-ssd-streaming e parse invalido, "-ssd"+"-streaming"); (2) load com -ssd ABORTA em ggml-backend.cpp:383 get_usage(NULL) ("GGML_ASSERT(buffer) failed") ~50s no load, thread llama_row_pool no dump — repetido em 3 variantes (default ngram-ssd, --no-ngram-ssd, --ssd-streaming-cache-experts 8GB explicito) → bug do path -ssd com qwen4exp, nao interplay com PLE nem orcamento de cache; (3) sem -ssd, experts somam ~26 GB e -ngl 99 tenta CUDA direto ("unable to allocate CUDA0"); (4) -cmoe (experts RAM 26GB) > RAM disponivel da casa e Gyro-S (mesma familia, engine dedicado TQ1_0) ja fechou 97% RAM em 24/10 — nada do lado dos runtimes encaixa hoje. Descoberta util: cafe tem --ngram-ssd DEFAULT-ENABLED (PLE do qwen4 streama do SSD nativamente do fork — o thrash de PLE projetado NAO aplica enquanto o ngram-ssd funciona). GGUF Q2_K (mradermacher, 56335871168) + mmproj-Q8_0 (616703296) baixados e integros em ~/.llama-models/groot-65b-a6b/; re-teste quando o path -ssd do cafe (ou um patch local) aceitar o arch. GGUFs (Q2_K 56335871168 + mmproj-Q8_0 616703296) DELETADOS 27/out pelo dono — ~52.5 GB de volta ao disco; re-download de mradermacher/Groot-65B-A6B-261023-GGUF: hf download mradermacher/Groot-65B-A6B-261023-GGUF Groot-65B-A6B-261023.Q2_K.gguf --local-dir ~/.llama-models/groot-65b-a6b/ (+ mmproj-Q8_0.gguf). LANE UNLISTED ATE SEGUNDA ORDEM (dono, 27/out). Header do GGUF oficial GrootTeam declara tensor_count=1 (anomalo) — mradermacher parseia normal (tc=1256). ctx no fragmento segue 65536 para o promeiro teste que funcionar.'
+      note: 'LANE NORMAL de 04/nov — cafe-llama.cpp via -ssd streaming + knobs vencedores da escada do proprio modelo (probe standalone 03/11: 8.2 frio / 14.6 quente defaults → 24-25 c/ predict → 31 c/ io-threads 4 → 33-34 c/ cache-mb 4096; essa aqui é a config E medida NESTE GGUF). -ssd carregou a familia no build d33bcfd7e (build 12256) — o crash de 27/out nao reproduz. TOOLS PROVADO 04/nov via rota do swap: 4/4 calls paralelos (2 tools x 2 cidades), JSON limpo, finish=tool_calls — tools true. Parallel tool calls do lado do cafe: por request param (parallel_tool_calls: true). MTP/spec NEGATIVO em IO-bound (2x medido) — nao habilitar. KV Hadamard (TurboQuant) e exclusivo do path ik (ver groot-19b-a3b-fast); aqui KV q4_0 puro. VRAM 4.5-4.9 GB probe 03/11; RSS ~10 GB = cache ssd 4 GiB residente + mmap. Historico da lane ik em _disabled→fast: aposentada 28/out pelo bug de re-serializacao do parser de tools do ik. Base pra lane do 65B: mesma familia de knobs.'
+      caveats:
+        - 'ctx 65536 no primeiro ciclo; nativo 262K/KV q4_0 ~10 full layers — subir com medicao'
+  groot-19b-a3b-fast:
+    name: Groot 19B A3B (fast)
+    description: "GrootTeam's efficient reasoning MoE on the faster ik_llama.cpp lane. 19B total with 3B active, built from Qwen3.6-35B-A3B, multimodal with full 262K context and parallel tool calling. Same model as Groot 19B A3B. Handles: plain answers directly; :think adds visible chain-of-thought."
+    tags:
+      - vis
+      - think
+      - tools
+    cmd: ${ik_llama_server} --port ${PORT} --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf --no-mmproj-offload --no-graph-reuse -ngl 99 --n-cpu-moe 34 --ctx-size 262144 --reasoning on --jinja --parallel 1 --parallel-tool-calls --cache-type-k q4_0 --cache-type-v q4_0 --k-cache-hadamard --v-cache-hadamard --flash-attn auto --defer-experts --prefetch-experts -b 512 -ub 128 --temp 1.0 --top-k 20 --top-p 0.95 --metrics
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.8
+          top_k: 20
+          presence_penalty: 1.5
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 20
+          presence_penalty: 1.5
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 262144
+    metadata:
+      size: ~11.66 GB (Q4_K_M) + 0.86 GB mmproj
+      context: 262144
+      vram_usage: ~5.06 GB VRAM @262K + ~14 GB RAM
+      source: GrootTeam/Groot-19B-A3B-261023-GGUF (Q4_K_M, 11657618560 bytes exatos) + mmproj-BF16 (902822016 bytes)
+      kv_cache: q4_0/q4_0 + hadamard
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 19400000000
+      active: 3000000000
+      experts: "128 roteados + 1 shared; 8 ativos/token; expert_ff 512"
+      mtp: "1 layer (0.4B) — 4 tensors nextn no GGUF, 271.4 MiB skipped quando MTP nao pedido"
+      license: apache-2.0
+      sampling_card: "thinking: 1.0/0.95/top_k 20/presence 1.5 (matches setParamsByID) | non-thinking: 0.7/0.80/top_k 20/presence 1.5 (matches) | precise coding: 0.6/0.95/top_k 20/presence 0.0 (nao wired — handle opcional futura)"
+      embedding_length: 2048
+      context_length: 262144
+      quantization: Q4_K_M
+      note: 'Smoke 27/10 (ik 804ee29c): escada de tuning medida — n-cpu-moe 40 @131K = 2.89GB/36.4 t/s; n-cpu-moe 32 @262K = 5.53GB (90%, raspa)/38+ t/s; ESCOLHIDO n-cpu-moe 34 @262144 = pico 5.06GB (82%, folga ~1.1GB) e MESMOS 37.4-37.9 t/s (plain e think). 1.5x mais rapido que a lane cafe. Parallel tool calls NATIVO (-ptc): 4 get_weather/get_local_time simultaneos, JSON limpo, finish=tool_calls — com template embedded (sem --chat-template-file da casa). Dual-mode via enable_thinking, reasoning_content OK, 17*23=391. Mesmo peso e mmproj da lane cafe (um download serve as duas). Hadamard KV = TurboQuant ik (exclusivo do ik; o cafe roda KV q4_0 puro). GGUF em ~/.llama-models/groot-19b-a3b/. EDIT 04/nov: renomeada para -fast quando a lane normal (groot-19b-a3b) passou pro cafe via -ssd streaming + knobs (33-34 t/s medidos no probe de hoje); o bug de parser de tools do ik segue a ressalva viva desta variante (args unescape).'
   lfm2.5-24b-a2b:
+  # APOSENTADO COM HONRAS + SACRIFICIO DE DISCO 31/10/2026 (dono): GGUF APEX
+  # I-Compact (11G) DELETADO — restore: remover a linha 'unlisted: true' e:
+  #   hf download mudler/LFM2.5-24B-A2B-APEX-GGUF LFM2.5-24B-A2B-APEX-I-Compact.gguf --local-dir ~/.llama-models/lfm25-24b-a2b/
+  #   hf download mudler/LFM2.5-24B-A2B-APEX-GGUF chat_template.jinja --local-dir ~/.llama-models/lfm25-24b-a2b/  (se o cmd pedir template)
     unlisted: true
     name: LFM 2.5 24B A2B
-    description: 'LiquidAI flagship agentic MoE: 24B total / 2.45B active (64 experts, top-4 routing, 30 shortconv + 10 GQA layers). 131K context, 128K vocab, native reasoning. Agent-focused training (36T tokens); knowledge-heavy tasks need retrieval.'
+    description: "LiquidAI flagship agentic MoE: 24B total / 2.45B active (64 experts, top-4 routing, 30 shortconv + 10 GQA layers). 131K context, 128K vocab, native reasoning. Agent-focused training (36T tokens); knowledge-heavy tasks need retrieval."
     cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
       --model ${models_dir}/lfm25-24b-a2b/LFM2.5-24B-A2B-APEX-I-Compact.gguf
@@ -824,9 +986,9 @@ models:
     health_check_timeout: 600
     capabilities:
       in:
-      - text
+        - text
       out:
-      - text
+        - text
       tools: true
       reranker: false
       context: 131072
@@ -851,11 +1013,14 @@ models:
       embedding_length: 2048
       context_length: 131072
       quantization: APEX I-Compact
-      note: 'MoE 64 experts +4 usados/token, 2 dense-lead blocks (header do GGUF cravado). Reasoning NATIVO (template preserve_thinking — SEM toggle enable_thinking, sempre pensa; SEM handle :think de decreto do user 13/out: a variante é desnecessária no always-think). ctx 131072 NO cmd (decreto user 13/out: 131K ou morte; o KV q4_0 = +0.7 GB VRAM: cabe). -cmoe = o offload exclusivo do cafe (experts RAM page-cache evictável, receita validada do laguna 34.6 t/s @131K). Estimativa de decode: 25-35 t/s (A2B < A3B do laguna). GGUF em ~/.llama-models/lfm25-24b-a2b/.'
+      note: 'EDIT 04/nov pos-escadinha-19B: + --ssd-predict/--ssd-io-threads 4/--ssd-cache-mb 4096 no cmd — knobs inertes em -cmoe (sem streaming ativo), ganho possivel de ~+2 t/s (so medido na laguna, N=2=ruido); probe deste modelo pendente do reinstall (pesos fora do disco por decreto do dono). MoE 64 experts +4 usados/token, 2 dense-lead blocks (header do GGUF cravado). Reasoning NATIVO (template preserve_thinking — SEM toggle enable_thinking, sempre pensa; SEM handle :think de decreto do user 13/out: a variante é desnecessária no always-think). ctx 131072 NO cmd (decreto user 13/out: 131K ou morte; o KV q4_0 = +0.7 GB VRAM: cabe). -cmoe = o offload exclusivo do cafe (experts RAM page-cache evictável, receita validada do laguna 34.6 t/s @131K). Estimativa de decode: 25-35 t/s (A2B < A3B do laguna). GGUF em ~/.llama-models/lfm25-24b-a2b/.'
   lfm2.5-24b-a2b-fast:
+  # APOSENTADO COM HONRAS + SACRIFICIO DE DISCO 31/10/2026 (dono): mesmo GGUF
+  # da lane normal (compartilhado, 11G) DELETADO — restore: remover 'unlisted: true'
+  # e re-baixar (ver comando no fragment lfm2.5-24b-a2b.yaml).
     unlisted: true
     name: LFM 2.5 24B A2B (fast)
-    description: LiquidAI flagship agentic MoE. 24B total / 2.45B active (64 experts, top-4 routing, 30 shortconv + 10 GQA layers). 131K context, 128K vocab, native reasoning. Agent-focused training (36T tokens); knowledge-heavy tasks need retrieval. ik_llama.cpp backend, higher RAM/VRAM usage.
+    description: "LiquidAI flagship agentic MoE. 24B total / 2.45B active (64 experts, top-4 routing, 30 shortconv + 10 GQA layers). 131K context, 128K vocab, native reasoning. Agent-focused training (36T tokens); knowledge-heavy tasks need retrieval. ik_llama.cpp backend, higher RAM/VRAM usage."
     cmd: '${ik_llama_server} --port ${PORT}
 
       --model ${models_dir}/lfm25-24b-a2b/LFM2.5-24B-A2B-APEX-I-Compact.gguf
@@ -896,16 +1061,16 @@ models:
     health_check_timeout: 600
     capabilities:
       in:
-      - text
+        - text
       out:
-      - text
+        - text
       tools: true
       reranker: false
       context: 131072
     metadata:
       size: ~10.4 GB (APEX I-Compact)
       context: 131072
-      vram_usage: '~4.6 GB VRAM (gpu7: experts blk 0-6 na GPU) + ~10.1 GB RAM'
+      vram_usage: "~4.6 GB VRAM (gpu7: experts blk 0-6 na GPU) + ~10.1 GB RAM"
       source: mudler/LFM2.5-24B-A2B-APEX-GGUF (APEX I-Compact)
       kv_cache: q4_0/q4_0
       features:
@@ -926,10 +1091,10 @@ models:
       note: 'Backend ik. -ot parcial gpu7: experts dos blocos 0-6 na GPU (7-39 na CPU) — A/B 13/out: baseline (todos CPU) 33.3 t/s, gpu7 36.3 t/s (+9%) @400 tokens, ambos prompt único/temp 0.1 (VRAM 65% vs 37%, RAM -3.5 GB). GGML_CUDA_NO_PINNED=1 PROIBIDO: pinned obrigatório (sem ele: load trava 13.3 GiB alloc + decode 0.63 t/s). Pinned exige RAM folgada no load. -cmoe é EXCLUSIVO do cafe. Ik binary pull 3dbc2c9f (Oct 13) inclui lfm2moe runtime #2530 e spec decode LFM2 #2652 (CPU checkpoint). tok_embd fica NA GPU (o vocab 128K embd em CPU mataria o decode; o -ot tok_embd do k2 NÃO se aplica aqui). -nkvo OFF (a arch shortconv híbrida: o teste decide o KV residency — se OOM @32K: -nkvo como o k2). Smoke pending (pós-N=5 do minicpm5). GGUF em ~/.llama-models/lfm25-24b-a2b/.'
   lfm3-1.7b:
     name: LFM3 1.7B
-    description: LiquidAI LFM3 1.7B descensurado (Heretic, KL 0.0094 / refusals 3-100 vs 92-100 do original — par KL+recusas verificado), gerico edge da nova geracao tri-hybrid (13 short-conv + 5 SWA + 6 global attn), 256K de contexto nativo, raciocinio dual-mode. Substituto drop-in do GGUF oficial (mesmo tamanho/quant).
+    description: "LiquidAI LFM3 1.7B descensurado (Heretic, KL 0.0094 / refusals 3-100 vs 92-100 do original — par KL+recusas verificado), gerico edge da nova geracao tri-hybrid (13 short-conv + 5 SWA + 6 global attn), 256K de contexto nativo, raciocinio dual-mode. Substituto drop-in do GGUF oficial (mesmo tamanho/quant)."
     tags:
-    - think
-    - tools
+      - think
+      - tools
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/lfm3-1.7b/LFM3-1.7B-Heretic-Abliterated-Q8_0.gguf
@@ -978,16 +1143,16 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-      - text
+        - text
       out:
-      - text
+        - text
       tools: true
       reranker: false
       context: 65536
     metadata:
       size: ~1.85 GB (Q8_0)
-      context: 65536 por slot x 5 slots (327680 total)
-      vram_usage: ~4.1 GB VRAM pico @262K slot unico; @5x64K est. ~4.4GB (KV q4_0 ~1.35GB)
+      context: "65536 por slot x 5 slots (327680 total)"
+      vram_usage: "~4.1 GB VRAM pico @262K slot unico; @5x64K est. ~4.4GB (KV q4_0 ~1.35GB)"
       source: Vortecks/LFM3-1.7B-Heretic-Abliterated-GGUF (static, sem imatrix; Q8_0, 1846237728 bytes exatos; upstream safetensors BF16 do mesmo repo)
       kv_cache: q4_0/q4_0
       features:
@@ -1007,10 +1172,10 @@ models:
       note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb; LFM3 chegou HOJE via merges #31252/#31257 — pull + rebuild local). ctx NATIVO 262144 deployado (escada: f16 KV @262K = 3.0GB CUDA OOM; q4_0 = pico 4.14GB com folga). Decode 75 t/s, prompt 631 t/s (Q8_0, GPU sozinha). Tool calling: 4 get_weather/ get_local_time simultaneos, JSON limpo, finish=tool_calls, template embedded (--jinja, sem template da casa). DUAL-MODE REAL do vendor: o modelo pensa SEMPRE e o template tem toggle enable_thinking — plain pino false (respondera direto, reasoning 0 verificado), :think pin true; raciocinio nativo estilo distill ("We need to..." — PT OK direto no plain). Samplers do fabricante (chat geral): temp 0.1 / top_k 50 / repetition_penalty 1.1 (math usa 1.0/0.95/20 na mao do client). Escorregada factual tipica de 1.7B (SP/Minas numa frase) — papel prompter/enhance, nao enciclopedia. GGUF em ~/.llama-models/lfm3-1.7b/. Substituição candidata do lfm2.5-2.6b (régua maison 67.0) — re-discussão de aposentadorias pendente os resultados. 29/10: slots 5x64K (-parallel 5, -c 327680, KV q4_0 mantido, -b/-ub do paralelo) para multi-agentes — slots 5x64K est. ~4.4GB dentro dos 4.8GB livres da 3050 | 01/11: REDUZIDO a 3 slots a pedido do dono (3x~107K por agente; o KV total 327680 nao muda); smoke slots 29/10 (da era 5) OK (spawn saudavel, pico ~4.8GB usados/1058 MiB livres, 5 reqs paralelas atendidas em batch 0.2s wall). 30/10: SWAP p/ GGUF Heretic-Abliterated (static, Vortecks) — pedido do usuario, drop-in Q8_0->Q8_0. KL 0.0094 + refusals 3/100 (par completo, KL baixo SOZINHO nao vale). GGUF oficial LFM3-1.7B-Q8_0.gguf mantido no dir p/ rollback imediato.'
   lfm3-audio-2b-pollard:
     name: LFM3 Audio 2B Pollard
-    description: 'Audio 2B da LiquidAI quantizado Pollard (IQ ladder, imatrix + tool-call retention medida). Rung Q6_K = recomendado do card: KLD 0.0043 vs f16, top-1 97.6%, tool-ready 98.2% (CI 94-100, verified gate). Libera ~0.4 GB VRAM vs Q8_0 p/ coexistencia no fleet. Alternativa de menor pegada: IQ4_XS (1.07 GB, retention 100%, CI 93-108).'
+    description: "Audio 2B da LiquidAI quantizado Pollard (IQ ladder, imatrix + tool-call retention medida). Rung Q6_K = recomendado do card: KLD 0.0043 vs f16, top-1 97.6%, tool-ready 98.2% (CI 94-100, verified gate). Libera ~0.4 GB VRAM vs Q8_0 p/ coexistencia no fleet. Alternativa de menor pegada: IQ4_XS (1.07 GB, retention 100%, CI 93-108)."
     tags:
-    - tools
-    - audio
+      - tools
+      - audio
     proxy: http://127.0.0.1:${PORT}
     checkEndpoint: /health
     cmd: '${llama_server} --port ${PORT}
@@ -1050,17 +1215,17 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-      - text
-      - audio
+        - text
+        - audio
       out:
-      - text
+        - text
       tools: true
       reranker: false
       context: 32768
     metadata:
       size: ~1.43 GB (Q6_K Pollard) + 0.57 GB mmproj-F16 (audio encoder, movido p/ este dir 31/10 com a aposentadoria da lane stock)
       context: 32768
-      vram_usage: ~3.9 GB VRAM pico @32K estimado (KV q4_0)
+      vram_usage: "~3.9 GB VRAM pico @32K estimado (KV q4_0)"
       source: PollardWeights/LFM3-Audio-2B-Pollard (Q6_K) + mmproj-F16 oficial LiquidAI (570846400 bytes; era da lane lfm3-audio-2b, MOVIDO p/ cá 31/10 na aposentadoria do stock)
       kv_cache: q4_0/q4_0
       features:
@@ -1081,11 +1246,11 @@ models:
       pollard_note: 'Pollard build (repo 29/10/26): pesos IGUAIS ao f16, bits alocados por sensibilidade medida por camada, imatrix + pollard-verify gate. Rung Q6_K: PPL 3.4089, KLD 0.0043, top-1 97.6%, tool-ready 98.2% (CI 94-100). IQ4_XS DELETADO com causa empírica (29/10, duplex realtime do dono): emite a tool call SEM o wrapper XML (nome+JSON nus), o parser cliente nao acha bloco, a tool nunca executa e o modelo re-anuncia em loop — dano de quant agressiva na emissao de tokens especiais do template. Q6_K = rung ativo; teste do dono pendente. O repo Pollard NAO inclui mmproj: este lane usa o mmproj-F16 oficial da LiquidAI MOVIDO pra este dir (570846400 bytes, ex- lane stock aposentada 31/10). Contexto 32K mantido = limite de arquitetura do card, nao estendido. Ganhos esperados: ~0.4 GB VRAM de coexistencia no fleet + cold-start menor; ganho de decode marginal (2B ja offloada integral nos 6 GB). Baixar peso (huggingface-cli APOSENTADO, o CLI atual e hf): hf download PollardWeights/LFM3-Audio-2B-Pollard --include LFM3-Audio-2B-Pollard-Q6_K.gguf --local-dir ~/.llama-models/lfm3-audio-2b-pollard/'
   lfm3-omni-2b-pollard:
     name: LFM3 Omni 2B Pollard
-    description: 'Omni-modal 2B da LiquidAI quantizado Pollard (IQ ladder, imatrix + pollard-verify gate): texto/imagem/video COM trilha sonora + audio (16 kHz) entra, texto ou fala sai. Musica no contrato (fala/musica/son ambiente/ eventos). RUNG ATIVO: Q6_K (no Audio-2B: KLD 0.0043, top-1 97.6%, tool-ready 98.2%; IQ4_XS REPROVADO empiricamente no Audio-2B 29/10 — emite tool call SEM o wrapper XML, parser cliente nao acha, loop de re-anuncio). Substituto direto da lane lfm3-omni-2b (Q8_0 aposentada).'
+    description: "Omni-modal 2B da LiquidAI quantizado Pollard (IQ ladder, imatrix + pollard-verify gate): texto/imagem/video COM trilha sonora + audio (16 kHz) entra, texto ou fala sai. Musica no contrato (fala/musica/son ambiente/ eventos). RUNG ATIVO: Q6_K (no Audio-2B: KLD 0.0043, top-1 97.6%, tool-ready 98.2%; IQ4_XS REPROVADO empiricamente no Audio-2B 29/10 — emite tool call SEM o wrapper XML, parser cliente nao acha, loop de re-anuncio). Substituto direto da lane lfm3-omni-2b (Q8_0 aposentada)."
     tags:
-    - vis
-    - tools
-    - audio
+      - vis
+      - tools
+      - audio
     proxy: http://127.0.0.1:${PORT}
     checkEndpoint: /health
     cmd: '${llama_server} --port ${PORT}
@@ -1129,11 +1294,11 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-      - text
-      - image
-      - audio
+        - text
+        - image
+        - audio
       out:
-      - text
+        - text
       tools: true
       reranker: false
       embeddings: false
@@ -1141,7 +1306,7 @@ models:
     metadata:
       size: ~1.43 GB (Q6_K Pollard) + 0.90 GB mmproj-BF16 (do repo Pollard, par testado do criador)
       context: 32768
-      vram_usage: ~3.6-4.6 GB VRAM pico @32K estimado (KV q4_0; o Q8_0 media ~4-5 GB)
+      vram_usage: "~3.6-4.6 GB VRAM pico @32K estimado (KV q4_0; o Q8_0 media ~4-5 GB)"
       source: PollardWeights/LFM3-Omni-2B-Pollard (Q6_K, 1427640832 bytes; mmproj-LiquidAI__LFM3-Omni-2B-BF16.gguf, 949841248 bytes)
       kv_cache: q4_0/q4_0
       features:
@@ -1161,11 +1326,11 @@ models:
       pollard_note: 'Pollard (repo 31/10/26): pesos iguais ao f16, bits alocados por sensibilidade por camada, imatrix + pollard-verify gate. Rung Q6_K escolhido: mesmo rung provado do Audio-2B Pollard (KLD 0.0043, tool-ready 98.2 percent, CI 94-100); IQ3_S/IQ4_XS presentes no repo mas NAO ligados — o audio 2B mostrou que rung agressivo quebra emissao de tokens especiais (tool wrapper) e o duplex PARSEIA tool call no cliente. SMOKE PENDENTE (GPU — janela do dono apos renders 31/10): a lane entra listed; conferir no smoke o spawn, tool call XML no realtime, ASR/music QA sane vs lane stock. O rung IQ4_XS do omni NAO herda o veredicto do audio automaticamente, mas a cautela segue: testar so se o dono pedir explicitamente. mmproj — o repo Pollard inclui mmproj-LiquidAI__LFM3-Omni-2B-BF16.gguf (949841248 bytes, MESMO TAMANHO do mmproj-F16 oficial 949841248 mas sha256 DIVERGE — a9938f9f vs 361bc951, par testado do criador); lane usa o par do repo, o stock (Q8_0+mmproj F16) aposentado a seco. Heranca de quirks da lane stock (nota la): voz PT = sotaque EN (checkpoint, fechado); doom loop na descricao de IMAGEM (aberto 27/10); nao-thinking; pequenos slips de idioma.'
   lfm3-vl-2b:
     name: LFM3 VL 2B
-    description: 'VLM 2B da LiquidAI (tri-hybrid nova geracao): documentos, charts, video, app screens e raciocinio espacial. Pensa por default (dual-mode real via enable_thinking). Competitive com Gemma 4 12B sendo 6x menor, pelo card do vendor. NAO e para coding/multi-turn longo (card).'
+    description: "VLM 2B da LiquidAI (tri-hybrid nova geracao): documentos, charts, video, app screens e raciocinio espacial. Pensa por default (dual-mode real via enable_thinking). Competitive com Gemma 4 12B sendo 6x menor, pelo card do vendor. NAO e para coding/multi-turn longo (card)."
     tags:
-    - vis
-    - think
-    - tools
+      - vis
+      - think
+      - tools
     cmd: '${llama_server} --port ${PORT}
 
       --model ${models_dir}/lfm3-vl-2b/LFM3-VL-2B-Q8_0.gguf
@@ -1210,17 +1375,17 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-      - text
-      - image
+        - text
+        - image
       out:
-      - text
+        - text
       tools: true
       reranker: false
       context: 131072
     metadata:
       size: ~1.85 GB (Q8_0) + 0.38 GB mmproj-F16
       context: 131072
-      vram_usage: ~4.18 GB VRAM pico @131K (KV q4_0, desktop incluso)
+      vram_usage: "~4.18 GB VRAM pico @131K (KV q4_0, desktop incluso)"
       source: LiquidAI/LFM3-VL-2B-GGUF (Q8_0, 1846238496 bytes exatos) + mmproj-F16 (378996032 bytes)
       kv_cache: q4_0/q4_0
       features:
@@ -1238,13 +1403,13 @@ models:
       context_length: 131072
       quantization: Q8_0
       note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb, merges #31252/#31257 do dia): ctx 128K nativo deployado (131072; card diz 128K tokens input+output), VRAM pico 4.18GB. DUAL-MODE REAL verificado por A/B: default pensa (reasoning 1242 chars) e o budget de max_tokens PRECISA contar o think (IMG probe com 250 tok = content vazio, finish=length — o think comeu tudo); think via enable_thinking: reasoning 1358; off: reasoning 0 e resposta DIRETA 2.4s (74 t/s classe). Tool calling 4/4 simultaneos, JSON limpo, finish= tool_calls. Card do vendor: doc/charts/video/spatial e "nao recomendado para coding, multi-turn ou raciocinio complexo" — papel OCR/VLM-QA da casa (candidato ao trono do lfm2.5-vl-3b aposentado e a substituicao do espaco funcional do gemma4-12b removido em Sep). Samplers do card: evals deles 0.6/0.95; lane pina por handle. GGUF em ~/.llama-models/lfm3-vl-2b/.'
-  minicpm-v-4.7-35b:
+  "minicpm-v-4.7-35b":
     name: MiniCPM-V 4.7 35B-A3B
-    description: 'OpenBMB MiniCPM-V 4.7 35B-A3B - first MoE visual model of the series: multi-image, video and OCR with early token compression. 131K context, native reasoning, tool-calling.'
+    description: "OpenBMB MiniCPM-V 4.7 35B-A3B - first MoE visual model of the series: multi-image, video and OCR with early token compression. 131K context, native reasoning, tool-calling."
     tags:
-    - vis
-    - think
-    - tools
+      - vis
+      - think
+      - tools
     unlisted: true
     cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
@@ -1288,12 +1453,12 @@ models:
     filters:
       stripParams: temperature, top_p
       setParamsByID:
-        minicpm-v-4.7-35b:
+        "minicpm-v-4.7-35b":
           chat_template_kwargs:
             enable_thinking: false
           temperature: 0.7
           top_p: 0.9
-        minicpm-v-4.7-35b:think:
+        "minicpm-v-4.7-35b:think":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.7
@@ -1302,20 +1467,20 @@ models:
     health_check_timeout: 600
     capabilities:
       in:
-      - text
-      - image
+        - text
+        - image
       out:
-      - text
+        - text
       tools: true
       reranker: false
       context: 131072
     metadata:
       size: ~15.5 GB (mix Q3gud im) + ~0.9 GB mmproj 4x
       context: 131072
-      vram_usage: ~5.0 GB VRAM + ~11 GB RAM
+      vram_usage: "~5.0 GB VRAM + ~11 GB RAM"
       source: openbmb/MiniCPM-V-4.7-35B-A3B-gguf
-      kv_cache: q4_0/q4_0
-      chat_template: '--chat-template-file oficial (openbmb 19/out fix enable_thinking=False default; :think via setParamsByID kwargs). :think CONHECIDO-FLAKY: em prompts triviais o modelo escreve a RESPOSTA dentro do think, fecha e para sem content (eos=im_end correto id248046, open/close=248068/69, split do servidor correto = bug do modelo em modo think; upstream defaultou OFF e não re-quantizou; manter e monitorar)'
+      kv_cache: "q4_0/q4_0"
+      chat_template: "--chat-template-file oficial (openbmb 19/out fix enable_thinking=False default; :think via setParamsByID kwargs). :think CONHECIDO-FLAKY: em prompts triviais o modelo escreve a RESPOSTA dentro do think, fecha e para sem content (eos=im_end correto id248046, open/close=248068/69, split do servidor correto = bug do modelo em modo think; upstream defaultou OFF e não re-quantizou; manter e monitorar)"
       features:
         completion: true
         tools: true
@@ -1330,7 +1495,7 @@ models:
       context_length: 131072
       embedding_length: 2048
       quantization: Q3_K exps / Q4_K base
-      note: 'Linha MiniCPM-V 4.7 out/2026: card declara vence Qwen3.6-35B-A3B (score+tempo) — a liga disk 35B da casa é ornith 143.6 > occamy 141.4 > qwen3.8-distill 141.0, e a comparação declarada deles é vs a geração física anterior. mix_q3gud_im = recomendação OFICIAL do cookbook (experts Q3_K c/ imatrix sobre base Q4_K_M = 15.5GB ''matches Q4_K_M on benchmarks''); Q4_K_M puro = 21.17GB. -ot ffn_*_exps=CPU = rota de laguna/ornith (3B ativos, experts na RAM). M-RoPE canvas: PR #29416 (rope.section_order) — cafe v0.76 (ad57e28a1, 13/Out) MERGEADO e suporta; ik SEM #29416 ainda (fragment usa cafe). tools: true = card diz tool-calling nativo (SGLang/vLLM/llama.cpp/ollama); smoke valida. mmproj 4x = mais detalhe; 16x alternativa mais rápida. health 600s = MoE 15.5GB + mmproj cold start longo. Sampling: card oficial temp 0.7/top-p 0.9/top-k 100/rp 1.05 (regra da série). LES (Lookahead Expert Scheduling) e DSpark NÃO fazem parte: são do fork tc-mb/llama.cpp-omni (13-17 t/s no iPhone é o cenário experts-no-SSD; nossa rota experts-na-RAM não usa).'
+      note: "Linha MiniCPM-V 4.7 out/2026: card declara vence Qwen3.6-35B-A3B (score+tempo) — a liga disk 35B da casa é ornith 143.6 > occamy 141.4 > qwen3.8-distill 141.0, e a comparação declarada deles é vs a geração física anterior. mix_q3gud_im = recomendação OFICIAL do cookbook (experts Q3_K c/ imatrix sobre base Q4_K_M = 15.5GB 'matches Q4_K_M on benchmarks'); Q4_K_M puro = 21.17GB. -ot ffn_*_exps=CPU = rota de laguna/ornith (3B ativos, experts na RAM). M-RoPE canvas: PR #29416 (rope.section_order) — cafe v0.76 (ad57e28a1, 13/Out) MERGEADO e suporta; ik SEM #29416 ainda (fragment usa cafe). tools: true = card diz tool-calling nativo (SGLang/vLLM/llama.cpp/ollama); smoke valida. mmproj 4x = mais detalhe; 16x alternativa mais rápida. health 600s = MoE 15.5GB + mmproj cold start longo. Sampling: card oficial temp 0.7/top-p 0.9/top-k 100/rp 1.05 (regra da série). LES (Lookahead Expert Scheduling) e DSpark NÃO fazem parte: são do fork tc-mb/llama.cpp-omni (13-17 t/s no iPhone é o cenário experts-no-SSD; nossa rota experts-na-RAM não usa)."
   ornith-1.5-35b-heretic:
     name: Ornith 1.5 35B Heretic
     description: 35B-A3B MoE generalist assistant, abliterated (heretic TPE). 200K context, strong agentic and tool-calling behavior.
@@ -1394,10 +1559,10 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-      - text
-      - image
+        - text
+        - image
       out:
-      - text
+        - text
       tools: true
       reranker: false
       context: 200000
@@ -1421,7 +1586,7 @@ models:
       context_length: 262144
       embedding_length: 2048
       quantization: APEX I-Compact
-      note: 'vram detalhe: ~4.9 GB VRAM + ~4.7 GB RAM used | experts em page cache file-backed evictável via -cmoe (a RAM usada é cache — evictável quando o sistema pede) vram detalhe: MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s 0.74 05/10/2026: -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap 24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly. Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K).'
+      note: 'EDIT 04/nov pos-escadinha-19B: + --ssd-predict/--ssd-io-threads 4/--ssd-cache-mb 4096 no cmd — knobs inertes em -cmoe (sem streaming), ganho possivel ~+2 t/s (so medido na laguna, N=2=ruido); probe deste modelo pendente. vram detalhe: ~4.9 GB VRAM + ~4.7 GB RAM used | experts em page cache file-backed evictável via -cmoe (a RAM usada é cache — evictável quando o sistema pede) vram detalhe: MEDIDO 0.74 05/10: ~4.85GB VRAM + ~4.7GB RAM used no sistema (experts em page cache FILE-BACKED evictável via -cmoe) — -hmoe do 0.74 (GPU via PCIe) era MAIS LENTO: 17.6-24.3 t/s; decode -cmoe: 29.2-30.9 t/s 0.74 05/10/2026: -hmoe (GPU computa experts via PCIe + moe-cache VRAM) perdeu p/ CPU compute em 6GB — A/B medido: cmoe 29.9 t/s avg vs hmoe auto 17.6 / reserve 21.0 / overlap 24.3; moe-cache NÃO engaja em 6GB (reserva 1024MB + KV 131K < pool min). -cmoe = experts em page cache FILE-BACKED (RSS server 2.3GB, evictável) = desktop-friendly. Esboço Oct 4: turbo4 + 262K nativo; turbo8 user-verbatim NUNCA funcionou (removida a linha custom TURBO8_0). Se RAM apertar, fica só a variante ik (131K).'
   ornith-1.5-35b-heretic-fast:
     name: Ornith 1.5 35B Heretic Fast
     description: Ornith-1.5-35B com heretic (SC117 trial 62, KL 0.0105) + MTP graft shisa + template Sharp v22.5.0 (o Tiel da casa). Substituto de orn15+q36hc. Visão via mmproj BF16. APEX I-Compact 17.3GB.
@@ -1499,10 +1664,10 @@ models:
     health_check_timeout: 900
     capabilities:
       in:
-      - text
-      - image
+        - text
+        - image
       out:
-      - text
+        - text
       tools: true
       reranker: false
       context: 131072
@@ -1529,9 +1694,9 @@ models:
       note: 'vram detalhe: ~4.6-5GB VRAM estimado (mesma arch do orn15; medir no smoke) Heretic KL 0.0105 (moderado, sem eval público) + Sharp v22.5.0 externo (GGUF embutido NAO é sharp) + MTP graft shisa (nextn=1 verificado). Handle ''ornith-1.5-35b-heretic'' é TEMPORÁRIO de teste: se a régua de sanidade passar, vira o substituto de orn15+q36hc; se falhar, fragmento vai pra _disabled/ sem drama. KV validado 25/10 contra o cmd real: ctk/ctv q4_0 (large_cache_k/v) + hadamard K/V, backend ik — o attn_rot antigo era herança errada do orn15 (nunca existiu flag aqui). Sha256 do GGUF re-verificado pós reinstalação 24/10: 37f67861...e0e7 OK.'
   phonon-40m-multilingual:
     name: Phonon 40M Multilingual
-    description: Phonon Multilingual is a 40M text-to-speech model from Gradium that speaks English, French, German, Spanish and Portuguese from one set of weights, built on a flow-matching language model over Mimi audio latents. Made for low-latency on-device speech, it streams audio as it generates and draws its voices from a shared multilingual catalog.
+    description: "Phonon Multilingual is a 40M text-to-speech model from Gradium that speaks English, French, German, Spanish and Portuguese from one set of weights, built on a flow-matching language model over Mimi audio latents. Made for low-latency on-device speech, it streams audio as it generates and draws its voices from a shared multilingual catalog."
     tags:
-    - tts
+      - tts
     proxy: http://127.0.0.1:${PORT}
     checkEndpoint: /health
     cmd: ${env.HOME}/.local/bin/ptts-openai-server --addr 127.0.0.1:${PORT} --model ${env.HOME}/.llama-models/audio/phonon-40m-multilingual --quant q8_0 --lang pt --device cpu --voice-catalog ${env.HOME}/.llama-models/audio/phonon-voices
@@ -1540,9 +1705,9 @@ models:
     ttl: 300
     capabilities:
       in:
-      - text
+        - text
       out:
-      - audio
+        - audio
       tools: false
       reranker: false
       context: 0
@@ -1569,16 +1734,16 @@ models:
       quantization: q8_0
       note: 'Variante multilingue do Phonon 40M (en/fr/de/es/pt num checkpoint so; mesmo runtime, mesmas 9 camadas de flow, Mimi 32d @12.5 fps, 24 kHz). Params reais 50.5M; "40M" e o nome comercial. Handle servido com --lang pt (normalizacao PT-BR): o idioma e flag de startup, entao servir ingles/alemao exigiria outro handle com --lang proprio. RTF medido 0.093 em CPU (5.44 s de audio em 0.51 s), 385 MB RSS, zero VRAM. Upstream gradium-ai/xn-ptts (Rust): binario em ~/.local/bin/ptts-openai-server (build CPU-only, repo apagado apos instalar); build CUDA inviavel (cudarc 0.19.9 vs CUDA 13.4). Licenca CC BY-NC 4.0.'
       caveats:
-      - CC BY-NC 4.0 — uso nao comercial
-      - Servidor ptts-openai-server (Rust), nao llama-server nem audio.cpp
-      - Idioma fixo no startup (--lang pt) — as outras quatro linhas do modelo pedem handles proprios
-      - Nomes de voz no catalogo (voices.jsonl em ~/.llama-models/audio/phonon-voices); /v1/audio/voices nao passa pelo proxy do swap
-      - Sem clonagem de voz — checkpoint liberado traz so o decoder Mimi; vozes do catalogo
+        - CC BY-NC 4.0 — uso nao comercial
+        - Servidor ptts-openai-server (Rust), nao llama-server nem audio.cpp
+        - Idioma fixo no startup (--lang pt) — as outras quatro linhas do modelo pedem handles proprios
+        - Nomes de voz no catalogo (voices.jsonl em ~/.llama-models/audio/phonon-voices); /v1/audio/voices nao passa pelo proxy do swap
+        - Sem clonagem de voz — checkpoint liberado traz so o decoder Mimi; vozes do catalogo
   phonon-40m-pt:
     name: Phonon 40M Portuguese
-    description: Phonon is a 40M text-to-speech model from Gradium, built on a flow-matching language model over Mimi audio latents. Made for low-latency on-device Portuguese speech, it streams audio as it generates and carries twelve Brazilian Portuguese voices.
+    description: "Phonon is a 40M text-to-speech model from Gradium, built on a flow-matching language model over Mimi audio latents. Made for low-latency on-device Portuguese speech, it streams audio as it generates and carries twelve Brazilian Portuguese voices."
     tags:
-    - tts
+      - tts
     proxy: http://127.0.0.1:${PORT}
     checkEndpoint: /health
     cmd: ${env.HOME}/.local/bin/ptts-openai-server --addr 127.0.0.1:${PORT} --model ${env.HOME}/.llama-models/audio/phonon-40m-pt --quant q8_0 --lang pt --device cpu --voice-catalog ${env.HOME}/.llama-models/audio/phonon-voices
@@ -1587,9 +1752,9 @@ models:
     ttl: 300
     capabilities:
       in:
-      - text
+        - text
       out:
-      - audio
+        - audio
       tools: false
       reranker: false
       context: 0
@@ -1616,16 +1781,16 @@ models:
       quantization: q8_0
       note: 'Gradium Phonon 40M (flow-matching LM 9 camadas d_model 512 -> latentes Mimi 32d @12.5 fps -> decoder Mimi -> 24 kHz). Params reais 50.5M (flow + Mimi decoder); "40M" e o nome comercial. Servido por ptts-openai-server (Rust, upstream gradium-ai/xn-ptts): binario instalado em ~/.local/bin/ptts-openai-server, build CPU-only; o repo clonado foi apagado depois do build (re-clonar p/ rebuild), NAO por audio.cpp: o checkpoint so traz decoder (sem encoder Mimi), entao o port pro audio.cpp exigiria conversor de voz e conditioners. Decisao CPU-only: build CUDA falha (cudarc 0.19.9 nao conhece CUDA 13.4) e o modelo nao precisa de GPU — medido RTF 0.095 (5.44 s de audio em 0.52 s) com 8 threads, 380 MB RSS, zero VRAM. Licenca CC BY-NC 4.0 (nao comercial). Vozes: catalogo gradium/phonon-voices copiado para ~/.llama-models/audio/phonon-voices (12 pt-br baixadas; o catalogo completo tem 102). Vocabulario SPM, tokenizer.json + tokenizer.model no dir do modelo.'
       caveats:
-      - CC BY-NC 4.0 — uso nao comercial
-      - Servidor ptts-openai-server (Rust), nao llama-server nem audio.cpp
-      - Idioma fixo no startup (--lang pt); outro idioma exige outro handle com --lang diferente
-      - Nomes de voz no catalogo (voices.jsonl em ~/.llama-models/audio/phonon-voices); /v1/audio/voices nao passa pelo proxy do swap
-      - Sem clonagem de voz — o checkpoint liberado so traz o decoder Mimi; vozes vem do catalogo
+        - CC BY-NC 4.0 — uso nao comercial
+        - Servidor ptts-openai-server (Rust), nao llama-server nem audio.cpp
+        - Idioma fixo no startup (--lang pt); outro idioma exige outro handle com --lang diferente
+        - Nomes de voz no catalogo (voices.jsonl em ~/.llama-models/audio/phonon-voices); /v1/audio/voices nao passa pelo proxy do swap
+        - Sem clonagem de voz — o checkpoint liberado so traz o decoder Mimi; vozes vem do catalogo
   qwen3-tts:
     name: Qwen3-TTS 0.6B
     description: Qwen3 TTS is a text-to-speech model with voice cloning, served from the house voice library (Lucas, Hermes, Drácula, and more) via voice presets. OpenAI-compatible /v1/audio/speech endpoint.
     tags:
-    - tts
+      - tts
     proxy: http://127.0.0.1:${PORT}
     checkEndpoint: /health
     cmd: '${env.HOME}/git/audio.cpp/build/linux-cuda-release/bin/audiocpp_server
@@ -1642,9 +1807,9 @@ models:
     ttl: 300
     capabilities:
       in:
-      - text
+        - text
       out:
-      - audio
+        - audio
       tools: false
       reranker: false
       context: 0
@@ -1671,12 +1836,21 @@ models:
       quantization: q8_0
       note: 'Aposentado o stack torch-direct/FastAPI (port 8880). 10 voice presets da casa (voice_ref + reference_text). Clone nativo ok via presets — o --voice-ref CLI puro travou (bug p/ reportar). Language por nome: portuguese/english/etc.'
       caveats:
-      - Language codes por nome (portuguese) — NÃO pt-br (pt-br é o código dos modelos de áudio, ex. phonon-40m-pt)
-      - server-fleet.json obsoleto (o multi-model num server só não roteia via swap)
-      - Voz preset não-existente = fallback do modelo (voz default) — o UI lista só os válidos agora
+        - Language codes por nome (portuguese) — NÃO pt-br (pt-br é o código dos modelos de áudio, ex. phonon-40m-pt)
+        - server-fleet.json obsoleto (o multi-model num server só não roteia via swap)
+        - Voz preset não-existente = fallback do modelo (voz default) — o UI lista só os válidos agora
+# -------------------------------------------
+# QWEN3.8-FLASH-NEXT UD-IQ1_M — cafe-llama.cpp (lane experimental noturna)
+# Teste de viabilidade do "grandão": 125B parâmetros / 6B ativos + PLE n-gram 51B.
+# Experts ~20GB (IQ1_M) em RAM via -cmoe; PLE (26.8 GiB) streama do SSD
+# (--ngram-ssd DEFAULT-ON neste fork para arch qwen4exp); dense/KV/routers na GPU.
+# MTP draft externo quimmedes Q4_0 (2.2 GB). Arch qwen4exp — o -ssd full streaming
+# ABORTA nesse arch (GGML_ASSERT get_usage NULL, medido 27/out no Groot, mesma arch).
+# Descendente de: experimento Groot-65B-A6B (distill deste modelo, _disabled).
+# -------------------------------------------
   qwen38-flash-next-1m:
     name: Qwen3.8 Flash Next 1M
-    description: 'Teste do grandão — 125B/6B MoE do Qwen (linhagem qwen4exp, distill do Groot). Lane experimental: viabilidade de decode 4-8 t/s com experts IQ1_M residentes em RAM.'
+    description: "Teste do grandão — 125B/6B MoE do Qwen (linhagem qwen4exp, distill do Groot). Lane experimental: viabilidade de decode 4-8 t/s com experts IQ1_M residentes em RAM."
     cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
       --model ${models_dir}/qwen38-flash-next-ud-iq1m/UD-IQ1_M/Qwen3.8-Flash-Next-UD-IQ1_M-00001-of-00003.gguf
@@ -1697,7 +1871,11 @@ models:
 
       -ssd
 
-      --ssd-streaming-cache-experts 8
+      --ssd-predict
+
+      --ssd-io-threads 4
+
+      --ssd-cache-mb 4096
 
       -ngl 99
 
@@ -1724,16 +1902,16 @@ models:
     unlisted: true
     capabilities:
       in:
-      - text
+        - text
       out:
-      - text
+        - text
       tools: true
       reranker: false
       context: 16384
     metadata:
-      size: ~74.5 GiB (UD unsloth, split 3) + 2.2 GiB MTP draft
+      size: "~74.5 GiB (UD unsloth, split 3) + 2.2 GiB MTP draft"
       context: 16384 (GGUF declara 262144 — teto da casa por RAM/VRAM)
-      vram_usage: a medir (dense + KV + draft; régua 550-600 MiB livre = passa)
+      vram_usage: "a medir (dense + KV + draft; régua 550-600 MiB livre = passa)"
       source: unsloth/Qwen3.8-Flash-Next-GGUF (UD-IQ1_M) + quimmedes/Qwen3.8-Flash-Next-MTP-GGUF (Q4_0)
       kv_cache: q8_0/q8_0 (-kvu), draft q4_0
       features:
@@ -1751,7 +1929,7 @@ models:
       context_length: 262144
       embedding_length: 2560
       quantization: UD-IQ1_M
-      note: 'RESULTADO E DESTINO. Pesos removidos do disco 04/nov de manha POR DECRETO do dono apos o veredito do teste noturno (lane segue na frota, unlisted). VEREDITO: INVIAVEL nesta maquina como lane de uso. MEDIDAS (llama-server standalone, greedy, ctx 16k, q8_0 KV, 6 threads): (1) L1NOMTP (-cmoe, experts mmap/page-cache): decode 0.15 t/s QUENTE, prefill 0.21-0.28 t/s — kernels IQ1 na CPU + page-cache pressure. (2) L3C (-ssd --ssd-streaming-cache-experts 8): decode 1.19-1.55 t/s steady, prefill 0.83-1.04 t/s — 10x melhor que -cmoe; o piso 1.5 frio do Maya CONFIRMOU, o 4-8 aquecido NAO (IO-bound). (3) L3MTP (draft MTP quimmedes Q4_0 na CPU): decode 0.72 t/s — MTP NEGATIVO em regime IO-bound. (4) -ngld 99: OOM no draft CUDA0 (+1.9 GiB). VRAM estavel 1.3 GiB livre (regua passa). RAM ~75% (sob os 90%), zero thrash. Tool calling FUNCIONA (finish_reason=tool_calls, arguments JSON validos) mas exige enable_thinking false. Crash do -ssd c/ qwen4exp (Groot 27/out) NAO reproduz no build atual. CONTRASTE: Ornith 1.5 roda 20-34 t/s @131K na mesma maquina (15-25x). RESTORE (se um dia quant so-experts fechar -hmoe ~23.5G pinned em 31G, ou 2a NVMe): hf download unsloth/Qwen3.8-Flash-Next-GGUF --include "UD-IQ1_M/*" --local-dir ~/.llama-models/qwen38-flash-next-ud-iq1m/ + hf download quimmedes/Qwen3.8-Flash-Next-MTP-GGUF mtp-Qwen3.8-Flash-Next-Q4_0.gguf --local-dir ~/.llama-models/qwen38-flash-next-ud-iq1m/mtp/. Artefatos do teste (relatorio, launcher L1-L3, bench, monitor, probe) preservados em ~/.llama-models/qwen38-flash-next-lane/. Relatorio completo: RELATORIO-2026-11-04.md la.'
+      note: 'RESULTADO E DESTINO. Pesos removidos do disco 04/nov de manha POR DECRETO do dono apos o veredito do teste noturno (lane segue na frota, unlisted). EDIT 03-04/nov pos-probe-19B: cache-experts 8 → set vencedor da escada --ssd-predict + --ssd-io-threads 4 + --ssd-cache-mb 4096 (19B mediu 14.6 → 33-34 t/s com esses knobs; configemprestada SEM re-teste neste modelo — probe pendente do reinstall). VEREDITO DO TESTE NOTURNO: INVIAVEL nesta maquina como lane de uso. MEDIDAS (llama-server standalone, greedy, ctx 16k, q8_0 KV, 6 threads): (1) L1NOMTP (-cmoe, experts mmap/page-cache): decode 0.15 t/s QUENTE, prefill 0.21-0.28 t/s. (2) L3C (-ssd cache-experts 8): decode 1.19-1.55 t/s steady, prefill 0.83-1.04 t/s — IO-bound (0.4 GiB de experts random 4K por token). (3) L3MTP: decode 0.72 t/s — MTP NEGATIVO em IO-bound (2a confirmacao: escada 19B pé F tb negativa). PREFILL de 2k tokens = 35-40 min — inviavel pra agente INDEPENDENTE de knobs. VRAM 1.3 GiB livre (regua passa). RAM ~75%, zero thrash. Tool calling FUNCIONA (finish_reason=tool_calls) mas exige enable_thinking false. Crash do -ssd c/ qwen4exp NAO reproduz no build atual. RESTORE: hf download unsloth/Qwen3.8-Flash-Next-GGUF --include "UD-IQ1_M/*" --local-dir ~/.llama-models/qwen38-flash-next-ud-iq1m/ + hf download quimmedes/Qwen3.8-Flash-Next-MTP-GGUF mtp-Qwen3.8-Flash-Next-Q4_0.gguf --local-dir ~/.llama-models/qwen38-flash-next-ud-iq1m/mtp/. Artefatos e reatorio: ~/.llama-models/qwen38-flash-next-lane/.'
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
@@ -1790,9 +1968,9 @@ models:
     ttl: 60
     capabilities:
       in:
-      - text
+        - text
       out:
-      - text
+        - text
       tools: false
       reranker: false
       context: 131072
@@ -1817,55 +1995,318 @@ models:
       embedding_length: 2560
       quantization: Q4_K_M
       caveats:
-      - Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma
-      - Needs explicit translation prompt (Sprachspiel format works)
+        - Native Jinja template crashes llama.cpp — must use --no-jinja --chat-template gemma
+        - Needs explicit translation prompt (Sprachspiel format works)
       note: 'vram detalhe: ~3.5GB (model + cache) | model 2.4GB Q4_K_M + cache + compute Translation model. Sprachspiel translate mode default. 55 languages.'
+  whittle-45b:
+    name: Whittle Qwen3.8 45B-A3B
+    description: "David Aylward's (logic65) experimental research model. 45B MoE with 3B active, built from Qwen3.6-35B-A3B in the Qwen3.8-Flash-Next format, with an n-gram memory table and 128K context. Healed community checkpoint (28 Oct 2026) targeting long-tail knowledge and long-context reasoning; text only. Handles: plain answers directly; :think adds visible chain-of-thought."
+    tags:
+      - think
+      - tools
+    cmd: env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT} --model ${models_dir}/whittle-45b/Whittle-Qwen-3.8-45B-A3B-Q4_K_M.gguf --ctx-size 131072 --jinja --parallel 1 --cache-type-k q4_0 --cache-type-v q4_0 --flash-attn on -cmoe -ngl 99 -b 512 -ub 128 --lazy-mode off --temp 0.7 --top-p 0.8 --top-k 20 --repeat-penalty 1.05 --reasoning-budget 8192 --metrics
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: false
+          temperature: 0.7
+          top_p: 0.8
+        ${MODEL_ID}:think:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.7
+          top_p: 0.8
+    ttl: 0
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~25.24 GB (Q4_K_M)
+      context: 131072
+      vram_usage: ~4.9 GB VRAM + ~4 GB RAM
+      source: whittleOrg/Whittle-Qwen-3.8-45B-A3B-GGUF (Q4_K_M, conversao do autor)
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen4exp
+      parameters: 45100000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: Q4_K_M
+      note: "35B body (Qwen3.6-35B destilado p/ qwen4exp: GDN+FA interval 4, hyper-connections, 180 experts) + os 76 experts podados do Qwen3.6-35B recolocados (256/layer, 8 ativos + shared) + tabela n-gram hashada 10B (8 heads x 4.880.000 rows). Heal 28/out/2026: LoRA rank-16 nos experts 180-255 + rank-8 nos attention/SSM output (professor Qwen3.8-27B, 411 steps); ensinou niveis de reasoning-effort (xhigh default / low / medium via kwarg reasoning_effort — low ~18% menos tokens, mesma acuracia GSM8K). Medidas do autor NESSE Q4_K_M: HumanEval/HE+ 75.6/72.6, MBPP+ 65.9, tool-use 96/96, MATH-60 44 com 1690 tok/resposta, long-tail 111/252 vs 94 do 35B (p<0.001 — os experts restaurados compram vocabulario); GSM-50 40 vs 44 do 35B (queda real); healed PopQA 77/288 vs 54 do splice. Sem MTP (bloco max 39 nos 1022 tensores), sem vision/mmproj. RECEITA ATUAL: -cmoe -ngl 99 --lazy-mode off = receita comprovada da familia (whittle-35b ONYX: 391 ok, 19-23 t/s em 18/out); experts+tabela em page cache file-backed do SO (PERSISTE pos-restart — pedagio de recycle menor que o -ssd). REVERT 04/nov noite (dono): -ssd + knobs (--ssd-predict/--ssd-io-threads 4/ --ssd-cache-mb 4096) testado e REJEITADO — pedagio frio de ~137s pos-boot (fill SSD-bound, GPU 6%, fans parados, prompt_tokens 0 ate completar) e prefill de testchat travando 160s+; insuportavel interativamente. MEDIDO NO -cmoe (04/nov, pos-revert): 1a request pos-recycle = 15.5s (page cache do SO aquecido), 2a = 2.7s/40 tok; VRAM 4.03 GiB (66%), RAM 5.8 GiB usada. Numeros do -ssd (historia): boot 94s, 14.6 t/s decode aquecido, TTFT 2.8s, 4/4 tools, think toggle real, sem kpool crash (mesmo build onde o groot-65B mrd crasha — conversao do autor passa). KV q4_0/q4_0 intocado (regra do dono). Tabela n-gram = load-bearing: quantizada junto no Q4_K_M do autor (as medidas do card SAO nesse arquivo); nunca droppar linhas. --lazy-mode off OBRIGATORIO. Sampler da autora: 0.7/0.8/top_k 20/rp 1.05 — greedy decodifica em loop. PRATICA: ping de aquecimento apos todo boot da lane (config reload recicla e cobra o pedagio de novo). ttl 0 = nao desloca sozinha. Lane fast: pendente — Q4_K_M 25.24 GiB deve romper a banda de RAM pinada (~25-26/31 do precedente 35B-fast); candidato = Q3_K_M 19.85 GiB com -ot parcial 0-5 (receita whittle-35b-fast em _disabled)."
+# Hooks: ações na inicialização do llama-swap
+# preload: carrega modelos síncronamente antes de aceitar requests
+# Ideal para vLLM (startup lento = 30-90s sem warm-up)
+# NOTA: preloads desabilitados temporariamente — ocupam GPU e bloqueiam swap pra SGLang
+# Para reabilitar: descomente as linhas preload abaixo
 hooks:
   on_startup:
     preload: []
+      # - "qwen3.5-0.8b-vllm"
+      # - "lfm2.5-1.2b-vllm"
+
+# ============================================
+# SWAP MATRIX (v202+)
+# ============================================
+# O solver determina automaticamente qual combinação de modelos
+# pode rodar simultaneamente e quais descarregar quando necessário.
+#
+# ⚠️ REGRA CRÍTICA DE COEXISTÊNCIA:
+# Embedding e reranker (nomic, lfmemb, lfmcol) são CPU-only (~0.5GB total)
+# e NÃO consomem VRAM. Devem coexistir com QUALQUER LLM — leve ou pesado.
+# Todos os sets que agrupam LLMs DEVEM incluir as vars de embedding/reranker
+# no & (AND). Se uma var de embedding falta de um set, o solver trata
+# o embedding e o LLM como mutuamente exclusivos, causando ping-pong
+# de eviction (embedding evicta LLM cost 9+, LLM evicta embedding cost 1).
+#
+# Exemplo: heavy: "(qw36 | orn35) & (nomic | lfmemb | lfmcol)"
+# Veja references/new-model-workflow.md §6 para detalhes completos.
+# ============================================
+
 matrix:
   vars:
-    qpfim: qwen2.5-coder-1.5b-pollard
+    # Modelos pequenos
+    # q4: qwen3.5-4b  # removed Oct 11 2026 — qwen3.5-4b aposentado por decreto user (agents-a1-4b assume como padrão); handle órfão crasha config
+    # a1: agents-a1-4b  # OUTROU em Oct 12 2026 — régua disk N=5 fechada 124.4 (std 12.66; 03 zerado 1x, 01 tool_use 0 nas 5) — neohorse assumiu o trono 4B com dados (137.8)
+    # neo4: neohorse-1-4b  # APOSENTADO 21/out 2026 — sem uso na fleet; GGUF deletado, fragment em _removed/. (voltou 1x em Oct 12 e não pegou)
+    # q4x: qwen3.5-4b-262k  # disabled Sep 20 2026 — user: cafe fica pros MoEs, 4B segue no prod upstream/ik; ctx alto não importa nesse modelo
+    # m5a: minicpm5-1b-agentic  # disabled
+    # lfm8: lfm2.5-8b-a1b  # REMOVED Sep 10 2026 — GGUF deleted (bench 16/105, user confia no 2.6b); fragment em _removed/
+    # lfm26: lfm2.5-2.6b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/
+    # nb42: nanbeige4.2-3b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/
+    # Especialista logica formal (webAI, base Granite 4.2-3B da IBM) — lane nova, nao substitui
+    # twp: twil-lm3-pro  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER; restore: re-download webAI Q6_K + mv fragment
+    # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
+    # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
+    qpfim: qwen2.5-coder-1.5b-pollard  # reativado 16/out — FIM CPU-only (k2fim/k2p/k2 _disabled: GGUFs deletados no aperto SSD; restore: mv _disabled → models + vars)
+    # k2fim: k2-horizon-3.7b-pollard-fim  # _disabled 16/out — pesos deletados (aperto SSD)
+    # k2p: k2-horizon-3.7b-pollard  # _disabled 16/out — idem
+    # k2: k2-horizon-36b  # _disabled 16/out — pasta k2-horizon-36b deletada
+    # g12p: gemma4-12b-pollard  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%); restore: mv _disabled/ → models/
+    # GPT-2 124M — museum piece (2019 original, completion-only, ctx 1024)
+    # gpt2: gpt-2-124m  # desativado 17/09 (disk; restore: _disabled)
+    # gpt2xl: gpt-2-xl  # DISABLED Oct 3 2026 - GGUF deleted (pedido user); fragment em _disabled/; restore: descomentar + mv fragment
+    # Manacá 1B Instruct — PT-BR do zero (LNCC × NII/LLM-jp), pesquisa experimental
+    # man1: manaca-1b-instruct  # DISABLED Oct 3 2026 - GGUF deleted (pedido user); fragment em _disabled/; restore: descomentar + mv fragment
+    # inst: instella-moe-16b  # disabled
+    # Vision
     ocr: glm-ocr
-    mcv35: minicpm-v-4.7-35b
-    lfm24: lfm2.5-24b-a2b
-    lfm24f: lfm2.5-24b-a2b-fast
-    orn35: ornith-1.5-35b-heretic
-    orn35f: ornith-1.5-35b-heretic-fast
-    lag: laguna-xs-2.1
+    # MiniCPM-OCR 1.0 (OpenBMB out/2026, arch qwen35) — doc parse (text/table/formula)
+    # DSpark draft (arch dflash) acoplado no cmd (nao carrega standalone)
+    # mocr: minicpm-ocr-1.0  # _disabled 02/nov 2026 (pesos off disk; fragment em _disabled/)
+    # uocr: unlimited-ocr  # disabled Aug 2026 — unused
+    # qwvl: qwen3-vl-4b  # REMOVED Sep 10 2026 — GGUF deleted (A/B lfm2.5-vl-3b pendente pro enhance do H3); fragment em _removed/
+    # lfmvl3: lfm2.5-vl-3b  # APOSENTADO 27/out/2026 a pedido do dono — fragment em _disabled/; A/B p/ enhance do H3 cancelado junto
+    # MiniCPM-V 4.7 (out/2026): denso 1B (Q8_0, ~2.2GB VRAM) + MoE 35B-A3B (mix oficial, experts RAM)
+    # PR #29416 (M-RoPE rope.section_order): cafe v0.76 (13/Out) mergeou; ik ainda sem
+    # mcv1: minicpm-v-4.7-1b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/; o 35b (mcv35) fica
+    mcv35: minicpm-v-4.7-35b  # ATIVO Oct 13 2026 noite: GGUF re-baixado (mix 15.5GB + mmproj 4x 0.91GB) + cafe v0.76 (ad57e28a1) mergeou #29416 (M-RoPE OK) — backend cafe
+    lfm24: lfm2.5-24b-a2b  # ATIVO Oct 13 2026 — flag-ship LiquidAI MoE 24B/2.45B ativo (LiveClaw 48.09 > qwen3.6-35b 38.19), UD-Q4_K_XL 14.9GB, -cmoe receita laguna. Sem :think (always-think native). Régua N=5 na fila
+    lfm24f: lfm2.5-24b-a2b-fast  # o challenger ik (-ot exps CPU) — A/B pós-smoke do cafe
+    # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
+    orn35: ornith-1.5-35b-heretic  # 35B-A3B heretic — papel code do sprach (enable_thinking por handle)
+    orn35f: ornith-1.5-35b-heretic-fast  # reativado 24/out 2026 — challenger ik (MTP + defer/prefetch); fora dos sets, igual ao lfm24f/qwen-fast
+    # flintf: flint-40b-a2b-fast  # APOSENTADO 27/out/2026 pelo dono ("nao vale vs resto") — lanes desativadas; fragment em _disabled/; rm do GGUF pendente de OK (destrava disco pro Groot 65B)
+    # flint: flint-40b-a2b  # APOSENTADO junto 27/out/2026
+    # groot: groot-19b-a3b  # REMOVIDO 27/out/2026 — lane cafe -cmoe lenta demais na regua do dono; fragment em _removed/
+    # grootf: (fundido no groot 27/out/2026 — o dono pediu id sem sufixo; unico backend ativo e o ik)
+    # groot: groot-19b-a3b  # APOSENTADO 28/out/2026 pelo dono — bug de re-serialização do parser de tool calls do ik; fragment em _disabled/; GGUF deletado (re-download via HF, fonte no fragment)
+    # qw38d: qwen38-27b-defiance  # RETIRADO 25/out/2026 c/ honras — testchat: 3.2 t/s sofrivel; 2ª aposentadoria da família (1ª ago/26 'too slow'); GGUF deletado (REINSTALAR-DEFIANCE-2026-10-25.md)
+    # qw38df: qwen38-27b-defiance-fast  # RETIRADO junto — MTP 4.3 t/s não salvou na régua do dono; fragment em _disabled/
+    # bs2: bonsai2-9b  # APOSENTADO 31/10/2026 (dono) — GGUFs (PTQ1_0 + PQ2_0-MTP + mmproj) deletados, fragments _disabled/; papel query do sprach morre com ele
+    # g4: gemma4-e2b  # REMOVED Sep 10 2026 — GGUF QAT deleted (maturidade em outros modelos); fragment em _removed/
+    # ling: ling-3.0-tiny  # disabled Aug 2026 — doom loop in Pi agentic bench
+    # Pesados (offload)
+    # aw: agentworld-35b  # disabled Aug 2026
+    # orn15: MERGED no heretic 05/10 (fragment em _disabled/ornith-1.5-35b-onyx-old.yaml; GGUF deletado)
+    # glm: glm-4.7-flash  # REMOVED Sep 09 2026 — GGUF deleted (14.6GB), cloud/OpenRouter cobre fallback; fragment em models/_removed/
+    # q36: qwen3.6-35b-a3b-heretic  # APOSENTADO 02/nov 2026 (dono) — vocab identico ao ornith (248.320, headers GGUF); GGUFs deletados; fragment em _removed/; reinstall: HF Qwen/Qwen3.6-35B-A3B + quant APEX-I-Mini (mudler/positron)
+    # Baseline de codigo APEX I-Compact (sem heretic, sem MTP) + variante cafe; Oct 1 2026
+    # qc30/qc30f: REMOVED Oct 06 2026 — qwen3-coder aposentado (cafe + fast; GGUF 14.7GB deleted).
+    # N=5 canônico: 118.0/155 (piso 106). Fragments em _removed/
+    # q36hc: MERGED em q36 05/10 (o "-cafe" virou o heretic oficial; o ik é -fast em _disabled/)
+    # occ: occamy-1.0  # REMOVED Sep 27 2026 — bench 141.4±4.4 N=5, abaixo do ornith; GGUF deleted 15.4GB; fragment em _removed/
+    lag: laguna-xs-2.1  # REATIVADO 01/11/2026 via APEX I-Compact (hipotese do dono: a trava de set-prompt de Sep era sintoma do spike de RAM do ik-era; cafe rebasado 26/10) — restore do Q4_K_M oficial em _removed/laguna-xs-2.1.yaml
+    # k2: k2-horizon-36b  # _disabled 16/out — pasta k2-horizon-36b deletada; NORMAL era cafe 0.75 @131K
+    # k2h: k2-horizon-7b  # REMOVED Sep 16 2026 — errático em chat (idioma/identidade, tool-loop instável); GGUF a decidir; fragment em _removed/
+    # nex25: nex-n2.5-mini  # REMOVED Sep 10 2026 — GGUF deleted (21GB); rejeitado na régua: 34/75 phase1, think-loop em tasks c/ deliverable, MAS 25/25 no 06-sec web-only (nicho web-research); re-avaliar se mudler soltar APEX/ONYX; fragment em _removed/
+    # Bonsai 1-bit disabled Aug 2026 — user request
+    # bonsai1: bonsai-27b-1bit
+    # neo4: neohorse-1-4b  # removed Oct 11 2026 — neohorse aposentado + GGUF fora; handle órfão crasha o config (matrix refs unknown model)
+    # Qwen3.8-27B dense 1-bit disabled Aug 2026 — too slow, user never uses
+    # qw38: qwen3.8-27b
+    # qw38p: qwen3.8-27b-pollard  # removed Aug 30 2026 — 2.75 tok/s, superseded by bonsai-27b (10x faster, same class)
+    # Qwen3.8-27B GSQ-RCO IQ2_S-mtp removed Sep 20 2026 — 3.6 t/s ainda lento demais pro uso; GGUF deleted; fragment em _disabled/
+    # q38g: qwen3.8-27b-gsq
+    # Bonsai removed Sep 20 2026 — user nunca usa; GGUF deleted; fragment em _disabled/
+    # bonsai: bonsai-27b
+    # Tradução
     tg: translategemma-4b
+    # Português jurídico (Qwen3.5-9B LoRA, instruct)
+    # athenas: athenas-symbiote-9b  # disabled
+    # Audio
+    # asr: qwen3-asr-0.6b  # disabled
     ttsext: qwen3-tts
+    # ASR (speech-to-text) do Kilo Code — CPU-only, 0 VRAM. Fica em grupo AND
+    # PROPRIO em todos os sets (ver as sets abaixo): assim ele nunca evicta um
+    # LLM vivo e nunca e evictado por um. Diferente do grupo OR (lfmcol|eg2),
+    # onde os dois embeddings sao alternativas um do outro.
     pkstt: parakeet-tdt-0.6b-v3
+    # Embedding
+    # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
+    # lfmemb: lfm2.5-embedding-350m  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER (nome corrigido p/ "LFM2.5 Embedding 350M"); colbert+eg2 cobrem embed
+    # nemb: nemotron-3-embed-1b  # APOSENTADO 21/out 2026 — sprach migrou p/ eg2 em 06/10; GGUF deletado, fragment em _removed/
+    # Multimodal embedding (Google, 740M, texto+img+audio+video, 768d MRL, Apache 2.0)
     eg2: embeddinggemma-2
+    # Reranker (late-interaction, CPU-only)
     lfmcol: lfm2.5-colbert-350m
+    # Decision models (System One scorers, /v1/systemone) — exclusive no
+    # matrix (fora de sets); judge do laya-snake; routing #1195 pending
+    # laya: DESINSTALADO 20/out/2026 — recall@3 21% no harness do seletor
+    #   (4 falsos no controle negativo, prior fixo) e ruído ~0.5 como juiz do
+    #   snake; julia-1 cobre o posto com 400x mais discriminação. Fragment em
+    #   _disabled/ + laya.HELPER.md; pesos apagados (805MB, ggml-org re-download)
     julia: julia-1
-    sp26: spark-x2.6-4b
-    lfm317: lfm3-1.7b
+    # MiniCPM-OCR-Jev (OpenBMB) — scorer 0-1 de qualidade de candidatos OCR
+    # (2 scores via pooled output, UMA passada). CPU-only (doutrina decision).
+    # Uma pergunta fixa (prompt no template do GGUF), rota /v1/systemone.
+    # mojev: minicpm-ocr-jev  # _disabled 02/nov 2026 (pesos off disk; fragment em _disabled/)
+    sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
+    # nbe4: nemotron-bolt-e4b  # APOSENTADO 31/10/2026 (dono) — GGUFs (UD-Q4_K_XL 5.1G + dflash draft) deletados, fragment _disabled/; restore: re-download unsloth (GATED)
+    lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + :think), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despejava (ping-pong cravado no journal 30/out 14:53)
+    # sn9: sensenova-loop-9b  # RETIRADO 31/out/2026 (fragment em _disabled/, restore no header do fragment)
+    # sn9v: sensenova-loop-9b-vision  # RETIRADO junto # fragment em _disabled/
+
   sets:
-    small_vision: lfm24 & (lfmcol | eg2) & pkstt
-    small_embed: (lfm24 | sp26 | lfm317) & (lfmcol | eg2) & qpfim & pkstt
-    small_only: (lfm24 | sp26 | lfm317) & pkstt
-    vision_only: ocr | mcv35
-    vision_embed: (ocr | mcv35) & (lfmcol | eg2) & pkstt
-    heavy: (lfm24 | mcv35 | orn35) & (lfmcol | eg2) & qpfim & pkstt
-    translate_only: tg
-    tts_external: ttsext
-    embed_only: lfmcol & eg2 & pkstt
-    rerank_only: lfmcol
-    rerank_embed: lfmcol & eg2 & pkstt
+    # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
+    small_vision: "lfm24 & (lfmcol | eg2) & pkstt"  # 31/10: twp aposentado (single member, expressão reescrita)
+
+    # LLM pequeno + Embedding (sem vision)
+    # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
+    # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
+    small_embed: "(lfm24 | sp26 | lfm317) & (lfmcol | eg2) & qpfim & pkstt"  # 31/10: twp + nbe4 aposentados
+
+    # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
+    small_only: "(lfm24 | sp26 | lfm317) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados
+
+    # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
+    # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
+
+    # Vision models (sozinhos ou com embedding/reranker)
+    vision_only: "ocr | mcv35"  # mocr _disabled 02/nov 2026
+    vision_embed: "(ocr | mcv35) & (lfmcol | eg2) & pkstt"  # mocr _disabled 02/nov 2026
+
+    # Modelos médios + Embedding/Reranker
+    # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
+    # medium: REMOVIDO 21/out 2026 — a lane existia só para o laguna; com ele fora, o heavy cobre (lfm24 é MoE 24B/2.45B ativo, não precisa de lane "média"). Para ressuscitar: descomentar
+    # medium: "(lfm24) & (lfmcol | eg2)" # k2 _disabled 16/out (pesos deletados); q36 REMOVED Oct 8 2026 — aposentado (user decision); qc30 REMOVED Oct 6 2026 — coder aposentado; g12p REMOVED Oct 1 — disk
+
+    # Modelos pesados (offload) + Embedding/Reranker + CPU completion
+    # qw38 removed Aug 2026 — model disabled
+    # bonsai1 removed Aug 2026 — user request (reactivated as bonsai, Sep 2026)
+    # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
+    # glm removed Sep 09 2026 — see vars note
+    # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
+    heavy: "(lfm24 | mcv35 | orn35) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim (regressão: o rewrite derrubou o FIM do heavy; ping-pong coder<->35B medido no journal — restauro da intenção 16/out documentada no small_embed) | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4)
+
+    # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
+    # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
+    # bs2_embed: "bs2 & (lfmcol | eg2) & pkstt"  # APOSENTADO 31/10/2026 junto do bs2 (papel query do sprach); k2/k2p/k2fim _disabled 16/out; q36 REMOVED Oct 8; orn15 merged no heretic
+
+    # Tradução (leve, cabe com embedding/reranker)
+    # translate_embed removed (hmt uninstalled)
+    translate_only: "tg"
+
+    # External TTS (separate process, same GPU)
+    tts_external: "ttsext"
+
+    # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
+    # AND entre todos os CPU-only: coexistem (zero VRAM) — OR evitaria em ping-pong
+    embed_only: "lfmcol & eg2 & pkstt"  # 31/10: lfmemb aposentado
+
+    # Reranker sozinho (late-interaction reranking, CPU-only)
+    rerank_only: "lfmcol"
+
+    # Reranker + Embedding (two-stage retrieval: dense → rerank)
+    rerank_embed: "lfmcol & eg2 & pkstt"  # 31/10: lfmemb aposentado (OR vira single member)
+
+  # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
+    # MiniCPM-V 4.7: barato de recarregar (1B 2.2GB GPU; 35B MoE ~11GB RAM, page cache)
     mcv35: 4
-    lag: 9
+    # orn15: 9  # merged no heretic 05/10
+    # glm: 9  # REMOVED Sep 09 2026 — model deleted
+    # q36: 9  # APOSENTADO 02/nov 2026
+    # k2: 9  # _disabled 16/out (pesos deletados)
+    # qc30: 7  # REMOVED Oct 06 2026
+    # occ: 9  # REMOVED Sep 27 2026 — model deleted
+    lag: 9  # REATIVADO 01/11/2026 (o cost 9 original da era prod)
+    # nex25: 9  # REMOVED Sep 10 2026
+    # qw38: 7  # disabled Aug 2026 — Qwen3.8-27B removed
+    # qw38p: 7  # removed Aug 30 2026 — Pollard superseded by bonsai-27b
+    # q38g: 8  # removed Sep 20 2026
+    # bonsai: 8  # removed Sep 20 2026
+    # bonsai2: 9  # re-instalado Oct 10 2026 — handle inativo até bench; 27B denso denso = caro de recarregar
+    # neo4: 2  # APOSENTADO 21/out 2026
+    # a1: 2  # OUTDO Oct 12 2026 (régua disk fechada 124.4)
+    # g4: 3  # REMOVED Sep 10 2026 — model deleted
     ttsext: 4
+    # ASR do Kilo: CPU-only, 0 VRAM, ~1 s pra subir. Custo 1 = e o primeiro
+    # a ser evictado se ainda assim houver conflito de coexistencia.
     pkstt: 1
     ocr: 3
-    lfm24: 6
-    orn35: 9
-    orn35f: 9
+    # mocr: 3  # _disabled 02/nov 2026
+    # mojev: 1  # _disabled 02/nov 2026
+    # qwvl: 3  # REMOVED Sep 10 2026
+    # lfmvl3: 3  # APOSENTADO 27/out/2026
+    # q4: 2  # removed Oct 11 2026 junto do modelo (aposentadoria qwen3.5-4b)
+    # a1: 2  # OUTDO Oct 12 2026 — régua disk 124.4 fechada; neohorse retomou
+    # q4x: 2  # disabled Sep 20 2026
+    # lfm8: 2  # REMOVED Sep 10 2026
+    # lfm26: 2  # APOSENTADO 21/out 2026
+    lfm24: 6  # LFM 24B: experts ~13.7GB RAM no -cmoe = reload caro (q4_k_xl lento de remmap); acima do k2p(7) abaixo do heavy 9? medio-alto
+    orn35: 9  # 35B-A3B MoE (17GB) — recarregar é caro
+    orn35f: 9  # o fast/challenger ik — mesmo GGUF, mesmo custo de reload
+    # flintf: 9  # APOSENTADO 27/out/2026
+    # flint: 9  # APOSENTADO 27/out/2026
+    # groot: 7  # APOSENTADO 28/out/2026 pelo dono — bug de re-serialização do parser de tool calls do ik (args unescape, quebrava agêntico no Kilo); fragment em _disabled/; GGUF deletado
+    # qw38d: 7  # RETIRADO 25/out/2026
+    # qw38df: 7  # RETIRADO 25/out/2026
+    # bs2: 4  # APOSENTADO 31/10/2026 junto do modelo (ternary 9B + fork Prism; reload médio)
+    # lfm24f: 6  # (o fast/challenger ik — mesmo custo de reload; fora dos sets, vivendo só no A/B)
+    # twp: 2  # APOSENTADO 31/10/2026 junto do modelo
+    # eq2: 2  # REMOVED Sep 10 2026
+    # eq4: 3  # REMOVED Sep 10 2026
     qpfim: 1
-    lfm317: 2
+    lfm317: 2  # 1.7B Q8 ~2GB GPU — reload rápido; num conflito real o pollard (cost 1) sai antes
+    # sn9: 4  # RETIRADO 31/out/2026 junto do fragment
+    # sn9v: 4  # RETIRADO junto
+    # g12p: 3  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%)
+    # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
+    # gpt2xl: 3  # DISABLED Oct 3 2026 - gpt2xl removido
+    # nomic: 1  # REMOVED Sep 10 2026
+    # lfmemb: 1  # APOSENTADO 31/10/2026 junto do modelo
+    # nemb: 1  # APOSENTADO 21/out 2026
     eg2: 1
     lfmcol: 1
     tg: 2
+    # Decision models (juizes /v1/systemone) - recarregam em ~2s, evictam primeiro
+    # laya: 1  # DESINSTALADO 20/out/2026
     julia: 1
-    sp26: 2
+    sp26: 2  # 3,54 GB denso — reload barato
+    # nbe4: 3  # APOSENTADO 31/10/2026 junto do modelo (5,06 GB denso — reload medio)
