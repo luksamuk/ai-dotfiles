@@ -819,7 +819,7 @@ models:
       - vis
       - think
       - tools
-    cmd: env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT} --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf --no-mmproj-offload --jinja --parallel 1 --ctx-size 65536 --cache-type-k q4_0 --cache-type-v q4_0 --flash-attn on -ssd --ssd-predict --ssd-io-threads 4 --ssd-cache-mb 4096 -ngl 99 -b 512 -ub 128 --temp 1.0 --top-k 20 --top-p 0.95 --metrics
+    cmd: env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT} --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf --no-mmproj-offload --jinja --parallel 1 --ctx-size 65536 --cache-type-k q4_0 --cache-type-v q4_0 --flash-attn on -cmoe -ngl 99 -b 512 -ub 128 --temp 1.0 --top-k 20 --top-p 0.95 --metrics
     filters:
       stripParams: temperature, top_p
       setParamsByID:
@@ -873,7 +873,7 @@ models:
       quantization: Q4_K_M
       embedding_length: 2048
       context_length: 262144
-      note: 'LANE NORMAL de 04/nov — cafe-llama.cpp via -ssd streaming + knobs vencedores da escada do proprio modelo (probe standalone 03/11: 8.2 frio / 14.6 quente defaults → 24-25 c/ predict → 31 c/ io-threads 4 → 33-34 c/ cache-mb 4096; essa aqui é a config E medida NESTE GGUF). -ssd carregou a familia no build d33bcfd7e (build 12256) — o crash de 27/out nao reproduz. TOOLS PROVADO 04/nov via rota do swap: 4/4 calls paralelos (2 tools x 2 cidades), JSON limpo, finish=tool_calls — tools true. Parallel tool calls do lado do cafe: por request param (parallel_tool_calls: true). MTP/spec NEGATIVO em IO-bound (2x medido) — nao habilitar. KV Hadamard (TurboQuant) e exclusivo do path ik (ver groot-19b-a3b-fast); aqui KV q4_0 puro. VRAM 4.5-4.9 GB probe 03/11; RSS ~10 GB = cache ssd 4 GiB residente + mmap. Historico da lane ik em _disabled→fast: aposentada 28/out pelo bug de re-serializacao do parser de tools do ik. Base pra lane do 65B: mesma familia de knobs.'
+      note: 'LANE NORMAL — TESTE -cmoe 04/nov noite (dono decretou mesmo criterio do whittle-45b: pedagio frio do -ssd pos-boot e inaceitavel interativamente). Historico: -cmoe medido 24,2 t/s no build 804ee29c (27/10) vs 33-34 t/s do -ssd+knobs (escada 03-04/nov, ganho real em steady-state mas com pedagio frio ~2min pos-recycle). Aposta: perder t/s, ganhar page cache do SO persistente. Veredito do dono decide: se nao der certo, lane non-fast descartada e o 19B vive so no groot-19b-a3b-fast (ik, 37 t/s). TOOLS PROVADO 04/nov via rota do swap (no -ssd): 4/4 calls paralelos, JSON limpo, finish=tool_calls — tools true. Parallel tool calls do lado do cafe: por request param (parallel_tool_calls: true). MTP/spec NEGATIVO em IO-bound (2x medido) — nao habilitar. KV Hadamard (TurboQuant) e exclusivo do path ik (ver fast); aqui KV q4_0 puro. Historico da lane ik: aposentada 28/out pelo bug de re-serializacao do parser de tools do ik (args unescape), reativada como -fast 04/nov.'
       caveats:
         - 'ctx 65536 no primeiro ciclo; nativo 262K/KV q4_0 ~10 full layers — subir com medicao'
   groot-19b-a3b-fast:
