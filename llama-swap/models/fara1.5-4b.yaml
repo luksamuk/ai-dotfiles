@@ -1,0 +1,94 @@
+fara1.5-4b:
+  name: Fara 1.5 4B
+  description: 'Agente CUA de BROWSER da Microsoft Research (famila Fara1.5, MIT). Visao pura por
+    screenshot (sem DOM), cliques por coordenada em pixel, tool calls estruturados. SFT sobre
+    Qwen3.5-4B com trajetorias FaraGen1.5. WebVoyager 80.8 / Online-Mind2Web 57.3 (card oficial).
+    Paper arXiv 2606.20785. Especialista de browser — nao treina desktop geral (sem OSWorld no card).'
+  tags:
+  - vis
+  - tools
+  - cua
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/fara1.5-4b/Fara1.5-4B-Q4_K_M.gguf
+
+    --mmproj ${models_dir}/fara1.5-4b/mmproj-Fara1.5-4B-f16.gguf
+
+    --ctx-size 65536
+
+    --jinja
+
+    --parallel 1
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -ngl 99
+
+    --repeat-penalty 1.05
+
+    -b 512
+
+    -ub 128
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 65536
+  metadata:
+    size: 2.88 GB (Q4_K_M) + 0.63 GB mmproj-F16
+    context: 65536
+    vram_usage: ~3.6 GB (pesos+mmproj) + ~0.6 GB KV @64K (q4_0, so 8/32 layers FULL attn)
+    source: bartowski/Fara1.5-4B-GGUF (imatrix, llama.cpp b10087) + mmproj-F16 (672423584 bytes exatos)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35
+    parameters: 4000000000
+    active: 4000000000
+    layers: 32 (full_attention_interval=4 — 8 camadas full attn, resto SSM)
+    embedding_length: 2560
+    context_length: 262144
+    quantization: Q4_K_M
+    note: 'SMOKE 05/nov (llama.cpp b10087 upstream, ${llama_server}): boot ~3s, texto PT ok,
+      TOOL CALL no wire OpenAI JSON nativo (browser_click x/y -> tool_calls + id + finish=tool_calls,
+      SEM adaptador — cua-driver/DSH consome direto), vision ok (descreveu fundo laranja + quadrado
+      azul canto sup-esq). BUG achado+fixado: caminho de visao em loop de repeticao 3x com vazamento
+      do fechador do think no content — fix --repeat-penalty 1.05 (182 -> 59 tokens, finish stop).
+      Sempre-pensa confirmado: enable_thinking:false NAO desliga o CoT (treinado sempre no card),
+      o kwarg so esvazia o prefill; raciocinio curto (53-144 chars), impacto de latencia pequeno.
+      Velocidade warm: ~30 t/s e2e (300 tok / 10.2s) com CoT + imagem no prompt. Card NAO declara
+      escada de reasoning_effort (0 ocorrencias no template embutido, verificado via gguf_header_probe — template do GGUF = 1:1 com chat_template.jinja do repo, 7756 chars). Dual-mode booleano enable_thinking da familia Qwen3.5 (na pratica: sempre-pensa). Samplers: card
+      NAO declara temperature/top_p (generation_config so tem EOS) — pin 0.6/0.95 e pragmatico,
+      ajustar apos smoke. Deploy a 64K (card 262K): hibrido SSM mantem KV so nas 8 camadas full
+      attn (~9KB/token q4_0), 64K segura historicos multi-screenshot e cabe na 3050 6GB com folga;
+      subir p/ 131K custa ~+0.6GB. Harness do treino (fara CLI/MagenticLite) emite outro wire,
+      mas o fio OpenAI JSON funcionou nativo no teste. EOS ids 248044/248046. GGUF em ~/.llama-models/fara1.5-4b/.'
