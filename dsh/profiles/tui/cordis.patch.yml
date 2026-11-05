@@ -51,8 +51,23 @@
         - id: nex-n2.5-mini
           reasoningEfforts:
             'off': null
+            low: low
             medium: medium
             high: high
+            xhigh: xhigh
+            max: max
+          contextWindow: 131072
+          input:
+          - text
+          - image
+        - id: nex-n2.5-mini-fast
+          reasoningEfforts:
+            'off': null
+            low: low
+            medium: medium
+            high: high
+            xhigh: xhigh
+            max: max
           contextWindow: 131072
           input:
           - text
@@ -212,4 +227,6 @@
       transport: stdio
       command: cua-driver
       args: ['mcp']
+      env:
+        CUA_DRIVER_RS_ENABLE_WAYLAND: '1'
       failOnStartupError: true
