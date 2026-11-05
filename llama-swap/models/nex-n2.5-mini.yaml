@@ -55,8 +55,11 @@ nex-n2.5-mini:
     note: 'Computer-use lane com VISION. APEX Mini 12.54 GiB + mmproj Q8_0 573 MB (experts IQ2_S mid, dono: ''Q1 no meio é
       complicado'' — I-Micro IQ1_M rejeitado). I-Compact 15.4G + mmproj BF16 906MB OOM na 3050 6GB a 131K; Mini + mmproj Q8_0
       570MB = 4.4G VRAM de 6G, folga. reasoningEfforts low/med/high/xhigh/max no wire (medidos: low=9tok, high=117tok). Vision
-      probed: descreveu retângulo verde-limão vibrante. Boot ~3s via cafe -cmoe. RETIFICAÇÃO 05/nov (teste no wire, kwarg E
-      top-level): low/med/xhigh/max = aliases do default-adaptive (a medição low=9tok não reproduz; único nível real é high) —
-      mapa enxugado pra off(default)/high; none NUNCA wirear (parser engole todo o texto como reasoning, content vazio).'
+      probed: descreveu retângulo verde-limão vibrante. Boot ~3s via cafe -cmoe. RETIFICAÇÃO 05/nov (card oficial nex-agi/Nex-N2.5-mini +
+      teste no wire kwarg E top-level): o card declara SÓ none(non-thinking)/medium(default-adaptive)/high(always-think) — low/xhigh/max
+      NÃO EXISTEM no card e no wire caem no ramo default (escada cafe N=1: 701/1321/1284/916 chars = ruído do sampler em torno do
+      default 1073, sem monotonia; a medição antiga low=9tok não reproduz). Mapa enxugado pra off(null = não manda nada = medium do
+      card)/high; none está NO CARD mas no nosso stack llama-server quebra o parser (content vazio, resposta inteira vira reasoning) —
+      não exposto.'
   reasoningEfforts:
     high: high
