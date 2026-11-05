@@ -613,7 +613,10 @@ def fetch_available_models():
             source = llamaswap.get("source", "")
             kv_cache = llamaswap.get("kv_cache", "")
             health_check_timeout = llamaswap.get("health_check_timeout", 0)
-            
+            # Efforts declarados no fragment (metadata.reasoningEfforts — exposto
+            # canonicamente no meta.llamaswap desde 05/nov; convenção da casa).
+            reasoning_efforts = llamaswap.get("reasoningEfforts") or {}
+
             model_info = {
                 "id": model_id,
                 "name": name,
@@ -629,6 +632,7 @@ def fetch_available_models():
                 "source": source,
                 "kv_cache": kv_cache,
                 "health_check_timeout": health_check_timeout,
+                "reasoning_efforts": reasoning_efforts,
             }
             
             if is_think:
@@ -754,6 +758,8 @@ class StreamingChat:
         self._pepe_turbo_backend_think_id = None
         self.supports_reasoning = False
         self.use_thinking_variant = False  # True se variante :think foi selecionada
+        # Effort selecionado do mapa reasoningEfforts do fragment (None = off)
+        self.selected_effort = None
         self.always_thinks = False        # True se modelo sempre pensa (ex: GPT-OSS Harmony)
         self.supports_vision = False
         self.supports_audio = False
@@ -1012,7 +1018,46 @@ class StreamingChat:
             border_style="cyan"
         ))
         
-        if selected_model.get("has_think_variant"):
+        # Etapa 2a: Seleção de effort (fragment declara metadata.reasoningEfforts).
+        # Mapa {nível: valor-no-fio}; valor None (ex: off: null) = não manda nada.
+        # Wire canônico: `reasoning_effort` top-level no body (upstream llama.cpp;
+        # probe nex-fast 05/nov mediu top-level ok também na lane ik).
+        efforts_map = selected_model.get("reasoning_efforts") or {}
+        if efforts_map:
+            effort_choices = [{"name": "💤 off (não manda nada — default do template)", "value": ""}]
+            for lvl, wire_val in efforts_map.items():
+                label = f"🧠 {lvl} (fio: {wire_val})" if wire_val else f"💤 {lvl} (sem param no fio)"
+                effort_choices.append({"name": label, "value": lvl})
+            try:
+                effort_pick = questionary.select(
+                    "Reasoning effort?",
+                    choices=effort_choices,
+                    use_indicator=True,
+                    use_arrow_keys=True,
+                    style=questionary.Style([
+                        ('question', 'bold #ffab00'),          # Âmbar vibrante
+                        ('selected', 'bg:#ff8f00 #000000 bold'),  # Fundo âmbar, texto preto
+                        ('pointer', 'bold #ffab00'),          # Seta âmbar
+                        ('instruction', 'dim'),
+                        ('answer', 'bold #ffab00'),           # Resposta final âmbar
+                        ('highlighted', 'bg:#ff8f00 #000000 bold'),  # Item em destaque
+                    ])
+                ).ask()
+            except KeyboardInterrupt:
+                console.print("[dim]Saindo...[/]")
+                sys.exit(0)
+
+            if effort_pick is None:
+                console.print("[dim]Saindo...[/]")
+                sys.exit(0)
+            if effort_pick:
+                self.selected_effort = efforts_map.get(effort_pick)
+                self.use_thinking_variant = True  # painel de raciocínio ligado
+                console.print(f"[yellow]🧠 Effort: {effort_pick}[/]")
+            else:
+                console.print("[green]💤 Effort: off (nada no fio)[/]")
+
+        elif selected_model.get("has_think_variant"):
             think_id = selected_model["think_variant_id"]
             
             variant_choices = [
@@ -1182,6 +1227,9 @@ class StreamingChat:
             name_line = Text(f"{display_name} ", style="bold cyan") + Text("🧠", style="bold yellow")
         else:
             name_line = Text(f"{display_name}", style="bold cyan")
+        # Badge do effort selecionado (fragment declara reasoningEfforts)
+        if self.selected_effort:
+            name_line += Text(f" ⚙️ effort={self.selected_effort}", style="bold magenta")
         # CLI prompt-mode badge (--raw / --no-system / --system)
         if CLI_RAW:
             name_line += Text("  [RAW — sem system, sem tools]", style="bold magenta")
@@ -1385,6 +1433,11 @@ class StreamingChat:
                 # upstream llama.cpp disables them by default — explicitly enable
                 if self.selected_model.startswith("lfm2"):
                     payload["parallel_tool_calls"] = True
+            # Effort selecionado no menu (metadata.reasoningEfforts do fragment):
+            # wire canônico top-level reasoning_effort = dial por request do upstream.
+            # 'off' (None) não manda nada — default-adaptive do template.
+            if self.selected_effort:
+                payload["reasoning_effort"] = self.selected_effort
             
             # Timeout dinâmico: usa health_check_timeout do modelo (cold start) + 30s buffer
             # Modelos como SGLang precisam de ~2-5 min pra carregar na primeira request
