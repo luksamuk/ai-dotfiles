@@ -91,4 +91,12 @@ fara1.5-4b:
       ajustar apos smoke. Deploy a 64K (card 262K): hibrido SSM mantem KV so nas 8 camadas full
       attn (~9KB/token q4_0), 64K segura historicos multi-screenshot e cabe na 3050 6GB com folga;
       subir p/ 131K custa ~+0.6GB. Harness do treino (fara CLI/MagenticLite) emite outro wire,
-      mas o fio OpenAI JSON funcionou nativo no teste. EOS ids 248044/248046. GGUF em ~/.llama-models/fara1.5-4b/.'
+      mas o fio OpenAI JSON funcionou nativo no teste. EOS ids 248044/248046. RETIRADA 05/nov
+      (mesma data do deploy — curta): dono achou o Fara competente mas o ctx de 64K insuficiente
+      pro historico multi-screenshot do cua-driver no 6GB; GGUFs deletados. SHA256 decoder
+      aedd3e6ed7071eb0941a9d86de0f35c16f76eedb9e15dbefa2b4a4e5e7838e51 / mmproj
+      373320845fb5539dd55a66d3faafcd8f123e83a7318334d557a04d604f5ef84d. Caminho de REATIVACAO
+      p/ ctx maior: re-download IQ4_XS (2543162464 bytes exatos, ~700MB menor que o Q4_K_M) no
+      lugar do Q4_K_M + --ctx-size 131072 (KV q4_0 ~1.2GB @131K nas 8 camadas full attn; est
+      total ~4.4GB) — pendente de teste. Fragment em _disabled/; restore = re-download
+      bartowski/Fara1.5-4B-GGUF + trazer de volta pra models/.'
