@@ -1025,9 +1025,12 @@ class StreamingChat:
         efforts_map = selected_model.get("reasoning_efforts") or {}
         if efforts_map:
             effort_choices = [{"name": "💤 off (não manda nada — default do template)", "value": ""}]
+            # Níveis com fio null (ex: 'off': null do fragment) = não mandar nada —
+            # o item 💤 off que sempre entra na lista já cobre; não duplicar.
             for lvl, wire_val in efforts_map.items():
-                label = f"🧠 {lvl} (fio: {wire_val})" if wire_val else f"💤 {lvl} (sem param no fio)"
-                effort_choices.append({"name": label, "value": lvl})
+                if not wire_val:
+                    continue
+                effort_choices.append({"name": f"🧠 {lvl} (fio: {wire_val})", "value": lvl})
             try:
                 effort_pick = questionary.select(
                     "Reasoning effort?",
