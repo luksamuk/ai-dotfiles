@@ -204,3 +204,12 @@
     searchProvider: searxng
 - id: web-deepseek-api
   disabled: true
+- insert:
+  - id: mcp-cua
+    name: '@deepseek-ai/dsh-mcp-client'
+    config:
+      serverName: cua
+      transport: stdio
+      command: cua-driver
+      args: ['mcp']
+      failOnStartupError: true
