@@ -35,7 +35,7 @@ alpie-seed:
     size: ~5.24 GB (Q4_K_M)
     context: '65536 deployado — teto nativo 262144; escada 06/11 toda medida (32K fp16 ate 262K fp16 passam, VRAM 4.72-4.89GB), mas 262K degrada decode a 4.9 t/s @64K preenchido — degrau 64K escolhido: prefill 829 t/s (melhor da escada) + decode ~10 t/s plano ate 16K'
     vram_usage: ~4.7 GB VRAM c/ offload parcial (sem -ngl, fit do vanilla decide); RSS ~5-6 GB
-    kv_cache: 'f16/f16 (hbrido: poucas camadas de ateno cheia — de 32K a 262K custa ~100 MiB de VRAM)'
+    kv_cache: 'f16/f16'
     source: 169Pi/Alpie_Seed_GGUF (alpie_seed-text-q4_k_m.gguf, 5629109184 bytes exatos; Apache-2.0, ungated)
     features:
       completion: true
@@ -61,4 +61,4 @@ alpie-seed:
       DSH entra SEM reasoningEfforts (regra declarada). SMOKE 06/11 pela rota do swap: prompt pt-BR par quase-homomorfo
       (fatoracao de x^2-5x+6, NAO fatorial) = PASS (finish=stop, (-2,-3) correto, soma/produto no escopo, zero drift). BUDGET:
       thinking rotinamente 5-7k chars — max_tokens 1500 estoura no reasoning (content vazio finish=length testado); usar 4000+.
-      Max tokens default do testchat (fit ao ctx) cobre. CURVA decode-vs-ctx @262K (06/11): 10.6 t/s vazio / 10.4 @1K / 10.1 @4K / 9.0 @16K / 4.9 @64K — plano ate ~16K, metade em 64K; prefill estavel ~700 t/s de 4K a 64K. Placar FP16 do vendor NAO vale p/ esta quant (aviso do proprio card).'
+      Max tokens default do testchat (fit ao ctx) cobre. KV f16/f16 hibrido: poucas camadas de ateno cheia — o contexto custa ~100 MiB de VRAM de 32K a 262K (escada inteira medida, por isso o teto nativo nao e problema de RAM). CURVA decode-vs-ctx @262K (06/11): 10.6 t/s vazio / 10.4 @1K / 10.1 @4K / 9.0 @16K / 4.9 @64K — plano ate ~16K, metade em 64K; prefill estavel ~700 t/s de 4K a 64K. Placar FP16 do vendor NAO vale p/ esta quant (aviso do proprio card).'
