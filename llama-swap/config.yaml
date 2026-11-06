@@ -574,6 +574,49 @@ models:
         - Converte o upload com ffmpeg - sem ffmpeg no PATH a transcrição falha com 500
         - Não é TTS e não serve /v1/audio/speech
         - CPU-only por desenho (a VRAM da casa é escassa, 6 GB) - troque PARAKEET_DEVICE=cuda se quiser
+  alpie-seed:
+    name: Alpie Seed 9B
+    description: Alpie Seed 9B (169Pi) — pos-treino de adapter (SFT + GRPO c/ DoRA-NF4 + c/ BF16 adapters) sobre o Qwen/Qwen3.5-9B, arch retida (qwen35 hybrid GDN), 262K nativo no papel. Vendor anuncia placar FP16 grande (MMLU-Pro 82.5, GPQA-D 84.3, OCRBench 90.3) e AVISA que os scores nao valem para quants 2/3/4-bit. Text-only nesta lane (VL so existe em Q2_K; mmproj nao baixado). Dense — vanilla por doutrina (ik = fast lane candidata se o dono quiser 30+ t/s).
+    tags:
+      - think
+    cmd: '${llama_server} --port ${PORT} --model ${models_dir}/alpie-seed/alpie_seed-text-q4_k_m.gguf --ctx-size 32768 --jinja --flash-attn on -b 2048 -ub 1024 --metrics '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: true
+    ttl: 900
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - text
+      out:
+        - text
+      tools: false
+      reranker: false
+      context: 32768
+    metadata:
+      size: ~5.24 GB (Q4_K_M)
+      context: 32768 deployado (262144 nativo do card; KV hbrido barato, escada p/ cima se o dono pedir)
+      vram_usage: ~4.7 GB VRAM c/ offload parcial (sem -ngl, fit do vanilla decide); RSS ~5-6 GB
+      source: 169Pi/Alpie_Seed_GGUF (alpie_seed-text-q4_k_m.gguf, 5629109184 bytes exatos; Apache-2.0, ungated)
+      features:
+        completion: true
+        tools: false
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 9000000000
+      embedding_length: 4096
+      context_length: 262144
+      quantization: Q4_K_M
+      license: apache-2.0
+      note: 'Linha BENCH 06/11 (vanilla build c7d9f630d, ctx 32768, KV fp16, sem -ngl): decode 13.1/13.3 t/s corto e 12.3 t/s c/ 2.8K de contexto (degradacao ~7%), prefill 560/652/697 t/s (escalada 660/2232/2752 tokens), TTFT 4K ~4s. Sem MTP/nextn no GGUF (probe). tools false PENDING PROBE: template tem 21 markers tool_call, mas marker nao e comportamento (regra citizenship) — probe com finish=tool_calls antes de virar true. Pos-treino e adapter-quantizado (DoRA/NF4) sobre Qwen3.5-9B; card do vendor NAO mediu o base — A/B de qualidade pendente e FORA do escopo deste install (dono pediu so velocidade). Sem escada de efforts: template so tem enable_thinking (0 markers reasoning_effort) — pense sempre-on, catologo DSH entra SEM reasoningEfforts (regra declarada). SMOKE 06/11 pela rota do swap: prompt pt-BR par quase-homomorfo (fatoracao de x^2-5x+6, NAO fatorial) = PASS (finish=stop, (-2,-3) correto, soma/produto no escopo, zero drift). BUDGET: thinking rotinamente 5-7k chars — max_tokens 1500 estoura no reasoning (content vazio finish=length testado); usar 4000+. Max tokens default do testchat (fit ao ctx) cobre. Placar FP16 do vendor NAO vale p/ esta quant (aviso do proprio card).'
   anima-aesthetic-v1.1:
     name: Anima Aesthetic v1.1
     description: "Anima Aesthetic v1.1 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. Fine-tune de consistencia; o melhor default art style da familia."
