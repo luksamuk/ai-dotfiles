@@ -579,7 +579,7 @@ models:
     description: Alpie Seed 9B (169Pi) — pos-treino de adapter (SFT + GRPO c/ DoRA-NF4 + c/ BF16 adapters) sobre o Qwen/Qwen3.5-9B, arch retida (qwen35 hybrid GDN), 262K nativo no papel. Vendor anuncia placar FP16 grande (MMLU-Pro 82.5, GPQA-D 84.3, OCRBench 90.3) e AVISA que os scores nao valem para quants 2/3/4-bit. Text-only nesta lane (VL so existe em Q2_K; mmproj nao baixado). Dense — vanilla por doutrina (ik = fast lane candidata se o dono quiser 30+ t/s).
     tags:
       - think
-    cmd: '${llama_server} --port ${PORT} --model ${models_dir}/alpie-seed/alpie_seed-text-q4_k_m.gguf --ctx-size 32768 --jinja --flash-attn on -b 2048 -ub 1024 --metrics '
+    cmd: '${llama_server} --port ${PORT} --model ${models_dir}/alpie-seed/alpie_seed-text-q4_k_m.gguf --ctx-size 262144 --jinja --flash-attn on -b 2048 -ub 1024 --metrics '
     filters:
       stripParams: temperature, top_p
       setParamsByID:
@@ -595,10 +595,10 @@ models:
         - text
       tools: false
       reranker: false
-      context: 32768
+      context: 262144
     metadata:
       size: ~5.24 GB (Q4_K_M)
-      context: 32768 deployado (262144 nativo do card; KV hbrido barato, escada p/ cima se o dono pedir)
+      context: '262144 NATIVO deployado — escada medida 06/11 (32K/64K fp16/128K fp16/131K kvq8/262K kvq4_0/262K KV fp16 — todos passam)'
       vram_usage: ~4.7 GB VRAM c/ offload parcial (sem -ngl, fit do vanilla decide); RSS ~5-6 GB
       source: 169Pi/Alpie_Seed_GGUF (alpie_seed-text-q4_k_m.gguf, 5629109184 bytes exatos; Apache-2.0, ungated)
       features:
