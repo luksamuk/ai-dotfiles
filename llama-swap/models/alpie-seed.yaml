@@ -28,7 +28,7 @@ alpie-seed:
     - text
     out:
     - text
-    tools: false
+    tools: true
     reranker: false
     context: 262144
   metadata:
@@ -38,7 +38,7 @@ alpie-seed:
     source: 169Pi/Alpie_Seed_GGUF (alpie_seed-text-q4_k_m.gguf, 5629109184 bytes exatos; Apache-2.0, ungated)
     features:
       completion: true
-      tools: false
+      tools: true
       thinking: true
       vision: false
       embedding: false
@@ -54,7 +54,7 @@ alpie-seed:
     note: 'Linha BENCH 06/11 (vanilla build c7d9f630d, ctx 32768, KV fp16, sem -ngl): decode 13.1/13.3 t/s corto e 12.3
       t/s c/ 2.8K de contexto (degradacao ~7%), prefill 560/652/697 t/s (escalada 660/2232/2752 tokens), TTFT 4K ~4s. Sem
       MTP/nextn no GGUF (probe). tools false PENDING PROBE: template tem 21 markers tool_call, mas marker nao e comportamento
-      (regra citizenship) — probe com finish=tool_calls antes de virar true. Pos-treino e adapter-quantizado (DoRA/NF4) sobre
+      (regra citizenship) — probe com finish=tool_calls antes de virar true. PROBE EXECUTADO 06/11 pela rota do swap: 1 call get_weather, JSON limpo (city corretos), finish=tool_calls, zero eco de XML — tools TRUE ganho. Pos-treino e adapter-quantizado (DoRA/NF4) sobre
       Qwen3.5-9B; card do vendor NAO mediu o base — A/B de qualidade pendente e FORA do escopo deste install (dono pediu so
       velocidade). Sem escada de efforts: template so tem enable_thinking (0 markers reasoning_effort) — pense sempre-on, catologo
       DSH entra SEM reasoningEfforts (regra declarada). SMOKE 06/11 pela rota do swap: prompt pt-BR par quase-homomorfo
