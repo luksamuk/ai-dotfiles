@@ -60,4 +60,4 @@ alpie-seed:
       DSH entra SEM reasoningEfforts (regra declarada). SMOKE 06/11 pela rota do swap: prompt pt-BR par quase-homomorfo
       (fatoracao de x^2-5x+6, NAO fatorial) = PASS (finish=stop, (-2,-3) correto, soma/produto no escopo, zero drift). BUDGET:
       thinking rotinamente 5-7k chars — max_tokens 1500 estoura no reasoning (content vazio finish=length testado); usar 4000+.
-      Max tokens default do testchat (fit ao ctx) cobre. Placar FP16 do vendor NAO vale p/ esta quant (aviso do proprio card).'
+      Max tokens default do testchat (fit ao ctx) cobre. CURVA decode-vs-ctx @262K (06/11): 10.6 t/s vazio / 10.4 @1K / 10.1 @4K / 9.0 @16K / 4.9 @64K — plano ate ~16K, metade em 64K; prefill estavel ~700 t/s de 4K a 64K. Placar FP16 do vendor NAO vale p/ esta quant (aviso do proprio card).'
