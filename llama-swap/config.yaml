@@ -1810,12 +1810,12 @@ models:
       embedding_length: 2048
       quantization: APEX I-Compact
       note: 'vram detalhe: ~4.6-5GB VRAM estimado (mesma arch do orn15; medir no smoke) Heretic KL 0.0105 (moderado, sem eval público) + Sharp v22.5.0 externo (GGUF embutido NAO é sharp) + MTP graft shisa (nextn=1 verificado). Handle ''ornith-1.5-35b-heretic'' é TEMPORÁRIO de teste: se a régua de sanidade passar, vira o substituto de orn15+q36hc; se falhar, fragmento vai pra _disabled/ sem drama. KV validado 25/10 contra o cmd real: ctk/ctv q4_0 (large_cache_k/v) + hadamard K/V, backend ik — o attn_rot antigo era herança errada do orn15 (nunca existiu flag aqui). Sha256 do GGUF re-verificado pós reinstalação 24/10: 37f67861...e0e7 OK.'
-  ornith-1.5-9b:
-    name: Ornith 1.5 9B
-    description: 'Ornith-1.5-9B (ornith-ai) — dense 9B da mesma arch qwen35 do base do Alpie, MIT, multimodal no card de origem (mmproj 0.86 GB disponvel no repo, NO wired nesta lane — VRAM da partial-offload 64K est apertada p/ +0.86GB; viso pendente do dono). Pos-treino de self-improvement da famlia: card vende SWE-V 70.6 vs 53.2 do base Qwen3.5-9B e o A/B 06/11 confirmou o esprito — 4x menos thinking que a 169Pi/Alpie com resposta melhor organizada.'
+  ornith-1.5-9b-heretic:
+    name: Ornith 1.5 9B (Heretic)
+    description: 'Ornith-1.5-9B decensurado (heretic) — dense 9B da arch qwen35 (hbrido GDN, a mesma famlia do 35B-A3B e do 122B), MIT, multimodal no checkpoint de origem (mmproj 0.86 GB no repo do autor; NAO wired nesta lane — a VRAM da partial-offload 64K fica apertada com +0.86 GB; viso pendente do dono). Pos-treino de self-improvement da ornith-ai: o card vnde SWE-V 70.6 vs 53.2 do base Qwen3.5-9B, e o A/B local de 06/11 confirmou o esprito — a mesma fatorao pt-BR pediu 4x menos thinking que a lane 169Pi/Alpie que aposentamos. O decensor  da linha Heretic (p-e-w) feita pelo Thunder13240 COM metodologia acima da mdia: mediu recusas dentro do bloco de reasoning (onde o Ornith escondia 67/100 das recusas), corrigiu a posio de sampling e converteu sem --no-nextn (o checkpoint declara mtp_num_hidden_layers mas no traz pesos mtp).'
     tags:
       - think
-    cmd: '${llama_server} --port ${PORT} --model ${models_dir}/ornith-1.5-9b/Ornith-1.5-9B-Q4_K_M.gguf --ctx-size 65536 --jinja --flash-attn on -b 2048 -ub 1024 --metrics '
+    cmd: '${llama_server} --port ${PORT} --model ${models_dir}/ornith-1.5-9b/Ornith-1.5-9B-heretic-Q4_K_M.gguf --ctx-size 65536 --jinja --flash-attn on -b 2048 -ub 1024 --metrics '
     filters:
       stripParams: temperature, top_p
       setParamsByID:
@@ -1833,10 +1833,11 @@ models:
       reranker: false
       context: 65536
     metadata:
-      size: ~5.38 GB (Q4_K_M)
-      context: '65536 deployado (KV hbrido fp16, quase de graa; a escada da famlia medida em 06/11: 32K at 262K, todos passam, VRAM 4.724.89 GB)'
-      vram_usage: ~4.6 GB VRAM com offload parcial (sem -ngl, fit decide)
-      source: 'ornith-ai/Ornith-1.5-9B-GGUF (Ornith-1.5-9B-Q4_K_M.gguf, ~5.38 GiB; MIT; mmproj-BF16 0.86GB no repo, sem download)'
+      size: ~5.24 GB (Q4_K_M heretic)
+      context: '65536 deployado — KV hbrido fp16 quase de graa: a escada da famlia (06/11) passou INTEIRA, de 32K a 262K fp16, com VRAM 4.72-4.89 GB; o 262K nativo degrada o decode para 4.9 t/s com a janela de 64K preenchida, por isso o degrau 64K escolhido (o dono aprov)'
+      vram_usage: ~4.6 GB VRAM com offload parcial (sem -ngl, fit do vanilla decide)
+      kv_cache: f16/f16
+      source: 'Thunder13240/Ornith-1.5-9B-heretic-GGUF (Ornith-1.5-9B-heretic-Q4_K_M.gguf, 5629108768 bytes exatos; MIT; base_model declarado ornith-ai/Ornith-1.5-9B; autor documenta ARA do Heretic com sampling position corrigida)'
       features:
         completion: true
         tools: false
@@ -1851,8 +1852,8 @@ models:
       embedding_length: 4096
       context_length: 262144
       quantization: Q4_K_M
-      license: mit
-      note: 'BENCH+SMOKE 06/11 (vanilla c7d9f630d, 64K KV fp16): decode 12.813.3 t/s (EMPATE fsico com a 169Pi/Alpie, mesmo shape), prefill 694/830/805 t/s. SMOKE fatorao pt-BR par quase-homorfo: PASS com 1708 chars de thinking vs 6877 da Alpie (4x menos na mesma lane) — o self-improvement da Ornith materializou no tamanho pequeno. tools false PENDING PROBE (o 35B heretic da famlia provou; o 9B falta). MTP/nextn: verificar no probe antes de spec-decode. Dono decretou aposentadoria da 169Pi/Alpie em 06/11.'
+      license: 'MIT (base) — decensor Thunder13240'
+      note: 'DESENSOR VERIFICADO (card do autor): recusas genuinas 99/100 base -> 0/100 (two-scorer — o keyword-scorer dizia 6/100 e erastava; todo hit era resposta cumprindo que continha "illegal"), uniformidade cross-group UNIFORME em 20 grupos (zero spread demografico — o modo de falha classico da ablerao), KL 0.0019 @Q8_0 / 0.048 @Q4_K_M ("normal pattern" da casa heretic). INSIGHT do autor: 67/100 das recusas do Ornith moram DENTRO do bloco de reasoning — corrigir a posio de sampling do ARA derrubou 22 -> 0 com KL Menor. Sem MTP no checkpoint (declarado, sem pesos). BENCH+SMOKE 06/11 (vanilla c7d9f630d, 64K fp16, no build da NO-heretic; heretic mede na mesma fsica — diff 0.048 de KL): decode 12.8-13.3 t/s (EMPATE fsico com a 169Pi/Alpie aposentada, mesmo shape), prefill 694/830/805 t/s. SMOKE fatorao pt-BR par quase-homorfo: PASS com 1.7k chars de thinking vs 6.9k da Alpie (4x menos na mesma lane). tools false PENDING PROBE (o 35B heretic da famlia provou tools; o 9B heretic falta medir). TROCA: dono aposentou a 169Pi/Alpie 06/11 no A/B; heretic entra como troca direta com o mesmo quant.'
   phonon-40m-multilingual:
     name: Phonon 40M Multilingual
     description: "Phonon Multilingual is a 40M text-to-speech model from Gradium that speaks English, French, German, Spanish and Portuguese from one set of weights, built on a flow-matching language model over Mimi audio latents. Made for low-latency on-device speech, it streams audio as it generates and draws its voices from a shared multilingual catalog."
