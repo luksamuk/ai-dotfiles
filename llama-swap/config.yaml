@@ -1815,7 +1815,7 @@ models:
     description: 'Ornith-1.5-9B decensurado (heretic) — dense 9B da arch qwen35 (hbrido GDN, a mesma famlia do 35B-A3B e do 122B), MIT, multimodal no checkpoint de origem (mmproj 0.86 GB no repo do autor; NAO wired nesta lane — a VRAM da partial-offload 64K fica apertada com +0.86 GB; viso pendente do dono). Pos-treino de self-improvement da ornith-ai: o card vnde SWE-V 70.6 vs 53.2 do base Qwen3.5-9B, e o A/B local de 06/11 confirmou o esprito — a mesma fatorao pt-BR pediu 4x menos thinking que a lane 169Pi/Alpie que aposentamos. O decensor  da linha Heretic (p-e-w) feita pelo Thunder13240 COM metodologia acima da mdia: mediu recusas dentro do bloco de reasoning (onde o Ornith escondia 67/100 das recusas), corrigiu a posio de sampling e converteu sem --no-nextn (o checkpoint declara mtp_num_hidden_layers mas no traz pesos mtp).'
     tags:
       - think
-    cmd: '${llama_server} --port ${PORT} --model ${models_dir}/ornith-1.5-9b/Ornith-1.5-9B-heretic-Q4_K_M.gguf --ctx-size 65536 --jinja --flash-attn on -b 2048 -ub 1024 --metrics '
+    cmd: '${llama_server} --port ${PORT} --model ${models_dir}/ornith-1.5-9b/Ornith-1.5-9B-heretic-Q4_K_M.gguf --mmproj ${models_dir}/ornith-1.5-9b/mmproj-Ornith-1.5-9B-heretic-f16.gguf --ctx-size 65536 --jinja --flash-attn on -b 2048 -ub 1024 --metrics '
     filters:
       stripParams: temperature, top_p
       setParamsByID:
@@ -1827,6 +1827,7 @@ models:
     capabilities:
       in:
         - text
+        - image
       out:
         - text
       tools: false
@@ -1842,7 +1843,7 @@ models:
         completion: true
         tools: false
         thinking: true
-        vision: false
+        vision: true
         embedding: false
         insert: false
         audio: false

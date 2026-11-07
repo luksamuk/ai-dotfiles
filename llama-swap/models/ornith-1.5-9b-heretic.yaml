@@ -12,6 +12,7 @@ ornith-1.5-9b-heretic:
   - think
   cmd: '${llama_server} --port ${PORT}
     --model ${models_dir}/ornith-1.5-9b/Ornith-1.5-9B-heretic-Q4_K_M.gguf
+    --mmproj ${models_dir}/ornith-1.5-9b/mmproj-Ornith-1.5-9B-heretic-f16.gguf
     --ctx-size 65536
     --jinja
     --flash-attn on
@@ -30,6 +31,7 @@ ornith-1.5-9b-heretic:
   capabilities:
     in:
     - text
+    - image
     out:
     - text
     tools: false
@@ -48,7 +50,7 @@ ornith-1.5-9b-heretic:
       completion: true
       tools: false
       thinking: true
-      vision: false
+      vision: true
       embedding: false
       insert: false
       audio: false
@@ -68,4 +70,4 @@ ornith-1.5-9b-heretic:
       — diff 0.048 de KL): decode 12.8-13.3 t/s (EMPATE fsico com a 169Pi/Alpie aposentada, mesmo shape), prefill
       694/830/805 t/s. SMOKE fatorao pt-BR par quase-homorfo: PASS com 1.7k chars de thinking vs 6.9k da Alpie
       (4x menos na mesma lane). tools false PENDING PROBE (o 35B heretic da famlia provou tools; o 9B heretic falta
-      medir). TROCA: dono aposentou a 169Pi/Alpie 06/11 no A/B; heretic entra como troca direta com o mesmo quant.'
+      medir). TROCA: dono aposentou a 169Pi/Alpie 06/11 no A/B; heretic entra como troca direta com o mesmo quant. VISAO PROVADA 06/11 pela rota do swap (candy.JPG do p-blog): identificou os M&Ms com CONTAGENS exatas (2 teal / 2 laranja / 1 verde), VRAM 4.9 GB com mmproj no device (0.86 GB cabem — sem --no-mmproj-offload), decode 8.5 t/s processando imagem. DSH input text+image nos 4 patches. NOTA: o mmproj do 35B NAO interopera — projetor 2048-d vs 4096-d do 9B (112 tensores divergem em dtype), confirmado por header.'
