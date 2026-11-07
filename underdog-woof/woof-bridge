@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""Woof TTS bridge — rota OpenAI-compatible /v1/audio/speech para o Underdog Woof
+(underdog-woof: 30.7-38.2M params, numpy puro, CPU). Padro stt-bridge da casa:
+unico processo, /health p/ swap, pesos pre-carregados no boot (Juno + Mira).
+Ingles apenas; CC BY-NC 4.0. Uso: woof-bridge --port PORT."""
+import sys, os, json
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+REPO = os.path.join(os.environ["HOME"], ".llama-models", "underdog-woof")
+sys.path.insert(0, REPO)
+WAVDIR = "/dev/shm/woof"
+
+from underdog_woof import Woof
+import time
+TTS = {"juno": Woof(), "mira": Woof(voice="mira")}
+
+class Handler(BaseHTTPRequestHandler):
+    def _send(self, code, payload, ctype="text/plain"):
+        self.send_response(code)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+    def do_GET(self):
+        base = self.path.split("?")[0]
+        if base == "/health":
+            return self._send(200, b"ok", "text/plain")
+        if base == "/v1/audio/voices":
+            payload = json.dumps({"object": "list", "data": [{"id": v, "object": "voice", "name": v.capitalize()} for v in ("juno", "mira")]}).encode()
+            return self._send(200, payload, "application/json")
+        self._send(404, b"not found", "text/plain")
+    def do_POST(self):
+        if self.path != "/v1/audio/speech":
+            return self._send(404, b"not found", "text/plain")
+        n = int(self.headers.get("Content-Length", 0) or 0)
+        try:
+            body = json.loads(self.rfile.read(n) or b"{}")
+        except Exception:
+            return self._send(400, b'{"error":"bad json"}', "application/json")
+        text = (body.get("input") or body.get("text") or "").strip()
+        if not text:
+            return self._send(400, b'{"error":"input vazio"}', "application/json")
+        voice = (body.get("voice") or "juno").lower()
+        # playground do llama-swap hardcodea as vozes OpenAI (SpeechInterface.svelte  hardcoded,
+        # no chama /v1/audio/voices) — alias para variar entre Juno/Mira nos nomes que ele lista
+        ALIAS = {"coral": "mira", "alloy": "juno", "echo": "juno", "fable": "mira",
+                 "onyx": "juno", "nova": "mira", "shimmer": "mira", "default": "juno"}
+        voice = ALIAS.get(voice, voice)
+        tts = TTS.get(voice or "juno", TTS["juno"])
+        os.makedirs(WAVDIR, exist_ok=True)
+        tmp = os.path.join(WAVDIR, f"woof_{os.getpid()}_{int(time.time()*1000%1e9)}.wav")
+        try:
+            tts.save(tmp, tts(text))
+            with open(tmp, "rb") as f:
+                wav = f.read()
+        finally:
+            if os.path.exists(tmp): os.remove(tmp)
+        self._send(200, wav, "audio/wav")
+    def log_message(self, *a):
+        pass
+
+if __name__ == "__main__":
+    port = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[1] == "--port" else 8096
+    HTTPServer(("127.0.0.1", port), Handler).serve_forever()
