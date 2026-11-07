@@ -2253,6 +2253,48 @@ models:
       embedding_length: 2048
       quantization: Q4_K_M
       note: '35B body (Qwen3.6-35B destilado p/ qwen4exp: GDN+FA interval 4, hyper-connections, 180 experts) + os 76 experts podados do Qwen3.6-35B recolocados (256/layer, 8 ativos + shared) + tabela n-gram hashada 10B (8 heads x 4.880.000 rows). Heal 28/out/2026: LoRA rank-16 nos experts 180-255 + rank-8 nos attention/SSM output (professor Qwen3.8-27B, 411 steps); ensinou niveis de reasoning-effort (xhigh default / low / medium via kwarg reasoning_effort — low ~18% menos tokens, mesma acuracia GSM8K). Medidas do autor NESSE Q4_K_M: HumanEval/HE+ 75.6/72.6, MBPP+ 65.9, tool-use 96/96, MATH-60 44 com 1690 tok/resposta, long-tail 111/252 vs 94 do 35B (p<0.001 — os experts restaurados compram vocabulario); GSM-50 40 vs 44 do 35B (queda real); healed PopQA 77/288 vs 54 do splice. Sem MTP (bloco max 39 nos 1022 tensores), sem vision/mmproj. RECEITA ATUAL: -cmoe -ngl 99 --lazy-mode off = receita comprovada da familia (whittle-35b ONYX: 391 ok, 19-23 t/s em 18/out); experts+tabela em page cache file-backed do SO (PERSISTE pos-restart — pedagio de recycle menor que o -ssd). REVERT 04/nov noite (dono): -ssd + knobs (--ssd-predict/--ssd-io-threads 4/ --ssd-cache-mb 4096) testado e REJEITADO — pedagio frio de ~137s pos-boot (fill SSD-bound, GPU 6%, fans parados, prompt_tokens 0 ate completar) e prefill de testchat travando 160s+; insuportavel interativamente. MEDIDO NO -cmoe (04/nov, pos-revert): 1a request pos-recycle = 15.5s (page cache do SO aquecido), 2a = 2.7s/40 tok; VRAM 4.03 GiB (66%), RAM 5.8 GiB usada. Numeros do -ssd (historia): boot 94s, 14.6 t/s decode aquecido, TTFT 2.8s, 4/4 tools, think toggle real, sem kpool crash (mesmo build onde o groot-65B mrd crasha — conversao do autor passa). KV q4_0/q4_0 intocado (regra do dono). Tabela n-gram = load-bearing: quantizada junto no Q4_K_M do autor (as medidas do card SAO nesse arquivo); nunca droppar linhas. --lazy-mode off OBRIGATORIO. Sampler da autora: 0.7/0.8/top_k 20/rp 1.05 — greedy decodifica em loop. PRATICA: ping de aquecimento apos todo boot da lane (config reload recicla e cobra o pedagio de novo). ttl 0 = nao desloca sozinha. Lane fast: DECIDIDO CONTRA pelo dono (04/nov noite): RAM pinada do 45B ficaria na boca da banda (~24-25/31) e o dono preferiu nao arriscar — sem lane ik planejada; se um dia reconsiderar, o candidato e Q3_K_M 19.85 GiB com -ot parcial 0-5 (receita whittle-35b-fast em _disabled). APOSENTADO COM HONRAS 05/nov/2026: gguf deletado por decreto do dono, substituido pelo nex-n2.5-mini como lane de computer-use. Restore: hf download whittleOrg/Whittle-Qwen-3.8-45B-A3B-GGUF Whittle-Qwen-3.8-45B-A3B-Q4_K_M.gguf --local-dir ~/.llama-models/whittle-45b/.'
+  woof:
+    name: Woof TTS (Underdog)
+    description: 'Underdog Woof — TTS de 30.7/38.2M params (31.7/40.6 MB), WER 2.06%/1.42% em setes-hard (batendo o Fish Drama 3 de 35.9B/41.5GB que  um 1/1000 do tamanho), numpy puro no CPU (18x tempo real, 1 thread). Decodificador no estilo Mimi (kyutai). Ingles apenas (normalizador  ingls; pt-BR sai com fontes erradas). Licena CC BY-NC 4.0 (no-comercial). Serve via bridge python-stdlib da casa (padro stt-bridge: /health + POST /v1/audio/speech).'
+    tags:
+      - tts
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    cmd: '${env.HOME}/git/ai-dotfiles/underdog-woof/woof-bridge --port ${PORT}'
+    cmdStop: 'pkill -f underdog-woof/woof-bridge'
+    health_check_timeout: 120
+    ttl: 300
+    capabilities:
+      in:
+        - text
+      out:
+        - audio
+      tools: false
+      reranker: false
+      context: 0
+    metadata:
+      size: 40.6 MB (two voices int8, um npz)
+      context: '0 (TTS)'
+      vram_usage: 0 (CPU-only, numpy; 852 MB RAM pico por processo)
+      kv_cache: n/a
+      source: 'ConwayResearch/Underdog-Woof (HF, 2 voices int8; weights em ~/.llama-models/underdog-woof/woof_int8.npz; pacote vendor em ~/.llama-models/underdog-woof/underdog_woof/; bridge versionado em ai-dotfiles)'
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        tts: true
+        image: false
+      architecture: woof-tts
+      parameters: '30700000 (1 voz) / 38200000 (2 vozes)'
+      context_length: 0
+      embedding_length: 0
+      quantization: int8
+      license: 'CC BY-NC 4.0 (no-comercial); decoder design Mimi (kyutai); dados LibriTTS-R + Emilia-YODAS (CC-BY)'
+      note: 'BRIDGE novo (07/11): padro stt-bridge da casa — POST /v1/audio/speech {input, voice: juno|mira} + /health, pesos pre-carregados no boot, WAV em /dev/shm apagado no finally (higiene de disco da casa). ROTA DO SWAP A PROVAR no e2e deste commit. WER  inteligibilidade via ASR (Whisper large-v3 / qwen3.8-omni-flash + gemma-4-31b de juiz), NO  naturalness/MOS — marketing do tweet  o Pareto real em ingls on-device. Voices: juno + mira.'
 # Hooks: ações na inicialização do llama-swap
 # preload: carrega modelos síncronamente antes de aceitar requests
 # Ideal para vLLM (startup lento = 30-90s sem warm-up)

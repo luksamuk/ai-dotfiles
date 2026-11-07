@@ -1,0 +1,49 @@
+woof:
+  name: Woof TTS (Underdog)
+  description: 'Underdog Woof — TTS de 30.7/38.2M params (31.7/40.6 MB), WER 2.06%/1.42% em setes-hard (batendo o Fish
+    Drama 3 de 35.9B/41.5GB que  um 1/1000 do tamanho), numpy puro no CPU (18x tempo real, 1 thread). Decodificador
+    no estilo Mimi (kyutai). Ingles apenas (normalizador  ingls; pt-BR sai com fontes erradas). Licena CC BY-NC 4.0
+    (no-comercial). Serve via bridge python-stdlib da casa (padro stt-bridge: /health + POST /v1/audio/speech).'
+  tags:
+  - tts
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: '${env.HOME}/git/ai-dotfiles/underdog-woof/woof-bridge --port ${PORT}'
+  cmdStop: 'pkill -f underdog-woof/woof-bridge'
+  health_check_timeout: 120
+  ttl: 300
+  capabilities:
+    in:
+    - text
+    out:
+    - audio
+    tools: false
+    reranker: false
+    context: 0
+  metadata:
+    size: 40.6 MB (two voices int8, um npz)
+    context: '0 (TTS)'
+    vram_usage: 0 (CPU-only, numpy; 852 MB RAM pico por processo)
+    kv_cache: n/a
+    source: 'ConwayResearch/Underdog-Woof (HF, 2 voices int8; weights em ~/.llama-models/underdog-woof/woof_int8.npz;
+      pacote vendor em ~/.llama-models/underdog-woof/underdog_woof/; bridge versionado em ai-dotfiles)'
+    features:
+      completion: false
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      tts: true
+      image: false
+    architecture: woof-tts
+    parameters: '30700000 (1 voz) / 38200000 (2 vozes)'
+    context_length: 0
+    embedding_length: 0
+    quantization: int8
+    license: 'CC BY-NC 4.0 (no-comercial); decoder design Mimi (kyutai); dados LibriTTS-R + Emilia-YODAS (CC-BY)'
+    note: 'BRIDGE novo (07/11): padro stt-bridge da casa — POST /v1/audio/speech {input, voice: juno|mira} + /health,
+      pesos pre-carregados no boot, WAV em /dev/shm apagado no finally (higiene de disco da casa). ROTA DO SWAP A PROVAR
+      no e2e deste commit. WER  inteligibilidade via ASR (Whisper large-v3 / qwen3.8-omni-flash + gemma-4-31b de juiz),
+      NO  naturalness/MOS — marketing do tweet  o Pareto real em ingls on-device. Voices: juno + mira.'
