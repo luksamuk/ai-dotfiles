@@ -8,6 +8,11 @@
           supportsDeveloperRole: false
           maxTokensField: max_tokens
         models:
+        - id: s5-nano
+          input:
+          - text
+          - image
+          contextWindow: 65536
         - id: ornith-1.5-9b-heretic
           input:
           - text
