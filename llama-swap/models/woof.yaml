@@ -44,6 +44,6 @@ woof:
     quantization: int8
     license: 'CC BY-NC 4.0 (no-comercial); decoder design Mimi (kyutai); dados LibriTTS-R + Emilia-YODAS (CC-BY)'
     note: 'BRIDGE novo (07/11): padro stt-bridge da casa — POST /v1/audio/speech {input, voice: juno|mira} + /health,
-      pesos pre-carregados no boot, WAV em /dev/shm apagado no finally (higiene de disco da casa). ROTA DO SWAP A PROVAR
-      no e2e deste commit. WER  inteligibilidade via ASR (Whisper large-v3 / qwen3.8-omni-flash + gemma-4-31b de juiz),
+      pesos pre-carregados no boot, WAV em /dev/shm apagado no finally (higiene de disco da casa). ROTA DO SWAP PROVADA 07/11 (POST 200 + WAV) e /v1/audio/voices adicionada  bridge (padro OpenAI voice; ?model=woof pela swap, Juno/Mira — o dropdown do playground carrega os
+      nomes corretos). WER  inteligibilidade via ASR (Whisper large-v3 / qwen3.8-omni-flash + gemma-4-31b de juiz),
       NO  naturalness/MOS — marketing do tweet  o Pareto real em ingls on-device. Voices: juno + mira.'
