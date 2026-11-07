@@ -26,7 +26,7 @@ class Handler(BaseHTTPRequestHandler):
         if base == "/health":
             return self._send(200, b"ok", "text/plain")
         if base == "/v1/audio/voices":
-            payload = json.dumps({"object": "list", "data": [{"id": v, "object": "voice", "name": v.capitalize()} for v in ("juno", "mira")]}).encode()
+            payload = json.dumps({"aliases": {}, "voices": ["juno", "mira"]}).encode()
             return self._send(200, payload, "application/json")
         self._send(404, b"not found", "text/plain")
     def do_POST(self):
