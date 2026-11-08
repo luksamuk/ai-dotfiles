@@ -2151,7 +2151,7 @@ models:
       size: ~3.2 GB (Q4_K_M 2.59 + mmproj 0.63 na RAM)
       context: '131072 deployado (262144 nativo)'
       backend: ik_llama.cpp (canonico 08/11; vanilla aposentado)
-      kv_cache: q4_0/q4_0 + hadamard (na host, deciso do fit)
+      kv_cache: q4_0/q4_0 + hadamard (host)
       vram_usage: '~4.0 GB VRAM (pesos) + mmproj em RAM (viso opt-in)'
       server_rss: ~3.5 GB host RAM
       ctx_checkpoints: 'DEFAULT (32) OBRIGATRIO para o prompt cache de modelos private-state (GDN); 0 = re-prefill por turn'
