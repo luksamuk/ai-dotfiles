@@ -3,9 +3,10 @@
 # Why vanilla: Q1_0 repack kernels + hadamard mul_mat/get_row upstream
 # (#23492, #29927, #30122, #30627) e ngram-mod spec decode no arg.cpp.
 # Sem fork desde b9867+. Arch qwen35 (Qwen3.6-27B, dense hybrid DeltaNet).
-# ESCOLHA DO DONO 07/nov: lane única @48K com KV q4_0 NA GPU (regime
-# cliff da escada, decode 23.7 t/s) — sem --no-kv-offload; o perfil
-# host-RAM @131K (8 t/s) fica só no histórico da escada abaixo.
+# ESCOLHA DO DONO 07/nov: lane única @40K com KV q4_0 NA GPU (regime
+# cliff da escada, decode 23.2 t/s a 87% do card) — sem --no-kv-offload;
+# 48K era 90%+ (dono rejeitou), 32K era pouco. O perfil host-RAM @131K
+# (8 t/s) fica só no histórico da escada abaixo.
 # -b 512 -ub 128 = buffers de compute enxutos, é o que destrava a KV
 # na GPU (com defaults o 48K não coube). mmproj Q8_0 na CPU RAM.
 # ROBUSTEZ: 48K sobrevive a desktop ~1 GB; 56K só com desktop leve
@@ -34,7 +35,7 @@ bonsai-27b:
     --no-mmproj-offload
     --jinja
     -ngl 99
-    --ctx-size 49152
+    --ctx-size 40960
     -fa on
     -ctk ${large_cache_k}
     -ctv ${large_cache_v}
@@ -71,7 +72,7 @@ bonsai-27b:
     - text
     tools: true
     reranker: false
-    context: 49152
+    context: 40960
   metadata:
     architecture: qwen35
     parameters: 27300000000
@@ -79,8 +80,8 @@ bonsai-27b:
     embedding_length: 5120
     quantization: Q1_0
     size: "~3.80 GB (Q1_0 binary) + 0.63 GB mmproj"
-    context: "48K (KV-GPU cliff; nativo 262K)"
-    vram_usage: "~4.6 GB na GPU com KV residente (measured 07/nov: 5599 MiB card c/ desktop 470)"
+    context: "40K (KV-GPU cliff; nativo 262K; meio-termo do dono 87% VRAM)"
+    vram_usage: "~4.9 GB na GPU com KV residente (measured 07/nov: 5358 MiB card = 87% no desktop 690)"
     source: "prism-ml/Bonsai-27B-gguf"
     kv_cache: "q4_0/q4_0"
     features:
