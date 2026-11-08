@@ -10,6 +10,14 @@
 # Tools: template Qwen3.6 + --jinja. PITFALL da casa: ngram-mod quebrou
 # parallel tool calls no Gemma4-E4B — testar multi-call antes de uso
 # agentic pesado.
+# LADDER 07/nov (s/ spec, prompt 9.5K tok, KV-GPU tenta 1o, host-RAM fallback;
+# desktop base 470-1080 MiB; -b 512 -ub 128 nos rungs finais, custo: prefill -20%):
+# HOST-RAM platô: 131K host 321/8.1 · 112K 320/8.0 · 100K 318/8.2 · 96K 313/8.9
+# · 80K 356/9.3 · 64K 355/9.3 · 48K(defaults) 355/9.2 · 64K(b512) 296/9.2 · 72K 296/9.2
+# GPU cliff (KV na GPU, decode 2.4x): 32K 402/23.0 · 44K 373/23.0 · 48K 382/23.7
+# · 56K 383/23.0 (margem 372 MiB no desktop 470) — 64K NAO coube (~200 MiB faltou).
+# Fronteira DESKTOP-DEPENDENTE: lane de swap nao tem fallback; 48K sobrevive a
+# desktop ~1GB, 56K só com desktop leve. (t/s = prefill/decode)
 # Always-thinking, single handle (sem :think), sem escada de effort.
 # --n-predict 32768 p/ o raciocinio nao comer o output budget.
 # -----------------------------------------------------------
