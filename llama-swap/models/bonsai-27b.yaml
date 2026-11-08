@@ -3,10 +3,13 @@
 # Why vanilla: Q1_0 repack kernels + hadamard mul_mat/get_row upstream
 # (#23492, #29927, #30122, #30627) e ngram-mod spec decode no arg.cpp.
 # Sem fork desde b9867+. Arch qwen35 (Qwen3.6-27B, dense hybrid DeltaNet).
-# VRAM: weights+compute ~4.4 GB; mmproj Q8_0 na CPU RAM (--no-mmproj-offload);
-# KV q4_0 em host RAM (--no-kv-offload). 131K canonical @ ~10.95 t/s (Ago);
-# modo speed 48K KV-GPU mediu 22.9 t/s (lane separada se quiser);
-# Jul: 20-27 t/s @32/48K.
+# ESCOLHA DO DONO 07/nov: lane única @48K com KV q4_0 NA GPU (regime
+# cliff da escada, decode 23.7 t/s) — sem --no-kv-offload; o perfil
+# host-RAM @131K (8 t/s) fica só no histórico da escada abaixo.
+# -b 512 -ub 128 = buffers de compute enxutos, é o que destrava a KV
+# na GPU (com defaults o 48K não coube). mmproj Q8_0 na CPU RAM.
+# ROBUSTEZ: 48K sobrevive a desktop ~1 GB; 56K só com desktop leve
+# (372 MiB) — por isso o degrau é 48K, não 56K.
 # Tools: template Qwen3.6 + --jinja. PITFALL da casa: ngram-mod quebrou
 # parallel tool calls no Gemma4-E4B — testar multi-call antes de uso
 # agentic pesado.
@@ -31,11 +34,12 @@ bonsai-27b:
     --no-mmproj-offload
     --jinja
     -ngl 99
-    --ctx-size 131072
-    --no-kv-offload
+    --ctx-size 49152
     -fa on
-    --cache-type-k ${large_cache_k}
-    --cache-type-v ${large_cache_v}
+    -ctk ${large_cache_k}
+    -ctv ${large_cache_v}
+    -b 512
+    -ub 128
     --spec-type ngram-mod
     --spec-ngram-mod-n-max 64
     --spec-ngram-mod-n-min 48
@@ -67,7 +71,7 @@ bonsai-27b:
     - text
     tools: true
     reranker: false
-    context: 131072
+    context: 49152
   metadata:
     architecture: qwen35
     parameters: 27300000000
@@ -75,10 +79,10 @@ bonsai-27b:
     embedding_length: 5120
     quantization: Q1_0
     size: "~3.80 GB (Q1_0 binary) + 0.63 GB mmproj"
-    context: "131K (@262K nativo)"
-    vram_usage: "~4.4 GB + ~3.5 GB RAM (KV q4_0 + mmproj)"
+    context: "48K (KV-GPU cliff; nativo 262K)"
+    vram_usage: "~4.6 GB na GPU com KV residente (measured 07/nov: 5599 MiB card c/ desktop 470)"
     source: "prism-ml/Bonsai-27B-gguf"
-    kv_cache: "q4_0/q4_0 (host RAM)"
+    kv_cache: "q4_0/q4_0 (GPU)"
     features:
       completion: true
       tools: true
