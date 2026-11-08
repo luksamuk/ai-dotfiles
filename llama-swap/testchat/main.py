@@ -498,7 +498,7 @@ def _classify_non_chat(model: dict) -> str | None:
     """Classifica um modelo como não-selecionável no chat, ou None se é chat.
 
     O /v1/models do llama-swap carrega tudo que precisa — não é preciso
-    adivinhar pelo nome. Quatro categorias não-chat no fleet:
+    adivinhar pelo nome. Cinco categorias não-chat no fleet (tts, embedding, decision, asr, image):
 
       "tts"       — text->audio (phonon-40m-*, qwen3-tts).
                      Sinais: meta.llamaswap.features.tts,
@@ -539,7 +539,14 @@ def _classify_non_chat(model: dict) -> str | None:
     if features.get("embedding") or caps.get("embeddings"):
         return "embedding"
 
-    # ASR: audio->text sem chat (só /v1/audio/transcriptions)
+    # Image-gen: SADA = imagem (sd-server da famlia Anima), sem chat.
+    # features.image  OUTPUT-imagem (gen); viso de entrada se declara
+    # features.vision — no confundir.
+    if (features.get("image") and not features.get("completion")) or (
+            "image" in out_modalities and not features.get("completion")):
+        return "image"
+
+    # ASR: audio->text sem chat (s /v1/audio/transcriptions)
     if caps.get("audio_transcriptions") and not features.get("completion"):
         return "asr"
 
