@@ -146,6 +146,14 @@ def load_pipeline_wan2gp(model_name: str, model_root: Path | None = None) -> tup
             raise FileNotFoundError(
                 f"WanGP moss processor files missing in ckpts/Qwen3.5-9B/: {missing_processor}"
             )
+    elif model_name == "p-h3-image":
+        checks = {
+            "transformer FL2VA pruned int8_convrot (compartilhado com a lane de vídeo)":
+                wgp_dir / "ckpts" / "MiniMax-H3-FL2VA-pruned_rank8_int8_convrot.safetensors",
+            "LoRA de destilação P-H3 (Pruna)": wgp_dir / "loras" / "minimax_h3" / "p-h3-image_lora_bf16.safetensors",
+            "TE Qwen3-VL-32B Q4_K_M (compartilhado com a lane de vídeo)":
+                wgp_dir / "ckpts" / "Qwen3-VL-32B-Instruct" / "qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf",
+        }
     else:
         raise ValueError(f"load_pipeline_wan2gp: unsupported model {model_name}")
 
@@ -282,7 +290,9 @@ def generate_image_wan2gp(
 
     cmd = [
         "systemd-run", "--user", "--scope", "-p", "MemoryMax=20G",
-        f"--unit={unit_name}",
+        # sufixo único: o fragmento do systemd sobrevive ao fim do scope e um
+        # unit_name fixo morre no SEGUNDO run ("already loaded") — achado 06/nov
+        f"--unit={unit_name}-{seed}-{os.getpid()}",
         str(WAN2GP_DIR / ".venv" / "bin" / "python"),
         config["wgp_py"],
         "--process", settings_file.name,

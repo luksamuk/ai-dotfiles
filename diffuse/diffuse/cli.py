@@ -122,6 +122,11 @@ def print_list() -> None:
             # Weights live in the WanGP ckpts/ tree, not in diffuse models/
             wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
             return (wgp / "flux3_image_klein_sd_int8_convrot.safetensors").exists()
+        elif backend == "ph3_wan2gp":
+            # P-H3-Image: o ckpt base é o MESMO FL2VA pruned da lane de vídeo;
+            # o que distingue a instalação é a LoRA da destilação Pruna
+            wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
+            return (wgp / "loras" / "minimax_h3" / "p-h3-image_lora_bf16.safetensors").exists()
         elif backend == "moss_wan2gp":
             wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
             if info.get("dir") == "moss-image-base":
@@ -418,7 +423,11 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--turbo", action="store_true",
-        help="moss-image: attach the DMD 8-step distillation LoRA at strength 1.0 and default to 8 steps / cfg 1.0 (50->8 steps, ~4x faster, not part of --enhance LoRA selection).",
+        help="moss-image: attach the DMD 8-step distillation LoRA at strength 1.0 and default to 8 steps / cfg 1.0 (50->8 steps, ~4x faster, not part of --enhance LoRA selection). p-h3-image: pDMD @4 steps.",
+    )
+    p.add_argument(
+        "--no-lora-select", action="store_true",
+        help="p-h3-image (e lanes wgp): roda o BASE CRU — sem seletor, sem turbo/pDMD, sem tag automática. A régua neutra do A/B.",
     )
     p.add_argument(
         "--init-img", metavar="ARQ", default=None,
@@ -528,6 +537,10 @@ def main() -> None:
             args.steps = 16          # BFL distilled recipe
         elif backend_type == "moss_wan2gp":
             args.steps = 50          # OpenMOSS release recipe (CFG 3, SLG 22; sem distill oficial no WanGP)
+        elif backend_type == "ph3_wan2gp":
+            args.steps = 8           # Pruna P-H3-Image recipe (8 steps, zero CFG, 4-8MP)
+        elif backend_type == "ph3_wan2gp":
+            args.steps = 8           # Pruna P-H3-Image recipe (8 steps, zero CFG, 4-8MP)
         elif backend_type == "qwen21_wan2gp":
             args.steps = 40          # base 2.1 recipe (cfg 4.0; --turbo remaps para 8 no runner)
         elif backend_type == "agate":
@@ -564,7 +577,7 @@ def main() -> None:
     original_prompt = prompt
 
     # Pre-flight
-    if backend_type in ("flux3_wan2gp", "qwen21_wan2gp", "qwen21_turbo_wan2gp", "moss_wan2gp"):
+    if backend_type in ("flux3_wan2gp", "qwen21_wan2gp", "qwen21_turbo_wan2gp", "moss_wan2gp", "ph3_wan2gp"):
         # Weights live in the WanGP ckpts/ tree; backends/wan2gp verifies per-file
         pass
     elif backend_type == "anima_sdcpp":
@@ -577,8 +590,8 @@ def main() -> None:
     # ── Validate --edit (qwen21, flux-3 e fibo suportam) ──
     ref_image_paths = None
     if args.edit:
-        if backend_type not in ("flux3_wan2gp", "qwen21_wan2gp", "qwen21_turbo_wan2gp", "fibo_sdcpp"):
-            print(f"  ⚠️  --edit is only supported with qwen-image-2.1, flux-3 or fibo (got {backend_type})")
+        if backend_type not in ("flux3_wan2gp", "qwen21_wan2gp", "qwen21_turbo_wan2gp", "fibo_sdcpp", "ph3_wan2gp"):
+            print(f"  ⚠️  --edit is only supported with qwen-image-2.1, flux-3, fibo or p-h3-image (got {backend_type})")
             print(f"     Use: diffuse -m qwen-image-2.1 --edit {args.edit} -p 'instruction'")
             sys.exit(1)
         missing = [x for x in args.edit if not x.exists()]
@@ -626,6 +639,11 @@ def main() -> None:
     # ── MOSS-Image early path (T2I via WanGP; layout-JSON nativo) ──
     if backend_type == "moss_wan2gp":
         _run_moss_wan2gp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
+        return
+
+    # ── P-H3-Image early path (T2I + editing de até 8 refs por WanGP; o próprio H3) ──
+    if backend_type == "ph3_wan2gp":
+        _run_ph3_wan2gp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
         return
 
     # ── Fibo 2.0 via sd.cpp (T2I + edição por referência) ──
@@ -1416,6 +1434,180 @@ def _run_flux3_wan2gp_image(
         enhanced_prompt=enhanced,
         original_prompt=original_prompt,
     )
+
+
+def _run_ph3_wan2gp_image(
+    args,
+    model_name: str,
+    model_info: dict,
+    prompt: str,
+    original_prompt: str,
+    seed: int,
+    width: int,
+    height: int,
+    ref_image_paths: list[str] | None,
+) -> None:
+    """Handle P-H3-Image generation/editing via WanGP (T2I + edit, até 8 refs).
+
+    Pruna recipe: 8 steps, cfg 1.0 (zero CFG — negative é no-op), 4-8MP. A
+    destilação P-H3 roda como LoRA @1.0 no def do WanGP sobre o MESMO ckpt
+    FL2VA pruned da lane de vídeo. Prompt-upsampler nativo da pipeline — o
+    enhance do diffuse usa o SYSTEM DO PRÓPRIO upstream (p_h3_image.py:
+    P_H3_IMAGE_TEXT_SYSTEM_PROMPT / _EDIT_, extraídos por marcador — o modelo é
+    "sensitive to prompting": short prompts rendem fraco). Edição: até 8 imagens
+    de referência. Turbo (--turbo): LoRA 2-step da comunidade no root
+    p_h3_image/ se baixada.
+    """
+    from diffuse.backends.wan2gp import (
+        load_pipeline_wan2gp,
+        generate_image_wan2gp,
+    )
+    model_type = "minimax_h3_image"
+    steps = args.steps if args.steps is not None else 8
+    guidance = args.cfg if args.cfg is not None else 1.0
+    refs = list(ref_image_paths or [])
+    if len(refs) > 8:
+        print(f"     P-H3-Image edita com até 8 imagens — usando as 8 primeiras de {len(refs)}")
+        refs = refs[:8]
+
+    loras_manual, mults_manual = [], []   # pré-init obrigatório: os gates abaixo leem sem tag
+    if "<lora:" in prompt:
+        prompt, _lora_tags = _extract_lora_tags(prompt)
+        from diffuse.backends.wan2gp import _parse_lora_filename_tag
+        from pathlib import Path as _P
+        _root = _P.home() / "git" / "Wan2GP" / "loras" / "minimax_h3"
+        _known = {_p.stem: _p.name for _p in _root.glob("*.safetensors")}
+        loras_manual, mults_manual = [], []
+        for _tag in _lora_tags.split():
+            _name, _mult = _parse_lora_filename_tag(_tag)
+            _fname = _known.get(_name) or (_name if _name in _known.values() else None)
+            if _fname:
+                loras_manual.append(_fname)
+                mults_manual.append(_mult)
+            else:
+                print(f"     Aviso: LoRA tag {_tag!r} nao resolvida em loras/minimax_h3/ — ignorada")
+        print(f"     MANUAL: {list(zip(loras_manual, mults_manual))} — seletor automatico desligado")
+        loras_extra = loras_manual
+        mults_extra = mults_manual
+
+    # ── system do enhance: constantes do módulo p_h3_image do wgp (upstream) ──
+    # texto (T2I) ou edit (com refs), extraídos por marcador + aspas triplas.
+    ph3_sys = None
+    try:
+        src_ph3 = (Path.home() / "git" / "Wan2GP" / "models" / "minimax_h3" /
+                   "p_h3_image.py").read_text()
+        const_name = ("P_H3_IMAGE_EDIT_SYSTEM_PROMPT" if refs
+                      else "P_H3_IMAGE_TEXT_SYSTEM_PROMPT")
+        marker = const_name + ' = """'
+        i0 = src_ph3.find(marker)
+        i1 = src_ph3.find('"""', i0 + len(marker))
+        if i0 >= 0 and i1 > i0:
+            ph3_sys = src_ph3[i0 + len(marker):i1]
+    except Exception as e:
+        print(f"     ⚠️  system do P-H3 não extraído ({e}) — fallback: system default", file=sys.stderr)
+
+    # ── enhance (--enhance/--enhance-with): system nativo + LLM do fleet/ollama ──
+    enhanced = None
+    if getattr(args, "enhance", False) or getattr(args, "enhance_with", None):
+        from diffuse.enhance import enhance_qwen21_prompt
+        enhance_model = args.enhance_with or _load_enhance_config(model_info)
+        print(f"  ✨ Enhancing via {enhance_model} (system nativo do P-H3)...")
+        enhanced, _raw = enhance_qwen21_prompt(
+            prompt, enhance_model, nsfw=bool(args.nsfw), extra_system=(ph3_sys or ""))
+        if enhanced and enhanced != prompt:
+            prompt = enhanced
+        else:
+            print("     ⚠️  Enhancement falhou — prompt cru (fail-open)")
+
+    # Community turbo (--turbo): LoRA 2-step da comunidade no root p_h3_image/.
+    # BUG 07/nov: o reset incondicional matava a tag manual extraída antes do
+    # enhance — o seletor rodava por cima (o gate testava o texto sem a tag) e
+    # toda rodada com tag manual aplicou forca do SELETOR @1.0, não a digitada.
+    if not loras_manual:
+        loras_extra: list[str] = []
+        mults_extra: list[str] = []
+    _no_sel = getattr(args, "no_lora_select", False)
+    if getattr(args, "turbo", False) and _no_sel:
+        print("     TURBO: --no-lora-select vence — pDMD não injetada, base cru")
+    if getattr(args, "turbo", False) and not _no_sel:
+        # DECRETO dono 09/nov: turbo da lane de imagem DESATIVADO. O pDMD saía
+        # "undercooked" porque o def do wgp TRAVA inference_steps do p-h3-image
+        # em 8 (lock_inference_steps: True + Euler de sigmas fixos) — a lora
+        # carregava e rodava fora do regime dela (2/3/4 NFE). A lora foi
+        # deletada; re-habilitar = patchar o def do wgp (lock off) + re-baixar
+        # (DOWNLOAD_MAP: sha + repo + arxiv 2609.35768).
+        print("     TURBO: desativado para p-h3-image (dono 09/nov — pDMD undercooked); rodando 8 steps vanilla")
+    loras_sel: list[str] = []
+    mults_sel: list[str] = []   # sel=só seletor; extra=manual — o generate soma UMA vez
+    if not loras_manual and not loras_extra and not _no_sel:   # tag manual, turbo ou --no-lora-select: seletor fora
+
+        import importlib.util
+        _spec = importlib.util.spec_from_file_location("h3_lora_sel", "/home/alchemist/.local/share/h3/lora_selector.py")
+        _hls = importlib.util.module_from_spec(_spec)
+        sys.modules["h3_lora_sel"] = _hls   # dataclasses resolve o módulo pelo registry
+        _spec.loader.exec_module(_hls)
+        _pool = [e for e in _hls.eligible(_hls.load_catalog("minimax_h3"), nsfw=bool(args.nsfw), variant="*", modality="") if e.get("imagem")]
+        _cfg = _hls.SelectorCfg(selector="decision", decision_model="d1-2b", decision_threshold=0.5, decision_max=3)
+        _ids, _rank = _hls._decision_select(prompt, _pool, _cfg)
+        _by_id = {str(e["id"]): e for e in _pool}
+        loras_sel = []
+        mults_sel = []
+        for _i in _ids:
+            e = _by_id.get(str(_i))
+            if e and e["safetensors"] not in loras_sel:   # dedupe seletor×manual
+                loras_sel.append(e["safetensors"])
+                mults_sel.append(str(e.get("strength_autor", 1.0)))
+        _top = _rank[0] if _rank else ("", 0.0)
+        print(f"     Seleção [imagem]: {len(loras_sel)} LoRA(s) ({len(_pool)} candidatas; top: {_top[0][:30]} {_top[1]:.3f})")
+
+# tags <lora:...> manuais vencem (resolucao no root minimax_h3):
+    # a rota da LoRA NSFW de forca leve — ex.: <lora:HMNSFW-Extreme-Realism:0.5>.
+    # O seletor automatico fica fora (imagem=False doutrina do derretimento 06/nov);
+    # manual em forca sub-unitaria = o experimento barato da rampa.
+    print(f"  \U0001f5bc\ufe0f  P-H3-Image 20B (o H3 da casa como imagem)")
+    print(f"     {width}x{height}, {steps} steps, cfg={guidance}, seed={seed}")
+    if refs:
+        print(f"     Edit mode com {len(refs)} ref(s): {[os.path.basename(r) for r in refs]}")
+
+    running = llama_swap_running_models()
+    if running:
+        print(f"  \U0001f504 Evicting LLM models: {', '.join(running)}")
+        evict_llm()
+        print(f"     VRAM freed")
+
+    print(f"  [1/3] Loading P-H3-Image pipeline ({model_info['bits']})...")
+    config, load_time = load_pipeline_wan2gp(model_name)
+    print(f"        WanGP config ready")
+
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+
+    print(f"  [2/3] Generating (WanGP profile 5, GPU offload)...")
+    wall_t0 = time.perf_counter()
+    output_path, diffusion_time, peak_hbm = generate_image_wan2gp(
+        config, prompt, seed, width, height, output_path,
+        ref_images=(refs or None), steps=steps, cfg_scale=guidance,
+        model_type=model_type, negative_prompt="",
+        unit_name="diffuse-p-h3", lora_root_name="minimax_h3",
+        flow_shift=None,
+        activated_loras=(loras_sel + loras_extra) or None, loras_multipliers=(mults_sel + mults_extra) or None,
+    )
+    wall_time = time.perf_counter() - wall_t0
+
+    print(f"  [3/3] Done - unloading...")
+
+    save_metadata(
+        model_name, prompt, seed, width, height, steps,
+        0.0, diffusion_time, wall_time, peak_hbm, output_path,
+    )
+    print_debrief(
+        model_name, model_info, prompt, seed,
+        width, height, steps, 0.0,
+        diffusion_time, wall_time, peak_hbm, output_path,
+        original_prompt=original_prompt,
+    )
+
+
 
 
 def _run_moss_wan2gp_image(

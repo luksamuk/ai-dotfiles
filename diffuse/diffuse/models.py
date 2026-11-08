@@ -167,6 +167,21 @@ MODELS: dict[str, dict] = {
     # embutido no pipeline. T2I puro no Wan2GP upstream (sem ref-image/mask) —
     # edição estruturada anda pelo layout JSON. Pesos: repack DDM int8_convrot
     # (DiT 5.41G + TE Qwen3.5-9B int8 8.96G + VAE flux2 small decoder 61MB).
+    "p-h3-image": {
+        "backend_id": "p-h3-image-wan2gp",
+        "lora_root": "p_h3_image",
+        "dir": "p-h3-image",
+        "backend_type": "ph3_wan2gp",
+        "category": "image",
+        "bits": "INT8 ConvRot + LoRA P-H3 (Pruna)",
+        "description": "P-H3-Image 8-Step 20B — o MiniMax-H3 da lane destilado pra imagem (8MP @8 steps, zero CFG, edição com até 8 refs, upsampler de prompt embutido), via Wan2GP",
+        "default_size": (2048, 2048),
+        "components": [
+            {"name": "MiniMax-H3-FL2VA-pruned_rank8_int8_convrot.safetensors (transformer, COMPARTILHADO com a lane de vídeo)", "path": "Wan2GP/ckpts/MiniMax-H3-FL2VA-pruned_rank8_int8_convrot.safetensors", "size_gb": 21.1},
+            {"name": "qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf (text encoder, COMPARTILHADO)", "path": "Wan2GP/ckpts/Qwen3-VL-32B-Instruct/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf", "size_gb": 13.58},
+            {"name": "p-h3-image_lora_bf16.safetensors (destilação Pruna)", "path": "Wan2GP/ckpts/loras/p_h3_image/p-h3-image_lora_bf16.safetensors", "size_gb": 1.96},
+        ],
+    },
     "moss-image": {
         "backend_id": "moss-image-wan2gp",
         "lora_root": "moss_image",
