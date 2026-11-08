@@ -20,6 +20,7 @@
 #   lfm2.5-2.6b           - LFM2.5-2.6B Q6_K (~2.22 GB) - dense hybrid, agentic RL, on-device, 128K ctx
 #   qwen2.5-coder-1.5b-pollard - Qwen2.5-Coder-1.5B-Instruct Pollard IQ4_XS (~824 MB) - FIM, imatrix, CPU-only
 #   bonsai-27b - prism-ml/Bonsai-27B Q1_0 1-bit binary (~3.8 GB) + mmproj - PrismML reasoning 27B
+#   openbonsai-qwen3.5-9b - webbrain-one PTQ1_0 ternary 9B (~2.0 GB), OpenBonsai framework, cafe backend
 #   qwen3.5-4b-3d-coder - ccore/Qwen3.5-4B-3D-Coder Q4_K_M (~2.71 GB) + mmproj BF16 (~0.64 GB) - Three.js 3D scene generation + coding
 #   lfm2.5-1.2b-think      - LFM2.5-1.2B-Thinking Q8_0 (~1.25 GB) - edge reasoning, CoT
 #   lfm2-24b              - LFM2-24B-A2B Q4_K_M (~14.4 GB) - MoE hybrid, 2.3B active
@@ -113,6 +114,8 @@ declare -A MODELS=(
   # Oct 10 2026: TROCA definitiva — original deletado (user), Heretic v2 (OS-Software) em disco (mesmo formato/kernels)
   # ["bonsai2-27b"] removed Sep 20 2026 — reativado como heretic; ver fragment models/bonsai2-27b-heretic.yaml
   ["bonsai2-27b-heretic"]="OS-Software/Ternary-Bonsai-2-27B-Uncensored-Heretic-v2-GGUF Ternary-Bonsai-2-27B-Uncensored-Heretic-v2-PTQ1_0.gguf"
+  # OpenBonsai Qwen3.5-9B — PTQ1_0 ternary independente (webbrain-one, Apache-2.0), formato Prism, cafe CUDA (2.0 GB)
+  ["openbonsai-qwen3.5-9b"]="webbrain-one/openbonsai-qwen-3.5-9b OpenBonsai-Qwen3.5-9B-PTQ1_0.gguf openbonsai/OpenBonsai-Qwen3.5-9B-PTQ1_0.gguf"
   # Ling-3.0-tiny - inclusionAI BailingMoE3 hybrid KDA+MLA, 7.9B/1.3B active, 128 experts
   # APEX I-Compact = 3.99 GB, abliterated. ik_llama.cpp backend (PR #2295).
   ["ling-3.0-tiny"]="SC117/Ling-3.0-tiny-abliterated-APEX-GGUF Ling-3.0-tiny-abliterated-APEX-I-Compact.gguf"
@@ -348,7 +351,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen38-flash-next-1m, qwen38-flash-next-1m-mtp, qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, minicpm-ocr-1.0, minicpm-ocr-jev, minicpm-ocr-dspark, qwen3.5-4b-3d-coder, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
+    echo "Available: qwen38-flash-next-1m, qwen38-flash-next-1m-mtp, qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, minicpm-ocr-1.0, minicpm-ocr-jev, minicpm-ocr-dspark, qwen3.5-4b-3d-coder, openbonsai-qwen3.5-9b, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
     return 1
   fi
   
@@ -416,6 +419,7 @@ show_sizes() {
   echo "  lfm2.5-2.6b          ~2.22 GB  (Q6_K) - Dense hybrid, agentic RL, on-device, 128K ctx, 16 langs"
   echo "  qwen2.5-coder-1.5b-pollard ~824 MB (Pollard IQ4_XS) - FIM, imatrix, CPU-only"
   echo "  bonsai-27b           ~3.80 GB (Q1_0 1-bit binary) + 0.63 GB mmproj - PrismML reasoning 27B, full GPU offload, ~4.4 GB VRAM"
+  echo "  openbonsai-qwen3.5-9b ~2.00 GB (PTQ1_0 ternary 1.58 bpw) - OpenBonsai Qwen3.5-9B, cafe CUDA, text-only, ~3.8 GB VRAM @131K"
   echo "  qwen3.5-4b-3d-coder  ~2.71 GB (Q4_K_M) + 0.64 GB mmproj BF16 - ccore Three.js 3D scene generation, all-in-VRAM, 131K ctx"
   echo "  bonsai2-27b-heretic  ~5.54 GB (PTQ1_0 ternary 1.75 bpw, heretic v2) - Bonsai 2 (Qwen3.8-27B) uncensored, cafe CUDA kernels, text-only, ~5.6 GB VRAM + ~3.5 GB RAM"
   # [REMOVED] lfm2.5-1.2b — superseded by LFM2.5-8B-A1B

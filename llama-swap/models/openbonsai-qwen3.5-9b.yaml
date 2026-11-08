@@ -44,6 +44,7 @@ openbonsai-qwen3.5-9b:
     context: 131072
   metadata:
     architecture: qwen35
+    parameters: 9000000000
     context_length: 262144
     embedding_length: 4096
     quantization: PTQ1_0
@@ -61,7 +62,9 @@ openbonsai-qwen3.5-9b:
       insert: false
       audio: false
       image: false
-    note: 'SMOKE 08/11 (cafe): DE BOTA — spawn OK, VRAM 3796 MiB; pt-BR PASSOU no teste da
+    note: 'ESCADA DE CTX 08/11: 131072 (3.8 GB VRAM) OK; 196608 (4.63 GB, 75%) OK; 262144 MORRE NO BOOT
+      (PTQ1_0 sem rs-cache). Decode por fill: 38.8 t/s vazio, 19.2-21.3 @52k, 10.3-10.6 @120k — prefill nao
+      degrada (439.8 t/s a 120k). FICOU 131072: 2x ornith-9b (64K), mais leve pra jogar com a VRAM. SMOKE 08/11 (cafe): DE BOTA — spawn OK, VRAM 3796 MiB; pt-BR PASSOU no teste da
       casa (fatorial 720 correto + fatoracao de polinomios, duas classes certas, respondeu
       em portugues — o card so testou turco). REGUA 52.9k prefill: prefill cold 136.2s
       (388.5 t/s); decode @52k cheio 19.2-21.3 t/s; @16k cheio 38.8 t/s; TTFT cache-hit

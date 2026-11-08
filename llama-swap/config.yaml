@@ -1700,6 +1700,7 @@ models:
       context: 131072
     metadata:
       architecture: qwen35
+      parameters: 9000000000
       context_length: 262144
       embedding_length: 4096
       quantization: PTQ1_0
@@ -1717,7 +1718,7 @@ models:
         insert: false
         audio: false
         image: false
-      note: 'SMOKE 08/11 (cafe): DE BOTA — spawn OK, VRAM 3796 MiB; pt-BR PASSOU no teste da casa (fatorial 720 correto + fatoracao de polinomios, duas classes certas, respondeu em portugues — o card so testou turco). REGUA 52.9k prefill: prefill cold 136.2s (388.5 t/s); decode @52k cheio 19.2-21.3 t/s; @16k cheio 38.8 t/s; TTFT cache-hit 0.1-0.2s. Precedente da familia (Ternary-Bonsai-2-9B, mesmo layout cafe): 66.2 t/s @131K sem fill. Thinking estoura 4K com frequencia (card + medido: runs de 1.1-3.9k tokens de thinking). Pendente se ficar permanente: o dono decide; registro em download-models.sh e catalogo DSH/Pi. QUALIDADE (card): abaixo do BF16 base e do Ternary-Bonsai-2-9B prism; pt-BR nao era territorio do autor mas passou aqui.'
+      note: 'ESCADA DE CTX 08/11: 131072 (3.8 GB VRAM) OK; 196608 (4.63 GB, 75%) OK; 262144 MORRE NO BOOT (PTQ1_0 sem rs-cache). Decode por fill: 38.8 t/s vazio, 19.2-21.3 @52k, 10.3-10.6 @120k — prefill nao degrada (439.8 t/s a 120k). FICOU 131072: 2x ornith-9b (64K), mais leve pra jogar com a VRAM. SMOKE 08/11 (cafe): DE BOTA — spawn OK, VRAM 3796 MiB; pt-BR PASSOU no teste da casa (fatorial 720 correto + fatoracao de polinomios, duas classes certas, respondeu em portugues — o card so testou turco). REGUA 52.9k prefill: prefill cold 136.2s (388.5 t/s); decode @52k cheio 19.2-21.3 t/s; @16k cheio 38.8 t/s; TTFT cache-hit 0.1-0.2s. Precedente da familia (Ternary-Bonsai-2-9B, mesmo layout cafe): 66.2 t/s @131K sem fill. Thinking estoura 4K com frequencia (card + medido: runs de 1.1-3.9k tokens de thinking). Pendente se ficar permanente: o dono decide; registro em download-models.sh e catalogo DSH/Pi. QUALIDADE (card): abaixo do BF16 base e do Ternary-Bonsai-2-9B prism; pt-BR nao era territorio do autor mas passou aqui.'
   ornith-1.5-35b-heretic:
     name: Ornith 1.5 35B Heretic
     description: 35B-A3B MoE generalist assistant, abliterated (heretic TPE). 200K context, strong agentic and tool-calling behavior.
