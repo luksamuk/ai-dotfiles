@@ -651,6 +651,7 @@ models:
       context: 40960
     metadata:
       architecture: qwen35
+      ik_support: 'BOOT TEST 08/11: NEGATIVO — ik carrega o GGUF (q1_0_g128, 498 tensores) mas SEM os kernels rapidos do repack PrismML (o vanilla/upstream _ que os tem): decode 1.9-2.3 t/s e prefill 6.3 t/s a ctx vazio = fallback lento, NO GO. Lane segue vanilla; a escada de contexto via KV q4_0 GPU no vanilla (metade da KV, ~80-100K alvo) fica em aberto e precisa de rgua de qualidade junto.'
       parameters: 27300000000
       context_length: 262144
       embedding_length: 5120
