@@ -58,15 +58,6 @@
             high: high
         - id: translategemma-4b
           contextWindow: 131072
-        - id: nex-n2.5-mini
-          reasoningEfforts:
-            'off': null
-            medium: medium
-            high: high
-          contextWindow: 131072
-          input:
-          - text
-          - image
         apiKeyEnv: LLAMASWAP_LOCAL_KEY
       ollama-cloud:
         api: openai-completions
@@ -190,7 +181,7 @@
 - id: agent-default-model
   config:
     provider: llama-swap
-    model: whittle-45b
+    model: ornith-1.5-35b-heretic
 - id: llm-deepseek
   disabled: true
 - id: llm-deepseek-account
