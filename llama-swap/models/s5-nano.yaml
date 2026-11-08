@@ -13,7 +13,7 @@ s5-nano:
     --fit
     --fit-margin 512
     --ctx-size ${small_model_max_ctx}
-    --chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja
+    --jinja
     --reasoning on
     --cache-type-k q4_0
     --cache-type-v q4_0
@@ -71,7 +71,11 @@ s5-nano:
       45.2s/1170 t/s (vanilla vence o cold, ik vence o fio). Escada vanilla do mesmo dia: f16 KV na RAM = 5.1 t/s @46k;
       KV q4_0 na RAM = 10.4-10.7 (@262K ou @114K dá igual, o gargalo é banda de RAM por token, não o slot). O ganho do
       ik vem de kernel: o fit dele deixa a KV q4_0+hadamard na host de propósito (buffer CUDA_Host de 1202 MiB). Pitfall
-      do vanilla: mmproj na GPU + q4_0 host KV crasha no prefill longo (com mmproj em RAM é estável). Referências da
-      família no catálogo: qwen3.5-4b ik 27.7 t/s @131K; Bee (removido 20/09) 41.2. Pendentes: tools PENDING PROBE no ik;
-      template emite thinking inline no content (não separa reasoning_content — conferir em cliente); MTP nextn não cabe
+      do vanilla: mmproj na GPU + q4_0 host KV crasha no prefill longo (com mmproj em RAM é estável). Ajuste pós-deploy:
+      requests com tools davam 500 (tools param requires --jinja) — RESOLVIDO trocando o template-file da casa por
+      --jinja no template embutido do GGUF da Maritaca, que é íntegro (o qwen-fixed era necessário porque o template
+      embutido do Qwen oficial é quebrado no ik). Bônus do --jinja: thinking agora separa reasoning_content (o inline
+      ia junto no content) e tool calling ENGATA no fio (tool_choice required → finish=tool_calls com argumentos
+      corretos 7+35; tools true nos capabilities fica pendente de prova agêntica real antes de virar catálogo).
+      Referências da família no catálogo: qwen3.5-4b ik 27.7 t/s @131K; Bee (removido 20/09) 41.2. MTP nextn não cabe
       como draft nos 6GB e ngram-mod existe no ik se apertar; comparação pt-BR vs spark-x2.6-4b pendente no e2e.'
