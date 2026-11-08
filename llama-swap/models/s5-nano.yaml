@@ -10,11 +10,13 @@ s5-nano:
   cmd: '${llama_server} --port ${PORT}
     --model ${models_dir}/s5-nano/S5-nano-Q4_K_M.gguf
     --mmproj ${models_dir}/s5-nano/mmproj-S5-nano-F16.gguf
-    --ctx-size 114688
+    --ctx-size 262144
     --jinja
     --flash-attn on
-    -b 2048
-    -ub 1024
+    -ngl 99
+    -nkvo
+    -b 512
+    -ub 128
     --metrics
     '
   filters:
@@ -33,11 +35,12 @@ s5-nano:
     - text
     tools: false
     reranker: false
-    context: 114688
+    context: 262144
   metadata:
     size: ~2.59 GB (Q4_K_M com imatrix) + 0.63 GB mmproj
-    context: '65536 deployado (262144 nativo; KV hbrido — a escada da famlia qwen35 passou inteira no ornith-9b: 32K a
-      262K fp16, VRAM quase fixa)'
+    context: '262144 deployado @262K native via ngl99+nkvo (KV f16 hbrido ~8.2 GB na host RAM, server RSS ~10.4 GB, zero swap;
+      o teto deixou de ser a VRAM de 6 GB da famlia qwen35 — a escada passou inteira no ornith-9b: 32K a
+      262K fp16 em GPU, VRAM quase fixa)'
     vram_usage: ~3.5 GB VRAM estimado (Q4 2.59 + mmproj 0.63; medir no load — shape all-in-VRAM provavel)
     kv_cache: f16/f16
     source: 'maritaca-ai/S5-nano-GGUF (S5-nano-Q4_K_M.gguf 4.29 GB Q8_0 + mmproj-S5-nano-F16.gguf 0.63 GB; Apache-2.0; base
@@ -59,4 +62,9 @@ s5-nano:
     license: apache-2.0
     note: 'MTP presente no GGUF (4 tensores nextn, blk.32) — spec-decode  candidato real NO APs o smoke (dense em VRAM  
       o nico regime que a casa no descartou MTP). tools false PENDING PROBE (21 markers no template). Placar do card  
-      BF16 com rgua prpria multi-seed; comparao pt-BR vs spark-x2.6-4b pendente no e2e.'
+      BF16 com rgua prpria multi-seed; comparao pt-BR vs spark-x2.6-4b pendente no e2e. MEASURED A/B speed 07/11 (probe
+      smoke N=5, prompt LRU, thinking counting): auto/-b2048/-ub1024 = 18.7 t/s (CV 2.6%); ngl99+nkvo/-b512/-ub128 =
+      22.1 t/s (CV 3.0%, +18%, TTFT 0.2s inalterado) — -ngl 99 sem -nkvo OOM no KV @114K (fit abortado: ngl setado pelo
+      user desativa o auto-fit; KV f16 hbrido = 3.58 GB). Fica a config ngl99+nkvo. CTX LADDER 07/11: 262144 deployado
+      @nkvo — decode 20.2 t/s N=5 (CV 1.8%, -9% vs 114K, mesma banda, TTFT idem), KV ~8.2 GB RAM; ctx de 262144 declarado
+      em capabilities e DSH/Pi (contextWindow IGUAL ao ctx da lane) deve acompanhar.'

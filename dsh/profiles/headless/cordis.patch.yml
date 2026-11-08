@@ -9,10 +9,13 @@
           maxTokensField: max_tokens
         models:
         - id: s5-nano
+          reasoningEfforts:
+            'off': 'none'
+            high: 'high'
           input:
           - text
           - image
-          contextWindow: 65536
+          contextWindow: 262144
         - id: ornith-1.5-9b-heretic
           input:
           - text
@@ -187,6 +190,30 @@
           reasoningEfforts:
             'off': 'false'
             high: 'true'
+        - id: kimi-k3.1-pro:cloud
+          reasoningEfforts:
+            'off': 'false'
+            low: low
+            medium: medium
+            high: high
+            max: max
+          input:
+          - text
+          - image
+        - id: mimo-v2.6-flash:cloud
+          reasoningEfforts:
+            'off': 'false'
+            high: 'true'
+          input:
+          - text
+          - image
+        - id: mimo-v2.6-pro:cloud
+          reasoningEfforts:
+            'off': 'false'
+            high: 'true'
+          input:
+          - text
+          - image
         apiKeyEnv: OLLAMA_LOCAL_KEY
 - id: agent-default-model
   config:
