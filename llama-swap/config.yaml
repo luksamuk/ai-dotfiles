@@ -1868,7 +1868,7 @@ models:
       size: ~5.24 GB (Q4_K_M heretic)
       context: '65536 deployado — KV hbrido fp16 quase de graa: a escada da famlia (06/11) passou INTEIRA, de 32K a 262K fp16, com VRAM 4.72-4.89 GB; o 262K nativo degrada o decode para 4.9 t/s com a janela de 64K preenchida, por isso o degrau 64K escolhido (o dono aprov)'
       vram_usage: '~3.9 GB VRAM (pesos/buffers, offload parcial do auto-fit) + mmproj em RAM (viso opt-in)'
-      kv_cache: q4_0/q4_0 (host, -nkvo)
+      kv_cache: q4_0/q4_0
       source: 'Thunder13240/Ornith-1.5-9B-heretic-GGUF (Ornith-1.5-9B-heretic-Q4_K_M.gguf, 5629108768 bytes exatos; MIT; base_model declarado ornith-ai/Ornith-1.5-9B; autor documenta ARA do Heretic com sampling position corrigida)'
       features:
         completion: true
@@ -2151,7 +2151,7 @@ models:
       size: ~3.2 GB (Q4_K_M 2.59 + mmproj 0.63 na RAM)
       context: '131072 deployado (262144 nativo)'
       backend: ik_llama.cpp (canonico 08/11; vanilla aposentado)
-      kv_cache: q4_0/q4_0 + hadamard (host)
+      kv_cache: q4_0/q4_0 + hadamard
       vram_usage: '~4.0 GB VRAM (pesos) + mmproj em RAM (viso opt-in)'
       server_rss: ~3.5 GB host RAM
       ctx_checkpoints: 'DEFAULT (32) OBRIGATRIO para o prompt cache de modelos private-state (GDN); 0 = re-prefill por turn'
