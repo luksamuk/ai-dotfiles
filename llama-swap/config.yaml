@@ -1082,7 +1082,7 @@ models:
       context: 131072
     metadata:
       size: ~11.66 GB (Q4_K_M) + 0.86 GB mmproj
-      context: '131072 (262144 era o degra anterior; MTP exige o degrau menor — rollback do ctx devolve o 262K)'
+      context: '131072 (262144 via rollback; MTP exige o degrau menor)'
       vram_usage: '~4.34 GB VRAM @131K c/ MTP (5.22 no pico @262K, que OOMa no prefill com draft) + ~14 GB RAM'
       source: GrootTeam/Groot-19B-A3B-261023-GGUF (Q4_K_M, 11657618560 bytes exatos) + mmproj-BF16 (902822016 bytes)
       kv_cache: q4_0/q4_0 + hadamard
