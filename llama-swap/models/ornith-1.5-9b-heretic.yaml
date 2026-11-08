@@ -16,6 +16,11 @@ ornith-1.5-9b-heretic:
     --ctx-size 65536
     --jinja
     --flash-attn on
+    -ngl auto
+    -nkvo
+    --no-mmproj-offload
+    --cache-type-k q4_0
+    --cache-type-v q4_0
     -b 2048
     -ub 1024
     --metrics
@@ -42,8 +47,8 @@ ornith-1.5-9b-heretic:
     context: '65536 deployado — KV hbrido fp16 quase de graa: a escada da famlia (06/11) passou INTEIRA, de 32K a 262K
       fp16, com VRAM 4.72-4.89 GB; o 262K nativo degrada o decode para 4.9 t/s com a janela de 64K preenchida, por isso
       o degrau 64K escolhido (o dono aprov)'
-    vram_usage: ~4.6 GB VRAM com offload parcial (sem -ngl, fit do vanilla decide)
-    kv_cache: f16/f16
+    vram_usage: '~3.9 GB VRAM (pesos/buffers, offload parcial do auto-fit) + mmproj em RAM (viso opt-in)'
+    kv_cache: q4_0/q4_0 (host, -nkvo)
     source: 'Thunder13240/Ornith-1.5-9B-heretic-GGUF (Ornith-1.5-9B-heretic-Q4_K_M.gguf, 5629108768 bytes exatos; MIT;
       base_model declarado ornith-ai/Ornith-1.5-9B; autor documenta ARA do Heretic com sampling position corrigida)'
     features:
@@ -70,4 +75,4 @@ ornith-1.5-9b-heretic:
       — diff 0.048 de KL): decode 12.8-13.3 t/s (EMPATE fsico com a 169Pi/Alpie aposentada, mesmo shape), prefill
       694/830/805 t/s. SMOKE fatorao pt-BR par quase-homorfo: PASS com 1.7k chars de thinking vs 6.9k da Alpie
       (4x menos na mesma lane). tools false PENDING PROBE (o 35B heretic da famlia provou tools; o 9B heretic falta
-      medir). TROCA: dono aposentou a 169Pi/Alpie 06/11 no A/B; heretic entra como troca direta com o mesmo quant. VISAO PROVADA 06/11 pela rota do swap (candy.JPG do p-blog): identificou os M&Ms com CONTAGENS exatas (2 teal / 2 laranja / 1 verde), VRAM 4.9 GB com mmproj no device (0.86 GB cabem — sem --no-mmproj-offload), decode 8.5 t/s processando imagem. DSH input text+image nos 4 patches. NOTA: o mmproj do 35B NAO interopera — projetor 2048-d vs 4096-d do 9B (112 tensores divergem em dtype), confirmado por header.'
+      medir). TROCA: dono aposentou a 169Pi/Alpie 06/11 no A/B; heretic entra como troca direta com o mesmo quant. VISAO PROVADA 06/11 pela rota do swap (candy.JPG do p-blog): identificou os M&Ms com CONTAGENS exatas (2 teal / 2 laranja / 1 verde), VRAM 4.9 GB com mmproj no device (0.86 GB cabem — sem --no-mmproj-offload), decode 8.5 t/s processando imagem. DSH input text+image nos 4 patches. NOTA: o mmproj do 35B NAO interopera — projetor 2048-d vs 4096-d do 9B (112 tensores divergem em dtype), confirmado por header. COMBO Q4-HOST 08/11 (lição do S5-nano): 52.9k prefill/régua, decode @52k cheio f16 = 3.1-3.3 t/s → combo -ngl auto -nkvo q4_0/q4_0 mmproj RAM = 7.2-7.8 t/s (+130%), prefill cold 72.2s, TTFT cache-hit 0.3s, visão re-provada pela rota do swap (descrição coerente do gráfico, ViT na RAM). A/B ik (fit, kv q4+hadamard): decode 9.3-9.6 (+28% sobre combo), prefill cold 131.6s/-45% — tradeoff real, decisão de swap canônico pendente do dono.'
