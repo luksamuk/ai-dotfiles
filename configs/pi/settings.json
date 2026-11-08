@@ -1,34 +1,41 @@
 {
-  "defaultModel": "ornith-1.5-35b-heretic:think",
-  "defaultProvider": "llama-swap",
-  "lastChangelogVersion": "1.4.0",
-  "packages": [
-    "npm:pi-acp",
-    "npm:@alasano/pi-linear",
-    "npm:pi-llama-cpp",
-    "npm:@billjr99/pi-openai-compat"
+ "defaultModel": "ornith-1.5-35b-heretic",
+ "defaultProvider": "llama-swap",
+ "lastChangelogVersion": "1.5.0",
+ "packages": [
+  "npm:pi-acp",
+  "npm:@alasano/pi-linear",
+  "npm:pi-llama-cpp",
+  "npm:@billjr99/pi-openai-compat",
+  "npm:pi-effort"
+ ],
+ "defaultThinkingLevel": "medium",
+ "compaction": {
+  "enabled": true,
+  "reserveTokens": 16384,
+  "keepRecentTokens": 20000
+ },
+ "httpIdleTimeoutMs": 0,
+ "theme": "dark",
+ "extensions": [
+  "-builtin:llama.cpp"
+ ],
+ "llamaSettings": {
+  "servers": [
+   {
+    "url": "http://127.0.0.1:12434",
+    "id": "llama-swap",
+    "name": "Frota Navi"
+   }
   ],
-  "defaultThinkingLevel": "medium",
-  "compaction": {
-    "enabled": true,
-    "reserveTokens": 16384,
-    "keepRecentTokens": 20000
-  },
-  "httpIdleTimeoutMs": 0,
-  "theme": "dark",
-  "extensions": [
-    "-builtin:llama.cpp"
-  ],
-  "llamaSettings": {
-    "servers": [
-      {
-        "url": "http://127.0.0.1:12434",
-        "id": "llama-swap",
-        "name": "Frota Navi"
-      }
-    ],
-    "reactToModelSelect": true,
-    "autoloadOnMessage": true,
-    "sortBy": "asc"
-  }
+  "reactToModelSelect": true,
+  "autoloadOnMessage": true,
+  "sortBy": "asc"
+ },
+ "extensionChangelogVersions": {
+  "{\"source\":\"npm:pi-effort\",\"scope\":\"user\"}": "0.1.1"
+ },
+ "pi-effort": {
+  "modelEffort": {}
+ }
 }

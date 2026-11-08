@@ -574,6 +574,173 @@ models:
         - Converte o upload com ffmpeg - sem ffmpeg no PATH a transcrição falha com 500
         - Não é TTS e não serve /v1/audio/speech
         - CPU-only por desenho (a VRAM da casa é escassa, 6 GB) - troque PARAKEET_DEVICE=cuda se quiser
+# -----------------------------------------------------------
+# BONSAI 27B (1-bit Q1_0) — VANILLA llama.cpp
+# Why vanilla: Q1_0 repack kernels + hadamard mul_mat/get_row upstream
+# (#23492, #29927, #30122, #30627) e ngram-mod spec decode no arg.cpp.
+# Sem fork desde b9867+. Arch qwen35 (Qwen3.6-27B, dense hybrid DeltaNet).
+# VRAM: weights+compute ~4.4 GB; mmproj Q8_0 na CPU RAM (--no-mmproj-offload);
+# KV q4_0 em host RAM (--no-kv-offload). 131K canonical @ ~10.95 t/s (Ago);
+# modo speed 48K KV-GPU mediu 22.9 t/s (lane separada se quiser);
+# Jul: 20-27 t/s @32/48K.
+# Tools: template Qwen3.6 + --jinja. PITFALL da casa: ngram-mod quebrou
+# parallel tool calls no Gemma4-E4B — testar multi-call antes de uso
+# agentic pesado.
+# Always-thinking, single handle (sem :think), sem escada de effort.
+# --n-predict 32768 p/ o raciocinio nao comer o output budget.
+# -----------------------------------------------------------
+  bonsai-27b:
+    name: "Bonsai 27B (1-bit)"
+    description: "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with true 1.125-bit binary weights, full thinking and reasoning at ~3.9 GB. 89.5% of FP16 intelligence."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      -m ${models_dir}/bonsai-27b/Bonsai-27B-Q1_0.gguf
+      --mmproj ${models_dir}/bonsai-27b/Bonsai-27B-mmproj-Q8_0.gguf
+      --no-mmproj-offload
+      --jinja
+      -ngl 99
+      --ctx-size 131072
+      --no-kv-offload
+      -fa on
+      --cache-type-k ${large_cache_k}
+      --cache-type-v ${large_cache_v}
+      --spec-type ngram-mod
+      --spec-ngram-mod-n-max 64
+      --spec-ngram-mod-n-min 48
+      --spec-ngram-mod-n-match 24
+      --n-predict 32768
+      --temp 0.7 --top-p 0.95 --top-k 20
+      --min-p 0
+      --repeat-penalty 1.0
+      --parallel 1
+      --metrics
+    cmdStop: 'pkill -f "Bonsai-27B-Q1_0"'
+    ttl: 900
+    health_check_timeout: 300
+    filters:
+      stripParams: "temperature, top_p, top_k, min_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.7
+          top_p: 0.95
+          top_k: 20
+          min_p: 0
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      architecture: qwen35
+      parameters: 27300000000
+      context_length: 262144
+      embedding_length: 5120
+      quantization: Q1_0
+      size: "~3.80 GB (Q1_0 binary) + 0.63 GB mmproj"
+      context: "131K (@262K nativo)"
+      vram_usage: "~4.4 GB + ~3.5 GB RAM (KV q4_0 + mmproj)"
+      source: "prism-ml/Bonsai-27B-gguf"
+      kv_cache: "q4_0/q4_0 (host RAM)"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+# -----------------------------------------------------------
+# QWEN3.5-4B-3D-CODER — VANILLA llama.cpp
+# Why vanilla: arch qwen35 (família do S5-mini), deploy padrão S5 @131K.
+# Base Qwen/Qwen3.5-4B, finetune ccore focado em cenas Three.js
+# interativas + coding geral (early preview, projeto vivo, technical
+# report no card). Visão: mmproj BF16 ORIGINAL do Qwen3.5-4B, unmodified
+# (proveniência lmstudio-community) — um arquivo para os dois quants.
+# Buffers de compute de prefill: -b 512 -ub 128 (2048/1024 estoura a
+# 6GB @131K, OOM de pp buffers 07/nov). mmproj na CPU RAM
+# (--no-mmproj-offload): ViT pago só por imagem, destrava o boot na 6GB.
+# q8_0 @131K pede 2176 MiB e OOMa na 6GB com desktop (1GB) vivo (07/nov);
+# q4_0 fecha o 131K com folga.
+# q8_0 só até 64K. Escada híbrida da família: VRAM quase fixa, provado
+# no ornith-9b a 262K fp16.
+# Sampling = FP16 gen defaults do card (0.6/0.95/20, rep 1.0).
+# Template TEM tools (formato XML function-call da família Arete) e
+# NÃO tem reasoning_effort: always-thinking, sem escada, single
+# handle, --n-predict 32768 p/ o thinking não comer o budget.
+# Image tokens compartilham a janela com prompt + código gerado.
+# Existe a variante GLB-3D-Coder (gera .glb) — NÃO deployada.
+# -----------------------------------------------------------
+  qwen3.5-4b-3d-coder:
+    name: "Qwen3.5-4B 3D-Coder"
+    description: "Small model for general coding with a focus on interactive Three.js 3D scene generation; accepts reference images via the Qwen3.5-4B vision encoder."
+    cmd: |
+      ${llama_server} --port ${PORT}
+      -m ${models_dir}/qwen3.5-4b-3d-coder/Qwen3.5-4B-3D-Coder-Q4_K_M.gguf
+      --mmproj ${models_dir}/qwen3.5-4b-3d-coder/mmproj-Qwen3.5-4B-BF16.gguf
+      --no-mmproj-offload
+      --jinja
+      -ngl 99
+      --ctx-size 131072
+      -fa on
+      -ctk q4_0
+      -ctv q4_0
+      -b 512
+      -ub 128
+      --n-predict 32768
+      --temp 0.6 --top-p 0.95 --top-k 20
+      --min-p 0
+      --repeat-penalty 1.0
+      --parallel 1
+      --metrics
+    cmdStop: 'pkill -f "Qwen3.5-4B-3D-Coder-Q4_K_M"'
+    ttl: 900
+    health_check_timeout: 300
+    filters:
+      stripParams: "temperature, top_p, top_k, min_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.6
+          top_p: 0.95
+          top_k: 20
+          min_p: 0
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      architecture: qwen35
+      parameters: 4200000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: Q4_K_M
+      size: "~2.71 GB (Q4_K_M) + 0.64 GB mmproj"
+      context: "131K (@262K nativo)"
+      vram_usage: "~4 GB all-in-VRAM (medir no load)"
+      source: "ccore/Qwen3.5-4B-3D-Coder"
+      kv_cache: "q4_0/q4_0"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
   anima-aesthetic-v1.1:
     name: Anima Aesthetic v1.1
     description: "Anima Aesthetic v1.1 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. Fine-tune de consistencia; o melhor default art style da familia."
@@ -2251,7 +2418,8 @@ matrix:
     # Qwen3.8-27B GSQ-RCO IQ2_S-mtp removed Sep 20 2026 — 3.6 t/s ainda lento demais pro uso; GGUF deleted; fragment em _disabled/
     # q38g: qwen3.8-27b-gsq
     # Bonsai removed Sep 20 2026 — user nunca usa; GGUF deleted; fragment em _disabled/
-    # bonsai: bonsai-27b
+    # REATIVADO 07/nov — vanilla (kernels Q1_0 upstream + ngram-mod), dense 27B binário 1.125 bpw, 131K
+    b27: bonsai-27b
     # Tradução
     tg: translategemma-4b
     # Português jurídico (Qwen3.5-9B LoRA, instruct)
@@ -2284,6 +2452,7 @@ matrix:
     # Uma pergunta fixa (prompt no template do GGUF), rota /v1/systemone.
     # mojev: minicpm-ocr-jev  # _disabled 02/nov 2026 (pesos off disk; fragment em _disabled/)
     sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
+    tq3d: qwen3.5-4b-3d-coder  # ccore 4B Three.js 3D-Coder Q4_K_M + mmproj BF16 @131K (07/nov, padrão S5-mini)
     # nbe4: nemotron-bolt-e4b  # APOSENTADO 31/10/2026 (dono) — GGUFs (UD-Q4_K_XL 5.1G + dflash draft) deletados, fragment _disabled/; restore: re-download unsloth (GATED)
     lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + :think), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despejava (ping-pong cravado no journal 30/out 14:53)
     # sn9: sensenova-loop-9b  # RETIRADO 31/out/2026 (fragment em _disabled/, restore no header do fragment)
@@ -2291,7 +2460,7 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "lfm24 & (lfmcol | eg2) & pkstt"  # 31/10: twp aposentado (single member, expressão reescrita)
+    small_vision: "(lfm24 | tq3d) & (lfmcol | eg2) & pkstt"  # 31/10: twp aposentado (single member) | 07/11: +tq3d (3D-Coder 4B vision @131K)
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
@@ -2319,7 +2488,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(lfm24 | mcv35 | orn35) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim (regressão: o rewrite derrubou o FIM do heavy; ping-pong coder<->35B medido no journal — restauro da intenção 16/out documentada no small_embed) | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4)
+    heavy: "(lfm24 | mcv35 | orn35 | b27) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -2346,6 +2515,8 @@ matrix:
   evict_costs:
     # MiniCPM-V 4.7: barato de recarregar (1B 2.2GB GPU; 35B MoE ~11GB RAM, page cache)
     mcv35: 4
+    b27: 4   # Bonsai 27B 1-bit: 3.8GB + mmproj; reload ~1min (07/nov)
+    tq3d: 2  # 3D-Coder 4B: 2.7GB + mmproj 0.64GB, all-in-VRAM (07/nov)
     # orn15: 9  # merged no heretic 05/10
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     # q36: 9  # APOSENTADO 02/nov 2026

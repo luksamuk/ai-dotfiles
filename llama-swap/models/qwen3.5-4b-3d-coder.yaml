@@ -1,0 +1,85 @@
+# -----------------------------------------------------------
+# QWEN3.5-4B-3D-CODER — VANILLA llama.cpp
+# Why vanilla: arch qwen35 (família do S5-mini), deploy padrão S5 @131K.
+# Base Qwen/Qwen3.5-4B, finetune ccore focado em cenas Three.js
+# interativas + coding geral (early preview, projeto vivo, technical
+# report no card). Visão: mmproj BF16 ORIGINAL do Qwen3.5-4B, unmodified
+# (proveniência lmstudio-community) — um arquivo para os dois quants.
+# Buffers de compute de prefill: -b 512 -ub 128 (2048/1024 estoura a
+# 6GB @131K, OOM de pp buffers 07/nov). mmproj na CPU RAM
+# (--no-mmproj-offload): ViT pago só por imagem, destrava o boot na 6GB.
+# q8_0 @131K pede 2176 MiB e OOMa na 6GB com desktop (1GB) vivo (07/nov);
+# q4_0 fecha o 131K com folga.
+# q8_0 só até 64K. Escada híbrida da família: VRAM quase fixa, provado
+# no ornith-9b a 262K fp16.
+# Sampling = FP16 gen defaults do card (0.6/0.95/20, rep 1.0).
+# Template TEM tools (formato XML function-call da família Arete) e
+# NÃO tem reasoning_effort: always-thinking, sem escada, single
+# handle, --n-predict 32768 p/ o thinking não comer o budget.
+# Image tokens compartilham a janela com prompt + código gerado.
+# Existe a variante GLB-3D-Coder (gera .glb) — NÃO deployada.
+# -----------------------------------------------------------
+qwen3.5-4b-3d-coder:
+  name: "Qwen3.5-4B 3D-Coder"
+  description: "Small model for general coding with a focus on interactive Three.js 3D scene generation; accepts reference images via the Qwen3.5-4B vision encoder."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    -m ${models_dir}/qwen3.5-4b-3d-coder/Qwen3.5-4B-3D-Coder-Q4_K_M.gguf
+    --mmproj ${models_dir}/qwen3.5-4b-3d-coder/mmproj-Qwen3.5-4B-BF16.gguf
+    --no-mmproj-offload
+    --jinja
+    -ngl 99
+    --ctx-size 131072
+    -fa on
+    -ctk q4_0
+    -ctv q4_0
+    -b 512
+    -ub 128
+    --n-predict 32768
+    --temp 0.6 --top-p 0.95 --top-k 20
+    --min-p 0
+    --repeat-penalty 1.0
+    --parallel 1
+    --metrics
+  cmdStop: 'pkill -f "Qwen3.5-4B-3D-Coder-Q4_K_M"'
+  ttl: 900
+  health_check_timeout: 300
+  filters:
+    stripParams: "temperature, top_p, top_k, min_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.6
+        top_p: 0.95
+        top_k: 20
+        min_p: 0
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    architecture: qwen35
+    parameters: 4200000000
+    context_length: 262144
+    embedding_length: 2560
+    quantization: Q4_K_M
+    size: "~2.71 GB (Q4_K_M) + 0.64 GB mmproj"
+    context: "131K (@262K nativo)"
+    vram_usage: "~4.5 GB lane (5535 MiB no card c/ desktop ~1GB, medido 07/nov)"
+    source: "ccore/Qwen3.5-4B-3D-Coder"
+    kv_cache: "q4_0/q4_0"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false

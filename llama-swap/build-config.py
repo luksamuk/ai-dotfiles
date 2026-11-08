@@ -117,6 +117,8 @@ ORIGINAL_ORDER = [
     "minicpm-ocr-1.0",          # ✅ Doc parse OCR (arch qwen35, mmproj 4x downsampler + DSpark draft acoplado) 28/out
     "minicpm-ocr-jev",          # ✅ OCR Jev scorer (decision CPU-only, arch qwen35 + pooling 3) 28/out
     "parakeet-tdt-0.6b-v3",     # ✅ ASR CPU-only (NVIDIA Parakeet TDT 0.6B v3) p/ o dicta do Kilo Code
+    "bonsai-27b",               # ✅ REATIVADO 07/nov — vanilla (kernels Q1_0 upstream + ngram-mod), dense 27B binário 1.125 bpw; substitui o legacy "bonsai-27b-1bit" (linha 91, fragment morto)
+    "qwen3.5-4b-3d-coder",      # ✅ ccore Three.js 3D-Coder Q4_K_M + mmproj BF16 @131K (padrão S5-mini), 07/nov
 ]
 
 

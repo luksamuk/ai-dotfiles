@@ -1,0 +1,82 @@
+# -----------------------------------------------------------
+# BONSAI 27B (1-bit Q1_0) — VANILLA llama.cpp
+# Why vanilla: Q1_0 repack kernels + hadamard mul_mat/get_row upstream
+# (#23492, #29927, #30122, #30627) e ngram-mod spec decode no arg.cpp.
+# Sem fork desde b9867+. Arch qwen35 (Qwen3.6-27B, dense hybrid DeltaNet).
+# VRAM: weights+compute ~4.4 GB; mmproj Q8_0 na CPU RAM (--no-mmproj-offload);
+# KV q4_0 em host RAM (--no-kv-offload). 131K canonical @ ~10.95 t/s (Ago);
+# modo speed 48K KV-GPU mediu 22.9 t/s (lane separada se quiser);
+# Jul: 20-27 t/s @32/48K.
+# Tools: template Qwen3.6 + --jinja. PITFALL da casa: ngram-mod quebrou
+# parallel tool calls no Gemma4-E4B — testar multi-call antes de uso
+# agentic pesado.
+# Always-thinking, single handle (sem :think), sem escada de effort.
+# --n-predict 32768 p/ o raciocinio nao comer o output budget.
+# -----------------------------------------------------------
+bonsai-27b:
+  name: "Bonsai 27B (1-bit)"
+  description: "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with true 1.125-bit binary weights, full thinking and reasoning at ~3.9 GB. 89.5% of FP16 intelligence."
+  cmd: |
+    ${llama_server} --port ${PORT}
+    -m ${models_dir}/bonsai-27b/Bonsai-27B-Q1_0.gguf
+    --mmproj ${models_dir}/bonsai-27b/Bonsai-27B-mmproj-Q8_0.gguf
+    --no-mmproj-offload
+    --jinja
+    -ngl 99
+    --ctx-size 131072
+    --no-kv-offload
+    -fa on
+    --cache-type-k ${large_cache_k}
+    --cache-type-v ${large_cache_v}
+    --spec-type ngram-mod
+    --spec-ngram-mod-n-max 64
+    --spec-ngram-mod-n-min 48
+    --spec-ngram-mod-n-match 24
+    --n-predict 32768
+    --temp 0.7 --top-p 0.95 --top-k 20
+    --min-p 0
+    --repeat-penalty 1.0
+    --parallel 1
+    --metrics
+  cmdStop: 'pkill -f "Bonsai-27B-Q1_0"'
+  ttl: 900
+  health_check_timeout: 300
+  filters:
+    stripParams: "temperature, top_p, top_k, min_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.7
+        top_p: 0.95
+        top_k: 20
+        min_p: 0
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    architecture: qwen35
+    parameters: 27300000000
+    context_length: 262144
+    embedding_length: 5120
+    quantization: Q1_0
+    size: "~3.80 GB (Q1_0 binary) + 0.63 GB mmproj"
+    context: "131K (@262K nativo)"
+    vram_usage: "~4.4 GB + ~3.5 GB RAM (KV q4_0 + mmproj)"
+    source: "prism-ml/Bonsai-27B-gguf"
+    kv_cache: "q4_0/q4_0 (host RAM)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
