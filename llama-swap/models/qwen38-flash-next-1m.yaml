@@ -70,7 +70,7 @@ qwen38-flash-next-1m:
   metadata:
     size: "~74.5 GiB (UD unsloth, split 3) + 2.2 GiB MTP draft"
     context: 16384 (GGUF declara 262144 — teto da casa por RAM/VRAM)
-    vram_usage: "a medir (dense + KV + draft; régua 550-600 MiB livre = passa)"
+    vram_usage: 'a medir'  # referencia do irmao: ~5.74 GB VRAM em request (93%) + ~21 GB RAM page-locked; regua 550-600 MiB livres = passa
     source: unsloth/Qwen3.8-Flash-Next-GGUF (UD-IQ1_M) + quimmedes/Qwen3.8-Flash-Next-MTP-GGUF (Q4_0)
     kv_cache: q8_0/q8_0 (-kvu), draft q4_0
     features:

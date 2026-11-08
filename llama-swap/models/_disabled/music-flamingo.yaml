@@ -28,7 +28,7 @@ music-flamingo:
     context: 8192
     vram_usage: ~3.6 GB VRAM
     source: mradermacher/music-flamingo-hf-GGUF (Q4_K_M) / nvidia/music-flamingo-hf
-    kv_cache: f16 (default — cache quant não testado com path de áudio)
+    kv_cache: 'f16'  # cache quant NAO testado com path de audio
     features:
       completion: true
       tools: false

@@ -64,11 +64,9 @@ spark-x2.6-1.7b:
     reranker: false
     context: 262144
   metadata:
-    size: ~1.82 GB (Q8_0 — Q4_K_M tinha so 50MB a menos, Q8 vence em hybrid) +
-      0.69 GB draft DSpark BF16 (PARKED no dir, NAO usado pela lane)
+    size: '~1.82 GB (Q8_0) + ~0.69 GB draft DSpark BF16'
     context: 262144
-    vram_usage: "~4.6 GB TOTAL medido (plain @262K: 4631 MiB TOTAL c/ desktop
-      1187; a lane ~3.4 GB; o --fit manteve os 262K inteiros)"
+    vram_usage: '~4.5 GB TOTAL @262K (lane ~3.4 GB)'
     source: XHToken/Spark-X2.6-1.7B-GGUF (Q8_0) + XHToken/Spark-X2.6-1.7B-DSpark-GGUF
       (draft BF16 345M, repo oficial)
     kv_cache: q4_0 + q4_0; draft f16 (SWA 512)

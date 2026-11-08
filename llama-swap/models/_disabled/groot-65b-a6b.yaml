@@ -92,7 +92,7 @@ groot-65b-a6b:
   metadata:
     size: ~52.46 GB (Q2_K) + 0.58 GB mmproj
     context: 65536
-    vram_usage: "a medir no smoke — backbone ~2 GB na GPU + KV leve (12 sparse-attn layers) + PLE 25 GB em host (mmap, thrash esperado)"
+    vram_usage: 'a medir'  # ~2 GB backbone na GPU + KV leve (12 sparse-attn layers) + PLE ~25 GB em host (mmap)
     source: mradermacher/Groot-65B-A6B-261023-GGUF (Q2_K, 56335871168 bytes exatos)
       + mmproj-Q8_0 (616703296 bytes)
     kv_cache: q4_0/q4_0

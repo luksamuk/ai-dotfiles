@@ -30,10 +30,10 @@ alpie-seed:
     - text
     tools: true
     reranker: false
-    context: 65536
+    context: '65536'  # escada do qwen35-hybrid 06/11 toda medida: 32K fp16 ate 262K fp16 passam com VRAM 4.72-4.89 GB; teto nativo 262144
   metadata:
     size: ~5.24 GB (Q4_K_M)
-    context: '65536 deployado — teto nativo 262144; escada 06/11 toda medida (32K fp16 ate 262K fp16 passam, VRAM 4.72-4.89GB), mas 262K degrada decode a 4.9 t/s @64K preenchido — degrau 64K escolhido: prefill 829 t/s (melhor da escada) + decode ~10 t/s plano ate 16K'
+    context: '65536'  # escada 06/11 toda medida: 32K fp16 ate 262K fp16 passam com VRAM 4.72-4.89 GB; teto nativo 262144
     vram_usage: ~4.7 GB VRAM c/ offload parcial (sem -ngl, fit do vanilla decide); RSS ~5-6 GB
     kv_cache: 'f16/f16'
     source: 169Pi/Alpie_Seed_GGUF (alpie_seed-text-q4_k_m.gguf, 5629109184 bytes exatos; Apache-2.0, ungated)

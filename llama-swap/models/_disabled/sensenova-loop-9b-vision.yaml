@@ -81,9 +81,9 @@ sensenova-loop-9b-vision:
     reranker: false
     context: 16384
   metadata:
-    size: "~8.21 GB main (Q4_K_M, bloco de loop armazenado DUPLICADO no arquivo: 937 tensors vs 523 do single-block) + ~0.88 GB mmproj (F16, arch clip)"
+    size: '~8.21 GB main (Q4_K_M, bloco de loop DUPLICADO no arquivo)'
     context: 16384
-    vram_usage: "pico medido 5708 MiB card total @16K (ngl 26: ~26/56 layers GPU) = 93% da 3050; mmproj na CPU (--no-mmproj-offload: ViT embute na CPU, segundos por imagem)"
+    vram_usage: '~5.58 GB VRAM (5708 MiB card @16K, ngl 26; mmproj na CPU)'
     source: "annelo/SenseNova-Loop-9B-Preview-Q4_K_M-Vision-GGUF (Q4_K_M b3f8cd84 + mmproj F16 3c94fcbb, SHA verificados) — base sensenova/SenseNova-Loop-9B-Preview (Apache 2.0)"
     kv_cache: q4_0/q4_0
     features:

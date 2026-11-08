@@ -44,9 +44,7 @@ ornith-1.5-9b-heretic:
     context: 65536
   metadata:
     size: ~5.24 GB (Q4_K_M heretic)
-    context: '65536 deployado — KV hbrido fp16 quase de graa: a escada da famlia (06/11) passou INTEIRA, de 32K a 262K
-      fp16, com VRAM 4.72-4.89 GB; o 262K nativo degrada o decode para 4.9 t/s com a janela de 64K preenchida, por isso
-      o degrau 64K escolhido (o dono aprov)'
+    context: '65536'  # escada da familia 06/11 passou inteira (32K-262K fp16, VRAM 4.72-4.89 GB); 262K nativo degrada o decode pra 4.9 t/s com janela 64K preenchida
     vram_usage: '~3.9 GB VRAM (pesos/buffers, offload parcial do auto-fit) + mmproj em RAM (viso opt-in)'
     kv_cache: q4_0/q4_0
     source: 'Thunder13240/Ornith-1.5-9B-heretic-GGUF (Ornith-1.5-9B-heretic-Q4_K_M.gguf, 5629108768 bytes exatos; MIT;

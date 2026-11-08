@@ -210,7 +210,7 @@ models:
     metadata:
       size: ~2.48 GB (Q4_K_M)
       context: 114688
-      vram_usage: '~5.6 GB @112K com desktop+netflix (01/11: OOM @131K nos compute buffers 535 MiB — era 5449 MiB @131K em 24/10; o novo build cresceu VRAM)'
+      vram_usage: '~5.6 GB @112K'
       source: daydreamwarrior/Spark-X2.6-4B-heretic (self-quant Q4_K_M do BF16 oficial, sha256 0312b17c...; base XHToken/Spark-X2.6-4B)
       kv_cache: q4_0 + q4_0
       features:
@@ -658,7 +658,7 @@ models:
       quantization: Q1_0
       size: "~3.80 GB (Q1_0 binary) + 0.63 GB mmproj"
       context: "40K (KV-GPU cliff; nativo 262K; meio-termo do dono 87% VRAM)"
-      vram_usage: "~4.9 GB na GPU com KV residente (measured 07/nov: 5358 MiB card = 87% no desktop 690)"
+      vram_usage: '~4.9 GB VRAM (5358 MiB card = 87% c/ desktop ~690 MiB)'
       source: "prism-ml/Bonsai-27B-gguf"
       kv_cache: "q4_0/q4_0"
       features:
@@ -743,7 +743,7 @@ models:
       quantization: Q4_K_M
       size: "~2.71 GB (Q4_K_M) + 0.64 GB mmproj"
       context: "131K (@262K nativo)"
-      vram_usage: "~4.5 GB lane (5535 MiB no card c/ desktop ~1GB, medido 07/nov)"
+      vram_usage: '~4.5 GB VRAM (5535 MiB no card c/ desktop ~1 GB)'
       source: "ccore/Qwen3.5-4B-3D-Coder"
       kv_cache: "q4_0/q4_0"
       features:
@@ -775,7 +775,7 @@ models:
       reranker: false
       context: 0
     metadata:
-      size: 4.18 GB DiT (BF16) + 0.64 GB TE (Qwen3-0.6B Q8_0) + 0.25 GB VAE qwen_image — TE/VAE compartilhados
+      size: '~5.07 GB total (4.18 DiT BF16 + 0.64 TE Q8_0 + 0.25 VAE)'
       context: 0
       vram_usage: ~5.1 GB residente (DiT+TE+VAE; --offload-to-cpu absorve o pico na 6GB)
       source: circlestone-labs/Anima (HF split_files) — sem GGUF upstream para o aesthetic
@@ -819,7 +819,7 @@ models:
       reranker: false
       context: 0
     metadata:
-      size: 2.24 GB DiT (GGUF Q8_0) + 0.64 GB TE (Qwen3-0.6B Q8_0) + 0.25 GB VAE qwen_image — TE/VAE compartilhados
+      size: '~3.13 GB total (2.24 DiT Q8_0 + 0.64 TE Q8_0 + 0.25 VAE)'
       context: 0
       vram_usage: ~3.1 GB residente (GGUF Q8 + TE + VAE) - o mais folgado da familia na 6GB
       source: Abiray/Anima-base-v1.0-GGUF (quant sobre os pesos oficiais circlestone-labs/Anima)
@@ -864,7 +864,7 @@ models:
       reranker: false
       context: 0
     metadata:
-      size: 4.18 GB DiT (BF16) + 0.64 GB TE (Qwen3-0.6B Q8_0) + 0.25 GB VAE qwen_image — TE/VAE compartilhados
+      size: '~5.07 GB total (4.18 DiT BF16 + 0.64 TE Q8_0 + 0.25 VAE)'
       context: 0
       vram_usage: ~5.1 GB residente (DiT+TE+VAE; --offload-to-cpu absorve o pico na 6GB)
       source: circlestone-labs/Anima (HF split_files) — sem GGUF upstream para o turbo
@@ -1082,8 +1082,8 @@ models:
       context: 131072
     metadata:
       size: ~11.66 GB (Q4_K_M) + 0.86 GB mmproj
-      context: '131072 (262144 via rollback; MTP exige o degrau menor)'
-      vram_usage: '~4.34 GB VRAM @131K c/ MTP (5.22 no pico @262K, que OOMa no prefill com draft) + ~14 GB RAM'
+      context: '131072'
+      vram_usage: '~4.34 GB VRAM c/ MTP + ~14 GB RAM @131K'
       source: GrootTeam/Groot-19B-A3B-261023-GGUF (Q4_K_M, 11657618560 bytes exatos) + mmproj-BF16 (902822016 bytes)
       kv_cache: q4_0/q4_0 + hadamard
       features:
@@ -1386,7 +1386,7 @@ models:
       reranker: false
       context: 32768
     metadata:
-      size: ~1.43 GB (Q6_K Pollard) + 0.57 GB mmproj-F16 (audio encoder, movido p/ este dir 31/10 com a aposentadoria da lane stock)
+      size: '~1.43 GB (Q6_K Pollard) + 0.57 GB mmproj-F16 (audio encoder)'
       context: 32768
       vram_usage: "~3.9 GB VRAM pico @32K estimado (KV q4_0)"
       source: PollardWeights/LFM3-Audio-2B-Pollard (Q6_K) + mmproj-F16 oficial LiquidAI (570846400 bytes; era da lane lfm3-audio-2b, MOVIDO p/ cá 31/10 na aposentadoria do stock)
@@ -1467,7 +1467,7 @@ models:
       embeddings: false
       context: 32768
     metadata:
-      size: ~1.43 GB (Q6_K Pollard) + 0.90 GB mmproj-BF16 (do repo Pollard, par testado do criador)
+      size: '~1.43 GB (Q6_K Pollard) + 0.90 GB mmproj-BF16'
       context: 32768
       vram_usage: "~3.6-4.6 GB VRAM pico @32K estimado (KV q4_0; o Q8_0 media ~4-5 GB)"
       source: PollardWeights/LFM3-Omni-2B-Pollard (Q6_K, 1427640832 bytes; mmproj-LiquidAI__LFM3-Omni-2B-BF16.gguf, 949841248 bytes)
@@ -1867,7 +1867,7 @@ models:
       context: 65536
     metadata:
       size: ~5.24 GB (Q4_K_M heretic)
-      context: '65536 deployado — KV hbrido fp16 quase de graa: a escada da famlia (06/11) passou INTEIRA, de 32K a 262K fp16, com VRAM 4.72-4.89 GB; o 262K nativo degrada o decode para 4.9 t/s com a janela de 64K preenchida, por isso o degrau 64K escolhido (o dono aprov)'
+      context: '65536'
       vram_usage: '~3.9 GB VRAM (pesos/buffers, offload parcial do auto-fit) + mmproj em RAM (viso opt-in)'
       kv_cache: q4_0/q4_0
       source: 'Thunder13240/Ornith-1.5-9B-heretic-GGUF (Ornith-1.5-9B-heretic-Q4_K_M.gguf, 5629108768 bytes exatos; MIT; base_model declarado ornith-ai/Ornith-1.5-9B; autor documenta ARA do Heretic com sampling position corrigida)'
@@ -2106,7 +2106,7 @@ models:
     metadata:
       size: "~74.5 GiB (UD unsloth, split 3) + 2.2 GiB MTP draft"
       context: 16384 (GGUF declara 262144 — teto da casa por RAM/VRAM)
-      vram_usage: "a medir (dense + KV + draft; régua 550-600 MiB livre = passa)"
+      vram_usage: 'a medir'
       source: unsloth/Qwen3.8-Flash-Next-GGUF (UD-IQ1_M) + quimmedes/Qwen3.8-Flash-Next-MTP-GGUF (Q4_0)
       kv_cache: q8_0/q8_0 (-kvu), draft q4_0
       features:
