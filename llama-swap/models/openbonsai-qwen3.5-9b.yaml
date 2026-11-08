@@ -1,0 +1,72 @@
+# -----------------------------------------------------------------
+# OPENBONSAI QWEN3.5-9B (PTQ1_0) — CAFE (prototipo experimental)
+# Por que cafe: tipo PTQ1_0 (143, Prism-private) NAO existe no upstream
+# vanilla (gguf-py do vanilla rejeita o dtype); cafe carrega com kernel
+# CUDA nativo do proprio Prism (mmq-instance-ptq1_0) — layout identico ao
+# Ternary-Bonsai-2-9B, provado na lane bonsai2-9b (66.2 t/s @131K).
+# ik = path CPU rtr 1 (~10 t/s em i5) — sem kernel CUDA pro tipo.
+# Modelo: webbrain-one/openbonsai-qwen-3.5-9b (Apache-2.0; base Qwen3.5-9B)
+# comprimido pelo framework openbonsai (independente, NAO Prism).
+# Texto puro: sem mmproj, sem MTP. Template Qwen3.5 embutido (7.5 KB) +
+# tokenizer 248320 tokens. Thinking ON por default e estoura 4096 tokens
+# com frequencia (card: 18/50 GSM8K cortados) — budget de output alto.
+# QUALIDADE (card, honesto): abaixo do BF16 base e do Ternary-Bonsai-2-9B
+# da Prism; pt-BR NAO testado pelo autor (calibracao quase toda ingles,
+# "non-English output is weak") — o teste pt da casa decide o destino.
+# -----------------------------------------------------------------
+openbonsai-qwen3.5-9b:
+  name: OpenBonsai Qwen3.5 9B
+  description: "Experimental 9B ternary (1.58-bit, PTQ1_0 ~2 GB) of Qwen3.5-9B compressed by the open OpenBonsai framework. Same tensor layout as PrismML Ternary-Bonsai-2-9B. Text only, research preview."
+  tags:
+  - llm
+  - thinking
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
+
+    --port ${PORT}
+
+    -m ${models_dir}/openbonsai/OpenBonsai-Qwen3.5-9B-PTQ1_0.gguf
+
+    -ngl 99 -c 131072 -fa on -ctk q4_0 -ctv q4_0 -b 512 -ub 128
+
+    --host 127.0.0.1 --jinja
+
+    '
+  cmdStop: pkill -f 'cafe-llama.cpp/build/bin/llama-server.*OpenBonsai-Qwen3.5-9B-PTQ1_0'
+  health_check_timeout: 120
+  ttl: 1800
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    architecture: qwen35
+    context_length: 262144
+    embedding_length: 4096
+    quantization: PTQ1_0
+    size: ~2.0 GB (PTQ1_0 ternario, texto puro)
+    context: 131072
+    vram_usage: "~4.4 GB estimado (precedente bonsai2-9b mesmo layout: 4471 MiB, 72.8% @131K KV q4_0)"
+    source: 'webbrain-one/openbonsai-qwen-3.5-9b (OpenBonsai-Qwen3.5-9B-PTQ1_0.gguf; Apache-2.0; base Qwen3.5-9B)'
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    note: 'SMOKE 08/11 (cafe): DE BOTA — spawn OK, VRAM 3796 MiB; pt-BR PASSOU no teste da
+      casa (fatorial 720 correto + fatoracao de polinomios, duas classes certas, respondeu
+      em portugues — o card so testou turco). REGUA 52.9k prefill: prefill cold 136.2s
+      (388.5 t/s); decode @52k cheio 19.2-21.3 t/s; @16k cheio 38.8 t/s; TTFT cache-hit
+      0.1-0.2s. Precedente da familia (Ternary-Bonsai-2-9B, mesmo layout cafe): 66.2 t/s
+      @131K sem fill. Thinking estoura 4K com frequencia (card + medido: runs de 1.1-3.9k
+      tokens de thinking). Pendente se ficar permanente: o dono decide; registro em
+      download-models.sh e catalogo DSH/Pi. QUALIDADE (card): abaixo do BF16 base e do
+      Ternary-Bonsai-2-9B prism; pt-BR nao era territorio do autor mas passou aqui.'
