@@ -31,11 +31,11 @@ groot-19b-a3b-fast:
     - text
     tools: true
     reranker: false
-    context: 262144
+    context: 131072
   metadata:
     size: ~11.66 GB (Q4_K_M) + 0.86 GB mmproj
-    context: 262144
-    vram_usage: ~5.06 GB VRAM @262K + ~14 GB RAM
+    context: '131072 (262144 era o degra anterior; MTP exige o degrau menor — rollback do ctx devolve o 262K)'
+    vram_usage: '~4.34 GB VRAM @131K c/ MTP (5.22 no pico @262K, que OOMa no prefill com draft) + ~14 GB RAM'
     source: GrootTeam/Groot-19B-A3B-261023-GGUF (Q4_K_M, 11657618560 bytes exatos) + mmproj-BF16 (902822016 bytes)
     kv_cache: q4_0/q4_0 + hadamard
     features:
