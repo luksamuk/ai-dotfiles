@@ -103,7 +103,7 @@ ornith-1.5-35b-heretic-fast:
       é TEMPORÁRIO de teste: se a régua de sanidade passar, vira o substituto de orn15+q36hc; se falhar, fragmento vai pra
       _disabled/ sem drama. KV validado 25/10 contra o cmd real: ctk/ctv q4_0 (large_cache_k/v) + hadamard K/V, backend ik
       — o attn_rot antigo era herança errada do orn15 (nunca existiu flag aqui). Sha256 do GGUF re-verificado pós reinstalação
-      24/10: 37f67861...e0e7 OK. NOTA 08/11 pós-merge ik (5202/639e2012): o ik ganhou tq.cuh (TurboQuant KV path CUDA) —
-      turbo2/turbo3 nesta lane (KV grande @131K) é interesse do dono como A/B real, GATE: smoke de sanidade + decode +
-      régua de qualidade antes de catálogo (no café, turbo CORROMPEU a SWA híbrida da mesma famlia; o tq do ik é outro
-      código, mas não testado em hybrid qwen35).'
+      24/10: 37f67861...e0e7 OK. NOTA 08/11 pós-merge ik (5203/662bb434): tq (TurboQuant) no ik = NEGATIVO pra lanes
+      hybrid qwen35 — tq2_t/tqk6 abortam no build do graph (ggml.c:13092 quantize_row_q sem impl CPU pro TQ; testado no
+      groot, vale aqui: kernels CUDA existem, plumbing CPU incompleto upstream). Parser do cache-type aberto no 662bb434;
+      re-teste s após upstream fechar o quantize_row CPU.'
