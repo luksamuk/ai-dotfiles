@@ -8,9 +8,9 @@ groot-19b-a3b-fast:
   - think
   - tools
   cmd: ${ik_llama_server} --port ${PORT} --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf
-    --no-mmproj-offload --no-graph-reuse -ngl 99 --n-cpu-moe 34 --ctx-size 262144 --reasoning on --jinja --parallel 1 --parallel-tool-calls
+    --no-mmproj-offload --no-graph-reuse -ngl 99 --n-cpu-moe 34 --ctx-size ${small_model_max_ctx} --reasoning on --jinja --parallel 1 --parallel-tool-calls
     --cache-type-k q4_0 --cache-type-v q4_0 --k-cache-hadamard --v-cache-hadamard --flash-attn auto --defer-experts --prefetch-experts
-    -b 512 -ub 128 --temp 1.0 --top-k 20 --top-p 0.95 --metrics
+    -b 512 -ub 128 --temp 1.0 --top-k 20 --top-p 0.95 --spec-type mtp:n_max=1,p_min=0.0 --metrics
   filters:
     stripParams: temperature, top_p
     setParamsByID:
@@ -63,7 +63,11 @@ groot-19b-a3b-fast:
       (plain e think). 1.5x mais rapido que a lane cafe. TURBO A/B 08/11: NEGATIVO — tq2_t/tqk6 abortam no build do
       graph (ggml.c:13092 quantize_row_q sem implementao CPU pro TQ; iqk s tem TQ2_T pra mul_mat/dequantize). Kernels
       CUDA tq chegaram no merge 639e2012 + parser aberto via patch house 662bb434, MAS falta o plumbing CPU — NO GO
-      at upstream fechar; KV segue q4_0+hadamard @262K (a KV no  f16: o 2.1GB da nota antiga  histrico de f16). Parallel tool calls NATIVO (-ptc): 4 get_weather/get_local_time simultaneos,
+      at upstream fechar; KV segue q4_0+hadamard. MTP A/B 08/11: ENGATA — `--spec-type mtp:n_max=1,p_min=0.0`
+      (receita da ornith-35b-fast) com ctx 131072: decode @52k cheio 25.5-26.7 t/s vs 20.5 baseline (+25-30%),
+      prefill inalterado (215-245s, dentro do rudo), VRAM 4338 MiB @131K. @262K o MTP MORRE no meio do prefill
+      (morte sbita no draft, reproduziu AT com a VRAM livre) — por isso o dono aceitou descer pra 131K; a escada
+      de volta  rollback do ctx. Parallel tool calls NATIVO (-ptc): 4 get_weather/get_local_time simultaneos,
       JSON limpo, finish=tool_calls — com template embedded (sem --chat-template-file da casa). Dual-mode via enable_thinking,
       reasoning_content OK, 17*23=391. Mesmo peso e mmproj da lane cafe (um download serve as duas). Hadamard KV = TurboQuant
       ik (exclusivo do ik; o cafe roda KV q4_0 puro). GGUF em ~/.llama-models/groot-19b-a3b/. EDIT 04/nov: renomeada para
