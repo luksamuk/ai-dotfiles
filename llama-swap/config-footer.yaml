@@ -120,7 +120,7 @@ matrix:
     # Embedding
     # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
     # lfmemb: lfm2.5-embedding-350m  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER (nome corrigido p/ "LFM2.5 Embedding 350M"); colbert+eg2 cobrem embed
-    # nemb: nemotron-3-embed-1b  # APOSENTADO 21/out 2026 — sprach migrou p/ eg2 em 06/10; GGUF deletado, fragment em _removed/
+    nemb: nemotron-3-embed-1b  # REATIVADO 09/nov/2026 (LUC-148/149) — par nemotron vs eg2 na validação do sprach; GGUF re-convertido da receita MANUAL CONVERSION (header do download-models.sh)
     # Multimodal embedding (Google, 740M, texto+img+audio+video, 768d MRL, Apache 2.0)
     eg2: embeddinggemma-2
     # Reranker (late-interaction, CPU-only)
@@ -145,12 +145,12 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(lfm24 | tq3d) & (lfmcol | eg2) & pkstt"  # 31/10: twp aposentado (single member) | 07/11: +tq3d (3D-Coder 4B vision @131K)
+    small_vision: "(lfm24 | tq3d) & (lfmcol | eg2 | nemb) & pkstt"  # 31/10: twp aposentado | 07/11: +tq3d (3D-Coder 4B vision @131K) | 09/11: +nemb reativado
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(lfm24 | sp26 | lfm317) & (lfmcol | eg2) & qpfim & pkstt"  # 31/10: twp + nbe4 aposentados
+    small_embed: "(lfm24 | sp26 | lfm317) & (lfmcol | eg2 | nemb) & qpfim & pkstt"  # 31/10: twp + nbe4 aposentados | 09/11: +nemb
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
     small_only: "(lfm24 | sp26 | lfm317) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados
@@ -160,7 +160,7 @@ matrix:
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "ocr | mcv35"  # mocr _disabled 02/nov 2026
-    vision_embed: "(ocr | mcv35) & (lfmcol | eg2) & pkstt"  # mocr _disabled 02/nov 2026
+    vision_embed: "(ocr | mcv35) & (lfmcol | eg2 | nemb) & pkstt"  # mocr _disabled 02/nov 2026 | 09/11: +nemb
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -173,7 +173,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(lfm24 | mcv35 | orn35 | b27) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense)
+    heavy: "(lfm24 | mcv35 | orn35 | b27) & (lfmcol | eg2 | nemb) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -188,13 +188,13 @@ matrix:
 
     # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
     # AND entre todos os CPU-only: coexistem (zero VRAM) — OR evitaria em ping-pong
-    embed_only: "lfmcol & eg2 & pkstt"  # 31/10: lfmemb aposentado
+    embed_only: "lfmcol & eg2 & nemb & pkstt"  # 31/10: lfmemb aposentado | 09/11: +nemb reativado
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
 
     # Reranker + Embedding (two-stage retrieval: dense → rerank)
-    rerank_embed: "lfmcol & eg2 & pkstt"  # 31/10: lfmemb aposentado (OR vira single member)
+    rerank_embed: "lfmcol & eg2 & nemb & pkstt"  # 31/10: lfmemb aposentado (OR vira single member) | 09/11: +nemb
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
@@ -255,6 +255,7 @@ matrix:
     # nomic: 1  # REMOVED Sep 10 2026
     # lfmemb: 1  # APOSENTADO 31/10/2026 junto do modelo
     # nemb: 1  # APOSENTADO 21/out 2026
+    nemb: 1  # REATIVADO 09/nov/2026 — CPU-only, reload barato, evicta primeiro
     eg2: 1
     lfmcol: 1
     tg: 2
