@@ -40,6 +40,10 @@ matrix:
     # nb42: nanbeige4.2-3b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/
     # Especialista logica formal (webAI, base Granite 4.2-3B da IBM) — lane nova, nao substitui
     # twp: twil-lm3-pro  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER; restore: re-download webAI Q6_K + mv fragment
+    # Portal 2 personality cores (degenerate, Q8_0, LFM2.5) — publicados no HF 10/nov
+    # adventure continua fora (sem judge formal; staging local em ~/git/ai/portal-cores)
+    spc: portal-core-space
+    fct: portal-core-fact
     # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
     qpfim: qwen2.5-coder-1.5b-pollard  # reativado 16/out — FIM CPU-only (k2fim/k2p/k2 _disabled: GGUFs deletados no aperto SSD; restore: mv _disabled → models + vars)
@@ -145,15 +149,15 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(lfm24 | tq3d) & (lfmcol | eg2 | nemb) & pkstt"  # 31/10: twp aposentado | 07/11: +tq3d (3D-Coder 4B vision @131K) | 09/11: +nemb reativado
+    small_vision: "(lfm24 | tq3d | spc | fct) & (lfmcol | eg2 | nemb) & pkstt"  # 31/10: twp aposentado | 07/11: +tq3d (3D-Coder 4B vision @131K) | 09/11: +nemb reativado | 10/11: +spc/fct (portal cores publicados no HF)
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(lfm24 | sp26 | lfm317) & (lfmcol | eg2 | nemb) & qpfim & pkstt"  # 31/10: twp + nbe4 aposentados | 09/11: +nemb
+    small_embed: "(lfm24 | sp26 | lfm317 | spc | fct) & (lfmcol | eg2 | nemb) & qpfim & pkstt"  # 31/10: twp + nbe4 aposentados | 09/11: +nemb | 10/11: +spc/fct
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "(lfm24 | sp26 | lfm317) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados
+    small_only: "(lfm24 | sp26 | lfm317 | spc | fct) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados | 10/11: +spc/fct
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
@@ -247,6 +251,8 @@ matrix:
     # eq4: 3  # REMOVED Sep 10 2026
     qpfim: 1
     lfm317: 2  # 1.7B Q8 ~2GB GPU — reload rápido; num conflito real o pollard (cost 1) sai antes
+    spc: 1   # Portal core Space 362MB — reload segundos
+    fct: 2   # Portal core Fact 1.2GB — reload rápido
     # sn9: 4  # RETIRADO 31/out/2026 junto do fragment
     # sn9v: 4  # RETIRADO junto
     # g12p: 3  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%)

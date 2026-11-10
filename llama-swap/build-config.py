@@ -111,6 +111,8 @@ ORIGINAL_ORDER = [
     "lfm2.5-colbert-350m",      # ✅ Reranker (CPU-only, Q8_0)
     "nemotron-3-embed-1b",      # ✅ Embedding (CPU-only, Q8_0, converted from BF16)
     "embeddinggemma-2",         # ✅ Embedding multimodal (CPU-only, Q8_0, texto+img+audio, 768d MRL, 06/10/2026)
+    "portal-core-space",        # ✅ Portal 2 Space Core v7b degenerate (Q8_0, LFM2.5-350M) — reativado 10/nov após publish HF
+    "portal-core-fact",         # ✅ Portal 2 Fact Core v8 degenerate (Q8_0, LFM2.5-1.2B) — reativado 10/nov após publish HF
     # Decision models (System One, /v1/systemone #29818; llama-swap routing PENDING #1195)
     # "laya",                   # REMOVED 20/out/2026 — juiz ruído (snake) + seletor 21% (diffuse); julia-1 cobre
     "julia-1",                  # ✅ Juiz leve (ModernBERT 144M BF16)

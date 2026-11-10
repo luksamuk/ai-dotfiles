@@ -94,6 +94,9 @@ declare -A MODELS=(
   # Uses ik_llama + hadamard KV + UD-Q4_K_XL (2.8 GB)
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-UD-Q4_K_XL.gguf"
   ["qwen3.5-4b-3d-coder"]="ccore/Qwen3.5-4B-3D-Coder Qwen3.5-4B-3D-Coder-Q4_K_M.gguf qwen3.5-4b-3d-coder/Qwen3.5-4B-3D-Coder-Q4_K_M.gguf"
+  # Portal cores (casa) — GGUFs publicados nos repos -GGUF (10/nov 2026)
+  ["portal-core-space"]="luksamuk/portal-core-space-GGUF portal-core-space-Q8_0.gguf portal-core-space/portal-core-space-Q8_0.gguf"
+  ["portal-core-fact"]="luksamuk/portal-core-fact-GGUF portal-core-fact-Q8_0.gguf portal-core-fact/portal-core-fact-Q8_0.gguf"
   ["spark-x2.6-4b"]="XHToken/Spark-X2.6-4B-GGUF Spark-X2.6-4B-Q4_K_M.gguf"
   ["nemotron-bolt-e4b"]="unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF NVIDIA-Nemotron-3.5-Bolt-E4B-UD-Q4_K_XL.gguf"
   ["nemotron-bolt-e4b-dflash"]="unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF dflash-NVIDIA-Nemotron-3.5-Bolt-E4B-Q8_0.gguf"

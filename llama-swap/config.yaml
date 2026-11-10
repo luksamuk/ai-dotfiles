@@ -403,6 +403,154 @@ models:
         image: false
       note: 'vram detalhe: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only) | Text-steered: queries ''task: {tarefa} | query:'' e docs ''title: {t} | text: {conteudo}'' (title: none se sem titulo); media SEM prefixo. Multimodal via mmproj (vision 212 tensors + audio 751 tensors no mmproj). MRL: truncate + re-normalizar client-side (768/512/256 perde pouco; 128 valida antes). Smoke 06/10/2026: MRR=1.0 retrieval 8q pt-BR, STS spearman 0.94 (par-a-par com nemotron-3-embed, 23ms vs 104ms query CPU). mmproj carrega vision+audio: aceita imagem/audio como input (vision tag = input, image false = nao gera). Lançamento 06/10/2026, GGUF oficial ggml-org; build 2796+ do llama.cpp necessita (arch gemma-embedding2, PR #30054).'
       context: 8192
+  portal-core-space:
+    name: 'Portal Core: Space'
+    description: Portal 2 Space Core personality construct. Obsessed with going to space. Bilingual PT/EN.
+    tags:
+    - chat
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/portal-core-space/portal-core-space-Q8_0.gguf
+
+      --jinja
+
+      --fit on
+
+      --fit-target ${vram_margin}
+
+      --ctx-size 16384
+
+      --parallel 1
+
+      --cont-batching
+
+      --temp 1.0
+
+      --top-p 0.9
+
+      --top-k 40
+
+      --repeat-penalty 1.1
+
+      --cache-type-k q8_0
+
+      --cache-type-v q8_0
+
+      --flash-attn on
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          temperature: 1.0
+          top_p: 0.9
+    health_check_timeout: 300
+    ttl: 60
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: false
+      reranker: false
+      context: 16384
+    metadata:
+      size: ~362 MB (Q8_0)
+      context: 16K
+      vram_usage: ~0.5GB (model + cache)
+      source: hf luksamuk/portal-core-space-GGUF (Q8_0 379219904 bytes; merged safetensors em luksamuk/portal-core-space)
+      kv_cache: q8_0 + q8_0
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 362000000
+      context_length: 16384
+      quantization: Q8_0
+      note: 'Reativado 10/nov a pedido do dono (publicado no HF; v7b = 100% PASS no judge). Samplers do card: temp 1.0 / top_p 0.9 / top_k 40. Degenerate POR DESIGN - nunca remover temp alto, ele e o comportamento esperado.'
+  portal-core-fact:
+    name: 'Portal Core: Fact'
+    description: Portal 2 Fact Core personality construct. States absurd fabricated facts with absolute confidence. Bilingual PT/EN.
+    tags:
+    - chat
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/portal-core-fact/portal-core-fact-Q8_0.gguf
+
+      --jinja
+
+      --fit on
+
+      --fit-target ${vram_margin}
+
+      --ctx-size 16384
+
+      --parallel 1
+
+      --cont-batching
+
+      --temp 1.0
+
+      --top-p 0.9
+
+      --top-k 40
+
+      --repeat-penalty 1.1
+
+      --cache-type-k q8_0
+
+      --cache-type-v q8_0
+
+      --flash-attn on
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          temperature: 1.0
+          top_p: 0.9
+    health_check_timeout: 300
+    ttl: 60
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: false
+      reranker: false
+      context: 16384
+    metadata:
+      size: ~1.2 GB (Q8_0)
+      context: 16K
+      vram_usage: ~1.7GB (model + cache)
+      source: hf luksamuk/portal-core-fact-GGUF (Q8_0 1246253440 bytes; merged safetensors em luksamuk/portal-core-fact)
+      kv_cache: q8_0 + q8_0
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 1200000000
+      context_length: 16384
+      quantization: Q8_0
+      note: 'Reativado 10/nov a pedido do dono (publicado no HF; v8 = 83% contextual / 17% degenerate no judge). Samplers do card: temp 1.0 / top_p 0.9 / top_k 40. Degenerate POR DESIGN - nunca remover temp alto, ele e o comportamento esperado.'
   julia-1:
     name: Julia-1
     description: System One decision model (ModernBERT 144M BF16). Serves POST /v1/systemone for laya-snake judge. Not a chat model.
@@ -2272,6 +2420,8 @@ hooks:
     preload: []
 matrix:
   vars:
+    spc: portal-core-space
+    fct: portal-core-fact
     qpfim: qwen2.5-coder-1.5b-pollard
     ocr: glm-ocr
     mcv35: minicpm-v-4.7-35b
@@ -2292,9 +2442,9 @@ matrix:
     tq3d: qwen3.5-4b-3d-coder
     lfm317: lfm3-1.7b
   sets:
-    small_vision: (lfm24 | tq3d) & (lfmcol | eg2 | nemb) & pkstt
-    small_embed: (lfm24 | sp26 | lfm317) & (lfmcol | eg2 | nemb) & qpfim & pkstt
-    small_only: (lfm24 | sp26 | lfm317) & pkstt
+    small_vision: (lfm24 | tq3d | spc | fct) & (lfmcol | eg2 | nemb) & pkstt
+    small_embed: (lfm24 | sp26 | lfm317 | spc | fct) & (lfmcol | eg2 | nemb) & qpfim & pkstt
+    small_only: (lfm24 | sp26 | lfm317 | spc | fct) & pkstt
     vision_only: ocr | mcv35
     vision_embed: (ocr | mcv35) & (lfmcol | eg2 | nemb) & pkstt
     heavy: (lfm24 | mcv35 | orn35 | b27) & (lfmcol | eg2 | nemb) & qpfim & pkstt
@@ -2316,6 +2466,8 @@ matrix:
     orn35f: 9
     qpfim: 1
     lfm317: 2
+    spc: 1
+    fct: 2
     nemb: 1
     eg2: 1
     lfmcol: 1
