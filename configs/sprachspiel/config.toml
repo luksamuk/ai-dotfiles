@@ -1,16 +1,21 @@
+# decreto 08/11: spark-x2.6-4b assume chat/default/query/summarize apos a
+# aposentadoria do lfm2.5-24b-a2b (31/10) e do bonsai2-9b.
+# NOTA: sprachspiel nao tem campo de esforco de thinking e nao manda
+# chat_template_kwargs — o esforco (low/high) e o plain do lfm3-1.7b nao sao
+# acessiveis daqui; o summarize de vai pensar no default da lane do spark.
 [model]
-default = "lfm2.5-24b-a2b"
+default = "spark-x2.6-4b"
 
 [model.query]
-model = "bonsai2-9b"
+model = "spark-x2.6-4b"
 tools = true
 
 [model.chat]
-model = "lfm2.5-24b-a2b"
+model = "spark-x2.6-4b"
 tools = true
 
 [model.summarize]
-model = "lfm2.5-24b-a2b"
+model = "spark-x2.6-4b"
 thinking = false
 tools = false
 
@@ -27,7 +32,7 @@ tools = true
 
 # --- VISION MODE ---
 [model.vision]
-model = "lfm2.5-vl-3b"
+model = "lfm3-vl-2b"
 tools = false
 
 [model.ocr]

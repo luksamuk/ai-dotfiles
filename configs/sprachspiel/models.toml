@@ -1,3 +1,10 @@
+# models.toml — aliases de modelo do sprachspiel
+# SYNC FROTA 08/11: fonte da verdade = llama-swap /v1/models (grupos listed;
+# lanes 'unlisted: true' = GGUF deletado nao contam). Clouds verificados com
+# `ollama list` no mesmo dia. Samplers: sprachspiel so envia temperature/top_p
+# (top_k/repeat_penalty sairam do schema); lanes com stripParams de temp/top_p
+# os descartam, entao entradas sem sampler = samplers pinados no server.
+
 [provider."ollama"]
 kind = "openai"
 base_url = "http://127.0.0.1:11434/v1"
@@ -10,14 +17,303 @@ base_url = "http://localhost:12434/v1"
 read_timeout_secs = 900
 stream_idle_timeout_secs = 900
 
-[models."qwen3.5-4b"]
+# --- CHAT / DEFAULT / QUERY / SUMMARIZE (decreto do dono 08/11) ---
+
+# Spark X2.6 4B (agentic de fabrica, 42-44 t/s @131K). Lane pin enable_thinking
+# true (o modo thinking-none do card responde em chines — sempre pensa).
+# Samplers pinados no server (0.7/0.95): stripParams temp/top_p/top_k.
+# NOTA de esforco: o sprachspiel nao tem campo de effort (envia reasoning_effort
+# fixo "medium" so quando thinking=true no role) — summarize segue thinking=false
+# no config.toml e pega o default da lane.
+[models."spark-x2.6-4b"]
 provider = "llama-swap"
-model_id = "qwen3.5-4b:think"
+model_id = "spark-x2.6-4b"
+num_ctx = 114688
+thinking = true
+tools = true
+
+# --- GROOT 19B A3B (GrootTeam MoE 19B/3B ativos, descendente Qwen3.6-35B-A3B) ---
+# Think pinado na lane (presence 1.5; samplers 1.0/0.95/top_k 20 no server).
+
+[models."groot-19b-a3b"]
+provider = "llama-swap"
+model_id = "groot-19b-a3b"
+num_ctx = 262144
+thinking = true
+tools = true
+
+[models."groot-19b-a3b-fast"]
+provider = "llama-swap"
+model_id = "groot-19b-a3b-fast"
 num_ctx = 131072
 thinking = true
 tools = true
 
+# --- S5-NANO (Maritaca, pt-BR nativo, placar BR 83.74; ik, 131K) ---
+# Always-think (lane --reasoning on). Tools ENGATAM no fio mas SEM prova
+# agêntica real — manter false ate o catalogo virar.
+[models."s5-nano"]
+provider = "llama-swap"
+model_id = "s5-nano"
+num_ctx = 131072
+thinking = true
+tools = false
 
+# --- LFM3 1.7B (tri-hybrid, decensurado, dual-mode, 75 t/s decode) ---
+# Samplers do vendor pinados na lane (0.1/50/1.1). O dual-mode do vendor e via
+# chat_template_kwargs que o sprachspiel NAO manda — no sprach, sempre pensa.
+# Handle :think foi aposentado da frota (padrao handle unico).
+[models."lfm3-1.7b"]
+provider = "llama-swap"
+model_id = "lfm3-1.7b"
+num_ctx = 65536
+thinking = true
+
+# --- LFM3 VL 2B (VLM da casa: sucesor do lfm2.5-vl-3b, docs/charts/video) ---
+# Pensa por default (dual-mode real); samplers 0.6/0.95 pinados na lane.
+
+[models."lfm3-vl-2b"]
+provider = "llama-swap"
+model_id = "lfm3-vl-2b"
+num_ctx = 131072
+thinking = true
+tools = true
+vision = true
+
+# --- OPENBONSAI QWEN3.5-9B (ternario PTQ1_0, experimental; pt-BR PASSOU 08/11) ---
+# Thinking estoura o budget de 4K com frequencia (runs de 1.1-3.9k) — budget alto.
+[models."openbonsai-qwen3.5-9b"]
+provider = "llama-swap"
+model_id = "openbonsai-qwen3.5-9b"
+num_ctx = 131072
+thinking = true
+tools = true
+
+# --- ORNITH 1.5 9B HERETIC (dense 9B, 64K deployado; troca da 169Pi/Alpie) ---
+# Viso provada 06/11 e 08/11 (combo, mmproj na RAM). Tools FALSE pendente de probe.
+[models."ornith-1.5-9b-heretic"]
+provider = "llama-swap"
+model_id = "ornith-1.5-9b-heretic"
+num_ctx = 65536
+thinking = true
+tools = false
+vision = true
+
+# --- QWEN3.5-4B-3D-CODER (Three.js + coding geral; always-think, sem escada) ---
+# n-predict 32768 na lane (thinking estoura 4K). Samplers 0.6/0.95/20 pinados.
+[models."qwen3.5-4b-3d-coder"]
+provider = "llama-swap"
+model_id = "qwen3.5-4b-3d-coder"
+num_ctx = 131072
+thinking = true
+tools = true
+vision = true
+
+# --- ORNITH 1.5 35B HERETIC (APEX I-Compact, ik lane, MTP; alias mantido p/ [model.code]) ---
+# Lane strips temp/top_p (pinados 0.6/0.95). Handle da frota renomeado (-fast).
+[models."ornith-1.5-35b"]
+provider = "llama-swap"
+model_id = "ornith-1.5-35b-heretic-fast"
+num_ctx = 131072
+thinking = true
+tools = true
+vision = true
+
+# --- TRANSLACAO / OCR / CODING-FIM ---
+
+[models."translategemma-4b"]
+provider = "llama-swap"
+model_id = "translategemma-4b"
+num_ctx = 131072
+temperature = 0.2
+top_p = 0.9
+thinking = false
+tools = false
+
+[models."glm-ocr"]
+provider = "llama-swap"
+model_id = "glm-ocr"
+num_ctx = 131072
+temperature = 0.1
+top_p = 0.9
+thinking = false
+tools = false
+vision = true
+
+[models."qwen2.5-coder-1.5b-pollard"]
+provider = "llama-swap"
+model_id = "qwen2.5-coder-1.5b-pollard"
+num_ctx = 32768
+thinking = false
+tools = false
+
+# --- EMBEDDINGS ---
+# ATENCAO: o index do DB (config.toml [embeddings]) e o embeddinggemma-2 (768d);
+# so reindexar com o MESMO modelo. ColBERT e reranker (MaxSim; OAI endpoint
+# entregue 128d mean-pool — dimensoes/ctx menores: NAO usar para o index).
+
+[models."embeddinggemma-2"]
+provider = "llama-swap"
+model_id = "embeddinggemma-2"
+embeddings = true
+dimensions = 768
+
+[models."lfm2.5-colbert-350m"]
+provider = "llama-swap"
+model_id = "lfm2.5-colbert-350m"
+embeddings = true
+dimensions = 128
+
+# --- CLOUDS (ollama) — verificados 08/11 ---
+
+[models."glm-5.2"]
+provider = "ollama"
+model_id = "glm-5.2:cloud"
+num_ctx = 1048576
+thinking = true
+
+[models."glm-5.3"]
+provider = "ollama"
+model_id = "glm-5.3:cloud"
+num_ctx = 1048576
+thinking = true
+
+[models."glm-5.3-flash"]
+provider = "ollama"
+model_id = "glm-5.3-flash:cloud"
+num_ctx = 1048576
+thinking = true
+vision = true
+
+[models."kimi-k2.6"]
+provider = "ollama"
+model_id = "kimi-k2.6:cloud"
+num_ctx = 262144
+thinking = true
+
+[models."kimi-k2.7-code"]
+provider = "ollama"
+model_id = "kimi-k2.7-code:cloud"
+num_ctx = 262144
+thinking = true
+vision = true
+
+[models."kimi-k3"]
+provider = "ollama"
+model_id = "kimi-k3:cloud"
+num_ctx = 1048576
+thinking = true
+vision = true
+
+[models."kimi-k3.1-pro"]
+provider = "ollama"
+model_id = "kimi-k3.1-pro:cloud"
+num_ctx = 1048576
+thinking = true
+vision = true
+
+[models."minimax-m2.7"]
+provider = "ollama"
+model_id = "minimax-m2.7:cloud"
+num_ctx = 196608
+thinking = true
+vision = true
+
+[models."minimax-m3"]
+provider = "ollama"
+model_id = "minimax-m3:cloud"
+num_ctx = 524288
+thinking = true
+
+[models."minimax-m3.1-flash"]
+provider = "ollama"
+model_id = "minimax-m3.1-flash:cloud"
+num_ctx = 1000000
+thinking = true
+vision = true
+
+[models."nemotron-3-super"]
+provider = "ollama"
+model_id = "nemotron-3-super:cloud"
+num_ctx = 262144
+thinking = true
+
+[models."nemotron-3-ultra"]
+provider = "ollama"
+model_id = "nemotron-3-ultra:cloud"
+num_ctx = 262144
+thinking = true
+
+[models."nemotron-3-nano-30b-cloud"]
+provider = "ollama"
+model_id = "nemotron-3-nano:30b-cloud"
+num_ctx = 1048576
+thinking = true
+
+[models."gemma4-31b-cloud"]
+provider = "ollama"
+model_id = "gemma4:31b-cloud"
+num_ctx = 262144
+thinking = true
+
+[models."deepseek-v4.1-flash"]
+provider = "ollama"
+model_id = "deepseek-v4.1-flash:1017-cloud"
+num_ctx = 1048576
+thinking = true
+
+[models."deepseek-v4-pro"]
+provider = "ollama"
+model_id = "deepseek-v4-pro:cloud"
+num_ctx = 1048576
+thinking = true
+
+[models."mimo-v2.6-flash"]
+provider = "ollama"
+model_id = "mimo-v2.6-flash:cloud"
+num_ctx = 1048576
+thinking = true
+vision = true
+
+[models."mimo-v2.6-pro"]
+provider = "ollama"
+model_id = "mimo-v2.6-pro:cloud"
+num_ctx = 1048576
+thinking = true
+vision = true
+
+[models."mistral-large-4"]
+provider = "ollama"
+model_id = "mistral-large-4:cloud"
+num_ctx = 1048576
+thinking = true
+vision = true
+
+[models."beam"]
+provider = "ollama"
+model_id = "beam:cloud"
+num_ctx = 1048576
+thinking = true
+
+[models."muse-spark-open"]
+provider = "ollama"
+model_id = "muse-spark-open:cloud"
+num_ctx = 1048576
+thinking = true
+vision = true
+
+# ============================================================
+# HISTORICO / FRAGMENTOS DE RESTAURACAO (disable-dated)
+# ============================================================
+
+# [models."qwen3.5-4b"]
+# provider = "llama-swap"
+# model_id = "qwen3.5-4b:think"
+# num_ctx = 131072
+# thinking = true
+# tools = true
+# DISABLED 08/11 — aposentado por decreto do dono (11/10); frota so tem o
+# qwen3.5-4b-3d-coder. Fragmento da lane: _disabled/qwen3.5-4b.yaml.
 
 # [models."athenas-symbiote-9b"]
 # provider = "llama-swap"
@@ -55,7 +351,6 @@ tools = true
 # tools = true
 # DISABLED 10/09 — GGUF APEX deletado (bench 16/105; user confia no lfm2.5-2.6b)
 
-
 # [models."kat-coder-v2.5-dev"]
 # provider = "llama-swap"
 # model_id = "kat-coder-v2.5-dev:think"
@@ -91,140 +386,80 @@ tools = true
 # tools = true
 # DISABLED 10/09 — GGUF deletado; rejeitado na régua (34/75 phase1; 0/25 poisoned
 # por think-loop; MAS 25/25 no 06-sec web-only). Re-avaliar c/ APEX/ONYX do mudler.
-# [models."nex-n2.5-mini:think"]
+
+# [models."qwen3.6-35b-a3b-heretic"] + :think
+# DISABLED 08/11 — GGUFs removidos (_removed/qwen36-retirement). Descendente na
+# frota: groot-19b-a3b (mesma arvore; Q4_K_M, 131-262K).
+
+# [models."lfm2.5-2.6b"] + :think
+# DISABLED 08/11 — GGUF deletado (_removed/lfm2.5-2.6b.yaml). Herdeiro na frota:
+# lfm3-1.7b (heretic, dual-mode, 75 t/s).
+
+# [models."lfm2.5-24b-a2b"]
 # provider = "llama-swap"
-# model_id = "nex-n2.5-mini:think"
+# model_id = "lfm2.5-24b-a2b"
+# num_ctx = 131072
+# temperature = 0.1
+# top_p = 0.95
+# thinking = true
+# tools = true
+# DISABLED 08/11 — aposentado com honras 31/10 (GGUF APEX deletado, lane unlisted;
+# restore: receita no comentario do config.yaml + fragment lfm2.5-24b-a2b.yaml).
 
-[models."qwen3.6-35b-a3b-heretic"]
-provider = "llama-swap"
-model_id = "qwen3.6-35b-a3b-heretic"
-num_ctx = 131072
-temperature = 0.6
-top_p = 0.85
-top_k = 20
-thinking = true
-tools = true
-
-[models."qwen3.6-35b-a3b-heretic:think"]
-provider = "llama-swap"
-model_id = "qwen3.6-35b-a3b-heretic:think"
-num_ctx = 131072
-temperature = 0.6
-top_p = 0.9
-top_k = 20
-thinking = true
-tools = true
-
-[models."lfm2.5-2.6b"]
-provider = "llama-swap"
-model_id = "lfm2.5-2.6b"
-num_ctx = 131072
-thinking = true
-tools = true
-
-[models."lfm2.5-2.6b:think"]
-provider = "llama-swap"
-model_id = "lfm2.5-2.6b:think"
-num_ctx = 131072
-thinking = true
-tools = true
-
-# [models."maple-preview"]
+# [models."bonsai2-9b"]
 # provider = "llama-swap"
-# model_id = "maple-preview"
+# model_id = "bonsai2-9b"
+# num_ctx = 131072
+# temperature = 1.0
+# top_p = 0.95
+# top_k = 20
+# thinking = true
+# tools = true
+# DISABLED 08/11 — GGUF fora da frota (_disabled/bonsai2-9b*.yaml). Sucessor
+# experimental: openbonsai-qwen3.5-9b (mesmo layout, qualidade abaixo do base).
+
+# [models."twil-lm3-pro"]
+# provider = "llama-swap"
+# model_id = "twil-lm3-pro:think"
 # num_ctx = 131072
 # thinking = true
 # tools = true
+# DISABLED 08/11 — fragment em _disabled/twil-lm3-pro.yaml.
 
-# [models."maple-preview:think"]
+# [models."k2-horizon-36b"]
 # provider = "llama-swap"
-# model_id = "maple-preview:think"
+# model_id = "k2-horizon-36b:think"
 # num_ctx = 131072
+# temperature = 0.7
+# top_p = 0.95
 # thinking = true
 # tools = true
+# DISABLED 08/11 — fragment em _disabled/k2-horizon-36b*.yaml.
 
-# [models."btl-4-compact"]
+# [models."lfm2.5-vl-3b"]
 # provider = "llama-swap"
-# model_id = "btl-4-compact"
-# num_ctx = 131072
-# thinking = true
-# tools = true
-
-# [models."btl-4-compact:think"]
-# provider = "llama-swap"
-# model_id = "btl-4-compact:think"
-# num_ctx = 131072
-# thinking = true
-# tools = true
-
-# [models."hy-mt2-1.8b"]
-# provider = "llama-swap"
-# model_id = "hy-mt2-1.8b"
-# num_ctx = 131072
-# temperature = 0.2
-# top_k = 40
-# top_p = 0.9
-# repeat_penalty = 1.1
-# thinking = false
-# tools = false
-
-[models."translategemma-4b"]
-provider = "llama-swap"
-model_id = "translategemma-4b"
-num_ctx = 131072
-temperature = 0.2
-top_k = 40
-top_p = 0.9
-repeat_penalty = 1.1
-thinking = false
-tools = false
-
-# [models."lfm2.5-vl-450m"]
-# provider = "llama-swap"
-# model_id = "lfm2.5-vl-450m"
+# model_id = "lfm2.5-vl-3b"
 # num_ctx = 131072
 # temperature = 0.7
 # top_p = 0.9
 # thinking = false
 # tools = false
 # vision = true
+# DISABLED 08/11 — GGUF fora (_disabled/lfm2.5-vl-3b.yaml). Herdeiro nomeado:
+# lfm3-vl-2b (competitive com Gemma 4 12B pelo card, 6x menor).
 
-# [models."lfm2.5-vl-1.6b-extract"]
+# [models."lfm2.5-embedding-350m"]
 # provider = "llama-swap"
-# model_id = "lfm2.5-vl-1.6b-extract"
-# num_ctx = 131072
-# temperature = 0.2
-# top_p = 0.9
-# thinking = false
-# tools = false
-# vision = true
+# model_id = "lfm2.5-embedding-350m"
+# embeddings = true
+# dimensions = 1024
+# DISABLED 08/11 — vai no _disabled da frota; rodeia lfm2.5-colbert-350m
+# (reranker, 128d — reindex do DB segue no embeddinggemma-2 768d).
 
-[models."lfm2.5-vl-3b"]
-provider = "llama-swap"
-model_id = "lfm2.5-vl-3b"
-num_ctx = 131072
-temperature = 0.7
-top_p = 0.9
-thinking = false
-tools = false
-vision = true
+# [models."lfm2.5-vl-450m"] / [models."lfm2.5-vl-1.6b-extract"]
+# DISABLED 10/09 — fragments em _disabled (geral + extract).
 
 # [models."qwen3-vl-4b"]  # REMOVED Sep 10 2026 — GGUF deletado (A/B c/ lfm2.5-vl-3b pendente)
-# provider = "llama-swap"
-# model_id = "qwen3-vl-4b"
-
-[models."glm-ocr"]
-provider = "llama-swap"
-model_id = "glm-ocr"
-num_ctx = 131072
-temperature = 0.1
-top_p = 0.9
-top_k = 40
-repeat_penalty = 1.0
-thinking = false
-tools = false
-vision = true
-
 
 # [models."nomic"]
 # provider = "llama-swap"
@@ -233,18 +468,6 @@ vision = true
 # dimensions = 768
 # DISABLED 10/09 — obsoleto vs nemotron-3-embed-1b (2048 dims)
 
-[models."lfm2.5-embedding-350m"]
-provider = "llama-swap"
-model_id = "lfm2.5-embedding-350m"
-embeddings = true
-dimensions = 1024
-
-[models."embeddinggemma-2"]
-provider = "llama-swap"
-model_id = "embeddinggemma-2"
-embeddings = true
-dimensions = 768
-
 # [models."glm-5"]
 # provider = "ollama"
 # model_id = "glm-5:cloud"
@@ -252,237 +475,19 @@ dimensions = 768
 # thinking = true
 # REMOVIDO 10/09: glm-5:cloud não existe mais no ollama (substituído por glm-5.1/5.2/5.3)
 
-[models."glm-5.2"]
-provider = "ollama"
-model_id = "glm-5.2:cloud"
-num_ctx = 1048576
-thinking = true
-
-
-[models."kimi-k2.6"]
-provider = "ollama"
-model_id = "kimi-k2.6:cloud"
-num_ctx = 262144
-thinking = true
-
-[models."kimi-k2.7-code"]
-provider = "ollama"
-model_id = "kimi-k2.7-code:cloud"
-num_ctx = 262144
-thinking = true
-vision = true
-
-
-[models."minimax-m2.7"]
-provider = "ollama"
-model_id = "minimax-m2.7:cloud"
-num_ctx = 196608
-thinking = true
-vision = true
-
-[models."minimax-m3"]
-provider = "ollama"
-model_id = "minimax-m3:cloud"
-num_ctx = 524288
-thinking = true
-
 # REMOVIDO 06/10: qwen3.5:cloud saiu do ollama
-# [models."qwen3-coder-next"]
-# provider = "ollama"
-# model_id = "qwen3-coder-next:cloud"
-# num_ctx = 262144
 # REMOVIDO 10/09: qwen3-coder-next:cloud não existe mais no ollama
-
-[models."nemotron-3-super"]
-provider = "ollama"
-model_id = "nemotron-3-super:cloud"
-num_ctx = 262144
-thinking = true
-
-[models."gemma4-31b-cloud"]
-provider = "ollama"
-model_id = "gemma4:31b-cloud"
-num_ctx = 262144
-thinking = true
-
-[models."nemotron-3-nano-30b-cloud"]
-provider = "ollama"
-model_id = "nemotron-3-nano:30b-cloud"
-num_ctx = 1048576
-thinking = true
-
-[models."deepseek-v4.1-flash"]
-provider = "ollama"
-model_id = "deepseek-v4.1-flash:1017-cloud"
-num_ctx = 1048576
-thinking = true
-
-# --- CLOUDS ADICIONADAS 10/09 (ollama list sync) ---
-
-[models."glm-5.3"]
-provider = "ollama"
-model_id = "glm-5.3:cloud"
-num_ctx = 1048576
-thinking = true
-
-[models."glm-5.3-flash"]
-provider = "ollama"
-model_id = "glm-5.3-flash:cloud"
-num_ctx = 1048576
-thinking = true
-vision = true
-
-[models."kimi-k3"]
-provider = "ollama"
-model_id = "kimi-k3:cloud"
-num_ctx = 1048576
-thinking = true
-vision = true
-
 # REMOVIDO 06/10: deepseek-v4-flash:cloud saiu do ollama (v4.1-flash cobre)
 
-[models."nemotron-3-ultra"]
-provider = "ollama"
-model_id = "nemotron-3-ultra:cloud"
-num_ctx = 262144
-thinking = true
-
-[models."deepseek-v4-pro"]
-provider = "ollama"
-model_id = "deepseek-v4-pro:cloud"
-num_ctx = 1048576
-thinking = true
-
-[models."ornith-1.5-35b"]
-provider = "llama-swap"
-model_id = "ornith-1.5-35b-heretic:think"
-num_ctx = 200192
-temperature = 0.6
-top_p = 0.95
-top_k = 20
-min_p = 0.0
-repeat_penalty = 1.0
-thinking = true
-tools = true
-
 # --- EMPERO QWEN3.8 (distillation, always thinks, no :think variant) ---
+# [models."empero-qwen3.8-2b"] / 4b — DISABLED 10/09 (GGUFs deletados, _removed)
 
-# [models."empero-qwen3.8-2b"]
-# provider = "llama-swap"
-# model_id = "empero-qwen3.8-2b"
-# num_ctx = 131072
-# thinking = true
-# tools = true
-# DISABLED 10/09 — GGUF deletado (sem caso de uso)
+# --- GRANITE 4.2 8B (IBM) — DISABLED 10/09, fragment em _disabled ---
+# --- BONSAI 27B — DISABLED 10/09, fragment em _disabled ---
+# --- MAPLE_PREVIEW / BTL-4-COMPACT / HY-MT2-1.8B — fragments comentados antigos ---
+# --- QWEN3.8-27B — DISABLED (defiance lanes em _disabled) ---
 
-# [models."empero-qwen3.8-4b"]
-# provider = "llama-swap"
-# model_id = "empero-qwen3.8-4b"
-# num_ctx = 131072
-# thinking = true
-# tools = true
-# DISABLED 10/09 — GGUF deletado (nunca surpreendeu; user decision)
-
-# [models."qwen3.8-27b"]
-# provider = "llama-swap"
-# model_id = "qwen3.8-27b:think"
-# num_ctx = 131072
-# temperature = 1.0
-# top_p = 0.95
-# top_k = 20
-# min_p = 0.0
-# repeat_penalty = 1.0
-# thinking = true
-# tools = true
-# 
-# # --- GRANITE 4.2 8B (IBM, dense 8B, IQ4_XS, agentic RL, Apache 2.0) ---
-# IBM-recommended samplers: temperature=1.0, top_p=0.95
-# 3 modes: base (non-thinking), :high (full CoT), :low (low-effort)
-
-# [models."granite-4.2-8b"]
-# provider = "llama-swap"
-# model_id = "granite-4.2-8b"
-# num_ctx = 131072
-# temperature = 1.0
-# top_p = 0.95
-# thinking = false
-# tools = true
-# DISABLED 10/09 — fragment na frota em _disabled/ (3 variantes comentadas juntas)
-# [models."granite-4.2-8b:high"]
-# provider = "llama-swap"
-# model_id = "granite-4.2-8b:high"
-# num_ctx = 131072
-# temperature = 1.0
-# top_p = 0.95
-# thinking = true
-# tools = true
-# [models."granite-4.2-8b:low"]
-# provider = "llama-swap"
-# model_id = "granite-4.2-8b:low"
-# num_ctx = 131072
-# temperature = 1.0
-# top_p = 0.95
-# thinking = true
-# tools = true
-
-# [models."bonsai-27b"]
-# provider = "llama-swap"
-# model_id = "bonsai-27b"
-# name = "Bonsai 27B (1-bit)"
-# DISABLED 10/09 — fragment na frota em _disabled
-
-[models."twil-lm3-pro"]
-provider = "llama-swap"
-model_id = "twil-lm3-pro:think"
-num_ctx = 131072
-thinking = true
-tools = true
-
-# --- K2-HORIZON 36B (ik, MoVA; raciocinio pesado; 17.5 t/s decode @8K) ---
-
-[models."k2-horizon-36b"]
-provider = "llama-swap"
-model_id = "k2-horizon-36b:think"
-num_ctx = 131072
-temperature = 0.7
-top_p = 0.95
-thinking = true
-tools = true
-
-# --- FLEET SYNC 06/10 (llama-swap-cli list -> models.toml) ---
-
-# [models."qwen3-coder-30b-fast"]
-# REMOVIDO 06/10 — user desinstalando o qwen3-coder (a variante padrão tb foi removida acima)
-
-# --- LFM 2.5 24B A2B (LiquidAI MoE 24B/2.45B ativo, cafe -cmoe, reasoning NATIVO always-think) ---
-
-[models."lfm2.5-24b-a2b"]
-provider = "llama-swap"
-model_id = "lfm2.5-24b-a2b"
-num_ctx = 131072
-temperature = 0.1
-top_p = 0.95
-top_k = 50
-thinking = true
-tools = true
-
-# --- BONSAI 2 9B (ternary PrismML, always-think nativo, visao via mmproj, 131K) ---
-
-[models."bonsai2-9b"]
-provider = "llama-swap"
-model_id = "bonsai2-9b"
-num_ctx = 131072
-temperature = 1.0
-top_p = 0.95
-top_k = 20
-thinking = true
-tools = true
-
-# --- QWEN2.5-CODER 1.5B POLLARD (FIM completion, sem tools, 32K) ---
-
-[models."qwen2.5-coder-1.5b-pollard"]
-provider = "llama-swap"
-model_id = "qwen2.5-coder-1.5b-pollard"
-num_ctx = 32768
-thinking = false
-tools = false
+# NAO incluidos (nao sao chat no models.toml):
+#   julia-1 / d1-2b (decision /v1/systemone, sem texto),
+#   woof / qwen3-tts (TTS), parakeet-tdt (STT), phonon (TTS pt-BR),
+#   anima-* (T2I), lfm3-audio/omni (audio).
