@@ -1,0 +1,96 @@
+raon-1-mini-preview:
+  name: Raon-1 mini preview
+  description: KRAFTON's Raon-1 mini preview is a 30B MoE-A4B instruct model trained for faithful
+    Korean conversation and agentic tasks, with a 131K-token context window. Built for
+    assistant-style work, it keeps conversational context and calls tools natively; thinking is
+    always on.
+  cmd: '${ik_llama_server} --port ${PORT}
+
+    --model ${models_dir}/raon-1-mini-preview/raon-1-mini-preview-IQ4_XS.gguf
+
+    --jinja
+
+    --parallel 1
+
+    --ctx-size 131072
+
+    --fit on
+
+    --fit-margin 512
+
+    -ngl 99
+
+    --flash-attn on
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --defer-experts
+
+    --prefetch-experts
+
+    --temp 1.0
+
+    --top-p 0.95
+
+    --top-k 20
+
+    --repeat-penalty 1.0
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p, top_k
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 1.0
+        top_p: 0.95
+        top_k: 20
+  ttl: 0
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: ~16.07 GB (IQ4_XS)
+    context: 131072
+    vram_usage: '~6 GB VRAM + ~10 GB RAM'
+    source: KRAFTON/Raon-1-mini-preview-gguf (GGUF oficial do vendor, IQ4_XS; ik_llama raon1 runtime, binary 5203/662bb434)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: raon1
+    parameters: 3000000000
+    context_length: 262144
+    embedding_length: 2560
+    quantization: IQ4_XS
+    note: 'NUNCA SMOKEADO — fragment preparado 11/nov/2026 SEM build-config (a pedido do dono,
+      durante corrida 2048): fica inerte ate o build-config.py rodar. Download IQ4_XS (16.07
+      GB) em curso no momento da escrita; exigir ls do GGUF + sha256 antes do deploy.
+     Arch raon1 (30B-A4B): 25 layers (1 dense + 24 MoE), 128 experts top-6 + 1 shared,
+      MLA (kv_lora_rank 512, q_lora 576) + RDA hybrid (mesma familia do nano, mHC 4
+      streams, SiTU), ctx nativo 262144, vocab 259.840 (untied), NoPE. Vendor GGUF:
+      F16/Q4_K_M(19.7)/IQ4_XS(16.1)/Q5/Q6/Q8 + draft DFlash 0.73 GB (baixado junto;
+      ik tem DFlash2 no mesmo commit #2759 do runtime — spec-decode A/B pendente).
+     Sampling embedado no GGUF e igual ao card (temp 1.0, top_p 0.95, top_k 20).
+      Thinking sempre ON (card: desabilitar nao recomendado) — single handle, como o nano.
+     Verificacoes pendentes no smoke: fit/fit-margin com experts em RAM (padrao orn35/k2),
+      cache-type em MLA no ik (GLM-4.7 precedent q4_0), ctx real (131072 proposto pela
+      ladder; sobe pra 262144 se o KV pinned couber), velocidade vs orn35 (classe
+      30B-A4B vs 35B-A3B). Header GGUF: raon1, 731 tensors, pre=raon.'

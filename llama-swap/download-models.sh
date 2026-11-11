@@ -100,6 +100,7 @@ declare -A MODELS=(
   ["portal-core-fact"]="luksamuk/portal-core-fact-GGUF portal-core-fact-Q8_0.gguf portal-core-fact/portal-core-fact-Q8_0.gguf"
   ["spark-x2.6-4b"]="XHToken/Spark-X2.6-4B-GGUF Spark-X2.6-4B-Q4_K_M.gguf"
   ["raon-1-nano"]="KRAFTON/Raon-1-nano-gguf raon-1-nano-Q4_K_M.gguf raon-1-nano/raon-1-nano-Q4_K_M.gguf"
+  ["raon-1-mini-preview"]="KRAFTON/Raon-1-mini-preview-gguf raon-1-mini-preview-IQ4_XS.gguf raon-1-mini-preview/raon-1-mini-preview-IQ4_XS.gguf"
   ["nemotron-bolt-e4b"]="unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF NVIDIA-Nemotron-3.5-Bolt-E4B-UD-Q4_K_XL.gguf"
   ["nemotron-bolt-e4b-dflash"]="unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF dflash-NVIDIA-Nemotron-3.5-Bolt-E4B-Q8_0.gguf"
   # ["qwen3.5-4b-mtp"] — consolidated into qwen3.5-4b, Jul 2026
