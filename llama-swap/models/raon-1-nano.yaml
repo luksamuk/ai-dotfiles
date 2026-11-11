@@ -87,4 +87,6 @@ raon-1-nano:
       nextn fork commit 11/nov) —      Snake 1-shot via Pi (11/nov/2026, prompt idêntico pro spark, sem ciclo externo de bugfix): entregou 2 arquivos em ~50s
       (effort medium), mas o HTML quebra no PARSE (ternário do keydown sem valor final) e o draw multiplica cell 2x
       (snake em pixels xcell) → tela preta, jogo inoperante. Autorevisão: zero — velocidade sem verificação.
-      A/B de speedup pendente de go do dono.'
+      A/B de speedup pendente de go do dono. V2 (bug report externo): consertou o parse (if/else) + as
+      unidades do draw (part.x direto); Parse OK — MAS o jogo ficou turn-based: move() só roda em
+      keydown/click, sem setInterval/rAF, speed decorativo. Gameplay v2 pendente do dono.'
