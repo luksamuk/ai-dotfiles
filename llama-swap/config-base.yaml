@@ -47,6 +47,11 @@ macros:
   # Build local em ~/git/kassane-ik_llama.cpp/build/bin/llama-server
   "ik2_llama_server": "${env.HOME}/git/kassane-ik_llama.cpp/build/bin/llama-server"
 
+  # Fork do fabricante KRAFTON (branch raon-1-nano-preview) — arch raon1nano
+  # (upstream e ik não têm o nano; ik tem só o raon1 do mini, upstream rejeitou o PR)
+  # Build local em ~/git/krafton-llama.cpp/build/bin/llama-server (shallow, commit 4d72ff0)
+  "krafton_llama_server": "${env.HOME}/git/krafton-llama.cpp/build/bin/llama-server"
+
   # bee_server REMOVIDO Sep 20 2026 — fork beellama.cpp deletado; cafe-llama.cpp
   # (turbo4 KV + hmoe/ssd MoE offload) cobre esse papel daqui em diante (user decision)
 

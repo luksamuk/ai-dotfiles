@@ -18,6 +18,7 @@
 #   lfm2.5-vl-450m-extract - LFM2.5-VL-450M-Extract Q4_K_M (0.22 GB) + mmproj F16 - ultra-light structured extraction (JSON)
 #   [REMOVED] lfm2.5-1.2b — superseded by LFM2.5-8B-A1B, disabled May 2026
 #   lfm2.5-2.6b           - LFM2.5-2.6B Q6_K (~2.22 GB) - dense hybrid, agentic RL, on-device, 128K ctx
+#   raon-1-nano          - KRAFTON Raon-1 nano Q4_K_M (~2.08 GB) - dense RDA+MLA híbrido, fork vendor raon1nano
 #   qwen2.5-coder-1.5b-pollard - Qwen2.5-Coder-1.5B-Instruct Pollard IQ4_XS (~824 MB) - FIM, imatrix, CPU-only
 #   bonsai-27b - prism-ml/Bonsai-27B Q1_0 1-bit binary (~3.8 GB) + mmproj - PrismML reasoning 27B
 #   openbonsai-qwen3.5-9b - webbrain-one PTQ1_0 ternary 9B (~2.0 GB), OpenBonsai framework, cafe backend
@@ -98,6 +99,7 @@ declare -A MODELS=(
   ["portal-core-space"]="luksamuk/portal-core-space-GGUF portal-core-space-Q8_0.gguf portal-core-space/portal-core-space-Q8_0.gguf"
   ["portal-core-fact"]="luksamuk/portal-core-fact-GGUF portal-core-fact-Q8_0.gguf portal-core-fact/portal-core-fact-Q8_0.gguf"
   ["spark-x2.6-4b"]="XHToken/Spark-X2.6-4B-GGUF Spark-X2.6-4B-Q4_K_M.gguf"
+  ["raon-1-nano"]="KRAFTON/Raon-1-nano-gguf raon-1-nano-Q4_K_M.gguf raon-1-nano/raon-1-nano-Q4_K_M.gguf"
   ["nemotron-bolt-e4b"]="unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF NVIDIA-Nemotron-3.5-Bolt-E4B-UD-Q4_K_XL.gguf"
   ["nemotron-bolt-e4b-dflash"]="unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF dflash-NVIDIA-Nemotron-3.5-Bolt-E4B-Q8_0.gguf"
   # ["qwen3.5-4b-mtp"] — consolidated into qwen3.5-4b, Jul 2026
@@ -354,7 +356,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: qwen38-flash-next-1m, qwen38-flash-next-1m-mtp, qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, minicpm-ocr-1.0, minicpm-ocr-jev, minicpm-ocr-dspark, qwen3.5-4b-3d-coder, openbonsai-qwen3.5-9b, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
+    echo "Available: raon-1-nano, qwen38-flash-next-1m, qwen38-flash-next-1m-mtp, qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, minicpm-ocr-1.0, minicpm-ocr-jev, minicpm-ocr-dspark, qwen3.5-4b-3d-coder, openbonsai-qwen3.5-9b, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
     return 1
   fi
   

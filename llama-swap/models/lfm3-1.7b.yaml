@@ -8,7 +8,7 @@ lfm3-1.7b:
   - tools
   cmd: '${llama_server} --port ${PORT}
 
-    --model ${models_dir}/lfm3-1.7b/LFM3-1.7B-Heretic-Abliterated-Q8_0.gguf
+    --model ${models_dir}/lfm3-1.7b/Vortecks_LFM3-1.7B-Heretic-Abliterated-Q6_K_S.gguf
 
     --ctx-size 327680
 
@@ -56,7 +56,7 @@ lfm3-1.7b:
     reranker: false
     context: 65536
   metadata:
-    size: ~1.85 GB (Q8_0)
+    size: ~1.4 GB (Q6_K_S bartowski)
     context: 65536 por slot x 5 slots (327680 total)
     vram_usage: ~4.1 GB VRAM pico @262K slot unico; @5x64K est. ~4.4GB (KV q4_0 ~1.35GB)
     source: Vortecks/LFM3-1.7B-Heretic-Abliterated-GGUF (static, sem imatrix; Q8_0, 1846237728 bytes exatos; upstream safetensors
@@ -75,7 +75,7 @@ lfm3-1.7b:
     parameters: 1900000000
     embedding_length: 2048
     context_length: 262144
-    quantization: Q8_0
+    quantization: Q6_K_S
     note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb; LFM3 chegou HOJE via merges #31252/#31257 — pull + rebuild local). ctx
       NATIVO 262144 deployado (escada: f16 KV @262K = 3.0GB CUDA OOM; q4_0 = pico 4.14GB com folga). Decode 75 t/s, prompt
       631 t/s (Q8_0, GPU sozinha). Tool calling: 4 get_weather/ get_local_time simultaneos, JSON limpo, finish=tool_calls,
@@ -90,3 +90,11 @@ lfm3-1.7b:
       5) OK (spawn saudavel, pico ~4.8GB usados/1058 MiB livres, 5 reqs paralelas atendidas em batch 0.2s wall). 30/10: SWAP
       p/ GGUF Heretic-Abliterated (static, Vortecks) — pedido do usuario, drop-in Q8_0->Q8_0. KL 0.0094 + refusals 3/100 (par
       completo, KL baixo SOZINHO nao vale). GGUF oficial LFM3-1.7B-Q8_0.gguf mantido no dir p/ rollback imediato.'
+
+# 11/11 (troca de fatia): Q8_0 Vortecks -> Q6_K_S bartowski (mesma fonte safetensors,
+# 1.4G vs 1.8G, 21% menos bytes/token). Duelo casa vs bartowski 11/11 deu paridade
+# tecnologica (PPL wiki/hold/pt: 17.21/11.17/32.18 vs Q8 17.29/11.13/32.15); o quant
+# da casa (APEX-IQ-lk) foi aposentado inteiro a pedido do dono (handle, fragment e
+# arquivos removidos - historia da fornalha em ~/projects/ai/calib/).
+# Rollback: Q8_0 Heretic no mesmo dir (drop-in de uma linha). Tier mais rapido
+# disponivel na prateleira: Q5_K_M bartowski (1.3G) - editar --model e nada mais.

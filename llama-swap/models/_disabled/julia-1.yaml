@@ -1,4 +1,12 @@
+# -------------------------------------------------
+# APOSENTADO COM HONRAS 11/11/2026 (dono): snake do laya em refactor e sem
+# uso; GGUF 144M DELETADO (~/.llama-models/decision-models/Julia-1-GGUF).
+# Restore: remover 'unlisted: true' e:
+#   hf download ggml-org/Julia-1-GGUF Julia-1-BF16.gguf --local-dir ~/.llama-models/decision-models/Julia-1-GGUF/
+# OBS: era o judge do laya-snake (/v1/systemone) — route #1195 nativa do swap.
+# -------------------------------------------------
 julia-1:
+  unlisted: true
   name: Julia-1
   description: System One decision model (ModernBERT 144M BF16). Serves POST /v1/systemone
     for laya-snake judge. Not a chat model.

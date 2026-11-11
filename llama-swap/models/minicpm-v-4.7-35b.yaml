@@ -3,8 +3,7 @@
   description: "OpenBMB MiniCPM-V 4.7 35B-A3B - first MoE visual model of the series:
     multi-image, video and OCR with early token compression. 131K context, native
     reasoning, tool-calling."
-  tags: [vis, think, tools]
-  unlisted: true
+  tags: [vis, tools, think]
   cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
     --model ${models_dir}/minicpm-v-4.7-35b/MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf
@@ -49,11 +48,6 @@
     setParamsByID:
       "minicpm-v-4.7-35b":
         chat_template_kwargs:
-          enable_thinking: false
-        temperature: 0.7
-        top_p: 0.9
-      "minicpm-v-4.7-35b:think":
-        chat_template_kwargs:
           enable_thinking: true
         temperature: 0.7
         top_p: 0.9
@@ -71,11 +65,16 @@
     vram_usage: "~5.0 GB VRAM + ~11 GB RAM"
     source: openbmb/MiniCPM-V-4.7-35B-A3B-gguf
     kv_cache: "q4_0/q4_0"
+    # always-think por design (classe Fara1.5-4B): enable_thinking false NAO
+    # desliga (modelo reabre think; probe 11/11 provou em off/none/default).
+    # SEM escada de effort: nao declarar reasoningEfforts (duplicaria o off
+    # no menu do testchat — lição do Fara). Bug known-flaky de trivia (4 tok) é
+    # do modelo, independente do estado.
     chat_template: "--chat-template-file oficial (openbmb 19/out fix enable_thinking=False default; :think via setParamsByID kwargs). :think CONHECIDO-FLAKY: em prompts triviais o modelo escreve a RESPOSTA dentro do think, fecha e para sem content (eos=im_end correto id248046, open/close=248068/69, split do servidor correto = bug do modelo em modo think; upstream defaultou OFF e não re-quantizou; manter e monitorar)"
     features:
       completion: true
       tools: true
-      thinking: false
+      thinking: true
       vision: true
       embedding: false
       insert: false

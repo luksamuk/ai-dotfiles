@@ -1,0 +1,87 @@
+raon-1-nano:
+  name: Raon-1 nano
+  description: KRAFTON's Raon-1 nano is a dense conversational model with 1.5B effective
+    parameters (3.1B counting the per-layer embedding table) and a 262,144-token context
+    window, built for faithful Korean and English chat. Designed for assistant work,
+    it keeps conversational context and calls tools natively.
+  cmd: '${krafton_llama_server} --port ${PORT}
+
+    --model ${models_dir}/raon-1-nano/raon-1-nano-Q4_K_M.gguf
+
+    --jinja
+
+    --parallel 1
+
+    --ctx-size 262144
+
+    -ngl 99
+
+    --flash-attn on
+
+    --temp 0.1
+
+    --presence-penalty 1.5
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p, top_k
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.1
+        presence_penalty: 1.5
+  ttl: 0
+  health_check_timeout: 300
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 262144
+  metadata:
+    size: ~2.08 GB (Q4_K_M)
+    context: 262144
+    vram_usage: '~3.9 GB VRAM'
+    source: KRAFTON/Raon-1-nano-gguf (GGUF oficial do vendor, Q4_K_M non-MTP; fork raon-1-nano-preview commit 4d72ff0)
+    kv_cache: f16
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: raon1nano
+    parameters: 3100000000
+    context_length: 262144
+    embedding_length: 1536
+    quantization: Q4_K_M
+    note: 'Arch raon1nano (KRAFTON Raon-1): dense "MoE-to-dense" — 3.1B total (1.5B efetivo;
+      a diferença é a tabela de per-layer embedding 256d do vocab 259.840). Hibrido:
+      18 layers Raon Delta Attention (gated delta-rule, estado fixo — família DeltaNet)
+      + 6 Gated MLA layers (kv_lora_rank 512, ~7 KiB/token total). Raon-mHC 4 streams,
+      NoPE, tied embeddings. Fork proprio do vendor (github.com/krafton-ai/llama.cpp,
+      branch raon-1-nano-preview): upstream NÃO TEM o arch (PR comunitário #31107 fechado
+      sem merge, era só o mini 30B), ik_llama tem só o raon1 (mini), nada de nano.
+      MTP vendor existe (variante _MTP dos GGUFs, commit nextn do fork) — house decision:
+      non-MTP primeiro, A/B de MTP depois se o dono pedir (dense = MTP pode acelerar,
+      decisão conservadora só se aplicava a MoE).
+     _sampling vendor (card "Sampling parameters"): thinking é DEFAULT e desabilitar
+      não é recomendado — plain handle pins enable_thinking true, :think fica como
+      alias compatível com os mesmos pins. General: temp 0.1 + presence_penalty 1.5;
+      Agentic/code: temp 1.0 + pp 0 (não há terceiro handle por política da frota —
+      quem usa agentic sobrescreve no cliente).
+     _Smoke 11/nov/2026 (swap, fork krafton-llama.cpp b1-4d72ff0, shallow clone raon-1-nano-preview):
+      77.5 t/s decode (swap timings @ctx 262144, Q4_K_M ngl 99), prompt 674 t/s; VRAM 3937/6144 MiB (64%)
+      com o residido carregado no ctx total — sobra ~2.2GB. Tool calling OK no 1º request
+      (finish=tool_calls, get_weather com city correto). Reasoning: template emite thinking por
+      default; reasoning_content presente nos 3 smokes. CLI CPU-only: 29.6 t/s. GGUF header:
+      arch raon1nano, ctx 262144, pre=raon, NFC. MTP vendor existe (variante _MTP dos GGUF,
+      nextn fork commit 11/nov) — A/B de speedup pendente de go do dono.'

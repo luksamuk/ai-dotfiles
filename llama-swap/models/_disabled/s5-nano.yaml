@@ -1,4 +1,11 @@
+# -------------------------------------------------
+# APOSENTADO COM HONRAS 11/11/2026 (dono): "muito legal, mas aposenta pra
+# experimentar outros modelos". GGUFs DELETADOS (~3.3G, ~/.llama-models/s5-nano/).
+# Restore: remover 'unlisted: true' e:
+#   hf download maritaca-ai/S5-nano-GGUF S5-nano-Q4_K_M.gguf mmproj-S5-nano-F16.gguf --local-dir ~/.llama-models/s5-nano/
+# -------------------------------------------------
 s5-nano:
+  unlisted: true
   name: Maritaca S5-nano
   description: 'S5-nano da Maritaca AI: dense 4.2B, arch qwen35 (a famlia hbrida GDN do ornith-9b), treino focado
     em portugus nativo. O card traz uma rgua eval 100% pt-BR (Prosa-PT, CAPITU, MMLU-PT, ENADE-QA, ENEM-VL, BLUEX,

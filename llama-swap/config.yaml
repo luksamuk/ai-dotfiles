@@ -14,6 +14,7 @@ macros:
   llama_server: ${env.HOME}/git/llama.cpp/build/bin/llama-server
   ik_llama_server: ${env.HOME}/git/ik_llama.cpp/build/bin/llama-server
   ik2_llama_server: ${env.HOME}/git/kassane-ik_llama.cpp/build/bin/llama-server
+  krafton_llama_server: ${env.HOME}/git/krafton-llama.cpp/build/bin/llama-server
   cafe_server: ${env.HOME}/git/cafe-llama.cpp/build/bin/llama-server
   sd_server: ${env.HOME}/git/stable-diffusion.cpp/build/bin/sd-server
   prism_llama_server: ${env.HOME}/git/prism-llama.cpp/llama-prism-b10685-7dffb15/llama-server
@@ -126,6 +127,69 @@ models:
         'off': null
         low: low
         high: high
+  raon-1-nano:
+    name: Raon-1 nano
+    description: KRAFTON's Raon-1 nano is a dense conversational model with 1.5B effective parameters (3.1B counting the per-layer embedding table) and a 262,144-token context window, built for faithful Korean and English chat. Designed for assistant work, it keeps conversational context and calls tools natively.
+    cmd: '${krafton_llama_server} --port ${PORT}
+
+      --model ${models_dir}/raon-1-nano/raon-1-nano-Q4_K_M.gguf
+
+      --jinja
+
+      --parallel 1
+
+      --ctx-size 262144
+
+      -ngl 99
+
+      --flash-attn on
+
+      --temp 0.1
+
+      --presence-penalty 1.5
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p, top_k
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.1
+          presence_penalty: 1.5
+    ttl: 0
+    health_check_timeout: 300
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 262144
+    metadata:
+      size: ~2.08 GB (Q4_K_M)
+      context: 262144
+      vram_usage: ~3.9 GB VRAM
+      source: KRAFTON/Raon-1-nano-gguf (GGUF oficial do vendor, Q4_K_M non-MTP; fork raon-1-nano-preview commit 4d72ff0)
+      kv_cache: f16
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: raon1nano
+      parameters: 3100000000
+      context_length: 262144
+      embedding_length: 1536
+      quantization: Q4_K_M
+      note: 'Arch raon1nano (KRAFTON Raon-1): dense "MoE-to-dense" — 3.1B total (1.5B efetivo; a diferença é a tabela de per-layer embedding 256d do vocab 259.840). Hibrido: 18 layers Raon Delta Attention (gated delta-rule, estado fixo — família DeltaNet) + 6 Gated MLA layers (kv_lora_rank 512, ~7 KiB/token total). Raon-mHC 4 streams, NoPE, tied embeddings. Fork proprio do vendor (github.com/krafton-ai/llama.cpp, branch raon-1-nano-preview): upstream NÃO TEM o arch (PR comunitário #31107 fechado sem merge, era só o mini 30B), ik_llama tem só o raon1 (mini), nada de nano. MTP vendor existe (variante _MTP dos GGUFs, commit nextn do fork) — house decision: non-MTP primeiro, A/B de MTP depois se o dono pedir (dense = MTP pode acelerar, decisão conservadora só se aplicava a MoE). _sampling vendor (card "Sampling parameters"): thinking é DEFAULT e desabilitar não é recomendado — plain handle pins enable_thinking true, :think fica como alias compatível com os mesmos pins. General: temp 0.1 + presence_penalty 1.5; Agentic/code: temp 1.0 + pp 0 (não há terceiro handle por política da frota — quem usa agentic sobrescreve no cliente). _Smoke 11/nov/2026 (swap, fork krafton-llama.cpp b1-4d72ff0, shallow clone raon-1-nano-preview): 77.5 t/s decode (swap timings @ctx 262144, Q4_K_M ngl 99), prompt 674 t/s; VRAM 3937/6144 MiB (64%) com o residido carregado no ctx total — sobra ~2.2GB. Tool calling OK no 1º request (finish=tool_calls, get_weather com city correto). Reasoning: template emite thinking por default; reasoning_content presente nos 3 smokes. CLI CPU-only: 29.6 t/s. GGUF header: arch raon1nano, ctx 262144, pre=raon, NFC. MTP vendor existe (variante _MTP dos GGUF, nextn fork commit 11/nov) — A/B de speedup pendente de go do dono.'
   qwen2.5-coder-1.5b-pollard:
     name: Qwen2.5 Coder 1.5B Pollard
     description: Qwen2.5-Coder-1.5B-Instruct memory-fit for code completion. FIM native, CPU-only serving with zero VRAM.
@@ -551,14 +615,95 @@ models:
       context_length: 16384
       quantization: Q8_0
       note: 'Reativado 10/nov a pedido do dono (publicado no HF; v8 = 83% contextual / 17% degenerate no judge). Samplers do card: temp 1.0 / top_p 0.9 / top_k 40. Degenerate POR DESIGN - nunca remover temp alto, ele e o comportamento esperado.'
-  julia-1:
-    name: Julia-1
-    description: System One decision model (ModernBERT 144M BF16). Serves POST /v1/systemone for laya-snake judge. Not a chat model.
+  minicpm-ocr-1.0:
+    name: MiniCPM-OCR 1.0
+    description: OpenBMB's 1.3B document parsing model - text, tables, formulas, charts and seals for EN/zh documents and PDFs via fixed prompts (Text/Table/Formula Recognition:).
     cmd: '${llama_server} --port ${PORT}
 
-      --model ${models_dir}/decision-models/Julia-1-GGUF/Julia-1-BF16.gguf
+      --model ${models_dir}/minicpm-ocr-1.0/MiniCPM-OCR-1_0-Q8_0.gguf
 
-      --ctx-size 8192
+      --mmproj ${models_dir}/minicpm-ocr-1.0/mmproj-model-f16-4x.gguf
+
+      --model-draft ${models_dir}/minicpm-ocr-dspark/dspark-MiniCPM-OCR-1_0-Q8_0.gguf
+
+      --spec-type draft-dspark
+
+      -ngld 99
+
+      --jinja
+
+      --no-webui
+
+      --fit on
+
+      # 3072 (e nao ${vram_margin}): o fit NAO mede o draft dflash ("dflash requires
+
+      # ctx_other" — warning normal durante fitting) e planeja a VRAM so do principal;
+
+      # com margem padrao, o draft (-ngld 99) estoura e o boot morre em OOM de
+
+      # compute buffers. 3 GB de margem deixam o espaco do draft dentro do plano,
+
+      # boot medido OK em ~0.9 GB VRAM total usada (28/out/2026).
+
+      --fit-target 3072
+
+      --fit-ctx ${small_model_min_ctx}
+
+      --ctx-size ${small_model_max_ctx}
+
+      --temp 0
+
+      --cache-type-k f16
+
+      --cache-type-v f16
+
+      --flash-attn on
+
+      --metrics
+
+      '
+    ttl: 60
+    capabilities:
+      in:
+      - text
+      - image
+      out:
+      - text
+      tools: false
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~0.81 GB backbone (Q8_0) + ~0.90 GB mmproj (F16) + ~0.33 GB DSpark draft (Q8_0)
+      context: 64K-128K (fit dinamico; nativo 262K)
+      vram_usage: ~3.5 GB (backbone + mmproj + draft + cache f16)
+      source: openbmb/MiniCPM-OCR-1.0-gguf + openbmb/MiniCPM-OCR-1.0-DSpark-gguf
+      kv_cache: f16
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35
+      parameters: 752000000
+      context_length: 262144
+      embedding_length: 1024
+      quantization: Q8_0
+      note: Thinking ja vem desabilitado no chat template embutido do GGUF (enable_thinking nao reativa; conversion propria exige --chat-template-kwargs enable_thinking:false). llama-mtmd-cli nao aceita draft - draft-dspark so com llama-cli ou llama-server. Para PDFs/pipeline completo, a SDK deles (minicpmvocr parse) encadeia layout + recon + Jev + DSpark; aqui fica o elemento isolado por decisao do dono.
+  minicpm-ocr-jev:
+    name: MiniCPM-OCR Jev
+    description: OpenBMB's 2B OCR quality scorer (Jev-style decision model) - scores text/formula/table OCR candidates 0-1 in a single pass by comparing the source image with the render.
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/minicpm-ocr-jev/MiniCPM-OCR-Jev-Q8_0.gguf
+
+      --mmproj ${models_dir}/minicpm-ocr-jev/mmproj-model-f16.gguf
+
+      --ctx-size 16384
 
       --batch-size 512
 
@@ -568,43 +713,48 @@ models:
 
       --no-webui
 
+      --cache-type-k q8_0
+
+      --cache-type-v q8_0
+
       --metrics
 
       '
     filters:
       stripParams: temperature, top_p, top_k, min_p, repeat_penalty
     ttl: 3600
-    health_check_timeout: 60
+    health_check_timeout: 90
     capabilities:
       in:
       - text
+      - image
       out:
-      - decisions
+      - text
       tools: false
       reranker: false
-      context: 8192
+      context: 16384
     metadata:
-      size: ~303 MB (BF16)
-      context: 8192
-      vram_usage: ~0.3 GB VRAM
-      source: 'ggml-org/Julia-1-GGUF (BF16, official #29818 conversion)'
-      kv_cache: n/a
+      size: ~2.01 GB (Q8_0) + 0.67 GB mmproj (F16)
+      context: 16384
+      vram_usage: ~0 GB VRAM (CPU-only, doutrina decision da casa); ~3 GB RAM
+      source: openbmb/MiniCPM-OCR-Jev-gguf
+      kv_cache: q8_0
       features:
         decision: true
         completion: false
         tools: false
         thinking: false
-        vision: false
-        image: false
+        vision: true
         embedding: false
         insert: false
         audio: false
-      architecture: modern-bert
-      parameters: 144000000
-      context_length: 8192
-      embedding_length: 384
-      quantization: BF16
-      note: 'vram detalhe: ~0.3 GB VRAM (model 303MB + compute) | model 303MB BF16 + compute Decision model (/v1/systemone: noul/choice/score). llama-swap v262+ roteia /v1/systemone nativo (issue #1195 fechada). Lightest judge: 144M, sub-5ms per question expected on GPU.'
+        image: false
+      architecture: qwen35
+      parameters: 1900000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: Q8_0
+      note: 'Decision exclusivo, FORA dos sets (padrao julia) - nao disputa VRAM. Scoring = um forward pass so, sem geracao de tokens. Contrato da request (/v1/systemone): "state" = STRING com o texto OCR reconhecido da regiao (nao objeto); "questions" = UMA pergunta fixa, so "choice" com criteria exatamente {"0": null, "1": null} ou "noul" (scores de 0-1 saem do modelo, as opcoes sao nomeadas 0=reprovado/1=aprovado pelo template do GGUF); as duas imagens vao em "images" (alias "files") como data URLs (data:image/...;base64,...), ordem: original primeiro, depois a render. O harness do pipeline OCR (layout -> recon -> Jev) fica na SDK/cript do dono - aqui o elemento fica separado no fleet de proposito.'
   parakeet-tdt-0.6b-v3:
     name: Parakeet TDT 0.6B v3
     description: 'NVIDIA Parakeet TDT 0.6B v3: speech-to-text multilíngue, 25 idiomas incluindo português brasileiro. Transcreve a voz do Kilo Code e devolve o texto; converte o áudio recebido para WAV antes de transcrever.'
@@ -1010,7 +1160,7 @@ models:
       context_length: 8192
       embedding_length: 2048
       quantization: Q8_0
-      note: 'INSTALADO 27/out (PR #31275 buildado localmente no branch fleet-liquid antes do merge upstream — tracker vigia o merge). SMOKE VERIFICADO: /v1/systemone com o payload real do laya-snake em 0.10s — respostas tipadas choice (turn_right 0.696 + probabilities {straight 0.200, turn_left 0.104}) e noul 0.320 (+ usage). Server detecta decision type lfm3-d1 automaticamente. Vision encoder incluso (mmproj) — decisões visual possiveis, AINDA nao UNLISTED até segunda ordem — d1-3b (seletor LoRA do diffuse) e julia-1 (juiz do snake) são os validados em produção. Este entra só depois de re-rodar o harness selecao_nway.py (skill llama-snake-decision-models) no caso do seletor e do testchat de juiz no caso do snake — um juiz ruim selecionável é armadilha ativa, conforme doutrina. decision da casa; GPU 0.10s e CPU = mesmo resultado bit a bit). Pesos em ~/.llama-models/lfm3-d1-2b/ (backbone + mmproj Q8_0).'
+      note: 'INSTALADO 27/out (PR #31275 buildado localmente no branch fleet-liquid antes do merge upstream — tracker vigia o merge). SMOKE VERIFICADO: /v1/systemone com o payload real do laya-snake em 0.10s — respostas tipadas choice (turn_right 0.696 + probabilities {straight 0.200, turn_left 0.104}) e noul 0.320 (+ usage). Server detecta decision type lfm3-d1 automaticamente. Vision encoder incluso (mmproj) — decisões visual possiveis, AINDA nao UNLISTED até segunda ordem — d1-3b (seletor LoRA do diffuse) e julia-1 (ex-juiz do snake, APOSENTADO 11/11 — snake em refactor) foram os validados em produção. Este entra só depois de re-rodar o harness selecao_nway.py (skill llama-snake-decision-models) no caso do seletor e do testchat de juiz no caso do snake — um juiz ruim selecionável é armadilha ativa, conforme doutrina. decision da casa; GPU 0.10s e CPU = mesmo resultado bit a bit). Pesos em ~/.llama-models/lfm3-d1-2b/ (backbone + mmproj Q8_0).'
   glm-ocr:
     name: GLM-OCR
     description: GLM's vision-language OCR model for complex document understanding and text extraction.
@@ -1198,7 +1348,7 @@ models:
     - tools
     cmd: '${llama_server} --port ${PORT}
 
-      --model ${models_dir}/lfm3-1.7b/LFM3-1.7B-Heretic-Abliterated-Q8_0.gguf
+      --model ${models_dir}/lfm3-1.7b/Vortecks_LFM3-1.7B-Heretic-Abliterated-Q6_K_S.gguf
 
       --ctx-size 327680
 
@@ -1246,7 +1396,7 @@ models:
       reranker: false
       context: 65536
     metadata:
-      size: ~1.85 GB (Q8_0)
+      size: ~1.4 GB (Q6_K_S bartowski)
       context: 65536 por slot x 5 slots (327680 total)
       vram_usage: ~4.1 GB VRAM pico @262K slot unico; @5x64K est. ~4.4GB (KV q4_0 ~1.35GB)
       source: Vortecks/LFM3-1.7B-Heretic-Abliterated-GGUF (static, sem imatrix; Q8_0, 1846237728 bytes exatos; upstream safetensors BF16 do mesmo repo)
@@ -1264,84 +1414,8 @@ models:
       parameters: 1900000000
       embedding_length: 2048
       context_length: 262144
-      quantization: Q8_0
+      quantization: Q6_K_S
       note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb; LFM3 chegou HOJE via merges #31252/#31257 — pull + rebuild local). ctx NATIVO 262144 deployado (escada: f16 KV @262K = 3.0GB CUDA OOM; q4_0 = pico 4.14GB com folga). Decode 75 t/s, prompt 631 t/s (Q8_0, GPU sozinha). Tool calling: 4 get_weather/ get_local_time simultaneos, JSON limpo, finish=tool_calls, template embedded (--jinja, sem template da casa). DUAL-MODE REAL do vendor: o modelo pensa SEMPRE e o template tem toggle enable_thinking — plain pino false (respondera direto, reasoning 0 verificado), :think pin true; raciocinio nativo estilo distill ("We need to..." — PT OK direto no plain). Samplers do fabricante (chat geral): temp 0.1 / top_k 50 / repetition_penalty 1.1 (math usa 1.0/0.95/20 na mao do client). Escorregada factual tipica de 1.7B (SP/Minas numa frase) — papel prompter/enhance, nao enciclopedia. GGUF em ~/.llama-models/lfm3-1.7b/. Substituição candidata do lfm2.5-2.6b (régua maison 67.0) — re-discussão de aposentadorias pendente os resultados. 29/10: slots 5x64K (-parallel 5, -c 327680, KV q4_0 mantido, -b/-ub do paralelo) para multi-agentes — slots 5x64K est. ~4.4GB dentro dos 4.8GB livres da 3050 | 01/11: REDUZIDO a 3 slots a pedido do dono (3x~107K por agente; o KV total 327680 nao muda); smoke slots 29/10 (da era 5) OK (spawn saudavel, pico ~4.8GB usados/1058 MiB livres, 5 reqs paralelas atendidas em batch 0.2s wall). 30/10: SWAP p/ GGUF Heretic-Abliterated (static, Vortecks) — pedido do usuario, drop-in Q8_0->Q8_0. KL 0.0094 + refusals 3/100 (par completo, KL baixo SOZINHO nao vale). GGUF oficial LFM3-1.7B-Q8_0.gguf mantido no dir p/ rollback imediato.'
-  lfm3-1.7b-heretic-apexiq-lk:
-    name: LFM3 1.7B Heretic APEX IQ (lk)
-    description: 'Primeiro quant da casa: APEX I-Quality dense (metodo mudler/apex-quant, gradiente 3-tier attn Q6_K / FFN mid IQ4_XS / embd Q8_0) com imatrix propria do corpus da casa (calib_casa: uso real Hefesto+Cedalion+Prometheus 65% + prosa geral 33%). PPL wikitext2 17.10 (Q8_0 17.29, BF16 17.26), needle 32K 4/4, decode 93 t/s vs 75 t/s do Q8_0. Heretic-Abliterated de base.'
-    tags:
-    - think
-    - tools
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/lfm3-apexiq-lk/LFM3-1.7B-Heretic-APEX-IQ-lk.gguf
-
-      --ctx-size 327680
-
-      --jinja
-
-      --parallel 3
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --flash-attn on
-
-      -ngl 99
-
-      -b 2048
-
-      -ub 1024
-
-      --temp 0.1
-
-      --top-k 50
-
-      --repeat-penalty 1.1
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.1
-          top_k: 50
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 65536
-    metadata:
-      size: ~1.3 GB (APEX I-Quality dense custom, 6.1 BPW efetivo)
-      context: 65536 por slot x 3 slots (327680 total, igual lane lfm317)
-      vram_usage: boot-fit medido 4234 MiB @3x107K slots KV q4_0 (19/11 forja) - folga maior que a lane Q8_0 (~4.8GB era 5 slots)
-      source: forja casa (Vortecks/LFM3-1.7B-Heretic-Abliterated safetensors BF16 -> GGUF BF16 -> llama-quantize cafe + --tensor-type-file apexiq_lk.txt + imatrix casa-512). Metodo mudler/apex-quant, imatrix NAO afiliada. GGUF em ~/.llama-models/lfm3-apexiq-lk/ com imatrix de origem ao lado.
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: lfm3
-      parameters: 1900000000
-      embedding_length: 2048
-      context_length: 262144
-      quantization: APEX I-Quality LK
-      note: 'Bateria da forja 10/11 (fase5/results.json): PPL wikitext2 17.10 (Q8_0 17.29, baseline Q4_K_S requant 18.30, BF16 17.26), holdout nunca visto 11.17 (BF16 11.13, baseline 11.44), KL ratio PPL(Q)/PPL(base) 1.0197 correlacao 99.76, needle 32K 4/4 (chaves a 25/50/75/90% de profundidade), rust micro 1/3 (igual Q8_0; 1.7B nao escala nessa regua), ENEM-mini no nivel de chance pra todas (3/20) - nao discrimina nesse porte. Boot-fit passou com args exatos da lane (4234 MiB). Samplers copiados da lane lfm317 (0.1/50/1.1). Fornalha: ~/projects/ai/calib/ (README com pipeline completo; corpus regeneravel via build_calib.py -- quanto mais uso dos bots, mais rico o corpus -> rebuild imatrix futuro). Coexiste com lfm317 via matrix (exclusivo mesma GPU).'
   lfm3-audio-2b-pollard:
     name: LFM3 Audio 2B Pollard
     description: 'Audio 2B da LiquidAI quantizado Pollard (IQ ladder, imatrix + tool-call retention medida). Rung Q6_K = recomendado do card: KLD 0.0043 vs f16, top-1 97.6%, tool-ready 98.2% (CI 94-100, verified gate). Libera ~0.4 GB VRAM vs Q8_0 p/ coexistencia no fleet. Alternativa de menor pegada: IQ4_XS (1.07 GB, retention 100%, CI 93-108).'
@@ -1575,9 +1649,8 @@ models:
     description: 'OpenBMB MiniCPM-V 4.7 35B-A3B - first MoE visual model of the series: multi-image, video and OCR with early token compression. 131K context, native reasoning, tool-calling.'
     tags:
     - vis
-    - think
     - tools
-    unlisted: true
+    - think
     cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
       --model ${models_dir}/minicpm-v-4.7-35b/MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf
@@ -1622,11 +1695,6 @@ models:
       setParamsByID:
         minicpm-v-4.7-35b:
           chat_template_kwargs:
-            enable_thinking: false
-          temperature: 0.7
-          top_p: 0.9
-        minicpm-v-4.7-35b:think:
-          chat_template_kwargs:
             enable_thinking: true
           temperature: 0.7
           top_p: 0.9
@@ -1651,7 +1719,7 @@ models:
       features:
         completion: true
         tools: true
-        thinking: false
+        thinking: true
         vision: true
         embedding: false
         insert: false
@@ -1663,55 +1731,6 @@ models:
       embedding_length: 2048
       quantization: Q3_K exps / Q4_K base
       note: 'Linha MiniCPM-V 4.7 out/2026: card declara vence Qwen3.6-35B-A3B (score+tempo) — a liga disk 35B da casa é ornith 143.6 > occamy 141.4 > qwen3.8-distill 141.0, e a comparação declarada deles é vs a geração física anterior. mix_q3gud_im = recomendação OFICIAL do cookbook (experts Q3_K c/ imatrix sobre base Q4_K_M = 15.5GB ''matches Q4_K_M on benchmarks''); Q4_K_M puro = 21.17GB. -ot ffn_*_exps=CPU = rota de laguna/ornith (3B ativos, experts na RAM). M-RoPE canvas: PR #29416 (rope.section_order) — cafe v0.76 (ad57e28a1, 13/Out) MERGEADO e suporta; ik SEM #29416 ainda (fragment usa cafe). tools: true = card diz tool-calling nativo (SGLang/vLLM/llama.cpp/ollama); smoke valida. mmproj 4x = mais detalhe; 16x alternativa mais rápida. health 600s = MoE 15.5GB + mmproj cold start longo. Sampling: card oficial temp 0.7/top-p 0.9/top-k 100/rp 1.05 (regra da série). LES (Lookahead Expert Scheduling) e DSpark NÃO fazem parte: são do fork tc-mb/llama.cpp-omni (13-17 t/s no iPhone é o cenário experts-no-SSD; nossa rota experts-na-RAM não usa).'
-  openbonsai-qwen3.5-9b:
-    name: OpenBonsai Qwen3.5 9B
-    description: Experimental 9B ternary (1.58-bit, PTQ1_0 ~2 GB) of Qwen3.5-9B compressed by the open OpenBonsai framework. Same tensor layout as PrismML Ternary-Bonsai-2-9B. Text only, research preview.
-    tags:
-    - llm
-    - thinking
-    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
-
-      --port ${PORT}
-
-      -m ${models_dir}/openbonsai/OpenBonsai-Qwen3.5-9B-PTQ1_0.gguf
-
-      -ngl 99 -c 131072 -fa on -ctk q4_0 -ctv q4_0 -b 512 -ub 128
-
-      --host 127.0.0.1 --jinja
-
-      '
-    cmdStop: pkill -f 'cafe-llama.cpp/build/bin/llama-server.*OpenBonsai-Qwen3.5-9B-PTQ1_0'
-    health_check_timeout: 120
-    ttl: 1800
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      architecture: qwen35
-      parameters: 9000000000
-      context_length: 262144
-      embedding_length: 4096
-      quantization: PTQ1_0
-      size: ~2.0 GB (PTQ1_0 ternario, texto puro)
-      context: 131072
-      vram_usage: '~4.4 GB estimado (precedente bonsai2-9b mesmo layout: 4471 MiB, 72.8% @131K KV q4_0)'
-      source: webbrain-one/openbonsai-qwen-3.5-9b (OpenBonsai-Qwen3.5-9B-PTQ1_0.gguf; Apache-2.0; base Qwen3.5-9B)
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      note: 'ESCADA DE CTX 08/11: 131072 (3.8 GB VRAM) OK; 196608 (4.63 GB, 75%) OK; 262144 MORRE NO BOOT (PTQ1_0 sem rs-cache). Decode por fill: 38.8 t/s vazio, 19.2-21.3 @52k, 10.3-10.6 @120k — prefill nao degrada (439.8 t/s a 120k). FICOU 131072: 2x ornith-9b (64K), mais leve pra jogar com a VRAM. SMOKE 08/11 (cafe): DE BOTA — spawn OK, VRAM 3796 MiB; pt-BR PASSOU no teste da casa (fatorial 720 correto + fatoracao de polinomios, duas classes certas, respondeu em portugues — o card so testou turco). REGUA 52.9k prefill: prefill cold 136.2s (388.5 t/s); decode @52k cheio 19.2-21.3 t/s; @16k cheio 38.8 t/s; TTFT cache-hit 0.1-0.2s. Precedente da familia (Ternary-Bonsai-2-9B, mesmo layout cafe): 66.2 t/s @131K sem fill. Thinking estoura 4K com frequencia (card + medido: runs de 1.1-3.9k tokens de thinking). Pendente se ficar permanente: o dono decide; registro em download-models.sh e catalogo DSH/Pi. QUALIDADE (card): abaixo do BF16 base e do Ternary-Bonsai-2-9B prism; pt-BR nao era territorio do autor mas passou aqui.'
   ornith-1.5-35b-heretic:
     name: Ornith 1.5 35B Heretic
     description: 35B-A3B MoE generalist assistant, abliterated (heretic TPE). 200K context, strong agentic and tool-calling behavior.
@@ -2174,54 +2193,6 @@ models:
       embedding_length: 2560
       quantization: UD-IQ1_M
       note: 'RESULTADO E DESTINO. Pesos removidos do disco 04/nov de manha POR DECRETO do dono apos o veredito do teste noturno (lane segue na frota, unlisted). EDIT 03-04/nov pos-probe-19B: cache-experts 8 → set vencedor da escada --ssd-predict + --ssd-io-threads 4 + --ssd-cache-mb 4096 (19B mediu 14.6 → 33-34 t/s com esses knobs; configemprestada SEM re-teste neste modelo — probe pendente do reinstall). VEREDITO DO TESTE NOTURNO: INVIAVEL nesta maquina como lane de uso. MEDIDAS (llama-server standalone, greedy, ctx 16k, q8_0 KV, 6 threads): (1) L1NOMTP (-cmoe, experts mmap/page-cache): decode 0.15 t/s QUENTE, prefill 0.21-0.28 t/s. (2) L3C (-ssd cache-experts 8): decode 1.19-1.55 t/s steady, prefill 0.83-1.04 t/s — IO-bound (0.4 GiB de experts random 4K por token). (3) L3MTP: decode 0.72 t/s — MTP NEGATIVO em IO-bound (2a confirmacao: escada 19B pé F tb negativa). PREFILL de 2k tokens = 35-40 min — inviavel pra agente INDEPENDENTE de knobs. VRAM 1.3 GiB livre (regua passa). RAM ~75%, zero thrash. Tool calling FUNCIONA (finish_reason=tool_calls) mas exige enable_thinking false. Crash do -ssd c/ qwen4exp NAO reproduz no build atual. RESTORE: hf download unsloth/Qwen3.8-Flash-Next-GGUF --include "UD-IQ1_M/*" --local-dir ~/.llama-models/qwen38-flash-next-ud-iq1m/ + hf download quimmedes/Qwen3.8-Flash-Next-MTP-GGUF mtp-Qwen3.8-Flash-Next-Q4_0.gguf --local-dir ~/.llama-models/qwen38-flash-next-ud-iq1m/mtp/. Artefatos e reatorio: ~/.llama-models/qwen38-flash-next-lane/.'
-  s5-nano:
-    name: Maritaca S5-nano
-    description: 'S5-nano da Maritaca AI: dense 4.2B, arch qwen35 (a famlia hbrida GDN do ornith-9b), treino focado em portugus nativo. O card traz uma rgua eval 100% pt-BR (Prosa-PT, CAPITU, MMLU-PT, ENADE-QA, ENEM-VL, BLUEX, MARCA, BRoverbs, ASSIN 2) com placar NATIVO-BR 83.74 (Think), acima do Qwen3.5-4B (72.49) e do LFM2.5-24B-A2B (67.06). Thinking, mmproj de viso prprio, Apache-2.0, ctx nativo 262144.'
-    tags:
-    - think
-    cmd: '${ik_llama_server} --port ${PORT} --model ${models_dir}/s5-nano/S5-nano-Q4_K_M.gguf --mmproj ${models_dir}/s5-nano/mmproj-S5-nano-F16.gguf --no-mmproj-offload --fit --fit-margin 512 --ctx-size ${small_model_max_ctx} --jinja --reasoning on --cache-type-k q4_0 --cache-type-v q4_0 --k-cache-hadamard --v-cache-hadamard --flash-attn auto --no-graph-reuse -b 512 -ub 128 --metrics '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: true
-    ttl: 900
-    health_check_timeout: 300
-    capabilities:
-      in:
-      - text
-      - image
-      out:
-      - text
-      tools: false
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~3.2 GB (Q4_K_M 2.59 + mmproj 0.63 na RAM)
-      context: 131072
-      backend: ik_llama.cpp (canonico 08/11; vanilla aposentado)
-      kv_cache: q4_0/q4_0 + hadamard
-      vram_usage: ~4.0 GB VRAM (pesos) + mmproj em RAM (viso opt-in)
-      server_rss: ~3.5 GB host RAM
-      ctx_checkpoints: DEFAULT (32) OBRIGATRIO para o prompt cache de modelos private-state (GDN); 0 = re-prefill por turn
-      source: maritaca-ai/S5-nano-GGUF (S5-nano-Q4_K_M.gguf 4.29 GB Q8_0 + mmproj-S5-nano-F16.gguf 0.63 GB; Apache-2.0)
-      features:
-        completion: true
-        tools: false
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 4200000000
-      embedding_length: 2560
-      context_length: 262144
-      quantization: Q4_K_M
-      license: apache-2.0
-      note: 'A/B fechado 08/11 contra a lane vanilla aposentada, régua de 52.9k tokens de prefill com thinking contado: decode a contexto cheio 18.3-20.3 t/s no ik vs 10.4-10.7 no vanilla (+80%); prefill cold ik 55s/967 t/s vs vanilla 45.2s/1170 t/s (vanilla vence o cold, ik vence o fio). Escada vanilla do mesmo dia: f16 KV na RAM = 5.1 t/s @46k; KV q4_0 na RAM = 10.4-10.7 (@262K ou @114K dá igual, o gargalo é banda de RAM por token, não o slot). O ganho do ik vem de kernel: o fit dele deixa a KV q4_0+hadamard na host de propósito (buffer CUDA_Host de 1202 MiB). Pitfall do vanilla: mmproj na GPU + q4_0 host KV crasha no prefill longo (com mmproj em RAM é estável). Ajuste pós-deploy: requests com tools davam 500 (tools param requires --jinja) — RESOLVIDO trocando o template-file da casa por --jinja no template embutido do GGUF da Maritaca, que é íntegro (o qwen-fixed era necessário porque o template embutido do Qwen oficial é quebrado no ik). Bônus do --jinja: thinking agora separa reasoning_content (o inline ia junto no content) e tool calling ENGATA no fio (tool_choice required → finish=tool_calls com argumentos corretos 7+35; tools true nos capabilities fica pendente de prova agêntica real antes de virar catálogo). Referências da família no catálogo: qwen3.5-4b ik 27.7 t/s @131K; Bee (removido 20/09) 41.2. MTP nextn não cabe como draft nos 6GB e ngram-mod existe no ik se apertar; comparação pt-BR vs spark-x2.6-4b pendente no e2e.'
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
@@ -2401,15 +2372,15 @@ matrix:
     nemb: nemotron-3-embed-1b
     eg2: embeddinggemma-2
     lfmcol: lfm2.5-colbert-350m
-    julia: julia-1
     sp26: spark-x2.6-4b
+    raon: raon-1-nano
     tq3d: qwen3.5-4b-3d-coder
     lfm317: lfm3-1.7b
-    l3apex: lfm3-1.7b-heretic-apexiq-lk
+    mcv47: minicpm-v-4.7-35b
   sets:
-    small_vision: (lfm24 | tq3d | spc | fct) & (lfmcol | eg2 | nemb) & pkstt
-    small_embed: (lfm24 | sp26 | lfm317 | l3apex | spc | fct) & (lfmcol | eg2 | nemb) & qpfim & pkstt
-    small_only: (lfm24 | sp26 | lfm317 | l3apex | spc | fct) & pkstt
+    small_vision: (lfm24 | tq3d | spc | fct | mcv47) & (lfmcol | eg2 | nemb) & pkstt
+    small_embed: (lfm24 | sp26 | raon | lfm317 | spc | fct) & (lfmcol | eg2 | nemb) & qpfim & pkstt
+    small_only: (lfm24 | sp26 | raon | lfm317 | spc | fct) & pkstt
     vision_only: ocr | mcv35
     vision_embed: (ocr | mcv35) & (lfmcol | eg2 | nemb) & pkstt
     heavy: (lfm24 | mcv35 | orn35 | b27) & (lfmcol | eg2 | nemb) & qpfim & pkstt
@@ -2431,12 +2402,12 @@ matrix:
     orn35f: 9
     qpfim: 1
     lfm317: 2
-    l3apex: 2
     spc: 1
     fct: 2
     nemb: 1
     eg2: 1
     lfmcol: 1
     tg: 2
-    julia: 1
+    mcv47: 3
     sp26: 2
+    raon: 2
