@@ -1046,118 +1046,6 @@ models:
         image: false
       note: 'vram detalhe: ~2GB (model + mmproj + cache) | GLM OCR multimodal: model 0.95GB + mmproj 0.48GB + cache; Q8_0 Specialized OCR model — use prompts like ''OCR'', ''OCR markdown'', ''Table Recognition:''. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.'
       context: 131072
-  groot-19b-a3b:
-    name: Groot 19B A3B
-    description: 'GrootTeam''s efficient reasoning MoE. 19B total with 3B active, built from Qwen3.6-35B-A3B, multimodal with 64K context on this lane. Targets agentic and tool-using tasks with concise outputs. Handles: thinking on by default.'
-    tags:
-    - vis
-    - think
-    - tools
-    cmd: env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT} --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf --no-mmproj-offload --jinja --parallel 1 --ctx-size 262144 --cache-type-k q4_0 --cache-type-v q4_0 --flash-attn on -cmoe -ngl 99 -b 512 -ub 128 --temp 1.0 --top-k 20 --top-p 0.95 --metrics
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-          top_k: 20
-          presence_penalty: 1.5
-    ttl: 900
-    health_check_timeout: 300
-    capabilities:
-      in:
-      - text
-      - image
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 262144
-    metadata:
-      size: ~11.66 GB (Q4_K_M) + 0.86 GB mmproj
-      context: 262144
-      vram_usage: ~4.7 GB VRAM + ~10 GB RAM
-      source: GrootTeam/Groot-19B-A3B-261023-GGUF (Q4_K_M, 11657618560 bytes exatos) + mmproj-BF16 (902822016 bytes)
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 19400000000
-      active: 3000000000
-      experts: 128 roteados + 1 shared; 8 ativos/token; expert_ff 512
-      mtp: 1 layer (0.4B) — 4 tensors nextn no GGUF, 271.4 MiB skipped quando MTP nao pedido
-      license: apache-2.0
-      sampling_card: 'thinking: 1.0/0.95/top_k 20/presence 1.5 (matches setParamsByID) | non-thinking: 0.7/0.80/top_k 20/presence 1.5 (matches) | precise coding: 0.6/0.95/top_k 20/presence 0.0 (nao wired — handle opcional futura)'
-      quantization: Q4_K_M
-      embedding_length: 2048
-      context_length: 262144
-      note: 'LANE NORMAL — TESTE -cmoe 04/nov noite (dono decretou mesmo criterio do whittle-45b: pedagio frio do -ssd pos-boot e inaceitavel interativamente). Historico: -cmoe medido 24,2 t/s no build 804ee29c (27/10) vs 33-34 t/s do -ssd+knobs (escada 03-04/nov, ganho real em steady-state mas com pedagio frio ~2min pos-recycle). Aposta: perder t/s, ganhar page cache do SO persistente. Veredito do dono decide: se nao der certo, lane non-fast descartada e o 19B vive so no groot-19b-a3b-fast (ik, 37 t/s). TOOLS PROVADO 04/nov via rota do swap (no -ssd): 4/4 calls paralelos, JSON limpo, finish=tool_calls — tools true. Parallel tool calls do lado do cafe: por request param (parallel_tool_calls: true). MTP/spec NEGATIVO em IO-bound (2x medido) — nao habilitar. KV Hadamard (TurboQuant) e exclusivo do path ik (ver fast); aqui KV q4_0 puro. Historico da lane ik: aposentada 28/out pelo bug de re-serializacao do parser de tools do ik (args unescape), reativada como -fast 04/nov.'
-      caveats:
-      - 'ctx 262144 desde 04/nov noite (decreto do dono: gostou dos 262K; medicao acompanha este flip — KV q4_0, ~10 full layers; fallback da casa = 131072 se OOM em coexistencia)'
-  groot-19b-a3b-fast:
-    name: Groot 19B A3B (fast)
-    description: 'GrootTeam''s efficient reasoning MoE on the faster ik_llama.cpp lane. 19B total with 3B active, built from Qwen3.6-35B-A3B, multimodal with full 262K context and parallel tool calling. Same model as Groot 19B A3B. Handles: thinking on by default.'
-    tags:
-    - vis
-    - think
-    - tools
-    cmd: ${ik_llama_server} --port ${PORT} --model ${models_dir}/groot-19b-a3b/groot-19b-a3b-261023-Q4_K_M.gguf --mmproj ${models_dir}/groot-19b-a3b/mmproj-Groot-19B-A3B-261023-BF16.gguf --no-mmproj-offload --no-graph-reuse -ngl 99 --n-cpu-moe 34 --ctx-size ${small_model_max_ctx} --reasoning on --jinja --parallel 1 --parallel-tool-calls --cache-type-k q4_0 --cache-type-v q4_0 --k-cache-hadamard --v-cache-hadamard --flash-attn auto --defer-experts --prefetch-experts -b 512 -ub 128 --temp 1.0 --top-k 20 --top-p 0.95 --spec-type mtp:n_max=1,p_min=0.0 --metrics
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-          top_k: 20
-          presence_penalty: 1.5
-    ttl: 900
-    health_check_timeout: 900
-    capabilities:
-      in:
-      - text
-      - image
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~11.66 GB (Q4_K_M) + 0.86 GB mmproj
-      context: '131072'
-      vram_usage: ~4.34 GB VRAM c/ MTP + ~14 GB RAM @131K
-      source: GrootTeam/Groot-19B-A3B-261023-GGUF (Q4_K_M, 11657618560 bytes exatos) + mmproj-BF16 (902822016 bytes)
-      kv_cache: q4_0/q4_0 + hadamard
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 19400000000
-      active: 3000000000
-      experts: 128 roteados + 1 shared; 8 ativos/token; expert_ff 512
-      mtp: 1 layer (0.4B) — 4 tensors nextn no GGUF, 271.4 MiB skipped quando MTP nao pedido
-      license: apache-2.0
-      sampling_card: 'thinking: 1.0/0.95/top_k 20/presence 1.5 (matches setParamsByID) | non-thinking: 0.7/0.80/top_k 20/presence 1.5 (matches) | precise coding: 0.6/0.95/top_k 20/presence 0.0 (nao wired — handle opcional futura)'
-      embedding_length: 2048
-      context_length: 262144
-      quantization: Q4_K_M
-      note: 'Smoke 27/10 (ik 804ee29c): escada de tuning medida — n-cpu-moe 40 @131K = 2.89GB/36.4 t/s; n-cpu-moe 32 @262K = 5.53GB (90%, raspa)/38+ t/s; ESCOLHIDO n-cpu-moe 34 @262144 = pico 5.06GB (82%, folga ~1.1GB) e MESMOS 37.4-37.9 t/s (plain e think). 1.5x mais rapido que a lane cafe. TURBO A/B 08/11: NEGATIVO — tq2_t/tqk6 abortam no build do graph (ggml.c:13092 quantize_row_q sem implementao CPU pro TQ; iqk s tem TQ2_T pra mul_mat/dequantize). Kernels CUDA tq chegaram no merge 639e2012 + parser aberto via patch house 662bb434, MAS falta o plumbing CPU — NO GO at upstream fechar; KV segue q4_0+hadamard. MTP A/B 08/11: ENGATA — `--spec-type mtp:n_max=1,p_min=0.0` (receita da ornith-35b-fast) com ctx 131072: decode @52k cheio 25.5-26.7 t/s vs 20.5 baseline (+25-30%), prefill inalterado (215-245s, dentro do rudo), VRAM 4338 MiB @131K. @262K o MTP MORRE no meio do prefill (morte sbita no draft, reproduziu AT com a VRAM livre) — por isso o dono aceitou descer pra 131K; a escada de volta  rollback do ctx. Parallel tool calls NATIVO (-ptc): 4 get_weather/get_local_time simultaneos, JSON limpo, finish=tool_calls — com template embedded (sem --chat-template-file da casa). Dual-mode via enable_thinking, reasoning_content OK, 17*23=391. Mesmo peso e mmproj da lane cafe (um download serve as duas). Hadamard KV = TurboQuant ik (exclusivo do ik; o cafe roda KV q4_0 puro). GGUF em ~/.llama-models/groot-19b-a3b/. EDIT 04/nov: renomeada para -fast quando a lane normal (groot-19b-a3b) passou pro cafe via -ssd streaming + knobs (33-34 t/s medidos no probe de hoje); o bug de parser de tools do ik segue a ressalva viva desta variante (args unescape).'
   lfm2.5-24b-a2b:
     unlisted: true
     name: LFM 2.5 24B A2B
@@ -1378,6 +1266,82 @@ models:
       context_length: 262144
       quantization: Q8_0
       note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb; LFM3 chegou HOJE via merges #31252/#31257 — pull + rebuild local). ctx NATIVO 262144 deployado (escada: f16 KV @262K = 3.0GB CUDA OOM; q4_0 = pico 4.14GB com folga). Decode 75 t/s, prompt 631 t/s (Q8_0, GPU sozinha). Tool calling: 4 get_weather/ get_local_time simultaneos, JSON limpo, finish=tool_calls, template embedded (--jinja, sem template da casa). DUAL-MODE REAL do vendor: o modelo pensa SEMPRE e o template tem toggle enable_thinking — plain pino false (respondera direto, reasoning 0 verificado), :think pin true; raciocinio nativo estilo distill ("We need to..." — PT OK direto no plain). Samplers do fabricante (chat geral): temp 0.1 / top_k 50 / repetition_penalty 1.1 (math usa 1.0/0.95/20 na mao do client). Escorregada factual tipica de 1.7B (SP/Minas numa frase) — papel prompter/enhance, nao enciclopedia. GGUF em ~/.llama-models/lfm3-1.7b/. Substituição candidata do lfm2.5-2.6b (régua maison 67.0) — re-discussão de aposentadorias pendente os resultados. 29/10: slots 5x64K (-parallel 5, -c 327680, KV q4_0 mantido, -b/-ub do paralelo) para multi-agentes — slots 5x64K est. ~4.4GB dentro dos 4.8GB livres da 3050 | 01/11: REDUZIDO a 3 slots a pedido do dono (3x~107K por agente; o KV total 327680 nao muda); smoke slots 29/10 (da era 5) OK (spawn saudavel, pico ~4.8GB usados/1058 MiB livres, 5 reqs paralelas atendidas em batch 0.2s wall). 30/10: SWAP p/ GGUF Heretic-Abliterated (static, Vortecks) — pedido do usuario, drop-in Q8_0->Q8_0. KL 0.0094 + refusals 3/100 (par completo, KL baixo SOZINHO nao vale). GGUF oficial LFM3-1.7B-Q8_0.gguf mantido no dir p/ rollback imediato.'
+  lfm3-1.7b-heretic-apexiq-lk:
+    name: LFM3 1.7B Heretic APEX IQ (lk)
+    description: 'Primeiro quant da casa: APEX I-Quality dense (metodo mudler/apex-quant, gradiente 3-tier attn Q6_K / FFN mid IQ4_XS / embd Q8_0) com imatrix propria do corpus da casa (calib_casa: uso real Hefesto+Cedalion+Prometheus 65% + prosa geral 33%). PPL wikitext2 17.10 (Q8_0 17.29, BF16 17.26), needle 32K 4/4, decode 93 t/s vs 75 t/s do Q8_0. Heretic-Abliterated de base.'
+    tags:
+    - think
+    - tools
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/lfm3-apexiq-lk/LFM3-1.7B-Heretic-APEX-IQ-lk.gguf
+
+      --ctx-size 327680
+
+      --jinja
+
+      --parallel 3
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --flash-attn on
+
+      -ngl 99
+
+      -b 2048
+
+      -ub 1024
+
+      --temp 0.1
+
+      --top-k 50
+
+      --repeat-penalty 1.1
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 0.1
+          top_k: 50
+    ttl: 900
+    health_check_timeout: 900
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 65536
+    metadata:
+      size: ~1.3 GB (APEX I-Quality dense custom, 6.1 BPW efetivo)
+      context: 65536 por slot x 3 slots (327680 total, igual lane lfm317)
+      vram_usage: boot-fit medido 4234 MiB @3x107K slots KV q4_0 (19/11 forja) - folga maior que a lane Q8_0 (~4.8GB era 5 slots)
+      source: forja casa (Vortecks/LFM3-1.7B-Heretic-Abliterated safetensors BF16 -> GGUF BF16 -> llama-quantize cafe + --tensor-type-file apexiq_lk.txt + imatrix casa-512). Metodo mudler/apex-quant, imatrix NAO afiliada. GGUF em ~/.llama-models/lfm3-apexiq-lk/ com imatrix de origem ao lado.
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm3
+      parameters: 1900000000
+      embedding_length: 2048
+      context_length: 262144
+      quantization: APEX I-Quality LK
+      note: 'Bateria da forja 10/11 (fase5/results.json): PPL wikitext2 17.10 (Q8_0 17.29, baseline Q4_K_S requant 18.30, BF16 17.26), holdout nunca visto 11.17 (BF16 11.13, baseline 11.44), KL ratio PPL(Q)/PPL(base) 1.0197 correlacao 99.76, needle 32K 4/4 (chaves a 25/50/75/90% de profundidade), rust micro 1/3 (igual Q8_0; 1.7B nao escala nessa regua), ENEM-mini no nivel de chance pra todas (3/20) - nao discrimina nesse porte. Boot-fit passou com args exatos da lane (4234 MiB). Samplers copiados da lane lfm317 (0.1/50/1.1). Fornalha: ~/projects/ai/calib/ (README com pipeline completo; corpus regeneravel via build_calib.py -- quanto mais uso dos bots, mais rico o corpus -> rebuild imatrix futuro). Coexiste com lfm317 via matrix (exclusivo mesma GPU).'
   lfm3-audio-2b-pollard:
     name: LFM3 Audio 2B Pollard
     description: 'Audio 2B da LiquidAI quantizado Pollard (IQ ladder, imatrix + tool-call retention medida). Rung Q6_K = recomendado do card: KLD 0.0043 vs f16, top-1 97.6%, tool-ready 98.2% (CI 94-100, verified gate). Libera ~0.4 GB VRAM vs Q8_0 p/ coexistencia no fleet. Alternativa de menor pegada: IQ4_XS (1.07 GB, retention 100%, CI 93-108).'
@@ -2441,10 +2405,11 @@ matrix:
     sp26: spark-x2.6-4b
     tq3d: qwen3.5-4b-3d-coder
     lfm317: lfm3-1.7b
+    l3apex: lfm3-1.7b-heretic-apexiq-lk
   sets:
     small_vision: (lfm24 | tq3d | spc | fct) & (lfmcol | eg2 | nemb) & pkstt
-    small_embed: (lfm24 | sp26 | lfm317 | spc | fct) & (lfmcol | eg2 | nemb) & qpfim & pkstt
-    small_only: (lfm24 | sp26 | lfm317 | spc | fct) & pkstt
+    small_embed: (lfm24 | sp26 | lfm317 | l3apex | spc | fct) & (lfmcol | eg2 | nemb) & qpfim & pkstt
+    small_only: (lfm24 | sp26 | lfm317 | l3apex | spc | fct) & pkstt
     vision_only: ocr | mcv35
     vision_embed: (ocr | mcv35) & (lfmcol | eg2 | nemb) & pkstt
     heavy: (lfm24 | mcv35 | orn35 | b27) & (lfmcol | eg2 | nemb) & qpfim & pkstt
@@ -2466,6 +2431,7 @@ matrix:
     orn35f: 9
     qpfim: 1
     lfm317: 2
+    l3apex: 2
     spc: 1
     fct: 2
     nemb: 1

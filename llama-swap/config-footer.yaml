@@ -79,6 +79,7 @@ matrix:
     # groot: groot-19b-a3b  # REMOVIDO 27/out/2026 — lane cafe -cmoe lenta demais na regua do dono; fragment em _removed/
     # grootf: (fundido no groot 27/out/2026 — o dono pediu id sem sufixo; unico backend ativo e o ik)
     # groot: groot-19b-a3b  # APOSENTADO 28/out/2026 pelo dono — bug de re-serialização do parser de tool calls do ik; fragment em _disabled/; GGUF deletado (re-download via HF, fonte no fragment)
+    # groot: groot-19b-a3b  # APOSENTADO (final, 1 semana reativado sem serventia) 11/nov/2026 pelo dono — semSmoke: retirado direto da régua; fragment + -fast em _disabled/; GGUF 12GB deletado (libera disco pro Groot 65B)
     # qw38d: qwen38-27b-defiance  # RETIRADO 25/out/2026 c/ honras — testchat: 3.2 t/s sofrivel; 2ª aposentadoria da família (1ª ago/26 'too slow'); GGUF deletado (REINSTALAR-DEFIANCE-2026-10-25.md)
     # qw38df: qwen38-27b-defiance-fast  # RETIRADO junto — MTP 4.3 t/s não salvou na régua do dono; fragment em _disabled/
     # bs2: bonsai2-9b  # APOSENTADO 31/10/2026 (dono) — GGUFs (PTQ1_0 + PQ2_0-MTP + mmproj) deletados, fragments _disabled/; papel query do sprach morre com ele
@@ -144,6 +145,7 @@ matrix:
     tq3d: qwen3.5-4b-3d-coder  # ccore 4B Three.js 3D-Coder Q4_K_M + mmproj BF16 @131K (07/nov, padrão S5-mini)
     # nbe4: nemotron-bolt-e4b  # APOSENTADO 31/10/2026 (dono) — GGUFs (UD-Q4_K_XL 5.1G + dflash draft) deletados, fragment _disabled/; restore: re-download unsloth (GATED)
     lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + :think), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despejava (ping-pong cravado no journal 30/out 14:53)
+    l3apex: lfm3-1.7b-heretic-apexiq-lk  # 10/nov: quant da forna (APEX I-Quality dense + imatrix casa). 1.3G, PPL wikitext2 17.10 < Q8_0 17.29, needle 4/4, 93 t/s. Boot-fit 4234 MiB @3x107K. Mesma exclusividade GPU do lfm317
     # sn9: sensenova-loop-9b  # RETIRADO 31/out/2026 (fragment em _disabled/, restore no header do fragment)
     # sn9v: sensenova-loop-9b-vision  # RETIRADO junto # fragment em _disabled/
 
@@ -154,10 +156,10 @@ matrix:
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(lfm24 | sp26 | lfm317 | spc | fct) & (lfmcol | eg2 | nemb) & qpfim & pkstt"  # 31/10: twp + nbe4 aposentados | 09/11: +nemb | 10/11: +spc/fct
+    small_embed: "(lfm24 | sp26 | lfm317 | l3apex | spc | fct) & (lfmcol | eg2 | nemb) & qpfim & pkstt"  # 31/10: twp + nbe4 aposentados | 09/11: +nemb | 10/11: +spc/fct
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "(lfm24 | sp26 | lfm317 | spc | fct) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados | 10/11: +spc/fct
+    small_only: "(lfm24 | sp26 | lfm317 | l3apex | spc | fct) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados | 10/11: +spc/fct
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
@@ -242,6 +244,7 @@ matrix:
     # flintf: 9  # APOSENTADO 27/out/2026
     # flint: 9  # APOSENTADO 27/out/2026
     # groot: 7  # APOSENTADO 28/out/2026 pelo dono — bug de re-serialização do parser de tool calls do ik (args unescape, quebrava agêntico no Kilo); fragment em _disabled/; GGUF deletado
+    # groot: 7  # aposentadoria final 11/nov/2026 — reativado 04/nov sem serventia; semSmoke
     # qw38d: 7  # RETIRADO 25/out/2026
     # qw38df: 7  # RETIRADO 25/out/2026
     # bs2: 4  # APOSENTADO 31/10/2026 junto do modelo (ternary 9B + fork Prism; reload médio)
@@ -250,7 +253,8 @@ matrix:
     # eq2: 2  # REMOVED Sep 10 2026
     # eq4: 3  # REMOVED Sep 10 2026
     qpfim: 1
-    lfm317: 2  # 1.7B Q8 ~2GB GPU — reload rápido; num conflito real o pollard (cost 1) sai antes
+    lfm317: 2  # 1.7B Q8 ~2GB GPU
+    l3apex: 2  # 1.7B APEX IQ 1.3G — mesmo regime do lfm317 — reload rápido; num conflito real o pollard (cost 1) sai antes
     spc: 1   # Portal core Space 362MB — reload segundos
     fct: 2   # Portal core Fact 1.2GB — reload rápido
     # sn9: 4  # RETIRADO 31/out/2026 junto do fragment
