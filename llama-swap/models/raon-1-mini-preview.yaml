@@ -14,11 +14,11 @@ raon-1-mini-preview:
 
     --ctx-size 131072
 
-    --fit on
+    --fit
 
     --fit-margin 512
 
-    -ngl 99
+    -b 256 -ub 64
 
     --flash-attn on
 
@@ -63,7 +63,7 @@ raon-1-mini-preview:
   metadata:
     size: ~16.07 GB (IQ4_XS)
     context: 131072
-    vram_usage: '~6 GB VRAM + ~10 GB RAM'
+    vram_usage: '~4.1 GB VRAM + ~12 GB RAM'
     source: KRAFTON/Raon-1-mini-preview-gguf (GGUF oficial do vendor, IQ4_XS; ik_llama raon1 runtime, binary 5203/662bb434)
     kv_cache: q4_0/q4_0
     features:
@@ -93,4 +93,11 @@ raon-1-mini-preview:
      Verificacoes pendentes no smoke: fit/fit-margin com experts em RAM (padrao orn35/k2),
       cache-type em MLA no ik (GLM-4.7 precedent q4_0), ctx real (131072 proposto pela
       ladder; sobe pra 262144 se o KV pinned couber), velocidade vs orn35 (classe
-      30B-A4B vs 35B-A3B). Header GGUF: raon1, 731 tensors, pre=raon.'
+      30B-A4B vs 35B-A3B). Header GGUF: raon1, 731 tensors, pre=raon.
+     _Smoke 11/nov/2026 (swap, ik b5203/662bb434): 23.7 t/s decode e 62 t/s prompt @131072 ctx;
+      VRAM 4138 MiB (69%) + ~12 GB RAM (experts em page cache via defer/prefetch); tool call 1º
+      request OK (get_weather/Curitiba); chat coerente, finish stop. KV medido: 283.5 MiB (q4_0,
+      MLA latent + RDA). PITFALL no 1º cmd: -ngl 99 conflitava com --fit (estourava o compute
+      buffer CUDA de 1.2 GB) → padrão ik da casa: --fit --fit-margin 512 + -b 256 -ub 64, sem -ngl.
+      MTP: a família tem draft DFlash (0.73 GB no disco) + DFlash2 no ik (#2759) — A/B de spec
+      decode pendente.'

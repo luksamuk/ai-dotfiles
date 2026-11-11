@@ -122,7 +122,7 @@ models:
       context_length: 1048576
       embedding_length: 2560
       quantization: Q4_K_M
-      note: 'Smoke 24/10/2026 (upstream, arch spark2_5 presente no llama.cpp e no cafe; ausente no ik). Medido @131K: 41,9-43,0 t/s, tool calling OK (finish=tool_calls com argumento certo), funcao Python OK. @65K fica em 77,6% e 42-44 t/s. Acima de 131K nao cabe: KV q8_0 estoura a 3050. Samplers do proprio GGUF (temp 1.0, top_p 0.95, top_k -1, repeat 1.0) — hardcoded, nao usar macro. Thinking: template enable_thinking. BASE E :think SAO AMBOS thinking-ON (24/10): o modo thinking-none respondeu em CHINES a uma saudacao curta, nao chamou ferramenta (finish=stop sem tool_calls) e errou 17x23 numa amostra — o default do vendor eh thinking ligado e o "none" nao serve. Smoke via llama-swap: 36-38 t/s, tool calling OK, pico 88,9% (5461 MiB). X2.6 mantem a arch do X2.5: os ganhos sao de pos-treino (agentico, tool use, contexto longo). Irmon X2.5 reprovou snake v2 (bug de colisao) e estourou o bench agentico 03 — regua pendente. DROP-IN HERETIC v2 05/nov (RETRIAL por decreto do dono): a ''degradacao'' que derrubou a v1 era CONFIG DO HARNESS (dsh com web_search quebrado: ''multiple usable web providers'', flails de tool) — nao o quant. Heretic Q4_K_M self-quant refeito (mesma receita: BF16 oficial byte-exato -> llama-quantize, 2474 MiB / 5.05 BPW), ctx 114688 como o deploy. v1: Q6_K do autor nao coube a 114688 (compute buffer Q6, OOM medido). KL do fine-tune 0.0097, refusals 1/100 vs 100/100. Sem branding heretic (decreto: identidade segue ''Spark X2.6 4B''; procedencia aqui e no source). A REGUA AGORA E O USO REAL no dsh com o harness CONSERTADO — o dono e o juiz.'
+      note: 'Smoke 24/10/2026 (upstream, arch spark2_5 presente no llama.cpp e no cafe; ausente no ik). Medido @131K: 41,9-43,0 t/s, tool calling OK (finish=tool_calls com argumento certo), funcao Python OK. @65K fica em 77,6% e 42-44 t/s. Acima de 131K nao cabe: KV q8_0 estoura a 3050. Samplers do proprio GGUF (temp 1.0, top_p 0.95, top_k -1, repeat 1.0) — hardcoded, nao usar macro. Thinking: template enable_thinking. BASE E :think SAO AMBOS thinking-ON (24/10): o modo thinking-none respondeu em CHINES a uma saudacao curta, nao chamou ferramenta (finish=stop sem tool_calls) e errou 17x23 numa amostra — o default do vendor eh thinking ligado e o "none" nao serve. Smoke via llama-swap: 36-38 t/s, tool calling OK, pico 88,9% (5461 MiB). X2.6 mantem a arch do X2.5: os ganhos sao de pos-treino (agentico, tool use, contexto longo). Irmon X2.5 reprovou snake v2 (bug de colisao) e estourou o bench agentico 03 — regua pendente. DROP-IN HERETIC v2 05/nov (RETRIAL por decreto do dono): a ''degradacao'' que derrubou a v1 era CONFIG DO HARNESS (dsh com web_search quebrado: ''multiple usable web providers'', flails de tool) — nao o quant. Heretic Q4_K_M self-quant refeito (mesma receita: BF16 oficial byte-exato -> llama-quantize, 2474 MiB / 5.05 BPW), ctx 114688 como o deploy. v1: Q6_K do autor nao coube a 114688 (compute buffer Q6, OOM medido). KL do fine-tune 0.0097, refusals 1/100 vs 100/100. Sem branding heretic (decreto: identidade segue ''Spark X2.6 4B''; procedencia aqui e no source). A REGUA AGORA E O USO REAL no dsh com o harness CONSERTADO — o dono e o juiz. Snake 1-shot via Pi (11/nov/2026, prompt idêntico pro raon, sem ciclo externo de bugfix): 9.4KB HTML+HUD, visual bem-acabado; self-review pegou 2 bugs próprios (typo GRGID, timing do step) — MAS o timing refeito roda 1 step POR FRAME na velocidade inicial (~60 steps/s; o modelo confundiu steps/s com frames) → a cobra atravessa o board de 24 células em ~0.3s = insta-game-over, reproduzível a cada restart. Parse OK; gameplay REPROVADO 1-shot. V2 (bug report externo): timing reconstruído com accumulator (step a cada 1/speed segundos, cap 8 steps/s) + canvas corrigido pra 576x576; self-review re-checou loop/restart antes de fechar; Parse OK. Gameplay v2 pendente do dono.'
       reasoningEfforts:
         'off': null
         low: low
@@ -189,7 +189,7 @@ models:
       context_length: 262144
       embedding_length: 1536
       quantization: Q4_K_M
-      note: 'Arch raon1nano (KRAFTON Raon-1): dense "MoE-to-dense" — 3.1B total (1.5B efetivo; a diferença é a tabela de per-layer embedding 256d do vocab 259.840). Hibrido: 18 layers Raon Delta Attention (gated delta-rule, estado fixo — família DeltaNet) + 6 Gated MLA layers (kv_lora_rank 512, ~7 KiB/token total). Raon-mHC 4 streams, NoPE, tied embeddings. Fork proprio do vendor (github.com/krafton-ai/llama.cpp, branch raon-1-nano-preview): upstream NÃO TEM o arch (PR comunitário #31107 fechado sem merge, era só o mini 30B), ik_llama tem só o raon1 (mini), nada de nano. MTP vendor existe (variante _MTP dos GGUFs, commit nextn do fork) — house decision: non-MTP primeiro, A/B de MTP depois se o dono pedir (dense = MTP pode acelerar, decisão conservadora só se aplicava a MoE). _sampling vendor (card "Sampling parameters"): thinking é DEFAULT e desabilitar não é recomendado — plain handle pins enable_thinking true, :think fica como alias compatível com os mesmos pins. General: temp 0.1 + presence_penalty 1.5; Agentic/code: temp 1.0 + pp 0 (não há terceiro handle por política da frota — quem usa agentic sobrescreve no cliente). _Smoke 11/nov/2026 (swap, fork krafton-llama.cpp b1-4d72ff0, shallow clone raon-1-nano-preview): 77.5 t/s decode (swap timings @ctx 262144, Q4_K_M ngl 99), prompt 674 t/s; VRAM 3937/6144 MiB (64%) com o residido carregado no ctx total — sobra ~2.2GB. Tool calling OK no 1º request (finish=tool_calls, get_weather com city correto). Reasoning: template emite thinking por default; reasoning_content presente nos 3 smokes. CLI CPU-only: 29.6 t/s. GGUF header: arch raon1nano, ctx 262144, pre=raon, NFC. MTP vendor existe (variante _MTP dos GGUF, nextn fork commit 11/nov) — A/B de speedup pendente de go do dono.'
+      note: 'Arch raon1nano (KRAFTON Raon-1): dense "MoE-to-dense" — 3.1B total (1.5B efetivo; a diferença é a tabela de per-layer embedding 256d do vocab 259.840). Hibrido: 18 layers Raon Delta Attention (gated delta-rule, estado fixo — família DeltaNet) + 6 Gated MLA layers (kv_lora_rank 512, ~7 KiB/token total). Raon-mHC 4 streams, NoPE, tied embeddings. Fork proprio do vendor (github.com/krafton-ai/llama.cpp, branch raon-1-nano-preview): upstream NÃO TEM o arch (PR comunitário #31107 fechado sem merge, era só o mini 30B), ik_llama tem só o raon1 (mini), nada de nano. MTP vendor existe (variante _MTP dos GGUFs, commit nextn do fork) — house decision: non-MTP primeiro, A/B de MTP depois se o dono pedir (dense = MTP pode acelerar, decisão conservadora só se aplicava a MoE). _sampling vendor (card "Sampling parameters"): thinking é DEFAULT e desabilitar não é recomendado — plain handle pins enable_thinking true, :think fica como alias compatível com os mesmos pins. General: temp 0.1 + presence_penalty 1.5; Agentic/code: temp 1.0 + pp 0 (não há terceiro handle por política da frota — quem usa agentic sobrescreve no cliente). _Smoke 11/nov/2026 (swap, fork krafton-llama.cpp b1-4d72ff0, shallow clone raon-1-nano-preview): 77.5 t/s decode (swap timings @ctx 262144, Q4_K_M ngl 99), prompt 674 t/s; VRAM 3937/6144 MiB (64%) com o residido carregado no ctx total — sobra ~2.2GB. Tool calling OK no 1º request (finish=tool_calls, get_weather com city correto). Reasoning: template emite thinking por default; reasoning_content presente nos 3 smokes. CLI CPU-only: 29.6 t/s. GGUF header: arch raon1nano, ctx 262144, pre=raon, NFC. MTP vendor existe (variante _MTP dos GGUF, nextn fork commit 11/nov) —      Snake 1-shot via Pi (11/nov/2026, prompt idêntico pro spark, sem ciclo externo de bugfix): entregou 2 arquivos em ~50s (effort medium), mas o HTML quebra no PARSE (ternário do keydown sem valor final) e o draw multiplica cell 2x (snake em pixels xcell) → tela preta, jogo inoperante. Autorevisão: zero — velocidade sem verificação. A/B de speedup pendente de go do dono. V2 (bug report externo): consertou o parse (if/else) + as unidades do draw (part.x direto); Parse OK — MAS o jogo ficou turn-based: move() só roda em keydown/click, sem setInterval/rAF, speed decorativo. Gameplay v2 pendente do dono.'
   qwen2.5-coder-1.5b-pollard:
     name: Qwen2.5 Coder 1.5B Pollard
     description: Qwen2.5-Coder-1.5B-Instruct memory-fit for code completion. FIM native, CPU-only serving with zero VRAM.
@@ -2193,6 +2193,86 @@ models:
       embedding_length: 2560
       quantization: UD-IQ1_M
       note: 'RESULTADO E DESTINO. Pesos removidos do disco 04/nov de manha POR DECRETO do dono apos o veredito do teste noturno (lane segue na frota, unlisted). EDIT 03-04/nov pos-probe-19B: cache-experts 8 → set vencedor da escada --ssd-predict + --ssd-io-threads 4 + --ssd-cache-mb 4096 (19B mediu 14.6 → 33-34 t/s com esses knobs; configemprestada SEM re-teste neste modelo — probe pendente do reinstall). VEREDITO DO TESTE NOTURNO: INVIAVEL nesta maquina como lane de uso. MEDIDAS (llama-server standalone, greedy, ctx 16k, q8_0 KV, 6 threads): (1) L1NOMTP (-cmoe, experts mmap/page-cache): decode 0.15 t/s QUENTE, prefill 0.21-0.28 t/s. (2) L3C (-ssd cache-experts 8): decode 1.19-1.55 t/s steady, prefill 0.83-1.04 t/s — IO-bound (0.4 GiB de experts random 4K por token). (3) L3MTP: decode 0.72 t/s — MTP NEGATIVO em IO-bound (2a confirmacao: escada 19B pé F tb negativa). PREFILL de 2k tokens = 35-40 min — inviavel pra agente INDEPENDENTE de knobs. VRAM 1.3 GiB livre (regua passa). RAM ~75%, zero thrash. Tool calling FUNCIONA (finish_reason=tool_calls) mas exige enable_thinking false. Crash do -ssd c/ qwen4exp NAO reproduz no build atual. RESTORE: hf download unsloth/Qwen3.8-Flash-Next-GGUF --include "UD-IQ1_M/*" --local-dir ~/.llama-models/qwen38-flash-next-ud-iq1m/ + hf download quimmedes/Qwen3.8-Flash-Next-MTP-GGUF mtp-Qwen3.8-Flash-Next-Q4_0.gguf --local-dir ~/.llama-models/qwen38-flash-next-ud-iq1m/mtp/. Artefatos e reatorio: ~/.llama-models/qwen38-flash-next-lane/.'
+  raon-1-mini-preview:
+    name: Raon-1 mini preview
+    description: KRAFTON's Raon-1 mini preview is a 30B MoE-A4B instruct model trained for faithful Korean conversation and agentic tasks, with a 131K-token context window. Built for assistant-style work, it keeps conversational context and calls tools natively; thinking is always on.
+    cmd: '${ik_llama_server} --port ${PORT}
+
+      --model ${models_dir}/raon-1-mini-preview/raon-1-mini-preview-IQ4_XS.gguf
+
+      --jinja
+
+      --parallel 1
+
+      --ctx-size 131072
+
+      --fit
+
+      --fit-margin 512
+
+      -b 256 -ub 64
+
+      --flash-attn on
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --defer-experts
+
+      --prefetch-experts
+
+      --temp 1.0
+
+      --top-p 0.95
+
+      --top-k 20
+
+      --repeat-penalty 1.0
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p, top_k
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: true
+          temperature: 1.0
+          top_p: 0.95
+          top_k: 20
+    ttl: 0
+    health_check_timeout: 900
+    capabilities:
+      in:
+      - text
+      out:
+      - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: ~16.07 GB (IQ4_XS)
+      context: 131072
+      vram_usage: ~4.1 GB VRAM + ~12 GB RAM
+      source: KRAFTON/Raon-1-mini-preview-gguf (GGUF oficial do vendor, IQ4_XS; ik_llama raon1 runtime, binary 5203/662bb434)
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: raon1
+      parameters: 3000000000
+      context_length: 262144
+      embedding_length: 2560
+      quantization: IQ4_XS
+      note: 'NUNCA SMOKEADO — fragment preparado 11/nov/2026 SEM build-config (a pedido do dono, durante corrida 2048): fica inerte ate o build-config.py rodar. Download IQ4_XS (16.07 GB) em curso no momento da escrita; exigir ls do GGUF + sha256 antes do deploy. Arch raon1 (30B-A4B): 25 layers (1 dense + 24 MoE), 128 experts top-6 + 1 shared, MLA (kv_lora_rank 512, q_lora 576) + RDA hybrid (mesma familia do nano, mHC 4 streams, SiTU), ctx nativo 262144, vocab 259.840 (untied), NoPE. Vendor GGUF: F16/Q4_K_M(19.7)/IQ4_XS(16.1)/Q5/Q6/Q8 + draft DFlash 0.73 GB (baixado junto; ik tem DFlash2 no mesmo commit #2759 do runtime — spec-decode A/B pendente). Sampling embedado no GGUF e igual ao card (temp 1.0, top_p 0.95, top_k 20). Thinking sempre ON (card: desabilitar nao recomendado) — single handle, como o nano. Verificacoes pendentes no smoke: fit/fit-margin com experts em RAM (padrao orn35/k2), cache-type em MLA no ik (GLM-4.7 precedent q4_0), ctx real (131072 proposto pela ladder; sobe pra 262144 se o KV pinned couber), velocidade vs orn35 (classe 30B-A4B vs 35B-A3B). Header GGUF: raon1, 731 tensors, pre=raon. _Smoke 11/nov/2026 (swap, ik b5203/662bb434): 23.7 t/s decode e 62 t/s prompt @131072 ctx; VRAM 4138 MiB (69%) + ~12 GB RAM (experts em page cache via defer/prefetch); tool call 1º request OK (get_weather/Curitiba); chat coerente, finish stop. KV medido: 283.5 MiB (q4_0, MLA latent + RDA). PITFALL no 1º cmd: -ngl 99 conflitava com --fit (estourava o compute buffer CUDA de 1.2 GB) → padrão ik da casa: --fit --fit-margin 512 + -b 256 -ub 64, sem -ngl. MTP: a família tem draft DFlash (0.73 GB no disco) + DFlash2 no ik (#2759) — A/B de spec decode pendente.'
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
@@ -2374,6 +2454,7 @@ matrix:
     lfmcol: lfm2.5-colbert-350m
     sp26: spark-x2.6-4b
     raon: raon-1-nano
+    raonmini: raon-1-mini-preview
     tq3d: qwen3.5-4b-3d-coder
     lfm317: lfm3-1.7b
     mcv47: minicpm-v-4.7-35b
@@ -2383,7 +2464,7 @@ matrix:
     small_only: (lfm24 | sp26 | raon | lfm317 | spc | fct) & pkstt
     vision_only: ocr | mcv35
     vision_embed: (ocr | mcv35) & (lfmcol | eg2 | nemb) & pkstt
-    heavy: (lfm24 | mcv35 | orn35 | b27) & (lfmcol | eg2 | nemb) & qpfim & pkstt
+    heavy: (lfm24 | mcv35 | orn35 | b27 | raonmini) & (lfmcol | eg2 | nemb) & qpfim & pkstt
     translate_only: tg
     tts_external: ttsext
     embed_only: lfmcol & eg2 & nemb & pkstt
@@ -2411,3 +2492,4 @@ matrix:
     mcv47: 3
     sp26: 2
     raon: 2
+    raonmini: 6
