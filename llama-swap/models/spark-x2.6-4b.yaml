@@ -85,7 +85,11 @@ spark-x2.6-4b:
       byte-exato -> llama-quantize, 2474 MiB / 5.05 BPW), ctx 114688 como o deploy. v1: Q6_K do autor nao coube a 114688 (compute
       buffer Q6, OOM medido). KL do fine-tune 0.0097, refusals 1/100 vs 100/100. Sem branding heretic (decreto: identidade
       segue ''Spark X2.6 4B''; procedencia aqui e no source). A REGUA AGORA E O USO REAL no dsh com o harness CONSERTADO —
-      o dono e o juiz.'
+      o dono e o juiz. Snake 1-shot via Pi (11/nov/2026, prompt idêntico pro raon, sem ciclo externo de
+      bugfix): 9.4KB HTML+HUD, visual bem-acabado; self-review pegou 2 bugs próprios (typo GRGID, timing
+      do step) — MAS o timing refeito roda 1 step POR FRAME na velocidade inicial (~60 steps/s; o modelo
+      confundiu steps/s com frames) → a cobra atravessa o board de 24 células em ~0.3s = insta-game-over,
+      reproduzível a cada restart. Parse OK; gameplay REPROVADO 1-shot.'
     reasoningEfforts:
       'off': null
       low: low

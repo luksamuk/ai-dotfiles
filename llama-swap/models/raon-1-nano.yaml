@@ -84,4 +84,7 @@ raon-1-nano:
       (finish=tool_calls, get_weather com city correto). Reasoning: template emite thinking por
       default; reasoning_content presente nos 3 smokes. CLI CPU-only: 29.6 t/s. GGUF header:
       arch raon1nano, ctx 262144, pre=raon, NFC. MTP vendor existe (variante _MTP dos GGUF,
-      nextn fork commit 11/nov) — A/B de speedup pendente de go do dono.'
+      nextn fork commit 11/nov) —      Snake 1-shot via Pi (11/nov/2026, prompt idêntico pro spark, sem ciclo externo de bugfix): entregou 2 arquivos em ~50s
+      (effort medium), mas o HTML quebra no PARSE (ternário do keydown sem valor final) e o draw multiplica cell 2x
+      (snake em pixels xcell) → tela preta, jogo inoperante. Autorevisão: zero — velocidade sem verificação.
+      A/B de speedup pendente de go do dono.'
