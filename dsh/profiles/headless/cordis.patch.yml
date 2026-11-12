@@ -35,6 +35,11 @@
           contextWindow: 131072
         - id: lfm3-1.7b
           contextWindow: 65536
+        - id: minicpm-v-4.7-35b
+          input:
+            - text
+            - image
+          contextWindow: 131072
         - id: lfm3-vl-2b
           input:
           - text
@@ -55,11 +60,12 @@
           - text
           - image
           contextWindow: 131072
-        - id: bonsai-27b
-          contextWindow: 40960
-          input:
-          - text
-          - image
+        # APOSENTADO 12/nov/2026 (dono) — restore no epitaph do fragment em llama-swap/models/_disabled/
+#         - id: bonsai-27b
+#           contextWindow: 40960
+#           input:
+#           - text
+#           - image
         - id: qwen3.5-4b-3d-coder
           contextWindow: 131072
           input:
@@ -234,3 +240,4 @@
     searchProvider: searxng
 - id: web-deepseek-api
   disabled: true
+

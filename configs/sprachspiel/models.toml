@@ -99,15 +99,14 @@ thinking = true
 tools = false
 vision = true
 
-# --- QWEN3.5-4B-3D-CODER (Three.js + coding geral; always-think, sem escada) ---
-# n-predict 32768 na lane (thinking estoura 4K). Samplers 0.6/0.95/20 pinados.
-[models."qwen3.5-4b-3d-coder"]
-provider = "llama-swap"
-model_id = "qwen3.5-4b-3d-coder"
-num_ctx = 131072
-thinking = true
-tools = true
-vision = true
+# --- QWEN3.5-4B-3D-CODER — APOSENTADO 12/nov/2026 (dono): probe 2048 reprovado + fidelidade multimodal nula. Fragment em _disabled/; restore lá.
+# [models."qwen3.5-4b-3d-coder"]
+# provider = "llama-swap"
+# model_id = "qwen3.5-4b-3d-coder"
+# num_ctx = 131072
+# thinking = true
+# tools = true
+# vision = true
 
 # --- ORNITH 1.5 35B HERETIC (APEX I-Compact, ik lane, MTP; alias mantido p/ [model.code]) ---
 # Lane strips temp/top_p (pinados 0.6/0.95). Handle da frota renomeado (-fast).
