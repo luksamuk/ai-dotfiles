@@ -2015,14 +2015,6 @@ class StreamingChat:
                 
                 # Cabeçalho com prompt e modelo
                 model_display = self.selected_model_name or self.selected_model
-                if self.use_thinking_variant:
-                    # decreto do dono (12/nov): no lugar do ":think" antigo, mostra o effort da rodada
-                    eff_name = getattr(self, "selected_effort_name", None)
-                    eff_wire = getattr(self, "selected_effort", None)
-                    if eff_name:
-                        model_display += f" (effort {eff_name}, fio: {eff_wire})"
-                    else:
-                        model_display += " (thinking default)"
                 
                 # Mostra o prompt original (com caminhos) se tinha imagens
                 display_prompt = prompt  # prompt original
@@ -2176,8 +2168,6 @@ class StreamingChat:
                             info_parts.append(f"[bold]Usage:[/] {prompt_n_val}/{ctx_max} tok [{bar}] {pct:.1f}%")
                     if model_info.get("kv_cache"):
                         info_parts.append(f"[dim]KV: {model_info['kv_cache']}[/]")
-                    if getattr(self, "selected_effort", None):
-                        info_parts.append(f"[bold]🧠 Effort:[/] {getattr(self, 'selected_effort_name', '?')} (fio: {self.selected_effort})")
                     if info_parts:
                         timing_lines.append("")  # Separador
                         timing_lines.extend(info_parts)
