@@ -1063,6 +1063,7 @@ class StreamingChat:
                 console.print("[dim]Saindo...[/]")
                 sys.exit(0)
             if effort_pick:
+                self.selected_effort_name = effort_pick
                 self.selected_effort = efforts_map.get(effort_pick)
                 self.use_thinking_variant = True  # painel de raciocínio ligado
                 console.print(f"[yellow]🧠 Effort: {effort_pick}[/]")
@@ -2169,6 +2170,8 @@ class StreamingChat:
                             info_parts.append(f"[bold]Usage:[/] {prompt_n_val}/{ctx_max} tok [{bar}] {pct:.1f}%")
                     if model_info.get("kv_cache"):
                         info_parts.append(f"[dim]KV: {model_info['kv_cache']}[/]")
+                    if getattr(self, "selected_effort", None):
+                        info_parts.append(f"[bold]🧠 Effort:[/] {getattr(self, 'selected_effort_name', '?')} (fio: {self.selected_effort})")
                     if info_parts:
                         timing_lines.append("")  # Separador
                         timing_lines.extend(info_parts)
