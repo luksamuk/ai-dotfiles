@@ -1031,7 +1031,9 @@ class StreamingChat:
         # probe nex-fast 05/nov mediu top-level ok também na lane ik).
         efforts_map = selected_model.get("reasoning_efforts") or {}
         if efforts_map:
-            effort_choices = [{"name": "💤 off (não manda nada — default do template)", "value": ""}]
+            # decreto do dono (12/nov): SEM opo off no seletor — sempre-thinking;
+            # quem quiser "off" declara no fragment o par {nivel: ""} e vira item com fio vazio.
+            effort_choices = []
             # Níveis com fio null (ex: 'off': null do fragment) = não mandar nada —
             # o item 💤 off que sempre entra na lista já cobre; não duplicar.
             for lvl, wire_val in efforts_map.items():
