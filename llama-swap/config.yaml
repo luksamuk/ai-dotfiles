@@ -803,7 +803,7 @@ models:
       - CPU-only por desenho (a VRAM da casa é escassa, 6 GB) - troque PARAKEET_DEVICE=cuda se quiser
   bonsai2-27b:
     name: Bonsai 2 27B
-    description: Qwen3.8-27B comprimido pra 5.5 GB (ternário PTQ1_0 1.75 bpw) pela PrismML (Bonsai 2), foco em qualidade sub-2-bit; claims de 98.2% do FP16. Roda no fork cafe-llama.cpp com kernels CUDA nativos.
+    description: Qwen3.8-27B comprimido pra 5.95 GB (ternário PTQ1_0 v5 1.72 bpw) pela PrismML (Bonsai 2), foco em qualidade sub-2-bit com 98.2% do FP16. Thinking is always on and cannot be disabled.
     tags:
     - think
     - tools
@@ -815,24 +815,13 @@ models:
 
       -ngl 50 -c 65536 -fa on -nkvo --cache-type-k q4_0 --cache-type-v q4_0 --jinja
 
-      --temp 0.7 --top-p 0.8 --top-k 20 --min-p 0 --presence-penalty 1.5 --repeat-penalty 1.0
+      --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0 --repeat-penalty 1.0
 
       '
     ttl: 900
     health_check_timeout: 900
     filters:
       stripParams: temperature, top_p, top_k, reasoning_effort
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: true
-            reasoning_effort: xhigh
-          temperature: 1.0
-          top_p: 0.95
-          top_k: 20
-          min_p: 0
-          presence_penalty: 0.0
-          repeat_penalty: 1.0
     capabilities:
       in:
       - text
@@ -861,8 +850,6 @@ models:
       context_length: 262144
       embedding_length: 5120
       quantization: PTQ1_0
-      reasoningEfforts:
-        xhigh: xhigh
       note: 'REATIVADO 12/nov/2026 (dono) com binrio NOVO: fork prismml-eng/llama.cpp branch prism, shallow commit 6447906b (11/06), compilado sm86 sem UI. PTQ1_0 v5 = 5.95 GB (era 5.54/v4), com rotao hadamard prism.* (signs 28k, 401 weight_names) — O STOCK CARrega mas d gibberish (banda silently-broken; o Q2_0 7.63 GB  o packing stock-safe do vanilla b11556+, no forks). O cafe (quimmedes) tem os kernels de 19/09 mas o fork ganhou 10/31-11/06: fix de decode GDN state rows qwen35 split-K PQ2_0 (n/a Ampere) e MoE epilogues (n/a dense). Deploy ESPALHADOR DO ORN9B: -nkvo + KV q4_0 (antes era -nkvo solo). Histrico: cafe+kerneis 19/09 = 3.4-3.5 t/s; fork original 2.94; teto ngl 56 = 5.33 GB VRAM (full offload OOM ~100-200MiB); ngl 48 = 1.66 t/s; CPU-only 0.53-0.64. Bench snake 09/10: 3.3 t/s, 16/16, markdown leak, perdeu da Saluki. DECRETO 12/nov (dono): SEM :think — always-thinking, single handle com xhigh pinado (thinking ON). DIALETO PROVADO 12/nov (curl s/ effort): xhigh ok; medium/low ACEITOS mas no encurtam o think (121/104 chars vs 95 do xhigh); none (o knob de off do KNOWN_ISSUES) NO DESLIGA — reasoning_content veio cheio = pensa sempre, perodo; high = HTTP 500. Empty answers = output budget: thinking conta no max_tokens, usar >= 16k. MTP: PTQ1_0 no traz nextn e no h DSpark drafter oficial (SPECULATIVE.md). _SMOKE 12/nov (swap, fork b1 6447906b): 5.10 t/s decode sustentado + 12.2 t/s prompt @65K (vs 3.4-3.5 do cafe kerneis 19/09 = +45-50% no binrio novo); VRAM 4604 MiB (75% da 3050) + KV q4_0 no RAM (-nkvo); OOM no -ngl 56 (peso v5 +400MB) -ngl 50. Always-thinking: reasoning_content presente, finish stop, math correto. vs orn9b (12.8-13.3 t/s): o TPE segue 2.5x mais lento — ganho real mas no tira o papel de laboratrio de ternary.'
   anima-aesthetic-v1.1:
     name: Anima Aesthetic v1.1
