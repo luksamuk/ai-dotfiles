@@ -66,11 +66,17 @@
 #           input:
 #           - text
 #           - image
-        - id: qwen3.5-4b-3d-coder
-          contextWindow: 131072
+# qwen3.5-4b-3d-coder — APOSENTADO 12/nov/2026 (restore no epitaph)
+        - id: bonsai2-27b
+          reasoningEfforts:
+            off: xhigh
+            low: xhigh
+            medium: xhigh
+            high: xhigh
+            xhigh: xhigh
           input:
-          - text
-          - image
+            - text
+          contextWindow: 65536
         - id: spark-x2.6-4b
           contextWindow: 114688
           reasoningEfforts:
