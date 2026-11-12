@@ -20,9 +20,10 @@
 #   lfm2.5-2.6b           - LFM2.5-2.6B Q6_K (~2.22 GB) - dense hybrid, agentic RL, on-device, 128K ctx
 #   raon-1-nano          - KRAFTON Raon-1 nano Q4_K_M (~2.08 GB) - dense RDA+MLA híbrido, fork vendor raon1nano
 #   qwen2.5-coder-1.5b-pollard - Qwen2.5-Coder-1.5B-Instruct Pollard IQ4_XS (~824 MB) - FIM, imatrix, CPU-only
-#   bonsai-27b - prism-ml/Bonsai-27B Q1_0 1-bit binary (~3.8 GB) + mmproj - PrismML reasoning 27B
+#   [APOSENTADO 12/nov/2026] bonsai-27b — _disabled/ + epitaph; GGUFs preservados
+#   bonsai2-27b         - Ternary-Bonsai-2-27B PTQ1_0 v5 (~5.95 GB) - ternario PrismML, fork prismml-eng branch prism
 #   openbonsai-qwen3.5-9b - webbrain-one PTQ1_0 ternary 9B (~2.0 GB), OpenBonsai framework, cafe backend
-#   qwen3.5-4b-3d-coder - ccore/Qwen3.5-4B-3D-Coder Q4_K_M (~2.71 GB) + mmproj BF16 (~0.64 GB) - Three.js 3D scene generation + coding
+#   [APOSENTADO 12/nov/2026] qwen3.5-4b-3d-coder — _disabled/ + epitaph
 #   lfm2.5-1.2b-think      - LFM2.5-1.2B-Thinking Q8_0 (~1.25 GB) - edge reasoning, CoT
 #   lfm2-24b              - LFM2-24B-A2B Q4_K_M (~14.4 GB) - MoE hybrid, 2.3B active
 #   [REMOVED] granite-4.1-3b — tool-calling failed in Pi, removed May 2026
@@ -94,7 +95,7 @@ declare -A MODELS=(
   # Consolidated: formerly qwen3.5-4b-mtp, now canonical qwen3.5-4b (Jul 2026)
   # Uses ik_llama + hadamard KV + UD-Q4_K_XL (2.8 GB)
   ["qwen3.5-4b"]="unsloth/Qwen3.5-4B-GGUF Qwen3.5-4B-UD-Q4_K_XL.gguf"
-  ["qwen3.5-4b-3d-coder"]="ccore/Qwen3.5-4B-3D-Coder Qwen3.5-4B-3D-Coder-Q4_K_M.gguf qwen3.5-4b-3d-coder/Qwen3.5-4B-3D-Coder-Q4_K_M.gguf"
+  # ["qwen3.5-4b-3d-coder"]=[APOSENTADO 12/nov/2026] _disabled/ + epitaph
   # Portal cores (casa) — GGUFs publicados nos repos -GGUF (10/nov 2026)
   ["portal-core-space"]="luksamuk/portal-core-space-GGUF portal-core-space-Q8_0.gguf portal-core-space/portal-core-space-Q8_0.gguf"
   ["portal-core-fact"]="luksamuk/portal-core-fact-GGUF portal-core-fact-Q8_0.gguf portal-core-fact/portal-core-fact-Q8_0.gguf"
@@ -115,7 +116,8 @@ declare -A MODELS=(
   # REMOVED Aug 30 2026 — superseded by bonsai-27b (1-bit 27B, 10x faster on this box)
   # ["qwen3.8-27b-pollard"]="PollardWeights/Qwen3.8-27B-Pollard Qwen3.8-27B-Pollard-IQ3_S.gguf"
   # PrismML Bonsai 27B 1-bit — Qwen3.6-27B binary weights, Q1_0 upstream CUDA (3.8 GB)
-  ["bonsai-27b"]="prism-ml/Bonsai-27B-gguf Bonsai-27B-Q1_0.gguf bonsai-27b/Bonsai-27B-Q1_0.gguf"
+  # ["bonsai-27b"]=[APOSENTADO 12/nov/2026] GGUFs preservados em disco (~/.llama-models/bonsai-27b/)
+  ["bonsai2-27b"]="prism-ml/Ternary-Bonsai-2-27B-gguf Ternary-Bonsai-2-27B-PTQ1_0.gguf bonsai2-27b/Ternary-Bonsai-2-27B-PTQ1_0.gguf"
   # PrismML Bonsai 2 27B — Qwen3.8-27B ternary PTQ1_0 (1.75 bpw), cafe CUDA kernels (5.54 GB)
   # Oct 10 2026: TROCA definitiva — original deletado (user), Heretic v2 (OS-Software) em disco (mesmo formato/kernels)
   # ["bonsai2-27b"] removed Sep 20 2026 — reativado como heretic; ver fragment models/bonsai2-27b-heretic.yaml
@@ -299,8 +301,8 @@ declare -A MODELS=(
 # Multimodal projector files (downloaded alongside their vision models)
 # Format: "repo filename [local_filename]"
 declare -A MMPROJ=(
-  ["bonsai-27b"]="prism-ml/Bonsai-27B-gguf Bonsai-27B-mmproj-Q8_0.gguf bonsai-27b/Bonsai-27B-mmproj-Q8_0.gguf"
-  ["qwen3.5-4b-3d-coder"]="ccore/Qwen3.5-4B-3D-Coder mmproj-Qwen3.5-4B-BF16.gguf qwen3.5-4b-3d-coder/mmproj-Qwen3.5-4B-BF16.gguf"
+  # mmproj bonsai-27b: aposentado junto (GGUF preservado)
+  # mmproj 3d-coder: aposentado 12/nov/2026 junto do modelo (restaurar no epitaph)
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF mmproj-LFM2.5-VL-450m-F16.gguf"
   ["lfm2.5-vl-1.6b-extract"]="LiquidAI/LFM2.5-VL-1.6B-Extract-GGUF mmproj-LFM2.5-VL-1.6B-Extract-F16.gguf"
   ["lfm2.5-vl-450m-extract"]="LiquidAI/LFM2.5-VL-450M-Extract-GGUF mmproj-LFM2.5-VL-450M-Extract-F16.gguf"
@@ -357,7 +359,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: raon-1-nano, qwen38-flash-next-1m, qwen38-flash-next-1m-mtp, qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, minicpm-ocr-1.0, minicpm-ocr-jev, minicpm-ocr-dspark, qwen3.5-4b-3d-coder, openbonsai-qwen3.5-9b, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
+    echo "Available: raon-1-nano, qwen38-flash-next-1m, qwen38-flash-next-1m-mtp, qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, bonsai2-27b, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, minicpm-ocr-1.0, minicpm-ocr-jev, minicpm-ocr-dspark, openbonsai-qwen3.5-9b, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
     return 1
   fi
   
@@ -424,9 +426,10 @@ show_sizes() {
   echo "  lfm2.5-vl-1.6b-extract 0.70 GB  (Q4_K_M) + 0.82 GB mmproj - Structured vision extraction (JSON), lfm2 arch (upstream llama.cpp only)"
   echo "  lfm2.5-2.6b          ~2.22 GB  (Q6_K) - Dense hybrid, agentic RL, on-device, 128K ctx, 16 langs"
   echo "  qwen2.5-coder-1.5b-pollard ~824 MB (Pollard IQ4_XS) - FIM, imatrix, CPU-only"
-  echo "  bonsai-27b           ~3.80 GB (Q1_0 1-bit binary) + 0.63 GB mmproj - PrismML reasoning 27B, full GPU offload, ~4.4 GB VRAM"
+  echo "  [APOSENTADO 12/nov/2026] bonsai-27b (Q1_0 1-bit + mmproj, GGUFs preservados)"
+  echo "  bonsai2-27b          ~5.95 GB (PTQ1_0 v5) - ternario PrismML (fork prismml-eng branch prism)"
   echo "  openbonsai-qwen3.5-9b ~2.00 GB (PTQ1_0 ternary 1.58 bpw) - OpenBonsai Qwen3.5-9B, cafe CUDA, text-only, ~3.8 GB VRAM @131K"
-  echo "  qwen3.5-4b-3d-coder  ~2.71 GB (Q4_K_M) + 0.64 GB mmproj BF16 - ccore Three.js 3D scene generation, all-in-VRAM, 131K ctx"
+  echo "  [APOSENTADO 12/nov/2026] qwen3.5-4b-3d-coder (2.71 GB + 0.64 mmproj)"
   echo "  bonsai2-27b-heretic  ~5.54 GB (PTQ1_0 ternary 1.75 bpw, heretic v2) - Bonsai 2 (Qwen3.8-27B) uncensored, cafe CUDA kernels, text-only, ~5.6 GB VRAM + ~3.5 GB RAM"
   # [REMOVED] lfm2.5-1.2b — superseded by LFM2.5-8B-A1B
   # [REMOVED] lfm2.5-1.2b-think — superseded by LFM2.5-8B-A1B

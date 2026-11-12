@@ -109,7 +109,7 @@ matrix:
     # q38g: qwen3.8-27b-gsq
     # Bonsai removed Sep 20 2026 — user nunca usa; GGUF deleted; fragment em _disabled/
     # REATIVADO 07/nov — vanilla (kernels Q1_0 upstream + ngram-mod), dense 27B binário 1.125 bpw, 131K
-    b27: bonsai-27b
+    # b27: bonsai-27b  # APOSENTADO 12/nov/2026 (dono) — probe 2048 reprovado; fragment _disabled/ + epitaph; GGUFs em disco (4.2GB)
     # Tradução
     tg: translategemma-4b
     # Português jurídico (Qwen3.5-9B LoRA, instruct)
@@ -141,7 +141,8 @@ matrix:
     sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
     raon: raon-1-nano  # KRAFTON dense 1.5B-efetivo (arch raon1nano, hibrido RDA+MLA), fork vendor, 262K nativo — smoke 11/nov
     raonmini: raon-1-mini-preview  # 30B-A4B MoE (arch raon1 no ik) — STAGED 11/nov SEM build-config; fragment inert ate compilar + smoke
-    tq3d: qwen3.5-4b-3d-coder  # ccore 4B Three.js 3D-Coder Q4_K_M + mmproj BF16 @131K (07/nov, padrão S5-mini)
+    bs2t: bonsai2-27b  # REATIVADO 12/nov: Bonsai-2 27B TPE PTQ1_0 v5 (arch qwen35, fork prismml-eng 11/06), espelho do deploy or9b
+    # tq3d: qwen3.5-4b-3d-coder  # APOSENTADO 12/nov/2026 (dono) — probe 2048 reprovado 2/7 + fidelidade multimodal nula; fragment _disabled/ + epitaph; restore no epitaph
     # nbe4: nemotron-bolt-e4b  # APOSENTADO 31/10/2026 (dono) — GGUFs (UD-Q4_K_XL 5.1G + dflash draft) deletados, fragment _disabled/; restore: re-download unsloth (GATED)
     lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + :think), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despejava (ping-pong cravado no journal 30/out 14:53)
     mcv47: minicpm-v-4.7-35b  # REATIVADO 11/nov (unlisted removido): MoE visual 35B-A3B (mix q3gud_im 15.5GB, experts RAM ~11G, 5G VRAM, 131K ctx, dual think-ON + effort off/high). LISTED sem var = exclusivo no solver (lição lfm317 30/out)
@@ -150,7 +151,7 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(lfm24 | tq3d | spc | fct | mcv47) & (lfmcol | eg2 | nemb) & pkstt"  # 11/11: +mcv47 (MiniCPM-V 4.7 35B-A3B visual, experts RAM) | 10/11: +spc/fct (portal cores publicados no HF)
+    small_vision: "(lfm24 | spc | fct | mcv47) & (lfmcol | eg2 | nemb) & pkstt"  # 11/11: +mcv47 (MiniCPM-V 4.7 35B-A3B visual, experts RAM) | 10/11: +spc/fct (portal cores publicados no HF) | 12/11: tq3d aposentado
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
@@ -178,7 +179,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(lfm24 | mcv35 | orn35 | b27 | raonmini) & (lfmcol | eg2 | nemb) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config)
+    heavy: "(lfm24 | mcv35 | orn35 | raonmini | bs2t) & (lfmcol | eg2 | nemb) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -205,8 +206,9 @@ matrix:
   evict_costs:
     # MiniCPM-V 4.7: barato de recarregar (1B 2.2GB GPU; 35B MoE ~11GB RAM, page cache)
     mcv35: 4
-    b27: 4   # Bonsai 27B 1-bit: 3.8GB + mmproj; reload ~1min (07/nov)
-    tq3d: 2  # 3D-Coder 4B: 2.7GB + mmproj 0.64GB, all-in-VRAM (07/nov)
+    # b27: 4   # APOSENTADO 12/nov/2026 (dono) — GGUFs preservados em disco
+    bs2t: 6  # Bonsai-2 27B TPE PTQ1_0 v5 5.95GB + KV RAM: reload medio-alto (estimativa, pendente smoke)
+    # tq3d: 2  # APOSENTADO 12/nov/2026 (dono) — restore no epitaph do fragment
     # orn15: 9  # merged no heretic 05/10
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
     # q36: 9  # APOSENTADO 02/nov 2026
