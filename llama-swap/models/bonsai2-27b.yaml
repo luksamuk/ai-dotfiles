@@ -20,6 +20,7 @@ bonsai2-27b:
   ttl: 900
   health_check_timeout: 900
   filters:
+    stripParams: temperature, top_p, top_k, reasoning_effort
     setParamsByID:
       ${MODEL_ID}:
         chat_template_kwargs:
