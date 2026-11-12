@@ -52,9 +52,6 @@ qwen38-flash-next-1m:
     setParamsByID:
       ${MODEL_ID}:
         chat_template_kwargs:
-          enable_thinking: false
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
           enable_thinking: true
   ttl: 0
   health_check_timeout: 1200
