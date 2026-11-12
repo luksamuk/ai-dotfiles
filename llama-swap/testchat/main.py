@@ -2016,7 +2016,13 @@ class StreamingChat:
                 # Cabeçalho com prompt e modelo
                 model_display = self.selected_model_name or self.selected_model
                 if self.use_thinking_variant:
-                    model_display += " :think"
+                    # decreto do dono (12/nov): no lugar do ":think" antigo, mostra o effort da rodada
+                    eff_name = getattr(self, "selected_effort_name", None)
+                    eff_wire = getattr(self, "selected_effort", None)
+                    if eff_name:
+                        model_display += f" (effort {eff_name}, fio: {eff_wire})"
+                    else:
+                        model_display += " (thinking default)"
                 
                 # Mostra o prompt original (com caminhos) se tinha imagens
                 display_prompt = prompt  # prompt original
