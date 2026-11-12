@@ -121,7 +121,6 @@ ORIGINAL_ORDER = [
     "minicpm-ocr-jev",          # ✅ OCR Jev scorer (decision CPU-only, arch qwen35 + pooling 3) 28/out
     "parakeet-tdt-0.6b-v3",     # ✅ ASR CPU-only (NVIDIA Parakeet TDT 0.6B v3) p/ o dicta do Kilo Code
     # "bonsai-27b",            # [APOSENTADO 12/nov/2026] — _disabled/ + epitaph (Bonsai-2 TPE ressuscitado como bonsai2-27b)
-    "bonsai2-27b",             # ✅ REATIVADO 12/nov — fork prismml-eng branch prism 6447906b (11/06), PTQ1_0 v5 5.95GB, deploy espelho do or9b
     # "qwen3.5-4b-3d-coder",  # [APOSENTADO 12/nov/2026] — _disabled/ + epitaph
 ]
 

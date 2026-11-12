@@ -801,56 +801,6 @@ models:
       - Converte o upload com ffmpeg - sem ffmpeg no PATH a transcrição falha com 500
       - Não é TTS e não serve /v1/audio/speech
       - CPU-only por desenho (a VRAM da casa é escassa, 6 GB) - troque PARAKEET_DEVICE=cuda se quiser
-  bonsai2-27b:
-    name: Bonsai 2 27B
-    description: Qwen3.8-27B comprimido pra 5.95 GB (ternário PTQ1_0 v5 1.72 bpw) pela PrismML (Bonsai 2), foco em qualidade sub-2-bit com 98.2% do FP16. Thinking is always on and cannot be disabled.
-    tags:
-    - think
-    - tools
-    proxy: http://127.0.0.1:${PORT}
-    checkEndpoint: /health
-    cmd: '${prism2_llama_server} --host 127.0.0.1 --port ${PORT}
-
-      -m ${models_dir}/bonsai2-27b/Ternary-Bonsai-2-27B-PTQ1_0.gguf
-
-      -ngl 50 -c 65536 -fa on -nkvo --cache-type-k q4_0 --cache-type-v q4_0 --jinja
-
-      --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0 --repeat-penalty 1.0
-
-      '
-    ttl: 900
-    health_check_timeout: 900
-    filters:
-      stripParams: temperature, top_p, top_k, reasoning_effort
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 65536
-    metadata:
-      size: ~5.95 GB (PTQ1_0 v5)
-      context: 65536
-      vram_usage: ~5.6 GB VRAM + ~3.5 GB RAM
-      source: prism-ml/Ternary-Bonsai-2-27B-gguf (PTQ1_0 v5, reviso 04/nov; base Qwen3.8-27B, Apache 2.0; roda NO fork prismml-eng/llama.cpp branch prism, NUNCA no stock - rotao hadamard prism.* nos KVs = banda silently-broken no vanilla)
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35
-      parameters: 27360000000
-      context_length: 262144
-      embedding_length: 5120
-      quantization: PTQ1_0
-      note: 'REATIVADO 12/nov/2026 (dono) com binrio NOVO: fork prismml-eng/llama.cpp branch prism, shallow commit 6447906b (11/06), compilado sm86 sem UI. PTQ1_0 v5 = 5.95 GB (era 5.54/v4), com rotao hadamard prism.* (signs 28k, 401 weight_names) — O STOCK CARrega mas d gibberish (banda silently-broken; o Q2_0 7.63 GB  o packing stock-safe do vanilla b11556+, no forks). O cafe (quimmedes) tem os kernels de 19/09 mas o fork ganhou 10/31-11/06: fix de decode GDN state rows qwen35 split-K PQ2_0 (n/a Ampere) e MoE epilogues (n/a dense). Deploy ESPALHADOR DO ORN9B: -nkvo + KV q4_0 (antes era -nkvo solo). Histrico: cafe+kerneis 19/09 = 3.4-3.5 t/s; fork original 2.94; teto ngl 56 = 5.33 GB VRAM (full offload OOM ~100-200MiB); ngl 48 = 1.66 t/s; CPU-only 0.53-0.64. Bench snake 09/10: 3.3 t/s, 16/16, markdown leak, perdeu da Saluki. DECRETO 12/nov (dono): SEM :think — always-thinking, single handle com xhigh pinado (thinking ON). DIALETO PROVADO 12/nov (curl s/ effort): xhigh ok; medium/low ACEITOS mas no encurtam o think (121/104 chars vs 95 do xhigh); none (o knob de off do KNOWN_ISSUES) NO DESLIGA — reasoning_content veio cheio = pensa sempre, perodo; high = HTTP 500. Empty answers = output budget: thinking conta no max_tokens, usar >= 16k. MTP: PTQ1_0 no traz nextn e no h DSpark drafter oficial (SPECULATIVE.md). _SMOKE 12/nov (swap, fork b1 6447906b): 5.10 t/s decode sustentado + 12.2 t/s prompt @65K (vs 3.4-3.5 do cafe kerneis 19/09 = +45-50% no binrio novo); VRAM 4604 MiB (75% da 3050) + KV q4_0 no RAM (-nkvo); OOM no -ngl 56 (peso v5 +400MB) -ngl 50. Always-thinking: reasoning_content presente, finish stop, math correto. vs orn9b (12.8-13.3 t/s): o TPE segue 2.5x mais lento — ganho real mas no tira o papel de laboratrio de ternary.'
   anima-aesthetic-v1.1:
     name: Anima Aesthetic v1.1
     description: Anima Aesthetic v1.1 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. Fine-tune de consistencia; o melhor default art style da familia.
@@ -2329,7 +2279,6 @@ matrix:
     sp26: spark-x2.6-4b
     raon: raon-1-nano
     raonmini: raon-1-mini-preview
-    bs2t: bonsai2-27b
     lfm317: lfm3-1.7b
     mcv47: minicpm-v-4.7-35b
   sets:
@@ -2338,7 +2287,7 @@ matrix:
     small_only: (lfm24 | sp26 | raon | lfm317 | spc | fct) & pkstt
     vision_only: ocr | mcv35
     vision_embed: (ocr | mcv35) & (lfmcol | eg2 | nemb) & pkstt
-    heavy: (lfm24 | mcv35 | orn35 | raonmini | bs2t) & (lfmcol | eg2 | nemb) & qpfim & pkstt
+    heavy: (lfm24 | mcv35 | orn35 | raonmini) & (lfmcol | eg2 | nemb) & qpfim & pkstt
     translate_only: tg
     tts_external: ttsext
     embed_only: lfmcol & eg2 & nemb & pkstt
@@ -2346,7 +2295,6 @@ matrix:
     rerank_embed: lfmcol & eg2 & nemb & pkstt
   evict_costs:
     mcv35: 4
-    bs2t: 6
     lag: 9
     ttsext: 4
     pkstt: 1
