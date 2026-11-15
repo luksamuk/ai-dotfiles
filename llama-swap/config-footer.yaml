@@ -69,7 +69,7 @@ matrix:
     # PR #29416 (M-RoPE rope.section_order): cafe v0.76 (13/Out) mergeou; ik ainda sem
     # mcv1: minicpm-v-4.7-1b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/; o 35b (mcv35) fica
     mcv35: minicpm-v-4.7-35b  # ATIVO Oct 13 2026 noite: GGUF re-baixado (mix 15.5GB + mmproj 4x 0.91GB) + cafe v0.76 (ad57e28a1) mergeou #29416 (M-RoPE OK) — backend cafe
-    lfm24: lfm2.5-24b-a2b  # ATIVO Oct 13 2026 — flag-ship LiquidAI MoE 24B/2.45B ativo (LiveClaw 48.09 > qwen3.6-35b 38.19), UD-Q4_K_XL 14.9GB, -cmoe receita laguna. Sem :think (always-think native). Régua N=5 na fila
+    lfm24: lfm2.5-24b-a2b  # APOSENTADO COM HONRAS + SACRIFÍCIO DE DISCO 31/out (GGUF APEX I-Compact fora do disco; unlisted: true) — flag-ship LiquidAI MoE 24B/2.45B ativo (LiveClaw 48.09 > qwen3.6-35b 38.19), UD-Q4_K_XL 14.9GB, -cmoe receita laguna. Sem :think (always-think native). Régua N=5 na fila
     lfm24f: lfm2.5-24b-a2b-fast  # o challenger ik (-ot exps CPU) — A/B pós-smoke do cafe
     # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
     orn35: ornith-1.5-35b-heretic  # 35B-A3B heretic — papel code do sprach (enable_thinking por handle)
@@ -186,7 +186,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(lfm24 | mcv35 | orn35 | ctiel | groot) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4 | 15/nov: +ctiel 5o pesado +groot (troca do raonmini aposentado)
+heavy: "(mcv35 | orn35 | ctiel | groot) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4 | 15/nov: +ctiel 5o pesado +groot (troca do raonmini aposentado)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -246,7 +246,7 @@ matrix:
     # q4x: 2  # disabled Sep 20 2026
     # lfm8: 2  # REMOVED Sep 10 2026
     # lfm26: 2  # APOSENTADO 21/out 2026
-    lfm24: 6  # LFM 24B: experts ~13.7GB RAM no -cmoe = reload caro (q4_k_xl lento de remmap); acima do k2p(7) abaixo do heavy 9? medio-alto
+    # lfm24: 6  # APOSENTADO 31/out (q4_k_xl lento de remmap); acima do k2p(7) abaixo do heavy 9? medio-alto
     orn35: 9  # 35B-A3B MoE (17GB) — recarregar é caro
     orn35f: 9  # o fast/challenger ik — mesmo GGUF, mesmo custo de reload
     # qw38c: 9  # APOSENTADO 15/nov/2026 (dono)
