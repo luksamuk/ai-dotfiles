@@ -154,6 +154,16 @@ def load_pipeline_wan2gp(model_name: str, model_root: Path | None = None) -> tup
             "TE Qwen3-VL-32B Q4_K_M (compartilhado com a lane de vídeo)":
                 wgp_dir / "ckpts" / "Qwen3-VL-32B-Instruct" / "qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf",
         }
+    elif model_name == "h3-image":
+        checks = {
+            "transformer oficial pruned_rank8 int8_convrot":
+                wgp_dir / "ckpts" / "MiniMax-H3-Image-pruned_rank8_int8_convrot.safetensors",
+            "VAE image fp16": wgp_dir / "ckpts" / "minimax_h3_image" / "minimax_h3_image_vae_fp16.safetensors",
+            "TE Qwen3-VL-32B Q4_K_M (compartilhado com a lane de vídeo)":
+                wgp_dir / "ckpts" / "Qwen3-VL-32B-Instruct" / "qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf",
+            "LoRA pDMD 2-step (acelerador oficial)":
+                wgp_dir / "loras" / "minimax_h3" / "minimax_h3_pdmd_2nfe_bf16.safetensors",
+        }
     else:
         raise ValueError(f"load_pipeline_wan2gp: unsupported model {model_name}")
 
@@ -210,6 +220,7 @@ def generate_image_wan2gp(
     activated_loras: list[str] | None = None, loras_multipliers: list[str] | None = None,
     unit_name: str = "diffuse-flux3", lora_root_name: str = "qwen21",
     flow_shift: int | None = None,
+    config_id: str | None = None,
 ) -> tuple:
     """Generate (or edit) via WanGP. Returns (path, wall, 0.0).
 
@@ -253,6 +264,10 @@ def generate_image_wan2gp(
     if negative_prompt:
         # Only effective at guidance > 1 (CFG); harmless no-op for distilled recipes.
         settings["negative_prompt"] = negative_prompt
+    if config_id:
+        # Model-definition config group selection (system_configs do wgp);
+        # o H3-Image usa isso pra escolher o TE (ex.: gguf_q4_k_m).
+        settings["config"] = config_id
     if flow_shift is not None:
         settings["flow_shift"] = flow_shift
     if refs:

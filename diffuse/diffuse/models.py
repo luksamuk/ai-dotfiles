@@ -182,6 +182,22 @@ MODELS: dict[str, dict] = {
             {"name": "p-h3-image_lora_bf16.safetensors (destilação Pruna)", "path": "Wan2GP/ckpts/loras/p_h3_image/p-h3-image_lora_bf16.safetensors", "size_gb": 1.96},
         ],
     },
+    "h3-image": {
+        "backend_id": "h3-image-wan2gp",
+        "lora_root": "minimax_h3",
+        "dir": "h3-image",
+        "backend_type": "h3img_wan2gp",
+        "category": "image",
+        "bits": "INT8 ConvRot pruned_rank8 (oficial; pDMD só com --turbo)",
+        "description": "H3-Image oficial (MiniMaxAI) pruned 20B, pDMD 2-step — 16 MP nativo @2 steps, zero CFG, edição com até 16 refs, enhance com o system nativo do h3_image.py, via Wan2GP def casa (TE GGUF Q4_K_M fixado)",
+        "default_size": (4096, 4096),
+        "components": [
+            {"name": "MiniMax-H3-Image-pruned_rank8_int8_convrot.safetensors (transformer oficial)", "path": "Wan2GP/ckpts/MiniMax-H3-Image-pruned_rank8_int8_convrot.safetensors", "size_gb": 21.1},
+            {"name": "qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf (text encoder, COMPARTILHADO)", "path": "Wan2GP/ckpts/Qwen3-VL-32B-Instruct/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf", "size_gb": 13.58},
+            {"name": "minimax_h3_pdmd_2nfe_bf16.safetensors (LoRA pDMD 2-step)", "path": "Wan2GP/loras/minimax_h3/minimax_h3_pdmd_2nfe_bf16.safetensors", "size_gb": 1.4},
+            {"name": "minimax_h3_image_vae_fp16.safetensors (VAE image)", "path": "Wan2GP/ckpts/minimax_h3_image/minimax_h3_image_vae_fp16.safetensors", "size_gb": 1.2},
+        ],
+    },
     "moss-image": {
         "backend_id": "moss-image-wan2gp",
         "lora_root": "moss_image",
