@@ -77,3 +77,8 @@ qwen2.5-coder-1.5b-pollard:
     embedding_length: 1536
     quantization: Pollard IQ4_XS
     note: Pollard memory-fit Qwen2.5-Coder-1.5B-Instruct. IQ4_XS with imatrix on mixed prose+code. FIM native (Qwen2.5-Coder tokens). CPU-only, coexists with GPU MoE. ngram-mod enabled.
+
+# FIM RE-VALIDADO 15/nov (shoot-out vs LFM3-1.7B, probe /completion inline fim tokens):
+# qwen2.5-coder: fill EXATO (return total / peso_total) em 0.4s na CPU;
+# LFM3-1.7B SEM tokens FIM no vocabulário (inline = eco/garbage; chat-PSM = content vazio no heretic vortecks)
+# → qwen2.5-coder-1.5b permanece o FIM floor da casa; nenhuma alternativa leve encontrada (Qwen3-Coder pulou pra 30B).
