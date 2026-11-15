@@ -1,3 +1,11 @@
+# -------------------------------------------
+# ANIMA-TURBO-V1.1 — APOSENTADO 15/nov/2026 pelo dono ("nao gero tanta coisa de anime mais").
+# Fragmento saiu; os PESOS (5.5 GB em ~/.llama-models/anima: DiT 2B turbo + TE Qwen3-0.6B + VAE qwen_image) deletados.
+# O grosso do wiring vivia no DIFFUSE: 4 entradas MODELS (turbo/aesthetic/base/preview3),
+# backends/anima_sdcpp.py, _run_anima_image, args --init-img/--img2img-strength/--ref-image/--ref-mode
+# e os helpers de enchance danbooru — tudo removido no mesmo dia (diffuse commit proprio).
+# REINSTALAR: fragment em git истории + pesos via HF (CircleStone Labs anima-turbo-v1.1 safetensors ~4.18 GB + TE/VAE common).
+# -------------------------------------------
 anima-turbo-v1.1:
   name: Anima Turbo v1.1
   description: "Anima Turbo v1.1 — 2B text-to-image anime/illustration da CircleStone Labs x Comfy Org, via sd-server (sd.cpp). Uncensored por default (tier Unbound); safety tags booru (safe/sensitive/nsfw/explicit) dirigem em vez de bloquear. Prompt estilo danbooru em ingles. RECOMENDADO para comecar: distilled, 10 steps CFG 1 (receita do criador), rapido."
