@@ -1,0 +1,139 @@
+# -------------------------------------------
+# QWEN3.8-FLASH-CODER (+ fast) — APOSENTADO 15/nov/2026 pelo dono: REPROVADO no gate agentic.
+# Desinstalado apos teste real no Pi (snake E2E): (1) write estruturado ok no cafe,
+# (2) doom-loop de path apos primeiro erro de tool (EACCES) — modelo nao usa a correcao
+# nem o caminho relativo que JÁ FUNCIONOU, repete identico (cafe: /home/test x2; ik:
+# /home/test -> /test x2, R73k de reasoning queimado no ciclo), (3) think-on + resposta
+# final de codigo = content vazio (intrinseco, template nao resolve), (4) 17x23 = 350/390
+# (regua 391), (5) Java fraco (parseInt branch sempre-verdadeira), (6) ~13-14 t/s = metade
+# da classe orn35, (7) sem MTP (nextn_predict_layers=0). Padrão MiniPlus-loop: fragmento
+# para _disabled/, GGUF deletado. Mesmo template Sharp v22.5 que consertou o parser do ik
+# (tools vazavam pro reasoning com o template IsValorum — esse FIX permanece valido).
+# REINSTALAR: hf download IsValorum/Qwen3.8-Flash-Coder-APEX-I-NanoPlus-GGUF --local-dir
+#   ~/.llama-models/qwen3.8-flash-coder/ (GGUF 18.34 GB, sha256 b8f636cb...7677)
+#   template externo: sharp_chat_template.jinja (repo) — e conferir se o upstream
+#   Jab1718 publicou o passe de recuperacao multilingue/geral prometido no card.
+# -------------------------------------------
+# -------------------------------------------
+# QWEN3.8-FLASH-CODER - cafe-llama.cpp (-cmoe)
+# Base: Qwen3.8-Flash-Coder (Jab1718) = moe-slice do Qwen3.8-Flash-Next (160/512 experts
+# podados contra English Python/SWE-bench) + DoRA de recuperacao; quant APEX-I-NanoPlus
+# (IsValorum, IQ2/IQ3 nos experts, output Q6_K) = 17.08 GiB, ~3,44 BPW.
+# Arch qwen4exp: 48 layers hibridos (36 linear_attention/DeltaNet + 12 qwen_sparse_attention
+# c/ indexer QSA). PLE layer_ids vazio (PLE NAO existe no slice — nada de -ssd/ngram).
+# SEM MTP: header do GGUF declara nextn_predict_layers=0 e zero tensores nextn.
+# Papel: minion de codigo (idiot-savant) sob o orn35 juiz — ingles; PT-BR e general chat
+# podados (card em vermelho). Text-only: sem mmproj.
+# Regime: -cmoe (experts 17GiB cabem em page cache; -ssd = emergencia, decreto do dono).
+# Samplers HARDCODED do card IsValorum: repeat-penalty 1.0 + min-p 0.00 MANDATORIOS
+# (card: penalty troca colchetes/chars de sintaxe em codigo) — NAO usar code_min_p/code_repeat_penalty.
+# Template: dialect proprio de efforts (enable_thinking + reasoning_effort xhigh/high/
+# medium/default/low/minimal; off/none/false = think block vazio). NAO stripamos
+# reasoning_effort (template e leniente, sem raise_exception — strip mataria o menu
+# de efforts do DSH; lição bonsai vale so pra template que estoura 500).
+# TEMPLATE SHARP v22.5.0 (qwen3.8-froggeric, ${templates_dir}) — o fix da casa pra
+# familia 3.8: dialect enable_thinking + reasoning_effort (none/off = disable real;
+# low/minimal; medium; high/xhigh/max = xhigh), tool_call_format 'xml' default = o
+# wrapper de tool-call nativo que o modelo emite (mesmo formato do IsValorum; kwarg
+# 'json' existe no sharp se o xml falhar no fio). auto_disable_thinking_with_tools=false
+# (default) preserva a regra 1: thinking sempre ligado ate com tools.
+# O chat_template.jinja do repo IsValorum fica no dir do modelo como proveniência;
+# o EMBEDDED no GGUF e o vanilla sem dialect (8957 bytes). Relato HF "unusable" =
+# template — fix coberto pelo sharp.
+# SMOKE 14/nov (dono interrompeu a orn35, desktop no ar):
+#  200000 = OOM nos compute buffers (dense-on-GPU do slice e mais gordo que o orn35:
+#  output Q6_K + embds Q3_K de vocab 248k + 96 tensors highway hc_ Q6_K/Q5_0).
+#  131072 = CARREGA, 771 MiB livres de VRAM (régua 550-600 passa). ESCADA pra cima
+#  262144→200K→163K só valerá com desktop mais leve OU -ngl menor.
+#  Decode medido ~12,5-13,5 t/s (t6 default). THINK-ON EM TASK DE CODIGO = QUEBRADO:
+#  resposta final de codigo vai pro think sem fechar (content vazio, finish=stop) e o
+#  default degenerou em repeticao de bloco de codigo (N=3). xhigh/high parseiam (17x23 -> 390,
+#  errado: 391 — aritmetica podada junto). TOOL CALLING thinking-on FUNCIONA
+#  (finish=tool_calls, args certos). Effort OFF = 3/3 content limpo.
+#  PENDENTE DO DONO: default effort do handle (regra 'thinking sempre ligado' x comportamento).
+# -------------------------------------------
+qwen3.8-flash-coder:
+  name: Qwen3.8-Flash-Coder
+  description: Agentic coding MoE sliced from Qwen3.8-Flash-Next (160 experts, 42.6B/3.7B active). English coding specialist with strict tool calling; degraded on other languages and general chat.
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
+    --model ${models_dir}/qwen3.8-flash-coder/Qwen3.8-Flash-Coder-85GB.APEX-I-NanoPlus.gguf
+
+    --jinja
+
+    --chat-template-file ${templates_dir}/sharp_chat_template.jinja
+
+    --parallel 1
+
+    --ctx-size 131072
+
+    --temp 0.6
+
+    --top-p 0.95
+
+    --top-k 20
+
+    --min-p 0.0
+
+    --repeat-penalty 1.0
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -cmoe
+
+    -ngl 99
+
+    -b 512
+
+    -ub 128
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: true
+  ttl: 0
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: ~17.08 GiB (18.34 GB disco)
+    context: 200000
+    vram_usage: ~5.37 GB VRAM (medido @131K) + experts em page cache
+    source: IsValorum/Qwen3.8-Flash-Coder-APEX-I-NanoPlus-GGUF (sha256 b8f636cb...7677; base Jab1718/qwen3.8-flash-coder-85gb-bf16, slice de Qwen/Qwen3.8-Flash-Next)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen4exp
+    parameters: 42600000000
+    context_length: 262144
+    embedding_length: 2560
+    quantization: APEX-I-NanoPlus
+    reasoningEfforts:
+      'off': 'off'
+      low: low
+      medium: medium
+      high: high
+      xhigh: xhigh
+    note: 'Dialect de efforts do template (IsValorum hardened agentic): reasoning_effort aceita xhigh/high/medium/default/low|minimal; off (ou enable_thinking false) emite think block vazio = thinking OFF real. Samplers do card: temp 0.6/top-p 0.95/top-k 20/min-p 0.0/repeat 1.0. Dominio de poda = Python+TS+Rust+C++ 91/100 na suite autoral; Kotlin/Java fora do corpus — primeira checagem de minion e em JVM. 91% pass@1 e invariancia arquitetural sao self-reported (sem benchmark externo no card).'

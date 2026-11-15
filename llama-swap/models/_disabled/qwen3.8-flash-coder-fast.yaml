@@ -1,0 +1,122 @@
+# -------------------------------------------
+# QWEN3.8-FLASH-CODER (+ fast) — APOSENTADO 15/nov/2026 pelo dono: REPROVADO no gate agentic.
+# Desinstalado apos teste real no Pi (snake E2E): (1) write estruturado ok no cafe,
+# (2) doom-loop de path apos primeiro erro de tool (EACCES) — modelo nao usa a correcao
+# nem o caminho relativo que JÁ FUNCIONOU, repete identico (cafe: /home/test x2; ik:
+# /home/test -> /test x2, R73k de reasoning queimado no ciclo), (3) think-on + resposta
+# final de codigo = content vazio (intrinseco, template nao resolve), (4) 17x23 = 350/390
+# (regua 391), (5) Java fraco (parseInt branch sempre-verdadeira), (6) ~13-14 t/s = metade
+# da classe orn35, (7) sem MTP (nextn_predict_layers=0). Padrão MiniPlus-loop: fragmento
+# para _disabled/, GGUF deletado. Mesmo template Sharp v22.5 que consertou o parser do ik
+# (tools vazavam pro reasoning com o template IsValorum — esse FIX permanece valido).
+# REINSTALAR: hf download IsValorum/Qwen3.8-Flash-Coder-APEX-I-NanoPlus-GGUF --local-dir
+#   ~/.llama-models/qwen3.8-flash-coder/ (GGUF 18.34 GB, sha256 b8f636cb...7677)
+#   template externo: sharp_chat_template.jinja (repo) — e conferir se o upstream
+#   Jab1718 publicou o passe de recuperacao multilingue/geral prometido no card.
+# -------------------------------------------
+# -------------------------------------------
+# QWEN3.8-FLASH-CODER (fast) - ik_llama.cpp (lane fast PROPOSITAL: mesmo modelo do cafe lane)
+# Mesmo GGUF qwen4exp do cafe lane: 160 experts IQ2/IQ3, 12 qwen_sparse_attention +
+# 36 DeltaNet, sem PLE, text-only, SEM MTP (nextn_predict_layers=0 no header —
+# ik lane nasce sem --spec-type; sem draft, sem a alavanca de +36% da orn35f).
+# SMOKE 14/nov: o --fit do ik faz o override de experts p/ CPU SOZINHO e e exclusivo
+#  (-cmoe/-ncmoe + --fit = abort). --defer-experts NAO move experts (estrategia de mmap).
+#  ctx 131072: fit sem folego — required 4347 > available 4082 ATE COM margin 0 (curto 265 MiB).
+#  65536 + fit-margin 512 = CARREGA (9s pinado, VRAM 5482, ~660 livres). Hadamard: load+decode OK.
+#  Decode ~14,3 t/s @64K (effort off) — empata com o cafe a 131K (~13 t/s).
+#  TOOL PARSER DO IK: RESOLVIDO pelo sharp v22.5 (15/nov) — tool_calls=1 no fio
+#  (antes vazava pro reasoning c/ template IsValorum). Fast lane de re-virada com tools.
+#  17x23 -> 350 (xhigh 390) — aritmetica fora do dominio podado.
+# reasoningEfforts + samplers iguais ao cafe lane; enable_thinking sempre on (régua da casa).
+# -------------------------------------------
+qwen3.8-flash-coder-fast:
+  name: Qwen3.8-Flash-Coder (fast)
+  description: The same Qwen3.8-Flash-Coder lane served intentionally by ik_llama.cpp — same English coding slice, less context (131K), faster path via ik resource controls.
+  cmd: '${ik_llama_server} --port ${PORT}
+
+    --model ${models_dir}/qwen3.8-flash-coder/Qwen3.8-Flash-Coder-85GB.APEX-I-NanoPlus.gguf
+
+    --jinja
+
+    --chat-template-file ${templates_dir}/sharp_chat_template.jinja
+
+    --fit
+
+    --fit-margin 512
+
+    --ctx-size 65536
+
+    --temp 0.6
+
+    --top-p 0.95
+
+    --top-k 20
+
+    --min-p 0.0
+
+    --repeat-penalty 1.0
+
+    --parallel 1
+
+    --parallel-tool-calls
+
+    --cache-type-k ${large_cache_k}
+
+    --cache-type-v ${large_cache_v}
+
+    --k-cache-hadamard
+
+    --v-cache-hadamard
+
+    --flash-attn auto
+
+    --defer-experts
+
+    --prefetch-experts
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: true
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 65536
+  metadata:
+    size: ~17.08 GiB (18.34 GB disco, mesmo GGUF do cafe lane)
+    context: 131072
+    vram_usage: ~5.48 GB VRAM (medido @64K, fit-margin 512)
+    source: IsValorum/Qwen3.8-Flash-Coder-APEX-I-NanoPlus-GGUF (base Jab1718/qwen3.8-flash-coder-85gb-bf16, slice de Qwen/Qwen3.8-Flash-Next)
+    kv_cache: q4_0/q4_0 + hadamard
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen4exp
+    parameters: 42600000000
+    context_length: 262144
+    embedding_length: 2560
+    quantization: APEX-I-NanoPlus
+    reasoningEfforts:
+      'off': 'off'
+      low: low
+      medium: medium
+      high: high
+      xhigh: xhigh
+    note: 'Lane fast fora dos sets (padrao qwen-fast, evict 9). Fit exclusivo (sem -cmoe/-ncmoe junto = abort). ctx 131K NAO cabe no fit do ik (265 MiB curto @margin 0) — 64K e o teto com margin 512. Tool parser RESOLVIDO pelo sharp v22.5 (tool_calls=1 medido 15/nov). Sem MTP (header): sem --spec-type. Typos de path do modelo observados nos probes (/et/hostname, /hosts) — vigiar em flow agentic.'

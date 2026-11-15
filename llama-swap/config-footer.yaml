@@ -74,6 +74,10 @@ matrix:
     # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
     orn35: ornith-1.5-35b-heretic  # 35B-A3B heretic — papel code do sprach (enable_thinking por handle)
     orn35f: ornith-1.5-35b-heretic-fast  # reativado 24/out 2026 — challenger ik (MTP + defer/prefetch); fora dos sets, igual ao lfm24f/qwen-fast
+    ctiel: cyber-tiel-coder  # ATIVO 15/nov — Cyber-Tiel-Coder 35B (peculiar-ragdoll, finetune cybersec da ornith-1.5 abliterated) + MiniPlus IsValorum; MTP draft externo
+    ctielf: cyber-tiel-coder-fast  # lane fast ik proposital (--fit, MTP, hadamard; fora dos sets)
+    # qw38c: qwen3.8-flash-coder  # APOSENTADO 15/nov/2026 (dono) — reprovado no gate agentic (doom-loop de path, R73k reasoning queimado; think-on code vazio) — fragment _disabled/ + epitaph; GGUF deletado
+    # qw38cf: qwen3.8-flash-coder-fast  # aposentado junto (fast ik; tool parser resolvido pelo sharp, o fix permanece)
     # flintf: flint-40b-a2b-fast  # APOSENTADO 27/out/2026 pelo dono ("nao vale vs resto") — lanes desativadas; fragment em _disabled/; rm do GGUF pendente de OK (destrava disco pro Groot 65B)
     # flint: flint-40b-a2b  # APOSENTADO junto 27/out/2026
     # groot: groot-19b-a3b  # REMOVIDO 27/out/2026 — lane cafe -cmoe lenta demais na regua do dono; fragment em _removed/
@@ -125,7 +129,7 @@ matrix:
     # Embedding
     # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
     # lfmemb: lfm2.5-embedding-350m  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER (nome corrigido p/ "LFM2.5 Embedding 350M"); colbert+eg2 cobrem embed
-    nemb: nemotron-3-embed-1b  # REATIVADO 09/nov/2026 (LUC-148/149) — par nemotron vs eg2 na validação do sprach; GGUF re-convertido da receita MANUAL CONVERSION (header do download-models.sh)
+    # nemb: nemotron-3-embed-1b  # REMOVIDO 12/nov/2026 (dono) — peso fora do disco; recovery: conversão manual, receita no header do download-models.sh (REAÇÃO: 09/nov LUC-148/149)
     # Multimodal embedding (Google, 740M, texto+img+audio+video, 768d MRL, Apache 2.0)
     eg2: embeddinggemma-2
     # Reranker (late-interaction, CPU-only)
@@ -141,6 +145,7 @@ matrix:
     sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
     raon: raon-1-nano  # KRAFTON dense 1.5B-efetivo (arch raon1nano, hibrido RDA+MLA), fork vendor, 262K nativo — smoke 11/nov
     raonmini: raon-1-mini-preview  # 30B-A4B MoE (arch raon1 no ik) — STAGED 11/nov SEM build-config; fragment inert ate compilar + smoke
+    # saluki27: saluki-27b  # REMOVIDO 12/nov/2026 tarde (dono, orçamento disco p/ H3-Image) — foi reativado hoje de manhã; recovery: fragment _disabled/ + hf download ConwayResearch/Underdog-Saluki-27B-1.0
     # bs2t: bonsai2-27b  # RE-APOSENTADO 12/nov/2026 à noite — degenera em word-salad com system prompt >=4k chars (bissecção provada; git history p/ prova) — PRISML fork fica em ~/git/prismml-eng-llama.cpp
     # tq3d: qwen3.5-4b-3d-coder  # APOSENTADO 12/nov/2026 (dono) — probe 2048 reprovado 2/7 + fidelidade multimodal nula; fragment _disabled/ + epitaph; restore no epitaph
     # nbe4: nemotron-bolt-e4b  # APOSENTADO 31/10/2026 (dono) — GGUFs (UD-Q4_K_XL 5.1G + dflash draft) deletados, fragment _disabled/; restore: re-download unsloth (GATED)
@@ -151,12 +156,12 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(lfm24 | spc | fct | mcv47) & (lfmcol | eg2 | nemb) & pkstt"  # 11/11: +mcv47 (MiniCPM-V 4.7 35B-A3B visual, experts RAM) | 10/11: +spc/fct (portal cores publicados no HF) | 12/11: tq3d aposentado
+    small_vision: "(lfm24 | spc | fct | mcv47) & (lfmcol | eg2) & pkstt"  # 12/nov: nemb saiu (REMOVIDO, dono)  # 11/11: +mcv47 (MiniCPM-V 4.7 35B-A3B visual, experts RAM) | 10/11: +spc/fct (portal cores publicados no HF) | 12/11: tq3d aposentado
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(lfm24 | sp26 | raon | lfm317 | spc | fct) & (lfmcol | eg2 | nemb) & qpfim & pkstt"  # 31/10: twp + nbe4 aposentados | 09/11: +nemb | 10/11: +spc/fct | 11/11: +raon
+    small_embed: "(lfm24 | sp26 | raon | lfm317 | spc | fct) & (lfmcol | eg2) & qpfim & pkstt"  # 12/nov: nemb saiu (REMOVIDO, dono)  # 31/10: twp + nbe4 aposentados | 09/11: +nemb | 10/11: +spc/fct | 11/11: +raon
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
     small_only: "(lfm24 | sp26 | raon | lfm317 | spc | fct) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados | 10/11: +spc/fct | 11/11: +raon
@@ -166,7 +171,7 @@ matrix:
 
     # Vision models (sozinhos ou com embedding/reranker)
     vision_only: "ocr | mcv35"  # mocr _disabled 02/nov 2026
-    vision_embed: "(ocr | mcv35) & (lfmcol | eg2 | nemb) & pkstt"  # mocr _disabled 02/nov 2026 | 09/11: +nemb
+    vision_embed: "(ocr | mcv35) & (lfmcol | eg2) & pkstt"  # 12/nov: nemb saiu (REMOVIDO, dono)  # mocr _disabled 02/nov 2026 | 09/11: +nemb
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -179,7 +184,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(lfm24 | mcv35 | orn35 | raonmini) & (lfmcol | eg2 | nemb) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também)
+    heavy: "(lfm24 | mcv35 | orn35 | raonmini | ctiel) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -194,19 +199,20 @@ matrix:
 
     # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
     # AND entre todos os CPU-only: coexistem (zero VRAM) — OR evitaria em ping-pong
-    embed_only: "lfmcol & eg2 & nemb & pkstt"  # 31/10: lfmemb aposentado | 09/11: +nemb reativado
+    embed_only: "lfmcol & eg2 & pkstt"  # 31/10: lfmemb aposentado | 09/11: +nemb reativado | 12/nov: nemb REMOVIDO
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
 
     # Reranker + Embedding (two-stage retrieval: dense → rerank)
-    rerank_embed: "lfmcol & eg2 & nemb & pkstt"  # 31/10: lfmemb aposentado (OR vira single member) | 09/11: +nemb
+    rerank_embed: "lfmcol & eg2 & pkstt"  # 31/10: lfmemb aposentado (OR vira single member) | 09/11: +nemb | 12/nov: nemb REMOVIDO
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
     # MiniCPM-V 4.7: barato de recarregar (1B 2.2GB GPU; 35B MoE ~11GB RAM, page cache)
     mcv35: 4
     # b27: 4   # APOSENTADO 12/nov/2026 (dono) — GGUFs preservados em disco
+    # saluki27: 5  # REMOVIDO 12/nov
     # tq3d: 2  # APOSENTADO 12/nov/2026 (dono) — restore no epitaph do fragment
     # orn15: 9  # merged no heretic 05/10
     # glm: 9  # REMOVED Sep 09 2026 — model deleted
@@ -241,6 +247,10 @@ matrix:
     lfm24: 6  # LFM 24B: experts ~13.7GB RAM no -cmoe = reload caro (q4_k_xl lento de remmap); acima do k2p(7) abaixo do heavy 9? medio-alto
     orn35: 9  # 35B-A3B MoE (17GB) — recarregar é caro
     orn35f: 9  # o fast/challenger ik — mesmo GGUF, mesmo custo de reload
+    # qw38c: 9  # APOSENTADO 15/nov/2026 (dono)
+    ctiel: 9  # 35B MoE (16.8GB c/ draft+mmproj) — reload caro, classe orn35
+    ctielf: 9  # mesmo GGUF
+    # qw38cf: 9  # aposentado junto
     # flintf: 9  # APOSENTADO 27/out/2026
     # flint: 9  # APOSENTADO 27/out/2026
     # groot: 7  # APOSENTADO 28/out/2026 pelo dono — bug de re-serialização do parser de tool calls do ik (args unescape, quebrava agêntico no Kilo); fragment em _disabled/; GGUF deletado
@@ -264,7 +274,7 @@ matrix:
     # nomic: 1  # REMOVED Sep 10 2026
     # lfmemb: 1  # APOSENTADO 31/10/2026 junto do modelo
     # nemb: 1  # APOSENTADO 21/out 2026
-    nemb: 1  # REATIVADO 09/nov/2026 — CPU-only, reload barato, evicta primeiro
+    # nemb: 1  # REMOVIDO 12/nov/2026 (estava REATIVADO 09/nov)
     eg2: 1
     lfmcol: 1
     tg: 2

@@ -81,6 +81,10 @@ ORIGINAL_ORDER = [
     "qwen3.6-35b-a3b-262k",  # ✅ 262K nativo via cafe-llama.cpp Turbo KV (alias q36x, set/2026)
     "ornith-1.0-35b",        # ✅ Post-trained Qwen 3.5 35B MoE (agentic coding RL)
     "ornith-1.5-35b",        # ✅ Self-improving RL MoE (task generation + scaffold + rollouts)
+    "cyber-tiel-coder",      # 15/nov: qwen35moe finetune da linhagem ornith-1.5 (peculiar-ragdoll cybersec) + MiniPlus IsValorum; cafe -cmoe + MTP draft (-md) + fast ik
+    "cyber-tiel-coder-fast", # lane fast ik proposital (--fit, MTP draft externo, hadamard; 131K; fora dos sets)
+    # "qwen3.8-flash-coder",        # APOSENTADO 15/nov/2026 (dono) — reprovado no gate agentic (doom-loop, R73k; think-on code vazio); fragment _disabled/ + epitaph; GGUF deletado
+    # "qwen3.8-flash-coder-fast",   # aposentado junto
     # "bonsai-27b",            # REMOVED Sep 20 2026 — GGUF deleted; user nunca usa; fragment em _disabled/
     # "qwen3.8-27b-pollard",   # REMOVED Aug 30 2026 — 2.75 tok/s, superseded by bonsai-27b
     "kat-coder-v2.5-dev",    # ✅ Post-trained Qwen 3.6 35B MoE (SOTA agentic coding, SWE-bench 69.4)
@@ -110,7 +114,7 @@ ORIGINAL_ORDER = [
     "nomic-embed-text-v2-moe",  # ✅ Embedding (CPU-only, Q4_K_M)
     # "lfm2.5-embedding-350m",  # APOSENTADO 31/10/2026 (dono) — _disabled + HELPER; colbert/eg2 cobrem embed
     "lfm2.5-colbert-350m",      # ✅ Reranker (CPU-only, Q8_0)
-    "nemotron-3-embed-1b",      # ✅ Embedding (CPU-only, Q8_0, converted from BF16)
+    # "nemotron-3-embed-1b",      # ✅ Embedding (CPU-only, Q8_0, converted from BF16) — REMOVIDO 12/nov/2026 (dono); fragment em _removed/, GGUF deletado
     "embeddinggemma-2",         # ✅ Embedding multimodal (CPU-only, Q8_0, texto+img+audio, 768d MRL, 06/10/2026)
     "portal-core-space",        # ✅ Portal 2 Space Core v7b degenerate (Q8_0, LFM2.5-350M) — reativado 10/nov após publish HF
     "portal-core-fact",         # ✅ Portal 2 Fact Core v8 degenerate (Q8_0, LFM2.5-1.2B) — reativado 10/nov após publish HF
@@ -121,6 +125,8 @@ ORIGINAL_ORDER = [
     "minicpm-ocr-jev",          # ✅ OCR Jev scorer (decision CPU-only, arch qwen35 + pooling 3) 28/out
     "parakeet-tdt-0.6b-v3",     # ✅ ASR CPU-only (NVIDIA Parakeet TDT 0.6B v3) p/ o dicta do Kilo Code
     # "bonsai-27b",            # [APOSENTADO 12/nov/2026] — _disabled/ + epitaph (Bonsai-2 TPE ressuscitado como bonsai2-27b)
+    # "saluki-27b",              # ✅ REATIVADO 12/nov — Underdog Saluki IQ2-mix, cafe, always-thinking; substitui o slot do Bonsai-2 TPE (re-aposentado: degenera com system >=4k, git history 5389e86)
+                               # → REMOVIDO 12/nov/2026 PÓS-REATIVAÇÃO (dono, orçamento de disco p/ H3-Image oficial); recovery: hf download ConwayResearch/Underdog-Saluki-27B-1.0 (IQ2-mix + mmproj Q8_0), fragment em _disabled/
     # "qwen3.5-4b-3d-coder",  # [APOSENTADO 12/nov/2026] — _disabled/ + epitaph
 ]
 

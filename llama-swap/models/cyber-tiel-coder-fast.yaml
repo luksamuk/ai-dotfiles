@@ -1,0 +1,115 @@
+# -------------------------------------------
+# CYBER-TIEL-CODER (fast) - ik_llama.cpp (mesmo modelo, menos contexto, mais rapido)
+# Espelho do orn35-fast: --fit (exclusivo! -cmoe/-ncmoe + fit = abort; fit faz o override
+# de experts pra CPU sozinho), defer/prefetch-experts (estrategia de mmap), KV q4_0 + hadamard
+# (proven na familia qwen35moe), parallel-tool-calls.
+# MTP draft externo: -md companion + --spec-type mtp:n_max=1,p_min=0.0 (spelling canônico do ik).
+# Template embedded do finetuner via --jinja; SHARP v22.5 e o fallback provado da familia.
+# ctx 131072 = padrao qwen-fast da orn35 (fit decide; escada sobe/desce conforme free VRAM).
+# -------------------------------------------
+cyber-tiel-coder-fast:
+  name: Cyber-Tiel-Coder (fast)
+  description: The same Cyber-Tiel-Coder lane served intentionally by ik_llama.cpp — less context, faster path with MTP draft.
+  cmd: '${ik_llama_server} --port ${PORT}
+
+    --model ${models_dir}/cyber-tiel-coder/Cyber-Tiel-Coder-35B-A3B.APEX-I-MiniPlus-V2.1.gguf
+
+    --mmproj ${models_dir}/cyber-tiel-coder/mmproj-Q8_0.gguf
+
+    --no-mmproj-offload
+
+    --jinja
+
+    -ngl 99
+
+    -cmoe
+
+    --ctx-size 262144
+
+    --temp 0.6
+
+    --top-p 0.95
+
+    --top-k 20
+
+    --min-p 0.05
+
+    --repeat-penalty 1.0
+
+    --reasoning-budget 8192
+
+    --parallel 1
+
+    --parallel-tool-calls
+
+    --cache-type-k ${large_cache_k}
+
+    --cache-type-v ${large_cache_v}
+
+    --k-cache-hadamard
+
+    --v-cache-hadamard
+
+    --flash-attn auto
+
+    -b 512
+
+    -ub 128
+
+    --defer-experts
+
+    --prefetch-experts
+
+    -md ${models_dir}/cyber-tiel-coder/mtp-Cyber-Tiel-Coder-35B-A3B.gguf
+
+    -ngld 0
+
+    --spec-type mtp:n_max=1,p_min=0.0
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: true
+  ttl: 0
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 262144
+  metadata:
+    size: ~13.74 GiB + 0.61 GiB mmproj + 1.38 GiB MTP draft (mesmos arquivos do cafe lane)
+    context: 262144
+    vram_usage: ~4.26 GB VRAM @262K (medido) — dense menor, sobra ~1.9 GB na regua
+    source: IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF (sha256 56d755b3 mtp 34f22d95; base peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-GGUF-MTP; base do finetune huihui-ai/Huihui-Ornith-1.5-35B-A3B-abliterated)
+    kv_cache: q4_0/q4_0 + hadamard
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 35000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: APEX-I-MiniPlus
+    reasoningEfforts:
+      'off': 'off'
+      low: low
+      medium: medium
+      high: high
+      xhigh: xhigh
+    note: 'RECEITA FINAL ik (smoke 15/nov): SEM --fit — o fit do ik morre no DRAFT (1840 MiB no device que nao cabe pos-main; e ignora -ngld 0). Receita: -ngl 99 + -cmoe + -ngld 0 (draft inteiro na CPU; aceitacao 90-75%). Escada ik FECHADA: 131K (3.48GB) -> 200K (3.87GB) -> 262K NATIVO (4.26GB; 25.8 t/s decode, prefill 144 t/s, MTP 75%). Fast vence o teto de ctx do cafe (262144 = KV buffer OOM no cafe). Hadamard provado. 17x23=391 CORRETO e zero typos de path nos probes. Lane fora dos sets (padrao qwen-fast, evict 9).'

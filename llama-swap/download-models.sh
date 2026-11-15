@@ -4,6 +4,8 @@
 #
 # Available models:
 #   qwen38-flash-next-1m - Qwen3.8-Flash-Next UD-IQ1_M split 3 (~74.5 GB) + MTP draft Q4_0 (2.2 GB) - lane experimental cafe, NOT production (dormammu's brother)
+#   [APOSENTADO 15/nov/2026] qwen3.8-flash-coder — reprovado no gate agentic; fragment _disabled/ + epitaph; GGUF deletado
+#   cyber-tiel-coder     - Cyber-Tiel-Coder-35B MiniPlus (~14.75 GB) + MTP draft (1.48 GB) + mmproj (0.61 GB) - finetune cybersec da linhagem ornith-1.5
 #   qwen3.5-0.8b         - Qwen3.5-0.8B UD-Q3_K_XL (~0.46 GB) + mmproj (~196 MB) - fits in VRAM, vision+text
 #   qwen3.5-4b           - Qwen3.5-4B MoQ-3.75 (~1.92 GB) - fits in VRAM
 #   [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
@@ -131,6 +133,14 @@ declare -A MODELS=(
   # O download-models baixa a parte 001; partes 002/003 ficam no mesmo dir (baixe junto).
   ["qwen38-flash-next-1m"]="unsloth/Qwen3.8-Flash-Next-GGUF UD-IQ1_M/Qwen3.8-Flash-Next-UD-IQ1_M-00001-of-00003.gguf qwen38-flash-next-ud-iq1m/UD-IQ1_M/Qwen3.8-Flash-Next-UD-IQ1_M-00001-of-00003.gguf"
   ["qwen38-flash-next-1m-mtp"]="quimmedes/Qwen3.8-Flash-Next-MTP-GGUF mtp-Qwen3.8-Flash-Next-Q4_0.gguf qwen38-flash-next-ud-iq1m/mtp/mtp-Qwen3.8-Flash-Next-Q4_0.gguf"
+  # Qwen3.8-Flash-Coder — moe-slice do Flash-Next (Jab1718, 160/512 experts, DoRA em cima) + quant IsValorum APEX-I-NanoPlus
+  # Fragment: models/qwen3.8-flash-coder.yaml (+ -fast). Text-only (slice sem encoder de visao).
+  # ["qwen3.8-flash-coder"]="IsValorum/Qwen3.8-Flash-Coder-APEX-I-NanoPlus-GGUF Qwen3.8-Flash-Coder-85GB.APEX-I-NanoPlus.gguf qwen3.8-flash-coder/Qwen3.8-Flash-Coder-85GB.APEX-I-NanoPlus.gguf"
+  # Cyber-Tiel-Coder 35B-A3B (peculiar-ragdoll, linhagem ornith-1.5 abliterated) + quant IsValorum APEX-I-MiniPlus V2.1
+  # Fragment: models/cyber-tiel-coder.yaml (+ -fast). MTP draft externo (-md), mmproj Q8_0 incluso.
+  ["cyber-tiel-coder"]="IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF Cyber-Tiel-Coder-35B-A3B.APEX-I-MiniPlus-V2.1.gguf cyber-tiel-coder/Cyber-Tiel-Coder-35B-A3B.APEX-I-MiniPlus-V2.1.gguf"
+  ["cyber-tiel-coder-mtp"]="IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF mtp-Cyber-Tiel-Coder-35B-A3B.gguf cyber-tiel-coder/mtp-Cyber-Tiel-Coder-35B-A3B.gguf"
+  ["cyber-tiel-coder-mmproj"]="IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF mmproj-Q8_0.gguf cyber-tiel-coder/mmproj-Q8_0.gguf"
   # [REMOVED Sep 2026] qwen3.5-9b — user request
   # [REMOVED] gemma4-e4b — disabled Jul 2026, redundant with E2B (no code use case)
   # ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
@@ -300,7 +310,7 @@ declare -A MODELS=(
 # Multimodal projector files (downloaded alongside their vision models)
 # Format: "repo filename [local_filename]"
 declare -A MMPROJ=(
-  ["saluki-27b"]="ConwayResearch/Underdog-Saluki-27B-1.0 mmproj-Q8_0.gguf saluki-27b/mmproj-Q8_0.gguf"
+  ["saluki-27b"]="ConwayResearch/Underdog-Saluki-27B-1.0 mmproj-Underdog-Saluki-27B-1.0-Q8_0.gguf saluki-27b/mmproj-Underdog-Saluki-27B-1.0-Q8_0.gguf"
   # mmproj bonsai-27b: aposentado junto (GGUF preservado)
   # mmproj 3d-coder: aposentado 12/nov/2026 junto do modelo (restaurar no epitaph)
   ["lfm2.5-vl-450m"]="LiquidAI/LFM2.5-VL-450M-GGUF mmproj-LFM2.5-VL-450m-F16.gguf"
@@ -359,7 +369,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: raon-1-nano, qwen38-flash-next-1m, qwen38-flash-next-1m-mtp, qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, minicpm-ocr-1.0, minicpm-ocr-jev, minicpm-ocr-dspark, openbonsai-qwen3.5-9b, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
+    echo "Available: raon-1-nano, qwen38-flash-next-1m, qwen38-flash-next-1m-mtp, cyber-tiel-coder, cyber-tiel-coder-mtp, cyber-tiel-coder-mmproj, qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, minicpm-ocr-1.0, minicpm-ocr-jev, minicpm-ocr-dspark, openbonsai-qwen3.5-9b, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
     return 1
   fi
   
@@ -440,6 +450,8 @@ show_sizes() {
   # glm-4.7-flash removed
   echo "  qwen3.6-35b-a3b    ~17.30 GB  (APEX I-Compact) - Heavy offload, MoE coding + tools"
   echo "  ornith-1.0-35b     ~16.50 GB  (APEX I-Compact) - Post-trained Qwen 3.5 35B MoE, agentic coding RL"
+  echo "  [APOSENTADO 15/nov/2026] qwen3.8-flash-coder — see _disabled/ epitaph"
+  echo "  cyber-tiel-coder    ~14.75 GB + 1.48 MTP + 0.61 mmproj (APEX-I-MiniPlus) - finetune cybersec da ornith-1.5 (peculiar-ragdoll), lanes cafe/ik"
   echo "  kat-coder-v2.5-dev ~16.50 GB  (APEX Compact) - Post-trained Qwen 3.6 35B MoE, SOTA agentic coding (SWE-bench 69.4)"
   echo "  agents-a1-35b      ~16.50 GB  (APEX I-Compact) - 35B MoE, long-horizon search + tool calling"
   echo "  glm-4.7-flash      ~14.60 GB  (APEX I-Compact) - 30B MoE MLA, smallest 35B-class, fast"
