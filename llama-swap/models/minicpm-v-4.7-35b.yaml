@@ -6,9 +6,9 @@
   tags: [vis, tools, think]
   cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
-    --model ${models_dir}/minicpm-v-4.7-35b/MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf
+    --model ${models_dir}/minicpm-v-4.7-isvalorum/MiniCPM-V-4.7-35B-A3B.APEX-I-NanoPlus-V2.1.gguf
 
-    --mmproj ${models_dir}/minicpm-v-4.7-35b/mmproj-model-f16-4x.gguf
+    --mmproj ${models_dir}/minicpm-v-4.7-isvalorum/mmproj-Q8_0.gguf
 
     --media-path ${media_path}
 
@@ -60,10 +60,10 @@
     reranker: false
     context: 131072
   metadata:
-    size: ~15.5 GB (mix Q3gud im) + ~0.9 GB mmproj 4x
+    size: ~11.69 GiB (12.55 GB disk) + 0.61 GiB mmproj Q8_0
     context: 131072
     vram_usage: "~5.0 GB VRAM + ~11 GB RAM"
-    source: openbmb/MiniCPM-V-4.7-35B-A3B-gguf
+    source: "IsValorum/MiniCPM-V-4.7-35B-A3B-APEX-I-NanoPlus-GGUF (revisao corrigida: block_count=40, nextn=0; 12.55 GB + mmproj-Q8_0)"
     kv_cache: "q4_0/q4_0"
     # always-think por design (classe Fara1.5-4B): enable_thinking false NAO
     # desliga (modelo reabre think; probe 11/11 provou em off/none/default).
@@ -84,7 +84,7 @@
     parameters: 35000000000
     context_length: 131072
     embedding_length: 2048
-    quantization: Q3_K exps / Q4_K base
+    quantization: APEX-I-NanoPlus
     note: "Linha MiniCPM-V 4.7 out/2026: card declara vence Qwen3.6-35B-A3B (score+tempo) — a liga disk 35B da casa é ornith 143.6 > occamy 141.4 > qwen3.8-distill 141.0, e a comparação declarada deles é vs a geração física anterior. mix_q3gud_im = recomendação OFICIAL do cookbook (experts Q3_K c/ imatrix sobre base Q4_K_M = 15.5GB 'matches Q4_K_M on benchmarks'); Q4_K_M puro = 21.17GB. -ot ffn_*_exps=CPU = rota de laguna/ornith (3B ativos, experts na RAM). M-RoPE canvas: PR #29416 (rope.section_order) — cafe v0.76 (ad57e28a1, 13/Out) MERGEADO e suporta; ik SEM #29416 ainda (fragment usa cafe). tools: true = card diz tool-calling nativo (SGLang/vLLM/llama.cpp/ollama); smoke valida. mmproj 4x = mais detalhe; 16x alternativa mais rápida. health 600s = MoE 15.5GB + mmproj cold start longo. Sampling: card oficial temp 0.7/top-p 0.9/top-k 100/rp 1.05 (regra da série). LES (Lookahead Expert Scheduling) e DSpark NÃO fazem parte: são do fork tc-mb/llama.cpp-omni (13-17 t/s no iPhone é o cenário experts-no-SSD; nossa rota experts-na-RAM não usa)."# APOSENTADO COM HONRAS 27/out/2026: lane ativa no fleet mas unlisted (modus operandi
 # 'aposentar com honras' — fica endereçável, não lista em /v1/models). Peso principal
 # (MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf, 15.5GB) deletado pelo dono no mesmo dia;
