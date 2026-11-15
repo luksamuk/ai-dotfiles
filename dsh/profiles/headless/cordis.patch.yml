@@ -8,37 +8,17 @@
           supportsDeveloperRole: false
           maxTokensField: max_tokens
         models:
-        - id: s5-nano
-          reasoningEfforts:
-            'off': 'none'
-            high: 'high'
-          input:
-          - text
-          - image
-          contextWindow: 131072
         - id: ornith-1.5-9b-heretic
           input:
           - text
           - image
           contextWindow: 65536
-        - id: openbonsai-qwen3.5-9b
-          contextWindow: 131072
-        - id: groot-19b-a3b
-          input:
-          - text
-          - image
-          contextWindow: 262144
-        - id: groot-19b-a3b-fast
-          input:
-          - text
-          - image
-          contextWindow: 131072
         - id: lfm3-1.7b
           contextWindow: 65536
         - id: minicpm-v-4.7-35b
           input:
-            - text
-            - image
+          - text
+          - image
           contextWindow: 131072
         - id: lfm3-vl-2b
           input:
@@ -67,22 +47,36 @@
 #           - text
 #           - image
 # qwen3.5-4b-3d-coder — APOSENTADO 12/nov/2026 (restore no epitaph)
-        - id: saluki-27b
-          reasoningEfforts:
-            low: low
-            medium: medium
-            xhigh: xhigh
-          input:
-            - text
-          contextWindow: 65536
         - id: spark-x2.6-4b
           contextWindow: 114688
           reasoningEfforts:
-            'off': null
+            off:
             low: low
             high: high
         - id: translategemma-4b
           contextWindow: 131072
+        - id: cyber-tiel-coder
+          reasoningEfforts:
+            off: off
+            low: low
+            medium: medium
+            high: high
+            xhigh: xhigh
+          input:
+          - text
+          - image
+          contextWindow: 200000
+        - id: cyber-tiel-coder-fast
+          reasoningEfforts:
+            off: off
+            low: low
+            medium: medium
+            high: high
+            xhigh: xhigh
+          input:
+          - text
+          - image
+          contextWindow: 262144
         apiKeyEnv: LLAMASWAP_LOCAL_KEY
       ollama-cloud:
         api: openai-completions
@@ -97,7 +91,7 @@
           - image
         - id: deepseek-v4.1-flash:1017-cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             low: low
             high: high
             max: max
@@ -106,7 +100,7 @@
           - image
         - id: beam:cloud
           reasoningEfforts:
-            'off': null
+            off:
             low: low
             medium: medium
             high: high
@@ -114,7 +108,7 @@
             max: max
         - id: muse-spark-open:cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             low: low
             medium: medium
             high: high
@@ -128,13 +122,13 @@
           - image
         - id: glm-5.3:cloud
           reasoningEfforts:
-            'off': null
+            off:
             low: low
             high: high
             max: max
         - id: glm-5.3-flash:cloud
           reasoningEfforts:
-            'off': null
+            off:
             low: low
             high: high
             max: max
@@ -143,7 +137,7 @@
           - image
         - id: kimi-k3:cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             low: low
             high: high
             max: max
@@ -152,19 +146,19 @@
           - image
         - id: glm-5.2:cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             high: high
             max: max
         - id: kimi-k2.7-code:cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             high: 'true'
           input:
           - text
           - image
         - id: nemotron-3-ultra:cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             high: 'true'
         - id: minimax-m3:cloud
           input:
@@ -172,39 +166,39 @@
           - image
         - id: deepseek-v4-pro:cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             low: low
             high: high
             max: max
         - id: kimi-k2.6:cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             high: 'true'
           input:
           - text
           - image
         - id: nemotron-3-nano:30b-cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             high: 'true'
         - id: gemma4:31b-cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             high: 'true'
           input:
           - text
           - image
         - id: minimax-m2.7:cloud
           reasoningEfforts:
-            'off': null
+            off:
             high: 'true'
         - id: nemotron-3-super:cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             high: 'true'
         - id: kimi-k3.1-pro:cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             low: low
             medium: medium
             high: high
@@ -214,14 +208,14 @@
           - image
         - id: mimo-v2.6-flash:cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             high: 'true'
           input:
           - text
           - image
         - id: mimo-v2.6-pro:cloud
           reasoningEfforts:
-            'off': 'false'
+            off: 'false'
             high: 'true'
           input:
           - text
