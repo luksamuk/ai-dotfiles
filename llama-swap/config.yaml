@@ -501,52 +501,33 @@ models:
   cyber-tiel-coder:
     name: Cyber-Tiel-Coder 35B-A3B
     description: Uncensored agentic coding MoE finetuned from Ornith 1.5 (abliterated) toward cybersec and autonomous engineering; 256 experts, MTP-capable, vision optional.
-    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
-
+    cmd: 'env -u PYTHONPATH ${ik_llama_server} --port ${PORT}
       --model ${models_dir}/cyber-tiel-coder/Cyber-Tiel-Coder-35B-A3B.APEX-I-MiniPlus-V2.1.gguf
-
       --mmproj ${models_dir}/cyber-tiel-coder/mmproj-Q8_0.gguf
-
       --no-mmproj-offload
-
       -md ${models_dir}/cyber-tiel-coder/mtp-Cyber-Tiel-Coder-35B-A3B.gguf
-
-      --spec-type draft-mtp
-
+      -ngld 0
+      --spec-type mtp:n_max=1,p_min=0.0
       --jinja
-
-      --parallel 1
-
-      --ctx-size 200000
-
+      --fit
+      --fit-margin 1024
+      --ctx-size 262144
       --temp 0.6
-
       --top-p 0.95
-
       --top-k 20
-
       --min-p 0.05
-
       --repeat-penalty 1.0
-
       --reasoning-budget 8192
-
+      --parallel 1
+      --parallel-tool-calls
       --cache-type-k q4_0
-
       --cache-type-v q4_0
-
-      --flash-attn on
-
-      -cmoe
-
-      -ngl 99
-
-      -b 512
-
-      -ub 128
-
+      --k-cache-hadamard
+      --v-cache-hadamard
+      --flash-attn auto
+      --defer-experts
+      --prefetch-experts
       --metrics
-
       '
     filters:
       stripParams: temperature, top_p
