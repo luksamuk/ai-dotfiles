@@ -147,9 +147,6 @@ def print_list() -> None:
         elif backend == "qwen21_turbo_wan2gp":
             wgp = Path.home() / "git" / "Wan2GP" / "ckpts"
             return (wgp / "qwen_image_21_turbo_7B_int8_convrot.safetensors").exists()
-        elif backend == "anima_sdcpp":
-            # Layout de frota: pesos em ~/.llama-models/anima/<sub>/<file>
-            return (Path.home() / ".llama-models" / "anima" / info["weights_subdir"] / info["diffusion_file"]).exists()
         else:
             p = MODELS_DIR / model_dir
         return p.exists() and any(p.iterdir()) if p.exists() else False
@@ -219,8 +216,7 @@ def print_loras() -> None:
             continue
         fam = fams.setdefault(root, {"models": [], "dirs": []})
         fam["models"].append(name)
-        anima_root = Path.home() / ".llama-models" / "anima" / info.get("weights_subdir", "") / "lora"
-        for cand in (wgp_loras / root, MODELS_DIR / info.get("dir", "") / "lora", anima_root):
+        for cand in (wgp_loras / root, MODELS_DIR / info.get("dir", "") / "lora"):
             if cand.exists() and cand not in fam["dirs"]:
                 fam["dirs"].append(cand)
 
@@ -435,22 +431,6 @@ def parse_args() -> argparse.Namespace:
         "--no-lora-select", action="store_true",
         help="p-h3-image (e lanes wgp): roda o BASE CRU — sem seletor, sem turbo/pDMD, sem tag automática. A régua neutra do A/B.",
     )
-    p.add_argument(
-        "--init-img", metavar="ARQ", default=None,
-        help="anima: img2img — foto como partida (denoise parcial, fundo original preservado). Combina com --img2img-strength (default 0.7). Em turbo (destilado) fica pior; prefira base/aesthetic.",
-    )
-    p.add_argument(
-        "--img2img-strength", type=float, default=0.7, metavar="F",
-        help="anima: strength do img2img (0.5 = fidelidade à foto; 0.85 = reimaginação solta). Ignorado sem --init-img.",
-    )
-    p.add_argument(
-        "--ref-image", metavar="ARQ", default=None,
-        help="anima: imagem de referência (condicionamento cosmos_reference, ex.: mapa Canny). Use com LoRA de controle via tag manual <lora:NOME:s> — a tag vence o seletor.",
-    )
-    p.add_argument(
-        "--ref-mode", choices=["canny", "raw"], default="canny", metavar="MODO",
-        help="anima: preprocessamento automático da --ref-image — canny (default) gera o mapa de bordas na geometria do render; raw passa a imagem como veio (Mapa de bordas pronto).",
-    )
     return p.parse_args()
 
 
@@ -587,10 +567,6 @@ def main() -> None:
     if backend_type in ("flux3_wan2gp", "qwen21_wan2gp", "qwen21_turbo_wan2gp", "moss_wan2gp", "ph3_wan2gp", "h3img_wan2gp"):
         # Weights live in the WanGP ckpts/ tree; backends/wan2gp verifies per-file
         pass
-    elif backend_type == "anima_sdcpp":
-        # Weights live in ~/.llama-models/anima (layout de frota); o runner
-        # anima valida os 3 componentes (DiT/TE/VAE) e levanta erro claro.
-        pass
     else:
         require_model_dir(model_name)
 
@@ -660,10 +636,7 @@ def main() -> None:
         _run_fibo_sdcpp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
         return
 
-    # ── Anima (CircleStone×Comfy, 2B anime) via sd.cpp — T2I puro ──
-    if backend_type == "anima_sdcpp":
-        _run_anima_image(args, model_name, model_info, prompt, original_prompt, seed, width, height)
-        return
+    # ── Anima (CircleStone×Comfy, 2B anime) via sd.cpp — T2I puro ──        return
 
     # ── LLM eviction (free VRAM for diffusion) ──
     if args.evict_llm:
@@ -1159,180 +1132,6 @@ def _run_fibo_sdcpp_image(
 
     print(f"  [3/3] Done.")
 
-    save_metadata(
-        model_name, prompt, seed, width, height, steps,
-        cfg, 0.0, wall_time, 0.0, output_path,
-        enhanced_prompt=enhanced,
-    )
-    print_debrief(
-        model_name, model_info, prompt, seed,
-        width, height, steps, cfg,
-        0.0, wall_time, 0.0, output_path,
-        enhanced_prompt=enhanced,
-        original_prompt=original_prompt,
-    )
-
-
-def _run_anima_image(
-    args,
-    model_name: str,
-    model_info: dict,
-    prompt: str,
-    original_prompt: str,
-    seed: int,
-    width: int,
-    height: int,
-) -> None:
-    """Anima (CircleStone×Comfy, 2B) via sd.cpp — T2I puro.
-
-    Pesos em ~/.llama-models/anima (layout de frota). T2I apenas: o sd-cpp
-    da Anima não expõe edit/im2img na CLI da casa — edição é terreno da
-    Aesthetic+ComfyUI ou de outro modelo. Receita por variante vive no
-    registry (sample_steps/cfg_scale/sampler do card do criador).
-    """
-    from diffuse.backends.anima_sdcpp import generate_image_anima
-
-    steps = args.steps if args.steps is not None else model_info.get("sample_steps", 10)
-    cfg = model_info.get("cfg_scale", 1.0)
-
-    print(f"  🎨 Anima T2I: {width}×{height}, {steps} steps, cfg={cfg}, "
-          f"sampler={model_info.get('sampler', 'er_sde')}, seed={seed}")
-
-    # ── img2img / ref-image (31/out-01/nov/2026): preprocessamento automático.
-    # canny: mapa gerado na geometria do render (cache ao lado da foto);
-    # raw: passa como veio (mapa de bordas pronto). init-img: auto-fit.
-    # A LoRA de controle (ref_only no catálogo) é anexada AUTOMATICAMENTE —
-    # tag manual vence e desliga o auto-attach.
-    ref_image = None
-    init_img = None
-    if getattr(args, "ref_image", None):
-        if getattr(args, "ref_mode", "canny") == "canny":
-            try:
-                from diffuse.backends.anima_sdcpp import canny_map
-                ref_image = canny_map(args.ref_image, width, height)
-                print(f"  🖼  ref-image (cosmos_reference): canny map gerado → {ref_image}")
-            except RuntimeError as exc:
-                print(f"\n  ✗ {exc}\n  (se a imagem JÁ é um mapa de bordas, use --ref-mode raw)")
-                sys.exit(1)
-        else:
-            from diffuse.backends.anima_sdcpp import fit_to
-            try:
-                ref_image = fit_to(args.ref_image, width, height)
-            except RuntimeError as exc:
-                print(f"\n  ✗ {exc}")
-                sys.exit(1)
-            print(f"  🖼  ref-image (cosmos_reference, raw): {ref_image}")
-        if "<lora:" not in prompt:
-            from diffuse.lora_selector import load_catalog
-            refs = [e for e in (load_catalog(model_info.get("lora_root", "")) or [])
-                    if e.get("ref_only")
-                    and model_name in (e.get("compat") or ["*"])]
-            if refs:
-                e = refs[0]
-                nome = e["safetensors"][:-len(".safetensors")] if e["safetensors"].endswith(".safetensors") else e["safetensors"]
-                prompt = f"<lora:{nome}:{float(e.get('strength_autor') or 1.0)}> {prompt}"
-                print(f"  🖼  LoRA de controle anexada automaticamente: {e['safetensors']} "
-                      f"@{float(e.get('strength_autor') or 1.0)}")
-    if getattr(args, "init_img", None):
-        try:
-            from diffuse.backends.anima_sdcpp import fit_to
-            init_img = fit_to(args.init_img, width, height)
-        except RuntimeError as exc:
-            print(f"\n  ✗ {exc}")
-            sys.exit(1)
-        print(f"  🖼  img2img: {init_img} (strength {args.img2img_strength})")
-
-    # Pesos ficam fora do repo (frota); a checagem padrão do diffuse/models
-    # não se aplica — o backend valida os 3 componentes e levanta erro claro.
-    from diffuse.backends.anima_sdcpp import anima_paths
-    anima_paths(model_name)
-
-    # ── Prompt enhancement (mesma frota dos irmãos) ──
-    lora_tags = ""
-    if "<lora:" in prompt:
-        prompt, lora_tags = _extract_lora_tags(prompt)
-    enhanced = None
-    if args.enhance or args.enhance_with:
-        enhance_model = args.enhance_with or _load_enhance_config(model_info)
-        if model_info.get("enhance_type", "anima") == "anima":
-            print(f"\n  ✨ Enhancing prompt via {enhance_model} (danbooru tags)...")
-            from diffuse.enhance import enhance_anima_prompt
-            enhanced, _ = enhance_anima_prompt(prompt, enhance_model, nsfw=args.nsfw)
-        else:
-            print(f"\n  ✨ Enhancing prompt via {enhance_model}...")
-            enhanced, _ = enhance_prompt(prompt, enhance_model, nsfw=args.nsfw)
-        if enhanced and enhanced != prompt:
-            print(f"     Expanded to ({len(enhanced)} chars)")
-            _show_enhanced_if_requested(args, enhanced)
-            prompt = enhanced
-
-    # tag manual sempre reaplicada FORA do ramo enhance (bug 20/out/2026 do qwen21:
-    # sem --enhance, a tag extraída nunca voltava e a LoRA era silenciosamente ignorada)
-    if lora_tags:
-        prompt = _reapply_lora_tags(prompt, lora_tags)
-
-    # ── seleção de LoRA (31/out/2026; aberta p/ turbo+aesthetic 02/nov/2026 — as LoRAs
-    # nascem do base e as variantes compartilham a mesma geometria; turbo (destilado)
-    # imprime caveat porque o efeito tende a sair lavado). Fail-open no módulo; guard
-    # '<lora:' impede dupla seleção (tag manual vence); entrada degenerada (<3 palavras)
-    # não chama o decision. Seleção VALE o prompt já-expandido (a mesma ideia crua
-    # escolhe LoRA diferente antes/depois do enhance). ─────────────────────────────
-    lora_dir = None
-    if model_info.get("lora_root") and "<lora:" not in prompt:
-        if model_name == "anima-turbo-v1.1":
-            print("  ℹ️  LoRA sobre turbo (destilado): efeito tende a sair lavado — se importar, prefira base/aesthetic")
-        if len(prompt.split()) < 3:
-            print("  [warn] prompt muito curto p/ selecionar LoRA; rodando base")
-        else:
-            from diffuse.lora_selector import select_loras, load_selector_cfg
-            cfg_sel = load_selector_cfg(args)
-            pre_sel = prompt
-            prompt, _res, _info = select_loras(
-                prompt, root=model_info["lora_root"],
-                nsfw=bool(getattr(args, "nsfw", False)),
-                variant=model_name, cfg=cfg_sel)
-            if prompt != pre_sel and enhanced is None:
-                enhanced = prompt
-    if model_info.get("lora_root"):
-        candidate_dir = (Path.home() / ".llama-models" / "anima"
-                         / model_info.get("weights_subdir", "") / "lora")
-        if not candidate_dir.is_dir():
-            # variantes da família reusam o /lora do base (mesma arch; 02/nov/2026)
-            candidate_dir = (Path.home() / ".llama-models" / "anima"
-                             / "base-v1.0" / "lora")
-        if candidate_dir.is_dir():
-            lora_dir = candidate_dir
-
-    # Evict LLMs antes de carregar (DiT + TE juntos ≈ 5GB na 3050)
-    running = llama_swap_running_models()
-    if running:
-        print(f"  🔄 Evicting LLM models: {', '.join(running)}")
-        evict_llm()
-        print(f"     VRAM freed for image generation")
-
-    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
-    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
-
-    print(f"  [1/2] Rodando sd-cli ({model_info['bits']})...")
-    try:
-        output_path, wall_time = generate_image_anima(
-            model_name=model_name,
-            prompt=prompt,
-            seed=seed,
-            steps=steps,
-            width=width,
-            height=height,
-            output_path=output_path,
-            lora_dir=lora_dir,
-            init_img=init_img,
-            img2img_strength=getattr(args, "img2img_strength", 0.7),
-            ref_image=ref_image,
-        )
-    except (RuntimeError, FileNotFoundError) as exc:
-        print(f"\n  ✗ {exc}")
-        sys.exit(1)
-
-    print(f"  [2/2] Done.")
     save_metadata(
         model_name, prompt, seed, width, height, steps,
         cfg, 0.0, wall_time, 0.0, output_path,

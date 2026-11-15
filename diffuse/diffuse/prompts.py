@@ -106,14 +106,6 @@ def get_moss_enhance_prompt(nsfw: bool = False) -> str:
     return _load_prompt("moss_enhance")
 
 
-def get_anima_enhance_prompt(nsfw: bool = False) -> str:
-    """Anima é danbooru-trainado e uncensored por default (tier "Unbound") —
-    sem rewrite de segurança; o idioma nativo é a string de tags (medido:
-    atributos de cor/objeto sobrevivem em tags e se perdem em JSON/prosa)."""
-    return _load_prompt("anima_enhance")
-
-
-
 def get_edit_vision_prompt(nsfw: bool = False, multi: bool = False) -> str:
     if multi:
         return _toggle_safety_rules(_load_prompt("edit_vision_multi"), nsfw)
