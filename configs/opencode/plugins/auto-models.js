@@ -51,6 +51,19 @@ function deriveModelPatch(remote, modelID) {
     Number(m.context_window) || Number(m.meta?.llamaswap?.context) ||
     Number(m.context_length) || Number(m.max_input_tokens) || null
 
+  // Fleet-declared reasoning efforts (meta.llamaswap.reasoningEfforts maps
+  // menu level -> wire value). Verbatim passthrough: variant id = menu level,
+  // settings.reasoningEffort = wire value (serialized as top-level
+  // `reasoning_effort` on openai-compatible). No declaration -> no variants
+  // (opencode default free selection).
+  const re = ls.reasoningEfforts
+  const variants =
+    re && typeof re === "object" && !Array.isArray(re)
+      ? Object.entries(re)
+          .filter(([k, v]) => typeof k === "string" && k && typeof v === "string" && v)
+          .map(([k, v]) => ({ id: k, settings: { reasoningEffort: v } }))
+      : null
+
   // Fleet convention: 32K output budget for big-ctx models, ctx/4 otherwise.
   const outputLimit = context ? (context >= 131072 ? 32768 : Math.floor(context / 4)) : null
 
@@ -63,19 +76,27 @@ function deriveModelPatch(remote, modelID) {
     },
   }
   if (context) patch.limit = { context, ...(outputLimit ? { output: outputLimit } : {}) }
+  if (variants && variants.length > 0) patch.variants = variants
   return patch
 }
 
 // Build a full Model.Info per the v2 schema (capabilities, variants, time,
 // cost, status, enabled, limit are all required fields).
 function makeModelInfo(providerID, id, patch) {
+  let name = id;
+  if(patch.name) {
+    name = patch.name;
+    if(id.endsWith(":think")) {
+      name = name + " 🧠";
+    }
+  }
   return {
     id,
     modelID: id,
     providerID,
-    name: patch.name || id,
+    name: name,
     capabilities: patch.capabilities || { tools: true, input: ["text"], output: ["text"] },
-    variants: [],
+    variants: patch.variants || [],
     time: { released: Date.now() },
     cost: [],
     status: "active",
@@ -173,6 +194,9 @@ async function _setup(ctx) {
               cur.capabilities = cur.capabilities || it.patch.capabilities
               cur.limit = cur.limit || it.patch.limit
               cur.name = cur.name || it.patch.name
+              if (it.patch.variants && (!Array.isArray(cur.variants) || cur.variants.length === 0)) {
+                cur.variants = it.patch.variants
+              }
             }
           }
           if (toAdd.length > 0) {
