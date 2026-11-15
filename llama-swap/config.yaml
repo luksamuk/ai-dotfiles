@@ -1303,6 +1303,116 @@ models:
         image: false
       note: 'vram detalhe: ~2GB (model + mmproj + cache) | GLM OCR multimodal: model 0.95GB + mmproj 0.48GB + cache; Q8_0 Specialized OCR model — use prompts like ''OCR'', ''OCR markdown'', ''Table Recognition:''. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.'
       context: 131072
+# -------------------------------------------
+# GROOT-19B (fast) - ik_llama.cpp — lane fast proposital do cafe lane (mesmo modelo).
+# Revival 15/nov: MiniPlus IsValorum (8.42 GB vs Q4_K_M ~12) libera o espaco que o
+# antigo nao tinha: o UD-Q4_K_M morria @262K ("pico 5.22 GB e o draft estoura no
+# prefill longo, 502/exit"); o MiniPlus + -cmoe (vs -ncmoe 34 do antigo) devolve
+# os 14 layers de experts que ficavam no GPU. ALVO: 262144 NATIVO (escada descendo
+# se o boot/estourar no prefill: 200000 -> 131072).
+# MTP EMBED (blk.40.nextn): --spec-type mtp:n_max=1,p_min=0.0; o autor nao benchmarkou
+# o spec — medir aceitacao no smoke (o antigo rodava mtp:n_max=1).
+# KV q4_0 + hadamard (proven na familia qwen35moe/ik). defer/prefetch = estrategia mmap.
+# Vision mmproj q8_0 (0.61) + --no-mmproj-offload = custo zero.
+# Always-think (classe Fara): SEM reasoningEfforts; template enable_thinking.
+# Samplers: card "precise coding" 0.6/0.95/20/min-p 0.0/rep 1.0 (espelho do cafe lane).
+# -------------------------------------------
+  groot-19b-fast:
+    name: Groot-19B-A3B (fast)
+    description: The same Groot-19B-A3B lane served intentionally by ik_llama.cpp — aiming native 262K context with the lighter MiniPlus quant.
+    cmd: '${ik_llama_server} --port ${PORT}
+
+      --model ${models_dir}/groot-19b/Groot-19B-A3B-261023.APEX-I-MiniPlus-V2.1.gguf
+
+      --mmproj ${models_dir}/groot-19b/mmproj-GrootTeam_Groot-19B-A3B-261023-q8_0.gguf
+
+      --no-mmproj-offload
+
+      --jinja
+
+      -ngl 99
+
+      -cmoe
+
+      --spec-type mtp:n_max=1,p_min=0.0
+
+      --ctx-size 262144
+
+      --temp 0.6
+
+      --top-p 0.95
+
+      --top-k 20
+
+      --min-p 0.0
+
+      --repeat-penalty 1.0
+
+      --reasoning-budget 8192
+
+      --parallel 1
+
+      --parallel-tool-calls
+
+      --cache-type-k ${large_cache_k}
+
+      --cache-type-v ${large_cache_v}
+
+      --k-cache-hadamard
+
+      --v-cache-hadamard
+
+      --flash-attn auto
+
+      --defer-experts
+
+      --prefetch-experts
+
+      -b 512
+
+      -ub 128
+
+      --metrics
+
+      '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: true
+    ttl: 0
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 262144
+    metadata:
+      size: ~8.42 GB + 0.61 GiB mmproj q8_0 (mesmos arquivos do cafe lane)
+      context: 262144
+      vram_usage: ~4 GB VRAM estimado @262K (a medir; o antigo estourava 5.22)
+      source: IsValorum/Groot-19B-A3B-261023-APEX-I-MiniPlus-V2.1-GGUF (base GrootTeam/Groot-19B-A3B-261023)
+      kv_cache: q4_0/q4_0 + hadamard
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: qwen35moe
+      parameters: 19000000000
+      context_length: 262144
+      embedding_length: 2048
+      quantization: APEX-I-MiniPlus
+      note: 'Sem reasoningEfforts (always-think). MTP embed: card nao benchmarka spec — medir no fio. Escada: 262144 alvo; antigo UD estourava o DRAFT no prefill longo (502/exit) — se reproduzir, escada 200000/131072 no fragment + probe de prefill longo antes de qualquer redeclarar vitoria.'
   lfm2.5-24b-a2b:
   # APOSENTADO COM HONRAS + SACRIFICIO DE DISCO 31/10/2026 (dono): GGUF APEX
   # I-Compact (11G) DELETADO — restore: remover a linha 'unlisted: true' e:
@@ -2549,6 +2659,7 @@ matrix:
     ctiel: cyber-tiel-coder  # ATIVO 15/nov — Cyber-Tiel-Coder 35B (peculiar-ragdoll, finetune cybersec da ornith-1.5 abliterated) + MiniPlus IsValorum; MTP draft externo
     ctielf: cyber-tiel-coder-fast  # lane fast ik proposital (--fit, MTP, hadamard; fora dos sets)
     groot: groot-19b  # ATIVO 15/nov — revival: GrootTeam 19B-A3B distill + MiniPlus IsValorum (8.42 GB); cafe -cmoe @200K, MTP embed
+    grootf: groot-19b-fast  # lane fast ik proposital (-cmoe, MTP embed, hadamard; alvo 262K); fora dos sets
     # qw38c: qwen3.8-flash-coder  # APOSENTADO 15/nov/2026 (dono) — reprovado no gate agentic (doom-loop de path, R73k reasoning queimado; think-on code vazio) — fragment _disabled/ + epitaph; GGUF deletado
     # qw38cf: qwen3.8-flash-coder-fast  # aposentado junto (fast ik; tool parser resolvido pelo sharp, o fix permanece)
     # flintf: flint-40b-a2b-fast  # APOSENTADO 27/out/2026 pelo dono ("nao vale vs resto") — lanes desativadas; fragment em _disabled/; rm do GGUF pendente de OK (destrava disco pro Groot 65B)
@@ -2759,4 +2870,5 @@ matrix:
     raon: 2  # 2,08 GB denso — reload barato
     # raonmini: 6  # APOSENTADO 15/nov
     groot: 9  # 19B-A3B MoE (8.4 GB + mmproj) — reload medio-alto, classe orn35-menor
+    grootf: 9  # mesmo GGUF
     # nbe4: 3  # APOSENTADO 31/10/2026 junto do modelo (5,06 GB denso — reload medio)
