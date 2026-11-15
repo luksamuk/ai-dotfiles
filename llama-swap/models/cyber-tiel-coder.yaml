@@ -1,29 +1,16 @@
 # -------------------------------------------
-# CYBER-TIEL-CODER - cafe-llama.cpp (-cmoe)
-# Linhagem: ornith-ai/Ornith-1.5-35B-A3B -> huihui-ai/Huihui-Ornith-1.5-35B-A3B-abliterated
-#   -> peculiar-ragdoll/Cyber-Tiel-Coder (finetune agentic/cybersec, MTP companion) -> quant IsValorum APEX-I-MiniPlus V2.1.
-# Arch qwen35moe (probe do header): 256 experts / 8 ativos, kv heads 2, ctx nativo 262144, embedding 2048.
-# MTP: draft EXTERNO (companion mtp-Cyber-Tiel-Coder-35B-A3B.gguf, blk.40.nextn =1) — principal vem SEM nextn.
-#   cafe consome: -md + --spec-type draft-mtp (help confirmado). Draft 1.48 GB.
-# Visao: mmproj-Q8_0 614 MB (--no-mmproj-offload = custo zero medico na casa).
-# Samplers OFICIAIS do card: temp 0.6 / top-p 0.95 / top-k 20 / min-p 0.05 (coding advisory:
-#   0.05 poda ruido de sintaxe) / repeat-penalty 1.0 MANDATORIO (card: penalty troca colchetes).
-# PPL audited: 7.5124 +/-0.207 vs 7.46 BF16 = +0.70% (tier Q5_K_L borderando Q6_K @3.43 BPW).
-# Evidencia externa: derFusel rodou ESTE arquivo MiniPlus no Shortbench (Pi, mesmo agente da casa):
-#   12/12 @96K (rank #03 global), 12/12 @160K (#05), q8_0 KV, reasoning_effort=high.
-#   Limitacao DO CARD: schema degrada sob compaction (98.3%) — o pin de effort e' do cliente
-#   (reasoningEfforts abaixo); stripParams NAO leva reasoning_effort (template leniente).
-# Template: EMBEDDED (30529 bytes, dialect reasoning_effort + tools) = o oficial do finetuner
-#   via --jinja SEM override. FALLBACK: ${templates_dir}/sharp_chat_template.jinja (proven na
-#   familia qwen35moe/cafe/ik — trocar so se o agentic vazar) — o jinja do repo IsValorum fica no dir.
-# ESCADA DE CTX (smoke 15/nov, FECHADA): 262144 = OOM no buffer de KV (512 MiB) e no
-# contexto do MTP em boot; 200000 = carrega e serve (residencia 5.73GB = 93%, perfil orn35
-# normal; 28.3 t/s decode c/ MTP 63%, prefill 100 t/s). TETO CAFFE = 200000 na 6GB com desktop.
+# CYBER-TIEL-CODER (fast) - ik_llama.cpp (mesmo modelo, menos contexto, mais rapido)
+# Espelho do orn35-fast: --fit (exclusivo! -cmoe/-ncmoe + fit = abort; fit faz o override
+# de experts pra CPU sozinho), defer/prefetch-experts (estrategia de mmap), KV q4_0 + hadamard
+# (proven na familia qwen35moe), parallel-tool-calls.
+# MTP draft externo: -md companion + --spec-type mtp:n_max=1,p_min=0.0 (spelling canônico do ik).
+# Template embedded do finetuner via --jinja; SHARP v22.5 e o fallback provado da familia.
+# ctx 131072 = padrao qwen-fast da orn35 (fit decide; escada sobe/desce conforme free VRAM).
 # -------------------------------------------
 cyber-tiel-coder:
-  name: Cyber-Tiel-Coder 35B-A3B
-  description: Uncensored agentic coding MoE finetuned from Ornith 1.5 (abliterated) toward cybersec and autonomous engineering; 256 experts, MTP-capable, vision optional.
-  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+  name: Cyber-Tiel-Coder
+  description: The same Cyber-Tiel-Coder lane served intentionally by ik_llama.cpp — less context, faster path with MTP draft.
+  cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/cyber-tiel-coder/Cyber-Tiel-Coder-35B-A3B.APEX-I-MiniPlus-V2.1.gguf
 
@@ -31,15 +18,11 @@ cyber-tiel-coder:
 
     --no-mmproj-offload
 
-    -md ${models_dir}/cyber-tiel-coder/mtp-Cyber-Tiel-Coder-35B-A3B.gguf
-
-    --spec-draft-ngl 0
-
-    --spec-type draft-mtp
-
     --jinja
 
-    --parallel 1
+    -ngl 99
+
+    -cmoe
 
     --ctx-size 262144
 
@@ -55,19 +38,33 @@ cyber-tiel-coder:
 
     --reasoning-budget 8192
 
-    --cache-type-k q4_0
+    --parallel 1
 
-    --cache-type-v q4_0
+    --parallel-tool-calls
 
-    --flash-attn on
+    --cache-type-k ${large_cache_k}
 
-    -cmoe
+    --cache-type-v ${large_cache_v}
 
-    -ngl 99
+    --k-cache-hadamard
+
+    --v-cache-hadamard
+
+    --flash-attn auto
 
     -b 512
 
     -ub 128
+
+    --defer-experts
+
+    --prefetch-experts
+
+    -md ${models_dir}/cyber-tiel-coder/mtp-Cyber-Tiel-Coder-35B-A3B.gguf
+
+    -ngld 0
+
+    --spec-type mtp:n_max=1,p_min=0.0
 
     --metrics
 
@@ -90,11 +87,11 @@ cyber-tiel-coder:
     reranker: false
     context: 262144
   metadata:
-    size: ~13.74 GiB + 0.61 GiB mmproj + 1.38 GiB MTP draft
+    size: ~13.74 GiB + 0.61 GiB mmproj + 1.38 GiB MTP draft (mesmos arquivos do cafe lane)
     context: 262144
-    vram_usage: ~5 GB VRAM estimado (medir no smoke; dense menor que orn35)
+    vram_usage: ~4.26 GB VRAM @262K (medido) — dense menor, sobra ~1.9 GB na regua
     source: IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF (sha256 56d755b3 mtp 34f22d95; base peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-GGUF-MTP; base do finetune huihui-ai/Huihui-Ornith-1.5-35B-A3B-abliterated)
-    kv_cache: q4_0/q4_0
+    kv_cache: q4_0/q4_0 + hadamard
     features:
       completion: true
       tools: true
@@ -115,4 +112,4 @@ cyber-tiel-coder:
       medium: medium
       high: high
       xhigh: xhigh
-    note: 'Card recomenda reasoning_effort=high para tasks agentic schema-sensitive (low/compaction normaliza tipos). Draft MTP externo negativo em regime IO-bound (2x medido na casa) — aqui e -cmoe com experts residentes, MTP deve pagar; conferir aceite no smoke. Sem mmproj-offload = visao gratis. Escada de contexto pendente (regua 550-600 MiB).'
+    note: 'RECEITA FINAL ik (smoke 15/nov): SEM --fit — o fit do ik morre no DRAFT (1840 MiB no device que nao cabe pos-main; e ignora -ngld 0). Receita: -ngl 99 + -cmoe + -ngld 0 (draft inteiro na CPU; aceitacao 90-75%). Escada ik FECHADA: 131K (3.48GB) -> 200K (3.87GB) -> 262K NATIVO (4.26GB; 25.8 t/s decode, prefill 144 t/s, MTP 75%). Fast vence o teto de ctx do cafe (262144 = KV buffer OOM no cafe). Hadamard provado. 17x23=391 CORRETO e zero typos de path nos probes. Lane fora dos sets (padrao qwen-fast, evict 9).'

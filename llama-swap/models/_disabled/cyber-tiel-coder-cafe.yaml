@@ -1,0 +1,128 @@
+# -------------------------------------------
+# CYBER-TIEL-CODER (cafe lane) — APOSENTADO 15/nov/2026 pelo dono.
+# O ik -fast lane assumiu o papel único (262K, 4.26 GB, draft CPU).
+# Causa do aposento: a lane cafe gastava 5.6 GB VRAM (MTP draft no GPU por
+# default — o fix era --spec-draft-ngl 0 que descobrimos e já está registrado)
+# mas o ik faz o mesmo com 4.26 GB (draft -ngld 0), decode ganha, prefill ganha,
+# spawn ganha. Não há razão pra coexistir na 6GB.
+# REINSTALAR: fragmento em git history + pesos já no disco + --spec-draft-ngl 0
+# (o cafe aceita o long form; -ngld 0 é o curto só no ik)
+# -------------------------------------------
+# -------------------------------------------
+# CYBER-TIEL-CODER - cafe-llama.cpp (-cmoe)
+# Linhagem: ornith-ai/Ornith-1.5-35B-A3B -> huihui-ai/Huihui-Ornith-1.5-35B-A3B-abliterated
+#   -> peculiar-ragdoll/Cyber-Tiel-Coder (finetune agentic/cybersec, MTP companion) -> quant IsValorum APEX-I-MiniPlus V2.1.
+# Arch qwen35moe (probe do header): 256 experts / 8 ativos, kv heads 2, ctx nativo 262144, embedding 2048.
+# MTP: draft EXTERNO (companion mtp-Cyber-Tiel-Coder-35B-A3B.gguf, blk.40.nextn =1) — principal vem SEM nextn.
+#   cafe consome: -md + --spec-type draft-mtp (help confirmado). Draft 1.48 GB.
+# Visao: mmproj-Q8_0 614 MB (--no-mmproj-offload = custo zero medico na casa).
+# Samplers OFICIAIS do card: temp 0.6 / top-p 0.95 / top-k 20 / min-p 0.05 (coding advisory:
+#   0.05 poda ruido de sintaxe) / repeat-penalty 1.0 MANDATORIO (card: penalty troca colchetes).
+# PPL audited: 7.5124 +/-0.207 vs 7.46 BF16 = +0.70% (tier Q5_K_L borderando Q6_K @3.43 BPW).
+# Evidencia externa: derFusel rodou ESTE arquivo MiniPlus no Shortbench (Pi, mesmo agente da casa):
+#   12/12 @96K (rank #03 global), 12/12 @160K (#05), q8_0 KV, reasoning_effort=high.
+#   Limitacao DO CARD: schema degrada sob compaction (98.3%) — o pin de effort e' do cliente
+#   (reasoningEfforts abaixo); stripParams NAO leva reasoning_effort (template leniente).
+# Template: EMBEDDED (30529 bytes, dialect reasoning_effort + tools) = o oficial do finetuner
+#   via --jinja SEM override. FALLBACK: ${templates_dir}/sharp_chat_template.jinja (proven na
+#   familia qwen35moe/cafe/ik — trocar so se o agentic vazar) — o jinja do repo IsValorum fica no dir.
+# ESCADA DE CTX (smoke 15/nov, FECHADA): 262144 = OOM no buffer de KV (512 MiB) e no
+# contexto do MTP em boot; 200000 = carrega e serve (residencia 5.73GB = 93%, perfil orn35
+# normal; 28.3 t/s decode c/ MTP 63%, prefill 100 t/s). TETO CAFFE = 200000 na 6GB com desktop.
+# -------------------------------------------
+cyber-tiel-coder:
+  name: Cyber-Tiel-Coder 35B-A3B
+  description: Uncensored agentic coding MoE finetuned from Ornith 1.5 (abliterated) toward cybersec and autonomous engineering; 256 experts, MTP-capable, vision optional.
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
+    --model ${models_dir}/cyber-tiel-coder/Cyber-Tiel-Coder-35B-A3B.APEX-I-MiniPlus-V2.1.gguf
+
+    --mmproj ${models_dir}/cyber-tiel-coder/mmproj-Q8_0.gguf
+
+    --no-mmproj-offload
+
+    -md ${models_dir}/cyber-tiel-coder/mtp-Cyber-Tiel-Coder-35B-A3B.gguf
+
+    --spec-draft-ngl 0
+
+    --spec-type draft-mtp
+
+    --jinja
+
+    --parallel 1
+
+    --ctx-size 262144
+
+    --temp 0.6
+
+    --top-p 0.95
+
+    --top-k 20
+
+    --min-p 0.05
+
+    --repeat-penalty 1.0
+
+    --reasoning-budget 8192
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -cmoe
+
+    -ngl 99
+
+    -b 512
+
+    -ub 128
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: true
+  ttl: 0
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 262144
+  metadata:
+    size: ~13.74 GiB + 0.61 GiB mmproj + 1.38 GiB MTP draft
+    context: 262144
+    vram_usage: ~5 GB VRAM estimado (medir no smoke; dense menor que orn35)
+    source: IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF (sha256 56d755b3 mtp 34f22d95; base peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-GGUF-MTP; base do finetune huihui-ai/Huihui-Ornith-1.5-35B-A3B-abliterated)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 35000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: APEX-I-MiniPlus
+    reasoningEfforts:
+      'off': 'off'
+      low: low
+      medium: medium
+      high: high
+      xhigh: xhigh
+    note: 'Card recomenda reasoning_effort=high para tasks agentic schema-sensitive (low/compaction normaliza tipos). Draft MTP externo negativo em regime IO-bound (2x medido na casa) — aqui e -cmoe com experts residentes, MTP deve pagar; conferir aceite no smoke. Sem mmproj-offload = visao gratis. Escada de contexto pendente (regua 550-600 MiB).'
