@@ -69,6 +69,7 @@ ORIGINAL_ORDER = [
     "lfm2.5-1.2b",           # ✅
     "spark-x2.6-4b",        # ✅ upstream (arch spark2_5), 131K @88,7% — 24/out
     "raon-1-nano",          # ✅ fork KRAFTON (arch raon1nano, híbrido RDA+MLA) — 11/nov
+    "groot-19b",   # 15/nov — qwen35moe 19B-A3B (GrootTeam), MiniPlus IsValorum; cafe -cmoe + MTP embed
     # "nemotron-bolt-e4b",  # APOSENTADO 31/10/2026 (dono) — _disabled/ + HELPER; re-download unsloth UD-Q4_K_XL
     "lfm2.5-2.6b",           # ✅ Dense hybrid, agentic RL, on-device
     "qwen2.5-coder-1.5b-pollard",  # ✅ Pollard Coder IQ4_XS CPU-only (FIM, imatrix, coexists with GPU MoE)

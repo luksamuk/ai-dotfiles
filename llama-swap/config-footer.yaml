@@ -76,6 +76,7 @@ matrix:
     orn35f: ornith-1.5-35b-heretic-fast  # reativado 24/out 2026 — challenger ik (MTP + defer/prefetch); fora dos sets, igual ao lfm24f/qwen-fast
     ctiel: cyber-tiel-coder  # ATIVO 15/nov — Cyber-Tiel-Coder 35B (peculiar-ragdoll, finetune cybersec da ornith-1.5 abliterated) + MiniPlus IsValorum; MTP draft externo
     ctielf: cyber-tiel-coder-fast  # lane fast ik proposital (--fit, MTP, hadamard; fora dos sets)
+    groot: groot-19b  # ATIVO 15/nov — revival: GrootTeam 19B-A3B distill + MiniPlus IsValorum (8.42 GB); cafe -cmoe @200K, MTP embed
     # qw38c: qwen3.8-flash-coder  # APOSENTADO 15/nov/2026 (dono) — reprovado no gate agentic (doom-loop de path, R73k reasoning queimado; think-on code vazio) — fragment _disabled/ + epitaph; GGUF deletado
     # qw38cf: qwen3.8-flash-coder-fast  # aposentado junto (fast ik; tool parser resolvido pelo sharp, o fix permanece)
     # flintf: flint-40b-a2b-fast  # APOSENTADO 27/out/2026 pelo dono ("nao vale vs resto") — lanes desativadas; fragment em _disabled/; rm do GGUF pendente de OK (destrava disco pro Groot 65B)
@@ -144,7 +145,7 @@ matrix:
     # mojev: minicpm-ocr-jev  # _disabled 02/nov 2026 (pesos off disk; fragment em _disabled/)
     sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
     raon: raon-1-nano  # KRAFTON dense 1.5B-efetivo (arch raon1nano, hibrido RDA+MLA), fork vendor, 262K nativo — smoke 11/nov
-    raonmini: raon-1-mini-preview  # 30B-A4B MoE (arch raon1 no ik) — STAGED 11/nov SEM build-config; fragment inert ate compilar + smoke
+    # raonmini: raon-1-mini-preview  # APOSENTADO 15/nov/2026 (dono, sem uso) — fragment _disabled/ + pesos fora (16 GB); raon-1-nano permanece
     # saluki27: saluki-27b  # REMOVIDO 12/nov/2026 tarde (dono, orçamento disco p/ H3-Image) — foi reativado hoje de manhã; recovery: fragment _disabled/ + hf download ConwayResearch/Underdog-Saluki-27B-1.0
     # bs2t: bonsai2-27b  # RE-APOSENTADO 12/nov/2026 à noite — degenera em word-salad com system prompt >=4k chars (bissecção provada; git history p/ prova) — PRISML fork fica em ~/git/prismml-eng-llama.cpp
     # tq3d: qwen3.5-4b-3d-coder  # APOSENTADO 12/nov/2026 (dono) — probe 2048 reprovado 2/7 + fidelidade multimodal nula; fragment _disabled/ + epitaph; restore no epitaph
@@ -184,7 +185,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(lfm24 | mcv35 | orn35 | raonmini | ctiel) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4
+    heavy: "(lfm24 | mcv35 | orn35 | ctiel | groot) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4 | 15/nov: +ctiel 5o pesado +groot (troca do raonmini aposentado)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -284,5 +285,6 @@ matrix:
     mcv47: 3  # 35B-A3B MoE visual: 5G VRAM + 11G RAM, cold ~600s — caro de recarregar
     sp26: 2  # 3,54 GB denso — reload barato
     raon: 2  # 2,08 GB denso — reload barato
-    raonmini: 6  # 16 GB MoE (experts RAM) — reload médio (estimativa, pendente smoke)
+    # raonmini: 6  # APOSENTADO 15/nov
+    groot: 9  # 19B-A3B MoE (8.4 GB + mmproj) — reload medio-alto, classe orn35-menor
     # nbe4: 3  # APOSENTADO 31/10/2026 junto do modelo (5,06 GB denso — reload medio)

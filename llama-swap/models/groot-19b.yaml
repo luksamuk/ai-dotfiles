@@ -1,0 +1,97 @@
+# -------------------------------------------
+# GROOT-19B - cafe-llama.cpp (-cmoe) — REVIVAL 15/nov/2026 da lane aposentada (era UD-IQ2 ~12 GB, lenta demais).
+# Agora MiniPlus IsValorum: 8.42 GB (qwen35moe, 19B-A3B distill da GrootTeam — metodo de escala undisclosed).
+# MTP EMBED (blk.40.nextn): --spec-type draft-mtp; o autor NAO benchmarkou o spec — medir aceitacao no smoke,
+#   se degradar, remover o --spec-type (quickstart do card mostra com e sem).
+# Vision mmproj q8_0 (0.61 GB) — NAO re-avaliada pos-quant pelo autor; --no-mmproj-offload = custo zero.
+# Always-think (comeca em thinking; enable_thinking:false por request desliga) — SEM reasoningEfforts (classe Fara).
+# Samplers OFICIAIS do card (precise coding): temp 0.6 / top-p 0.95 / top-k 20 / min-p 0.0 / repetition_penalty 1.0.
+# Card manda llama.cpp b12017+ (build da frota e a frente disso).
+# Escada: 200000 estreia (espelho da familia; escada 262144 quando medir).
+# -------------------------------------------
+groot-19b:
+  name: Groot-19B-A3B
+  description: GrootTeam 19B-A3B MoE distill (qwen35moe), uncensored multipurpose agent; MiniPlus quant, MTP-capable, vision optional.
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
+    --model ${models_dir}/groot-19b/Groot-19B-A3B-261023.APEX-I-MiniPlus-V2.1.gguf
+
+    --mmproj ${models_dir}/groot-19b/mmproj-GrootTeam_Groot-19B-A3B-261023-q8_0.gguf
+
+    --no-mmproj-offload
+
+    --spec-type draft-mtp
+
+    --jinja
+
+    --parallel 1
+
+    --ctx-size 200000
+
+    --temp 0.6
+
+    --top-p 0.95
+
+    --top-k 20
+
+    --min-p 0.0
+
+    --repeat-penalty 1.0
+
+    --reasoning-budget 8192
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -cmoe
+
+    -ngl 99
+
+    -b 512
+
+    -ub 128
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: true
+  ttl: 0
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 200000
+  metadata:
+    size: ~8.42 GB + 0.61 GiB mmproj q8_0
+    context: 200000
+    vram_usage: ~4 GB VRAM estimado (19B dense menor; medir no smoke)
+    source: IsValorum/Groot-19B-A3B-261023-APEX-I-MiniPlus-V2.1-GGUF (base GrootTeam/Groot-19B-A3B-261023)
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: qwen35moe
+    parameters: 19000000000
+    context_length: 262144
+    embedding_length: 2048
+    quantization: APEX-I-MiniPlus
+    note: 'Card s/ auditoria de PPL (base self-reportado da GrootTeam); vision pos-quant nao re-avaliada; scaling method undisclosed. MTP nao benchmarkado (medir no smoke). Sem reasoningEfforts (always-think).'

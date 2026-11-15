@@ -6,6 +6,7 @@
 #   qwen38-flash-next-1m - Qwen3.8-Flash-Next UD-IQ1_M split 3 (~74.5 GB) + MTP draft Q4_0 (2.2 GB) - lane experimental cafe, NOT production (dormammu's brother)
 #   [APOSENTADO 15/nov/2026] qwen3.8-flash-coder — reprovado no gate agentic; fragment _disabled/ + epitaph; GGUF deletado
 #   cyber-tiel-coder     - Cyber-Tiel-Coder-35B MiniPlus (~14.75 GB) + MTP draft (1.48 GB) + mmproj (0.61 GB) - finetune cybersec da linhagem ornith-1.5
+#   groot-19b            - Groot-19B-A3B MiniPlus (~8.42 GB) + mmproj q8 (0.61 GB), MTP embed - distill GrootTeam, agent MoE multiproposito
 #   qwen3.5-0.8b         - Qwen3.5-0.8B UD-Q3_K_XL (~0.46 GB) + mmproj (~196 MB) - fits in VRAM, vision+text
 #   qwen3.5-4b           - Qwen3.5-4B MoQ-3.75 (~1.92 GB) - fits in VRAM
 #   [REMOVED] lfm2-8b-moe — superseded by LFM2.5-8B-A1B, disabled May 2026
@@ -142,6 +143,9 @@ declare -A MODELS=(
   ["cyber-tiel-coder"]="IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF Cyber-Tiel-Coder-35B-A3B.APEX-I-MiniPlus-V2.1.gguf cyber-tiel-coder/Cyber-Tiel-Coder-35B-A3B.APEX-I-MiniPlus-V2.1.gguf"
   ["cyber-tiel-coder-mtp"]="IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF mtp-Cyber-Tiel-Coder-35B-A3B.gguf cyber-tiel-coder/mtp-Cyber-Tiel-Coder-35B-A3B.gguf"
   ["cyber-tiel-coder-mmproj"]="IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF mmproj-Q8_0.gguf cyber-tiel-coder/mmproj-Q8_0.gguf"
+  # Groot-19B-A3B (GrootTeam distill, qwen35moe) + MiniPlus IsValorum — revival 15/nov da lane aposentada
+  ["groot-19b"]="IsValorum/Groot-19B-A3B-261023-APEX-I-MiniPlus-V2.1-GGUF Groot-19B-A3B-261023.APEX-I-MiniPlus-V2.1.gguf groot-19b/Groot-19B-A3B-261023.APEX-I-MiniPlus-V2.1.gguf"
+  ["groot-19b-mmproj"]="IsValorum/Groot-19B-A3B-261023-APEX-I-MiniPlus-V2.1-GGUF mmproj-GrootTeam_Groot-19B-A3B-261023-q8_0.gguf groot-19b/mmproj-GrootTeam_Groot-19B-A3B-261023-q8_0.gguf"
   # [REMOVED Sep 2026] qwen3.5-9b — user request
   # [REMOVED] gemma4-e4b — disabled Jul 2026, redundant with E2B (no code use case)
   # ["gemma4-e4b"]="unsloth/gemma-4-E4B-it-GGUF gemma-4-E4B-it-Q4_K_M.gguf"
@@ -373,7 +377,7 @@ download_model() {
   
   if [[ -z "$repo_file" ]]; then
     echo "Error: Unknown model '$key'"
-    echo "Available: raon-1-nano, minicpm-v-4.7-35b, minicpm-v-4.7-35b-mmproj, qwen38-flash-next-1m, qwen38-flash-next-1m-mtp, cyber-tiel-coder, cyber-tiel-coder-mtp, cyber-tiel-coder-mmproj, qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, minicpm-ocr-1.0, minicpm-ocr-jev, minicpm-ocr-dspark, openbonsai-qwen3.5-9b, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
+    echo "Available: raon-1-nano, groot-19b, groot-19b-mmproj, minicpm-v-4.7-35b, minicpm-v-4.7-35b-mmproj, qwen38-flash-next-1m, qwen38-flash-next-1m-mtp, cyber-tiel-coder, cyber-tiel-coder-mtp, cyber-tiel-coder-mmproj, qwen3.5-4b, nanbeige4.2-3b, gemma4-e4b, gemma4-e2b, lfm2.5-vl-450m, lfm2.5-vl-1.6b-extract, lfm2.5-8b-a1b, lfm2.5-2.6b, qwen2.5-coder-1.5b-pollard, qwen3.6-35b-a3b, ornith-1.0-35b, kat-coder-v2.5-dev, agentworld-35b, agents-a1-35b, glm-4.7-flash, athenas-symbiote-9b, qwopus-35b, gpt-oss-20b, minicpm-v-4.6, qwen3-vl-4b, smolvlm2-500m-video, minicpm5-1b-agentic, smolllm3-3b, webworld-8b, qwopus-coder-9b, hy-mt2-1.8b, glm-ocr, minicpm-ocr-1.0, minicpm-ocr-jev, minicpm-ocr-dspark, openbonsai-qwen3.5-9b, nomic-embed-text-v2-moe, nemotron-3-embed-1b, mellum2-12b-thinking, ornstein-36-35b, laya, julia-1, all"
     return 1
   fi
   
@@ -455,6 +459,7 @@ show_sizes() {
   echo "  qwen3.6-35b-a3b    ~17.30 GB  (APEX I-Compact) - Heavy offload, MoE coding + tools"
   echo "  ornith-1.0-35b     ~16.50 GB  (APEX I-Compact) - Post-trained Qwen 3.5 35B MoE, agentic coding RL"
   echo "  [APOSENTADO 15/nov/2026] qwen3.8-flash-coder — see _disabled/ epitaph"
+  echo "  groot-19b          ~8.42 GB + 0.61 mmproj (MiniPlus) - distill GrootTeam 19B-A3B, agent MoE (revival)"
   echo "  cyber-tiel-coder    ~14.75 GB + 1.48 MTP + 0.61 mmproj (APEX-I-MiniPlus) - finetune cybersec da ornith-1.5 (peculiar-ragdoll), lanes cafe/ik"
   echo "  kat-coder-v2.5-dev ~16.50 GB  (APEX Compact) - Post-trained Qwen 3.6 35B MoE, SOTA agentic coding (SWE-bench 69.4)"
   echo "  agents-a1-35b      ~16.50 GB  (APEX I-Compact) - 35B MoE, long-horizon search + tool calling"
