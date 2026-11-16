@@ -10,11 +10,11 @@ lfm3-1.7b:
 
     --model ${models_dir}/lfm3-1.7b/Vortecks_LFM3-1.7B-Heretic-Abliterated-Q6_K_S.gguf
 
-    --ctx-size 327680
+    --ctx-size 262144
 
     --jinja
 
-    --parallel 3
+    --parallel 1
 
     --cache-type-k q4_0
 
@@ -54,11 +54,11 @@ lfm3-1.7b:
     - text
     tools: true
     reranker: false
-    context: 65536
+    context: 262144
   metadata:
     size: ~1.4 GB (Q6_K_S bartowski)
-    context: 65536 por slot x 5 slots (327680 total)
-    vram_usage: ~4.1 GB VRAM pico @262K slot unico; @5x64K est. ~4.4GB (KV q4_0 ~1.35GB)
+    context: 262144
+    vram_usage: "~4.1 GB VRAM pico no slot único @262144 (KV q4_0)"
     source: Vortecks/LFM3-1.7B-Heretic-Abliterated-GGUF (static, sem imatrix; Q8_0, 1846237728 bytes exatos; upstream safetensors
       BF16 do mesmo repo)
     kv_cache: q4_0/q4_0
@@ -89,7 +89,7 @@ lfm3-1.7b:
       01/11: REDUZIDO a 3 slots a pedido do dono (3x~107K por agente; o KV total 327680 nao muda); smoke slots 29/10 (da era
       5) OK (spawn saudavel, pico ~4.8GB usados/1058 MiB livres, 5 reqs paralelas atendidas em batch 0.2s wall). 30/10: SWAP
       p/ GGUF Heretic-Abliterated (static, Vortecks) — pedido do usuario, drop-in Q8_0->Q8_0. KL 0.0094 + refusals 3/100 (par
-      completo, KL baixo SOZINHO nao vale). GGUF oficial LFM3-1.7B-Q8_0.gguf mantido no dir p/ rollback imediato.'
+      completo, KL baixo SOZINHO nao vale). GGUF oficial LFM3-1.7B-Q8_0.gguf mantido no dir p/ rollback imediato. 16/11: --parallel 1 @262144 (slot único) — pedido do dono, multi-slot aposentado; capabilities.context/metadata.context = 262144.'
 
 # 11/11 (troca de fatia): Q8_0 Vortecks -> Q6_K_S bartowski (mesma fonte safetensors,
 # 1.4G vs 1.8G, 21% menos bytes/token). Duelo casa vs bartowski 11/11 deu paridade
