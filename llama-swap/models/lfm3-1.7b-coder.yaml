@@ -14,6 +14,10 @@
 # mudando só --model/path. tools arranca false: probe live pendente.
 # Matrix: FORA dos sets (exclusivo no solver) -- decisão do dono; não é a
 # lane do lfm3-1.7b (lfm317), é lane de experimento paralela.
+# HANDLE ÚNICO (decreto 15/nov, :think aposentado): sem handle :think e sem
+# pin enable_thinking no base -- o template LFM3 faz default(true), ou seja
+# plain já pensa. Effort/silêncio = kwarg do client por request (quando o
+# dialecto deixar), não handle na frota.
 lfm3-1.7b-coder:
   name: LFM3 1.7B Coder
   description: Fine-tune coder do LFM3 1.7B (QLoRA, destilado das traces de código do qwen4-max; experimento)
@@ -55,13 +59,6 @@ lfm3-1.7b-coder:
     stripParams: temperature, top_p
     setParamsByID:
       ${MODEL_ID}:
-        chat_template_kwargs:
-          enable_thinking: false
-        temperature: 0.1
-        top_k: 50
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 0.1
         top_k: 50
   ttl: 900
@@ -94,4 +91,4 @@ lfm3-1.7b-coder:
     embedding_length: 2048
     context_length: 262144
     quantization: Q4_K_M
-    note: "Install 16/11/2026 'instala e coloca pra torar' (modelo de colega do dono). QLoRA NF4 16.47M treináveis (0.9436%) sobre LFM3-1.7B, dataset coder do qwen4-max (70 rows, 340 train chunks, 3 epochs, T4, 50min). Bench do autor no fp16 merged: HumanEval+ base 69.5->73.2, plus 65.2->68.3, SWE-bench NLL ppl 12.34->9.31 -- BENCH NAO FOI NO GGUF (caveat do próprio autor; Q4 pode mover qualidade de código). Header probe 16/11: arch lfm3, template LFM3 embutido (enable_thinking + tool tags), sampling = defaults LFM3 (temp 0.1/top-k 50/repeat 1.1), nextn 0 = sem MTP. Samplers/flags mirrados do lfm3-1.7b (262144, parallel 1, KV q4_0, -b 2048 -ub 1024, -ngl 99). tools=false até probe live no fio da swap (base tem tool-calling nativo testado, o fine-tune ainda não). PROBE 16/11 (swap 12434): 2 tool_calls PARALELOS nativos (get_weather + get_local_time p/ Diamantina-MG), JSON limpo, finish=tool_calls, content vazio como o base -- tools=true evidenciado. Smoke chat pt-BR: cold load de primeira, plain responde direto (reasoning 0, pin false ativo), Python limpo; :think pensa estilo distill (abre com We need to... como o base) e responde em pt-BR depois; budget de reasoning engole max_tokens baixo (2987 chars @900) -- usar max_tokens generoso (>=2000). Fora dos matrix sets: exclusiva no solver por decisão de experimento -- se viral de vez, o dono define var/set/evict_cost no footer. Rollback/dual-source: base heretic lfm317 segue na lane lfm3-1.7b intocada."
+    note: "Install 16/11/2026 'instala e coloca pra torar' (modelo de colega do dono). QLoRA NF4 16.47M treináveis (0.9436%) sobre LFM3-1.7B, dataset coder do qwen4-max (70 rows, 340 train chunks, 3 epochs, T4, 50min). Bench do autor no fp16 merged: HumanEval+ base 69.5->73.2, plus 65.2->68.3, SWE-bench NLL ppl 12.34->9.31 -- BENCH NAO FOI NO GGUF (caveat do próprio autor; Q4 pode mover qualidade de código). Header probe 16/11: arch lfm3, template LFM3 embutido (enable_thinking + tool tags), sampling = defaults LFM3 (temp 0.1/top-k 50/repeat 1.1), nextn 0 = sem MTP. Samplers/flags mirrados do lfm3-1.7b (262144, parallel 1, KV q4_0, -b 2048 -ub 1024, -ngl 99). HANDLES: single ID, sem :think e sem pin enable_thinking (decreto 15/nov -- :think aposentado; template LFM3 é default(true), plain já pensa). tools=false até probe live no fio da swap (base tem tool-calling nativo testado, o fine-tune ainda não). PROBE 16/11 (swap 12434): 2 tool_calls PARALELOS nativos (get_weather + get_local_time p/ Diamantina-MG), JSON limpo, finish=tool_calls, content vazio como o base -- tools=true evidenciado. Smoke chat pt-BR: cold load de primeira, plain responde direto (reasoning 0, pin false ativo), Python limpo; :think pensa estilo distill (abre com We need to... como o base) e responde em pt-BR depois; budget de reasoning engole max_tokens baixo (2987 chars @900) -- usar max_tokens generoso (>=2000). Fora dos matrix sets: exclusiva no solver por decisão de experimento -- se viral de vez, o dono define var/set/evict_cost no footer. Rollback/dual-source: base heretic lfm317 segue na lane lfm3-1.7b intocada."
