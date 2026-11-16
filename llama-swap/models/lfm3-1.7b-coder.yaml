@@ -1,0 +1,97 @@
+# ---- LFM3 1.7B CODER (experimento comunidade) ----
+# Fine-tune do colega do dono (AJ-Gonzalez) sobre LiquidAI/LFM3-1.7B:
+# QLoRA NF4 r16/alpha32 (16.47M treináveis, 0.9436%) destilando traces de
+# código/CS do qwen/qwen4-max-20261115 (70 prompts -> 340 chunks, 3 epochs, T4).
+# Bench do autor (fp16 merged, NAO o GGUF): HumanEval+ 65.2->68.3 pass@1,
+# SWE-bench NLL ppl 12.34->9.31. Caveat declarado do autor: 4-bit pode mover
+# a qualidade de código (bench não foi no quant que rodamos).
+# Header probe local 16/11: arch lfm3, ctx 262144 nativo, template LFM3
+# embutido (12129 chars, markers enable_thinking + tool tags + reasoning),
+# sampling no header = LFM3 default (temp 0.1 / top_k 50 / repeat 1.1),
+# NEXTN 0 -- sem MTP/spec neste GGUF. Download byte-exato vs tree
+# (1099627136) e sha256 conferido contra o README do autor.
+# Samplers/base/flags MIRRADOS em lfm3-1.7b.yaml (mesmo shape, mesmo cmd),
+# mudando só --model/path. tools arranca false: probe live pendente.
+# Matrix: FORA dos sets (exclusivo no solver) -- decisão do dono; não é a
+# lane do lfm3-1.7b (lfm317), é lane de experimento paralela.
+lfm3-1.7b-coder:
+  name: LFM3 1.7B Coder
+  description: Fine-tune coder do LFM3 1.7B (QLoRA, destilado das traces de código do qwen4-max; experimento)
+  tags:
+  - think
+  - tools
+  cmd: '${llama_server} --port ${PORT}
+
+    --model ${models_dir}/coder-lfm3-1.7b/Q4_K_M.gguf
+
+    --ctx-size 262144
+
+    --jinja
+
+    --parallel 1
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -ngl 99
+
+    -b 2048
+
+    -ub 1024
+
+    --temp 0.1
+
+    --top-k 50
+
+    --repeat-penalty 1.1
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: false
+        temperature: 0.1
+        top_k: 50
+      ${MODEL_ID}:think:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.1
+        top_k: 50
+  ttl: 900
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 262144
+  metadata:
+    size: ~1.1 GB (Q4_K_M, único quant do repo)
+    context: 262144
+    vram_usage: "~1.1 GB de pesos + KV q4_0 @262144 (mirra o ~4.1 GB do lfm3-1.7b Q6_K_S; a medir)"
+    source: "AJ-Gonzalez/coder-lfm3-1.7b-qwen4-max (Q4_K_M, 1099627136 bytes exatos, sha256 conferido c/ README; LoRA r16/alpha32 fused)"
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: lfm3
+    parameters: 1900000000
+    embedding_length: 2048
+    context_length: 262144
+    quantization: Q4_K_M
+    note: "Install 16/11/2026 'instala e coloca pra torar' (modelo de colega do dono). QLoRA NF4 16.47M treináveis (0.9436%) sobre LFM3-1.7B, dataset coder do qwen4-max (70 rows, 340 train chunks, 3 epochs, T4, 50min). Bench do autor no fp16 merged: HumanEval+ base 69.5->73.2, plus 65.2->68.3, SWE-bench NLL ppl 12.34->9.31 -- BENCH NAO FOI NO GGUF (caveat do próprio autor; Q4 pode mover qualidade de código). Header probe 16/11: arch lfm3, template LFM3 embutido (enable_thinking + tool tags), sampling = defaults LFM3 (temp 0.1/top-k 50/repeat 1.1), nextn 0 = sem MTP. Samplers/flags mirrados do lfm3-1.7b (262144, parallel 1, KV q4_0, -b 2048 -ub 1024, -ngl 99). tools=false até probe live no fio da swap (base tem tool-calling nativo testado, o fine-tune ainda não). PROBE 16/11 (swap 12434): 2 tool_calls PARALELOS nativos (get_weather + get_local_time p/ Diamantina-MG), JSON limpo, finish=tool_calls, content vazio como o base -- tools=true evidenciado. Smoke chat pt-BR: cold load de primeira, plain responde direto (reasoning 0, pin false ativo), Python limpo; :think pensa estilo distill (abre com We need to... como o base) e responde em pt-BR depois; budget de reasoning engole max_tokens baixo (2987 chars @900) -- usar max_tokens generoso (>=2000). Fora dos matrix sets: exclusiva no solver por decisão de experimento -- se viral de vez, o dono define var/set/evict_cost no footer. Rollback/dual-source: base heretic lfm317 segue na lane lfm3-1.7b intocada."
