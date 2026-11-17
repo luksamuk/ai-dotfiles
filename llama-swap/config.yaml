@@ -1111,8 +1111,8 @@ models:
       quantization: Q8_0
       note: 'INSTALADO 27/out (PR #31275 buildado localmente no branch fleet-liquid antes do merge upstream — tracker vigia o merge). SMOKE VERIFICADO: /v1/systemone com o payload real do laya-snake em 0.10s — respostas tipadas choice (turn_right 0.696 + probabilities {straight 0.200, turn_left 0.104}) e noul 0.320 (+ usage). Server detecta decision type lfm3-d1 automaticamente. Vision encoder incluso (mmproj) — decisões visual possiveis, AINDA nao UNLISTED até segunda ordem — d1-3b (seletor LoRA do diffuse) e julia-1 (ex-juiz do snake, APOSENTADO 11/11 — snake em refactor) foram os validados em produção. Este entra só depois de re-rodar o harness selecao_nway.py (skill llama-snake-decision-models) no caso do seletor e do testchat de juiz no caso do snake — um juiz ruim selecionável é armadilha ativa, conforme doutrina. decision da casa; GPU 0.10s e CPU = mesmo resultado bit a bit). Pesos em ~/.llama-models/lfm3-d1-2b/ (backbone + mmproj Q8_0).'
   gemma-4-26b-nsfw:
-    name: Gemma 4 26B-A4B NSFW (heretic)
-    description: 'Gemma 4 26B-A4B (MoE 4B ativos) decensorado NSFW (yukiworks heretic, KL 0.0411, refusals 0/100) — generalista sem filtro: chat, vision, tools, contexto nativo 256K. É o enhancer dflt da frota (diffuse/h3/ltx/musica), e aceita qualquer outro papel que caiba num 26B-A4B na 3050. Thinking sempre ligado por protocolo da frota.'
+    name: Gemma 4 26B-A4B (Heretic NSFW)
+    description: 'Gemma-4-26B-A4B-it decensorado via Heretic v2.2 com ARA otimizada em dataset focalizado de conteúdo adulto (yukiworks; KL 0.0411, refusals 0/100 no classificador do card vs 89/100 do base google/gemma-4-26B-A4B-it). MoE 26B com ~4B ativos por token, served por cafe -cmoe. Capacidades: chat, visão (mmproj Q8_0 em RAM via --no-mmproj-offload), tool calling nativo do template canônico, contexto 262144 nativo com KV q4_0 (medido no smoke 16/11). Papel primário na frota: enhancer de prompt (diffuse/h3/ltx/musica). Uso genérico de chat é suportado. Thinking habilitado por padrão via setParamsByID; o template canônico não expõe escada de effort.'
     tags:
     - think
     - nsfw
