@@ -1,8 +1,8 @@
 gemma-4-26b-nsfw:
-  name: Gemma 4 26B NSFW Enhancer
-  description: 'Gemma 4 26B-A4B (MoE 4B ativos) heretic NSFW (yukiworks, KL 0.0411, refusals 0/100) — enhancer de prompts
-    explicitos para chains H3/imagem. Protocolo novo: thinking SEMPRE ligado (kwarg enable_thinking). SEM escada de
-    effort: o template do Gemma 4 nao tem kwarg reasoning_effort e o dono definiu — não se limita reasoning-budget.'
+  name: Gemma 4 26B-A4B NSFW (heretic)
+  description: 'Gemma 4 26B-A4B (MoE 4B ativos) decensorado NSFW (yukiworks heretic, KL 0.0411, refusals 0/100) — generalista
+    sem filtro: chat, vision, tools, contexto nativo 256K. É o enhancer dflt da frota (diffuse/h3/ltx/musica), e aceita
+    qualquer outro papel que caiba num 26B-A4B na 3050. Thinking sempre ligado por protocolo da frota.'
   tags:
     - think
     - nsfw
@@ -98,7 +98,7 @@ gemma-4-26b-nsfw:
       deterministica: red circle upper-left + blue square lower-right, descrição exata, 6s ViT na CPU); CTX 262144 PASS
       (native max, total sistema 5352 MiB, decode ~23 t/s, finish=stop com think 1285 chars + content limpo @max_tokens
       1024; o content vazio de um probe @cap 64 era think burn, não contexto). RAW /completion sem template sai junk
-      (sampling da lane é pra chat, não FIM) — usar chat sempre. PAPEL: enhancer in-chain ANTES do render — sem
+      (sampling da lane é pra chat, não FIM) — usar chat sempre. PAPEL PRIMÁRIO: enhancer da frota de enhance (diffuse/h3/ltx/musica), in-chain ANTES do render — sem
       modelo paralelo no llama-swap durante chain (regra da casa). Piso de qualidade do quant: i1-IQ4_XS é piso, se a
       prosa vier evasiva subir p/ i1-Q4_K_M 15.6 GB (67 GB livres comportam). SMOKE 16/11 (célula única bare-server port
       8899): header limpo (658/658 tensores, gemma4moe, 128e/8a, template canônico com enable_thinking, SEM reasoning_effort).
