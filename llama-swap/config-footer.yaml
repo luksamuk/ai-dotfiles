@@ -3,9 +3,9 @@
 # Ideal para vLLM (startup lento = 30-90s sem warm-up)
 # NOTA: preloads desabilitados temporariamente — ocupam GPU e bloqueiam swap pra SGLang
 # Para reabilitar: descomente as linhas preload abaixo
-hooks:
-  on_startup:
-    preload: []
+# hooks:
+#   on_startup:
+#     preload: []
       # - "qwen3.5-0.8b-vllm"
       # - "lfm2.5-1.2b-vllm"
 
@@ -72,10 +72,9 @@ matrix:
     lfm24: lfm2.5-24b-a2b  # APOSENTADO COM HONRAS + SACRIFÍCIO DE DISCO 31/out (GGUF APEX I-Compact fora do disco; unlisted: true) — flag-ship LiquidAI MoE 24B/2.45B ativo (LiveClaw 48.09 > qwen3.6-35b 38.19), UD-Q4_K_XL 14.9GB, -cmoe receita laguna. Sem :think (always-think native). Régua N=5 na fila
     lfm24f: lfm2.5-24b-a2b-fast  # o challenger ik (-ot exps CPU) — A/B pós-smoke do cafe
     # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
-    orn35: ornith-1.5-35b-heretic  # 35B-A3B heretic — papel code do sprach (enable_thinking por handle)
-    orn35f: ornith-1.5-35b-heretic-fast  # reativado 24/out 2026 — challenger ik (MTP + defer/prefetch); fora dos sets, igual ao lfm24f/qwen-fast
+    # orn35: APOSENTADA 16/11/2026 (dono) — ornith-1.5-35b-heretic em _disabled/, GGUFs deletados; papel code do sprach sem dono por enquanto
+    # orn35f: idem (lane fast ik da mesma aposentadoria)
     ctiel: cyber-tiel-coder  # ATIVO 15/nov — Cyber-Tiel-Coder 35B (peculiar-ragdoll, finetune cybersec da ornith-1.5 abliterated) + MiniPlus IsValorum; MTP draft externo
-    ctielf: cyber-tiel-coder-fast  # lane fast ik proposital (--fit, MTP, hadamard; fora dos sets)
     groot: groot-19b  # ATIVO 15/nov — revival: GrootTeam 19B-A3B distill + MiniPlus IsValorum (8.42 GB); cafe -cmoe @200K, MTP embed
     grootf: groot-19b-fast  # lane fast ik proposital (-cmoe, MTP embed, hadamard; alvo 262K); fora dos sets
     # qw38c: qwen3.8-flash-coder  # APOSENTADO 15/nov/2026 (dono) — reprovado no gate agentic (doom-loop de path, R73k reasoning queimado; think-on code vazio) — fragment _disabled/ + epitaph; GGUF deletado
@@ -186,7 +185,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-heavy: "(mcv35 | orn35 | ctiel | groot) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4 | 15/nov: +ctiel 5o pesado +groot (troca do raonmini aposentado)
+    heavy: "(mcv35 | ctiel | groot) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4 | 15/nov: +ctiel 5o pesado +groot (troca do raonmini aposentado) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -247,11 +246,10 @@ heavy: "(mcv35 | orn35 | ctiel | groot) & (lfmcol | eg2) & qpfim & pkstt"  # 21/
     # lfm8: 2  # REMOVED Sep 10 2026
     # lfm26: 2  # APOSENTADO 21/out 2026
     # lfm24: 6  # APOSENTADO 31/out (q4_k_xl lento de remmap); acima do k2p(7) abaixo do heavy 9? medio-alto
-    orn35: 9  # 35B-A3B MoE (17GB) — recarregar é caro
-    orn35f: 9  # o fast/challenger ik — mesmo GGUF, mesmo custo de reload
+    # orn35: 9  # APOSENTADA 16/11/2026
+    # orn35f: 9  # idem
     # qw38c: 9  # APOSENTADO 15/nov/2026 (dono)
     ctiel: 9  # 35B MoE (16.8GB c/ draft+mmproj) — reload caro, classe orn35
-    ctielf: 9  # mesmo GGUF
     # qw38cf: 9  # aposentado junto
     # flintf: 9  # APOSENTADO 27/out/2026
     # flint: 9  # APOSENTADO 27/out/2026

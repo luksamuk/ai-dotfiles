@@ -1,0 +1,100 @@
+gemma-4-26b-nsfw:
+  name: Gemma 4 26B NSFW Enhancer
+  description: 'Gemma 4 26B-A4B (MoE 4B ativos) heretic NSFW (yukiworks, KL 0.0411, refusals 0/100) — enhancer de prompts
+    explicitos para chains H3/imagem. Protocolo novo: thinking SEMPRE ligado (kwarg enable_thinking). SEM escada de
+    effort: o template do Gemma 4 nao tem kwarg reasoning_effort e o dono definiu — não se limita reasoning-budget.'
+  tags:
+    - think
+    - nsfw
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
+    --model ${models_dir}/gemma4-heretic-nsfw/gemma-4-26B-A4B-it-heretic-NSFW.i1-IQ4_XS.gguf
+
+    --ctx-size 32768
+
+    --jinja
+
+    --parallel 1
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
+
+    -cmoe
+
+    -ngl 99
+
+    -b 512
+
+    -ub 128
+
+    --temp 0.7
+
+    --top-p 0.95
+
+    --top-k 20
+
+    --min-p ${code_min_p}
+
+    --repeat-penalty ${code_repeat_penalty}
+
+    --spec-type none
+
+    --metrics
+    '
+  filters:
+    stripParams: temperature, top_p
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: true
+  ttl: 0
+  health_check_timeout: 900
+  capabilities:
+    in:
+      - text
+    out:
+      - text
+    tools: false
+    reranker: false
+    context: 32768
+  metadata:
+    size: ~13.0 GB (i1-IQ4_XS, imatrix)
+    context: 32768
+    vram_usage: "MEDIDO 16/11 smoke: ~4.8 GB VRAM (4801 MiB no nvidia-smi); load 6s (page cache quente); decode ~27 t/s"
+    source: 'mradermacher/gemma-4-26B-A4B-it-heretic-NSFW-i1-GGUF (i1-IQ4_XS); decensor base yukiworks/gemma-4-26B-A4B-it-heretic-NSFW
+      (Heretic v2.2, dataset NSFW próprio, KL 0.0411 vs refusals 0/100 do classificador)'
+    base_model: google/gemma-4-26B-A4B-it
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: false
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: gemma4moe
+    parameters: 26000000000
+    active_parameters: 4000000000
+    context_length: 262144
+    quantization: i1-IQ4_XS
+    note: 'Espaço veio da aposentadoria com honras do Ornith 1.5 35B (16/11/2026, fragments em _disabled/). Template
+      canônico Gemma 4 EMBUTIDO no GGUF (sem --chat-template-file): controla thinking via kwarg enable_thinking (default
+      OFF do lado do template — setParamsByID força true) e injeta canal vazio <|channel>thought quando OFF. SEM escada de
+      effort: template não tem kwarg reasoning_effort e o dono determinou NÃO limitar --reasoning-budget (decisão 16/11) —
+      think livre, o tempo é o custo declarado. NÃO declarar reasoningEfforts nas capabilities (lição do Fara no minicpm: duplicaria o off no menu).
+      mmproj NÃO servido (1.1 GiB inútil pro papel; dono não vê NSFW). PAPEL: enhancer in-chain ANTES do render — sem
+      modelo paralelo no llama-swap durante chain (regra da casa). Piso de qualidade do quant: i1-IQ4_XS é piso, se a
+      prosa vier evasiva subir p/ i1-Q4_K_M 15.6 GB (67 GB livres comportam). SMOKE 16/11 (célula única bare-server port
+      8899): header limpo (658/658 tensores, gemma4moe, 128e/8a, template canônico com enable_thinking, SEM reasoning_effort).
+      PASSOU: think OFF no chat_template com sysprompt REAL do enhancer v2 (4402 chars = header 547 + _NSFW_V2_BASE)
+      entregou contrato flat 3 campos + vocab blunt (cock) + speaker ids + anti-speech; probe bruto idem (dick, cunt,
+      ejaculate); think ON + max_tokens 1200 = content VAZIO (think queima ~1900 tok; o cap era do PROBE, não da chain) —
+      a chain real do h3 CLI manda max_tokens 65536 (sem budget na prática) e os 1024/2048 do minimax_h3_handler são
+      vestigiais no caminho remote (jamais enviados). Decisão do dono (16/11): budget NENHUM na chain — já é o estado
+      real; o cap 512 do CLI é do VLM describe (outro papel, think off deliberado c/ nota 31/08), intocado. t/s probe1: 27.1.
+      Falha de probe = fragmento pra _disabled/ sem drama (precedente orn-fast).'
