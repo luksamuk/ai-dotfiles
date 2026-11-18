@@ -35,3 +35,13 @@ que desliga TUDO o que aceita env:
 - Mythos: o CLI 2.1.327 não tem env `ANTHROPIC_DEFAULT_MYTHOS_MODEL` (é
   availability-gated: `isMythosAvailable`); Fable tem env completo e está
   mapeado.
+
+## ARMADILHA: settings.json `env` sobrepõe o wrapper
+
+O `~/.claude/settings.json` aplica o bloco `env` POR CIMA do ambiente do
+processo — um resto do claude-local antigo assado lá (`ANTHROPIC_BASE_URL=11434`,
+trio deepseek, telemetria) fazia o wrapper rotear pro ollama mesmo com o picker
+em llama-swap (banner mostrava deepseek-v4.1-flash:cloud). Limpado em 17/nov:
+o único key que ficou é `CLAUDE_CODE_MAX_CONTEXT_TOKENS` (claude-específico).
+**Nunca voltar a colocar `ANTHROPIC_*`/telemetria no settings.json** — o
+claude-local é a fonte única de verdade dessas envs.
