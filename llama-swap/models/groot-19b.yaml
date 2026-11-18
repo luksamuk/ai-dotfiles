@@ -1,18 +1,20 @@
-# -------------------------------------------
-# GROOT-19B - cafe-llama.cpp (-cmoe) — REVIVAL 15/nov/2026 da lane aposentada (era UD-IQ2 ~12 GB, lenta demais).
-# Agora MiniPlus IsValorum: 8.42 GB (qwen35moe, 19B-A3B distill da GrootTeam — metodo de escala undisclosed).
-# MTP EMBED (blk.40.nextn): --spec-type draft-mtp; o autor NAO benchmarkou o spec — medir aceitacao no smoke,
-#   se degradar, remover o --spec-type (quickstart do card mostra com e sem).
-# Vision mmproj q8_0 (0.61 GB) — NAO re-avaliada pos-quant pelo autor; --no-mmproj-offload = custo zero.
-# Always-think (comeca em thinking; enable_thinking:false por request desliga) — SEM reasoningEfforts (classe Fara).
-# Samplers OFICIAIS do card (precise coding): temp 0.6 / top-p 0.95 / top-k 20 / min-p 0.0 / repetition_penalty 1.0.
-# Card manda llama.cpp b12017+ (build da frota e a frente disso).
-# Escada: 200000 estreia (espelho da familia; escada 262144 quando medir).
-# -------------------------------------------
 groot-19b:
+  # CONSOLIDACAO 17/nov/2026 (dono): a -fast ik vira o default (id de produto, sem
+  # sufixo; decreto de handle unico) e a lane cafe sai. Mesmos pesos MiniPlus V2.1
+  # (as duas lanes compartilhavam os arquivos — nada de disco mudou).
+  # Receita ik = a do -fast; ALVO ctx nativo 262144 (SMOKE OBRIGATORIO: o antigo
+  # UD estourava o draft no prefill longo, 502/exit; MiniPlus promete aguentar —
+  # escada 200000 -> 131072 se o boot/prefilly longo estourar, ver epitaph no git).
+  # MTP EMBED (blk.40.nextn) --spec-type mtp:n_max=1,p_min=0.0: autor NAO
+  # benchmarkou o spec — medir aceitacao no fio; degradou, remover o --spec-type.
+  # KV q4_0 + hadamard (proven na familia qwen35moe/ik). defer/prefetch = mmap.
+  # Vision mmproj q8_0 (0.61 GB) nao re-avaliada pos-quant; --no-mmproj-offload.
+  # Always-think (classe Fara): SEM reasoningEfforts.
+  # Samplers OFICIAIS do card ("precise coding"): 0.6/0.95/20/min-p 0.0/rep 1.0.
   name: Groot-19B-A3B
-  description: GrootTeam 19B-A3B MoE distill (qwen35moe), uncensored multipurpose agent; MiniPlus quant, MTP-capable, vision optional.
-  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+  description: GrootTeam 19B-A3B MoE distill (qwen35moe), uncensored multipurpose agent;
+    MiniPlus quant, MTP-capable, 262K native context, vision optional.
+  cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/groot-19b/Groot-19B-A3B-261023.APEX-I-MiniPlus-V2.1.gguf
 
@@ -20,13 +22,15 @@ groot-19b:
 
     --no-mmproj-offload
 
-    --spec-type draft-mtp
-
     --jinja
 
-    --parallel 1
+    -ngl 99
 
-    --ctx-size 200000
+    -cmoe
+
+    --spec-type mtp:n_max=1,p_min=0.0
+
+    --ctx-size 262144
 
     --temp 0.6
 
@@ -40,15 +44,23 @@ groot-19b:
 
     --reasoning-budget 8192
 
-    --cache-type-k q4_0
+    --parallel 1
 
-    --cache-type-v q4_0
+    --parallel-tool-calls
 
-    --flash-attn on
+    --cache-type-k ${large_cache_k}
 
-    -cmoe
+    --cache-type-v ${large_cache_v}
 
-    -ngl 99
+    --k-cache-hadamard
+
+    --v-cache-hadamard
+
+    --flash-attn auto
+
+    --defer-experts
+
+    --prefetch-experts
 
     -b 512
 
@@ -67,19 +79,19 @@ groot-19b:
   health_check_timeout: 900
   capabilities:
     in:
-    - text
-    - image
+      - text
+      - image
     out:
-    - text
+      - text
     tools: true
     reranker: false
-    context: 200000
+    context: 262144
   metadata:
     size: ~8.42 GB + 0.61 GiB mmproj q8_0
-    context: 200000
-    vram_usage: ~4 GB VRAM estimado (19B dense menor; medir no smoke)
+    context: 262144
+    vram_usage: "~3.9 GB VRAM + ~11.5 GB RAM (medido 17/nov com lfm24 evictada; EffectCraft 75 MB fora do swap)"
     source: IsValorum/Groot-19B-A3B-261023-APEX-I-MiniPlus-V2.1-GGUF (base GrootTeam/Groot-19B-A3B-261023)
-    kv_cache: q4_0/q4_0
+    kv_cache: q4_0/q4_0 + hadamard
     features:
       completion: true
       tools: true
@@ -94,4 +106,9 @@ groot-19b:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX-I-MiniPlus
-    note: 'Card s/ auditoria de PPL (base self-reportado da GrootTeam); vision pos-quant nao re-avaliada; scaling method undisclosed. MTP nao benchmarkado (medir no smoke). Sem reasoningEfforts (always-think).'
+    note: 'Card sem auditoria de PPL (base self-reportado da GrootTeam; scaling method
+      undisclosed). Sem reasoningEfforts (always-think). CONSOLIDACAO 17/nov: lane cafe
+      (-cmoe, 200K, spec draft-mtp) deletada; a -fast ik vira o id unico. 262144 VALIDADO
+      17/nov no fio: boot 9s, prompt 44K @185 t/s SEM 502/estouro de draft (modo de falha
+      do UD nao reproduziu), decode 22-32 t/s, reasoning presente. VRAM/RAM medidos no
+      boot+prefill 44K.'
