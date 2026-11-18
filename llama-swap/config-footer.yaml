@@ -152,7 +152,7 @@ matrix:
     # nbe4: nemotron-bolt-e4b  # APOSENTADO 31/10/2026 (dono) — GGUFs (UD-Q4_K_XL 5.1G + dflash draft) deletados, fragment _disabled/; restore: re-download unsloth (GATED)
     lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + [handle-think-EXTINTO 12/nov/2026]), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despejava (ping-pong cravado no journal 30/out 14:53)
     mcv47: minicpm-v-4.7-35b  # REATIVADO 11/nov (unlisted removido): MoE visual 35B-A3B (mix q3gud_im 15.5GB, experts RAM ~11G, 5G VRAM, 131K ctx, dual think-ON + effort off/high). LISTED sem var = exclusivo no solver (lição lfm317 30/out)
-    sn9: sensenova-loop-9b  # REATIVADO 17/nov/2026 — release final, lane CPU-only (nao concorre por VRAM)
+    # sn9: sensenova-loop-9b  # RETIRADO de novo 17/nov ~23:20 (prefill O(n^2) em CPU mata agente; epitaph em _disabled/) 
     # sn9v: sensenova-loop-9b-vision  # RETIRADO junto # fragment em _disabled/
 
   sets:
@@ -266,7 +266,7 @@ matrix:
     lfm317: 2  # 1.7B Q8 ~2GB GPU
     spc: 1   # Portal core Space 362MB — reload segundos
     fct: 2   # Portal core Fact 1.2GB — reload rápido
-    sn9: 2  # REATIVADO 17/nov/2026 CPU-only (mmap; reload segundos)
+    # sn9: 2  # retirado junto 17/nov
     # sn9v: 4  # RETIRADO junto
     # g12p: 3  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%)
     # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)

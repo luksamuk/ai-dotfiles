@@ -8,7 +8,7 @@
 # (tracker: entrada SenseNova-Loop-9B vigia o PR).
 sensenova-loop-9b:
   name: SenseNova Loop 9B
-  description: "SenseNova Loop 9B is a 9B text model from SenseTime deployed with a 16K context window.
+  description: "SenseNova Loop 9B is a 9B text model from SenseTime deployed with a 128K context window.
     Built for general chat, agentic tasks and creative work; it excels at structured creative reasoning
     and motion design oriented workflows. Handles: thinking on by default."
   tags:
@@ -28,7 +28,7 @@ sensenova-loop-9b:
 
     -ngl 0
 
-    --ctx-size 16384
+    --ctx-size 131072
 
     -fa on
 
@@ -59,10 +59,10 @@ sensenova-loop-9b:
       - text
     tools: true
     reranker: false
-    context: 16384
+    context: 131072
   metadata:
     size: ~4.6 GB (Q3_K_M)
-    context: 16384
+    context: 131072
     vram_usage: CPU-only
     source: guideboardlabs/SenseNova-Loop-9B-GGUF (Q3_K_M) — base sensenova/SenseNova-Loop-9B (Apache 2.0)
     kv_cache: q4_0/q4_0
@@ -88,9 +88,12 @@ sensenova-loop-9b:
       full-CPU); CPU-only = decode 6.06 t/s / prefill 382 t/s @3.8K tokens (20 threads; 6 threads =
       5.91 t/s, E-cores indiferentes) e 16K em RAM com folga — CPU-only escolhido pro convivio com
       EffectCraft. CUDA_VISIBLE_DEVICES= vazio no cmd: build e GGML_CUDA e o flag garante 0 VRAM.
+      CTX 131072 (17/nov/noite, dono): 16K estourou no pi — overhead do harness ~20K tokens
+      (system prompt + catalogo de tools) nao cabia; CPU-only custa RAM e 21GB livres comportam
+      o cap da casa; prefill CPU 380 t/s absorve o 20K do pi em ~52s por turno.
       Sampler = gen config do card final via README do maintainer (temp 1.0, top_p 0.95), thinking on.
       SEM escada de effort: template do GGUF tem 0 hits de reasoning_effort; dual apenas por
-      enable_thinking (bool) — handle unico com pin true (decreto 12/nov). ctx 16384 e o DEPLOYED
+      enable_thinking (bool) — handle unico com pin true (decreto 12/nov). ctx DEPLOYED 131072
       (native 524288, YaRN x2 no GGUF). tools: template com blocos completos; probe na rota do swap
       pendente no deploy (legado do Preview passou 31/out) — falhando, flipar tools false + rebuild.
       Arch sensenova_loop so roda no fork (mission-deny/GuideboardLabs; GGML mHC ops em CPU+CUDA+Vulkan);

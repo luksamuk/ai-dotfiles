@@ -2112,79 +2112,6 @@ models:
       embedding_length: 2560
       quantization: UD-IQ1_M
       note: 'RESULTADO E DESTINO. Pesos removidos do disco 04/nov de manha POR DECRETO do dono apos o veredito do teste noturno (lane segue na frota, unlisted). EDIT 03-04/nov pos-probe-19B: cache-experts 8 → set vencedor da escada --ssd-predict + --ssd-io-threads 4 + --ssd-cache-mb 4096 (19B mediu 14.6 → 33-34 t/s com esses knobs; configemprestada SEM re-teste neste modelo — probe pendente do reinstall). VEREDITO DO TESTE NOTURNO: INVIAVEL nesta maquina como lane de uso. MEDIDAS (llama-server standalone, greedy, ctx 16k, q8_0 KV, 6 threads): (1) L1NOMTP (-cmoe, experts mmap/page-cache): decode 0.15 t/s QUENTE, prefill 0.21-0.28 t/s. (2) L3C (-ssd cache-experts 8): decode 1.19-1.55 t/s steady, prefill 0.83-1.04 t/s — IO-bound (0.4 GiB de experts random 4K por token). (3) L3MTP: decode 0.72 t/s — MTP NEGATIVO em IO-bound (2a confirmacao: escada 19B pé F tb negativa). PREFILL de 2k tokens = 35-40 min — inviavel pra agente INDEPENDENTE de knobs. VRAM 1.3 GiB livre (regua passa). RAM ~75%, zero thrash. Tool calling FUNCIONA (finish_reason=tool_calls) mas exige enable_thinking false. Crash do -ssd c/ qwen4exp NAO reproduz no build atual. RESTORE: hf download unsloth/Qwen3.8-Flash-Next-GGUF --include "UD-IQ1_M/*" --local-dir ~/.llama-models/qwen38-flash-next-ud-iq1m/ + hf download quimmedes/Qwen3.8-Flash-Next-MTP-GGUF mtp-Qwen3.8-Flash-Next-Q4_0.gguf --local-dir ~/.llama-models/qwen38-flash-next-ud-iq1m/mtp/. Artefatos e reatorio: ~/.llama-models/qwen38-flash-next-lane/.'
-  sensenova-loop-9b:
-    name: SenseNova Loop 9B
-    description: 'SenseNova Loop 9B is a 9B text model from SenseTime deployed with a 16K context window. Built for general chat, agentic tasks and creative work; it excels at structured creative reasoning and motion design oriented workflows. Handles: thinking on by default.'
-    tags:
-    - think
-    - tools
-    proxy: http://127.0.0.1:${PORT}
-    checkEndpoint: /health
-    cmd: 'env CUDA_VISIBLE_DEVICES= LD_LIBRARY_PATH=${env.HOME}/projects/ai/sensenova-loop-fork/build/bin ${sensenova_server}
-
-      --port ${PORT}
-
-      -m ${models_dir}/sensenova-loop-9b/SenseNova-Loop-9B-Q3_K_M.gguf
-
-      --jinja
-
-      --parallel 1
-
-      -ngl 0
-
-      --ctx-size 16384
-
-      -fa on
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --no-webui
-
-      --metrics
-
-      '
-    cmdStop: pkill -f 'sensenova-loop-fork/build/bin/llama-server'
-    ttl: 900
-    health_check_timeout: 300
-    filters:
-      stripParams: temperature, top_p, reasoning_effort
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 1.0
-          top_p: 0.95
-    capabilities:
-      in:
-      - text
-      out:
-      - text
-      tools: true
-      reranker: false
-      context: 16384
-    metadata:
-      size: ~4.6 GB (Q3_K_M)
-      context: 16384
-      vram_usage: CPU-only
-      source: guideboardlabs/SenseNova-Loop-9B-GGUF (Q3_K_M) — base sensenova/SenseNova-Loop-9B (Apache 2.0)
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: sensenova_loop
-      parameters: 9200000000
-      context_length: 524288
-      embedding_length: 4096
-      quantization: Q3_K_M
-      note: 'REATIVADO 17/nov/2026 com o release final (saiu do -Preview, sem gating; GGUF text-only, visao/MTP fora). MEDIDAS 17/nov na 3050 6GB (binario fork, Q3_K_M): full GPU -ngl 99 = decode 17.8-17.9 t/s INVARIANTE com ctx 2K-16K (híbrido DeltaNet: prefill 105-142 t/s), 16K @94% VRAM, 24K+ OOM (degrau fixo de compute do grafo loopeado); offload -ngl 28/30 = 7.0-7.2 t/s e prefill colapsa pra 14 t/s (sync GPU-CPU por token sobre 56 execucoes; 2 camadas ja custam quase o full-CPU); CPU-only = decode 6.06 t/s / prefill 382 t/s @3.8K tokens (20 threads; 6 threads = 5.91 t/s, E-cores indiferentes) e 16K em RAM com folga — CPU-only escolhido pro convivio com EffectCraft. CUDA_VISIBLE_DEVICES= vazio no cmd: build e GGML_CUDA e o flag garante 0 VRAM. Sampler = gen config do card final via README do maintainer (temp 1.0, top_p 0.95), thinking on. SEM escada de effort: template do GGUF tem 0 hits de reasoning_effort; dual apenas por enable_thinking (bool) — handle unico com pin true (decreto 12/nov). ctx 16384 e o DEPLOYED (native 524288, YaRN x2 no GGUF). tools: template com blocos completos; probe na rota do swap pendente no deploy (legado do Preview passou 31/out) — falhando, flipar tools false + rebuild. Arch sensenova_loop so roda no fork (mission-deny/GuideboardLabs; GGML mHC ops em CPU+CUDA+Vulkan); upstream ggml-org: FR #31571 aberto; ik_llama.cpp PR #2936 draft — merge dispara o descarte. HISTORIA PREVIEW (aposentado 31/out, broxou em offload + vocab): 16.2 t/s @16K ngl 88 Vulkan, ladder em sn9-ladder.sh (git log).'
   translategemma-4b:
     name: TranslateGemma 4B
     description: Open translation models built on Gemma 3, helping people communicate across 55 languages. The 4B variant is optimized for mobile and edge devices.
@@ -2364,7 +2291,6 @@ matrix:
     raon: raon-1-nano
     lfm317: lfm3-1.7b
     mcv47: minicpm-v-4.7-35b
-    sn9: sensenova-loop-9b
   sets:
     small_vision: (lfm24 | spc | fct | mcv47) & (lfmcol | eg2) & pkstt
     small_embed: (lfm24 | sp26 | raon | lfm317 | spc | fct) & (lfmcol | eg2) & qpfim & pkstt
@@ -2388,7 +2314,6 @@ matrix:
     lfm317: 2
     spc: 1
     fct: 2
-    sn9: 2
     eg2: 1
     lfmcol: 1
     tg: 2
