@@ -33,6 +33,14 @@ de candidatos. Não preencha resultados do teste final antecipadamente.
 - Dados e revisões; filtros de contaminação:
 - Uso de dados, gradientes, forwards, checkpoints treinados/metamodelos:
 
+## 3A. Editor, target e evaluator
+
+- Editor/target são modelos separados? Identidade, revision, provider e harness:
+- Evidência prévia do editor nessa classe de tarefa, não só coding benchmark:
+- Resultados da escada: tooling read-only, no-ops/impossíveis, reparo pequeno:
+- Quem possui aceitação e deploy externos ao editor:
+- Editor/target grandes alternam lanes? Plano sequencial/externo e custo:
+
 ## 4. Splits
 
 | Split | Itens/entidades | Pode ver outputs? | Pode escolher hiperparâmetros? |
@@ -77,7 +85,17 @@ Descreva cada braço:
 - Text-only com mesma informação de tokens/metadata; controles delta-only,
   wrong/shuffled/statistics-only/no-tokenizer quando aplicáveis:
 
-## 6B. Operação
+## 6B. Campos adicionais para síntese de políticas
+
+- Ambiente, versão do simulador e contrato observação -> ações:
+- Estado completo/histórico e arquitetura mínima da política:
+- Features/caminhos/candidatos/safety calculados fora da rede:
+- Baselines aleatória, algorítmica/oracle e RL/imitação/busca evolutiva:
+- Seeds/episódios/mapas/tamanhos held-out e unidade estatística:
+- Score, colisões, loops/timeouts, latência e critérios de vitória/autonomia:
+- Editor removido do loop no artefato final? Formato/runtime e GGUF=N/A?:
+
+## 6C. Operação
 
 - Fórmula e orientação dos tensores:
 - Tensors, shapes, índices, layers/components/experts:

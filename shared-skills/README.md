@@ -6,7 +6,7 @@ default e no profile Hefesto; esta cópia preserva o mesmo pacote completo.
 
 ## Conteúdo
 
-- `weight-space-programming/`: WSP/WSR v2.0.0, protocolo, evidências,
+- `weight-space-programming/`: WSP/WSR v2.1.0, protocolo, evidências,
   bibliografia e template de pré-registro.
 - `cua-driver/`: conteúdo real do symlink compartilhado, snapshot da versão
   0.51.5; o host tinha uma instalação filtrada por plataforma.

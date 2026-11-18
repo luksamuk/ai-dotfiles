@@ -1,7 +1,7 @@
 ---
 name: weight-space-programming
 description: "Use ao ler/editar pesos; exige controles e validação."
-version: 2.0.0
+version: 2.1.0
 author: Hermes Agent
 license: CC0
 metadata:
@@ -41,6 +41,29 @@ metamodelos entram como métodos relacionados, com suas próprias premissas.
 
 “Sem gradiente” descreve apenas uma restrição de otimização. Não diga que é
 zero-data, zero-feedback, barato ou sem treino em todo o pipeline sem provar.
+
+## Escolha do editor: não confunda com o alvo
+
+Editor, target e evaluator são papéis separados. O editor pode ser local ou
+remoto, maior ou menor que o target; self-reading não é default nem vantagem
+comprovada. Não escolha por parâmetros, coding benchmark ou reputação isolados:
+escrever tooling não prova leitura causal de pesos.
+
+Antes de confiar num editor, faça uma escada mínima:
+
+1. **Tooling read-only:** shapes, nomes, índices, código seguro e resultados
+   reproduzíveis, sem inventar outputs.
+2. **Controles de leitura:** text-only, no-ops, edits impossíveis e inertes;
+   meça BA, recall direcional, specificity e falsos alarmes.
+3. **Reparo conhecido em target pequeno:** base, random norm-matched, no-op e
+   guards, sem deixar o editor aprovar o próprio edit.
+4. **Confirmação no target pretendido:** sessões repetidas e teste final
+   externo. Só então promova o editor para essa classe de tarefa.
+
+O evaluator externo, com gates pré-registrados, é dono da aceitação. O editor
+propõe hipóteses e código, nunca concede o próprio deploy. Para editor e target
+grandes na mesma máquina, planeje avaliação sequencial ou externa; evitar
+evictions/thrashing por alternância de lanes a cada iteração.
 
 ## Fontes e leitura para o usuário
 
@@ -88,10 +111,34 @@ não evidência final. Diga se é preprint, blog, working paper ou revisado.
 | Combinar checkpoints da mesma base | Task arithmetic/TIES/DARE/mergekit | Subtrair modelos de bases/tokenizers diferentes |
 | Atualização frequente ou rollback imediato | Adapter/memória externa/GRACE/SERAC | Internalizar à força no checkpoint |
 | Já existe LoRA/delta | Materializar, alinhar ou fatorar o delta existente | Dizer que SVD/LoRA criou conhecimento sem treino |
+| Criar política para jogo/controle | WSP do zero ou reparo localizado + simulador externo | Supor que um scorer pretrained aprende a estratégia por edição |
 | Criar modelo pequeno e legível do zero | Closed-form WSP/iWSP; considerar arquitetura esparsa | Extrapolar para substituir LLMs pretrained |
 | Só há GGUF quantizado | Localizar fonte BF16; editar e requantizar | Tratar dequantização como recuperação da precisão |
 
 Detalhes e referências dessas rotas: `references/methods-and-validation.md`.
+
+### Síntese de políticas para jogos e controle
+
+Este é um caso de síntese ou reparo, não substituição automática de fine-tune.
+Use-o quando as regras/observações permitem especificar uma política pequena ou
+quando uma política existente tem falha concentrada. Não assuma que um scorer
+pretrained aprenderá uma estratégia espacial difusa só por weight editing.
+
+- Fixe primeiro o contrato `observação -> ações`, se o estado é completo ou se
+  há histórico, e a arquitetura mínima da política.
+- Use simulador headless como evaluator externo, com seeds/episódios held-out.
+  O editor pode receber métricas e traces sem controlar o aceite.
+- Inclua política aleatória, algoritmo conhecido/oracle e, quando pertinentes,
+  RL/imitação ou busca evolutiva. WSP precisa vencer em qualidade ou custo, não
+  apenas ser mais sofisticado.
+- Declare o que o harness calcula: features, caminhos, candidatos e safety.
+  Se um algoritmo externo escolhe a ação e a rede apenas a copia, a inteligência
+  não está nos pesos.
+- Separe **autonomia** de **vitória**. Depois de compilada, a política roda sem
+  o editor no loop; isso não prova win rate, generalização ou ausência de loops.
+- Meça score, colisões, timeouts/loops, truncamento, latência e transferência a
+  seeds/mapas/tamanhos não usados na descoberta. Materialize no runtime real;
+  GGUF é N/A quando a política usa outro formato.
 
 ## Fluxo operacional
 

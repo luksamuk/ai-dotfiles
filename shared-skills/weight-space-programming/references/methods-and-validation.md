@@ -18,6 +18,7 @@ pesos de WSP. Links e contexto bibliográfico: `papers.md`.
 | Steering compilado | Direção e writer locais; distribuição de inputs | Persistência sem hook | Aproximação dependente de contexto; evidência após quantização estreita |
 | LoRA/SVD/low-rank | Delta/adapters existentes | Materialização, rollback, compressão e merge | Fatoração não cria conhecimento; PiSSA e variants ainda treinam |
 | WSR/metanetworks/probes | Model zoo e encoder/probe treinado, ou WSR zero-shot com edit dado | Predizer/triar propriedades | Predição não implica causalidade nem fornece edit; specialist não é plug-and-play |
+| Síntese de política para controle | Regras/observações especificáveis ou falha concentrada; simulador externo | Escrever política pequena e retirar editor do loop | Não prova aprendizado difuso; baseline algorítmico/RL pode vencer |
 
 ## 2. Knowledge editing
 
@@ -211,6 +212,20 @@ Não os apresente como leitor pronto para qualquer LLM local.
       isso de suporte armazenado ou esparsidade real.
 - [ ] Edits sequenciais testados para retenção/forgetting, não só último alvo.
 - [ ] “Mínimo” significa ponto fixo do algoritmo/candidato, não mínimo global.
+
+### Síntese de políticas e controle
+
+- [ ] Editor, target e evaluator são papéis separados; editor não aprova o
+      próprio candidato nem concede deploy.
+- [ ] Editor passou por tooling read-only, no-ops/impossíveis e reparo pequeno;
+      coding benchmark isolado não conta como prova de weight reading.
+- [ ] Contrato observação/ações, histórico e arquitetura mínima estão fixados.
+- [ ] Simulador headless, episódios/seeds/mapas held-out e unidade estatística
+      definidos; aleatória, oracle/algoritmo e RL/ES incluídos quando pertinentes.
+- [ ] Computação feita pelo harness é declarada; copiar ação do oracle não conta
+      como inteligência aprendida/escrita na rede.
+- [ ] Autonomia sem editor no loop é separada de win rate, colisões, loops,
+      timeouts, latência e generalização.
 
 ### Persistência e release
 
