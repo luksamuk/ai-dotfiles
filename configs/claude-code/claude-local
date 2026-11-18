@@ -106,11 +106,12 @@ for m in data.get("data", []):
     seen.add(mid); seen.add(name)
     label = mid + (" [vision]" if f.get("vision") else "")
     shown.append(label)
-print(" ".join(shown))
+vis = sum(1 for s in shown if "[vision]" in s)
+print("\n".join(shown))
 if sum(hidden.values()):
     detail = " · ".join(f"{v} {k}" for k, v in sorted(hidden.items()))
     print("HIDDEN:" + detail, file=sys.stderr)
-print(f"VISION_OK:{sum(1 for s in shown if '[vision]' in s)}", file=sys.stderr)
+print(f"VISION_OK:{vis}", file=sys.stderr)
 PY
 }
 
@@ -126,7 +127,7 @@ for m in data.get("models", []):
     if not name: continue
     caps = m.get("capabilities") or m.get("details", {}).get("capabilities") or []
     out.append(name + (" [vision]" if "vision" in caps else ""))
-print(" ".join(out))
+print("\n".join(out))
 PY
 }
 
@@ -138,7 +139,7 @@ if [ -z "$MODEL" ]; then
         *)      LIST=$(list_swap) ;;
     esac
     [ -z "${LIST:-}" ] && { echo "claude-local: nenhum modelo listado em $BASE_URL" >&2; exit 1; }
-    CHOICE=$(printf '%s\n' $LIST | gum choose --header "modelo em $PROVIDER ([vision] aceita imagem)") || exit 1
+    CHOICE=$(printf '%s\n' "$LIST" | gum choose --header "modelo em $PROVIDER ([vision] aceita imagem)") || exit 1
     MODEL=$(printf '%s' "$CHOICE" | awk '{print $1}')
 fi
 
