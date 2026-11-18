@@ -1,0 +1,157 @@
+#!/bin/sh
+# claude-local — Claude Code roteado pro Ollama ou pro llama-swap, telemetria desligada.
+#
+# Uso:
+#   claude-local                              # picker gum: provider -> modelo
+#   claude-local --provider swap --model lfm2.5-24b-a2b   # pula o picker
+#   claude-local -p "resuma o repo"           # flags passthrough pro claude
+#
+# Verificado 17/nov/2026: llama-swap v216 expõe /v1/messages (Anthropic) e as
+# lanes ik (lfm2.5, cyber-tiel) e cafe (gemma) respondem com thinking blocks —
+# o roteamento anthropic->swap->backend funciona pra frota inteira.
+#
+# Motivo do wrapper: `ollama launch claude` NÃO desliga DISABLE_TELEMETRY
+# (métricas Statsig/GrowthBook). Não liga firewall — bloquear os domínios de
+# telemetria faz o Claude Code entrar em retry storm em /api/hello (90% dos
+# requests, medido em 2026 no relatório da Chaser Systems).
+
+set -u
+
+OLLAMA_URL="${CLAUDE_LOCAL_OLLAMA:-http://127.0.0.1:11434}"
+SWAP_URL="${CLAUDE_LOCAL_SWAP:-http://127.0.0.1:12434}"
+
+# Roteamento: nada sai pra api.anthropic.com (provider/model decididos abaixo;
+# envs exportadas uma vez no fim). ANTHROPIC_API_KEY vazio + AUTH_TOKEN dummy:
+# o claude manda Bearer dummy, os gateways locais ignoram.
+ANTHROPIC_AUTH_TOKEN=ollama
+ANTHROPIC_API_KEY=""
+CLAUDE_CODE_ATTRIBUTION_HEADER=0
+
+# Telemetria / tráfego não-essencial
+DISABLE_TELEMETRY=1
+CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+DISABLE_ERROR_REPORTING=1
+DISABLE_FEEDBACK_COMMAND=1
+CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY=1
+DO_NOT_TRACK=1
+
+# Updates e afins
+# DISABLE_UPDATES removido (2026-09-18): travava o `claude update` manual
+# ("Updates are disabled by your administrator"). DISABLE_AUTOUPDATER fica:
+# sem update automático escondido, só manual.
+DISABLE_AUTOUPDATER=1
+DISABLE_COST_WARNINGS=1
+CLAUDE_CODE_DISABLE_AUTO_MEMORY=1
+CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL=1
+CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1
+
+# OpenTelemetry: sem exporters (caso algum plugin tente emitir)
+OTEL_LOGS_EXPORTER=none
+OTEL_METRICS_EXPORTER=none
+OTEL_TRACES_EXPORTER=none
+
+# ── Provider ────────────────────────────────────────────────────────────────
+PROVIDER="${CLAUDE_LOCAL_PROVIDER:-}"
+MODEL="${CLAUDE_LOCAL_MODEL:-}"
+# Parser POSIX sem word-splitting: consome --provider/--model no FRENTE e
+# empurra o resto pro fim de "$@" (claude recebe os dele intactos).
+# NAO passar --model pro claude: o estado global dele restaura o ultimo modelo
+# usado e o CLI valida nomes client-side (unrecognized_model). Correcao
+# canonica: --model sonnet no exec (alias valido) + trio ANTHROPIC_DEFAULT_*_MODEL
+# fazendo o remap (mesmo padrao do exemplo HF).
+NEED_ROTATE=$#
+while [ $NEED_ROTATE -gt 0 ]; do
+    case "$1" in
+        --provider) PROVIDER="$2"; shift 2; NEED_ROTATE=$((NEED_ROTATE-2)) ;;
+        --model)    MODEL="$2"; shift 2; NEED_ROTATE=$((NEED_ROTATE-2)) ;;
+        *)   set -- "$@" "$1"; shift; NEED_ROTATE=$((NEED_ROTATE-1)) ;;
+    esac
+done
+if [ -z "$PROVIDER" ]; then
+    [ -t 0 ] || { echo "claude-local: sem TTY; use --provider/--model ou CLAUDE_LOCAL_*" >&2; exit 1; }
+    PROVIDER=$(gum choose --header "provider para o Claude Code" ollama llama-swap) || exit 1
+fi
+case "$PROVIDER" in
+    ollama) BASE_URL="$OLLAMA_URL" ;;
+    llama-swap|swap) BASE_URL="$SWAP_URL" ;;
+    *) echo "claude-local: provider invalido '$PROVIDER' (ollama|llama-swap)" >&2; exit 1 ;;
+esac
+
+# ── Listagem de modelos (mesmo criterio do picker do testchat) ──────────────
+# llama-swap: /v1/models + filtro de nao-chat (tts/embedding/image-gen/asr/
+# decision-only, dedupe por id+name) + contagem de ocultos. [vision] marca
+# modelos que aceitam imagem em /v1/messages; sem flag client de inhibicao no
+# claude — em modelo sem [vision] a recusa vem do server com 400 explicito.
+list_swap() {
+    python3 - "$SWAP_URL" <<'PY'
+import json, sys, urllib.request
+data = json.load(urllib.request.urlopen(sys.argv[1] + "/v1/models", timeout=5))
+shown, seen, hidden = [], set(), {}
+for m in data.get("data", []):
+    mid, name = m.get("id") or "", m.get("name") or ""
+    if not mid or mid in seen or name in seen:
+        continue
+    f = ((m.get("meta") or {}).get("llamaswap") or {}).get("features") or {}
+    c = m.get("capabilities") or {}
+    out = (m.get("architecture") or {}).get("output_modalities") or []
+    cat = None
+    if f.get("tts") or c.get("audio_speech") or "audio" in out: cat = "tts"
+    elif f.get("embedding") or c.get("embeddings"): cat = "embedding"
+    elif (f.get("image") or "image" in out) and not f.get("completion"): cat = "image"
+    elif c.get("audio_transcriptions") and not f.get("completion"): cat = "asr"
+    elif f.get("decision") and not f.get("completion"): cat = "decision"
+    if cat:
+        hidden[cat] = hidden.get(cat, 0) + 1
+        continue
+    seen.add(mid); seen.add(name)
+    label = mid + (" [vision]" if f.get("vision") else "")
+    shown.append(label)
+print(" ".join(shown))
+if sum(hidden.values()):
+    detail = " · ".join(f"{v} {k}" for k, v in sorted(hidden.items()))
+    print("HIDDEN:" + detail, file=sys.stderr)
+print(f"VISION_OK:{sum(1 for s in shown if '[vision]' in s)}", file=sys.stderr)
+PY
+}
+
+list_ollama() {
+    # /api/tags: modelos curados pelo dono (inclui os :cloud). capabilities chegou
+    # no ollama >= 0.6; sem o campo, lista sem marcador.
+    python3 - "$OLLAMA_URL" <<'PY'
+import json, sys, urllib.request
+data = json.load(urllib.request.urlopen(sys.argv[1] + "/api/tags", timeout=5))
+out = []
+for m in data.get("models", []):
+    name = m.get("name") or m.get("model")
+    if not name: continue
+    caps = m.get("capabilities") or m.get("details", {}).get("capabilities") or []
+    out.append(name + (" [vision]" if "vision" in caps else ""))
+print(" ".join(out))
+PY
+}
+
+# ── Modelo ──────────────────────────────────────────────────────────────────
+if [ -z "$MODEL" ]; then
+    [ -t 0 ] || { echo "claude-local: sem TTY; informe CLAUDE_LOCAL_MODEL" >&2; exit 1; }
+    case "$PROVIDER" in
+        ollama) LIST=$(list_ollama) ;;
+        *)      LIST=$(list_swap) ;;
+    esac
+    [ -z "${LIST:-}" ] && { echo "claude-local: nenhum modelo listado em $BASE_URL" >&2; exit 1; }
+    CHOICE=$(printf '%s\n' $LIST | gum choose --header "modelo em $PROVIDER ([vision] aceita imagem)") || exit 1
+    MODEL=$(printf '%s' "$CHOICE" | awk '{print $1}')
+fi
+
+export ANTHROPIC_AUTH_TOKEN ANTHROPIC_API_KEY
+export ANTHROPIC_BASE_URL="$BASE_URL"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="$MODEL" ANTHROPIC_DEFAULT_SONNET_MODEL="$MODEL" \
+       ANTHROPIC_DEFAULT_HAIKU_MODEL="$MODEL" ANTHROPIC_DEFAULT_FABLE_MODEL="$MODEL" \
+       CLAUDE_CODE_SUBAGENT_MODEL="$MODEL" CLAUDE_CODE_ATTRIBUTION_HEADER
+export DISABLE_TELEMETRY CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC DISABLE_ERROR_REPORTING \
+       DISABLE_FEEDBACK_COMMAND CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY DO_NOT_TRACK
+export DISABLE_AUTOUPDATER DISABLE_COST_WARNINGS CLAUDE_CODE_DISABLE_AUTO_MEMORY \
+       CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL CLAUDE_CODE_DISABLE_TERMINAL_TITLE
+export OTEL_LOGS_EXPORTER OTEL_METRICS_EXPORTER OTEL_TRACES_EXPORTER
+
+# shellcheck disable=SC2086
+exec claude --model sonnet "$@"
