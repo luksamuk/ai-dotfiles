@@ -134,10 +134,10 @@ def enhance_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
 
     # max_tokens must be generous for thinking models — reasoning tokens
     # consume most of the budget before the JSON answer is emitted.
-    # qwen3.6-35b-a3b:think uses ~15-25k tokens on reasoning alone, and the
+    # qwen3.6-35b-a3b[handle-think-EXTINTO 12/nov/2026] uses ~15-25k tokens on reasoning alone, and the
     # measured ceiling in production was 25k+ (empty content at 16384).
-    # 65536 = teto (mesmo do h3). max_tokens é só um CAP: modelo sem :think
-    # para no finish_reason dele, não gasta o budget. Só a variante :think
+    # 65536 = teto (mesmo do h3). max_tokens é só um CAP: modelo sem [handle-think-EXTINTO 12/nov/2026]
+    # para no finish_reason dele, não gasta o budget. Só a variante [handle-think-EXTINTO 12/nov/2026]
     # queima o resto.
     max_tokens_val = 65536
 
@@ -168,7 +168,7 @@ def enhance_prompt(prompt: str, model: str, nsfw: bool = False) -> tuple:
             with urllib.request.urlopen(req) as resp:
                 data = json.loads(resp.read())
                 msg = data["choices"][0]["message"]
-                # Thinking models (e.g. qwen3.6:think) put reasoning in
+                # Thinking models (e.g. qwen3.6[handle-think-EXTINTO 12/nov/2026]) put reasoning in
                 # reasoning_content and the actual answer in content.
                 # If content is empty but reasoning_content exists, the
                 # model likely ran out of max_tokens during thinking.
@@ -317,7 +317,7 @@ def enhance_moss_prompt(prompt: str, model: str, nsfw: bool = False, extra_syste
     log.info("MOSS-Image enhancing prompt via %s", model)
     t0 = time.perf_counter()
 
-    max_tokens_val = 65536  # Moss: teto p/ thinking (era 4096 — esvazrava com :think)
+    max_tokens_val = 65536  # Moss: teto p/ thinking (era 4096 — esvazrava com [handle-think-EXTINTO 12/nov/2026])
 
     _enhance_url, _enhance_model = resolve_enhance_endpoint(model)
     payload = json.dumps({
@@ -728,7 +728,7 @@ def analyze_and_enhance_edit(image_path, user_prompt: str, model: str, nsfw: boo
                 {"role": "user", "content": img_parts + [{"type": "text", "text": user_text}]},
             ],
             "temperature": 0.5,
-            "max_tokens": 65536,  # teto p/ :think (o budget de 16384 esvaziava o content)
+            "max_tokens": 65536,  # teto p/ [handle-think-EXTINTO 12/nov/2026] (o budget de 16384 esvaziava o content)
         }).encode("utf-8")
 
     t0 = time.perf_counter()

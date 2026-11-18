@@ -1,6 +1,7 @@
 bonsai2-4b:
   name: Ternary Bonsai 4B
-  description: Ternary Bonsai 4B is a 4B ternary (1.71-bit) model from PrismML, built on the Qwen3.5 base with native vision. Always-thinking — it handles multimodal input, tool calling, and everyday coding at high speed.
+  description: Ternary Bonsai 4B is a 4B ternary (1.71-bit) model from PrismML, built on the Qwen3.5 base with native vision. Always-thinking — it handles multimodal input, tool calling, and everyday coding
+    at high speed.
   tags:
   - llm
   - thinking
@@ -51,7 +52,10 @@ bonsai2-4b:
     context_length: 131072
     embedding_length: 0
     quantization: PTQ1_0
-    note: 'kv detalhe: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.2 GB). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 109.6 t/s decode / 166.8 prompt. PQ2_0-MTP testado: 95.4 t/s — mais LENTO que PTQ1_0 puro (o pack PQ2_0 custa mais que o ganho do draft no 4B); MTP descartado neste tamanho. Alvo declarado do teste: bater Qwen3.5-4B (66/75 régua antiga). DFlash2 drafter (1.6GB BF16) em ~/.llama-models/bonsai2/ — spec-decode do fork, wiring futuro. mmproj Q8_0 = visão multimodal de fábrica. Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0).'
+    note: 'kv detalhe: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.2 GB). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido
+      16/out GPU: 109.6 t/s decode / 166.8 prompt. PQ2_0-MTP testado: 95.4 t/s — mais LENTO que PTQ1_0 puro (o pack PQ2_0 custa mais que o ganho do draft no 4B); MTP descartado neste tamanho. Alvo declarado
+      do teste: bater Qwen3.5-4B (66/75 régua antiga). DFlash2 drafter (1.6GB BF16) em ~/.llama-models/bonsai2/ — spec-decode do fork, wiring futuro. mmproj Q8_0 = visão multimodal de fábrica. Sempre-thinking:
+      sem handle -think-handle-extinto- (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0).'
     caveats:
     - Exige LD_LIBRARY_PATH do build do fork Prism
     - 'Thinking model: reasoning longo, max_tokens generoso'

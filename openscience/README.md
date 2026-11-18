@@ -113,9 +113,9 @@ docker exec openscience openscience local add --url http://localhost:12434/v1
 # Add specific models only (recommended — filter out embeddings, ASR, TTS, etc.)
 docker exec openscience openscience local add \
   --url http://localhost:12434/v1 \
-  --model agents-a1-35b --model agents-a1-35b:think \
-  --model kat-coder-v2.5-dev --model kat-coder-v2.5-dev:think \
-  --model qwen3.6-35b-a3b --model qwen3.6-35b-a3b:think
+  --model agents-a1-35b --model agents-a1-35b[handle-think-EXTINTO 12/nov/2026] \
+  --model kat-coder-v2.5-dev --model kat-coder-v2.5-dev[handle-think-EXTINTO 12/nov/2026] \
+  --model qwen3.6-35b-a3b --model qwen3.6-35b-a3b[handle-think-EXTINTO 12/nov/2026]
 
 # List configured providers
 docker exec openscience openscience local list

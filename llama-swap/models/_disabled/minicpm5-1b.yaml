@@ -1,7 +1,6 @@
 minicpm5-1b:
   name: MiniCPM5 1B
-  description: Dense 1B Transformer built for on-device deployment, designed for local
-    assistants, coding agents, tool-use workflows, and hybrid reasoning.
+  description: Dense 1B Transformer built for on-device deployment, designed for local assistants, coding agents, tool-use workflows, and hybrid reasoning.
   cmd: '${llama_server} --port ${PORT}
 
     --model ${models_dir}/minicpm5-1b/MiniCPM5-1B-Q8_0.gguf
@@ -43,11 +42,6 @@ minicpm5-1b:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.9
-        top_p: 0.95
   ttl: 60
   capabilities:
     in:
@@ -62,8 +56,7 @@ minicpm5-1b:
     context: 131072
     vram_usage: ~1.6 GB VRAM
     source: openbmb/MiniCPM5-1B-GGUF (Q8_0)
-    note: 'vram detalhe: ~1.6GB (model + cache) Tool calling fixed (llama.cpp b9833+).
-      Parser auto-detects via --jinja. NEVER use custom chat template.'
+    note: 'vram detalhe: ~1.6GB (model + cache) Tool calling fixed (llama.cpp b9833+). Parser auto-detects via --jinja. NEVER use custom chat template.'
     kv_cache: q8_0
     features:
       completion: true

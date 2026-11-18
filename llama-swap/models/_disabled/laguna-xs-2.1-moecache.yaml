@@ -1,9 +1,7 @@
 laguna-xs-2.1-moecache:
   name: Laguna XS 2.1 (moe-cache A/B)
-  description: A/B test - Laguna XS 2.1 on cafe 0.75 with upstream --moe-cache-mib
-    instead of fork -cmoe. Same everything else.
-  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
-    --port ${PORT}
+  description: A/B test - Laguna XS 2.1 on cafe 0.75 with upstream --moe-cache-mib instead of fork -cmoe. Same everything else.
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
     --model ${models_dir}/laguna-xs-2.1/Laguna-XS-2.1-Q4_K_M.gguf
 
@@ -49,11 +47,6 @@ laguna-xs-2.1-moecache:
           enable_thinking: false
         temperature: 0.3
         top_p: 0.85
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.7
-        top_p: 0.9
   ttl: 300
   health_check_timeout: 600
   capabilities:
@@ -84,8 +77,5 @@ laguna-xs-2.1-moecache:
     context_length: 131072
     embedding_length: 2048
     quantization: Q4_K_M
-    note: 'A/B TEST (07/10): cafe 0.75 e67054048 com --moe-cache-mib 512 (upstream
-      #29887) vs fragment oficial -cmoe (fork). Mapping: experts CPU via override-tensor
-      (o -cmoe faz isso automatico; no moe-cache o experts CPU e explicito). Bench
-      A/B c/ ab-k2-horizon.sh adaptado. Se ganhar, fragment oficial migra (user:
-      "papo de alterarmos no restante"). Se empatar, -cmoe fica.'
+    note: 'A/B TEST (07/10): cafe 0.75 e67054048 com --moe-cache-mib 512 (upstream #29887) vs fragment oficial -cmoe (fork). Mapping: experts CPU via override-tensor (o -cmoe faz isso automatico; no moe-cache
+      o experts CPU e explicito). Bench A/B c/ ab-k2-horizon.sh adaptado. Se ganhar, fragment oficial migra (user: "papo de alterarmos no restante"). Se empatar, -cmoe fica.'

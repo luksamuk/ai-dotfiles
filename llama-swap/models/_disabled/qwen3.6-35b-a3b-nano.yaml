@@ -1,9 +1,7 @@
 qwen3.6-35b-a3b-nano:
   name: Qwen 3.6 35B Nano
-  description: Qwen3.6-35B-A3B em quant APEX-I-NanoPlus (13.03 GB) com visão — o segundo
-    lugar do benchmark agentic em modo econômico. -3.5 GB vs MiniPlus, PPL 5.52 (+3.84%),
-    routers F32 zero drift. MTP companion disponível (draft Q8_0) para speculative
-    decoding quando a VRAM permitir.
+  description: Qwen3.6-35B-A3B em quant APEX-I-NanoPlus (13.03 GB) com visão — o segundo lugar do benchmark agentic em modo econômico. -3.5 GB vs MiniPlus, PPL 5.52 (+3.84%), routers F32 zero drift. MTP
+    companion disponível (draft Q8_0) para speculative decoding quando a VRAM permitir.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/qwen36-nanoplus/Qwen3.6-35B-A3B.APEX-I-NanoPlus.gguf
@@ -67,11 +65,6 @@ qwen3.6-35b-a3b-nano:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -103,7 +96,5 @@ qwen3.6-35b-a3b-nano:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX-I-NanoPlus (routers F32, head Q6_K)
-    note: 'vram detalhe: a medir no smoke (expect <4GB VRAM com --fit) Deploy 27/09
-      como Cenário B (economia RAM/VRAM). MTP companion Q8_0 baixado mas spec-decoding
-      OFF no smoke (draft KV @131K não cabe na 3050 — mesma decisão do heretic-cafe).
-      Avaliação: smoke tests + snake; sem benchmark agentic ainda.'
+    note: 'vram detalhe: a medir no smoke (expect <4GB VRAM com --fit) Deploy 27/09 como Cenário B (economia RAM/VRAM). MTP companion Q8_0 baixado mas spec-decoding OFF no smoke (draft KV @131K não cabe
+      na 3050 — mesma decisão do heretic-cafe). Avaliação: smoke tests + snake; sem benchmark agentic ainda.'

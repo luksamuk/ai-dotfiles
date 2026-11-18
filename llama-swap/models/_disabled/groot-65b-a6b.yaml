@@ -1,20 +1,11 @@
 groot-65b-a6b:
   name: Groot 65B A6B
-  description: "LANE UNICA (sem fast, por fisica) — BLOQUEADO 04/nov no build d33bcfd7e/build
-    12256: o GGUF (mradermacher Q2_K) aborta no warm-up decode em QUALQUER config offload
-    (-ssd com knobs, -ssd puro, -ssd modo slots, -cmoe, e ate -ngl 0 all-CPU): mesmas
-    GGML_ASSERT(buffer) failed, ggml-backend.cpp:383, kpool::set_input (QSA indexer k-pool
-    input sem buffer). O 19B (qwen35moe, sem QSA) e o flash-next 125B (unsloth IQ1_M,
-    mesma build ontem) RODAM -ssd/-cmoe normal: bug confinado ao hybrid-idx (needs_mem_idx
-    = QWEN4EXP-only) x este GGUF/conversao. Bug report a caminho (quimmedes/cafe-llama.cpp).
-    Fatos cravados: starts-from Qwen3.8-Flash-Next (licenca qwen-community-1.0), arch
-    qwen4exp, 48 camadas (12 Qwen Sparse Attention + 36 Gated DeltaNet), experts 256
-    roteados + 1 shared (10 ativos), PLE n-gram 51B em host mmap, multimodal nativo,
-    MTP 1.4B (6 tensors blk.48.nextn no GGUF; MTP_USAGE oficial: opt-in/experimental,
-    NAO lossless e sem speedup prometido — OFF), ctx nativo 262K, template extraido do
-    oficial shard 1 (8.952 chars) e wired local. Decode SSD-bound esperado quando
-    destravar: ~2-4 t/s — assento de raciocinio pesado/consulta esparsa, nao daily
-    driver."
+  description: 'LANE UNICA (sem fast, por fisica) — BLOQUEADO 04/nov no build d33bcfd7e/build 12256: o GGUF (mradermacher Q2_K) aborta no warm-up decode em QUALQUER config offload (-ssd com knobs, -ssd
+    puro, -ssd modo slots, -cmoe, e ate -ngl 0 all-CPU): mesmas GGML_ASSERT(buffer) failed, ggml-backend.cpp:383, kpool::set_input (QSA indexer k-pool input sem buffer). O 19B (qwen35moe, sem QSA) e o flash-next
+    125B (unsloth IQ1_M, mesma build ontem) RODAM -ssd/-cmoe normal: bug confinado ao hybrid-idx (needs_mem_idx = QWEN4EXP-only) x este GGUF/conversao. Bug report a caminho (quimmedes/cafe-llama.cpp). Fatos
+    cravados: starts-from Qwen3.8-Flash-Next (licenca qwen-community-1.0), arch qwen4exp, 48 camadas (12 Qwen Sparse Attention + 36 Gated DeltaNet), experts 256 roteados + 1 shared (10 ativos), PLE n-gram
+    51B em host mmap, multimodal nativo, MTP 1.4B (6 tensors blk.48.nextn no GGUF; MTP_USAGE oficial: opt-in/experimental, NAO lossless e sem speedup prometido — OFF), ctx nativo 262K, template extraido
+    do oficial shard 1 (8.952 chars) e wired local. Decode SSD-bound esperado quando destravar: ~2-4 t/s — assento de raciocinio pesado/consulta esparsa, nao daily driver.'
   cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
     --model ${models_dir}/groot-65b-a6b/groot-65b-a6b-261023.Q2_K.gguf
@@ -70,13 +61,6 @@ groot-65b-a6b:
         top_p: 0.8
         top_k: 20
         presence_penalty: 1.5
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 1.0
-        top_p: 0.95
-        top_k: 20
-        presence_penalty: 0.0
   ttl: 0
   health_check_timeout: 1200
   unlisted: true
@@ -92,9 +76,8 @@ groot-65b-a6b:
   metadata:
     size: ~52.46 GB (Q2_K) + 0.58 GB mmproj
     context: 65536
-    vram_usage: 'a medir'  # ~2 GB backbone na GPU + KV leve (12 sparse-attn layers) + PLE ~25 GB em host (mmap)
-    source: mradermacher/Groot-65B-A6B-261023-GGUF (Q2_K, 56335871168 bytes exatos)
-      + mmproj-Q8_0 (616703296 bytes)
+    vram_usage: a medir
+    source: mradermacher/Groot-65B-A6B-261023-GGUF (Q2_K, 56335871168 bytes exatos) + mmproj-Q8_0 (616703296 bytes)
     kv_cache: q4_0/q4_0
     features:
       completion: true
@@ -106,40 +89,23 @@ groot-65b-a6b:
       audio: false
       image: false
     architecture: qwen4exp
-    experts: "256 roteados + 1 shared; 10 ativos/token"
-    mtp: "1.4B — 6 tensors blk.48.nextn no GGUF mradermacher (probe 04/11); MTP_USAGE oficial: opt-in/experimental, output especulativo NAO lossless (greedy difere) e sem speedup prometido — OFF"
+    experts: 256 roteados + 1 shared; 10 ativos/token
+    mtp: '1.4B — 6 tensors blk.48.nextn no GGUF mradermacher (probe 04/11); MTP_USAGE oficial: opt-in/experimental, output especulativo NAO lossless (greedy difere) e sem speedup prometido — OFF'
     license: qwen-community-1.0 (herdada do Qwen3.8-Flash-Next)
-    note_extra: "chat_template do GGUF mradermacher: ABSENT (quirk de conversao) — template 8.952 chars EXTRAIDO do GGUF oficial (shard 1) em 04/11 e wired via --chat-template-file (casa: padrao minicpm-v)"
+    note_extra: 'chat_template do GGUF mradermacher: ABSENT (quirk de conversao) — template 8.952 chars EXTRAIDO do GGUF oficial (shard 1) em 04/11 e wired via --chat-template-file (casa: padrao minicpm-v)'
     parameters: 65000000000
     active: 6000000000
     embedding_length: 2560
     context_length: 262144
     quantization: Q2_K
-    note: 'EDIT 04/nov 2026: -ssd DESBLOQUEADO no build atual do cafe (build 12256/d33bcfd7e) — o crash
-      nao reproduz (confirmado por 2 fontes: probe direto no 19B mesma arch, e teste noturno flash-next).
-      Knobs do cmd = set vencedor da escada do 19B (--ssd-predict + --ssd-io-threads 4 + --ssd-cache-mb 4096:
-      14.6 → 33-34 t/s la — config emprestada SEM re-teste no proprio 65B; probe pendente do reinstall).
-      MTP negativo medido 2x em regime IO-bound (flash-next e 19B) — nao habilitar spec aqui sem re-teste.
-      HISTORICO do bloqueio no build antigo (02dda80a9 + merges
-      26/10): o expert streaming nao carrega o Groot-65B. Fatos medidos: (1) flag
-      correta e -ssd (-ssd-streaming e parse invalido, "-ssd"+"-streaming"); (2)
-      load com -ssd ABORTA em ggml-backend.cpp:383 get_usage(NULL) ("GGML_ASSERT(buffer)
-      failed") ~50s no load, thread llama_row_pool no dump — repetido em 3 variantes
-      (default ngram-ssd, --no-ngram-ssd, --ssd-streaming-cache-experts 8GB explicito)
-      → bug do path -ssd com qwen4exp, nao interplay com PLE nem orcamento de cache;
-      (3) sem -ssd, experts somam ~26 GB e -ngl 99 tenta CUDA direto ("unable to
-      allocate CUDA0"); (4) -cmoe (experts RAM 26GB) > RAM disponivel da casa e
-      Gyro-S (mesma familia, engine dedicado TQ1_0) ja fechou 97% RAM em 24/10 —
-      nada do lado dos runtimes encaixa hoje. Descoberta util: cafe tem --ngram-ssd
-      DEFAULT-ENABLED (PLE do qwen4 streama do SSD nativamente do fork — o thrash
-      de PLE projetado NAO aplica enquanto o ngram-ssd funciona). GGUF Q2_K
-      (mradermacher, 56335871168) + mmproj-Q8_0 (616703296) baixados e integros em
-      ~/.llama-models/groot-65b-a6b/; re-teste quando o path
-      -ssd do cafe (ou um patch local) aceitar o arch. GGUFs (Q2_K 56335871168 +
-      mmproj-Q8_0 616703296) DELETADOS 27/out pelo dono — ~52.5 GB de volta ao disco;
-      re-download de mradermacher/Groot-65B-A6B-261023-GGUF:
-      hf download mradermacher/Groot-65B-A6B-261023-GGUF Groot-65B-A6B-261023.Q2_K.gguf
-      --local-dir ~/.llama-models/groot-65b-a6b/ (+ mmproj-Q8_0.gguf). LANE UNLISTED
-      ATE SEGUNDA ORDEM (dono, 27/out). Header do GGUF oficial
-      GrootTeam declara tensor_count=1 (anomalo) — mradermacher parseia normal
-      (tc=1256). ctx no fragmento segue 65536 para o promeiro teste que funcionar.'
+    note: 'EDIT 04/nov 2026: -ssd DESBLOQUEADO no build atual do cafe (build 12256/d33bcfd7e) — o crash nao reproduz (confirmado por 2 fontes: probe direto no 19B mesma arch, e teste noturno flash-next).
+      Knobs do cmd = set vencedor da escada do 19B (--ssd-predict + --ssd-io-threads 4 + --ssd-cache-mb 4096: 14.6 → 33-34 t/s la — config emprestada SEM re-teste no proprio 65B; probe pendente do reinstall).
+      MTP negativo medido 2x em regime IO-bound (flash-next e 19B) — nao habilitar spec aqui sem re-teste. HISTORICO do bloqueio no build antigo (02dda80a9 + merges 26/10): o expert streaming nao carrega
+      o Groot-65B. Fatos medidos: (1) flag correta e -ssd (-ssd-streaming e parse invalido, "-ssd"+"-streaming"); (2) load com -ssd ABORTA em ggml-backend.cpp:383 get_usage(NULL) ("GGML_ASSERT(buffer) failed")
+      ~50s no load, thread llama_row_pool no dump — repetido em 3 variantes (default ngram-ssd, --no-ngram-ssd, --ssd-streaming-cache-experts 8GB explicito) → bug do path -ssd com qwen4exp, nao interplay
+      com PLE nem orcamento de cache; (3) sem -ssd, experts somam ~26 GB e -ngl 99 tenta CUDA direto ("unable to allocate CUDA0"); (4) -cmoe (experts RAM 26GB) > RAM disponivel da casa e Gyro-S (mesma familia,
+      engine dedicado TQ1_0) ja fechou 97% RAM em 24/10 — nada do lado dos runtimes encaixa hoje. Descoberta util: cafe tem --ngram-ssd DEFAULT-ENABLED (PLE do qwen4 streama do SSD nativamente do fork —
+      o thrash de PLE projetado NAO aplica enquanto o ngram-ssd funciona). GGUF Q2_K (mradermacher, 56335871168) + mmproj-Q8_0 (616703296) baixados e integros em ~/.llama-models/groot-65b-a6b/; re-teste
+      quando o path -ssd do cafe (ou um patch local) aceitar o arch. GGUFs (Q2_K 56335871168 + mmproj-Q8_0 616703296) DELETADOS 27/out pelo dono — ~52.5 GB de volta ao disco; re-download de mradermacher/Groot-65B-A6B-261023-GGUF:
+      hf download mradermacher/Groot-65B-A6B-261023-GGUF Groot-65B-A6B-261023.Q2_K.gguf --local-dir ~/.llama-models/groot-65b-a6b/ (+ mmproj-Q8_0.gguf). LANE UNLISTED ATE SEGUNDA ORDEM (dono, 27/out). Header
+      do GGUF oficial GrootTeam declara tensor_count=1 (anomalo) — mradermacher parseia normal (tc=1256). ctx no fragmento segue 65536 para o promeiro teste que funcionar.'

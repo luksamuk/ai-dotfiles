@@ -1,8 +1,6 @@
 k2-horizon-7b:
   name: K2-Horizon 7B
-  description: 'IFM K2-Horizon-7B dense (k2_horizon arch, PR #2435). 512K nativo,
-    thinking profundo (budget vendor 32K+). EXPERIMENTAL: smoke de codigo reprovado
-    por budget de thinking — testchat apenas.'
+  description: 'IFM K2-Horizon-7B dense (k2_horizon arch, PR #2435). 512K nativo, thinking profundo (budget vendor 32K+). EXPERIMENTAL: smoke de codigo reprovado por budget de thinking — testchat apenas.'
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/k2-horizon-7b/K2-Horizon-7B-Q4_K_M.gguf
@@ -54,9 +52,6 @@ k2-horizon-7b:
       ${MODEL_ID}:
         temperature: 1.0
         top_p: 0.95
-      ${MODEL_ID}:think:
-        temperature: 1.0
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -72,8 +67,7 @@ k2-horizon-7b:
     context: 131072
     vram_usage: ~5.28 GB VRAM
     source: abenzerps/K2-Horizon-7B-GGUF (Q4_K_M), base IFM/K2-Horizon-7B
-    kv_cache: q4_0 + hadamard K/V (v-cache ok; k-cache-hadamard teve glitches reportados
-      pelo kassane no fork dele — monitorar)
+    kv_cache: q4_0 + hadamard K/V (v-cache ok; k-cache-hadamard teve glitches reportados pelo kassane no fork dele — monitorar)
     features:
       completion: true
       tools: true
@@ -88,7 +82,5 @@ k2-horizon-7b:
     context_length: 524288
     embedding_length: 4096
     quantization: Q4_K_M
-    note: 'vram detalhe: 5.28 GB medido @8K ctx com --fit (smoke 16/09) Thinking voraz:
-      vendor recomenda 32K+ output tokens com reasoning_effort=high. Smoke de codigo
-      reprovado com budgets <= 8K (4 runs: 3x content=0, 1x codigo com bug). USO EXPERIMENTAL
-      — testchat com budget generoso.'
+    note: 'vram detalhe: 5.28 GB medido @8K ctx com --fit (smoke 16/09) Thinking voraz: vendor recomenda 32K+ output tokens com reasoning_effort=high. Smoke de codigo reprovado com budgets <= 8K (4 runs:
+      3x content=0, 1x codigo com bug). USO EXPERIMENTAL — testchat com budget generoso.'

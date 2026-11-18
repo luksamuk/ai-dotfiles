@@ -1,15 +1,12 @@
 nex-n2.5-mini:
   name: Nex N2.5 Mini
-  description: Nex-N2.5-mini is a 35B Mixture-of-Experts agentic model (Qwen3.5 base
-    + Gated DeltaNet hybrid attention) post-trained by Nex-AGI for long-horizon coding,
-    computer use and tool calling. Adaptive thinking via reasoning_effort. Text-only
-    on 6GB VRAM (vision mmproj available but disabled).
+  description: Nex-N2.5-mini is a 35B Mixture-of-Experts agentic model (Qwen3.5 base + Gated DeltaNet hybrid attention) post-trained by Nex-AGI for long-horizon coding, computer use and tool calling. Adaptive
+    thinking via reasoning_effort. Text-only on 6GB VRAM (vision mmproj available but disabled).
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/nex-n2.5-mini/Nex-N2.5-mini-Q4_K_M.gguf
 
-    # No --mmproj: vision crashes on 6GB RTX 3050 (lição Jul 2026, mmproj 899MB em
-    disco se precisar).
+    # No --mmproj: vision crashes on 6GB RTX 3050 (lição Jul 2026, mmproj 899MB em disco se precisar).
 
     --fit
 
@@ -58,11 +55,6 @@ nex-n2.5-mini:
       ${MODEL_ID}:
         temperature: 0.7
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          reasoning_effort: high
-        temperature: 0.7
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -93,10 +85,6 @@ nex-n2.5-mini:
     context_length: 262144
     embedding_length: 2048
     quantization: Q4_K_M
-    note: 'vram detalhe: ~5-6GB VRAM estimado + ~15-16GB pinned RAM (Q4_K_M não-interleaved,
-      sem spec decoding) Added Sep 09 2026 (release Sep 08). Vendor benches: Terminal-Bench
-      2.1 73.4, SWE-Bench Pro 43.8, OSWorld-V 71.2 — números de vendor, régua própria
-      decide. Toggle thinking = reasoning_effort (''none''/''high'') via chat_template_kwargs
-      — NÃO usar qwen-fixed-chat-template (var errada). Tool calls XML qwen3-coder
-      style. Sem MTP tensors: rodará pure AR. Upgrade natural: APEX-MTP/ONYX do mudler
-      quando sair (N2-mini antigo tinha APEX I-Compact 16.5GB).'
+    note: 'vram detalhe: ~5-6GB VRAM estimado + ~15-16GB pinned RAM (Q4_K_M não-interleaved, sem spec decoding) Added Sep 09 2026 (release Sep 08). Vendor benches: Terminal-Bench 2.1 73.4, SWE-Bench Pro
+      43.8, OSWorld-V 71.2 — números de vendor, régua própria decide. Toggle thinking = reasoning_effort (''none''/''high'') via chat_template_kwargs — NÃO usar qwen-fixed-chat-template (var errada). Tool
+      calls XML qwen3-coder style. Sem MTP tensors: rodará pure AR. Upgrade natural: APEX-MTP/ONYX do mudler quando sair (N2-mini antigo tinha APEX I-Compact 16.5GB).'

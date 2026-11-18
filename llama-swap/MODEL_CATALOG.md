@@ -217,7 +217,7 @@
 | **KV cache** | `${large_cache_k}`/`${large_cache_v}` = `q4_0`/`q4_0` + hadamard |
 | **Flash attention** | `--flash-attn auto` |
 | **Context** | Dynamic, `--fit --fit-margin 768 --defer-experts` |
-| **Thinking** | ✅ Yes — dual mode (`:think` variant) |
+| **Thinking** | ✅ Yes — dual mode (`[handle-think-EXTINTO 12/nov/2026]` variant) |
 | **Tool calling** | ✅ Yes (`--parallel-tool-calls`) |
 | **Vision** | ❌ No (`--no-mmproj` — mmproj blocks partial expert offload) |
 | **Sampling** | `temp=${code_temp} / top-p=${code_top_p}` (coding-optimized: 0.6/0.85) |
@@ -293,7 +293,7 @@
 | **KV cache** | `${large_cache_k}`/`${large_cache_v}` = `q4_0`/`q4_0` + hadamard |
 | **Flash attention** | `--flash-attn auto` |
 | **Context** | Dynamic, `--fit --fit-margin 768 --defer-experts` |
-| **Thinking** | ✅ Yes — dual mode (`:think` variant) |
+| **Thinking** | ✅ Yes — dual mode (`[handle-think-EXTINTO 12/nov/2026]` variant) |
 | **Tool calling** | ✅ Yes (`--parallel-tool-calls`) |
 | **Vision** | ❌ No (`--no-mmproj` — mmproj blocks partial expert offload) |
 | **Sampling** | `temp=${code_temp} / top-p=${code_top_p}` (coding-optimized: 0.6/0.85) |
@@ -386,7 +386,7 @@
 | **Load** | `-ngl 88 --ctx-size 16384 -t 10` + `env GGML_VK_DISABLE_HOST_VISIBLE_VIDMEM=1` obrigatória (small-BAR; sem ela prompt cai 10x) |
 | **VRAM** | pico medido 5815 MiB card (server ~4.7 GB) @16K = 94,7% da 3050 |
 | **Context** | 16K (escolha: mesmo t/s do 4K com 4x ctx; nativo 262K não roda: 24K+ OOM no rs cache de 352 MiB; 32K = 10,9 t/s; 64K = 4,6 t/s) |
-| **Thinking** | ✅ always-thinking: plain pin enable_thinking=false (direto), `:think` pin true (orçamento ~1500+ tokens; PT abstrato ramifica) |
+| **Thinking** | ✅ always-thinking: plain pin enable_thinking=false (direto), `[handle-think-EXTINTO 12/nov/2026]` pin true (orçamento ~1500+ tokens; PT abstrato ramifica) |
 | **Tool calling** | ✅ probeado 31/out pela rota do swap (finish=tool_calls, get_weather, args JSON válidos) |
 | **Vision** | ❌ text-only (mmproj existe no repo annelo — follow-up do dono) |
 | **Velocidade** | 16,2 t/s decode / 59 t/s prompt @16K (full-offload) |
@@ -406,7 +406,7 @@
 | **Load** | `-ngl 26 --ctx-size 16384` + `--no-mmproj-offload` (mmproj na CPU: ViT embute na CPU, segundos por imagem) + `GGML_VK_DISABLE_HOST_VISIBLE_VIDMEM=1` |
 | **VRAM** | pico medido 5708 MiB card @16K = ~93% da 3050; OOM com mmproj em GPU (core dump: a flag --no-mmproj-offload resolve) |
 | **Context** | 16K (8K mais folgado; acima disso o KV aperta) |
-| **Thinking** | ✅ always-thinking (plain direto via enable_thinking=false, :think liga; budget ~1500+) |
+| **Thinking** | ✅ always-thinking (plain direto via enable_thinking=false, [handle-think-EXTINTO 12/nov/2026] liga; budget ~1500+) |
 | **Tool calling** | ✅ probeado NESTE runtime (finish=tool_calls, get_weather, JSON válido) |
 | **Vision** | ✅ PROBEADO 31/out: circle-red ("The circle is red.", finish=stop), manga.jpg real (reconheceu Death Note, página PT-BR; nomes de autores escorregam — 9B) |
 | **Velocidade** | 5.0-5.4 t/s decode (26/56 layers GPU, resto CPU); prompt+imagem ~30s ponta a ponta |

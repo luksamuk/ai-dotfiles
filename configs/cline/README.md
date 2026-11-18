@@ -6,7 +6,7 @@ Backup of Cline CLI configuration files.
 
 - `providers.json` → `~/.cline/data/settings/providers.json`
   - API key replaced with `PLACEHOLDER_USE_LOCAL_KEY` (no PII)
-  - After restoring, run: `cline auth -p openai-compatible -k <your-key> -m qwen3.5-4b:think`
+  - After restoring, run: `cline auth -p openai-compatible -k <your-key> -m qwen3.5-4b[handle-think-EXTINTO 12/nov/2026]`
 - `cline_mcp_settings.json` → `~/.cline/data/settings/cline_mcp_settings.json`
   - MCP servers (searxng + duckduckgo), no PII
 

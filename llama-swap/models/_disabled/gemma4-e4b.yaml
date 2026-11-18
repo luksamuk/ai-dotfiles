@@ -1,15 +1,9 @@
 gemma4-e4b:
   name: Gemma 4 E4B
-  description: Gemma 4 models are designed to deliver frontier-level performance at
-    each size. They are well-suited for reasoning, agentic workflows, coding, and
-    multimodal understanding.
-  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf\n\
-    # No --no-mmproj: ik doesn't support this flag (upstream-only)\n--fit\n--fit-margin\
-    \ 512\n--jinja\n--parallel 1\n--parallel-tool-calls\n--ctx-size ${small_model_max_ctx}\n\
-    --temp 0.7\n--top-p 0.9\n--top-k 40\n--min-p 0.01\n--repeat-penalty 1.0\n--reasoning\
-    \ on\n--cache-type-k q8_0\n--cache-type-v q4_0\n--k-cache-hadamard\n--v-cache-hadamard\n\
-    --flash-attn auto\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n \
-    \ --metrics\n"
+  description: Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding.
+  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf\n# No --no-mmproj: ik doesn't support this flag (upstream-only)\n--fit\n--fit-margin 512\n--jinja\n--parallel\
+    \ 1\n--parallel-tool-calls\n--ctx-size ${small_model_max_ctx}\n--temp 0.7\n--top-p 0.9\n--top-k 40\n--min-p 0.01\n--repeat-penalty 1.0\n--reasoning on\n--cache-type-k q8_0\n--cache-type-v q4_0\n--k-cache-hadamard\n\
+    --v-cache-hadamard\n--flash-attn auto\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n  --metrics\n"
   filters:
     stripParams: temperature, top_p
     setParamsByID:
@@ -17,11 +11,6 @@ gemma4-e4b:
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.7
-        top_p: 0.9
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
         top_p: 0.9
   ttl: 60
   health_check_timeout: 300
@@ -53,5 +42,4 @@ gemma4-e4b:
     context_length: 131072
     embedding_length: 2560
     quantization: Q4_K_M
-    note: 'vram detalhe: ~5.3GB VRAM (fits with mmproj) Upgraded from UD-Q3_K_XL →
-      Q4_K_M. Text-only (no mmproj). Tightest VRAM model — adding mmproj reduces ctx.'
+    note: 'vram detalhe: ~5.3GB VRAM (fits with mmproj) Upgraded from UD-Q3_K_XL → Q4_K_M. Text-only (no mmproj). Tightest VRAM model — adding mmproj reduces ctx.'

@@ -1,9 +1,7 @@
 empero-qwen3.8-2b:
   name: Empero Qwen3.8 2B
-  description: Empero distillation of Qwen3.8-2.4T-A95B into Qwen3.5-2B. Full-parameter
-    SFT on ~30K curated teacher CoT traces. MMLU 0.283 to 0.548, GSM8K 0.330 to 0.640.
-    Hybrid Gated DeltaNet + full attention. Reasoning model — always thinks. Tool
-    calling supported.
+  description: Empero distillation of Qwen3.8-2.4T-A95B into Qwen3.5-2B. Full-parameter SFT on ~30K curated teacher CoT traces. MMLU 0.283 to 0.548, GSM8K 0.330 to 0.640. Hybrid Gated DeltaNet + full attention.
+    Reasoning model — always thinks. Tool calling supported.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/empero-qwen3.8-2b/Qwen3.8-2B-Q4_K_M.gguf
@@ -87,10 +85,6 @@ empero-qwen3.8-2b:
     context_length: 262144
     embedding_length: 1536
     quantization: Q4_K_M
-    note: 'vram detalhe: ~2.5GB VRAM (model 1.31GB + q4_0 hadamard KV cache + compute)
-      Empero distillation of Qwen3.8-2.4T-A95B into Qwen3.5-2B. Full-parameter SFT
-      on ~30K curated teacher CoT traces. MMLU 0.283->0.548, GSM8K 0.330->0.640. Hybrid
-      Gated DeltaNet (3:1 with full attention). Reasoning model — always thinks, no
-      :think variant. Chat template embedded in GGUF supports tool calling. Tool calling
-      REQUIRES thinking enabled. 101.1 tok/s @ RTX 3050 6GB (ik_llama). Architecture
-      qwen35 — fully supported by ik_llama.cpp.'
+    note: 'vram detalhe: ~2.5GB VRAM (model 1.31GB + q4_0 hadamard KV cache + compute) Empero distillation of Qwen3.8-2.4T-A95B into Qwen3.5-2B. Full-parameter SFT on ~30K curated teacher CoT traces. MMLU
+      0.283->0.548, GSM8K 0.330->0.640. Hybrid Gated DeltaNet (3:1 with full attention). Reasoning model — always thinks, no -think-handle-extinto- variant. Chat template embedded in GGUF supports tool calling. Tool calling
+      REQUIRES thinking enabled. 101.1 tok/s @ RTX 3050 6GB (ik_llama). Architecture qwen35 — fully supported by ik_llama.cpp.'

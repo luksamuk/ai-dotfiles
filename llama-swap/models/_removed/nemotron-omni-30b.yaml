@@ -1,8 +1,7 @@
 nemotron-omni-30b:
   name: Nemotron 3 Nano Omni 30B
-  description: NVIDIA's omnimodal reasoning MoE model. 30B params, 3B active. Hybrid
-    Mamba-2 + Attention architecture with C-RADIO v4-H vision encoder and Parakeet
-    audio encoder. Supports text, image, audio, and video inputs.
+  description: NVIDIA's omnimodal reasoning MoE model. 30B params, 3B active. Hybrid Mamba-2 + Attention architecture with C-RADIO v4-H vision encoder and Parakeet audio encoder. Supports text, image, audio,
+    and video inputs.
   cmd: '${llama_server} --port ${PORT}
 
     --model ${models_dir}/nemotron-omni-30b/NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-UD-Q4_K_XL.gguf
@@ -48,12 +47,6 @@ nemotron-omni-30b:
           enable_thinking: false
         temperature: 0.2
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-          reasoning_budget: 16384
-        temperature: 0.6
-        top_p: 0.95
   ttl: 600
   health_check_timeout: 600
   capabilities:
@@ -86,7 +79,5 @@ nemotron-omni-30b:
     context_length: 262144
     embedding_length: 2048
     quantization: UD-Q4_K_XL
-    note: 'vram detalhe: ~5.5GB VRAM + ~18GB RAM (CPU offload, upstream --fit) Uses
-      upstream llama.cpp (ik_llama lacks nemotron_h_moe arch support — NOT an i-quant
-      issue, ik_llama supports IQ2_XXS/IQ3_XXS/IQ4_XS natively). BeeLama also supports
-      this arch if DFlash/TurboQuant wanted later.'
+    note: 'vram detalhe: ~5.5GB VRAM + ~18GB RAM (CPU offload, upstream --fit) Uses upstream llama.cpp (ik_llama lacks nemotron_h_moe arch support — NOT an i-quant issue, ik_llama supports IQ2_XXS/IQ3_XXS/IQ4_XS
+      natively). BeeLama also supports this arch if DFlash/TurboQuant wanted later.'

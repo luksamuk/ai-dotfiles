@@ -1,10 +1,7 @@
 qwen3-next-80b:
   name: Qwen3-Next 80B
-  description: 'O primeiro 80B da frota: MoE 512 experts top-10 com DeltaNet nativo
-    (linear attention), 3B ativos. Serve via cafe -ssd — streaming de experts, quente
-    rapido, frio lento (warmup por dominio).'
-  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
-    --port ${PORT}
+  description: 'O primeiro 80B da frota: MoE 512 experts top-10 com DeltaNet nativo (linear attention), 3B ativos. Serve via cafe -ssd — streaming de experts, quente rapido, frio lento (warmup por dominio).'
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
     --model ${models_dir}/qwen3-next-80b/Qwen3-Next-80B-A3B-Instruct.Q4_K_M.gguf
 
@@ -78,8 +75,5 @@ qwen3-next-80b:
     experts: 512
     active_experts: 10
     quantization: Q4_K_M
-    note: 'vram detalhe: ~3-4GB VRAM (dense+attn) + experts via -ssd (page cache)
-      Primeiro 80B da frota. Hibrida gated DeltaNet (linear) + full@4. GGUF mradermacher
-      SEM MTP (draft = fase 2, unsloth MTP/). -ssd regime igual laguna: quente rapido
-      / warmup por dominio. INSTRUCT sem thinking: chat template do GGUF nao tem bloco
-      think (verificado no dump) — alias :think removido no deploy (Oct 3), features.thinking=false.'
+    note: 'vram detalhe: ~3-4GB VRAM (dense+attn) + experts via -ssd (page cache) Primeiro 80B da frota. Hibrida gated DeltaNet (linear) + full@4. GGUF mradermacher SEM MTP (draft = fase 2, unsloth MTP/).
+      -ssd regime igual laguna: quente rapido / warmup por dominio. INSTRUCT sem thinking: chat template do GGUF nao tem bloco think (verificado no dump) — alias -think-handle-extinto- removido no deploy (Oct 3), features.thinking=false.'

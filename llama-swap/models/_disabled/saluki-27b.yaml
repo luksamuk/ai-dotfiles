@@ -30,7 +30,6 @@ saluki-27b:
         temperature: 0.6
         top_p: 0.95
         top_k: 20
-
   capabilities:
     in:
     - text
@@ -64,27 +63,15 @@ saluki-27b:
       low: low
       medium: medium
       xhigh: xhigh
-    reasoningEfforts:
-      low: low
-      medium: medium
-      xhigh: xhigh
-    note: 'REATIVADO 12/nov/2026 (round 7): single handle ALWAYS-THINKING (enable_thinking true
-      pinado; o saluki aceita o knob false? NAO PROVADO nesta revisao o contrario, mas o
-      decreto da casa  single handle, thinking ON, sem :think). Handles antigos plain-false/:think
-      removidos. Sampling = receita Underdog (0.6/0.95/20) - MANTIDO (fabricante). Backend cafe
-      (4.7 t/s = vanilla 4.8 paridade). GOTCHA: setParamsByID tem que ficar DENTRO de filters:
-      (root = ignorado silenciosamente, K2 precedncia). Smoke 08/10: ctx 4K-64K free (-nkvo),
-      128K = server sobe mas requisio morre (OOM no compute do slot, -b/-ub baixos NAO resolvem);
-      262K native = invivel (KV ~9GB em RAM); ik ELIMINADO (degenera, template qwen3.5 quebrado
-      + OOM sem unified memory). Tool call OK (get_weather Diamantina). -ngl 34 = max com rs
-      rs cache do hybrid no 6GB acima de 30; 30/64 layers GPU, resto na CPU RAM; KV 64K em CPU RAM
-      via -nkvo (+2.3GB, custo decode zero medido). mmproj 629MB (--no-mmproj-offload) = ViT
-      prefill ~35s/imagem pago s no request; vision opt-in.
-     _DIALETO PROVADO 12/nov (template extraida do GGUF via GGUFReader, 8.952 chars): effort
-      xhigh (default: reasoning_effort|default xhigh) / medium / low com ramos prprios;
-      enable_thinking FALSE DESLIGA de verdade (emite bloco think vazio e pula) — diferena
-      do bonsai2 (que ignorava none); valores no suportados (high/none/off) = raise_exception
-      "Unexpected reasoning effort" + HTTP 500. CORREO 12/nov (dono): efforts FUNCIONAM entra no reasoningEfforts (low/medium/xhigh) e no seletor; stripParams SEM reasoning_effort (a seleo do client atravssa); off no existe via effort (enable_thinking false existe mas o decreto  always-thinking) — os mapas 3-valores tornam impossvel o 500 do raise.'
+    note: 'REATIVADO 12/nov/2026 (round 7): single handle ALWAYS-THINKING (enable_thinking true pinado; o saluki aceita o knob false? NAO PROVADO nesta revisao o contrario, mas o decreto da casa  single
+      handle, thinking ON, sem -think-handle-extinto-). Handles antigos plain-false/-think-handle-extinto- removidos. Sampling = receita Underdog (0.6/0.95/20) - MANTIDO (fabricante). Backend cafe (4.7 t/s = vanilla 4.8 paridade). GOTCHA:
+      setParamsByID tem que ficar DENTRO de filters: (root = ignorado silenciosamente, K2 precedncia). Smoke 08/10: ctx 4K-64K free (-nkvo), 128K = server sobe mas requisio morre (OOM no compute do slot,
+      -b/-ub baixos NAO resolvem); 262K native = invivel (KV ~9GB em RAM); ik ELIMINADO (degenera, template qwen3.5 quebrado + OOM sem unified memory). Tool call OK (get_weather Diamantina). -ngl 34 = max
+      com rs rs cache do hybrid no 6GB acima de 30; 30/64 layers GPU, resto na CPU RAM; KV 64K em CPU RAM via -nkvo (+2.3GB, custo decode zero medido). mmproj 629MB (--no-mmproj-offload) = ViT prefill ~35s/imagem
+      pago s no request; vision opt-in. _DIALETO PROVADO 12/nov (template extraida do GGUF via GGUFReader, 8.952 chars): effort xhigh (default: reasoning_effort|default xhigh) / medium / low com ramos prprios;
+      enable_thinking FALSE DESLIGA de verdade (emite bloco think vazio e pula) — diferena do bonsai2 (que ignorava none); valores no suportados (high/none/off) = raise_exception "Unexpected reasoning effort"
+      + HTTP 500. CORREO 12/nov (dono): efforts FUNCIONAM entra no reasoningEfforts (low/medium/xhigh) e no seletor; stripParams SEM reasoning_effort (a seleo do client atravssa); off no existe via effort
+      (enable_thinking false existe mas o decreto  always-thinking) — os mapas 3-valores tornam impossvel o 500 do raise.'
     caveats:
     - Dense 27B IQ2: 4.6-4.8 t/s (lento p/ cotidiano vs MoE K2 17.5)
     - Tool calling = foco do refino Underdog; math de competicao ~82-85% do full

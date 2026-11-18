@@ -1,8 +1,7 @@
 bonsai-27b-ternary:
   name: Bonsai 27B Ternary
-  description: PrismML's ternary 27B reasoning model — Qwen3.6-27B with 1.71-bit weights,
-    full thinking/reasoning/agentic capabilities at 7.2 GB. 95% of FP16 intelligence
-    retained. Hybrid attention enables 262K context.
+  description: PrismML's ternary 27B reasoning model — Qwen3.6-27B with 1.71-bit weights, full thinking/reasoning/agentic capabilities at 7.2 GB. 95% of FP16 intelligence retained. Hybrid attention enables
+    262K context.
   cmd: '${bonsai_llama_server} --port ${PORT}
 
     --model ${models_dir}/bonsai-27b-ternary/Ternary-Bonsai-27B-Q2_0.gguf
@@ -46,13 +45,6 @@ bonsai-27b-ternary:
       ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
-        temperature: 0.7
-        top_p: 0.95
-        top_k: 20
-        min_p: 0
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 0.7
         top_p: 0.95
         top_k: 20

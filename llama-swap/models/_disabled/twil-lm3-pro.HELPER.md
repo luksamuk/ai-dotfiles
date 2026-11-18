@@ -2,7 +2,7 @@
 
 Pedido do dono. Dir `~/.llama-models/twil-lm3-pro/` deletado (~2.8 GB, Q6_K;
 o Q8_0 já tinha saído do disco no A/B de 01/10). Especialista de lógica formal
-(webAI, base Granite 4.2 da IBM), track A com :think (handle morre junto),
+(webAI, base Granite 4.2 da IBM), track A com -think-handle-extinto- (handle morre junto),
 temp 0 no think inject; card pede max_tokens >=2048.
 
 Fonte HF verificada HTTP 200 no momento do delete: `webAI-Official/TwIL-LM3-Pro` (Q6_K).

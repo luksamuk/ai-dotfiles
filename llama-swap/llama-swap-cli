@@ -277,7 +277,7 @@ cmd_describe() {
 
     echo "$data" | jq -r '
       .data[] |
-      select(.id | endswith(":think") | not) |
+      select(.id | endswith("[handle-think-EXTINTO 12/nov/2026]") | not) |
       {
         id: .id,
         name: (.name // .id),
@@ -319,7 +319,7 @@ cmd_list() {
 
     echo "$data" | jq -r '
       .data[] |
-      select(.id | endswith(":think") | not) |
+      select(.id | endswith("[handle-think-EXTINTO 12/nov/2026]") | not) |
       {
         id: .id,
         arch: (.meta.llamaswap.architecture // "-"),

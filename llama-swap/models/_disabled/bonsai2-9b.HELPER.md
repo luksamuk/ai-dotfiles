@@ -5,7 +5,7 @@ Pedido do dono: desinstalar o "Ternary Bonsai 9B" — os DOIS deploys saíram
 deletado inteiro, ~5.3 GB: 2.0 + 2.68 + mmproj Q8_0 0.62).
 
 Fontes HF verificadas HTTP 200 no momento do delete: `prism-ml/Ternary-Bonsai-2-9B-gguf`.
-Sempre-thinking (sem :think; samplers oficiais: temp 1.0/0.95/20/presence 1.0).
+Sempre-thinking (sem -think-handle-extinto-; samplers oficiais: temp 1.0/0.95/20/presence 1.0).
 História relevante: migram pro cafe (kernel PTQ1_0 nativo do Prism, 22/10);
 variante sempre-think sem handle dual. NOTA: o bonsai2-27b-heretic SEGUE ATIVO
 (outro modelo, outra dir).

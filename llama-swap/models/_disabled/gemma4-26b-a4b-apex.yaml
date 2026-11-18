@@ -1,8 +1,6 @@
 gemma4-26b-a4b-apex:
   name: Gemma 4 26B MoE
-  description: Gemma 4 models are designed to deliver frontier-level performance at
-    each size. They are well-suited for reasoning, agentic workflows, coding, and
-    multimodal understanding.
+  description: Gemma 4 models are designed to deliver frontier-level performance at each size. They are well-suited for reasoning, agentic workflows, coding, and multimodal understanding.
   cmd: '${llama_server} --port ${PORT}
 
     --model ${models_dir}/gemma-4-26B-A4B-APEX-I-Compact.gguf
@@ -39,11 +37,6 @@ gemma4-26b-a4b-apex:
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.7
-        top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 1.0
         top_p: 0.95
   ttl: 300
   capabilities:

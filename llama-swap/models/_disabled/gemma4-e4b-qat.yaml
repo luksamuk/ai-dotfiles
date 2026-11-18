@@ -1,7 +1,6 @@
 gemma4-e4b-qat:
   name: Gemma 4 E4B QAT
-  description: Gemma 4 E4B with Quantization-Aware Training (Q4_0). Official Google
-    checkpoint — higher quality than PTQ at same quant level.
+  description: Gemma 4 E4B with Quantization-Aware Training (Q4_0). Official Google checkpoint — higher quality than PTQ at same quant level.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/gemma-4-E4B_q4_0-it.gguf
@@ -51,11 +50,6 @@ gemma4-e4b-qat:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.9
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
   ttl: 60
   capabilities:
     in:
@@ -85,5 +79,4 @@ gemma4-e4b-qat:
     context_length: 131072
     embedding_length: 2560
     quantization: Q4_0_QAT
-    note: 'vram detalhe: ~5.7GB VRAM Google QAT checkpoint. Trained with quantization-aware
-      training for Q4_0 format. Text-only — no mmproj.'
+    note: 'vram detalhe: ~5.7GB VRAM Google QAT checkpoint. Trained with quantization-aware training for Q4_0 format. Text-only — no mmproj.'

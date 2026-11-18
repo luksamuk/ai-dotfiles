@@ -1,13 +1,9 @@
 glm-4.7-flash:
   name: GLM 4.7 Flash
-  description: GLM-4.7-Flash is a 30B Mixture-of-Experts model with Multi-head Latent
-    Attention (MLA), 64 experts with 4 active per token. Built for fast, efficient
-    conversational AI and tool calling.
-  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/glm-4.7-flash/GLM-4.7-Flash-APEX-I-Compact.gguf\n\
-    --fit on\n--fit-target 128\n--ctx-size 131072\n--temp 0.7\n--top-p 1.0\n--top-k\
-    \ -1\n--min-p 0.01\n--repeat-penalty 1.0\n--jinja\n--parallel 1\n--cache-type-k\
-    \ q4_0\n--cache-type-v q4_0\n--flash-attn on\n--spec-type ngram-mod\n  --spec-ngram-mod-n-match\
-    \ 24\n  --spec-ngram-mod-n-min 48\n  --spec-ngram-mod-n-max 64\n  --metrics\n"
+  description: GLM-4.7-Flash is a 30B Mixture-of-Experts model with Multi-head Latent Attention (MLA), 64 experts with 4 active per token. Built for fast, efficient conversational AI and tool calling.
+  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/glm-4.7-flash/GLM-4.7-Flash-APEX-I-Compact.gguf\n--fit on\n--fit-target 128\n--ctx-size 131072\n--temp 0.7\n--top-p 1.0\n--top-k -1\n--min-p\
+    \ 0.01\n--repeat-penalty 1.0\n--jinja\n--parallel 1\n--cache-type-k q4_0\n--cache-type-v q4_0\n--flash-attn on\n--spec-type ngram-mod\n  --spec-ngram-mod-n-match 24\n  --spec-ngram-mod-n-min 48\n  --spec-ngram-mod-n-max\
+    \ 64\n  --metrics\n"
   filters:
     stripParams: temperature, top_p
     setParamsByID:
@@ -16,11 +12,6 @@ glm-4.7-flash:
           enable_thinking: false
         temperature: 1.0
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.7
-        top_p: 1.0
   ttl: 300
   health_check_timeout: 300
   capabilities:
@@ -51,8 +42,5 @@ glm-4.7-flash:
     context_length: 131072
     embedding_length: 2048
     quantization: I-Compact
-    note: 'vram detalhe: ~5GB VRAM + ~10GB pinned RAM (upstream llama.cpp, 30 tok/s
-      at 128K with q4_0+FA) 30B MoE with MLA (Multi-head Latent Attention, DeepSeek-V2
-      style). 64 experts, 4 active, ~2B active/token. Smallest 35B-class in fleet
-      (14.6GB). MLA compresses KV cache internally — no hadamard transform needed.
-      Apache-2.0.'
+    note: 'vram detalhe: ~5GB VRAM + ~10GB pinned RAM (upstream llama.cpp, 30 tok/s at 128K with q4_0+FA) 30B MoE with MLA (Multi-head Latent Attention, DeepSeek-V2 style). 64 experts, 4 active, ~2B active/token.
+      Smallest 35B-class in fleet (14.6GB). MLA compresses KV cache internally — no hadamard transform needed. Apache-2.0.'

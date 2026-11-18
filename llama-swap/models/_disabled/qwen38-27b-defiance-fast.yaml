@@ -49,14 +49,8 @@ qwen38-27b-defiance-fast:
         chat_template_kwargs:
           enable_thinking: false
         temperature: 0.7
-        top_p: 0.80
+        top_p: 0.8
         presence_penalty: 1.5
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 1.0
-        top_p: 0.95
-        presence_penalty: 0.0
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -70,7 +64,7 @@ qwen38-27b-defiance-fast:
   metadata:
     size: ~15.71 GB (IQ4_XS)
     context: 98304
-    vram_usage: '~4.7-5.1 GB VRAM @ngl 10 + MTP'
+    vram_usage: ~4.7-5.1 GB VRAM @ngl 10 + MTP
     source: ttindall/Qwen3.8-27B-Defiance-Uncensored-MTP-GGUF (sha256 d48cdb6e627b...f2f, validado)
     kv_cache: q8_0/q8_0
     features:
@@ -87,4 +81,6 @@ qwen38-27b-defiance-fast:
     context_length: 262144
     embedding_length: 5120
     quantization: IQ4_XS
-    note: "Lane MTP (cauda nextn embutida no GGUF), n_max=8; régua 25/10: 4.33 t/s com MTP vs 3.16 baseline no mesmo contexto (aceitação ~54-61%). Teto: acima de 98.304 o init passa mas o PRIMEIRO decode aborta (SIGABRT, cudaGraphLaunch OOM — ik aborta hard; core dumps em /var/lib/systemd/coredump). Sem MTP o mesmo GGUF vai a 130.816 (lane qw38d). -ctx-ckpt 0: snapshots de checkpoint consomem VRAM por slot; medir antes de reabilitar. UNCENSORED. Text-only."
+    note: 'Lane MTP (cauda nextn embutida no GGUF), n_max=8; régua 25/10: 4.33 t/s com MTP vs 3.16 baseline no mesmo contexto (aceitação ~54-61%). Teto: acima de 98.304 o init passa mas o PRIMEIRO decode
+      aborta (SIGABRT, cudaGraphLaunch OOM — ik aborta hard; core dumps em /var/lib/systemd/coredump). Sem MTP o mesmo GGUF vai a 130.816 (lane qw38d). -ctx-ckpt 0: snapshots de checkpoint consomem VRAM
+      por slot; medir antes de reabilitar. UNCENSORED. Text-only.'

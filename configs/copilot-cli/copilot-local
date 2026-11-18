@@ -2,7 +2,7 @@
 # copilot-local — GitHub Copilot CLI 100% local via llama-swap
 #
 # Usage:
-#   copilot-local                     # Interactive session (default: Qwen 3.6 35B :think)
+#   copilot-local                     # Interactive session (default: Qwen 3.6 35B [handle-think-EXTINTO 12/nov/2026])
 #   copilot-local qwen3.6-35b         # Use Qwen 3.6 35B (think mode, vision)
 #   copilot-local qwen3.6-35b-base    # Use Qwen 3.6 35B (base, no thinking)
 #   copilot-local -p "task"           # Print mode (non-interactive)
@@ -27,13 +27,13 @@ unset COPILOT_PROVIDER_BEARER_TOKEN
 
 # ── Model selection ──
 # Default model (used when no argument is given)
-DEFAULT_MODEL="qwen3.6-35b-a3b-heretic:think"
+DEFAULT_MODEL="qwen3.6-35b-a3b-heretic[handle-think-EXTINTO 12/nov/2026]"
 
 # Model shortcuts: short name → llama-swap model ID
 declare -A MODELS=(
-  [qwen3.6-35b]="qwen3.6-35b-a3b-heretic:think"
+  [qwen3.6-35b]="qwen3.6-35b-a3b-heretic[handle-think-EXTINTO 12/nov/2026]"
   [qwen3.6-35b-base]="qwen3.6-35b-a3b-heretic"
-  [lfm2.5-2.6b]="lfm2.5-2.6b:think"
+  [lfm2.5-2.6b]="lfm2.5-2.6b[handle-think-EXTINTO 12/nov/2026]"
   [lfm2.5-2.6b-base]="lfm2.5-2.6b"
 )
 

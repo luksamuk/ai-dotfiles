@@ -1,15 +1,11 @@
 kat-coder-v2.5-dev:
   name: KAT-Coder V2.5 Dev
-  description: KAT-Coder-V2.5-Dev is a coding-focused agentic model trained by Kwaipilot
-    to act autonomously inside real, executable repositories. Built on Qwen3.6-35B-A3B
-    with SFT+RL. SOTA agentic coding among similar-scale models.
-  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/kat-coder-v2.5-dev/KAT-Coder-V2.5-Dev-APEX-I-Compact.gguf\n\
-    --fit\n--fit-margin 512\n--ctx-size 131072\n--temp 1.0\n--top-p 0.95\n--top-k\
-    \ 20\n--min-p ${code_min_p}\n--repeat-penalty 1.5\n--reasoning on\n--jinja\n--chat-template-file\
-    \ ${templates_dir}/qwen-fixed-chat-template.jinja\n--parallel 1\n--parallel-tool-calls\n\
-    --cache-type-k ${large_cache_k}\n--cache-type-v ${large_cache_v}\n--k-cache-hadamard\n\
-    --v-cache-hadamard\n--flash-attn auto\n--defer-experts\n--prefetch-experts\n--spec-type\
-    \ ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n  --metrics\n"
+  description: KAT-Coder-V2.5-Dev is a coding-focused agentic model trained by Kwaipilot to act autonomously inside real, executable repositories. Built on Qwen3.6-35B-A3B with SFT+RL. SOTA agentic coding
+    among similar-scale models.
+  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/kat-coder-v2.5-dev/KAT-Coder-V2.5-Dev-APEX-I-Compact.gguf\n--fit\n--fit-margin 512\n--ctx-size 131072\n--temp 1.0\n--top-p 0.95\n--top-k\
+    \ 20\n--min-p ${code_min_p}\n--repeat-penalty 1.5\n--reasoning on\n--jinja\n--chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja\n--parallel 1\n--parallel-tool-calls\n--cache-type-k\
+    \ ${large_cache_k}\n--cache-type-v ${large_cache_v}\n--k-cache-hadamard\n--v-cache-hadamard\n--flash-attn auto\n--defer-experts\n--prefetch-experts\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n\
+    \  --metrics\n"
   filters:
     stripParams: temperature, top_p
     setParamsByID:
@@ -18,12 +14,6 @@ kat-coder-v2.5-dev:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.8
-        presence_penalty: 1.5
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 1.0
-        top_p: 0.95
         presence_penalty: 1.5
   ttl: 900
   health_check_timeout: 900
@@ -55,9 +45,6 @@ kat-coder-v2.5-dev:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX I-Compact
-    note: 'vram detalhe: ~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated
-      33-34 t/s) Post-trained Qwen 3.6 35B MoE by Kwaipilot. SFT (127K examples) +
-      RL with TITO consistency, TIS, hierarchical rewards. SWE-bench Verified 69.4
-      (SOTA for class). RL penalizes excessive parallel tool calls (Qwen3.6 tendency).
-      Vision not included in open-weight release. Uses qwen-fixed-chat-template.jinja
-      — same as Ornith/Qwen3.6.'
+    note: 'vram detalhe: ~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s) Post-trained Qwen 3.6 35B MoE by Kwaipilot. SFT (127K examples) + RL with TITO consistency, TIS, hierarchical
+      rewards. SWE-bench Verified 69.4 (SOTA for class). RL penalizes excessive parallel tool calls (Qwen3.6 tendency). Vision not included in open-weight release. Uses qwen-fixed-chat-template.jinja —
+      same as Ornith/Qwen3.6.'

@@ -1,9 +1,7 @@
 bonsai-27b:
   name: Bonsai 27B 1-bit
-  description: PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with true 1.125-bit
-    binary weights, full thinking/reasoning at ~3.9 GB. 89.5% of FP16 intelligence.
-    Full GPU offload on RTX 3050 6GB. Upstream llama.cpp with ngram-mod/dspark speculative
-    decoding.
+  description: PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with true 1.125-bit binary weights, full thinking/reasoning at ~3.9 GB. 89.5% of FP16 intelligence. Full GPU offload on RTX 3050 6GB. Upstream
+    llama.cpp with ngram-mod/dspark speculative decoding.
   cmd: '${llama_server} --port ${PORT}
 
     --model ${models_dir}/bonsai-27b/Bonsai-27B-Q1_0.gguf
@@ -59,13 +57,6 @@ bonsai-27b:
         top_p: 0.95
         top_k: 20
         min_p: 0
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.7
-        top_p: 0.95
-        top_k: 20
-        min_p: 0
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -97,8 +88,5 @@ bonsai-27b:
     context_length: 262144
     embedding_length: 5120
     quantization: Q1_0
-    note: 'vram detalhe: ~4.4 GB VRAM (Q1_0 weights + compute; mmproj in RAM, KV in
-      host RAM) 1-bit binary 1.125 bpw, Qwen3.6-27B base. Full GPU resident. Aug 30
-      2026: canonical 128K ctx via --no-kv-offload (KV in host RAM), 10.95 tok/s;
-      speed mode 48K KV-GPU, 22.91 tok/s; mmproj-RAM; dspark sidecar incompatible,
-      deleted. Jul 2026 measurements: 32K=27 tok/s, 48K=20 tok/s with ngram-mod.'
+    note: 'vram detalhe: ~4.4 GB VRAM (Q1_0 weights + compute; mmproj in RAM, KV in host RAM) 1-bit binary 1.125 bpw, Qwen3.6-27B base. Full GPU resident. Aug 30 2026: canonical 128K ctx via --no-kv-offload
+      (KV in host RAM), 10.95 tok/s; speed mode 48K KV-GPU, 22.91 tok/s; mmproj-RAM; dspark sidecar incompatible, deleted. Jul 2026 measurements: 32K=27 tok/s, 48K=20 tok/s with ngram-mod.'

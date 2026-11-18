@@ -80,7 +80,7 @@ lfm3-1.7b:
       NATIVO 262144 deployado (escada: f16 KV @262K = 3.0GB CUDA OOM; q4_0 = pico 4.14GB com folga). Decode 75 t/s, prompt
       631 t/s (Q8_0, GPU sozinha). Tool calling: 4 get_weather/ get_local_time simultaneos, JSON limpo, finish=tool_calls,
       template embedded (--jinja, sem template da casa). DUAL-MODE REAL do vendor: o modelo pensa SEMPRE e o template tem
-      toggle enable_thinking — plain pino false (respondera direto, reasoning 0 verificado), :think pin true; raciocinio nativo
+      toggle enable_thinking — plain pino false (respondera direto, reasoning 0 verificado), [handle-think-EXTINTO 12/nov/2026] pin true; raciocinio nativo
       estilo distill ("We need to..." — PT OK direto no plain). Samplers do fabricante (chat geral): temp 0.1 / top_k 50 /
       repetition_penalty 1.1 (math usa 1.0/0.95/20 na mao do client). Escorregada factual tipica de 1.7B (SP/Minas numa frase)
       — papel prompter/enhance, nao enciclopedia. GGUF em ~/.llama-models/lfm3-1.7b/. Substituição candidata do lfm2.5-2.6b

@@ -1,27 +1,16 @@
 btl-4-compact:
   name: BTL-4 Compact
-  description: BTL-4 is a 35B agentic reasoning model from Bad Theory Labs, fine-tuned
-    from Ornith-1.0-35B on an execution-gated reasoning corpus. Compact is the IQ2_XXS
-    edition at 2.30 bpw, retaining 94.1% of the full-precision model's measured behaviour.
-  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/btl-4-compact/BTL-4-IQ2_XXS.gguf\n\
-    --fit\n--fit-margin 1024\n--ctx-size 131072\n--temp 1.0\n--top-p 1.0\n--top-k\
-    \ ${code_top_k}\n--min-p ${code_min_p}\n--repeat-penalty ${code_repeat_penalty}\n\
-    --reasoning on\n--jinja\n--chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja\n\
-    --parallel 1\n--parallel-tool-calls\n--cache-type-k ${large_cache_k}\n--cache-type-v\
-    \ ${large_cache_v}\n--k-cache-hadamard\n--v-cache-hadamard\n--flash-attn auto\n\
-    --defer-experts\n--prefetch-experts\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n\
-    \  --metrics\n"
+  description: BTL-4 is a 35B agentic reasoning model from Bad Theory Labs, fine-tuned from Ornith-1.0-35B on an execution-gated reasoning corpus. Compact is the IQ2_XXS edition at 2.30 bpw, retaining 94.1%
+    of the full-precision model's measured behaviour.
+  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/btl-4-compact/BTL-4-IQ2_XXS.gguf\n--fit\n--fit-margin 1024\n--ctx-size 131072\n--temp 1.0\n--top-p 1.0\n--top-k ${code_top_k}\n--min-p ${code_min_p}\n\
+    --repeat-penalty ${code_repeat_penalty}\n--reasoning on\n--jinja\n--chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja\n--parallel 1\n--parallel-tool-calls\n--cache-type-k ${large_cache_k}\n\
+    --cache-type-v ${large_cache_v}\n--k-cache-hadamard\n--v-cache-hadamard\n--flash-attn auto\n--defer-experts\n--prefetch-experts\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n  --metrics\n"
   filters:
     stripParams: temperature, top_p
     setParamsByID:
       ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
-        temperature: 1.0
-        top_p: 1.0
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 1.0
         top_p: 1.0
   ttl: 900
@@ -54,8 +43,5 @@ btl-4-compact:
     context_length: 262144
     embedding_length: 2048
     quantization: IQ2_XXS
-    note: 'vram detalhe: ~3.3GB VRAM + ~7GB pinned RAM (ik pinned memory, estimated)
-      Fine-tuned Ornith-1.0-35B (Qwen 3.5 35B MoE). Execution-gated reasoning corpus.
-      256 experts, 8 routed, ~2.1B active/token. IQ2_XXS 2.30 bpw, 94.1% behavioural
-      retention. Per-group clip search quantization (no training, no calibration data).
-      Uses qwen-fixed-chat-template.jinja — same as Ornith.'
+    note: 'vram detalhe: ~3.3GB VRAM + ~7GB pinned RAM (ik pinned memory, estimated) Fine-tuned Ornith-1.0-35B (Qwen 3.5 35B MoE). Execution-gated reasoning corpus. 256 experts, 8 routed, ~2.1B active/token.
+      IQ2_XXS 2.30 bpw, 94.1% behavioural retention. Per-group clip search quantization (no training, no calibration data). Uses qwen-fixed-chat-template.jinja — same as Ornith.'

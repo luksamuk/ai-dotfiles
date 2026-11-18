@@ -129,7 +129,7 @@ def strip_thinking_and_extract(text: str, response_tag: Optional[str],
         think_match = re.search(think_pattern, text, flags=re.DOTALL | re.IGNORECASE)
         if think_match:
             thinking = think_match.group(1).strip()
-            text = text[:think_match.start()] + text[think_match.end():]
+            text = text[[handle-think-EXTINTO 12/nov/2026]_match.start()] + text[think_match.end():]
 
         start_pattern = rf"<{re.escape(response_tag)}>"
         start_matches = list(re.finditer(start_pattern, text, re.IGNORECASE))
@@ -476,7 +476,7 @@ def run_agent(agent_model: str, state: str, task: str,
         {"role": "user", "content": user_msg},
     ]
 
-    # max_tokens omitted = unlimited. With :think variants the reasoning budget
+    # max_tokens omitted = unlimited. With [handle-think-EXTINTO 12/nov/2026] variants the reasoning budget
     # must not eat into the content tokens the agent needs to emit the action.
     content, elapsed, tokens = chat_completion(
         agent_model, messages, max_tokens=None, temperature=0.1,
@@ -500,7 +500,7 @@ def run_world_model_simple(world_model: str, state: str, action: str,
         {"role": "user", "content": user_msg},
     ]
 
-    # max_tokens omitted = unlimited. The world model (AgentWorld with :think)
+    # max_tokens omitted = unlimited. The world model (AgentWorld with [handle-think-EXTINTO 12/nov/2026])
     # needs full headroom for both reasoning and the predicted observation;
     # capping it caused the prediction to cut off mid-state.
     content, elapsed, tokens = chat_completion(
@@ -604,11 +604,11 @@ def main():
             world_candidates = [m for m in all_models if "world" in m.lower()]
         if not world_candidates:
             world_candidates = all_models
-        # Prefer :think variant for world models — world models need thinking
+        # Prefer [handle-think-EXTINTO 12/nov/2026] variant for world models — world models need thinking
         # to simulate environments properly (AgentWorld puts reasoning in thinking,
-        # prediction in content). Without :think, reasoning leaks into content.
-        think_first = [m for m in world_candidates if m.endswith(":think")]
-        non_think = [m for m in world_candidates if not m.endswith(":think")]
+        # prediction in content). Without [handle-think-EXTINTO 12/nov/2026], reasoning leaks into content.
+        think_first = [m for m in world_candidates if m.endswith("[handle-think-EXTINTO 12/nov/2026]")]
+        non_think = [m for m in world_candidates if not m.endswith("[handle-think-EXTINTO 12/nov/2026]")]
         world_candidates = think_first + non_think
         world_model = select_model("Select World Model:", world_candidates)
 

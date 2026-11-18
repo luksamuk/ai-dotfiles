@@ -2,7 +2,7 @@
 
 Configurações para o [[https://pi.dev/][Pi Coding Agent]], assistente de código AI via CLI.
 
-O Pi é um agente de codificação no terminal que suporta múltiplos providers (Ollama, llama.cpp/Serve, servers remotos), tool-calling, raciocínio (= :think =) e compação de contexto. Repositório: [[https://github.com/badlogic/pi-mono][github.com/badlogic/pi-mono]].
+O Pi é um agente de codificação no terminal que suporta múltiplos providers (Ollama, llama.cpp/Serve, servers remotos), tool-calling, raciocínio (= [handle-think-EXTINTO 12/nov/2026] =) e compação de contexto. Repositório: [[https://github.com/badlogic/pi-mono][github.com/badlogic/pi-mono]].
 
 ** Arquivos
 
@@ -59,11 +59,11 @@ Notas:
 | =nemotron-3-nano:30b-cloud=    | Nemotron 3 Nano 30B 1M     |      1M  | não   |
 | =qwen3.5:cloud=                | Qwen 3.5 397B              |    262K  | sim   |
 
-** Modelos Locais (llama-swap) — 17 modelos base + 9 variantes :think
+** Modelos Locais (llama-swap) — 17 modelos base + 9 variantes [handle-think-EXTINTO 12/nov/2026]
 Todos os modelos do fleet estão disponíveis no Pi (exceção: modelo de embedding excluído).
-Modelos com raciocínio têm variante =:think= que ativa modo de thinking.
+Modelos com raciocínio têm variante =[handle-think-EXTINTO 12/nov/2026]= que ativa modo de thinking.
 
-| Model ID | Nome | Contexto | Input | :think |
+| Model ID | Nome | Contexto | Input | [handle-think-EXTINTO 12/nov/2026] |
 |--------------------------------+-------------------------------+----------+----------------+--------|
 | (aposentado antes)  | Ternary Bonsai 9B | 128K | text +image |   -    |
 | (aposentado antes)   | Ternary Bonsai 9B (fast) | 64K | text +image |   -    |
@@ -72,25 +72,25 @@ Modelos com raciocínio têm variante =:think= que ativa modo de thinking.
 | =lfm2.5-24b-a2b-fast= | LFM 2.5 24B A2B (fast) | 128K | text |   -    |
 | =lfm2.5-vl-3b= | LFM2.5-VL 3B | 32K | text +image |   -    |
 | =lfm3-1.7b= | LFM3 1.7B | 256K | text |   -    |
-| =lfm3-1.7b:think= | LFM3 1.7B (Thinking) (Thinking) | 256K | text |  sim  |
+| =lfm3-1.7b[handle-think-EXTINTO 12/nov/2026]= | LFM3 1.7B (Thinking) (Thinking) | 256K | text |  sim  |
 | =minicpm-v-4.7-35b= | MiniCPM-V 4.7 35B-A3B | 128K | text +image |   -    |
-| =minicpm-v-4.7-35b:think= | MiniCPM-V 4.7 35B-A3B (Thinking) | 128K | text +image |  sim  |
+| =minicpm-v-4.7-35b[handle-think-EXTINTO 12/nov/2026]= | MiniCPM-V 4.7 35B-A3B (Thinking) | 128K | text +image |  sim  |
 | =nemotron-bolt-e4b= | Nemotron 3.5 Bolt E4B | 48K | text |   -    |
-| =nemotron-bolt-e4b:think= | Nemotron 3.5 Bolt E4B (Thinking) | 48K | text |  sim  |
+| =nemotron-bolt-e4b[handle-think-EXTINTO 12/nov/2026]= | Nemotron 3.5 Bolt E4B (Thinking) | 48K | text |  sim  |
 | =ornith-1.5-35b-heretic= | Ornith 1.5 35B Heretic | 195K | text +image |   -    |
-| =ornith-1.5-35b-heretic:think= | Ornith 1.5 35B Heretic (Thinking) | 195K | text +image |  sim  |
+| =ornith-1.5-35b-heretic[handle-think-EXTINTO 12/nov/2026]= | Ornith 1.5 35B Heretic (Thinking) | 195K | text +image |  sim  |
 | =ornith-1.5-35b-heretic-fast= | Ornith 1.5 35B Heretic Fast | 128K | text +image |   -    |
-| =ornith-1.5-35b-heretic-fast:think= | Ornith 1.5 35B Heretic Fast (Thinking) | 128K | text +image |  sim  |
+| =ornith-1.5-35b-heretic-fast[handle-think-EXTINTO 12/nov/2026]= | Ornith 1.5 35B Heretic Fast (Thinking) | 128K | text +image |  sim  |
 | =qwen2.5-coder-1.5b-pollard= | Qwen2.5 Coder 1.5B Pollard | 32K | text |   -    |
 | =qwen3.6-35b-a3b-heretic= | Qwen 3.6 35B Heretic | 128K | text +image |   -    |
-| =qwen3.6-35b-a3b-heretic:think= | Qwen 3.6 35B Heretic (Thinking) | 128K | text +image |  sim  |
+| =qwen3.6-35b-a3b-heretic[handle-think-EXTINTO 12/nov/2026]= | Qwen 3.6 35B Heretic (Thinking) | 128K | text +image |  sim  |
 | =qwen3.6-35b-a3b-heretic-fast= | Qwen 3.6 35B Heretic Fast | 100K | text +image |   -    |
-| =qwen3.6-35b-a3b-heretic-fast:think= | Qwen 3.6 35B Heretic Fast (Thinking) | 100K | text +image |  sim  |
+| =qwen3.6-35b-a3b-heretic-fast[handle-think-EXTINTO 12/nov/2026]= | Qwen 3.6 35B Heretic Fast (Thinking) | 100K | text +image |  sim  |
 | =spark-x2.6-4b= | Spark X2.6 4B | 128K | text |   -    |
-| =spark-x2.6-4b:think= | Spark X2.6 4B (Thinking) | 128K | text |  sim  |
+| =spark-x2.6-4b[handle-think-EXTINTO 12/nov/2026]= | Spark X2.6 4B (Thinking) | 128K | text |  sim  |
 | =translategemma-4b= | TranslateGemma 4B | 128K | text |   -    |
 | =twil-lm3-pro= | TwIL-LM3-Pro | 128K | text |   -    |
-| =twil-lm3-pro:think= | TwIL-LM3-Pro (Thinking) | 128K | text |  sim  |
+| =twil-lm3-pro[handle-think-EXTINTO 12/nov/2026]= | TwIL-LM3-Pro (Thinking) | 128K | text |  sim  |
 
 ** Modelos Edge (Sisyphus) — 3 modelos
 
@@ -157,9 +157,9 @@ Configuração recomendada em =settings.json= para modelos locais:
 }
 #+end_src
 
-- =reserveTokens: 16384= — reserva espaço suficiente para respostas longas (+ raciocínio em modelos =:think=)
+- =reserveTokens: 16384= — reserva espaço suficiente para respostas longas (+ raciocínio em modelos =[handle-think-EXTINTO 12/nov/2026]=)
 - =keepRecentTokens: 20000= — mantém as mensagens mais recentes intactas durante compação
-- Modelo padrão atual: =ornith-1.5-35b:think= (provider =llama-swap=)
+- Modelo padrão atual: =ornith-1.5-35b[handle-think-EXTINTO 12/nov/2026]= (provider =llama-swap=)
 
 ** Uso
 
@@ -171,7 +171,7 @@ pi --model glm-5.1:cloud
 pi --model ornith-1.5-35b
 
 # Usar modelo local com raciocínio
-pi --model "ornith-1.5-35b:think"
+pi --model "ornith-1.5-35b[handle-think-EXTINTO 12/nov/2026]"
 
 # Usar modelo local multimodal (visão + áudio)
 pi --model glm-ocr
@@ -199,7 +199,7 @@ pi --list-models
 
 7. *=llama-swap= é o nome do provider* (não =local= nem =llama.cpp=). Deve bater com a chave em =models.json=.
 
-8. *=thinkingFormat: "qwen-chat-template"=* no provider =llama-swap= é obrigatório para modelos =:think=. O llama.cpp requer =chat_template_kwargs.enable_thinking= no chat template.
+8. *=thinkingFormat: "qwen-chat-template"=* no provider =llama-swap= é obrigatório para modelos =[handle-think-EXTINTO 12/nov/2026]=. O llama.cpp requer =chat_template_kwargs.enable_thinking= no chat template.
 
 9. *=supportsDeveloperRole: false= e =supportsReasoningEffort: false=* no provider =ollama= são necessários porque a API Ollama não implementa essas features do spec OpenAI.
 

@@ -1,10 +1,7 @@
 ornith-1.5-35b:
   name: Ornith 1.5 35B
-  description: Ornith-1.5 is a family of open-source LLMs trained with end-to-end
-    self-improvement — the model proposes new tasks, generates task-specific scaffolds,
-    and produces solution rollouts for RL, continuously creating new learning experiences.
-    ONYX quantization (el4, APEX evolution) with MTP speculative decoding and vision
-    support.
+  description: Ornith-1.5 is a family of open-source LLMs trained with end-to-end self-improvement — the model proposes new tasks, generates task-specific scaffolds, and produces solution rollouts for RL,
+    continuously creating new learning experiences. ONYX quantization (el4, APEX evolution) with MTP speculative decoding and vision support.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/ornith-1.5-35b/Ornith-1.5-35B-A3B-ONYX-compact.gguf
@@ -70,11 +67,6 @@ ornith-1.5-35b:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -106,9 +98,6 @@ ornith-1.5-35b:
     context_length: 262144
     embedding_length: 2048
     quantization: ONYX compact
-    note: 'vram detalhe: ~4.6GB VRAM measured + ~16GB pinned RAM (45 tok/s with MTP,
-      accept 85-93%) Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram),
-      MTP accept 85-93%, +414MiB VRAM (75.6% total). ONYX = APEX evolution (dynamic
-      layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact:
-      _disabled/ornith-1.5-35b-apex.yaml, GGUF deleted Sep 2026 (re-download from
-      mudler repo if reverting).'
+    note: 'vram detalhe: ~4.6GB VRAM measured + ~16GB pinned RAM (45 tok/s with MTP, accept 85-93%) Default since Sep 2026 A/B: 45.1 vs 40.6 tok/s (APEX+ngram), MTP accept 85-93%, +414MiB VRAM (75.6% total).
+      ONYX = APEX evolution (dynamic layer sensitivity + router-weighted imatrix), MTP head preserved. Old APEX Compact: _disabled/ornith-1.5-35b-apex.yaml, GGUF deleted Sep 2026 (re-download from mudler
+      repo if reverting).'

@@ -1,9 +1,7 @@
 qwen3.6-35b-a3b:
   name: Qwen 3.6 35B
-  description: Qwen3.6 delivers substantial upgrades in agentic coding and thinking
-    preservation. Built on direct community feedback for a more intuitive, responsive,
-    and productive coding experience. Vision enabled Sep 10 at full 131K context (needs
-    ~20GB free host RAM; 32K fallback under memory pressure).
+  description: Qwen3.6 delivers substantial upgrades in agentic coding and thinking preservation. Built on direct community feedback for a more intuitive, responsive, and productive coding experience. Vision
+    enabled Sep 10 at full 131K context (needs ~20GB free host RAM; 32K fallback under memory pressure).
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-APEX-MTP-I-Compact.gguf
@@ -67,11 +65,6 @@ qwen3.6-35b-a3b:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -103,12 +96,7 @@ qwen3.6-35b-a3b:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX-MTP I-Compact
-    note: 'vram detalhe: ~5.6 GB VRAM estimado + ~14GB pinned RAM (MTP ~+414MiB, padrão
-      ornith Sep 2026) Sep 09: reactivated com APEX-MTP I-Compact (MTP heads baked
-      in, nextn=1; o APEX plain ignorava --multi-token-prediction silenciosamente
-      — audit May 2026). --spec-type mtp:n_max=1,p_min=0.0 = receita ornith-1.5 (42.6
-      tok/s medido Sep 10, accept 85-93%). VISION re-ativada 10/09 c/ ctx FULL 131K
-      (RAM limpa: VRAM 5.4/6.1GB estável em smokes; fallback 32K sob pressão — regra
-      Jul 2026). mmproj unsloth F16, verificado tensor-a-tensor vs ornith (qwen3vl_merger,
-      proj_dim 2048). Sep 10: alinhado ao ornith — --no-mmproj-offload + --prefetch-experts
-      + top_p 0.95 nos dois modos.'
+    note: 'vram detalhe: ~5.6 GB VRAM estimado + ~14GB pinned RAM (MTP ~+414MiB, padrão ornith Sep 2026) Sep 09: reactivated com APEX-MTP I-Compact (MTP heads baked in, nextn=1; o APEX plain ignorava --multi-token-prediction
+      silenciosamente — audit May 2026). --spec-type mtp:n_max=1,p_min=0.0 = receita ornith-1.5 (42.6 tok/s medido Sep 10, accept 85-93%). VISION re-ativada 10/09 c/ ctx FULL 131K (RAM limpa: VRAM 5.4/6.1GB
+      estável em smokes; fallback 32K sob pressão — regra Jul 2026). mmproj unsloth F16, verificado tensor-a-tensor vs ornith (qwen3vl_merger, proj_dim 2048). Sep 10: alinhado ao ornith — --no-mmproj-offload
+      + --prefetch-experts + top_p 0.95 nos dois modos.'

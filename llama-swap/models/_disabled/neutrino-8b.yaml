@@ -1,8 +1,6 @@
 neutrino-8b:
   name: Neutrino 8B
-  description: 'Fermion Research Neutrino-1: 8B ternary model (TRTC v4, sub-2-bit).
-    2.56GB download, 72.1 MMLU, 65.31 BFCL v3. Based on Qwen3-8B with ternary QAT.
-    Runs on 4.68 GiB VRAM.'
+  description: 'Fermion Research Neutrino-1: 8B ternary model (TRTC v4, sub-2-bit). 2.56GB download, 72.1 MMLU, 65.31 BFCL v3. Based on Qwen3-8B with ternary QAT. Runs on 4.68 GiB VRAM.'
   cmd: '${fv5_llama_server} --port ${PORT}
 
     --model ${models_dir}/neutrino-8b/gguf/neutrino-8b-fv5.gguf
@@ -45,12 +43,6 @@ neutrino-8b:
         temperature: 0.01
         top_p: 1.0
         repeat_penalty: 1.05
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
-        repeat_penalty: 1.05
   ttl: 60
   health_check_timeout: 300
   capabilities:
@@ -78,6 +70,4 @@ neutrino-8b:
     context_length: 40960
     embedding_length: 4096
     quantization: TRTC v4 (FV5 ternary, sub-2-bit)
-    note: '5-valued ternary weights (-1,-0.5,0,+0.5,+1). Requires fermion-llama.cpp
-      fork (branch fermion-fv5). Tool calling: greedy temp=0, rep_penalty=1.0. 62.63%
-      of weights are zero.'
+    note: '5-valued ternary weights (-1,-0.5,0,+0.5,+1). Requires fermion-llama.cpp fork (branch fermion-fv5). Tool calling: greedy temp=0, rep_penalty=1.0. 62.63% of weights are zero.'

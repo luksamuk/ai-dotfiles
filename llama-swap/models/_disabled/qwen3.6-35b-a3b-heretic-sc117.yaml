@@ -1,8 +1,6 @@
 qwen3.6-35b-a3b-heretic:
   name: Qwen 3.6 35B Heretic
-  description: 'Uncensored drop-in do qwen3.6-35b-a3b (heretic, KL 0.0015, 88% menos
-    recusas). Mesma estrutura: APEX-MTP nextn=1, vision via mmproj compartilhado,
-    131K ctx, q4_0+attn_rot+hadamard.'
+  description: 'Uncensored drop-in do qwen3.6-35b-a3b (heretic, KL 0.0015, 88% menos recusas). Mesma estrutura: APEX-MTP nextn=1, vision via mmproj compartilhado, 131K ctx, q4_0+attn_rot+hadamard.'
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/qwen3.6-35b-a3b-heretic/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-I-Compact.gguf
@@ -66,11 +64,6 @@ qwen3.6-35b-a3b-heretic:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -86,8 +79,7 @@ qwen3.6-35b-a3b-heretic:
     size: ~15.85 GB (APEX-I-Compact, heretic)
     context: 102400
     vram_usage: ~5.6 GB VRAM
-    source: SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF
-      (I-Compact) + mmproj unsloth F16 (compartilhado do qwen3.6-35b-a3b)
+    source: SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth F16 (compartilhado do qwen3.6-35b-a3b)
     kv_cache: q4_0/q4_0 + hadamard
     features:
       completion: true
@@ -103,9 +95,6 @@ qwen3.6-35b-a3b-heretic:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX I-Compact
-    note: 'vram detalhe: ~5.6 GB VRAM estimado + ~14GB pinned RAM (MTP ~+414MiB, padrao
-      q36) Sep 21: drop-in uncensored do q36. Heretic do llmfan46 (KL 0.0015 vs base)
-      quantizado pelo SC117 com nextn=1 preservado (753 tensors = bit-compatible com
-      APEX-MTP original; header verificado). mmproj e o MESMO arquivo do q36 (vision
-      tower do base, heretic nao toca). MTP: --spec-type mtp:n_max=1,p_min=0.0 (receita
-      ornith/q36).'
+    note: 'vram detalhe: ~5.6 GB VRAM estimado + ~14GB pinned RAM (MTP ~+414MiB, padrao q36) Sep 21: drop-in uncensored do q36. Heretic do llmfan46 (KL 0.0015 vs base) quantizado pelo SC117 com nextn=1
+      preservado (753 tensors = bit-compatible com APEX-MTP original; header verificado). mmproj e o MESMO arquivo do q36 (vision tower do base, heretic nao toca). MTP: --spec-type mtp:n_max=1,p_min=0.0
+      (receita ornith/q36).'

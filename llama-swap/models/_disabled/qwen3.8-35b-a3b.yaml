@@ -1,7 +1,6 @@
 qwen3.8-35b-a3b:
   name: Qwen 3.8 35B Distill
-  description: Empero distill de Qwen3.8 (2.4T A95B) em Qwen3.6-35B-A3B. CoT destilado,
-    math/code-weighted. Thinking sempre ligado. APEX-I-Compact + mmproj F16. Sem MTP.
+  description: Empero distill de Qwen3.8 (2.4T A95B) em Qwen3.6-35B-A3B. CoT destilado, math/code-weighted. Thinking sempre ligado. APEX-I-Compact + mmproj F16. Sem MTP.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/qwen3.8-35b-a3b/Qwen3.8-35B-A3B-Distill-APEX-I-Compact.gguf
@@ -63,11 +62,6 @@ qwen3.8-35b-a3b:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -83,9 +77,7 @@ qwen3.8-35b-a3b:
     size: ~16.5 GB (APEX-I-Compact) + 858 MB mmproj F16
     context: 131072
     vram_usage: ~5 GB VRAM + ~11 GB RAM pinned
-    source: MrFuzzihead/Qwen3.8-35B-A3B-Distill-APEX-GGUF (APEX-I-Compact, imatrix
-      agentic/tool-calling) + mmproj F16 oficial empero-ai (SHA256SUMS verificados
-      17/09)
+    source: MrFuzzihead/Qwen3.8-35B-A3B-Distill-APEX-GGUF (APEX-I-Compact, imatrix agentic/tool-calling) + mmproj F16 oficial empero-ai (SHA256SUMS verificados 17/09)
     kv_cache: q4_0 + attn_rot + hadamard
     features:
       completion: true
@@ -101,11 +93,6 @@ qwen3.8-35b-a3b:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX-I-Compact
-    note: 'vram detalhe: ~4-5 GB estimado + ~11GB pinned RAM — medir no smoke Sep
-      17: onboarding. Quant primario APEX-I-Compact (receita validada do q36); IQ4_XS
-      em disco para A/B no smoke — fica o vencedor, perdedor deletado. Sampler vendor
-      do card: temp 0.6 / top_p 0.95 / top_k 20 (filters + models.json). Greedy =
-      failure mode documentado (repetition loop). Thinking always-on (traces de professor,
-      sem toggle real). Sem MTP. Smoke + speed-bench pendentes; rebuild/sync da config
-      so apos ichef2 do occamy fechar (watcher reload derruba o llama-server no meio
-      da run).'
+    note: 'vram detalhe: ~4-5 GB estimado + ~11GB pinned RAM — medir no smoke Sep 17: onboarding. Quant primario APEX-I-Compact (receita validada do q36); IQ4_XS em disco para A/B no smoke — fica o vencedor,
+      perdedor deletado. Sampler vendor do card: temp 0.6 / top_p 0.95 / top_k 20 (filters + models.json). Greedy = failure mode documentado (repetition loop). Thinking always-on (traces de professor, sem
+      toggle real). Sem MTP. Smoke + speed-bench pendentes; rebuild/sync da config so apos ichef2 do occamy fechar (watcher reload derruba o llama-server no meio da run).'

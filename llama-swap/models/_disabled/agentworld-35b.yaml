@@ -1,26 +1,16 @@
 agentworld-35b:
   name: Qwen AgentWorld 35B
-  description: Qwen's native language world model. 35B params, 3B active. Simulates
-    7 agent environments (MCP, Search, Terminal, SWE, Android, Web, OS) via long chain-of-thought
-    reasoning. Trained from CPT onward for environment modeling.
-  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/agentworld-35b/Qwen-AgentWorld-35B-A3B-APEX-I-Compact.gguf\n\
-    --fit\n--fit-margin 512\n--ctx-size 131072\n--temp ${think_temp}\n--top-p ${think_top_p}\n\
-    --top-k ${think_top_k}\n--min-p ${think_min_p}\n--repeat-penalty ${think_repeat_penalty}\n\
-    --reasoning on\n--jinja\n--parallel 1\n--cache-type-k ${large_cache_k}\n--cache-type-v\
-    \ ${large_cache_v}\n--k-cache-hadamard\n--v-cache-hadamard\n--flash-attn auto\n\
-    --defer-experts\n--prefetch-experts\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n\
-    \  --metrics\n"
+  description: Qwen's native language world model. 35B params, 3B active. Simulates 7 agent environments (MCP, Search, Terminal, SWE, Android, Web, OS) via long chain-of-thought reasoning. Trained from
+    CPT onward for environment modeling.
+  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/agentworld-35b/Qwen-AgentWorld-35B-A3B-APEX-I-Compact.gguf\n--fit\n--fit-margin 512\n--ctx-size 131072\n--temp ${think_temp}\n--top-p ${think_top_p}\n\
+    --top-k ${think_top_k}\n--min-p ${think_min_p}\n--repeat-penalty ${think_repeat_penalty}\n--reasoning on\n--jinja\n--parallel 1\n--cache-type-k ${large_cache_k}\n--cache-type-v ${large_cache_v}\n--k-cache-hadamard\n\
+    --v-cache-hadamard\n--flash-attn auto\n--defer-experts\n--prefetch-experts\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n  --metrics\n"
   filters:
     stripParams: temperature, top_p
     setParamsByID:
       ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
-        temperature: 0.6
-        top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 0.6
         top_p: 0.95
   ttl: 600
@@ -54,7 +44,5 @@ agentworld-35b:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX I-Compact
-    note: 'vram detalhe: ~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated
-      33-34 t/s) World model — simulates 7 agent environments. Use with worldsim CLI.
-      Thinking mode recommended for simulation fidelity. 131K ctx safe max with APEX
-      I-Compact (same as Qwen3.6/Ornith).'
+    note: 'vram detalhe: ~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s) World model — simulates 7 agent environments. Use with worldsim CLI. Thinking mode recommended for simulation
+      fidelity. 131K ctx safe max with APEX I-Compact (same as Qwen3.6/Ornith).'

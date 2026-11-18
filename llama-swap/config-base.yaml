@@ -74,8 +74,10 @@ macros:
   # Build VULKAN (o fork implementa ggml_mhc_route/merge em CPU e Vulkan — sem CUDA);
   # NVIDIA serve via Vulkan igualmente. Upstream ggml-org ainda SEM o arch (PR pendente).
   "prism2_llama_server": "${env.HOME}/git/prismml-eng-llama.cpp/build/bin/llama-server"
-  # Build local em ~/git/llama.cpp-sensenova-loop/build/bin/llama-server (31/out/2026)
-  "sensenova_server": "${env.HOME}/git/llama.cpp-sensenova-loop/build/bin/llama-server"
+  # Build CUDA em ~/projects/ai/sensenova-loop-fork/build/bin/llama-server (17/nov/2026).
+  # Lanes sensenova sao CPU-only: cmd manda CUDA_VISIBLE_DEVICES= (vazio) — o binario
+  # GGML_CUDA nunca inicia contexto e nao toca a GPU. Fork: mission-deny/GuideboardLabs.
+  "sensenova_server": "${env.HOME}/projects/ai/sensenova-loop-fork/build/bin/llama-server"
 
   # Caminho para o llama-server do runtime COMUNITARIO com visao (sensenova_loop via
   # classe qwen35 + mHC + patches notfakerv/annelo: clover PR 31306 + native, base ff0d396e3)

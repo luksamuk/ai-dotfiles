@@ -1,7 +1,6 @@
 mellum2-12b-a2.5b:
   name: Mellum 2 12B
-  description: JetBrains coding MoE — 12B total, 2.5B active. Excels at tool use,
-    agentic workflows, code generation and reasoning.
+  description: JetBrains coding MoE — 12B total, 2.5B active. Excels at tool use, agentic workflows, code generation and reasoning.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/Mellum2-12B-A2.5B-Thinking-Q4_K_M.gguf
@@ -47,11 +46,6 @@ mellum2-12b-a2.5b:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
   ttl: 300
   health_check_timeout: 300
   capabilities:
@@ -67,13 +61,9 @@ mellum2-12b-a2.5b:
     context: 131072
     vram_usage: ~4.5 GB VRAM + ~3 GB RAM
     source: RJ000/Mellum2-12B-A2.5B-Thinking-GGUF (Q4_K_M)
-    note: 'vram detalhe: ~4.5GB VRAM + ~3GB RAM (partial expert offload) Community
-      quant (RJ000). ik-pinned since #1919 (Mellum2 arch + split mode). MoE offload
-      optimized.'
-    caveat: 'GGUF Thinking always produces reasoning. Base variant (enable_thinking:
-      false) leaks inline text — use :think for clean separation (reasoning_content).
-      Parallel tool calls work with --parallel-tool-calls. Occasional content leakage
-      before tool calls on ambiguous prompts.'
+    note: 'vram detalhe: ~4.5GB VRAM + ~3GB RAM (partial expert offload) Community quant (RJ000). ik-pinned since #1919 (Mellum2 arch + split mode). MoE offload optimized.'
+    caveat: 'GGUF Thinking always produces reasoning. Base variant (enable_thinking: false) leaks inline text — use -think-handle-extinto- for clean separation (reasoning_content). Parallel tool calls work with --parallel-tool-calls.
+      Occasional content leakage before tool calls on ambiguous prompts.'
     kv_cache: q8_0 + q4_0
     features:
       completion: true

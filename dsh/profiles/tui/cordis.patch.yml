@@ -8,6 +8,9 @@
           supportsDeveloperRole: false
           maxTokensField: max_tokens
         models:
+        - id: sensenova-loop-9b
+          contextWindow: 16384
+          input: [text]
         - id: ornith-1.5-9b-heretic
           input:
           - text
@@ -271,4 +274,12 @@
       args: [mcp]
       env:
         CUA_DRIVER_RS_ENABLE_WAYLAND: '1'
+      failOnStartupError: true
+- insert:
+  - id: mcp-pesquisarr
+    name: '@deepseek-ai/dsh-mcp-client'
+    config:
+      serverName: pesquisarr
+      transport: streamable-http
+      url: http://100.72.245.16:8895/api/mcp
       failOnStartupError: true

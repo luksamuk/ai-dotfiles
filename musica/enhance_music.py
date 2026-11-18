@@ -90,7 +90,7 @@ def enhance(prompt: str, lyrics: str, model: str) -> str:
             "model": model,
             "temperature": 0.4,
             # sem max_tokens: sem teto de tokens (convenção da casa — handles
-            # :think queimam tokens de reasoning antes do caption; diffuse não
+            # [handle-think-EXTINTO 12/nov/2026] queimam tokens de reasoning antes do caption; diffuse não
             # limita e o h3 usa 65536). O guard de finish_reason fica por garantia.
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
@@ -103,7 +103,7 @@ def enhance(prompt: str, lyrics: str, model: str) -> str:
     text = (choice["message"].get("content") or "").strip()
     if not text and choice.get("finish_reason") == "length":
         raise RuntimeError(
-            "enhance cortado em max_tokens (reasoning comeu o orçamento) — tente um handle sem :think"
+            "enhance cortado em max_tokens (reasoning comeu o orçamento) — tente um handle sem [handle-think-EXTINTO 12/nov/2026]"
         )
     # higiene: LLMs teimosos às vezes cercam com ``` ou "caption:" — cortar
     text = re.sub(r"^```[a-z]*\n?|```\n?$", "", text, flags=re.M).strip()

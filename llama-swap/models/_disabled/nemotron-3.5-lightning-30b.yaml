@@ -1,25 +1,15 @@
 nemotron-3.5-lightning-30b:
   name: Nemotron 3.5 Lightning 30B
-  description: NVIDIA Nemotron 3.5 Lightning is a 30B Mixture-of-Experts model with
-    3B active parameters, built on a hybrid Mamba-2 + MoE + Attention architecture.
-    Designed for always-on agents and high-volume specialized task execution. Configurable
-    reasoning mode.
-  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/nemotron-3.5-lightning-30b/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_K_M.gguf\n\
-    --fit on\n--fit-target 256\n--ctx-size 131072\n--temp 1.0\n--top-p 0.95\n--top-k\
-    \ -1\n--min-p 0.0\n--repeat-penalty 1.0\n--reasoning on\n--jinja\n--parallel 1\n\
-    --cache-type-k ${large_cache_k}\n--cache-type-v ${large_cache_v}\n--flash-attn\
-    \ auto\n--n-cpu-moe 99\n  --metrics\n"
+  description: NVIDIA Nemotron 3.5 Lightning is a 30B Mixture-of-Experts model with 3B active parameters, built on a hybrid Mamba-2 + MoE + Attention architecture. Designed for always-on agents and high-volume
+    specialized task execution. Configurable reasoning mode.
+  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/nemotron-3.5-lightning-30b/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_K_M.gguf\n--fit on\n--fit-target 256\n--ctx-size 131072\n--temp 1.0\n--top-p\
+    \ 0.95\n--top-k -1\n--min-p 0.0\n--repeat-penalty 1.0\n--reasoning on\n--jinja\n--parallel 1\n--cache-type-k ${large_cache_k}\n--cache-type-v ${large_cache_v}\n--flash-attn auto\n--n-cpu-moe 99\n  --metrics\n"
   filters:
     stripParams: temperature, top_p
     setParamsByID:
       ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
-        temperature: 1.0
-        top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 1.0
         top_p: 0.95
   ttl: 600
@@ -52,8 +42,5 @@ nemotron-3.5-lightning-30b:
     context_length: 131072
     embedding_length: 3072
     quantization: q4_k_m
-    note: 'vram detalhe: ~5GB VRAM + ~19GB RAM (upstream llama.cpp, --fit managed)
-      30B MoE with hybrid Mamba-2 + MoE + Attention. 3B active per token. Q4_K_M quant
-      (23.7GB). NVFP4 tested but unusably slow on Ampere (0.6 tok/s). Mamba-2 SSM
-      layers need no KV cache — only attention layers do. No Portuguese support (EN/ES/FR/DE/IT/JA).
-      OpenMDW-1.1 license.'
+    note: 'vram detalhe: ~5GB VRAM + ~19GB RAM (upstream llama.cpp, --fit managed) 30B MoE with hybrid Mamba-2 + MoE + Attention. 3B active per token. Q4_K_M quant (23.7GB). NVFP4 tested but unusably slow
+      on Ampere (0.6 tok/s). Mamba-2 SSM layers need no KV cache — only attention layers do. No Portuguese support (EN/ES/FR/DE/IT/JA). OpenMDW-1.1 license.'

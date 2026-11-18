@@ -1,8 +1,7 @@
 ornith-1.0-9b:
   name: Ornith 1.0 9B
-  description: Ornith-1.0 is a family of open-source LLMs specialized for agentic
-    coding, trained with a novel self-scaffolding reinforcement learning approach
-    that jointly optimizes the scaffold and the solution.
+  description: Ornith-1.0 is a family of open-source LLMs specialized for agentic coding, trained with a novel self-scaffolding reinforcement learning approach that jointly optimizes the scaffold and the
+    solution.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/ornith-1.0-9b/ornith-1.0-9b-Q4_K_M.gguf
@@ -52,11 +51,6 @@ ornith-1.0-9b:
           enable_thinking: false
         temperature: 1.0
         top_p: 1.0
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 1.0
-        top_p: 1.0
   ttl: 60
   health_check_timeout: 300
   capabilities:
@@ -87,6 +81,5 @@ ornith-1.0-9b:
     context_length: 262144
     embedding_length: 4096
     quantization: Q4_K_M
-    note: 'vram detalhe: ~5.2GB VRAM (text-only, ik with hadamard cache) Post-trained
-      Qwen 3.5 9B Dense + Gemma 4. Self-scaffolding RL for agentic coding. Identity
-      bleeds as ''trained by Google'' — use system prompt to override.'
+    note: 'vram detalhe: ~5.2GB VRAM (text-only, ik with hadamard cache) Post-trained Qwen 3.5 9B Dense + Gemma 4. Self-scaffolding RL for agentic coding. Identity bleeds as ''trained by Google'' — use
+      system prompt to override.'

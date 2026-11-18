@@ -1,7 +1,6 @@
 qwen3.6-27b:
   name: Qwen 3.6 27B
-  description: Qwen3.6-27B is a dense 27B parameter model delivering frontier-level
-    performance in reasoning, coding, and multilingual tasks.
+  description: Qwen3.6-27B is a dense 27B parameter model delivering frontier-level performance in reasoning, coding, and multilingual tasks.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/Qwen3.6-27B.i1-Q3_K_M.gguf
@@ -49,11 +48,6 @@ qwen3.6-27b:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.9
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
   ttl: 120
   capabilities:
     in:
@@ -83,6 +77,5 @@ qwen3.6-27b:
     context_length: 262144
     embedding_length: 4608
     quantization: i1-Q3_K_M
-    note: 'vram detalhe: ~5GB VRAM + ~7GB RAM (ik pinned memory, hadamard cache) Snake
-      23/25 (missed wasd, self_collision). 3.65 tok/s on RTX 3050 6GB. DISABLED: too
-      slow + 13GB disk for ~4 tok/s not justified. 35B MoE covers heavy niche.'
+    note: 'vram detalhe: ~5GB VRAM + ~7GB RAM (ik pinned memory, hadamard cache) Snake 23/25 (missed wasd, self_collision). 3.65 tok/s on RTX 3050 6GB. DISABLED: too slow + 13GB disk for ~4 tok/s not justified.
+      35B MoE covers heavy niche.'

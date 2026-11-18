@@ -1,8 +1,7 @@
 qwen3.5-4b-abliterated:
   name: Qwen3.5 4B Abliterated
-  description: Qwen 3.5 is a family of open-source multimodal models that delivers
-    exceptional utility and performance. Abliterated variant with refusal behaviors
-    removed for adversarial testing and NSFW prompt enhancement.
+  description: Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance. Abliterated variant with refusal behaviors removed for adversarial testing and NSFW
+    prompt enhancement.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/qwen3.5-4b-abliterated/Huihui-Qwen3.5-4B-abliterated.Q4_K_M.gguf
@@ -64,11 +63,6 @@ qwen3.5-4b-abliterated:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.9
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
   ttl: 60
   health_check_timeout: 300
   capabilities:
@@ -99,7 +93,5 @@ qwen3.5-4b-abliterated:
       insert: false
       audio: false
       image: false
-    note: 'vram detalhe: ~4.5GB VRAM (model 2.71GB + q4_0/q4_0 hadamard cache + compute)
-      Abliterated variant — refusal behaviors removed via Abliterix. Parameters aligned
-      to qwen3.5-4b normal (Aug 2026). Uses Huihui-Qwen3.5-4B-abliterated (renamed
-      from Qwen3.5-4B-abliterated-i1).'
+    note: 'vram detalhe: ~4.5GB VRAM (model 2.71GB + q4_0/q4_0 hadamard cache + compute) Abliterated variant — refusal behaviors removed via Abliterix. Parameters aligned to qwen3.5-4b normal (Aug 2026).
+      Uses Huihui-Qwen3.5-4B-abliterated (renamed from Qwen3.5-4B-abliterated-i1).'

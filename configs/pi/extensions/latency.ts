@@ -72,6 +72,6 @@ export default function (pi: ExtensionAPI) {
   });
 
   function shortModel(modelId: string): string {
-    return modelId.replace(/:think$/, "+t").replace(/:cloud$/, "☁");
+    return modelId.replace(/[handle-think-EXTINTO 12/nov/2026]$/, "+t").replace(/:cloud$/, "☁");
   }
 }

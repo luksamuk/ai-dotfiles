@@ -1,8 +1,6 @@
 north-mini-code:
   name: North Mini Code
-  description: Cohere's first open-source agentic coding model. 30B MoE with only
-    3B active params, optimized for code generation, agentic software engineering,
-    and terminal tasks.
+  description: Cohere's first open-source agentic coding model. 30B MoE with only 3B active params, optimized for code generation, agentic software engineering, and terminal tasks.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/north-mini-code-iq4xs/North-Mini-Code-1.0-IQ4_XS.gguf
@@ -50,11 +48,6 @@ north-mini-code:
       ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
-        temperature: 1.0
-        top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 1.0
         top_p: 0.95
   ttl: 300

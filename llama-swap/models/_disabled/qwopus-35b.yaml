@@ -1,15 +1,13 @@
 qwopus-35b:
   name: Qwopus 35B
-  description: Qwopus3.5 is a reasoning-enhanced model family fine-tuned from Qwen3.5
-    designed to improve reasoning stability and correctness, especially in programming.
+  description: Qwopus3.5 is a reasoning-enhanced model family fine-tuned from Qwen3.5 designed to improve reasoning stability and correctness, especially in programming.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/Qwopus3.6-35B-A3B-v1-APEX-I-Compact.gguf
 
     # No --no-mmproj: ik_llama.cpp doesn''t support this flag (upstream-only)
 
-    # No --fit-ctx: ik_llama.cpp doesn''t support this flag; --ctx-size serves as
-    ceiling
+    # No --fit-ctx: ik_llama.cpp doesn''t support this flag; --ctx-size serves as ceiling
 
     --fit
 
@@ -58,11 +56,6 @@ qwopus-35b:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.85
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
   ttl: 120
   capabilities:
     in:
@@ -92,8 +85,6 @@ qwopus-35b:
     context_length: 262144
     embedding_length: 2048
     quantization: I-Compact
-    warning: 'Vision disabled — mmproj blocks partial expert offload. APEX I-Compact:
-      edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. --defer-experts speeds up model
-      loading. --flash-attn auto saves overhead on short prompts.'
-    note: 'vram detalhe: ~5GB VRAM + ~11GB RAM (APEX mixed-precision offload, ik_llama.cpp
-      pinned memory)'
+    warning: 'Vision disabled — mmproj blocks partial expert offload. APEX I-Compact: edges Q4_K, middle Q3_K, shared Q6_K, attn Q4_K. --defer-experts speeds up model loading. --flash-attn auto saves overhead
+      on short prompts.'
+    note: 'vram detalhe: ~5GB VRAM + ~11GB RAM (APEX mixed-precision offload, ik_llama.cpp pinned memory)'

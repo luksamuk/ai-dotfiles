@@ -20,8 +20,8 @@
 #               ornith-1.5-35b-heretic — o k2-horizon-36b estava _disabled
 #               desde 16/out, então era um fallback morto.
 diffuse:
-  model: qwen3.6-35b-a3b-heretic:think
-  fallback: ornith-1.5-35b-heretic:think
+  model: qwen3.6-35b-a3b-heretic[handle-think-EXTINTO 12/nov/2026]
+  fallback: ornith-1.5-35b-heretic[handle-think-EXTINTO 12/nov/2026]
   # seleção de LoRA (F1, 20/out/2026): llm = rerank ColBERT + LLM escolhe (histórico);
   # decision = modelo de decisão via /v1/systemone (d1-2b validado 27/out: recall@3
   # 100%, 6/6 casos OK, 0 falsos no controle — IDENTICO ao d1-3b no mesmo harness).
@@ -31,8 +31,8 @@ diffuse:
   decision_threshold: 0.5
   decision_max: 2           # 25/out: teto 2 (pedido do user) — 4 empilhados derreteram o render
 h3:
-  model: qwen3.6-35b-a3b-heretic:think
-  fallback: ornith-1.5-35b-heretic:think
+  model: qwen3.6-35b-a3b-heretic[handle-think-EXTINTO 12/nov/2026]
+  fallback: ornith-1.5-35b-heretic[handle-think-EXTINTO 12/nov/2026]
   # 21/out/2026: seleção de LoRA herdada do diffuse (mesmo schema e mesmos valores).
   # Medido no harness do H3 (14 casos, catálogo de 18): decision d1-3b = recall@4 100%,
   # 3/3 negativos limpos, 0,7s. llm (heretic) = 77%, 1 falso positivo, 14,7s.
@@ -43,11 +43,11 @@ h3:
   decision_max: 3          # 22/out: teto 3 (pedido do user); turbo conta separado
   lora_selector: decision   # llm | decision — espelha a chave do diffuse. decision: o LLM so escreve o prompt
 ltx:
-  model: qwen3.6-35b-a3b-heretic:think
-  fallback: ornith-1.5-35b-heretic:think
+  model: qwen3.6-35b-a3b-heretic[handle-think-EXTINTO 12/nov/2026]
+  fallback: ornith-1.5-35b-heretic[handle-think-EXTINTO 12/nov/2026]
 musica:
-  model: qwen3.6-35b-a3b-heretic:think
-  fallback: ornith-1.5-35b-heretic:think
+  model: qwen3.6-35b-a3b-heretic[handle-think-EXTINTO 12/nov/2026]
+  fallback: ornith-1.5-35b-heretic[handle-think-EXTINTO 12/nov/2026]
   # 30/out/2026: musica entra na frota de enhance (wrapper do ai-dotfiles/musica).
   # O LLM so reescreve a LEgendA (structured caption); lyrics são contexto
   # somente-leitura. Params de console (bpm p/ ace_step) ficam com o decision:

@@ -1,8 +1,7 @@
 qwen3.5-9b:
   name: Qwen3.5 9B
-  description: Qwen 3.5 is a family of open-source multimodal models that delivers
-    exceptional utility and performance, integrating breakthroughs in multimodal learning,
-    architectural efficiency, and reinforcement learning.
+  description: Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement
+    learning.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/Qwen3.5-9B-MoQ-3.6.gguf
@@ -64,11 +63,6 @@ qwen3.5-9b:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.9
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
   ttl: 60
   health_check_timeout: 300
   capabilities:
@@ -99,9 +93,6 @@ qwen3.5-9b:
     context_length: 262144
     embedding_length: 4096
     quantization: MoQ-3.6
-    note: 'vram detalhe: ~4.8GB VRAM (text-only, ik with hadamard cache) MoQ-3.6 replaces
-      UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25 vs 20/25 Snake),
-      32% smaller (3.75 vs 5.55 GB). MTP OOM on 6GB VRAM. OOM fix: q4_0 K cache (was
-      q8_0), ctx-checkpoints=0, batch-size=512, ubatch=128 — prevents CUDA OOM at
-      ~92K tokens on RTX 3050 6GB. --spec-type ngram-mod removed (spec decode buffers
+    note: 'vram detalhe: ~4.8GB VRAM (text-only, ik with hadamard cache) MoQ-3.6 replaces UD-Q4_K_XL: same speed (12.2 tok/s), equal+ quality (21/25 vs 20/25 Snake), 32% smaller (3.75 vs 5.55 GB). MTP OOM
+      on 6GB VRAM. OOM fix: q4_0 K cache (was q8_0), ctx-checkpoints=0, batch-size=512, ubatch=128 — prevents CUDA OOM at ~92K tokens on RTX 3050 6GB. --spec-type ngram-mod removed (spec decode buffers
       compete for VRAM with context checkpoints, aggravating OOM).'

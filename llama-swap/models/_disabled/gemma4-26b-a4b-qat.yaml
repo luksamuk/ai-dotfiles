@@ -1,7 +1,6 @@
 gemma4-26b-a4b-qat-ik:
   name: Gemma 4 26B MoE QAT
-  description: Gemma 4 26B-A4B with Quantization-Aware Training (Q4_0). MoE reasoning
-    + coding model.
+  description: Gemma 4 26B-A4B with Quantization-Aware Training (Q4_0). MoE reasoning + coding model.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/gemma-4-26B_q4_0-it.gguf
@@ -45,11 +44,6 @@ gemma4-26b-a4b-qat-ik:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 1.0
-        top_p: 0.95
   ttl: 300
   capabilities:
     in:
@@ -79,6 +73,5 @@ gemma4-26b-a4b-qat-ik:
     context_length: 262144
     embedding_length: 2816
     quantization: Q4_0_QAT
-    note: 'vram detalhe: ~5GB VRAM + ~9.5GB RAM (24 GPU layers, ik pinned memory)
-      Google QAT checkpoint. MoE 26B/4B active — 24 GPU layers on RTX 3050 6GB. ik
-      --gpu-layers 24, --fit causes OOM. Speed TBD after benchmark.'
+    note: 'vram detalhe: ~5GB VRAM + ~9.5GB RAM (24 GPU layers, ik pinned memory) Google QAT checkpoint. MoE 26B/4B active — 24 GPU layers on RTX 3050 6GB. ik --gpu-layers 24, --fit causes OOM. Speed TBD
+      after benchmark.'

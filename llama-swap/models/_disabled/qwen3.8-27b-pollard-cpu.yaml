@@ -1,7 +1,6 @@
 qwen3.8-27b-pollard-cpu:
   name: Qwen3.8 27B Pollard (CPU-only)
-  description: Qwen3.8-27B dense VLM (DeltaNet hybrid), Pollard IQ3_S, CPU-only inference.
-    Zero VRAM — coexists with GPU MoE models. A/B variant for CPU vs GPU-offload comparison.
+  description: Qwen3.8-27B dense VLM (DeltaNet hybrid), Pollard IQ3_S, CPU-only inference. Zero VRAM — coexists with GPU MoE models. A/B variant for CPU vs GPU-offload comparison.
   cmd: 'env CUDA_VISIBLE_DEVICES=
 
     ${ik_llama_server} --port ${PORT}
@@ -52,12 +51,6 @@ qwen3.8-27b-pollard-cpu:
         temperature: 0.7
         top_p: 0.8
         presence_penalty: 1.5
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 1.0
-        top_p: 0.95
-        presence_penalty: 0.0
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -89,7 +82,5 @@ qwen3.8-27b-pollard-cpu:
     context_length: 262144
     embedding_length: 5120
     quantization: Pollard IQ3_S (imatrix Qwen3.8-27B, from Q8_0)
-    note: 'vram detalhe: 0 (CPU-only) vram_usage detalhe: 0 MiB VRAM (CUDA_VISIBLE_DEVICES=).
-      All in RAM, ~14 GB RSS. Verify with nvidia-smi --query-compute-apps. CPU-only
-      A/B variant of qwen3.8-27b-pollard. Same samplers. MTP spec decode (Pollard
-      GGUF HAS NextN head blk.64, verified). APEX CPU-only reference: 3.40 tok/s.'
+    note: 'vram detalhe: 0 (CPU-only) vram_usage detalhe: 0 MiB VRAM (CUDA_VISIBLE_DEVICES=). All in RAM, ~14 GB RSS. Verify with nvidia-smi --query-compute-apps. CPU-only A/B variant of qwen3.8-27b-pollard.
+      Same samplers. MTP spec decode (Pollard GGUF HAS NextN head blk.64, verified). APEX CPU-only reference: 3.40 tok/s.'

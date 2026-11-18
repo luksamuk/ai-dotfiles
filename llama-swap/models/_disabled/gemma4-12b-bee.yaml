@@ -1,7 +1,6 @@
 gemma4-12b-bee:
   name: Gemma 4 12B (Bee)
-  description: Gemma 4 12B Q4_0 — BeeLlama.cpp v0.4.4 com KVarN kvarn4 KV cache. Multimodal
-    unificado (texto+áudio+imagem).
+  description: Gemma 4 12B Q4_0 — BeeLlama.cpp v0.4.4 com KVarN kvarn4 KV cache. Multimodal unificado (texto+áudio+imagem).
   cmd: '${bee_server} --port ${PORT}
 
     --model ${models_dir}/gemma-4-12b/gemma-4-12b-it-Q4_0.gguf
@@ -39,7 +38,7 @@ gemma4-12b-bee:
         enable_thinking: false
       temperature: 0.7
       top_p: 0.9
-    ${MODEL_ID}:think:
+    ${MODEL_ID}-think-handle-extinto-:
       chat_template_kwargs:
         enable_thinking: true
       temperature: 0.6
@@ -64,6 +63,5 @@ gemma4-12b-bee:
     parameters: 12000000000
     context_length: 8192
     quantization: Q4_0
-    note: 'vram detalhe: ~6.9GB com kvarn4 BeeLlama.cpp v0.4.4 com KVarN kvarn4 (suportado
-      so em Qwen3.6/Gemma 4). mmproj unificado vision+audio (gemma4a preprocessor).
-      ctx 131072 proibido p/ audio (crash mtmd). tools=false: validar antes de habilitar.'
+    note: 'vram detalhe: ~6.9GB com kvarn4 BeeLlama.cpp v0.4.4 com KVarN kvarn4 (suportado so em Qwen3.6/Gemma 4). mmproj unificado vision+audio (gemma4a preprocessor). ctx 131072 proibido p/ audio (crash
+      mtmd). tools=false: validar antes de habilitar.'

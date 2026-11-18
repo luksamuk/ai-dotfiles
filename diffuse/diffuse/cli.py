@@ -377,7 +377,7 @@ def parse_args() -> argparse.Namespace:
         "--enhance-edit-with", metavar="MODEL",
         help="Edit-only: refine the edit instruction with a VISION-capable model "
              "that also sees the reference image (one-shot analyze+enhance). "
-             "Any llama-swap vision model (e.g. ornith-1.5-35b-heretic:think) or "
+             "Any llama-swap vision model (e.g. ornith-1.5-35b-heretic[handle-think-EXTINTO 12/nov/2026]) or "
              "'ollama:' prefix. Implies --enhance; only meaningful with --edit.",
     )
     p.add_argument(
@@ -462,8 +462,8 @@ def _load_enhance_config(model_info: dict | None = None) -> str:
 
     Módulo-level (não aninhada) de propósito: os runners por modelo
     (_run_qwen21_*, _run_moss_*, etc.) precisam do MESMO handle resolvido
-    pela config — inclusive o sufixo :think. Quando esta função vivia
-    aninhada em main(), cada runner re-resolvia do models.py e o :think
+    pela config — inclusive o sufixo [handle-think-EXTINTO 12/nov/2026]. Quando esta função vivia
+    aninhada em main(), cada runner re-resolvia do models.py e o [handle-think-EXTINTO 12/nov/2026]
     do fleet se perdia no payload.
     """
     cfg_path = os.path.expanduser("~/.local/share/fleet/enhance-models.yaml")
@@ -491,7 +491,7 @@ def _load_enhance_config(model_info: dict | None = None) -> str:
         live = set()
 
     for cand in candidates:
-        if cand and (not live or cand in live or (cand + ":think") in live):
+        if cand and (not live or cand in live or (cand + "[handle-think-EXTINTO 12/nov/2026]") in live):
             return cand
     return "qwen3.5-4b"
 
@@ -990,8 +990,8 @@ def _run_bonsai_image(
         prompt, lora_tags = _extract_lora_tags(prompt)
     enhanced = None
     if args.enhance or args.enhance_with:
-        # Resolve pela CONFIG DO FLEET (pode trazer :think). Antes esta linha
-        # re-resolvia do models.py e o :think do fleet se perdia no payload.
+        # Resolve pela CONFIG DO FLEET (pode trazer [handle-think-EXTINTO 12/nov/2026]). Antes esta linha
+        # re-resolvia do models.py e o [handle-think-EXTINTO 12/nov/2026] do fleet se perdia no payload.
         enhance_model = args.enhance_with or _load_enhance_config(model_info)
         enhance_type = model_info.get("enhance_type", "vision")
 
@@ -1084,8 +1084,8 @@ def _run_fibo_sdcpp_image(
         prompt, lora_tags = _extract_lora_tags(prompt)
     enhanced = None
     if args.enhance or args.enhance_with:
-        # Resolve pela CONFIG DO FLEET (pode trazer :think). Antes esta linha
-        # re-resolvia do models.py e o :think do fleet se perdia no payload.
+        # Resolve pela CONFIG DO FLEET (pode trazer [handle-think-EXTINTO 12/nov/2026]). Antes esta linha
+        # re-resolvia do models.py e o [handle-think-EXTINTO 12/nov/2026] do fleet se perdia no payload.
         enhance_model = args.enhance_with or _load_enhance_config(model_info)
         enhance_type = model_info.get("enhance_type", "qwen21")
         if enhance_type == "fibo":
@@ -1188,8 +1188,8 @@ def _run_flux3_wan2gp_image(
     # Without refs, standard T2I vision enhancement.
     enhanced = None
     if args.enhance or args.enhance_with:
-        # Resolve pela CONFIG DO FLEET (pode trazer :think). Antes esta linha
-        # re-resolvia do models.py e o :think do fleet se perdia no payload.
+        # Resolve pela CONFIG DO FLEET (pode trazer [handle-think-EXTINTO 12/nov/2026]). Antes esta linha
+        # re-resolvia do models.py e o [handle-think-EXTINTO 12/nov/2026] do fleet se perdia no payload.
         enhance_model = args.enhance_with or _load_enhance_config(model_info)
         if is_edit and _check_model_vision(enhance_model):
             print(f"\n  \U0001f441\ufe0f\u2728 {enhance_model} analyzes the reference(s) and refines the edit instruction...")
@@ -1698,8 +1698,8 @@ def _run_moss_wan2gp_image(
                      "moss-image-kromoss": "kromoss", "moss-imagine": "imagine",
                      "moss-image-photoreal": "photoreal"}.get(model_name, "*")
     if args.enhance or args.enhance_with:
-        # Resolve pela CONFIG DO FLEET (pode trazer :think). Antes esta linha
-        # re-resolvia do models.py e o :think do fleet se perdia no payload.
+        # Resolve pela CONFIG DO FLEET (pode trazer [handle-think-EXTINTO 12/nov/2026]). Antes esta linha
+        # re-resolvia do models.py e o [handle-think-EXTINTO 12/nov/2026] do fleet se perdia no payload.
         enhance_model = args.enhance_with or _load_enhance_config(model_info)
         print(f"\n  ✨ Enhancing prompt via {enhance_model} (moss doctrine)...")
         if _cfg.selector == "llm" and "<lora:" not in prompt:
@@ -1818,8 +1818,8 @@ def _run_qwen21_turbo_wan2gp_image(
         prompt, lora_tags = _extract_lora_tags(prompt)
     enhanced = None
     if args.enhance or args.enhance_with or getattr(args, "enhance_edit_with", None):
-        # Resolve pela CONFIG DO FLEET (pode trazer :think). Antes esta linha
-        # re-resolvia do models.py e o :think do fleet se perdia no payload.
+        # Resolve pela CONFIG DO FLEET (pode trazer [handle-think-EXTINTO 12/nov/2026]). Antes esta linha
+        # re-resolvia do models.py e o [handle-think-EXTINTO 12/nov/2026] do fleet se perdia no payload.
         enhance_model = args.enhance_with or _load_enhance_config(model_info)
         enhance_type = model_info.get("enhance_type", "qwen21")
         from diffuse.lora_selector import select_loras, load_selector_cfg
@@ -2016,8 +2016,8 @@ def _run_qwen21_wan2gp_image(
         evict_llm()
     enhanced = None
     if args.enhance or args.enhance_with or getattr(args, "enhance_edit_with", None):
-        # Resolve pela CONFIG DO FLEET (pode trazer :think). Antes esta linha
-        # re-resolvia do models.py e o :think do fleet se perdia no payload.
+        # Resolve pela CONFIG DO FLEET (pode trazer [handle-think-EXTINTO 12/nov/2026]). Antes esta linha
+        # re-resolvia do models.py e o [handle-think-EXTINTO 12/nov/2026] do fleet se perdia no payload.
         enhance_model = args.enhance_with or _load_enhance_config(model_info)
         enhance_type = model_info.get("enhance_type", "qwen21")
         from diffuse.lora_selector import select_loras, load_selector_cfg

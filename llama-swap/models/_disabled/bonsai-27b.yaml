@@ -1,63 +1,58 @@
-# -----------------------------------------------------------
-# BONSAI 27B (1-bit Q1_0) — VANILLA llama.cpp
-# Why vanilla: Q1_0 repack kernels + hadamard mul_mat/get_row upstream
-# (#23492, #29927, #30122, #30627) e ngram-mod spec decode no arg.cpp.
-# Sem fork desde b9867+. Arch qwen35 (Qwen3.6-27B, dense hybrid DeltaNet).
-# ESCOLHA DO DONO 07/nov: lane única @40K com KV q4_0 NA GPU (regime
-# cliff da escada, decode 23.2 t/s a 87% do card) — sem --no-kv-offload;
-# 48K era 90%+ (dono rejeitou), 32K era pouco. O perfil host-RAM @131K
-# (8 t/s) fica só no histórico da escada abaixo.
-# -b 512 -ub 128 = buffers de compute enxutos, é o que destrava a KV
-# na GPU (com defaults o 48K não coube). mmproj Q8_0 na CPU RAM.
-# ROBUSTEZ: 48K sobrevive a desktop ~1 GB; 56K só com desktop leve
-# (372 MiB) — por isso o degrau é 48K, não 56K.
-# Tools: template Qwen3.6 + --jinja. PITFALL da casa: ngram-mod quebrou
-# parallel tool calls no Gemma4-E4B — testar multi-call antes de uso
-# agentic pesado.
-# LADDER 07/nov (s/ spec, prompt 9.5K tok, KV-GPU tenta 1o, host-RAM fallback;
-# desktop base 470-1080 MiB; -b 512 -ub 128 nos rungs finais, custo: prefill -20%):
-# HOST-RAM platô: 131K host 321/8.1 · 112K 320/8.0 · 100K 318/8.2 · 96K 313/8.9
-# · 80K 356/9.3 · 64K 355/9.3 · 48K(defaults) 355/9.2 · 64K(b512) 296/9.2 · 72K 296/9.2
-# GPU cliff (KV na GPU, decode 2.4x): 32K 402/23.0 · 44K 373/23.0 · 48K 382/23.7
-# · 56K 383/23.0 (margem 372 MiB no desktop 470) — 64K NAO coube (~200 MiB faltou).
-# Fronteira DESKTOP-DEPENDENTE: lane de swap nao tem fallback; 48K sobrevive a
-# desktop ~1GB, 56K só com desktop leve. (t/s = prefill/decode)
-# Always-thinking, single handle (sem :think), sem escada de effort.
-# --n-predict 32768 p/ o raciocinio nao comer o output budget.
-# -----------------------------------------------------------
 bonsai-27b:
-  name: "Bonsai 27B (1-bit)"
-  description: "PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with true 1.125-bit binary weights, full thinking and reasoning at ~3.9 GB. 89.5% of FP16 intelligence."
-  cmd: |
-    ${llama_server} --port ${PORT}
+  name: Bonsai 27B (1-bit)
+  description: PrismML's 1-bit 27B reasoning model — Qwen3.6-27B with true 1.125-bit binary weights, full thinking and reasoning at ~3.9 GB. 89.5% of FP16 intelligence.
+  cmd: '${llama_server} --port ${PORT}
+
     -m ${models_dir}/bonsai-27b/Bonsai-27B-Q1_0.gguf
+
     --mmproj ${models_dir}/bonsai-27b/Bonsai-27B-mmproj-Q8_0.gguf
+
     --no-mmproj-offload
+
     --jinja
+
     -ngl 99
+
     --ctx-size 40960
+
     -fa on
+
     -ctk ${large_cache_k}
+
     -ctv ${large_cache_v}
+
     -b 512
+
     -ub 128
+
     --spec-type ngram-mod
+
     --spec-ngram-mod-n-max 64
+
     --spec-ngram-mod-n-min 48
+
     --spec-ngram-mod-n-match 24
+
     --n-predict 32768
+
     --temp 0.7 --top-p 0.95 --top-k 20
+
     --min-p 0
+
     --repeat-penalty 1.0
+
     --parallel 1
+
     --metrics
-  cmdStop: 'pkill -f "Bonsai-27B-Q1_0"'
+
+    '
+  cmdStop: pkill -f "Bonsai-27B-Q1_0"
   ttl: 900
   health_check_timeout: 300
   filters:
-    stripParams: "temperature, top_p, top_k, min_p"
+    stripParams: temperature, top_p, top_k, min_p
     setParamsByID:
-      "${MODEL_ID}":
+      ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: true
         temperature: 0.7
@@ -75,19 +70,17 @@ bonsai-27b:
     context: 40960
   metadata:
     architecture: qwen35
-    ik_support: 'BOOT TEST 08/11: NEGATIVO — ik carrega o GGUF (q1_0_g128, 498 tensores) mas SEM os kernels rapidos do
-      repack PrismML (o vanilla/upstream _ que os tem): decode 1.9-2.3 t/s e prefill 6.3 t/s a ctx vazio = fallback
-      lento, NO GO. Lane segue vanilla; a escada de contexto via KV q4_0 GPU no vanilla (metade da KV, ~80-100K alvo)
-      fica em aberto e precisa de rgua de qualidade junto.'
+    ik_support: 'BOOT TEST 08/11: NEGATIVO — ik carrega o GGUF (q1_0_g128, 498 tensores) mas SEM os kernels rapidos do repack PrismML (o vanilla/upstream _ que os tem): decode 1.9-2.3 t/s e prefill 6.3
+      t/s a ctx vazio = fallback lento, NO GO. Lane segue vanilla; a escada de contexto via KV q4_0 GPU no vanilla (metade da KV, ~80-100K alvo) fica em aberto e precisa de rgua de qualidade junto.'
     parameters: 27300000000
     context_length: 262144
     embedding_length: 5120
     quantization: Q1_0
-    size: "~3.80 GB (Q1_0 binary) + 0.63 GB mmproj"
-    context: 40960  # 40K = KV-GPU cliff; nativo 262K; meio-termo do dono a 87% VRAM
-    vram_usage: '~4.9 GB VRAM (5358 MiB card = 87% c/ desktop ~690 MiB)'
-    source: "prism-ml/Bonsai-27B-gguf"
-    kv_cache: "q4_0/q4_0"
+    size: ~3.80 GB (Q1_0 binary) + 0.63 GB mmproj
+    context: 40960
+    vram_usage: ~4.9 GB VRAM (5358 MiB card = 87% c/ desktop ~690 MiB)
+    source: prism-ml/Bonsai-27B-gguf
+    kv_cache: q4_0/q4_0
     features:
       completion: true
       tools: true

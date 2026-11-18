@@ -1,7 +1,6 @@
 gemma4-e4b-bee:
   name: Gemma 4 E4B (Bee)
-  description: Gemma 4 E4B Q4_K_M — BeeLlama.cpp backend with TurboQuant turbo3_tcq
-    KV cache.
+  description: Gemma 4 E4B Q4_K_M — BeeLlama.cpp backend with TurboQuant turbo3_tcq KV cache.
   cmd: '${bee_server} --port ${PORT}
 
     --model ${models_dir}/gemma-4-E4B-it-Q4_K_M.gguf
@@ -45,11 +44,6 @@ gemma4-e4b-bee:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.9
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
   ttl: 60
   capabilities:
     in:
@@ -79,5 +73,4 @@ gemma4-e4b-bee:
     context_length: 131072
     embedding_length: 2560
     quantization: Q4_K_M
-    note: 'vram detalhe: ~5.3GB VRAM (model + turbo3_tcq cache) BeeLlama backend with
-      TurboQuant. Was on ik for -khad/-vhad; Bee has TurboQuant instead.'
+    note: 'vram detalhe: ~5.3GB VRAM (model + turbo3_tcq cache) BeeLlama backend with TurboQuant. Was on ik for -khad/-vhad; Bee has TurboQuant instead.'

@@ -148,7 +148,7 @@ models:
 # qwen-fixed-chat-template.jinja for tool-call instructions.
 # Tool calling: --parallel-tool-calls.
 # Thinking: reasoning_content field, separate from content.
-# Dual mode: base (chat, no think) and :think (reasoning)
+# Dual mode: base (chat, no think) and [handle-think-EXTINTO 12/nov/2026] (reasoning)
 # NOTE: Formerly "qwen3.5-4b-mtp" — consolidated as canonical qwen3.5-4b (Jul 2026)
 #   Old upstream+Q4_K_M variant moved to _disabled/qwen3.5-4b-upstream.yaml
 # -------------------------------------------
@@ -190,7 +190,7 @@ models:
             enable_thinking: false
           temperature: 0.7
           top_p: 0.9
-        "${MODEL_ID}:think":
+        "${MODEL_ID}[handle-think-EXTINTO 12/nov/2026]":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
@@ -274,7 +274,7 @@ models:
         "${MODEL_ID}":
           temperature: 0.1
           top_p: 0.9
-        "${MODEL_ID}:think":
+        "${MODEL_ID}[handle-think-EXTINTO 12/nov/2026]":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.1
@@ -448,7 +448,7 @@ models:
             enable_thinking: false
           temperature: 0.7
           top_p: 0.9
-        "${MODEL_ID}:think":
+        "${MODEL_ID}[handle-think-EXTINTO 12/nov/2026]":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
@@ -535,7 +535,7 @@ models:
             enable_thinking: false
           temperature: 0.6
           top_p: 0.85
-        "${MODEL_ID}:think":
+        "${MODEL_ID}[handle-think-EXTINTO 12/nov/2026]":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
@@ -602,8 +602,8 @@ models:
 #   Benchmarks: temp=1.0
 
 # --ctx-size 131072: same safe ceiling (model supports 262K, YaRN extends to 1M)
-# Dual mode: base (chat, no think) and :think (reasoning)
-# --reasoning-budget 8192: caps thinking tokens at 8192 when :think is active.
+# Dual mode: base (chat, no think) and [handle-think-EXTINTO 12/nov/2026] (reasoning)
+# --reasoning-budget 8192: caps thinking tokens at 8192 when [handle-think-EXTINTO 12/nov/2026] is active.
 #   Base mode is unaffected (template injects closed think block, budget never triggers).
 # --reasoning-budget-message: smooth transition when budget is exhausted.
 # Uses qwen-fixed-chat-template.jinja — embedded GGUF template lacks
@@ -654,7 +654,7 @@ models:
             enable_thinking: false
           temperature: 0.6
           top_p: 0.95
-        "${MODEL_ID}:think":
+        "${MODEL_ID}[handle-think-EXTINTO 12/nov/2026]":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
@@ -757,7 +757,7 @@ models:
             enable_thinking: false
           temperature: 0.3
           top_p: 0.85
-        "${MODEL_ID}:think":
+        "${MODEL_ID}[handle-think-EXTINTO 12/nov/2026]":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.7
@@ -847,7 +847,7 @@ models:
           top_p: 0.80
           top_k: 20
           presence_penalty: 1.5
-        "${MODEL_ID}:think":
+        "${MODEL_ID}[handle-think-EXTINTO 12/nov/2026]":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 1.0
@@ -963,9 +963,9 @@ models:
 
 # Tool calling: XML format (tool_call_format="xml" in chat template)
 #   --jinja parses correctly, tested single + multi-turn (bug #22684 from 4.1 FIXED)
-#   2026-09-02 re-enable: tool args only parse CLEAN on :think variant @ temp 1.0.
-#   Base variant (thinking off, temp 0.6) mangles tool call arguments — use :think for agentic.
-# Thinking: enable_thinking toggle in chat template (dual mode: base + :think)
+#   2026-09-02 re-enable: tool args only parse CLEAN on [handle-think-EXTINTO 12/nov/2026] variant @ temp 1.0.
+#   Base variant (thinking off, temp 0.6) mangles tool call arguments — use [handle-think-EXTINTO 12/nov/2026] for agentic.
+# Thinking: enable_thinking toggle in chat template (dual mode: base + [handle-think-EXTINTO 12/nov/2026])
 #   preserve_thinking recommended for multi-turn tool use
 
 # Backend: upstream llama.cpp (PR #25994 merged 2026-07-27)
@@ -1011,7 +1011,7 @@ models:
           temperature: 0.6
           top_p: 0.95
           top_k: 20
-        "${MODEL_ID}:think":
+        "${MODEL_ID}[handle-think-EXTINTO 12/nov/2026]":
           chat_template_kwargs:
             enable_thinking: true
             preserve_thinking: true
@@ -1642,7 +1642,7 @@ models:
 # PROMOVIDO 2026-09-08 (user decision): PollardWeights IQ4_XS "PollardMix"
 # (measured-allocation: bits por sensibilidade de camada) no lugar do
 # Q4_K_M oficial. Comparação completa nos 3 ambientes (testchat ReAct,
-# :think, N=1; bench direto greedy N=3):
+# [handle-think-EXTINTO 12/nov/2026], N=1; bench direto greedy N=3):
 #   GPU decode:   Pollard 86.5 t/s vs Q4_K_M 82.1 (empate técnico, ±5)
 #   CPU decode:   Pollard 19.5     vs Q4_K_M 27.6 (Q4_K_M vence, -30% IQ dequant)
 #   GPU prefill:  Pollard 3039     vs Q4_K_M 2870 tok/s
@@ -1652,9 +1652,9 @@ models:
 #            CPU -> Q4_K_M (mas user usa GPU aqui).
 
 # TOOL CALL: no modo BASE o IQ4_XS falha (responde texto plano onde deveria
-# chamar <function ...>); na variante :think funciona BEM — 4 parallel calls
-# corretas no testchat, parse limpo. 3º caso do padrão "tools só no :think"
-# (nanbeige4.2-3b, spark-x2.5-4b). Agentes: usar sempre :think.
+# chamar <function ...>); na variante [handle-think-EXTINTO 12/nov/2026] funciona BEM — 4 parallel calls
+# corretas no testchat, parse limpo. 3º caso do padrão "tools só no [handle-think-EXTINTO 12/nov/2026]"
+# (nanbeige4.2-3b, spark-x2.5-4b). Agentes: usar sempre [handle-think-EXTINTO 12/nov/2026].
 
 # KV budget (RTX 3050 6GB): 42 layers x 2 KV heads x 128 dim.
 # q4_0 KV = ~10.6 KiB/token -> 131K ~1.35GB. Modelo 1.41GB + KV + buffers ~3.8GB.
@@ -1697,7 +1697,7 @@ models:
             enable_thinking: false
           temperature: 0.7
           top_p: 0.95
-        "${MODEL_ID}:think":
+        "${MODEL_ID}[handle-think-EXTINTO 12/nov/2026]":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 1.0
@@ -1731,7 +1731,7 @@ models:
       parameters: 2000000000
       context_length: 131072
       quantization: "Q4_K_M"
-      note: "Pollard IQ4_XS testado 07-08/09 e REVERTIDO 08/09: loop infinito em tarefa de código simples (Adler32) no uso real — dados do A/B permanecem válidos (empate decode GPU, TTFT -23%, -148MB, CPU -30%), mas o comportamento agêntico pesa mais. Tool call: Q4_K_M clean nos DOIS modos (IQ4_XS só no :think). REMOVIDOS 08/09: Q8_0 oficial, Pollard Q5_K_M (GGUFs deletados). Pollard IQ4_XS GGUF MANTIDO no dir como opção A/B futura. Fallback docs no header."
+      note: "Pollard IQ4_XS testado 07-08/09 e REVERTIDO 08/09: loop infinito em tarefa de código simples (Adler32) no uso real — dados do A/B permanecem válidos (empate decode GPU, TTFT -23%, -148MB, CPU -30%), mas o comportamento agêntico pesa mais. Tool call: Q4_K_M clean nos DOIS modos (IQ4_XS só no [handle-think-EXTINTO 12/nov/2026]). REMOVIDOS 08/09: Q8_0 oficial, Pollard Q5_K_M (GGUFs deletados). Pollard IQ4_XS GGUF MANTIDO no dir como opção A/B futura. Fallback docs no header."
 # -------------------------------------------
 # OCCAMY-1.0 - MoE CO-WORK AGENTIC (Accio-Lab) — APEX-I-MiniPlus-V2 (IsValorum)
 # Base: Qwen/Qwen3.6-35B-A3B (mesmo base do q36) + post-training: SFT full-param
@@ -1793,7 +1793,7 @@ models:
             enable_thinking: false
           temperature: 0.6
           top_p: 0.95
-        "${MODEL_ID}:think":
+        "${MODEL_ID}[handle-think-EXTINTO 12/nov/2026]":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
@@ -1935,7 +1935,7 @@ models:
             enable_thinking: false
           temperature: 0.6
           top_p: 0.95
-        "${MODEL_ID}:think":
+        "${MODEL_ID}[handle-think-EXTINTO 12/nov/2026]":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6
@@ -2020,7 +2020,7 @@ models:
             enable_thinking: false
           temperature: 0.7
           top_p: 0.9
-        "${MODEL_ID}:think":
+        "${MODEL_ID}[handle-think-EXTINTO 12/nov/2026]":
           chat_template_kwargs:
             enable_thinking: true
           temperature: 0.6

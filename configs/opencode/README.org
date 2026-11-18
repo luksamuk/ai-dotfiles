@@ -58,8 +58,8 @@ The =capabilities= field is only for =[ "tools" ]=. For vision, always use the
 =modalities= field. The old =capabilities: ["vision"]= was removed from the
 =lfm2.5-vl-450m= entry and replaced with =modalities=.
 
-** Thinking variants (=:think=)
+** Thinking variants (=[handle-think-EXTINTO 12/nov/2026]=)
 
-llama-swap supports =:think= variants via =setParamsByID=. In OpenCode config
-these appear as separate model keys (e.g. =qwen3.5-4b:think=). They do /not/
+llama-swap supports =[handle-think-EXTINTO 12/nov/2026]= variants via =setParamsByID=. In OpenCode config
+these appear as separate model keys (e.g. =qwen3.5-4b[handle-think-EXTINTO 12/nov/2026]=). They do /not/
 need separate =modalities= — they inherit from the base model's API behavior.

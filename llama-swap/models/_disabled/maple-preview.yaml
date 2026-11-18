@@ -1,8 +1,6 @@
 maple-preview:
   name: Maple Preview 20B-A1B
-  description: DeepGrove's 20B-A1B ternary reasoning model — 1.49B active MoE with
-    256 experts, native 2-bit weights. SOTA reasoning for weight class. 5.5 GB, 131K
-    context. Runs at 250+ t/s on CPU.
+  description: DeepGrove's 20B-A1B ternary reasoning model — 1.49B active MoE with 256 experts, native 2-bit weights. SOTA reasoning for weight class. 5.5 GB, 131K context. Runs at 250+ t/s on CPU.
   cmd: '${env.HOME}/git/llama.cpp-maple/build/bin/llama-server --port ${PORT}
 
     --model ${models_dir}/maple-preview/maple-preview-TQ2_0-head-Q4_K.gguf
@@ -48,13 +46,6 @@ maple-preview:
       ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
-        temperature: 1.0
-        top_p: 0.95
-        top_k: 20
-        min_p: 0
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 1.0
         top_p: 0.95
         top_k: 20

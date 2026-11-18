@@ -1,7 +1,6 @@
 qwopus-coder-9b-bee:
   name: Qwopus 9B Coder
-  description: Qwopus3.5 is a reasoning-enhanced model family fine-tuned from Qwen3.5,
-    especially optimized for programming agentic coding tasks.
+  description: Qwopus3.5 is a reasoning-enhanced model family fine-tuned from Qwen3.5, especially optimized for programming agentic coding tasks.
   cmd: '${bee_server} --port ${PORT}
 
     --model ${models_dir}/Qwopus3.5-9B-coder-Exp-Q4_K_M.gguf
@@ -41,11 +40,6 @@ qwopus-coder-9b-bee:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.85
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
   ttl: 120
   capabilities:
     in:
@@ -75,6 +69,5 @@ qwopus-coder-9b-bee:
     context_length: 262144
     embedding_length: 4096
     quantization: Q4_K_M
-    warning: TurboQuant turbo3_tcq KV cache. BeeLlama.cpp backend (no --fit, uses
-      --n-gpu-layers 99). Dense 9B = all params active per token.
+    warning: TurboQuant turbo3_tcq KV cache. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99). Dense 9B = all params active per token.
     note: 'vram detalhe: ~5.5GB VRAM (model + turbo3_tcq cache, ~5x less KV memory)'

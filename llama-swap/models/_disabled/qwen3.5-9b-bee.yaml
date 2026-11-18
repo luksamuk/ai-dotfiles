@@ -1,8 +1,7 @@
 qwen3.5-9b-bee:
   name: Qwen3.5 9B
-  description: Qwen 3.5 is a family of open-source multimodal models that delivers
-    exceptional utility and performance, integrating breakthroughs in multimodal learning,
-    architectural efficiency, and reinforcement learning.
+  description: Qwen 3.5 is a family of open-source multimodal models that delivers exceptional utility and performance, integrating breakthroughs in multimodal learning, architectural efficiency, and reinforcement
+    learning.
   cmd: '${bee_server} --port ${PORT}
 
     --model ${models_dir}/Qwen3.5-9B-MoQ-3.6.gguf
@@ -46,11 +45,6 @@ qwen3.5-9b-bee:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.9
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
   ttl: 60
   capabilities:
     in:
@@ -80,6 +74,5 @@ qwen3.5-9b-bee:
     context_length: 262144
     embedding_length: 4096
     quantization: UD-Q3_K_XL
-    warning: TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality.
-      BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99).
+    warning: TurboQuant turbo3_tcq KV cache — ~5x compression at near-fp16 quality. BeeLlama.cpp backend (no --fit, uses --n-gpu-layers 99).
     note: 'vram detalhe: ~5GB VRAM (model + turbo3_tcq cache, ~5x less KV memory)'

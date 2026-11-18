@@ -1,7 +1,6 @@
 ornstein-36-35b:
   name: Ornstein 3.6 35B SABER
-  description: Ornstein is a community fine-tune of Qwen3.6-35B using NSC-ACE-SABER,
-    achieving +2.87pp on BFCL tool-calling benchmarks while preserving reasoning capabilities.
+  description: Ornstein is a community fine-tune of Qwen3.6-35B using NSC-ACE-SABER, achieving +2.87pp on BFCL tool-calling benchmarks while preserving reasoning capabilities.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/Qwen3.6-35B-A3B-NSC-ACE-SABER-Q4_K_M.gguf
@@ -51,11 +50,6 @@ ornstein-36-35b:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.85
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
   ttl: 300
   capabilities:
     in:
@@ -85,7 +79,5 @@ ornstein-36-35b:
     context_length: 262144
     embedding_length: 2048
     quantization: Q4_K_M
-    note: 'vram detalhe: ~5.4GB VRAM + ~18GB pinned RAM (ik pinned memory, estimated)
-      NSC-ACE-SABER fine-tune of Qwen3.6-35B-A3B. +2.87pp BFCL over base, 98.33% HarmBench
-      compliance, KLD 0.025. TEST ONLY — evaluating as potential replacement for Qwen3.6-APEX.
-      Standard Q4_K_M quant (no APEX I-Compact available). No MTP in this variant.'
+    note: 'vram detalhe: ~5.4GB VRAM + ~18GB pinned RAM (ik pinned memory, estimated) NSC-ACE-SABER fine-tune of Qwen3.6-35B-A3B. +2.87pp BFCL over base, 98.33% HarmBench compliance, KLD 0.025. TEST ONLY
+      — evaluating as potential replacement for Qwen3.6-APEX. Standard Q4_K_M quant (no APEX I-Compact available). No MTP in this variant.'

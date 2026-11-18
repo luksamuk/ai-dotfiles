@@ -1,26 +1,17 @@
 littlelamb-0.3b-tc:
   name: LittleLamb 0.3B TC
-  description: Compact 0.3B-parameter model specialized for function and tool calling
-    tasks in resource-constrained environments.
+  description: Compact 0.3B-parameter model specialized for function and tool calling tasks in resource-constrained environments.
   tags:
   - tools
-  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LittleLamb-ToolCalling.Q8_0.gguf\n\
-    --jinja\n--fit on\n--fit-target 768\n--fit-ctx ${small_model_min_ctx}\n--ctx-size\
-    \ 40960\n  --parallel 4\n--cont-batching\n--temp ${code_temp}\n--top-p ${code_top_p}\n\
-    --top-k ${code_top_k}\n--min-p ${code_min_p}\n--repeat-penalty ${code_repeat_penalty}\n\
-    --reasoning on\n--cache-type-k ${small_cache_k}\n--cache-type-v ${small_cache_v}\n\
-    --flash-attn on\n--metrics\n"
+  cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LittleLamb-ToolCalling.Q8_0.gguf\n--jinja\n--fit on\n--fit-target 768\n--fit-ctx ${small_model_min_ctx}\n--ctx-size 40960\n  --parallel 4\n\
+    --cont-batching\n--temp ${code_temp}\n--top-p ${code_top_p}\n--top-k ${code_top_k}\n--min-p ${code_min_p}\n--repeat-penalty ${code_repeat_penalty}\n--reasoning on\n--cache-type-k ${small_cache_k}\n\
+    --cache-type-v ${small_cache_v}\n--flash-attn on\n--metrics\n"
   filters:
     stripParams: temperature, top_p
     setParamsByID:
       ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
-        temperature: 0.6
-        top_p: 0.9
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 0.6
         top_p: 0.9
   health_check_timeout: 300

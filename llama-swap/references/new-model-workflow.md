@@ -39,7 +39,7 @@ Before downloading, verify tool calling capability:
 - **If both missing** → model **cannot do tool calling** on llama-swap. Mark `tools: false` in fragment.
 - **Test early**: if `finish_reason: "stop"` (not `"tool_calls"`) and content is garbled → tool calling is broken. Don't waste time on multiple templates.
 - **Parallel tool calls**: Check if model supports calling multiple tools in one response. Test with 4+ tool calls. If only 1 call per response, add `--parallel-tool-calls` (ik-only) and re-test.
-- **Always-thinking models**: If the model ALWAYS generates reasoning (no `enable_thinking` toggle, e.g. Nanbeige4.1, gpt-oss-20b), deploy without `:think` variant. Add `--n-predict 32768` (or higher) so reasoning tokens don't consume output budget.
+- **Always-thinking models**: If the model ALWAYS generates reasoning (no `enable_thinking` toggle, e.g. Nanbeige4.1, gpt-oss-20b), deploy without `[handle-think-EXTINTO 12/nov/2026]` variant. Add `--n-predict 32768` (or higher) so reasoning tokens don't consume output budget.
 
 ### 3. Download
 
@@ -88,13 +88,8 @@ model-name:
     setParamsByID:
       "${MODEL_ID}":
         chat_template_kwargs:
-          enable_thinking: false
+          enable_thinking: true   # single handle, always-thinking (12/nov 2026 decree)
         temperature: 0.7
-        top_p: 0.9
-      "${MODEL_ID}:think":
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
         top_p: 0.9
   ttl: 60
   metadata:
@@ -199,7 +194,7 @@ If the model has `tools: true` and `thinking: true` and tolerates agentic use:
 - **Pi Coding Agent**: Add to `~/git/ai-dotfiles/configs/pi/` config
 - **Crush**: Add to `~/git/ai-dotfiles/configs/crush/crush.json`
 - **Other agents**: Check `~/git/ai-dotfiles/configs/` for available agents
-- **:think variants**: When deploying a `:think` variant with a custom display name, prefix the name with 🧠 emoji
+- **[handle-think-EXTINTO 12/nov/2026] variants**: When deploying a `[handle-think-EXTINTO 12/nov/2026]` variant with a custom display name, prefix the name with 🧠 emoji
 
 ### 13. Commit
 
@@ -215,8 +210,8 @@ git commit -m "llama-swap: add <model-name>"
 
 - **Model IDs**: Use `name-parameters` format (e.g., `qwen3.5-4b`, `gemma4-e4b`)
 - **MoE models**: Include active parameters: `qwen3.6-35b-a3b` (not `qwen3.6-35b-moe`)
-- **:think variants**: Deploy as separate entries with `:think` suffix (e.g., `qwen3.5-4b:think`)
-- **Always-thinking models**: Deploy WITHOUT `:think` variant — the base model is already always-thinking
+- **[handle-think-EXTINTO 12/nov/2026] variants**: Deploy as separate entries with `[handle-think-EXTINTO 12/nov/2026]` suffix (e.g., `qwen3.5-4b[handle-think-EXTINTO 12/nov/2026]`)
+- **Always-thinking models**: Deploy WITHOUT `[handle-think-EXTINTO 12/nov/2026]` variant — the base model is already always-thinking
 
 ## Fragment System
 

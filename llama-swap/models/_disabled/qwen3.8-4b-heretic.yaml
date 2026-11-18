@@ -1,8 +1,6 @@
 qwen3.8-4b-heretic:
   name: Qwen3.8 4B Heretic
-  description: 'Qwen3.8-4B: destilacao full-param do Qwen3.8 2.4T na arquitetura qwen35,
-    descensurada com Heretic v1.4.0 (refusals 6/100 vs 99/100, KL 0.0167). Mesmas
-    flags do qwen3.5-4b; roda lado a lado.'
+  description: 'Qwen3.8-4B: destilacao full-param do Qwen3.8 2.4T na arquitetura qwen35, descensurada com Heretic v1.4.0 (refusals 6/100 vs 99/100, KL 0.0167). Mesmas flags do qwen3.5-4b; roda lado a lado.'
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/qwen3.8-4b-heretic/Qwen3.5-4B-EmperoAI-Qwen3.8-Distill-Heretic-Abliterated-MTP-GGUF-Q4_K_M.gguf
@@ -64,11 +62,6 @@ qwen3.8-4b-heretic:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.9
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
   ttl: 60
   health_check_timeout: 300
   capabilities:
@@ -83,8 +76,7 @@ qwen3.8-4b-heretic:
     size: ~2.6 GB (Q4_K_M)
     context: 131072
     vram_usage: ~4.5 GB VRAM
-    source: insraq/Qwen3.5-4B-EmperoAI-Qwen3.8-Distill-Heretic-Abliterated-MTP-GGUF
-      (Q4_K_M)
+    source: insraq/Qwen3.5-4B-EmperoAI-Qwen3.8-Distill-Heretic-Abliterated-MTP-GGUF (Q4_K_M)
     kv_cache: q4_0/q4_0 + hadamard
     features:
       completion: true
@@ -100,9 +92,6 @@ qwen3.8-4b-heretic:
     context_length: 262144
     embedding_length: 2560
     quantization: Q4_K_M
-    note: 'vram detalhe: ~4.5GB VRAM (model 2.8GB + q8_0/q4_0 hadamard cache + compute)
-      UNCENSORED (Heretic v1.4.0): refusals 6/100 vs 99/100 do base, KL 0.0167. Destilado
-      do Qwen3.8 (MMLU 0.354->0.553; GSM8K 0.850->0.785). ik_llama.cpp with hadamard
-      KV cache + --fit for dynamic context. Ngram spec decode via ik syntax. Uses
-      qwen-fixed-chat-template.jinja for tool-call instructions. Formerly qwen3.5-4b-mtp,
+    note: 'vram detalhe: ~4.5GB VRAM (model 2.8GB + q8_0/q4_0 hadamard cache + compute) UNCENSORED (Heretic v1.4.0): refusals 6/100 vs 99/100 do base, KL 0.0167. Destilado do Qwen3.8 (MMLU 0.354->0.553;
+      GSM8K 0.850->0.785). ik_llama.cpp with hadamard KV cache + --fit for dynamic context. Ngram spec decode via ik syntax. Uses qwen-fixed-chat-template.jinja for tool-call instructions. Formerly qwen3.5-4b-mtp,
       consolidated Jul 2026.'

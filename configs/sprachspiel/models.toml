@@ -62,7 +62,7 @@ tools = false
 # --- LFM3 1.7B (tri-hybrid, decensurado, dual-mode, 75 t/s decode) ---
 # Samplers do vendor pinados na lane (0.1/50/1.1). O dual-mode do vendor e via
 # chat_template_kwargs que o sprachspiel NAO manda — no sprach, sempre pensa.
-# Handle :think foi aposentado da frota (padrao handle unico).
+# Handle [handle-think-EXTINTO 12/nov/2026] foi aposentado da frota (padrao handle unico).
 [models."lfm3-1.7b"]
 provider = "llama-swap"
 model_id = "lfm3-1.7b"
@@ -307,7 +307,7 @@ vision = true
 
 # [models."qwen3.5-4b"]
 # provider = "llama-swap"
-# model_id = "qwen3.5-4b:think"
+# model_id = "qwen3.5-4b[handle-think-EXTINTO 12/nov/2026]"
 # num_ctx = 131072
 # thinking = true
 # tools = true
@@ -324,7 +324,7 @@ vision = true
 
 # [models."gemma4-e2b"]
 # provider = "llama-swap"
-# model_id = "gemma4-e2b:think"
+# model_id = "gemma4-e2b[handle-think-EXTINTO 12/nov/2026]"
 # num_ctx = 131072
 # thinking = true
 # tools = true
@@ -332,14 +332,14 @@ vision = true
 
 # [models."gemma4-e4b"]
 # provider = "llama-swap"
-# model_id = "gemma4-e4b:think"
+# model_id = "gemma4-e4b[handle-think-EXTINTO 12/nov/2026]"
 # num_ctx = 131072
 # thinking = true
 # tools = true
 
 # [models."lfm2.5-8b-a1b"]
 # provider = "llama-swap"
-# model_id = "lfm2.5-8b-a1b:think"
+# model_id = "lfm2.5-8b-a1b[handle-think-EXTINTO 12/nov/2026]"
 # num_ctx = 131072
 # temperature = 0.7
 # top_p = 0.9
@@ -352,7 +352,7 @@ vision = true
 
 # [models."kat-coder-v2.5-dev"]
 # provider = "llama-swap"
-# model_id = "kat-coder-v2.5-dev:think"
+# model_id = "kat-coder-v2.5-dev[handle-think-EXTINTO 12/nov/2026]"
 # num_ctx = 131072
 # temperature = 0.6
 # top_p = 0.9
@@ -364,7 +364,7 @@ vision = true
 
 # [models."north-mini-code"]
 # provider = "llama-swap"
-# model_id = "north-mini-code:think"
+# model_id = "north-mini-code[handle-think-EXTINTO 12/nov/2026]"
 # num_ctx = 65536
 # temperature = 0.6
 # top_p = 0.9
@@ -386,11 +386,11 @@ vision = true
 # DISABLED 10/09 — GGUF deletado; rejeitado na régua (34/75 phase1; 0/25 poisoned
 # por think-loop; MAS 25/25 no 06-sec web-only). Re-avaliar c/ APEX/ONYX do mudler.
 
-# [models."qwen3.6-35b-a3b-heretic"] + :think
+# [models."qwen3.6-35b-a3b-heretic"] + [handle-think-EXTINTO 12/nov/2026]
 # DISABLED 08/11 — GGUFs removidos (_removed/qwen36-retirement). Descendente na
 # frota: groot-19b-a3b (mesma arvore; Q4_K_M, 131-262K).
 
-# [models."lfm2.5-2.6b"] + :think
+# [models."lfm2.5-2.6b"] + [handle-think-EXTINTO 12/nov/2026]
 # DISABLED 08/11 — GGUF deletado (_removed/lfm2.5-2.6b.yaml). Herdeiro na frota:
 # lfm3-1.7b (heretic, dual-mode, 75 t/s).
 
@@ -419,7 +419,7 @@ vision = true
 
 # [models."twil-lm3-pro"]
 # provider = "llama-swap"
-# model_id = "twil-lm3-pro:think"
+# model_id = "twil-lm3-pro[handle-think-EXTINTO 12/nov/2026]"
 # num_ctx = 131072
 # thinking = true
 # tools = true
@@ -427,7 +427,7 @@ vision = true
 
 # [models."k2-horizon-36b"]
 # provider = "llama-swap"
-# model_id = "k2-horizon-36b:think"
+# model_id = "k2-horizon-36b[handle-think-EXTINTO 12/nov/2026]"
 # num_ctx = 131072
 # temperature = 0.7
 # top_p = 0.95
@@ -478,7 +478,7 @@ vision = true
 # REMOVIDO 10/09: qwen3-coder-next:cloud não existe mais no ollama
 # REMOVIDO 06/10: deepseek-v4-flash:cloud saiu do ollama (v4.1-flash cobre)
 
-# --- EMPERO QWEN3.8 (distillation, always thinks, no :think variant) ---
+# --- EMPERO QWEN3.8 (distillation, always thinks, no [handle-think-EXTINTO 12/nov/2026] variant) ---
 # [models."empero-qwen3.8-2b"] / 4b — DISABLED 10/09 (GGUFs deletados, _removed)
 
 # --- GRANITE 4.2 8B (IBM) — DISABLED 10/09, fragment em _disabled ---

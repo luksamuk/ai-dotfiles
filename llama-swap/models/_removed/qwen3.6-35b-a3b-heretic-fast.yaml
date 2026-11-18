@@ -1,8 +1,6 @@
 qwen3.6-35b-a3b-heretic-fast:
   name: Qwen 3.6 35B Heretic Fast
-  description: Assistente de código sem censura (heretic TPE) com visão, em 14 GB
-    — a quant mais compacta da família. Ideal para teste de velocidade e comparação
-    com o prod.
+  description: Assistente de código sem censura (heretic TPE) com visão, em 14 GB — a quant mais compacta da família. Ideal para teste de velocidade e comparação com o prod.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
@@ -64,11 +62,6 @@ qwen3.6-35b-a3b-heretic-fast:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.85
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -84,8 +77,7 @@ qwen3.6-35b-a3b-heretic-fast:
     size: ~14.32 GB (APEX-I-Mini, heretic) + 903 MB mmproj
     context: 102400
     vram_usage: ~5.1 GB VRAM + ~14 GB RAM pinned
-    source: mudler/Qwen3.6-35B-A3B-uncensored-heretic-APEX-GGUF (APEX-I-Mini, base
-      llmfan46 heretic TPE)
+    source: mudler/Qwen3.6-35B-A3B-uncensored-heretic-APEX-GGUF (APEX-I-Mini, base llmfan46 heretic TPE)
     kv_cache: q4_0/q4_0 + hadamard
     features:
       completion: true
@@ -101,7 +93,5 @@ qwen3.6-35b-a3b-heretic-fast:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX I-Mini
-    note: 'vram detalhe: ~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34) APEX I-Mini
-      quant do mudler (base llmfan46 heretic TPE, -2.7 GB vs prod). Sep 24: experimental.
-      O mesmo heretic TPE do prod em quant APEX-I-Mini (14.32 GB). MTP off (sem nextn
-      tail). Se andar bem, substitui o prod.'
+    note: 'vram detalhe: ~5.1 GB VRAM + ~14 GB pinned RAM (n-cpu-moe 34) APEX I-Mini quant do mudler (base llmfan46 heretic TPE, -2.7 GB vs prod). Sep 24: experimental. O mesmo heretic TPE do prod em quant
+      APEX-I-Mini (14.32 GB). MTP off (sem nextn tail). Se andar bem, substitui o prod.'

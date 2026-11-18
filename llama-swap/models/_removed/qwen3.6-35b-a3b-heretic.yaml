@@ -1,9 +1,7 @@
 qwen3.6-35b-a3b-heretic:
   name: Qwen 3.6 35B Heretic
-  description: Qwen's 35B-A3B MoE generalist, abliterated (heretic TPE). 131K context,
-    single slot.
-  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
-    --port ${PORT}
+  description: Qwen's 35B-A3B MoE generalist, abliterated (heretic TPE). 131K context, single slot.
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
 
     --model ${models_dir}/qwen36-heretic-apex-mini/Qwen3.6-35B-A3B-uncensored-heretic-APEX-I-Mini.gguf
 
@@ -54,11 +52,6 @@ qwen3.6-35b-a3b-heretic:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -74,8 +67,7 @@ qwen3.6-35b-a3b-heretic:
     size: ~14.66 GB (APEX-I-Compact, heretic)
     context: 131072
     vram_usage: ~5.1 GB VRAM + ~15 GB RAM pinned
-    source: SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF
-      (I-Compact) + mmproj unsloth Q8
+    source: SC117/Qwen3.6-35B-A3B-uncensored-heretic-Native-MTP-Preserved-APEX-GGUF (I-Compact) + mmproj unsloth Q8
     kv_cache: q4_0/q4_0
     features:
       completion: true
@@ -91,8 +83,5 @@ qwen3.6-35b-a3b-heretic:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX I-Compact
-    note: 'vram detalhe: ~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe) | turbo4
-      KV; hmoe experts pinned Produção Sep 24: café herdou o posto do ik-131K (menor
-      pressão de VRAM/RAM, 262K nativo). Heretic KL 0.0015 (88% menos recusas). Sem
-      MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused
-      (IK TurboQuant); source do mmproj: unsloth Q8.'
+    note: 'vram detalhe: ~5.1 GB VRAM (turbo4 KV) + ~15 GB pinned RAM (hmoe) | turbo4 KV; hmoe experts pinned Produção Sep 24: café herdou o posto do ik-131K (menor pressão de VRAM/RAM, 262K nativo). Heretic
+      KL 0.0015 (88% menos recusas). Sem MTP @262K (draft KV não cabe). Smoke 200 OK (7s). KV turbo4 = WHT-rotated, FA-fused (IK TurboQuant); source do mmproj: unsloth Q8.'

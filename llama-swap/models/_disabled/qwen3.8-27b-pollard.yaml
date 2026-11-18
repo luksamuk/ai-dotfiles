@@ -1,8 +1,6 @@
 qwen3.8-27b-pollard:
   name: Qwen3.8 27B Pollard
-  description: Qwen3.8-27B dense VLM (DeltaNet hybrid) in Pollard IQ3_S quantization
-    with imatrix. Native image/video understanding, 262K context. Pollard requantized
-    from Q8_0 with exact imatrix.
+  description: Qwen3.8-27B dense VLM (DeltaNet hybrid) in Pollard IQ3_S quantization with imatrix. Native image/video understanding, 262K context. Pollard requantized from Q8_0 with exact imatrix.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/Qwen3.8-27B-Pollard-IQ3_S.gguf
@@ -63,12 +61,6 @@ qwen3.8-27b-pollard:
         temperature: 0.7
         top_p: 0.8
         presence_penalty: 1.5
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 1.0
-        top_p: 0.95
-        presence_penalty: 0.0
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -100,8 +92,5 @@ qwen3.8-27b-pollard:
     context_length: 262144
     embedding_length: 5120
     quantization: Pollard IQ3_S (imatrix Qwen3.8-27B, from Q8_0)
-    note: 'vram detalhe: ~5GB VRAM (--fit auto) + ~7GB RAM offload. DeltaNet KV near-constant
-      at 128K. Dense 27B DeltaNet+Attn hybrid (48+16 layers). Native VLM. Pollard
-      quant w/ exact imatrix, embedded MTP head blk.64 (verified in GGUF). Instruct:
-      presence_penalty=1.5. Thinking: temp=1.0. APEX reference same box: 3.75 GPU
-      / 3.40 CPU tok/s.'
+    note: 'vram detalhe: ~5GB VRAM (--fit auto) + ~7GB RAM offload. DeltaNet KV near-constant at 128K. Dense 27B DeltaNet+Attn hybrid (48+16 layers). Native VLM. Pollard quant w/ exact imatrix, embedded
+      MTP head blk.64 (verified in GGUF). Instruct: presence_penalty=1.5. Thinking: temp=1.0. APEX reference same box: 3.75 GPU / 3.40 CPU tok/s.'

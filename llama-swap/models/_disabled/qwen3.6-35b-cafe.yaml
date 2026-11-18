@@ -1,10 +1,7 @@
 qwen3.6-35b-cafe:
   name: Qwen 3.6 35B (262K TurboKV, cafe)
-  description: Same Qwen3.6-35B-A3B served by cafe-llama.cpp fork with Turbo KV cache
-    (turbo4). The only backend that loads the model's native 262K context on 6GB VRAM.
-    Vision verified at full 262K. Slower decode than the 131K production entry (~17
-    vs ~35 tok/s at 30K fill) — use for maximum-context workloads, batch/long-doc
-    analysis.
+  description: Same Qwen3.6-35B-A3B served by cafe-llama.cpp fork with Turbo KV cache (turbo4). The only backend that loads the model's native 262K context on 6GB VRAM. Vision verified at full 262K. Slower
+    decode than the 131K production entry (~17 vs ~35 tok/s at 30K fill) — use for maximum-context workloads, batch/long-doc analysis.
   cmd: '${cafe_server} --port ${PORT}
 
     --model ${models_dir}/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-APEX-MTP-I-Compact.gguf
@@ -54,11 +51,6 @@ qwen3.6-35b-cafe:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -90,11 +82,6 @@ qwen3.6-35b-cafe:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX-MTP I-Compact
-    note: 'vram detalhe: ~5.1 GB VRAM (turbo4 KV) + ~15GB pinned RAM (hmoe) Backend
-      cafe-llama.cpp (quimmedes/Ark fork) com Turbo KV turbo4 — unico que carrega
-      262K nativo na 3050 6GB (ik q4_0 KV @262K OOM). Validado 20/set: needle+QG limpos
-      @30K fill, 16.6 t/s decode @30K, vision OK @262K full (5.1GB). Tradeoff: decode
-      -52% vs ik-prod — batch/long-doc, não agentic interativo. Dual-mode padrão:
-      base sem thinking, :think liga. Sem MTP (draft KV 512MiB não cabe), sem pipeline-parallel
-      (48GB DMA @ctx longo), turbo2 crasha na arch hibrida. Tool calling nativo do
-      cafe (smoke OK).'
+    note: 'vram detalhe: ~5.1 GB VRAM (turbo4 KV) + ~15GB pinned RAM (hmoe) Backend cafe-llama.cpp (quimmedes/Ark fork) com Turbo KV turbo4 — unico que carrega 262K nativo na 3050 6GB (ik q4_0 KV @262K
+      OOM). Validado 20/set: needle+QG limpos @30K fill, 16.6 t/s decode @30K, vision OK @262K full (5.1GB). Tradeoff: decode -52% vs ik-prod — batch/long-doc, não agentic interativo. Dual-mode padrão:
+      base sem thinking, -think-handle-extinto- liga. Sem MTP (draft KV 512MiB não cabe), sem pipeline-parallel (48GB DMA @ctx longo), turbo2 crasha na arch hibrida. Tool calling nativo do cafe (smoke OK).'

@@ -1,7 +1,6 @@
 hunyuan-7b:
   name: Hunyuan 7B Instruct
-  description: Hunyuan-MT-7B is Tencent's state-of-the-art translation model supporting
-    mutual translation across 33 languages.
+  description: Hunyuan-MT-7B is Tencent's state-of-the-art translation model supporting mutual translation across 33 languages.
   tags:
   - hy7
   cmd: '${llama_server} --port ${PORT}
@@ -51,11 +50,6 @@ hunyuan-7b:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.9
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
   ttl: 60
   capabilities:
     in:
@@ -85,8 +79,6 @@ hunyuan-7b:
     context_length: 262144
     embedding_length: 4096
     quantization: Q4_K_M
-    warning: 'Uses hunyuan_v1_dense arch — ONLY llama.cpp upstream, NOT ik_llama.cpp.
-      Tencent Hunyuan Community License (personal use, <100M MAU commercial). DISABLED:
-      reasoning_content bug (llama.cpp doesn''t emit it for Hunyuan tags), dense 7B
-      outclassed by Qwen 3.6 35B MoE.'
+    warning: 'Uses hunyuan_v1_dense arch — ONLY llama.cpp upstream, NOT ik_llama.cpp. Tencent Hunyuan Community License (personal use, <100M MAU commercial). DISABLED: reasoning_content bug (llama.cpp doesn''t
+      emit it for Hunyuan tags), dense 7B outclassed by Qwen 3.6 35B MoE.'
     note: 'vram detalhe: ~5GB VRAM (fits entirely with --fit) '

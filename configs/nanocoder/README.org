@@ -86,13 +86,13 @@ Local models on RTX 3050 (6 GB VRAM) via llama-swap + llama.cpp server.
 | Model ID                        | Context  | Notes                          |
 |---------------------------------+----------+--------------------------------|
 | =qwen3.5-4b= |  131,072 | qwen3.5-4b, tools |
-| =qwen3.5-4b:think= |  131,072 | qwen3.5-4b thinking, tools |
+| =qwen3.5-4b[handle-think-EXTINTO 12/nov/2026]= |  131,072 | qwen3.5-4b thinking, tools |
 | =lfm2.5-2.6b= |  131,072 | lfm2.5-2.6b, tools |
-| =lfm2.5-2.6b:think= |  131,072 | lfm2.5-2.6b thinking, tools |
+| =lfm2.5-2.6b[handle-think-EXTINTO 12/nov/2026]= |  131,072 | lfm2.5-2.6b thinking, tools |
 | =ornith-1.5-35b= |  131,072 | ornith-1.5-35b, tools |
-| =ornith-1.5-35b:think= |  131,072 | ornith-1.5-35b thinking, tools |
+| =ornith-1.5-35b[handle-think-EXTINTO 12/nov/2026]= |  131,072 | ornith-1.5-35b thinking, tools |
 | =qwen3.6-35b-a3b-heretic= |  131,072 | qwen3.6-35b-a3b-heretic, tools |
-| =qwen3.6-35b-a3b-heretic:think= |  131,072 | qwen3.6-35b-a3b-heretic thinking, tools |
+| =qwen3.6-35b-a3b-heretic[handle-think-EXTINTO 12/nov/2026]= |  131,072 | qwen3.6-35b-a3b-heretic thinking, tools |
 
 ** Excluded from config
 
@@ -111,7 +111,7 @@ excluded from the nanocoder config:
 | =webworld-8b=          | Web agent, not general coding              |
 | =qwen3.5-abliterated:4b= | Ollama cloud alias, duplicate of local   |
 | =bonsai-27b=             | APOSENTADO 12/nov/2026 (dono) — 1-bit, fora da frota |
-| =bonsai-27b:think=       | APOSENTADO 12/nov/2026 (dono) — ver linha acima               |
+| =bonsai-27b[handle-think-EXTINTO 12/nov/2026]=       | APOSENTADO 12/nov/2026 (dono) — ver linha acima               |
 
 * Key nanocoder config options
 
@@ -131,9 +131,9 @@ Auto-save enabled with 30-second intervals, max 100 sessions retained for
 Both cloud and local providers use =requestTimeout: -1= and =socketTimeout: -1=
 (disabled) to handle long inference times on local models.
 
-* Notes on =:think= variants
+* Notes on =[handle-think-EXTINTO 12/nov/2026]= variants
 
-llama-swap supports =:think= variants via =setParamsByID=, which enables
+llama-swap supports =[handle-think-EXTINTO 12/nov/2026]= variants via =setParamsByID=, which enables
 thinking/reasoning mode on models that support it. In nanocoder, these appear
 as separate model names. They inherit the same context window as their base
 model — the =contextWindows= map explicitly sets both to the same value for

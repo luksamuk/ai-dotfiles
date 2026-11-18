@@ -1,6 +1,7 @@
 bonsai2-9b-fast:
   name: Ternary Bonsai 9B (fast)
-  description: Ternary Bonsai 9B (fast) is the same 9B ternary model from PrismML, trading context for speed. Always-thinking and multimodal — it targets quick iteration when the full 131K window is not needed.
+  description: Ternary Bonsai 9B (fast) is the same 9B ternary model from PrismML, trading context for speed. Always-thinking and multimodal — it targets quick iteration when the full 131K window is not
+    needed.
   tags:
   - llm
   - thinking
@@ -36,7 +37,7 @@ bonsai2-9b-fast:
   metadata:
     size: 2.68 GB DiT (PQ2_0-MTP-Q8_0, draft head embutido) + 0.62 GB mmproj Q8_0
     context: 65536
-    vram_usage: '~4.79 GB (4905 MiB, 79.8% da 3050; MTP2 @64K, KV q4_0)'
+    vram_usage: ~4.79 GB (4905 MiB, 79.8% da 3050; MTP2 @64K, KV q4_0)
     source: prism-ml/Ternary-Bonsai-2-9B-gguf (PQ2_0-MTP-Q8_0 + mmproj Q8_0)
     kv_cache: q4_0
     features:
@@ -53,7 +54,10 @@ bonsai2-9b-fast:
     context_length: 65536
     embedding_length: 0
     quantization: PQ2_0-MTP
-    note: 'kv detalhe: q8_0 @65536 (o rs-cache do MTP consome ~0.6 GB extra — 131K OOMa na 6GB c/ desktop). DUPLO-DEPLOY 16/out: fast = MTP draft 2 @64K, 83.5-85.9 t/s normais / 89.5 copy-heavy / 87.9% acceptance (vs 66.2 do PTQ1_0 puro). A lane sem drafter (contexto 131K) é o handle bonsai2-9b. Reload do swap PENDENTE (user testando — só o fragment muda; reload depois, sem stream em voo). ctx 32K (redução pedida 16/out). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0). UNCENSORED 20/out: mesmo LoRA abliteration do 9b base, fixo --lora-scaled:1 — OFF-CARD em PQ2_0-MTP (direção estimada no PTQ1_0; efeito neste quant não medido, experimento do dono).'
+    note: 'kv detalhe: q8_0 @65536 (o rs-cache do MTP consome ~0.6 GB extra — 131K OOMa na 6GB c/ desktop). DUPLO-DEPLOY 16/out: fast = MTP draft 2 @64K, 83.5-85.9 t/s normais / 89.5 copy-heavy / 87.9%
+      acceptance (vs 66.2 do PTQ1_0 puro). A lane sem drafter (contexto 131K) é o handle bonsai2-9b. Reload do swap PENDENTE (user testando — só o fragment muda; reload depois, sem stream em voo). ctx 32K
+      (redução pedida 16/out). Sempre-thinking: sem handle -think-handle-extinto- (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0). UNCENSORED 20/out: mesmo LoRA abliteration do 9b base,
+      fixo --lora-scaled:1 — OFF-CARD em PQ2_0-MTP (direção estimada no PTQ1_0; efeito neste quant não medido, experimento do dono).'
     caveats:
     - 'MTP acima de 64K não carrega: rs-cache do drafter pede ~603 MiB e estoura a 6GB'
     - 'Sempre-thinking: orçamento curto devolve content vazio — usar max_tokens ~1000+'

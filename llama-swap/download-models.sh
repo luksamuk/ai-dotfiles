@@ -273,7 +273,7 @@ declare -A MODELS=(
   # Nanbeige4.1-3B — BOSS Zhipin dense 3B reasoning + agentic coding model
   # Architecture: LlamaForCausalLM (llama) — supported in ALL backends
   # Q4_K_M ~1.8 GB — fits entirely in 6GB VRAM with room to spare
-  # ALWAYS THINKS (no :think toggle) — uses think/end_think format (same as Qwen3)
+  # ALWAYS THINKS (no [handle-think-EXTINTO 12/nov/2026] toggle) — uses think/end_think format (same as Qwen3)
   # Tool calling uses XML func_call tags — NOT OpenAI-compatible JSON
   # head_dim=128 → attn_rot ✅, vocab 166K (larger than Qwen3.5's 151K)
   # [REMOVED] nanbeige4.1-3b — multi-turn tool calling broken (#22684), GGUF deleted

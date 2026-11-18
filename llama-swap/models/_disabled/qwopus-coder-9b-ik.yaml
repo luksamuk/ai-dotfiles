@@ -1,15 +1,13 @@
 qwopus-coder-9b-ik:
   name: Qwopus 9B Coder
-  description: Qwopus3.5 is a reasoning-enhanced model family fine-tuned from Qwen3.5,
-    especially optimized for programming agentic coding tasks.
+  description: Qwopus3.5 is a reasoning-enhanced model family fine-tuned from Qwen3.5, especially optimized for programming agentic coding tasks.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/Qwopus3.5-9B-coder-Exp-Q4_K_M.gguf
 
     # No --no-mmproj: ik_llama.cpp doesn''t support this flag (upstream-only)
 
-    # No --fit-ctx: ik_llama.cpp doesn''t support this flag; --ctx-size serves as
-    ceiling
+    # No --fit-ctx: ik_llama.cpp doesn''t support this flag; --ctx-size serves as ceiling
 
     --fit
 
@@ -54,11 +52,6 @@ qwopus-coder-9b-ik:
           enable_thinking: false
         temperature: 0.6
         top_p: 0.85
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.9
   ttl: 120
   capabilities:
     in:
@@ -88,7 +81,5 @@ qwopus-coder-9b-ik:
     context_length: 262144
     embedding_length: 4096
     quantization: Q4_K_M
-    warning: Vision disabled — mmproj (880MB F16) blocks partial offload. Text-only
-      = max GPU layers = max speed. Dense 9B = all params active per token (slower
-      per token than MoE, but stronger for agentic).
+    warning: Vision disabled — mmproj (880MB F16) blocks partial offload. Text-only = max GPU layers = max speed. Dense 9B = all params active per token (slower per token than MoE, but stronger for agentic).
     note: 'vram detalhe: ~5.5GB VRAM (text-only, dense 9B all layers GPU via --fit)'

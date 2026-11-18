@@ -16,7 +16,7 @@ GGUF removido em 10/10/2026. Fragmento preservado em este diretório
 1. `mv models/_disabled/mellum2.1-12b.yaml models/`
 2. `cd llama-swap && python3 build-config.py` (sync automático pra live)
 3. Re-add nos harnesses: `configs/pi/models.json` (schema igual aos outros
-   handles llama-swap, entradas `mellum2.1-12b` + `mellum2.1-12b:think`)
+   handles llama-swap, entradas `mellum2.1-12b` + `mellum2.1-12b-think-handle-extinto-`)
    + sync pra `~/.pi/agent/models.json` — e qualquer outro harness desejado
 4. Reload do swap (watch-config auto ou SIGHUP)
 5. Verificar: `curl -s localhost:12434/v1/models | jq -r '.data[].id'`

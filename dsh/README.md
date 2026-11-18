@@ -25,7 +25,7 @@ configurado 100% manual (sem web UI). Espelho dos arquivos vivos de `~/.dsh`.
 - `profiles/{tui,headless}/cordis.patch.yml` — catálogo de models (frota
   llama-swap 12434 + ollama cloud 11434), rota default, reasoning efforts por
   modelo, MCP searxng (wrapper no Sisyphus, `100.72.245.16:8899/mcp`), deepseek
-  desativado. Regra da casa: thinking ON por default, sem variantes `:think`.
+  desativado. Regra da casa: thinking ON por default, sem variantes `[handle-think-EXTINTO 12/nov/2026]`.
 - `profiles/*/package.json` — pins das dependências (manifest de restore).
 - `env.example` — estrutura do `~/.dsh/.env` (dummies + token do MCP searxng).
 

@@ -2,7 +2,7 @@
 """relay_vision_common.py — biblioteca de visão/auto-despacho compartilhada entre ltx e h3.
 
 Funções extraídas/inspiradas no ltx_prompt_relay.py (motor LTX) para uso geral:
-  - resolve_think_variant(model): preferir :think c/ validação no fleet
+  - resolve_think_variant(model): preferir [handle-think-EXTINTO 12/nov/2026] c/ validação no fleet
   - check_vision(model): features.vision / input_modalities / heurística de nome
   - image_to_data_uri(path)
   - describe_image_vlm(path, model, nsfw): fallback lfm2.5-vl-3b descreve
@@ -29,8 +29,8 @@ def resolve_think_variant(model: str) -> str:
         with urllib.request.urlopen(f"{LLAMA_SWAP_URL}/v1/models", timeout=5) as resp:
             data = json.loads(resp.read())
         ids = {m.get("id", "") for m in data.get("data", [])}
-        if f"{model}:think" in ids:
-            return f"{model}:think"
+        if f"{model}[handle-think-EXTINTO 12/nov/2026]" in ids:
+            return f"{model}[handle-think-EXTINTO 12/nov/2026]"
     except Exception:
         pass
     return model
@@ -133,7 +133,7 @@ def enhance_call(model: str, system: str, prompt: str, images=None, nsfw: bool =
         via_mode = "text-only"
 
     content_text, reasoning = chat_once(model, system, content, temperature, max_tokens, timeout)
-    # LLMs :think às vezes entregam TODO o output no reasoning_content e deixam content vazio/válido-esperando
+    # LLMs [handle-think-EXTINTO 12/nov/2026] às vezes entregam TODO o output no reasoning_content e deixam content vazio/válido-esperando
     if not content_text.strip() and reasoning.strip():
         content_text = reasoning  # o reasoning contém o texto (e a linha LORAS: se pedida)
     if clean_fn:

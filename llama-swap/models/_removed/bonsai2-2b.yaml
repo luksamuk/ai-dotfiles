@@ -48,7 +48,9 @@ bonsai2-2b:
     context_length: 131072
     embedding_length: 0
     quantization: PTQ1_0
-    note: 'kv detalhe: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.1 GB). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido 16/out GPU: 209.0 t/s decode. Thinking model (reasoning_content longo). mmproj não baixado pro 2B (só 4B/9B têm). Sempre-thinking: sem handle :think (o modelo raciocina sempre; samplers oficiais Prism: temp 1.0/0.95/20/presence 1.0).'
+    note: 'kv detalhe: q8_0 @131072 (262K nativo — hybrid attention, 24 linear+8 full) (~0.1 GB). SÓ O FORK PrismML-Eng/llama.cpp branch prism carrega PTQ1_0 (GGML type 143 — vanilla e cafe rejeitam). Medido
+      16/out GPU: 209.0 t/s decode. Thinking model (reasoning_content longo). mmproj não baixado pro 2B (só 4B/9B têm). Sempre-thinking: sem handle -think-handle-extinto- (o modelo raciocina sempre; samplers oficiais Prism:
+      temp 1.0/0.95/20/presence 1.0).'
     caveats:
     - Exige LD_LIBRARY_PATH do build do fork Prism
     - 'Thinking model: respostas curtas precisam de max_tokens generoso'

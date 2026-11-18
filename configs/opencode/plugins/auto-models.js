@@ -86,7 +86,7 @@ function makeModelInfo(providerID, id, patch) {
   let name = id;
   if(patch.name) {
     name = patch.name;
-    if(id.endsWith(":think")) {
+    if(id.endsWith("[handle-think-EXTINTO 12/nov/2026]")) {
       name = name + " 🧠";
     }
   }

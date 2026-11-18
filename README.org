@@ -200,15 +200,15 @@ Cada subdiretório de =configs/= é uma fonte de verdade (/source of truth/) par
 | Harness     | Regra local                      | Cloud | Obs                                     |
 |-------------+----------------------------------+-------+-----------------------------------------|
 | Pi          | Todos os handles do fleet        | 14    | Exceção: libera tudo                    |
-| Crush       | Tools-only (base + :think)       | 15    | Sem modelos sem tool-calling            |
+| Crush       | Tools-only (base + [handle-think-EXTINTO 12/nov/2026])       | 15    | Sem modelos sem tool-calling            |
 | Codex       | Tools-only (perfis TOML)         | 15    | Local limitado (Responses API)          |
-| Droid       | Tools-only (base + :think)       | 15    | =noImageSupport= booleano               |
-| OpenCode    | Tools-only (base + :think)       | 15    | =modalities= + =capabilities= schema    |
+| Droid       | Tools-only (base + [handle-think-EXTINTO 12/nov/2026])       | 15    | =noImageSupport= booleano               |
+| OpenCode    | Tools-only (base + [handle-think-EXTINTO 12/nov/2026])       | 15    | =modalities= + =capabilities= schema    |
 | Goose       | dynamic_models + lista explícita | 15+   | Providers declarativos JSON (SEM llama_swap — canonical registry bug) |
 
 Notas:
-- A frota expõe **27 handles** em =http://127.0.0.1:12434= (base e =:think=). O número muda quando modelos entram/saem — a fonte é =llama-swap/config.yaml=, não esta tabela.
-- Modelos *always thinking* (GPT-OSS 20B) NÃO têm variante =:think=
+- A frota expõe **27 handles** em =http://127.0.0.1:12434= (base e =[handle-think-EXTINTO 12/nov/2026]=). O número muda quando modelos entram/saem — a fonte é =llama-swap/config.yaml=, não esta tabela.
+- Modelos *always thinking* (GPT-OSS 20B) NÃO têm variante =[handle-think-EXTINTO 12/nov/2026]=
 - =qwen3.6-35b-a3b= (llama-swap) é o modelo local com vision (=input: [text, image]=). Nenhum modelo local ativo suporta áudio.
 - O Codex local é limitado: llama-swap não suporta Responses API, usar =--oss --local-provider=ollama= como workaround
 

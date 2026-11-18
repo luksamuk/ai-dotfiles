@@ -1,10 +1,7 @@
 flint-40b-a2b-fast:
   name: Flint 40B A2.5B (fast)
-  description: "Flint Preview 40B MoE A2.5B ativo (256 experts top-6 + 2 shared, 49 blocos,
-    2 dense leading). Atencao hibrida full+SWA(513) com GQA 4 KV heads; ik aloca KV full
-    nas 49 camadas (SWA do Flint ainda nao aproveitado) - 131K estoura a 3050, lane em 112K
-    (validado 25/10; margem igual ao k2 131K em producao). Reasoning nativo sempre-on, sem
-    toggle. ik_llama.cpp backend."
+  description: Flint Preview 40B MoE A2.5B ativo (256 experts top-6 + 2 shared, 49 blocos, 2 dense leading). Atencao hibrida full+SWA(513) com GQA 4 KV heads; ik aloca KV full nas 49 camadas (SWA do Flint
+    ainda nao aproveitado) - 131K estoura a 3050, lane em 112K (validado 25/10; margem igual ao k2 131K em producao). Reasoning nativo sempre-on, sem toggle. ik_llama.cpp backend.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/flint-40b-a2b/Flint-APEX-I-Compact.gguf
@@ -56,7 +53,7 @@ flint-40b-a2b-fast:
   metadata:
     size: ~18.42 GB (APEX I-Compact)
     context: 114688
-    vram_usage: "~5.46 GB VRAM pico @112K (pesos 1.07 + KV 3.0) + ~16.1 GB RAM pinned (experts)"
+    vram_usage: ~5.46 GB VRAM pico @112K (pesos 1.07 + KV 3.0) + ~16.1 GB RAM pinned (experts)
     source: mudler/flint-APEX-GGUF (APEX I-Compact, 18424602016 bytes exatos)
     kv_cache: q4_0/q4_0
     features:
@@ -74,16 +71,9 @@ flint-40b-a2b-fast:
     embedding_length: 2048
     context_length: 114688
     quantization: APEX I-Compact
-    note: 'Smoke 25/10 (ik 804ee29c, Flint runtime #2725 mergeado 22/10): load ~6s mmap,
-      decode 47 t/s @64K (igual ao 16K), prompt 74 t/s @64K (117 @16K), pico VRAM 4137 MiB,
-      RAM pinned 16.1 GiB. Tool calling NATIVO validado: get_weather com args JSON corretos,
-      finish tool_calls. Reasoning sempre-on via reasoning_content (template sem toggle de
-      thinking) - ID unico, sem :think. 131K NAO cabe na 3050: KV CUDA 3528 MiB @131K (KV
-      full nas 49 camadas, SWA-513 nao implementado no ik) + pesos 1075 MiB + desktop ~800
-      = cudaMalloc OOM no compute buffer. Escada de ctx medida 25/10 (pico VRAM, folga
-      na 3050 de 6GB c/ ~800MB desktop): 64K=4137MiB, 96K=5015, 112K=5455 (folga ~690MB,
-      MESMA margem do k2 131K @88.7% em producao - escolhido), 120K=5675 (folga ~470MB,
-      raspando demais), 131K=falha. Sem MTP head (0
-      tensores nextn) - nao ligar spec decode. Samplers embutidos no GGUF: temp 1.0,
-      top_k 20, top_p 0.95. Cafe aguarda rebase upstream (Flint vanilla #30928 mergeado
-      21/10) para a lane non-fast. GGUF em ~/.llama-models/flint-40b-a2b/.'
+    note: 'Smoke 25/10 (ik 804ee29c, Flint runtime #2725 mergeado 22/10): load ~6s mmap, decode 47 t/s @64K (igual ao 16K), prompt 74 t/s @64K (117 @16K), pico VRAM 4137 MiB, RAM pinned 16.1 GiB. Tool calling
+      NATIVO validado: get_weather com args JSON corretos, finish tool_calls. Reasoning sempre-on via reasoning_content (template sem toggle de thinking) - ID unico, sem -think-handle-extinto-. 131K NAO cabe na 3050: KV
+      CUDA 3528 MiB @131K (KV full nas 49 camadas, SWA-513 nao implementado no ik) + pesos 1075 MiB + desktop ~800 = cudaMalloc OOM no compute buffer. Escada de ctx medida 25/10 (pico VRAM, folga na 3050
+      de 6GB c/ ~800MB desktop): 64K=4137MiB, 96K=5015, 112K=5455 (folga ~690MB, MESMA margem do k2 131K @88.7% em producao - escolhido), 120K=5675 (folga ~470MB, raspando demais), 131K=falha. Sem MTP head
+      (0 tensores nextn) - nao ligar spec decode. Samplers embutidos no GGUF: temp 1.0, top_k 20, top_p 0.95. Cafe aguarda rebase upstream (Flint vanilla #30928 mergeado 21/10) para a lane non-fast. GGUF
+      em ~/.llama-models/flint-40b-a2b/.'

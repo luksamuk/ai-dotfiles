@@ -1,15 +1,12 @@
 nex-n2-mini:
   name: Nex N2 Mini
-  description: Nex-N2-mini is a 35B Mixture-of-Experts agentic model with Agentic
-    Thinking, post-trained on Qwen3.5-35B-A3B-Base for first-tier coding and long-horizon
-    agentic tasks. Features adaptive thinking depth and coherent reasoning across
-    diverse agentic workflows.
+  description: Nex-N2-mini is a 35B Mixture-of-Experts agentic model with Agentic Thinking, post-trained on Qwen3.5-35B-A3B-Base for first-tier coding and long-horizon agentic tasks. Features adaptive thinking
+    depth and coherent reasoning across diverse agentic workflows.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/nex-n2-mini/Nex-N2-mini-APEX-I-Compact.gguf
 
-    # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only
-    = stable.
+    # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only = stable.
 
     --fit
 
@@ -60,11 +57,6 @@ nex-n2-mini:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.7
-        top_p: 0.95
   ttl: 300
   health_check_timeout: 300
   capabilities:
@@ -95,9 +87,6 @@ nex-n2-mini:
     context_length: 262144
     embedding_length: 2048
     quantization: I-Compact
-    note: 'vram detalhe: ~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated
-      33-34 t/s) 35B MoE agentic model. Qwen3.5 35B-A3B-Base. Agentic Thinking framework
-      (Adaptive + Coherent). SWE-bench 74.4, Terminal-Bench 60.7. APEX I-Compact:
-      imatrix v1.3 calibrated. Same arch/size as Qwen3.6/Ornith/Agents-A1 APEX — expects
-      33-34 t/s. Vision blocked on 6GB RTX 3050 (mmproj 903MB exists but CLIP OOMs
+    note: 'vram detalhe: ~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s) 35B MoE agentic model. Qwen3.5 35B-A3B-Base. Agentic Thinking framework (Adaptive + Coherent). SWE-bench 74.4,
+      Terminal-Bench 60.7. APEX I-Compact: imatrix v1.3 calibrated. Same arch/size as Qwen3.6/Ornith/Agents-A1 APEX — expects 33-34 t/s. Vision blocked on 6GB RTX 3050 (mmproj 903MB exists but CLIP OOMs
       at inference).'

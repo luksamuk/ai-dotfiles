@@ -69,7 +69,7 @@ matrix:
     # PR #29416 (M-RoPE rope.section_order): cafe v0.76 (13/Out) mergeou; ik ainda sem
     # mcv1: minicpm-v-4.7-1b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/; o 35b (mcv35) fica
     mcv35: minicpm-v-4.7-35b  # ATIVO Oct 13 2026 noite: GGUF re-baixado (mix 15.5GB + mmproj 4x 0.91GB) + cafe v0.76 (ad57e28a1) mergeou #29416 (M-RoPE OK) — backend cafe
-    lfm24: lfm2.5-24b-a2b  # APOSENTADO COM HONRAS + SACRIFÍCIO DE DISCO 31/out (GGUF APEX I-Compact fora do disco; unlisted: true) — flag-ship LiquidAI MoE 24B/2.45B ativo (LiveClaw 48.09 > qwen3.6-35b 38.19), UD-Q4_K_XL 14.9GB, -cmoe receita laguna. Sem :think (always-think native). Régua N=5 na fila
+    lfm24: lfm2.5-24b-a2b  # APOSENTADO COM HONRAS + SACRIFÍCIO DE DISCO 31/out (GGUF APEX I-Compact fora do disco; unlisted: true) — flag-ship LiquidAI MoE 24B/2.45B ativo (LiveClaw 48.09 > qwen3.6-35b 38.19), UD-Q4_K_XL 14.9GB, -cmoe receita laguna. Sem [handle-think-EXTINTO 12/nov/2026] (always-think native). Régua N=5 na fila
     lfm24f: lfm2.5-24b-a2b-fast  # o challenger ik (-ot exps CPU) — A/B pós-smoke do cafe
     # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
     # orn35: APOSENTADA 16/11/2026 (dono) — ornith-1.5-35b-heretic em _disabled/, GGUFs deletados; papel code do sprach sem dono por enquanto
@@ -150,9 +150,9 @@ matrix:
     # bs2t: bonsai2-27b  # RE-APOSENTADO 12/nov/2026 à noite — degenera em word-salad com system prompt >=4k chars (bissecção provada; git history p/ prova) — PRISML fork fica em ~/git/prismml-eng-llama.cpp
     # tq3d: qwen3.5-4b-3d-coder  # APOSENTADO 12/nov/2026 (dono) — probe 2048 reprovado 2/7 + fidelidade multimodal nula; fragment _disabled/ + epitaph; restore no epitaph
     # nbe4: nemotron-bolt-e4b  # APOSENTADO 31/10/2026 (dono) — GGUFs (UD-Q4_K_XL 5.1G + dflash draft) deletados, fragment _disabled/; restore: re-download unsloth (GATED)
-    lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + :think), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despejava (ping-pong cravado no journal 30/out 14:53)
+    lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + [handle-think-EXTINTO 12/nov/2026]), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despejava (ping-pong cravado no journal 30/out 14:53)
     mcv47: minicpm-v-4.7-35b  # REATIVADO 11/nov (unlisted removido): MoE visual 35B-A3B (mix q3gud_im 15.5GB, experts RAM ~11G, 5G VRAM, 131K ctx, dual think-ON + effort off/high). LISTED sem var = exclusivo no solver (lição lfm317 30/out)
-    # sn9: sensenova-loop-9b  # RETIRADO 31/out/2026 (fragment em _disabled/, restore no header do fragment)
+    sn9: sensenova-loop-9b  # REATIVADO 17/nov/2026 — release final, lane CPU-only (nao concorre por VRAM)
     # sn9v: sensenova-loop-9b-vision  # RETIRADO junto # fragment em _disabled/
 
   sets:
@@ -266,7 +266,7 @@ matrix:
     lfm317: 2  # 1.7B Q8 ~2GB GPU
     spc: 1   # Portal core Space 362MB — reload segundos
     fct: 2   # Portal core Fact 1.2GB — reload rápido
-    # sn9: 4  # RETIRADO 31/out/2026 junto do fragment
+    sn9: 2  # REATIVADO 17/nov/2026 CPU-only (mmap; reload segundos)
     # sn9v: 4  # RETIRADO junto
     # g12p: 3  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%)
     # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)

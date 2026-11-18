@@ -1,9 +1,7 @@
 qwen3.8-27b:
   name: Qwen3.8 27B
-  description: 'Qwen3.8-27B: dense 27B VLM with Gated DeltaNet linear attention +
-    Gated Attention hybrid. APEX Nano quantization (~3.3 bpw, 22.1% better than flat).
-    Native image/video understanding, 262K context. MTP speculative decoding. ik_llama
-    with heavy offload.'
+  description: 'Qwen3.8-27B: dense 27B VLM with Gated DeltaNet linear attention + Gated Attention hybrid. APEX Nano quantization (~3.3 bpw, 22.1% better than flat). Native image/video understanding, 262K
+    context. MTP speculative decoding. ik_llama with heavy offload.'
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/qwen3.8-27b/Qwen3.8-27B-APEX-I-Nano.gguf
@@ -66,12 +64,6 @@ qwen3.8-27b:
         temperature: 0.7
         top_p: 0.8
         presence_penalty: 1.5
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 1.0
-        top_p: 0.95
-        presence_penalty: 0.0
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -103,8 +95,5 @@ qwen3.8-27b:
     context_length: 262144
     embedding_length: 5120
     quantization: APEX I-Nano (~3.3 bpw)
-    note: 'vram detalhe: ~5GB VRAM (--fit auto) + ~7GB RAM offload. DeltaNet KV cache
-      near-constant at 128K. Dense 27B DeltaNet+Attn hybrid (48+16 layers). Native
-      VLM. APEX Nano 22.1% better KL than flat. ik_llama with --fit + --mlock + MTP
-      spec decode. Instruct: presence_penalty=1.5. Thinking: temp=1.0. Expected ~3-5
-      tok/s with heavy offload.'
+    note: 'vram detalhe: ~5GB VRAM (--fit auto) + ~7GB RAM offload. DeltaNet KV cache near-constant at 128K. Dense 27B DeltaNet+Attn hybrid (48+16 layers). Native VLM. APEX Nano 22.1% better KL than flat.
+      ik_llama with --fit + --mlock + MTP spec decode. Instruct: presence_penalty=1.5. Thinking: temp=1.0. Expected ~3-5 tok/s with heavy offload.'

@@ -1,7 +1,6 @@
 qwen3-8b:
   name: Qwen3 8B
-  description: Qwen3 is the latest generation of large language models in the Qwen
-    series, offering a comprehensive suite of dense and MoE models.
+  description: Qwen3 is the latest generation of large language models in the Qwen series, offering a comprehensive suite of dense and MoE models.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/Qwen3-8B-UD-Q3_K_XL.gguf
@@ -49,11 +48,6 @@ qwen3-8b:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.8
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.6
-        top_p: 0.95
   ttl: 60
   capabilities:
     in:

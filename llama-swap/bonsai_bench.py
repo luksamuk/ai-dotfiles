@@ -11,7 +11,7 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 SNAKE_PROMPT = """Write one complete Python 3 file using only the standard library. Return only Python code. Do not use markdown, comments, tests, examples, or explanatory text. Implement a deterministic Task store module with a compact, repetitive structure that is easy to predict. Required shape: - imports: dataclasses, datetime, typing - dataclass Task with fields id: int, title: str, status: str, created_at: str - class TaskStore with an internal dict[int, Task] - methods: add, get, rename, mark_done, reopen, delete, clear, list_all, list_open, list_done, count_open, count_done, titles, to_dicts, __len__, __contains__ - add assigns increasing integer ids starting at 1 - valid statuses are "open" and "done" - all list methods return tasks sorted by id - count_open and count_done use explicit loops - titles returns task titles sorted by task id - to_dicts returns deterministic dictionaries sorted by id - to_dicts includes id, title, status, and created_at keys for every task - raise ValueError for empty title or missing task id - use straightforward if statements and explicit loops - keep method bodies short and similar in style - no argparse, no JSON, no file IO, no unittest, no pytest - target about 110 to 132 lines of code - define __all__ = ["Task", "TaskStore"] - stop immediately after defining __all__"""
 
 def run_benchmark(model_key, max_tokens=4096, timeout=600, think=False):
-    model_id = f"{model_key}:think" if think else model_key
+    model_id = f"{model_key}[handle-think-EXTINTO 12/nov/2026]" if think else model_key
     payload = {
         "model": model_id,
         "messages": [{"role": "user", "content": SNAKE_PROMPT}],

@@ -40,7 +40,7 @@ def wait_for_model_ready(model: str, timeout: int = 120) -> bool:
 
     Returns True if model is ready, False if timeout exceeded.
     """
-    # Extract base model name (strip :think, :code, etc. suffixes)
+    # Extract base model name (strip [handle-think-EXTINTO 12/nov/2026], :code, etc. suffixes)
     base_model = model.split(":")[0]
     t0 = time.perf_counter()
 

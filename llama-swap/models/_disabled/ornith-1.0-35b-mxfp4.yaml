@@ -1,7 +1,6 @@
 ornith-1.0-35b-mxfp4:
   name: Ornith 1.0 35B MXFP4
-  description: Ornith-1.0 35B with MXFP4 expert quantization + agentic imatrix. A/B
-    comparison variant vs APEX I-Compact. Thinking always enabled.
+  description: Ornith-1.0 35B with MXFP4 expert quantization + agentic imatrix. A/B comparison variant vs APEX I-Compact. Thinking always enabled.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/ornith-1.0-35b-mxfp4/Ornith-1.0-35B-MXFP4_MOE-Only-Imatrix.gguf
@@ -53,11 +52,6 @@ ornith-1.0-35b-mxfp4:
           enable_thinking: true
         temperature: 1.0
         top_p: 1.0
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 1.0
-        top_p: 1.0
   ttl: 300
   health_check_timeout: 300
   capabilities:
@@ -88,8 +82,5 @@ ornith-1.0-35b-mxfp4:
     context_length: 262144
     embedding_length: 2048
     quantization: MXFP4
-    note: 'vram detalhe: ~5.4GB VRAM + ~14GB pinned RAM (2GB larger than APEX, more
-      RAM offload) MXFP4 Hybrid variant for A/B comparison vs APEX I-Compact. MXFP4
-      on routed experts, imatrix calibrated with agentic datasets. 18.5GB vs 16.5GB
-      APEX. Think always enabled (both base and :think modes). Same flags as APEX
-      variant.'
+    note: 'vram detalhe: ~5.4GB VRAM + ~14GB pinned RAM (2GB larger than APEX, more RAM offload) MXFP4 Hybrid variant for A/B comparison vs APEX I-Compact. MXFP4 on routed experts, imatrix calibrated with
+      agentic datasets. 18.5GB vs 16.5GB APEX. Think always enabled (both base and -think-handle-extinto- modes). Same flags as APEX variant.'

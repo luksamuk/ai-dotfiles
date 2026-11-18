@@ -21,15 +21,15 @@ VLM_FALLBACK = os.environ.get("LTX_VLM_FALLBACK", "lfm2.5-vl-3b")
 
 
 def resolve_think_variant(model: str) -> str:
-    """Preferir variante :think quando existir no fleet (enable_thinking true + top_p 0.95).
+    """Preferir variante [handle-think-EXTINTO 12/nov/2026] quando existir no fleet (enable_thinking true + top_p 0.95).
     O base do heretic roda com thinking DESLIGADO via setParamsByID (config llama-swap) —
-    o sufixo :think é o que ativa o COT pra valer, não o contrário."""
+    o sufixo [handle-think-EXTINTO 12/nov/2026] é o que ativa o COT pra valer, não o contrário."""
     try:
         with urllib.request.urlopen(f"{LLAMA_SWAP_URL}/v1/models", timeout=5) as resp:
             data = json.loads(resp.read())
         ids = {m.get("id", "") for m in data.get("data", [])}
-        if f"{model}:think" in ids:
-            return f"{model}:think"
+        if f"{model}[handle-think-EXTINTO 12/nov/2026]" in ids:
+            return f"{model}[handle-think-EXTINTO 12/nov/2026]"
     except Exception:
         pass
     return model

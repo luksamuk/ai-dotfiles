@@ -1,8 +1,6 @@
 ling-3.0-tiny:
   name: Ling 3.0 Tiny
-  description: inclusionAI lightweight hybrid reasoning MoE. 7.9B total, 1.3B active.
-    KDA + MLA architecture with 128 experts. APEX I-Compact quantization. Abliterated
-    (85% fewer refusals).
+  description: inclusionAI lightweight hybrid reasoning MoE. 7.9B total, 1.3B active. KDA + MLA architecture with 128 experts. APEX I-Compact quantization. Abliterated (85% fewer refusals).
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/ling-3.0-tiny/Ling-3.0-tiny-abliterated-APEX-I-Compact.gguf
@@ -65,14 +63,6 @@ ling-3.0-tiny:
         top_k: 20
         repeat_penalty: 1.0
         presence_penalty: 1.5
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 1.0
-        top_p: 0.95
-        top_k: 20
-        repeat_penalty: 1.0
-        presence_penalty: 0.0
   ttl: 60
   health_check_timeout: 300
   capabilities:
@@ -88,8 +78,7 @@ ling-3.0-tiny:
     context: 131072
     vram_usage: ~4.5 GB VRAM
     source: SC117/Ling-3.0-tiny-abliterated-APEX-GGUF (APEX I-Compact)
-    kv_cache: q4_0/q4_0 + hadamard (KDA linear attn = minimal KV, only 6/24 layers
-      use MLA)
+    kv_cache: q4_0/q4_0 + hadamard (KDA linear attn = minimal KV, only 6/24 layers use MLA)
     features:
       completion: true
       tools: true
@@ -104,7 +93,5 @@ ling-3.0-tiny:
     context_length: 262144
     embedding_length: 2560
     quantization: APEX I-Compact (4.10 bpw)
-    note: 'vram detalhe: ~4.5GB VRAM (model 3.99GB + q4_0 hadamard KV + compute) BailingMoE3
-      hybrid KDA+MLA MoE. 7.9B/1.3B active, 128 experts (8+1). APEX I-Compact beats
-      Q8_0 at half size. Abliterated (85% fewer refusals, KL 0.0677). KDA = linear
-      attention, KV cache quasi-constant. ik_llama.cpp PR #2295 backend.'
+    note: 'vram detalhe: ~4.5GB VRAM (model 3.99GB + q4_0 hadamard KV + compute) BailingMoE3 hybrid KDA+MLA MoE. 7.9B/1.3B active, 128 experts (8+1). APEX I-Compact beats Q8_0 at half size. Abliterated
+      (85% fewer refusals, KL 0.0677). KDA = linear attention, KV cache quasi-constant. ik_llama.cpp PR #2295 backend.'

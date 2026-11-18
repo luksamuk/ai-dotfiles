@@ -1,10 +1,11 @@
 lfm3-omni-2b:
   name: LFM3 Omni 2B
-  description: "Omni-modal 2B da LiquidAI: entende texto, imagem, video COM trilha
-    son e audio (16 kHz), responde em texto ou fala. Musica no contrato (fala/musica/
-    son ambiente/eventos). Ideal p/ ASR, QA de musica e julgamento de clipes H3
-    (ve e ouve juntos)."
-  tags: [vis, tools, audio]
+  description: 'Omni-modal 2B da LiquidAI: entende texto, imagem, video COM trilha son e audio (16 kHz), responde em texto ou fala. Musica no contrato (fala/musica/ son ambiente/eventos). Ideal p/ ASR,
+    QA de musica e julgamento de clipes H3 (ve e ouve juntos).'
+  tags:
+  - vis
+  - tools
+  - audio
   proxy: http://127.0.0.1:${PORT}
   checkEndpoint: /health
   cmd: '${llama_server} --port ${PORT}
@@ -59,9 +60,8 @@ lfm3-omni-2b:
   metadata:
     size: ~1.85 GB (Q8_0) + 0.90 GB mmproj-F16
     context: 32768
-    vram_usage: '~4.5 GB VRAM pico @32K (KV q4_0 na lane)'
-    source: LiquidAI/LFM3-Omni-2B-GGUF (Q8_0, 1846240768 bytes exatos) + mmproj-F16
-      (949841248 bytes)
+    vram_usage: ~4.5 GB VRAM pico @32K (KV q4_0 na lane)
+    source: LiquidAI/LFM3-Omni-2B-GGUF (Q8_0, 1846240768 bytes exatos) + mmproj-F16 (949841248 bytes)
     kv_cache: q4_0/q4_0
     features:
       completion: true
@@ -77,24 +77,11 @@ lfm3-omni-2b:
     embedding_length: 2048
     context_length: 32768
     quantization: Q8_0
-    note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb, merges #31252/#31257 do dia): MUSICA
-      VERIFICADA — leu main-theme.mp3 (clipe 86s, input_audio base64 via /v1/chat/
-      completions, 16kHz mono) e devolveu estilo (eletronico/house), instrumentos
-      (synth lead/bateria/bass/pad/arpejo), mood e estrutura em 1.9s / 78 t/s;
-      o card documenta audio understanding p/ speech, music, background sounds e
-      events. Tool calling: 4 get_weather/get_local_time simultaneos, JSON limpo,
-      finish=tool_calls em 1.0s. Substitui num modelo so: ASR+VLM+LLM+TTS (card);
-      audio IN 16kHz mono (fidelidade harmonica limitada), fala OUT 24kHz com
-      audio_temperature 0.4 quando pedido. Video: ve e ouve JUNTOS (2fps, soundtrack
-      incluso) — candidato a juiz de clipes H3 (aprovado, testar com clipe real).
-      Text benchmarks do vendor usam greedy; lane pina 0.6/0.95 (chat sane). 
-      NAO-THINKING (verificado 27/out por A/B do dono): template TEM enable_thinking
-      (3 refs) mas o modelo NAO emite reasoning_content nem default nem com o kwarg
-      true/false (respostas identicas) — :think RETIRADO de acordo com o standard
-      2b (handle fantasma proibido); dual-mode e do 1.7B apenas. Quirk: pequenos
-      slips de idioma (respondeu em italiano a pergunta PT); system prompt de
-      idioma resolve. QUIRK ABERTO (dono, 27/out): descrição de IMAGEM entra em
-      doom loop (repeat até o fim) — investigar mtmd do lfm3 (merge recém do
-      #31257); ASR/music QA sane. ctx 32K (input+output, card). Embeddings/mmproj F16 mantidos
-      (peso irrelevante, fidelidade visual prioritaria). GGUF em
-      ~/.llama-models/lfm3-omni-2b/.'
+    note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb, merges #31252/#31257 do dia): MUSICA VERIFICADA — leu main-theme.mp3 (clipe 86s, input_audio base64 via /v1/chat/ completions, 16kHz mono) e devolveu estilo
+      (eletronico/house), instrumentos (synth lead/bateria/bass/pad/arpejo), mood e estrutura em 1.9s / 78 t/s; o card documenta audio understanding p/ speech, music, background sounds e events. Tool calling:
+      4 get_weather/get_local_time simultaneos, JSON limpo, finish=tool_calls em 1.0s. Substitui num modelo so: ASR+VLM+LLM+TTS (card); audio IN 16kHz mono (fidelidade harmonica limitada), fala OUT 24kHz
+      com audio_temperature 0.4 quando pedido. Video: ve e ouve JUNTOS (2fps, soundtrack incluso) — candidato a juiz de clipes H3 (aprovado, testar com clipe real). Text benchmarks do vendor usam greedy;
+      lane pina 0.6/0.95 (chat sane). NAO-THINKING (verificado 27/out por A/B do dono): template TEM enable_thinking (3 refs) mas o modelo NAO emite reasoning_content nem default nem com o kwarg true/false
+      (respostas identicas) — -think-handle-extinto- RETIRADO de acordo com o standard 2b (handle fantasma proibido); dual-mode e do 1.7B apenas. Quirk: pequenos slips de idioma (respondeu em italiano a pergunta PT); system
+      prompt de idioma resolve. QUIRK ABERTO (dono, 27/out): descrição de IMAGEM entra em doom loop (repeat até o fim) — investigar mtmd do lfm3 (merge recém do #31257); ASR/music QA sane. ctx 32K (input+output,
+      card). Embeddings/mmproj F16 mantidos (peso irrelevante, fidelidade visual prioritaria). GGUF em ~/.llama-models/lfm3-omni-2b/.'

@@ -1,10 +1,7 @@
 spark-x2.5-4b:
   name: Spark X2.5 4B
-  description: 'XHToken/iFLYTEK Spark-X2.5-4B: hybrid SWA attention (27 sliding +
-    9 full layers), native 1M ctx claim, 4B params, agentic-focused (SWE-Bench Pro
-    claim unverified; Nanbeige 3B wins 7/9 shared benches). Text-only, no vision,
-    no MTP. Upstream backend (spark2_5). 131K ctx validated: needle @123.4K OK, prefill
-    1074 t/s @105K, decode 20 t/s @123K, 45 t/s short-ctx.'
+  description: 'XHToken/iFLYTEK Spark-X2.5-4B: hybrid SWA attention (27 sliding + 9 full layers), native 1M ctx claim, 4B params, agentic-focused (SWE-Bench Pro claim unverified; Nanbeige 3B wins 7/9 shared
+    benches). Text-only, no vision, no MTP. Upstream backend (spark2_5). 131K ctx validated: needle @123.4K OK, prefill 1074 t/s @105K, decode 20 t/s @123K, 45 t/s short-ctx.'
   cmd: '${llama_server} --port ${PORT}
 
     --model ${models_dir}/spark-x2.5-4b/Spark-X2.5-4B-Q4_K_M.gguf
@@ -36,11 +33,6 @@ spark-x2.5-4b:
           enable_thinking: false
         temperature: 0.7
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 1.0
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 300
   capabilities:
@@ -70,7 +62,5 @@ spark-x2.5-4b:
     parameters: 4000000000
     context_length: 1048576
     quantization: Q4_K_M
-    note: 'vram_usage detalhe: ~5.2GB total @131K (medido: modelo 2.42GB + KV q4_0
-      ~1.2GB + buffers) Tool calling so no :think. Sem MTP (sem NextN) — nao usar
-      --spec-type mtp (ik fallback OOM). llama-bench segfaulta nesta arch — medir
-      via llama-server timings.'
+    note: 'vram_usage detalhe: ~5.2GB total @131K (medido: modelo 2.42GB + KV q4_0 ~1.2GB + buffers) Tool calling so no -think-handle-extinto-. Sem MTP (sem NextN) — nao usar --spec-type mtp (ik fallback OOM). llama-bench
+      segfaulta nesta arch — medir via llama-server timings.'

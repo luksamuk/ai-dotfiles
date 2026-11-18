@@ -1,9 +1,7 @@
 lfm2.5-2.6b:
   name: LFM 2.5 2.6B
-  description: Liquid AI on-device agentic model. 2.6B dense hybrid with 128K context.
-    Trained with agentic RL inside Hermes Agent. Best-in-class tool use for its size.
-  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/llama.cpp/build/bin ${llama_server} --port
-    ${PORT}
+  description: Liquid AI on-device agentic model. 2.6B dense hybrid with 128K context. Trained with agentic RL inside Hermes Agent. Best-in-class tool use for its size.
+  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/llama.cpp/build/bin ${llama_server} --port ${PORT}
 
     --model ${models_dir}/lfm2.5-2.6b/LFM2.5-2.6B-QAD-Q4_0.gguf
 
@@ -41,8 +39,7 @@ lfm2.5-2.6b:
 
     --jinja
 
-    # spec-dspark REMOVIDO 07/10 — build pos-d81235049 (rebuild 06/10) quebra o fit com draft:
-    # fit mede sem o draft ("dflash requires ctx_other" e normal no fitting) -> pp buffer OOM -> SIGABRT -> 500
+    # spec-dspark REMOVIDO 07/10 — build pos-d81235049 (rebuild 06/10) quebra o fit com draft: # fit mede sem o draft ("dflash requires ctx_other" e normal no fitting) -> pp buffer OOM -> SIGABRT -> 500
     --metrics
 
     '
@@ -50,11 +47,6 @@ lfm2.5-2.6b:
     stripParams: temperature, top_p
     setParamsByID:
       ${MODEL_ID}:
-        temperature: 0.1
-        top_p: 0.9
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 0.1
         top_p: 0.9
   ttl: 60
@@ -87,11 +79,7 @@ lfm2.5-2.6b:
     context_length: 131072
     embedding_length: 2048
     quantization: QAD Q4_0
-    note: 'vram detalhe: ~3.9GB VRAM (model 1.55GB + q4_0 KV 131K + compute) | model
-      1.55GB QAD-Q4_0 + q4_0 KV @131K + compute Dense hybrid (22 conv + 8 GQA). Reasoning
-      model with 205 tag. Agentic RL trained inside Hermes Agent. 16 languages incl
-      Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only
-      8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM
-      in 6GB. QAD (Quantization-Aware Distillation) recovers ~97% of BF16 quality
-      vs native Q4_0. DSpark draft REMOVIDO 07/10: fit quebra c/ draft no build 06/10
-      (mede sem o draft -> pp buffer OOM -> SIGABRT). Baseline no-draft: 88.5 t/s.'
+    note: 'vram detalhe: ~3.9GB VRAM (model 1.55GB + q4_0 KV 131K + compute) | model 1.55GB QAD-Q4_0 + q4_0 KV @131K + compute Dense hybrid (22 conv + 8 GQA). Reasoning model with 205 tag. Agentic RL trained
+      inside Hermes Agent. 16 languages incl Portuguese. GGUF has no chat_template - uses lfm2.5-chat-template.jinja. Only 8/30 layers are attention (GQA), KV cache is tiny - q4_0 fits 131K full VRAM in
+      6GB. QAD (Quantization-Aware Distillation) recovers ~97% of BF16 quality vs native Q4_0. DSpark draft REMOVIDO 07/10: fit quebra c/ draft no build 06/10 (mede sem o draft -> pp buffer OOM -> SIGABRT).
+      Baseline no-draft: 88.5 t/s.'

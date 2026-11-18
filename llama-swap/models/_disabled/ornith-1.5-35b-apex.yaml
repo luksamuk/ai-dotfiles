@@ -1,30 +1,17 @@
 ornith-1.5-35b:
   name: Ornith 1.5 35B
-  description: Ornith-1.5 is a family of open-source LLMs trained with end-to-end
-    self-improvement — the model proposes new tasks, generates task-specific scaffolds,
-    and produces solution rollouts for RL, continuously creating new learning experiences.
-    APEX Compact quantization with vision support.
-  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/ornith-1.5-35b/Ornith-1.5-35B-A3B-APEX-Compact.gguf\n\
-    --mmproj ${models_dir}/ornith-1.5-35b/mmproj.gguf\n--no-mmproj-offload\n--fit\n\
-    --fit-margin 1024\n--ctx-size 131072\n--temp 0.6\n--top-p 0.95\n--top-k 20\n--min-p\
-    \ ${code_min_p}\n--repeat-penalty ${code_repeat_penalty}\n--reasoning on\n--reasoning-budget\
-    \ 8192\n--reasoning-budget-message \"Let me conclude my reasoning and provide\
-    \ the answer.\"\n--jinja\n--chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja\n\
-    --parallel 1\n--parallel-tool-calls\n--cache-type-k ${large_cache_k}\n--cache-type-v\
-    \ ${large_cache_v}\n--k-cache-hadamard\n--v-cache-hadamard\n--flash-attn auto\n\
-    --defer-experts\n--prefetch-experts\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n\
-    \  --metrics\n"
+  description: Ornith-1.5 is a family of open-source LLMs trained with end-to-end self-improvement — the model proposes new tasks, generates task-specific scaffolds, and produces solution rollouts for RL,
+    continuously creating new learning experiences. APEX Compact quantization with vision support.
+  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/ornith-1.5-35b/Ornith-1.5-35B-A3B-APEX-Compact.gguf\n--mmproj ${models_dir}/ornith-1.5-35b/mmproj.gguf\n--no-mmproj-offload\n--fit\n--fit-margin\
+    \ 1024\n--ctx-size 131072\n--temp 0.6\n--top-p 0.95\n--top-k 20\n--min-p ${code_min_p}\n--repeat-penalty ${code_repeat_penalty}\n--reasoning on\n--reasoning-budget 8192\n--reasoning-budget-message \"\
+    Let me conclude my reasoning and provide the answer.\"\n--jinja\n--chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja\n--parallel 1\n--parallel-tool-calls\n--cache-type-k ${large_cache_k}\n\
+    --cache-type-v ${large_cache_v}\n--k-cache-hadamard\n--v-cache-hadamard\n--flash-attn auto\n--defer-experts\n--prefetch-experts\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n  --metrics\n"
   filters:
     stripParams: temperature, top_p
     setParamsByID:
       ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
-        temperature: 0.6
-        top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 0.6
         top_p: 0.95
   ttl: 900
@@ -58,9 +45,6 @@ ornith-1.5-35b:
     context_length: 262144
     embedding_length: 2048
     quantization: APEX Compact
-    note: 'vram detalhe: ~4.7GB VRAM + ~15GB pinned RAM (ik pinned memory, ~36 tok/s
-      ngram-mod) APEX Compact without MTP draft head. Saves ~500MB VRAM vs MTP variant.
-      Uses ngram-mod for speculative decoding (~36 tok/s vs 45 with MTP). Vision via
-      mmproj with --no-mmproj-offload. Same quality as MTP variant — MTP only affects
-      speed, not quality. Lower VRAM pressure allows running alongside IDE/other GPU
+    note: 'vram detalhe: ~4.7GB VRAM + ~15GB pinned RAM (ik pinned memory, ~36 tok/s ngram-mod) APEX Compact without MTP draft head. Saves ~500MB VRAM vs MTP variant. Uses ngram-mod for speculative decoding
+      (~36 tok/s vs 45 with MTP). Vision via mmproj with --no-mmproj-offload. Same quality as MTP variant — MTP only affects speed, not quality. Lower VRAM pressure allows running alongside IDE/other GPU
       processes.'

@@ -384,7 +384,7 @@ AI assistant using the local llama-swap fleet on Navi. Cloud models
 tagged with =:cloud= are proxied through the Ollama instance on Navi,
 which must be reachable over LAN or Tailscale.
 
-Fleet snapshot (October 2026). Dual-mode models expose a =:think=
+Fleet snapshot (October 2026). Dual-mode models expose a =[handle-think-EXTINTO 12/nov/2026]=
 variant with reasoning enabled; run =llama-swap-cli list= on Navi for
 the live view:
 
@@ -441,7 +441,7 @@ fail: use a local one instead.
     (setopt llm-warn-on-nonfree nil)
 
     ;; Register local models in llm-models to avoid warnings. The regex
-    ;; matches any string containing the model name (incl. :think variants).
+    ;; matches any string containing the model name (incl. [handle-think-EXTINTO 12/nov/2026] variants).
     (llm-models-add
      :name "ornith-1.5-35b-heretic"
      :symbol 'ornith-1.5-35b-heretic
@@ -502,7 +502,7 @@ fail: use a local one instead.
     ;; Main provider: Ornith 1.5 35B Heretic (flagship, local llama-swap)
     (setopt ellama-provider
 	    (make-llm-openai-compatible
-	     :chat-model "ornith-1.5-35b-heretic:think"
+	     :chat-model "ornith-1.5-35b-heretic[handle-think-EXTINTO 12/nov/2026]"
 	     :url my-llama-swap-endpoint))
 
     ;; Translation provider: TranslateGemma 4B (local llama-swap)
@@ -514,34 +514,34 @@ fail: use a local one instead.
     ;; Coding provider: same as main
     (setopt ellama-coding-provider
 	    (make-llm-openai-compatible
-	     :chat-model "ornith-1.5-35b-heretic:think"
+	     :chat-model "ornith-1.5-35b-heretic[handle-think-EXTINTO 12/nov/2026]"
 	     :url my-llama-swap-endpoint))
 
     ;; Selectable providers (local fleet + cloud models via Navi Ollama)
     (setopt ellama-providers
 	    '(("Ornith 1.5 35B Heretic" (make-llm-openai-compatible
-					 :chat-model "ornith-1.5-35b-heretic:think"
+					 :chat-model "ornith-1.5-35b-heretic[handle-think-EXTINTO 12/nov/2026]"
 					 :url my-llama-swap-endpoint))
 	      ("Qwen 3.6 35B A3B Heretic" (make-llm-openai-compatible
-					   :chat-model "qwen3.6-35b-a3b-heretic:think"
+					   :chat-model "qwen3.6-35b-a3b-heretic[handle-think-EXTINTO 12/nov/2026]"
 					   :url my-llama-swap-endpoint))
 	      ("Qwen 3 Coder 30B" (make-llm-openai-compatible
 				   :chat-model "qwen3-coder-30b"
 				   :url my-llama-swap-endpoint))
 	      ("Laguna XS 2.1" (make-llm-openai-compatible
-				:chat-model "laguna-xs-2.1:think"
+				:chat-model "laguna-xs-2.1[handle-think-EXTINTO 12/nov/2026]"
 				:url my-llama-swap-endpoint))
 	      ("K2 Horizon 36B" (make-llm-openai-compatible
-				 :chat-model "k2-horizon-36b:think"
+				 :chat-model "k2-horizon-36b[handle-think-EXTINTO 12/nov/2026]"
 				 :url my-llama-swap-endpoint))
 	      ("Neohorse 1 4B" (make-llm-openai-compatible
-				:chat-model "neohorse-1-4b:think"
+				:chat-model "neohorse-1-4b[handle-think-EXTINTO 12/nov/2026]"
 				:url my-llama-swap-endpoint))
 	      ("Qwen 3.5 4B" (make-llm-openai-compatible
-			      :chat-model "qwen3.5-4b:think"
+			      :chat-model "qwen3.5-4b[handle-think-EXTINTO 12/nov/2026]"
 			      :url my-llama-swap-endpoint))
 	      ("LFM2.5 2.6B" (make-llm-openai-compatible
-			      :chat-model "lfm2.5-2.6b:think"
+			      :chat-model "lfm2.5-2.6b[handle-think-EXTINTO 12/nov/2026]"
 			      :url my-llama-swap-endpoint))
 	      ;; ("GLM 5.3 Flash (cloud)" (make-llm-ollama
 	      ;;                           :chat-model "glm-5.3-flash:cloud"

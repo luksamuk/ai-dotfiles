@@ -1,15 +1,10 @@
 ornith-1.0-35b:
   name: Ornith 1.0 35B
-  description: Ornith-1.0 is a family of open-source LLMs specialized for agentic
-    coding, trained with a novel self-scaffolding reinforcement learning approach
-    that jointly optimizes the scaffold and the solution.
-  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/ornith-1.0-35b/Ornith-1.0-35B-APEX-I-Compact.gguf\n\
-    --fit\n--fit-margin 1024\n--ctx-size 131072\n--temp 1.0\n--top-p 1.0\n--top-k\
-    \ ${code_top_k}\n--min-p ${code_min_p}\n--repeat-penalty ${code_repeat_penalty}\n\
-    --reasoning on\n--jinja\n--chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja\n\
-    --parallel 1\n--parallel-tool-calls\n--cache-type-k ${large_cache_k}\n--cache-type-v\
-    \ ${large_cache_v}\n--k-cache-hadamard\n--v-cache-hadamard\n--flash-attn auto\n\
-    --defer-experts\n--prefetch-experts\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n\
+  description: Ornith-1.0 is a family of open-source LLMs specialized for agentic coding, trained with a novel self-scaffolding reinforcement learning approach that jointly optimizes the scaffold and the
+    solution.
+  cmd: "${ik_llama_server} --port ${PORT}\n--model ${models_dir}/ornith-1.0-35b/Ornith-1.0-35B-APEX-I-Compact.gguf\n--fit\n--fit-margin 1024\n--ctx-size 131072\n--temp 1.0\n--top-p 1.0\n--top-k ${code_top_k}\n\
+    --min-p ${code_min_p}\n--repeat-penalty ${code_repeat_penalty}\n--reasoning on\n--jinja\n--chat-template-file ${templates_dir}/qwen-fixed-chat-template.jinja\n--parallel 1\n--parallel-tool-calls\n--cache-type-k\
+    \ ${large_cache_k}\n--cache-type-v ${large_cache_v}\n--k-cache-hadamard\n--v-cache-hadamard\n--flash-attn auto\n--defer-experts\n--prefetch-experts\n--spec-type ngram-mod:n_max=64,n_min=48,ngram_size_n=24\n\
     \  --metrics\n"
   filters:
     stripParams: temperature, top_p
@@ -17,11 +12,6 @@ ornith-1.0-35b:
       ${MODEL_ID}:
         chat_template_kwargs:
           enable_thinking: false
-        temperature: 1.0
-        top_p: 1.0
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
         temperature: 1.0
         top_p: 1.0
   ttl: 900
@@ -54,9 +44,6 @@ ornith-1.0-35b:
     context_length: 262144
     embedding_length: 2048
     quantization: I-Compact
-    note: 'vram detalhe: ~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated
-      33-34 t/s) Post-trained Qwen 3.5 35B MoE. Self-scaffolding RL for agentic coding.
-      256 experts, 8+1 active, ~3B active/token. APEX I-Compact: 22% smaller than
-      Q4_K_M, imatrix v1.3 calibrated. Expected 33-34 t/s matching Qwen 3.6 APEX.
-      Uses qwen-fixed-chat-template.jinja — embedded GGUF template lacks tool-call
-      format instructions, causing <|mask_start|>/<tool_code> leakage.'
+    note: 'vram detalhe: ~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s) Post-trained Qwen 3.5 35B MoE. Self-scaffolding RL for agentic coding. 256 experts, 8+1 active, ~3B active/token.
+      APEX I-Compact: 22% smaller than Q4_K_M, imatrix v1.3 calibrated. Expected 33-34 t/s matching Qwen 3.6 APEX. Uses qwen-fixed-chat-template.jinja — embedded GGUF template lacks tool-call format instructions,
+      causing <|mask_start|>/<tool_code> leakage.'

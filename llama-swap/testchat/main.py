@@ -159,7 +159,7 @@ def _lookup_hct(model_info: dict) -> int:
         cfg_path = os.path.expanduser("~/.config/llama-swap/config.yaml")
         with open(cfg_path) as f:
             text = f.read()
-        mid = (model_info or {}).get("id", "").split(":think")[0]
+        mid = (model_info or {}).get("id", "").split("[handle-think-EXTINTO 12/nov/2026]")[0]
         key = f'  "{mid}":'
         start = text.find(key)
         if start < 0:
@@ -568,7 +568,7 @@ def fetch_available_models():
     """Busca modelos disponíveis do endpoint /v1/models.
     
     Deduplica aliases (modelo = mesmo name), mantendo o ID mais descritivo.
-    Separa variantes :think como propriedade do modelo base.
+    Separa variantes [handle-think-EXTINTO 12/nov/2026] como propriedade do modelo base.
     Filtra modelos sem capacidade de chat (TTS, embedding, decision-only).
     Retorna (modelos_chat, ocultos_por_categoria).
     """
@@ -579,7 +579,7 @@ def fetch_available_models():
         
         # Agrupar por name — aliases compartilham o mesmo name
         # Um modelo pode aparecer várias vezes (ID principal + aliases)
-        # e pode ter variante :think separada
+        # e pode ter variante [handle-think-EXTINTO 12/nov/2026] separada
         base_models = {}  # name -> model dict (melhor ID)
         think_variants = {}  # name -> think model dict
         seen_ids = set()  # Track IDs já processados
@@ -603,7 +603,7 @@ def fetch_available_models():
                     hidden.setdefault(category, []).append(model_id)
                     continue
             
-            is_think = model_id.endswith(":think")
+            is_think = model_id.endswith("[handle-think-EXTINTO 12/nov/2026]")
             name = model.get("name", model_id)
             description = model.get("description", "")
             
@@ -680,7 +680,7 @@ def fetch_available_models():
         for name, info in sorted(base_models.items(), key=lambda x: x[0].lower()):
             has_think = name in think_variants
             info["has_think_variant"] = has_think
-            info["think_variant_id"] = f"{info['id']}:think" if has_think else None
+            info["think_variant_id"] = f"{info['id']}[handle-think-EXTINTO 12/nov/2026]" if has_think else None
             models.append(info)
         
         # Easter egg: Assistant Pepe Turbo — Pepe personality on 35B steroids
@@ -707,7 +707,7 @@ def fetch_available_models():
                 "supports_vision": turbo_backend.get("supports_vision", False),
                 "supports_tools": turbo_backend.get("supports_tools", False),
                 "has_think_variant": turbo_backend.get("has_think_variant", False),
-                "think_variant_id": "pepe-turbo:think" if turbo_backend.get("has_think_variant") else None,
+                "think_variant_id": "pepe-turbo[handle-think-EXTINTO 12/nov/2026]" if turbo_backend.get("has_think_variant") else None,
                 "context": turbo_backend.get("context", ""),
                 "vram": turbo_backend.get("vram", ""),
                 "size": turbo_backend.get("size", ""),
@@ -731,15 +731,15 @@ def fetch_available_models():
             if not inserted:
                 models.append(pepe_turbo)
             
-            # Registrar variante :think virtual se o backend suportar
+            # Registrar variante [handle-think-EXTINTO 12/nov/2026] virtual se o backend suportar
             if turbo_backend.get("has_think_variant"):
                 pepe_turbo_think = dict(pepe_turbo)
-                pepe_turbo_think["id"] = "pepe-turbo:think"
+                pepe_turbo_think["id"] = "pepe-turbo[handle-think-EXTINTO 12/nov/2026]"
                 pepe_turbo_think["name"] = "Assistant Pepe Turbo"
                 pepe_turbo_think["description"] = "🐸 Pepe on overdrive. The frog thinks. God help us all."
                 pepe_turbo_think["_is_pepe_turbo_think"] = True
                 # Não adicionamos na lista principal pra não poluir;
-                # o select_model() trata a escolha de variante :think
+                # o select_model() trata a escolha de variante [handle-think-EXTINTO 12/nov/2026]
         
         return models, hidden
         
@@ -764,7 +764,7 @@ class StreamingChat:
         self._pepe_turbo_backend_id = None
         self._pepe_turbo_backend_think_id = None
         self.supports_reasoning = False
-        self.use_thinking_variant = False  # True se variante :think foi selecionada
+        self.use_thinking_variant = False  # True se variante [handle-think-EXTINTO 12/nov/2026] foi selecionada
         # Effort selecionado do mapa reasoningEfforts do fragment (None = off)
         self.selected_effort = None
         self.always_thinks = False        # True se modelo sempre pensa (ex: GPT-OSS Harmony)
@@ -809,20 +809,20 @@ class StreamingChat:
     def check_model_reasoning(self) -> bool:
         """Verifica se o modelo suporta reasoning usando o metadata da API.
         
-        Para variantes :think, procura o modelo base e sempre retorna True.
+        Para variantes [handle-think-EXTINTO 12/nov/2026], procura o modelo base e sempre retorna True.
         Para modelos base com thinking, retorna True.
         """
-        # Se é variante :think, sabemos que suporta reasoning
+        # Se é variante [handle-think-EXTINTO 12/nov/2026], sabemos que suporta reasoning
         model_id_for_lookup = self.selected_model
-        is_think_variant = self.selected_model.endswith(":think")
+        is_think_variant = self.selected_model.endswith("[handle-think-EXTINTO 12/nov/2026]")
         if is_think_variant:
-            model_id_for_lookup = self.selected_model.removesuffix(":think")
+            model_id_for_lookup = self.selected_model.removesuffix("[handle-think-EXTINTO 12/nov/2026]")
         
         for model in self.available_models:
             if model["id"] == model_id_for_lookup:
                 supports = model["supports_thinking"]
                 if is_think_variant:
-                    supports = True  # Variante :think sempre tem reasoning
+                    supports = True  # Variante [handle-think-EXTINTO 12/nov/2026] sempre tem reasoning
                 self.supports_vision = model.get("supports_vision", False)
                 self.supports_tools = model.get("supports_tools", False)
                 self.supports_audio = model.get("features", {}).get("audio", False)
@@ -922,9 +922,9 @@ class StreamingChat:
         1. Exibe Panel com detalhes do modelo (ID, size, VRAM, descrição, warning)
         2. Lista de seleção com labels de uma linha
         3. Rodapé na lista: contador de modelos ocultos (sem capacidade de chat)
-        4. Após seleção, pergunta sobre variante :think se disponível
+        4. Após seleção, pergunta sobre variante [handle-think-EXTINTO 12/nov/2026] se disponível
         
-        Retorna: model_id selecionado (ou :think variant)
+        Retorna: model_id selecionado (ou [handle-think-EXTINTO 12/nov/2026] variant)
         """
         console.clear()
         
@@ -1075,7 +1075,7 @@ class StreamingChat:
             
             variant_choices = [
                 f"💬 Chat normal (sem reasoning explícito)",
-                f"🤔 Reasoning/Thinking (:think — rag chain-of-thought visível)",
+                f"🤔 Reasoning/Thinking ([handle-think-EXTINTO 12/nov/2026] — rag chain-of-thought visível)",
             ]
             
             try:
@@ -1101,15 +1101,15 @@ class StreamingChat:
                 console.print("[dim]Saindo...[/]")
                 sys.exit(0)
             
-            if "Reasoning" in variant or ":think" in variant:
+            if "Reasoning" in variant or "[handle-think-EXTINTO 12/nov/2026]" in variant:
                 final_model_id = think_id
                 self.use_thinking_variant = True
-                console.print(f"[yellow]⚡ Variante :think selecionada[/]")
+                console.print(f"[yellow]⚡ Variante [handle-think-EXTINTO 12/nov/2026] selecionada[/]")
             else:
                 self.use_thinking_variant = False
                 console.print(f"[green]💬 Variante chat normal selecionada[/]")
         elif selected_model.get("supports_thinking") and not selected_model.get("has_think_variant"):
-            # Modelo que SEMPRE pensa (ex: GPT-OSS Harmony) — sem variante :think
+            # Modelo que SEMPRE pensa (ex: GPT-OSS Harmony) — sem variante [handle-think-EXTINTO 12/nov/2026]
             # pois o raciocínio é arquitetural, não opcional
             self.always_thinks = True
             self.use_thinking_variant = True  # Ativa painel de raciocínio
@@ -1133,7 +1133,7 @@ class StreamingChat:
     def create_layout(self) -> Layout:
         """Cria o layout da interface.
         
-        Só mostra o painel de raciocínio se a variante :think foi selecionada.
+        Só mostra o painel de raciocínio se a variante [handle-think-EXTINTO 12/nov/2026] foi selecionada.
         Modelos com thinking capability mas em modo chat normal não mostram raciocínio.
         """
         layout = Layout()
@@ -1267,7 +1267,7 @@ class StreamingChat:
         header = Align.left(header_text)
         layout["header"].update(Panel(header, border_style="cyan"))
         
-        # Reasoning panel (só se :think foi selecionado) — texto puro
+        # Reasoning panel (só se [handle-think-EXTINTO 12/nov/2026] foi selecionado) — texto puro
         if self.use_thinking_variant:
             r_content = self.reasoning_content
             reasoning_panel = self._fit_text(r_content, reasoning_height, title="[yellow]Raciocínio[/]")
@@ -1783,7 +1783,7 @@ class StreamingChat:
         elif self.use_thinking_variant:
             console.print("[yellow]🤔 Modo reasoning ativado — painel de raciocínio visível[/]")
         elif self.supports_reasoning:
-            console.print("[dim]💡 Modo chat normal — raciocínio desabilitado (use variante :think para reasoning)[/]")
+            console.print("[dim]💡 Modo chat normal — raciocínio desabilitado (use variante [handle-think-EXTINTO 12/nov/2026] para reasoning)[/]")
         if self.supports_tools and not CLI_RAW:
             console.print("[cyan]🛠️ Tool calling ativo — Ferramentas de teste disponíveis:[/]")
             console.print("[dim]   🌡️  get_weather  — Clima atual por cidade (ex: \"Qual o clima em Tokyo?\")[/]")

@@ -1,14 +1,12 @@
 agents-a1-35b:
   name: Agents-A1 35B
-  description: Agents-A1 is a 35B Mixture-of-Experts agentic model built to scale
-    heterogeneous agentic abilities across long-horizon search, engineering, scientific
-    research, instruction following, and tool calling.
+  description: Agents-A1 is a 35B Mixture-of-Experts agentic model built to scale heterogeneous agentic abilities across long-horizon search, engineering, scientific research, instruction following, and
+    tool calling.
   cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/agents-a1-35b/Agents-A1-APEX-I-Compact.gguf
 
-    # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only
-    = stable.
+    # No --mmproj: vision crashes on 6GB RTX 3050 (CLIP compute graph OOM). Text-only = stable.
 
     --fit
 
@@ -59,11 +57,6 @@ agents-a1-35b:
           enable_thinking: false
         temperature: 0.85
         top_p: 0.95
-      ${MODEL_ID}:think:
-        chat_template_kwargs:
-          enable_thinking: true
-        temperature: 0.85
-        top_p: 0.95
   ttl: 900
   health_check_timeout: 900
   capabilities:
@@ -94,8 +87,5 @@ agents-a1-35b:
     context_length: 262144
     embedding_length: 2048
     quantization: I-Compact
-    note: 'vram detalhe: ~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated
-      33-34 t/s) 35B MoE agentic model. Qwen3.5 35B-A3B base. Focused on long-horizon
-      search, engineering, scientific research, tool calling. APEX I-Compact: imatrix
-      v1.3 calibrated. Same arch/size as Qwen3.6/Ornith APEX — expects 33-34 t/s.
-      Vision blocked on 6GB RTX 3050.'
+    note: 'vram detalhe: ~5.4GB VRAM + ~12GB pinned RAM (ik pinned memory, estimated 33-34 t/s) 35B MoE agentic model. Qwen3.5 35B-A3B base. Focused on long-horizon search, engineering, scientific research,
+      tool calling. APEX I-Compact: imatrix v1.3 calibrated. Same arch/size as Qwen3.6/Ornith APEX — expects 33-34 t/s. Vision blocked on 6GB RTX 3050.'

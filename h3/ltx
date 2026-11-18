@@ -183,7 +183,7 @@ if [[ "$ENHANCE" == true ]]; then
   # ── Fleet resolve: valida contra /v1/models; fallback automático (o relay nunca
   # passa cegamente, então só preciso trocar o handle antes do relay) ──
   LIVE_MODELS=$(curl -s --max-time 5 "${LLAMA_SWAP_URL%/v1/chat/completions}/v1/models" 2>/dev/null)
-  if ! echo "$LIVE_MODELS" | grep -q "\"$ENHANCE_WITH\"\|\"${ENHANCE_WITH}:think\""; then
+  if ! echo "$LIVE_MODELS" | grep -q "\"$ENHANCE_WITH\"\|\"${ENHANCE_WITH}[handle-think-EXTINTO 12/nov/2026]\""; then
     echo "=== Fleet: '$ENHANCE_WITH' indisponível — fallback '$LTX_ENHANCE_FALLBACK' ==="
     ENHANCE_WITH="$LTX_ENHANCE_FALLBACK"
   fi
