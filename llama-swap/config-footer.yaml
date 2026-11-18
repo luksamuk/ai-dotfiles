@@ -69,8 +69,8 @@ matrix:
     # PR #29416 (M-RoPE rope.section_order): cafe v0.76 (13/Out) mergeou; ik ainda sem
     # mcv1: minicpm-v-4.7-1b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/; o 35b (mcv35) fica
     mcv35: minicpm-v-4.7-35b  # ATIVO Oct 13 2026 noite: GGUF re-baixado (mix 15.5GB + mmproj 4x 0.91GB) + cafe v0.76 (ad57e28a1) mergeou #29416 (M-RoPE OK) — backend cafe
-    lfm24: lfm2.5-24b-a2b  # APOSENTADO COM HONRAS + SACRIFÍCIO DE DISCO 31/out (GGUF APEX I-Compact fora do disco; unlisted: true) — flag-ship LiquidAI MoE 24B/2.45B ativo (LiveClaw 48.09 > qwen3.6-35b 38.19), UD-Q4_K_XL 14.9GB, -cmoe receita laguna. Sem [handle-think-EXTINTO 12/nov/2026] (always-think native). Régua N=5 na fila
-    lfm24f: lfm2.5-24b-a2b-fast  # o challenger ik (-ot exps CPU) — A/B pós-smoke do cafe
+    lfm24: lfm2.5-24b-a2b  # REATIVADO 17/nov (I-NanoPlus 8.15GB, lane unica ik; a cafe saiu; LiveClaw 48.09 > qwen3.6-35b 38.19)
+    # lfm24f: (deletado 17/nov — a -fast ik virou o default unico)
     # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
     # orn35: APOSENTADA 16/11/2026 (dono) — ornith-1.5-35b-heretic em _disabled/, GGUFs deletados; papel code do sprach sem dono por enquanto
     # orn35f: idem (lane fast ik da mesma aposentadoria)
@@ -245,7 +245,7 @@ matrix:
     # q4x: 2  # disabled Sep 20 2026
     # lfm8: 2  # REMOVED Sep 10 2026
     # lfm26: 2  # APOSENTADO 21/out 2026
-    # lfm24: 6  # APOSENTADO 31/out (q4_k_xl lento de remmap); acima do k2p(7) abaixo do heavy 9? medio-alto
+    lfm24: 4  # REATIVADO 17/nov — I-NanoPlus 8.15GB (reload mais barato que o I-Compact 11G de 31/out, que era 6)
     # orn35: 9  # APOSENTADA 16/11/2026
     # orn35f: 9  # idem
     # qw38c: 9  # APOSENTADO 15/nov/2026 (dono)

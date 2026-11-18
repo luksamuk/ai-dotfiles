@@ -1,39 +1,43 @@
 lfm2.5-24b-a2b:
-  # APOSENTADO COM HONRAS + SACRIFICIO DE DISCO 31/10/2026 (dono): GGUF APEX
-  # I-Compact (11G) DELETADO — restore: remover a linha 'unlisted: true' e:
-  #   hf download mudler/LFM2.5-24B-A2B-APEX-GGUF LFM2.5-24B-A2B-APEX-I-Compact.gguf --local-dir ~/.llama-models/lfm25-24b-a2b/
-  #   hf download mudler/LFM2.5-24B-A2B-APEX-GGUF chat_template.jinja --local-dir ~/.llama-models/lfm25-24b-a2b/  (se o cmd pedir template)
-  unlisted: true
+  # REATIVADO 17/nov/2026 (dono): lane UNICA — o -fast ik vira o default (nome de produto,
+  # sem sufixo; decreto de handle unico) sobre o APEX I-NanoPlus (8.15GB vs 11G do I-Compact
+  # deletado em 31/out). A lane cafe (normal) foi deletada junto. Receita ik = a provada do
+  # lfm2.5-24b-a2b-fast (A/B 13/out) com o quant novo; restaurar: git history + epitaph
+  # (pesos: hf download IsValorum/LFM2.5-24B-A2B-APEX-I-NanoPlus-GGUF).
   name: LFM 2.5 24B A2B
   description: "LiquidAI flagship agentic MoE: 24B total / 2.45B active (64 experts,
     top-4 routing, 30 shortconv + 10 GQA layers). 131K context, 128K vocab, native
     reasoning. Agent-focused training (36T tokens); knowledge-heavy tasks need retrieval."
-  cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server}
-    --port ${PORT}
+  tags:
+    - think
+    - tools
+  proxy: http://127.0.0.1:${PORT}
+  checkEndpoint: /health
+  cmd: '${ik_llama_server} --port ${PORT}
 
-    --model ${models_dir}/lfm25-24b-a2b/LFM2.5-24B-A2B-APEX-I-Compact.gguf
+    --model ${models_dir}/lfm25-24b-a2b/LFM2.5-24B-A2B.APEX-I-NanoPlus.gguf
 
     --jinja
 
-    --parallel 1
+    -ot "blk\.([7-9]|1[0-9]|2[0-9]|3[0-9])\.ffn_(gate|up|down)_exps=CPU"
+
+    -ngl 99
 
     --ctx-size 131072
 
-    --cache-type-k q4_0
-
-    --cache-type-v q4_0
-
-    --flash-attn on
-
-    -cmoe
-
-    -ngl 99
+    --parallel 1
 
     --temp 0.1
 
     --top-k 50
 
     --repeat-penalty 1.05
+
+    --cache-type-k q4_0
+
+    --cache-type-v q4_0
+
+    --flash-attn on
 
     --metrics
 
@@ -49,17 +53,17 @@ lfm2.5-24b-a2b:
   health_check_timeout: 600
   capabilities:
     in:
-    - text
+      - text
     out:
-    - text
+      - text
     tools: true
     reranker: false
     context: 131072
   metadata:
-    size: ~10.4 GB (APEX I-Compact)
+    size: ~8.2 GB (APEX I-NanoPlus)
     context: 131072
-    vram_usage: ~5-6 GB VRAM + ~13.7 GB RAM (est. -cmoe)
-    source: mudler/LFM2.5-24B-A2B-APEX-GGUF (APEX I-Compact; oficiais usam alias d1)
+    vram_usage: "~2.7 GB VRAM + ~11.5 GB RAM"
+    source: IsValorum/LFM2.5-24B-A2B-APEX-I-NanoPlus-GGUF (imatrix m9ter1a) — base LiquidAI/LFM2.5-24B-A2B (LFM1.0)
     kv_cache: q4_0/q4_0
     features:
       completion: true
@@ -72,16 +76,22 @@ lfm2.5-24b-a2b:
       image: false
     architecture: lfm2moe
     parameters: 24000000000
-    active: 2000000000
+    active_parameters: 2450000000
     embedding_length: 2048
     context_length: 131072
-    quantization: APEX I-Compact
-    note: 'EDIT 04/nov pos-escadinha-19B: + --ssd-predict/--ssd-io-threads 4/--ssd-cache-mb 4096 no cmd — knobs
-      inertes em -cmoe (sem streaming ativo), ganho possivel de ~+2 t/s (so medido na laguna, N=2=ruido); probe
-      deste modelo pendente do reinstall (pesos fora do disco por decreto do dono). MoE 64 experts +4 usados/token, 2 dense-lead blocks (header do GGUF cravado).
-      Reasoning NATIVO (template preserve_thinking — SEM toggle enable_thinking, sempre
-      pensa; SEM handle [handle-think-EXTINTO 12/nov/2026] de decreto do user 13/out: a variante é desnecessária
-      no always-think). ctx 131072
-      NO cmd (decreto user 13/out: 131K ou morte; o KV q4_0 = +0.7 GB VRAM: cabe). -cmoe = o offload exclusivo do cafe (experts RAM page-cache evictável,
-      receita validada do laguna 34.6 t/s @131K). Estimativa de decode: 25-35 t/s
-      (A2B < A3B do laguna). GGUF em ~/.llama-models/lfm25-24b-a2b/.'
+    quantization: APEX I-NanoPlus
+    note: "Lane unica ik (a cafe -cmoe saiu com o fragment antigo; -cmoe exclusivo do cafe).
+      Receita provada do -fast (A/B 13/out) sobre o quant novo: -ot parcial com experts dos
+      blocos 0-6 na GPU e 7-39 na CPU (+9% vs tudo em CPU @400 tok); tok_embd fica na GPU
+      (vocab 128K em CPU mata o decode; o -ot tok_embd do k2 NAO se aplica). GGML_CUDA_NO_PINNED=1
+      PROIBIDO: pinned obrigatorio (sem ele load trava em 13.3 GiB alloc e decode 0.63 t/s).
+      -nkvo OFF (arch shortconv hibrida: teste decide KV residency). Ik 3dbc2c9f: lfm2moe
+      runtime #2530 + spec decode LFM2 #2652 (sem draft companion GGUF publicado — sem -md).
+      Hadamard KV do cyber-tiel: provado na familia qwen35moe, NAO na lfm2moe — nao importou.
+      APEX I-NanoPlus ~2.7 bpw medio: piso de qualidade a validar no smoke (I-Compact era
+      ~3.7 bpw). vram_usage estimado no boot (medir e re-escrever se divergir).
+      SMOKE 17/nov ~23:40 (swap, ctx real 131072 no /props): boot+chat 12s, decode 29.6 t/s
+      (I-Compact fazia 33-36 @400 tok), prompt curto 64 t/s, reasoning presente, finish=stop;
+      TOOLS PASS finish=tool_calls (args JSON limpos; 1 call por rodada, loop do cliente
+      continua); VRAM MEDIDA 2.7 GB / RSS 11.5 GB (lane inteira deitada na 6GB com folga
+      pro EffectCraft); bandeira do Brasil = 4 cores (acerto factual quant-pesado)."
