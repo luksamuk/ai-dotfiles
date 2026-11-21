@@ -9,6 +9,87 @@
   name: '@deepseek-ai/dsh-llm-pi-ai'
   config:
     providers:
+      llama-swap:
+        api: openai-completions
+        baseURL: http://127.0.0.1:12434/v1
+        compat: {supportsDeveloperRole: false, maxTokensField: max_tokens}
+        apiKeyEnv: LLAMASWAP_LOCAL_KEY
+        models:
+        - id: ornith-1.5-9b-heretic
+          contextWindow: 65536
+          input:
+          - text
+          - image
+        - id: lfm3-1.7b
+          contextWindow: 65536
+        - id: minicpm-v-4.7-35b
+          contextWindow: 131072
+          input:
+          - text
+          - image
+        - id: lfm3-vl-2b
+          contextWindow: 131072
+          input:
+          - text
+          - image
+        - id: lfm3-omni-2b-pollard
+          contextWindow: 32768
+          input:
+          - text
+          - image
+        - id: ornith-1.5-35b-heretic
+          contextWindow: 200000
+          input:
+          - text
+          - image
+        - id: ornith-1.5-35b-heretic-fast
+          contextWindow: 131072
+          input:
+          - text
+          - image
+        - id: spark-x2.6-4b
+          contextWindow: 114688
+          reasoningEfforts:
+            low: low
+            high: high
+        - id: translategemma-4b
+          contextWindow: 131072
+        - id: inkling-2-mini
+          contextWindow: 65536
+          reasoningEfforts:
+            off: 'none'
+            low: low
+            medium: medium
+            high: high
+            xhigh: xhigh
+          input:
+          - text
+        - id: cyber-tiel-coder
+          contextWindow: 200000
+          reasoningEfforts:
+            off: off
+            low: low
+            medium: medium
+            high: high
+            xhigh: xhigh
+          input:
+          - text
+          - image
+        - id: groot-19b
+          contextWindow: 200000
+        - id: groot-19b-fast
+          contextWindow: 262144
+        - id: cyber-tiel-coder-fast
+          contextWindow: 262144
+          reasoningEfforts:
+            off: off
+            low: low
+            medium: medium
+            high: high
+            xhigh: xhigh
+          input:
+          - text
+          - image
       ollama:
         displayName: Ollama
         api: openai-responses
@@ -43,34 +124,6 @@
         - id: nemotron-3-super:cloud
           name: Nemotron 3 Super
         apiKeyEnv: OLLAMA_API_KEY
-      llama-swap:
-        displayName: Llama-Swap
-        api: openai-responses
-        baseURL: http://localhost:12434
-        models:
-        - id: cyber-tiel-coder
-          reasoningEfforts:
-            off: off
-            low: low
-            medium: medium
-            high: high
-            xhigh: xhigh
-          input:
-          - text
-          - image
-          contextWindow: 200000
-        - id: cyber-tiel-coder-fast
-          reasoningEfforts:
-            off: off
-            low: low
-            medium: medium
-            high: high
-            xhigh: xhigh
-          input:
-          - text
-          - image
-          contextWindow: 262144
-        apiKeyEnv: LLAMA_SWAP_API_KEY
 - id: ui-theme
   name: '@deepseek-ai/dsh-client-ui-theme'
   config:
