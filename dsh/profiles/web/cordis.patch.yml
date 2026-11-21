@@ -12,132 +12,138 @@
       llama-swap:
         api: openai-completions
         baseURL: http://127.0.0.1:12434/v1
-        compat: {supportsDeveloperRole: false, maxTokensField: max_tokens}
+        compat: { supportsDeveloperRole: false, maxTokensField: max_tokens }
         apiKeyEnv: LLAMASWAP_LOCAL_KEY
         models:
-        - id: ornith-1.5-9b-heretic
-          contextWindow: 65536
-          input:
-          - text
-          - image
-        - id: lfm3-1.7b
-          contextWindow: 65536
-        - id: minicpm-v-4.7-35b
-          contextWindow: 131072
-          input:
-          - text
-          - image
-        - id: lfm3-vl-2b
-          contextWindow: 131072
-          input:
-          - text
-          - image
-        - id: lfm3-omni-2b-pollard
-          contextWindow: 32768
-          input:
-          - text
-          - image
-        - id: ornith-1.5-35b-heretic
-          contextWindow: 200000
-          input:
-          - text
-          - image
-        - id: ornith-1.5-35b-heretic-fast
-          contextWindow: 131072
-          input:
-          - text
-          - image
-        - id: spark-x2.6-4b
-          contextWindow: 114688
-          reasoningEfforts:
-            low: low
-            high: high
-        - id: translategemma-4b
-          contextWindow: 131072
-        - id: inkling-2-mini
-          contextWindow: 65536
-          reasoningEfforts:
-            off: 'none'
-            low: low
-            medium: medium
-            high: high
-            xhigh: xhigh
-          input:
-          - text
-        - id: cyber-tiel-coder
-          contextWindow: 200000
-          reasoningEfforts:
-            off: off
-            low: low
-            medium: medium
-            high: high
-            xhigh: xhigh
-          input:
-          - text
-          - image
-        - id: groot-19b
-          contextWindow: 200000
-        - id: groot-19b-fast
-          contextWindow: 262144
-        - id: cyber-tiel-coder-fast
-          contextWindow: 262144
-          reasoningEfforts:
-            off: off
-            low: low
-            medium: medium
-            high: high
-            xhigh: xhigh
-          input:
-          - text
-          - image
+          - id: ornith-1.5-9b-heretic
+            contextWindow: 65536
+            input:
+              - text
+              - image
+          - id: lfm3-1.7b
+            contextWindow: 65536
+          - id: minicpm-v-4.7-35b
+            contextWindow: 131072
+            input:
+              - text
+              - image
+          - id: lfm3-vl-2b
+            contextWindow: 131072
+            input:
+              - text
+              - image
+          - id: lfm3-omni-2b-pollard
+            contextWindow: 32768
+            input:
+              - text
+              - image
+          - id: ornith-1.5-35b-heretic
+            contextWindow: 200000
+            input:
+              - text
+              - image
+          - id: ornith-1.5-35b-heretic-fast
+            contextWindow: 131072
+            input:
+              - text
+              - image
+          - id: spark-x2.6-4b
+            contextWindow: 114688
+            reasoningEfforts:
+              low: low
+              high: high
+          - id: translategemma-4b
+            contextWindow: 131072
+          - id: inkling-2-mini
+            contextWindow: 65536
+            reasoningEfforts:
+              off: 'none'
+              low: low
+              medium: medium
+              high: high
+              xhigh: xhigh
+            input:
+              - text
+          - id: cyber-tiel-coder
+            contextWindow: 200000
+            reasoningEfforts:
+              off: off
+              low: low
+              medium: medium
+              high: high
+              xhigh: xhigh
+            input:
+              - text
+              - image
+          - id: groot-19b
+            contextWindow: 200000
+          - id: groot-19b-fast
+            contextWindow: 262144
+          - id: cyber-tiel-coder-fast
+            contextWindow: 262144
+            reasoningEfforts:
+              off: off
+              low: low
+              medium: medium
+              high: high
+              xhigh: xhigh
+            input:
+              - text
+              - image
       ollama:
         displayName: Ollama
         api: openai-responses
         baseURL: http://localhost:11434/v1
         models:
-        - id: deepseek-v4.1-flash:cloud
-          name: DeepSeek v4.1 Flash
-        - id: glm-5.3:cloud
-          name: GLM 5.3
-        - id: glm-5.3-flash:cloud
-          name: GLM 5.3 Flash
-        - id: kimi-k3:cloud
-          name: Kimi K3
-        - id: glm-5.2:cloud
-          name: GLM 5.2
-        - id: kimi-k2.7-code:cloud
-          name: Kimi K2.7 Code
-        - id: nemotron-3-ultra:cloud
-          name: Nemotron 3 Ultra
-        - id: minimax-m3:cloud
-          name: MiniMax M3
-        - id: deepseek-v4-pro:cloud
-          name: DeepSeek v4 Pro
-        - id: kimi-k2.6:cloud
-          name: Kimi K2.6
-        - id: nemotron-3-nano:30b-cloud
-          name: Nemotron 3 Nano 30B
-        - id: gemma4:31b-cloud
-          name: Gemma 4 31B
-        - id: minimax-m2.7:cloud
-          name: MiniMax M2.7
-        - id: nemotron-3-super:cloud
-          name: Nemotron 3 Super
+          - id: deepseek-v4.1-flash:cloud
+            name: DeepSeek v4.1 Flash
+          - id: glm-5.3:cloud
+            name: GLM 5.3
+          - id: glm-5.3-flash:cloud
+            name: GLM 5.3 Flash
+          - id: kimi-k3:cloud
+            name: Kimi K3
+          - id: glm-5.2:cloud
+            name: GLM 5.2
+          - id: kimi-k2.7-code:cloud
+            name: Kimi K2.7 Code
+          - id: nemotron-3-ultra:cloud
+            name: Nemotron 3 Ultra
+          - id: minimax-m3:cloud
+            name: MiniMax M3
+          - id: deepseek-v4-pro:cloud
+            name: DeepSeek v4 Pro
+          - id: kimi-k2.6:cloud
+            name: Kimi K2.6
+          - id: nemotron-3-nano:30b-cloud
+            name: Nemotron 3 Nano 30B
+          - id: gemma4:31b-cloud
+            name: Gemma 4 31B
+          - id: minimax-m2.7:cloud
+            name: MiniMax M2.7
+          - id: nemotron-3-super:cloud
+            name: Nemotron 3 Super
         apiKeyEnv: OLLAMA_API_KEY
 - id: ui-theme
   name: '@deepseek-ai/dsh-client-ui-theme'
   config:
-    preference: light
+    preference: dark
 - id: agent-default-model
   name: '@deepseek-ai/dsh-agent-default-model'
   config:
-    provider: ollama
-    model: glm-5.3:cloud
+    provider: llama-swap
+    model: inkling-2-mini
+    reasoningEffort: xhigh
 - insert:
-  - id: mcp-pesquisarr
-    name: '@deepseek-ai/dsh-mcp-client'
-    config:
-      serverName: pesquisarr
-      transport: streamable-http
-      url: http://100.72.245.16:8895/api/mcp
-      failOnStartupError: true
+    - id: mcp-pesquisarr
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: pesquisarr
+        transport: streamable-http
+        url: http://100.72.245.16:8895/api/mcp
+        failOnStartupError: true
+
+- id: web-search-deepseek
+  disabled: true
+- id: web-deepseek-api
+  disabled: true
