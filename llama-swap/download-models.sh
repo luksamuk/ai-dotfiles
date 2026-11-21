@@ -6,7 +6,7 @@
 #   qwen38-flash-next-1m - Qwen3.8-Flash-Next UD-IQ1_M split 3 (~74.5 GB) + MTP draft Q4_0 (2.2 GB) - lane experimental cafe, NOT production (dormammu's brother)
 #   [APOSENTADO 15/nov/2026] qwen3.8-flash-coder — reprovado no gate agentic; fragment _disabled/ + epitaph; GGUF deletado
 #   cyber-tiel-coder     - Cyber-Tiel-Coder-35B MiniPlus (~14.75 GB) + MTP draft (1.48 GB) + mmproj (0.61 GB) - finetune cybersec da linhagem ornith-1.5
-#   inkling-2-mini       - Inkling-2-Mini NanoPlus (~10.98 GB) - looped MoE TML, vanilla (arch #32694), text-only
+#   inkling-2-mini       - Inkling-2-Mini Abliterated MiniPlus (~12.98 GB) - looped MoE TML, vanilla (arch #32694), text-only (mmproj no repo)
 #   groot-19b            - Groot-19B-A3B MiniPlus (~8.42 GB) + mmproj q8 (0.61 GB), MTP embed - distill GrootTeam, agent MoE multiproposito
 #   qwen3.5-0.8b         - Qwen3.5-0.8B UD-Q3_K_XL (~0.46 GB) + mmproj (~196 MB) - fits in VRAM, vision+text
 #   qwen3.5-4b           - Qwen3.5-4B MoQ-3.75 (~1.92 GB) - fits in VRAM
@@ -145,7 +145,7 @@ declare -A MODELS=(
   ["cyber-tiel-coder-mtp"]="IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF mtp-Cyber-Tiel-Coder-35B-A3B.gguf cyber-tiel-coder/mtp-Cyber-Tiel-Coder-35B-A3B.gguf"
   ["cyber-tiel-coder-mmproj"]="IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF mmproj-Q8_0.gguf cyber-tiel-coder/mmproj-Q8_0.gguf"
   # Inkling-2-Mini (Thinking Machines, looped MoE) + quant IsValorum APEX-I-NanoPlus V2.1 — text-only (sem mmproj/MTP)
-  ["inkling-2-mini"]="IsValorum/Inkling-2-Mini-APEX-I-NanoPlus-V2.1-GGUF Inkling-2-Mini-APEX-I-NanoPlus-V2.1.gguf inkling-2-mini/Inkling-2-Mini-APEX-I-NanoPlus-V2.1.gguf"
+  ["inkling-2-mini"]="IsValorum/Inkling-2-Mini-Abliterated-APEX-I-MiniPlus-V2.1-GGUF Inkling-2-Mini-Abliterated-APEX-I-MiniPlus-V2.1.gguf inkling-2-mini/Inkling-2-Mini-Abliterated-APEX-I-MiniPlus-V2.1.gguf"
   # Groot-19B-A3B (GrootTeam distill, qwen35moe) + MiniPlus IsValorum — revival 15/nov da lane aposentada
   ["groot-19b"]="IsValorum/Groot-19B-A3B-261023-APEX-I-MiniPlus-V2.1-GGUF Groot-19B-A3B-261023.APEX-I-MiniPlus-V2.1.gguf groot-19b/Groot-19B-A3B-261023.APEX-I-MiniPlus-V2.1.gguf"
   ["groot-19b-mmproj"]="IsValorum/Groot-19B-A3B-261023-APEX-I-MiniPlus-V2.1-GGUF mmproj-GrootTeam_Groot-19B-A3B-261023-q8_0.gguf groot-19b/mmproj-GrootTeam_Groot-19B-A3B-261023-q8_0.gguf"
@@ -464,7 +464,7 @@ show_sizes() {
   echo "  [APOSENTADO 15/nov/2026] qwen3.8-flash-coder — see _disabled/ epitaph"
   echo "  groot-19b          ~8.42 GB + 0.61 mmproj (MiniPlus) - distill GrootTeam 19B-A3B, agent MoE (revival)"
   echo "  cyber-tiel-coder    ~14.75 GB + 1.48 MTP + 0.61 mmproj (APEX-I-MiniPlus) - finetune cybersec da ornith-1.5 (peculiar-ragdoll), lanes cafe/ik"
-  echo "  inkling-2-mini      ~10.98 GB (APEX-I-NanoPlus) - looped MoE TML Inkling-2-Mini, vanilla (arch #32694), text-only"
+  echo "  inkling-2-mini      ~12.98 GB (APEX-I-MiniPlus-Abliterated) - looped MoE TML Inkling-2-Mini, vanilla (arch #32694), text-only"
   echo "  kat-coder-v2.5-dev ~16.50 GB  (APEX Compact) - Post-trained Qwen 3.6 35B MoE, SOTA agentic coding (SWE-bench 69.4)"
   echo "  agents-a1-35b      ~16.50 GB  (APEX I-Compact) - 35B MoE, long-horizon search + tool calling"
   echo "  glm-4.7-flash      ~14.60 GB  (APEX I-Compact) - 30B MoE MLA, smallest 35B-class, fast"

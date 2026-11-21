@@ -68,7 +68,7 @@ matrix:
     # MiniCPM-V 4.7 (out/2026): denso 1B (Q8_0, ~2.2GB VRAM) + MoE 35B-A3B (mix oficial, experts RAM)
     # PR #29416 (M-RoPE rope.section_order): cafe v0.76 (13/Out) mergeou; ik ainda sem
     # mcv1: minicpm-v-4.7-1b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/; o 35b (mcv35) fica
-    mcv35: minicpm-v-4.7-35b  # ATIVO Oct 13 2026 noite: GGUF re-baixado (mix 15.5GB + mmproj 4x 0.91GB) + cafe v0.76 (ad57e28a1) mergeou #29416 (M-RoPE OK) — backend cafe
+    # mcv35: minicpm-v-4.7-35b  # APOSENTADO 21/nov/2026 (dono: "com honras") — GGUF isvalorum 13G deletado, fragment _disabled/; restore: re-download APEX-I-NanoPlus-V2.1 + mmproj Q8_0
     lfm24: lfm2.5-24b-a2b  # REATIVADO 17/nov (I-NanoPlus 8.15GB, lane unica ik; a cafe saiu; LiveClaw 48.09 > qwen3.6-35b 38.19)
     # lfm24f: (deletado 17/nov — a -fast ik virou o default unico)
     # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
@@ -150,14 +150,13 @@ matrix:
     # bs2t: bonsai2-27b  # RE-APOSENTADO 12/nov/2026 à noite — degenera em word-salad com system prompt >=4k chars (bissecção provada; git history p/ prova) — PRISML fork fica em ~/git/prismml-eng-llama.cpp
     # tq3d: qwen3.5-4b-3d-coder  # APOSENTADO 12/nov/2026 (dono) — probe 2048 reprovado 2/7 + fidelidade multimodal nula; fragment _disabled/ + epitaph; restore no epitaph
     # nbe4: nemotron-bolt-e4b  # APOSENTADO 31/10/2026 (dono) — GGUFs (UD-Q4_K_XL 5.1G + dflash draft) deletados, fragment _disabled/; restore: re-download unsloth (GATED)
-    lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + [handle-think-EXTINTO 12/nov/2026]), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despejava (ping-pong cravado no journal 30/out 14:53)
-    mcv47: minicpm-v-4.7-35b  # REATIVADO 11/nov (unlisted removido): MoE visual 35B-A3B (mix q3gud_im 15.5GB, experts RAM ~11G, 5G VRAM, 131K ctx, dual think-ON + effort off/high). LISTED sem var = exclusivo no solver (lição lfm317 30/out)
+    lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + [handle-think-EXTINTO 12/nov/2026]), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despeja (ping-pong cravado no journal 30/out 14:53)
     # sn9: sensenova-loop-9b  # RETIRADO de novo 17/nov ~23:20 (prefill O(n^2) em CPU mata agente; epitaph em _disabled/) 
     # sn9v: sensenova-loop-9b-vision  # RETIRADO junto # fragment em _disabled/
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(lfm24 | spc | fct | mcv47) & (lfmcol | eg2) & pkstt"  # 12/nov: nemb saiu (REMOVIDO, dono)  # 11/11: +mcv47 (MiniCPM-V 4.7 35B-A3B visual, experts RAM) | 10/11: +spc/fct (portal cores publicados no HF) | 12/11: tq3d aposentado
+    small_vision: "(lfm24 | spc | fct) & (lfmcol | eg2) & pkstt"  # 12/nov: nemb saiu (REMOVIDO, dono)  # 11/11: +mcv47 (aposentado 21/nov, GGUF removido — mcv47 retirado do set) | 10/11: +spc/fct (portal cores publicados no HF) | 12/11: tq3d aposentado
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
@@ -171,8 +170,8 @@ matrix:
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr | mcv35"  # mocr _disabled 02/nov 2026
-    vision_embed: "(ocr | mcv35) & (lfmcol | eg2) & pkstt"  # 12/nov: nemb saiu (REMOVIDO, dono)  # mocr _disabled 02/nov 2026 | 09/11: +nemb
+    vision_only: "ocr"  # mcv35 aposentado 21/nov (GGUF fora); mocr _disabled 02/nov 2026
+    vision_embed: "ocr & (lfmcol | eg2) & pkstt"  # mcv35 aposentado 21/nov; mocr _disabled 02/nov 2026
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -185,7 +184,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(mcv35 | ctiel | groot) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4 | 15/nov: +ctiel 5o pesado +groot (troca do raonmini aposentado) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)
+    heavy: "(ctiel | groot) & (lfmcol | eg2) & qpfim & pkstt"  # 21/nov: -mcv35 (aposentado c/ honras, GGUF fora — heavy volta a 2) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4 | 15/nov: +ctiel 5o pesado +groot (troca do raonmini aposentado) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -211,7 +210,7 @@ matrix:
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
     # MiniCPM-V 4.7: barato de recarregar (1B 2.2GB GPU; 35B MoE ~11GB RAM, page cache)
-    mcv35: 4
+    # mcv35: 4  # aposentado 21/nov 2026
     # b27: 4   # APOSENTADO 12/nov/2026 (dono) — GGUFs preservados em disco
     # saluki27: 5  # REMOVIDO 12/nov
     # tq3d: 2  # APOSENTADO 12/nov/2026 (dono) — restore no epitaph do fragment
@@ -281,7 +280,6 @@ matrix:
     # Decision models (juizes /v1/systemone) - recarregam em ~2s, evictam primeiro
     # laya: 1  # DESINSTALADO 20/out/2026
     # julia: 1  # APOSENTADO 11/nov/2026 (dono: snake em refactor)
-    mcv47: 3  # 35B-A3B MoE visual: 5G VRAM + 11G RAM, cold ~600s — caro de recarregar
     sp26: 2  # 3,54 GB denso — reload barato
     raon: 2  # 2,08 GB denso — reload barato
     # raonmini: 6  # APOSENTADO 15/nov

@@ -629,7 +629,7 @@ models:
     description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
     cmd: |
       ${llama_server} --port ${PORT}
-      --model ${models_dir}/inkling-2-mini/Inkling-2-Mini-APEX-I-NanoPlus-V2.1.gguf
+      --model ${models_dir}/inkling-2-mini/Inkling-2-Mini-Abliterated-APEX-I-MiniPlus-V2.1.gguf
       --jinja
       -ngl 99
       --no-op-offload
@@ -656,9 +656,9 @@ models:
       reranker: false
       context: 65536
     metadata:
-      size: "~10.98 GB"
+      size: "~12.09 GB"
       context: 65536
-      source: "IsValorum/Inkling-2-Mini-APEX-I-NanoPlus-V2.1-GGUF, base thinkingmachines/Inkling-2-Mini da TML"
+      source: "IsValorum/Inkling-2-Mini-Abliterated-APEX-I-MiniPlus-V2.1-GGUF, base thinkingmachines/Inkling-2-Mini da TML"
       kv_cache: "q8_0/q8_0"
       features:
         completion: true
@@ -673,14 +673,14 @@ models:
       parameters: 26200000000
       context_length: 1048576
       embedding_length: 2304
-      quantization: APEX-I-NanoPlus
+      quantization: APEX-I-MiniPlus-Abliterated
       reasoningEfforts:
         off: none
         low: low
         medium: medium
         high: high
         xhigh: xhigh
-      note: "Lane de teste do dono, 21/nov. Quant NanoPlus text-only do IsValorum: 0 tensors de visao e 0 nextn, portanto sem mmproj e sem draft. Arch inkling2_loop mergeada no vanilla pelo PR upstream 32694. Samplers do vendor TML. Gate real de frota segue ik/cafe, esta lane e vanilla e exclusiva no solver. Template tem reasoning_effort de none a max e float 0 a 0.99. Probe de tools PASSOU no fio da swap em 21/nov: finish_reason tool_calls com get_weather e argumentos validos — capabilities.tools true. BUG do op_offload RESOLVIDO com --no-op-offload (dossie completo em ~/relatorios-frota/inkling-loop-buffer/: op_offload default-true puxava copia de 4.7GB de pesos de experts do core pelo sched_copy_experts mesmo com ngl 0). Lane HIBRIDA 64K: ngl 99 + ncmoe 24 + nkvo q8/q8; headroom de 131K GPU e 91% NO GO, e de 131K host funciona so CPU-only a 10.1 t/s. Fallback CPU-only documentado no bloco de cabecalho. Visao re-adicionavel depois com mmproj-BF16 da unsloth de 0.6 GiB apos conferir interop do projector."
+      note: "Lane de teste do dono, 21/nov. Quant NanoPlus text-only do IsValorum: 0 tensors de visao e 0 nextn, portanto sem mmproj e sem draft. Arch inkling2_loop mergeada no vanilla pelo PR upstream 32694. Samplers do vendor TML. Gate real de frota segue ik/cafe, esta lane e vanilla e exclusiva no solver. Template tem reasoning_effort de none a max e float 0 a 0.99. Probe de tools PASSOU no fio da swap em 21/nov: finish_reason tool_calls com get_weather e argumentos validos — capabilities.tools true. BUG do op_offload RESOLVIDO com --no-op-offload (dossie completo em ~/relatorios-frota/inkling-loop-buffer/: op_offload default-true puxava copia de 4.7GB de pesos de experts do core pelo sched_copy_experts mesmo com ngl 0). Lane HIBRIDA 64K: ngl 99 + ncmoe 24 + nkvo q8/q8; headroom de 131K GPU e 91% NO GO, e de 131K host funciona so CPU-only a 10.1 t/s. Fallback CPU-only documentado no bloco de cabecalho. Visao re-adicionavel: o repo Abliterated do IsValorum traz mmproj-Inkling-2-Mini-Q8_0 de 0.32 GiB (nao instalado na lane; habilitar = --mmproj no cmd + features.vision true apos smoke de visao)."
   laguna-xs-2.1:
     name: Laguna XS 2.1
     description: "APOSENTADO COM HONRAS 04/nov/2026 (pesos deletados por decreto do dono para abrir espaço pro Groot-65B; lane fica unlisted, fragment + receita intactos). Poolside 33B-A3B MoE coding model, atencao hibrida SWA(512)+global, 131K de contexto, -cmoe (experts em page-cache evictavel), spec ngram-mod. Quant: APEX I-Compact (mudler, 14.69 GiB) reavaliada 01/11/2026 apos a reforma do backend cafe. Reasoning ALWAYS-ON no handle unico (padrao 2b-ter; samplers frios para reduzir o fechamento precoce do think); handle [handle-think-EXTINTO 12/nov/2026] aposentado 01/11/2026."
@@ -1749,93 +1749,6 @@ models:
       context_length: 131072
       quantization: Q8_0
       note: 'Smoke 27/10 (llama.cpp b3282-19ff817fb, merges #31252/#31257 do dia): ctx 128K nativo deployado (131072; card diz 128K tokens input+output), VRAM pico 4.18GB. DUAL-MODE REAL verificado por A/B: default pensa (reasoning 1242 chars) e o budget de max_tokens PRECISA contar o think (IMG probe com 250 tok = content vazio, finish=length — o think comeu tudo); think via enable_thinking: reasoning 1358; off: reasoning 0 e resposta DIRETA 2.4s (74 t/s classe). Tool calling 4/4 simultaneos, JSON limpo, finish= tool_calls. Card do vendor: doc/charts/video/spatial e "nao recomendado para coding, multi-turn ou raciocinio complexo" — papel OCR/VLM-QA da casa (candidato ao trono do lfm2.5-vl-3b aposentado e a substituicao do espaco funcional do gemma4-12b removido em Sep). Samplers do card: evals deles 0.6/0.95; lane pina por handle. GGUF em ~/.llama-models/lfm3-vl-2b/.'
-  "minicpm-v-4.7-35b":
-    name: MiniCPM-V 4.7 35B-A3B
-    description: "OpenBMB MiniCPM-V 4.7 35B-A3B - first MoE visual model of the series: multi-image, video and OCR with early token compression. 131K context, native reasoning, tool-calling."
-    tags:
-      - vis
-      - tools
-      - think
-    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
-
-      --model ${models_dir}/minicpm-v-4.7-isvalorum/MiniCPM-V-4.7-35B-A3B.APEX-I-NanoPlus-V2.1.gguf
-
-      --mmproj ${models_dir}/minicpm-v-4.7-isvalorum/mmproj-Q8_0.gguf
-
-      --media-path ${media_path}
-
-      --jinja
-
-      --chat-template-file ${templates_dir}/minicpm-v-4.7-chat-template.jinja
-
-      -ot "ffn_(gate|up|down)_exps=CPU"
-
-      -ngl 999
-
-      --ctx-size 131072
-
-      --parallel 1
-
-      --temp 0.7
-
-      --top-p 0.9
-
-      --top-k 100
-
-      --min-p ${default_min_p}
-
-      --repeat-penalty 1.05
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --flash-attn on
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        "minicpm-v-4.7-35b":
-          chat_template_kwargs:
-            enable_thinking: true
-          temperature: 0.7
-          top_p: 0.9
-    ttl: 0
-    health_check_timeout: 600
-    capabilities:
-      in:
-        - text
-        - image
-      out:
-        - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: ~11.69 GiB (12.55 GB disk) + 0.61 GiB mmproj Q8_0
-      context: 131072
-      vram_usage: "~5.0 GB VRAM + ~11 GB RAM"
-      source: "IsValorum/MiniCPM-V-4.7-35B-A3B-APEX-I-NanoPlus-GGUF (revisao corrigida: block_count=40, nextn=0; 12.55 GB + mmproj-Q8_0)"
-      kv_cache: "q4_0/q4_0"
-      chat_template: "--chat-template-file oficial (openbmb 19/out fix enable_thinking=False default; [handle-think-EXTINTO 12/nov/2026] via setParamsByID kwargs). [handle-think-EXTINTO 12/nov/2026] CONHECIDO-FLAKY: em prompts triviais o modelo escreve a RESPOSTA dentro do think, fecha e para sem content (eos=im_end correto id248046, open/close=248068/69, split do servidor correto = bug do modelo em modo think; upstream defaultou OFF e não re-quantizou; manter e monitorar)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: minicpm-v
-      parameters: 35000000000
-      context_length: 131072
-      embedding_length: 2048
-      quantization: APEX-I-NanoPlus
-      note: "Linha MiniCPM-V 4.7 out/2026: card declara vence Qwen3.6-35B-A3B (score+tempo) — a liga disk 35B da casa é ornith 143.6 > occamy 141.4 > qwen3.8-distill 141.0, e a comparação declarada deles é vs a geração física anterior. mix_q3gud_im = recomendação OFICIAL do cookbook (experts Q3_K c/ imatrix sobre base Q4_K_M = 15.5GB 'matches Q4_K_M on benchmarks'); Q4_K_M puro = 21.17GB. -ot ffn_*_exps=CPU = rota de laguna/ornith (3B ativos, experts na RAM). M-RoPE canvas: PR #29416 (rope.section_order) — cafe v0.76 (ad57e28a1, 13/Out) MERGEADO e suporta; ik SEM #29416 ainda (fragment usa cafe). tools: true = card diz tool-calling nativo (SGLang/vLLM/llama.cpp/ollama); smoke valida. mmproj 4x = mais detalhe; 16x alternativa mais rápida. health 600s = MoE 15.5GB + mmproj cold start longo. Sampling: card oficial temp 0.7/top-p 0.9/top-k 100/rp 1.05 (regra da série). LES (Lookahead Expert Scheduling) e DSpark NÃO fazem parte: são do fork tc-mb/llama.cpp-omni (13-17 t/s no iPhone é o cenário experts-no-SSD; nossa rota experts-na-RAM não usa)."
   ornith-1.5-9b-heretic:
     name: Ornith 1.5 9B (Heretic)
     description: 'Ornith-1.5-9B decensurado (heretic) — dense 9B da arch qwen35 (hbrido GDN, a mesma famlia do 35B-A3B e do 122B), MIT, multimodal no checkpoint de origem (mmproj 0.86 GB no repo do autor; NAO wired nesta lane — a VRAM da partial-offload 64K fica apertada com +0.86 GB; viso pendente do dono). Pos-treino de self-improvement da ornith-ai: o card vnde SWE-V 70.6 vs 53.2 do base Qwen3.5-9B, e o A/B local de 06/11 confirmou o esprito — a mesma fatorao pt-BR pediu 4x menos thinking que a lane 169Pi/Alpie que aposentamos. O decensor  da linha Heretic (p-e-w) feita pelo Thunder13240 COM metodologia acima da mdia: mediu recusas dentro do bloco de reasoning (onde o Ornith escondia 67/100 das recusas), corrigiu a posio de sampling e converteu sem --no-nextn (o checkpoint declara mtp_num_hidden_layers mas no traz pesos mtp).'
@@ -2341,7 +2254,7 @@ matrix:
     # MiniCPM-V 4.7 (out/2026): denso 1B (Q8_0, ~2.2GB VRAM) + MoE 35B-A3B (mix oficial, experts RAM)
     # PR #29416 (M-RoPE rope.section_order): cafe v0.76 (13/Out) mergeou; ik ainda sem
     # mcv1: minicpm-v-4.7-1b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/; o 35b (mcv35) fica
-    mcv35: minicpm-v-4.7-35b  # ATIVO Oct 13 2026 noite: GGUF re-baixado (mix 15.5GB + mmproj 4x 0.91GB) + cafe v0.76 (ad57e28a1) mergeou #29416 (M-RoPE OK) — backend cafe
+    # mcv35: minicpm-v-4.7-35b  # APOSENTADO 21/nov/2026 (dono: "com honras") — GGUF isvalorum 13G deletado, fragment _disabled/; restore: re-download APEX-I-NanoPlus-V2.1 + mmproj Q8_0
     lfm24: lfm2.5-24b-a2b  # REATIVADO 17/nov (I-NanoPlus 8.15GB, lane unica ik; a cafe saiu; LiveClaw 48.09 > qwen3.6-35b 38.19)
     # lfm24f: (deletado 17/nov — a -fast ik virou o default unico)
     # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
@@ -2423,14 +2336,13 @@ matrix:
     # bs2t: bonsai2-27b  # RE-APOSENTADO 12/nov/2026 à noite — degenera em word-salad com system prompt >=4k chars (bissecção provada; git history p/ prova) — PRISML fork fica em ~/git/prismml-eng-llama.cpp
     # tq3d: qwen3.5-4b-3d-coder  # APOSENTADO 12/nov/2026 (dono) — probe 2048 reprovado 2/7 + fidelidade multimodal nula; fragment _disabled/ + epitaph; restore no epitaph
     # nbe4: nemotron-bolt-e4b  # APOSENTADO 31/10/2026 (dono) — GGUFs (UD-Q4_K_XL 5.1G + dflash draft) deletados, fragment _disabled/; restore: re-download unsloth (GATED)
-    lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + [handle-think-EXTINTO 12/nov/2026]), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despejava (ping-pong cravado no journal 30/out 14:53)
-    mcv47: minicpm-v-4.7-35b  # REATIVADO 11/nov (unlisted removido): MoE visual 35B-A3B (mix q3gud_im 15.5GB, experts RAM ~11G, 5G VRAM, 131K ctx, dual think-ON + effort off/high). LISTED sem var = exclusivo no solver (lição lfm317 30/out)
+    lfm317: lfm3-1.7b  # ATIVO 27/out: LFM3 1.7B dual-mode (plain + [handle-think-EXTINTO 12/nov/2026]), slots 5x64K ~4.4GB na 3050. 30/out: entrou SEM var — solver tratava como exclusivo e cada FIM do pollard o despeja (ping-pong cravado no journal 30/out 14:53)
     # sn9: sensenova-loop-9b  # RETIRADO de novo 17/nov ~23:20 (prefill O(n^2) em CPU mata agente; epitaph em _disabled/) 
     # sn9v: sensenova-loop-9b-vision  # RETIRADO junto # fragment em _disabled/
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(lfm24 | spc | fct | mcv47) & (lfmcol | eg2) & pkstt"  # 12/nov: nemb saiu (REMOVIDO, dono)  # 11/11: +mcv47 (MiniCPM-V 4.7 35B-A3B visual, experts RAM) | 10/11: +spc/fct (portal cores publicados no HF) | 12/11: tq3d aposentado
+    small_vision: "(lfm24 | spc | fct) & (lfmcol | eg2) & pkstt"  # 12/nov: nemb saiu (REMOVIDO, dono)  # 11/11: +mcv47 (aposentado 21/nov, GGUF removido — mcv47 retirado do set) | 10/11: +spc/fct (portal cores publicados no HF) | 12/11: tq3d aposentado
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
@@ -2444,8 +2356,8 @@ matrix:
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr | mcv35"  # mocr _disabled 02/nov 2026
-    vision_embed: "(ocr | mcv35) & (lfmcol | eg2) & pkstt"  # 12/nov: nemb saiu (REMOVIDO, dono)  # mocr _disabled 02/nov 2026 | 09/11: +nemb
+    vision_only: "ocr"  # mcv35 aposentado 21/nov (GGUF fora); mocr _disabled 02/nov 2026
+    vision_embed: "ocr & (lfmcol | eg2) & pkstt"  # mcv35 aposentado 21/nov; mocr _disabled 02/nov 2026
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -2458,7 +2370,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(mcv35 | ctiel | groot) & (lfmcol | eg2) & qpfim & pkstt"  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4 | 15/nov: +ctiel 5o pesado +groot (troca do raonmini aposentado) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)
+    heavy: "(ctiel | groot) & (lfmcol | eg2) & qpfim & pkstt"  # 21/nov: -mcv35 (aposentado c/ honras, GGUF fora — heavy volta a 2) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4 | 15/nov: +ctiel 5o pesado +groot (troca do raonmini aposentado) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -2484,7 +2396,7 @@ matrix:
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
     # MiniCPM-V 4.7: barato de recarregar (1B 2.2GB GPU; 35B MoE ~11GB RAM, page cache)
-    mcv35: 4
+    # mcv35: 4  # aposentado 21/nov 2026
     # b27: 4   # APOSENTADO 12/nov/2026 (dono) — GGUFs preservados em disco
     # saluki27: 5  # REMOVIDO 12/nov
     # tq3d: 2  # APOSENTADO 12/nov/2026 (dono) — restore no epitaph do fragment
@@ -2554,7 +2466,6 @@ matrix:
     # Decision models (juizes /v1/systemone) - recarregam em ~2s, evictam primeiro
     # laya: 1  # DESINSTALADO 20/out/2026
     # julia: 1  # APOSENTADO 11/nov/2026 (dono: snake em refactor)
-    mcv47: 3  # 35B-A3B MoE visual: 5G VRAM + 11G RAM, cold ~600s — caro de recarregar
     sp26: 2  # 3,54 GB denso — reload barato
     raon: 2  # 2,08 GB denso — reload barato
     # raonmini: 6  # APOSENTADO 15/nov
