@@ -28,15 +28,15 @@ inkling-2-mini:
     --model ${models_dir}/inkling-2-mini/Inkling-2-Mini-Abliterated-APEX-I-MiniPlus-V2.1.gguf
     --mmproj ${models_dir}/inkling-2-mini/mmproj-Inkling-2-Mini-Q8_0.gguf
     --jinja
-    -ngl 99
+    -ngl 16
     --no-op-offload
     -cmoe
     -nkvo
-    --ctx-size 65536
+    --ctx-size 131072
     -b 512 -ub 128
     --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0.0
     --repeat-penalty 1.0
-    --cache-type-k q8_0 --cache-type-v q8_0
+    --cache-type-k q4_0 --cache-type-v q4_0
     --flash-attn auto
     --parallel 1
     --metrics
@@ -52,12 +52,12 @@ inkling-2-mini:
     - text
     tools: true
     reranker: false
-    context: 65536
+    context: 131072
   metadata:
     size: "~12.09 GB"
-    context: 65536
+    context: 131072
     source: "IsValorum/Inkling-2-Mini-Abliterated-APEX-I-MiniPlus-V2.1-GGUF, base thinkingmachines/Inkling-2-Mini da TML"
-    kv_cache: "q8_0/q8_0"
+    kv_cache: "q4_0/q4_0 host"
     features:
       completion: true
       tools: true
