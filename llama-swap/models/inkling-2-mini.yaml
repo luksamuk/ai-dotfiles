@@ -12,24 +12,25 @@
 # RESOLVIDO 21/nov (dossie: ~/relatorios-frota/inkling-loop-buffer/): buffer CUDA
 # de ~4.7GB no boot era op_offload default-true + sched_copy_experts copiando os
 # pesos de experts das 12 layers do core pro CUDA0 MESMO COM ngl 0 — o override
-# n-cpu-moe NAO impede a copia. Fix da lane: --no-op-offload.
-# Lane HIBRIDA 64K: -ngl 99 (attention GPU) + -ncmoe 24 (experts host) + -nkvo
-# (KV host q8) + --no-op-offload. Medido 21/nov via porta direta: decode 15.3
-# t/s @4K, VRAM escada +24.6MB/1K ctx (4K=39%, 131K ngl99 = 91% NO GO).
-# 64K = interpolado ~3.9GB (64%). Fallback CPU-only: CUDA_VISIBLE_DEVICES=""
-# (remove -ngl/-nkvo, funciona a 131K a 10 t/s — receita no dossie).
+# n-cpu-moe NAO impede a copia. Fix: --no-op-offload (o cafe herda o mesmo
+# mecanismo do upstream no merge 5eeeecb21 — validar a flag no binario novo).
+# Lane HIBRIDA 64K no CAFE: -cmoe (experts host, cache de experts do cafe
+# disponivel: probe com --moe-cache-mib) + -nkvo (KV host q8) + --no-op-offload.
+# Rebase do cafe 60fc74bd0 (21/11) trouxe o inkling2_loop completo (arch + loop),
+# binario build 12974/commit 5eeeecb21. Fallback vanilla: ${llama_server} +
+# --n-cpu-moe 24 (receita anterior), funciona a 64K a ~12 t/s.
 # -------------------------------------------
 inkling-2-mini:
   name: Inkling-2-Mini
   description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
   cmd: |
-    ${llama_server} --port ${PORT}
+    ${cafe_server} --port ${PORT}
     --model ${models_dir}/inkling-2-mini/Inkling-2-Mini-Abliterated-APEX-I-MiniPlus-V2.1.gguf
     --mmproj ${models_dir}/inkling-2-mini/mmproj-Inkling-2-Mini-Q8_0.gguf
     --jinja
     -ngl 99
     --no-op-offload
-    --n-cpu-moe 24
+    -cmoe
     -nkvo
     --ctx-size 65536
     -b 512 -ub 128
