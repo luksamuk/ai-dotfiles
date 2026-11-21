@@ -502,7 +502,11 @@ def _classify_non_chat(model: dict) -> str | None:
 
       "tts"       — text->audio (phonon-40m-*, qwen3-tts).
                      Sinais: meta.llamaswap.features.tts,
-                     capabilities.audio_speech, output_modalities contém "audio".
+                     capabilities.audio_speech, output_modalities contém "audio" —
+                     SE features.completion != true. Lane COM completion e
+                     audio-out (LFM3-Audio/Omni, out [text, audio]) é
+                     voice-chat duplex via /v1/realtime, não TTS: fica no
+                     picker.
 
       "embedding" — embedding/reranker (lfm2.5-embedding-350m,
                      lfm2.5-colbert-350m, embeddinggemma-2).
@@ -530,8 +534,11 @@ def _classify_non_chat(model: dict) -> str | None:
     caps = model.get("capabilities") or {}
     out_modalities = (model.get("architecture") or {}).get("output_modalities") or []
 
-    # TTS: audio na SAÍDA
-    if features.get("tts") or caps.get("audio_speech") or "audio" in out_modalities:
+    # TTS: audio na SAÍDA — mas lane COM completion (LFM3-Audio/Omni:
+    # voice-chat duplex via /v1/realtime) é chat de verdade, não TTS.
+    # TTS de verdade (qwen3-tts, phonon) tem completion false.
+    if (features.get("tts") or caps.get("audio_speech")
+            or "audio" in out_modalities) and not features.get("completion"):
         return "tts"
 
     # Embedding / reranker: flag nativa da swap (v269+) com fallback nos
@@ -2234,13 +2241,50 @@ Variáveis de ambiente:
     """)
 
 
+def _duplex_lanes(data: dict) -> tuple[list, list]:
+    """Divide lanes duplex em (rt_lanes, s2s_lanes).
+
+    Critério nativo do Playground da swap (mesmo do tab Realtime):
+    duplex = audio em input_modalities E output_modalities — é o que uma
+    lane de voz duplex declara, e exclui ASR (out [text]) e embedding
+    multimodal (out None) que features.audio catchava antes (parakeet
+    cairia aqui como s2s morto). Fallback nas features da casa se a
+    camada nativa não vier (swap <v269).
+
+    Importável pra verificação sem o seletor interativo.
+    """
+    rt_lanes, s2s_lanes = [], []
+    for model in data.get("data", []):
+        mid = model.get("id", "")
+        if ":" in mid or mid.endswith(("-s2s", "-tts", "-asr")):
+            continue
+        llamaswap = (model.get("meta") or {}).get("llamaswap") or {}
+        features = llamaswap.get("features") or {}
+        if features.get("embedding"):
+            continue
+        arch = model.get("architecture") or {}
+        in_mods = arch.get("input_modalities") or []
+        out_mods = arch.get("output_modalities") or []
+        if in_mods or out_mods:
+            duplex_ok = "audio" in in_mods and "audio" in out_mods
+        else:
+            duplex_ok = bool(features.get("audio")) and not features.get("embedding")
+        if not duplex_ok:
+            continue
+        if features.get("completion"):
+            rt_lanes.append(model)      # llama.cpp: realtime WS disponível
+        else:
+            s2s_lanes.append(model)     # audio.cpp: tasks/run s2s
+    return rt_lanes, s2s_lanes
+
+
 def run_duplex_session(start_model=None):
     """Modo duplex voz→voz. Dois transportes, pela lane:
-      1. LLAMA.CPP (features.audio + completion — lfm3-audio/omni): sessão
+      1. LLAMA.CPP (_duplex_lanes → rt — lfm3-audio/omni): sessão
          WebSocket /v1/realtime (PR #31269) persistente, conversa contínua
          no server, streaming bidirecional (protocolo do
          examples/realtime_client.py oficial).
-      2. AUDIO.CPP (features.audio sem chat — lfm2.5-audio): task s2s via
+      2. AUDIO.CPP (_duplex_lanes → s2s — lfm2.5-audio): task s2s via
          /upstream/<id>/v1/tasks/run (single-request audio→audio).
     """
     import asyncio as _asyncio
@@ -2254,20 +2298,7 @@ def run_duplex_session(start_model=None):
         console.print(f"[red]Erro ao buscar modelos: {e}[/]")
         return
 
-    rt_lanes, s2s_lanes = [], []
-    for model in data.get("data", []):
-        mid = model.get("id", "")
-        if ":" in mid or mid.endswith(("-s2s", "-tts", "-asr")):
-            continue
-        llamaswap = (model.get("meta") or {}).get("llamaswap") or {}
-        features = llamaswap.get("features") or {}
-        if not features.get("audio") or features.get("embedding"):
-            continue
-        if features.get("completion"):
-            rt_lanes.append(model)      # llama.cpp: realtime WS disponível
-        else:
-            s2s_lanes.append(model)     # audio.cpp: tasks/run s2s
-
+    rt_lanes, s2s_lanes = _duplex_lanes(data)
     lanes = rt_lanes + s2s_lanes
     if not lanes:
         console.print("[yellow]Nenhuma lane de áudio no fleet.[/]")

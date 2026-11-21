@@ -1,0 +1,77 @@
+# -------------------------------------------
+# INKLING-2-MINI - llama.cpp upstream (why: UNICO backend com inkling2_loop -
+# PR ggml-org #32694 mergeado 21/nov/2026; ik issue #2211 fechada sem impl,
+# cafe sem rebase desde 04/11 - ambos ainda NAO trazem a arch).
+# Looped MoE TML: 24 blocos (os 12 centrais rodam 3x = 48 apps/token),
+# 128 experts / 8 ativos, ctx nativo 1,048,576. head_dim 96 (2304/24) NAO e
+# multiplo de 64 -> sem attn_rot -> KV q8_0/q8_0 (regra da casa, exige FA).
+# Quant APEX-I-NanoPlus (IsValorum) NAO tem mmproj nem MTP no GGUF: text-only.
+# Experts na host RAM via --n-cpu-moe 24; samplers do vendor TML (guia unsloth:
+# temp 1.0, top-p 1.0, top-k 0, min-p 0). Lane de teste do dono, fora dos sets
+# (exclusiva no solver, sem var/evict_cost - padrao de lane nova).
+# BUG UPSTREAM (21/nov, comprovado no build 3957): a impl nova do inkling2_loop
+# pina buffer de compute de ~4.7-5.0GB na CUDA INCONDICIONALMENTE — falha com
+# ngl 99, ngl 16, ngl 8 e ate ngl 0, ctx 2048..8192, ub 64..2048, com e sem
+# override de experts e com FA on/off — o grafo do loop e alocado no GPU
+# backend sem respeitar o placement. Com CUDA visivel NAO BOOTA na 3050 ate
+# o upstream consertar. Workaround provado: CUDA_VISIBLE_DEVICES="" = CPU puro:
+# boota e serve decode 9.6 t/s / prefill 11 t/s @8K (smoke 21/nov: fatorial vs
+# fatoracao correto, reasoning separado do content). Re-teste GPU quando o
+# buffer do loop respeitar placement (git log src/models/inkling2-loop.cpp).
+# -------------------------------------------
+inkling-2-mini:
+  name: Inkling-2-Mini
+  description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
+  env:
+  - CUDA_VISIBLE_DEVICES=
+  cmd: |
+    ${llama_server} --port ${PORT}
+    --model ${models_dir}/inkling-2-mini/Inkling-2-Mini-APEX-I-NanoPlus-V2.1.gguf
+    --jinja
+    -ngl 0
+    --n-cpu-moe 24
+    --ctx-size 8192
+    --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0.0
+    --repeat-penalty 1.0
+    --cache-type-k q8_0 --cache-type-v q8_0
+    --flash-attn auto
+    --parallel 1
+    --metrics
+  filters:
+    stripParams: temperature, top_p
+  ttl: 300
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 8192
+  metadata:
+    size: "~10.98 GB"
+    context: 8192
+    source: "IsValorum/Inkling-2-Mini-APEX-I-NanoPlus-V2.1-GGUF, base thinkingmachines/Inkling-2-Mini da TML"
+    kv_cache: "q8_0/q8_0"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: inkling2_loop
+    parameters: 26200000000
+    context_length: 1048576
+    embedding_length: 2304
+    quantization: APEX-I-NanoPlus
+    reasoningEfforts:
+      off: none
+      low: low
+      medium: medium
+      high: high
+      xhigh: xhigh
+    note: "Lane de teste do dono, 21/nov. Quant NanoPlus text-only do IsValorum: 0 tensors de visao e 0 nextn, portanto sem mmproj e sem draft. Arch inkling2_loop mergeada no vanilla pelo PR upstream 32694. Samplers do vendor TML. Gate real de frota segue ik/cafe, esta lane e vanilla e exclusiva no solver. Template tem reasoning_effort de none a max e float 0 a 0.99. Probe de tools PASSOU no fio da swap em 21/nov: finish_reason tool_calls com get_weather e argumentos validos — capabilities.tools true. BUG UPSTREAM do inkling2_loop: buffer de compute da CUDA pinado de ~4.7 a 5.0GB mesmo com ngl 0, ctx 2048 e ub 64 — a lane roda CPU-only via CUDA_VISIBLE_DEVICES vazio, bootando a 9.6 t/s decode e 11 t/s prefill @8K no smoke; quando o upstream respeitar placement, re-teste a escada GPU da nota do bloco de cabecalho. Visao re-adicionavel depois com mmproj-BF16 da unsloth de 0.6 GiB apos conferir interop do projector."

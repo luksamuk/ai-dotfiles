@@ -85,6 +85,7 @@ ORIGINAL_ORDER = [
     "ornith-1.5-35b",        # ✅ Self-improving RL MoE (task generation + scaffold + rollouts)
     "cyber-tiel-coder",      # 15/nov: qwen35moe finetune da linhagem ornith-1.5 (peculiar-ragdoll cybersec) + MiniPlus IsValorum; cafe -cmoe + MTP draft (-md) + fast ik
     "cyber-tiel-coder-fast", # lane fast ik proposital (--fit, MTP draft externo, hadamard; 131K; fora dos sets)
+    "inkling-2-mini",        # 21/nov: inkling2_loop (looped MoE TML 26B-A3.4B), vanilla — PR ggml-org #32694 mergeado 21/nov; NanoPlus IsValorum text-only 10.2GB; fora dos sets (test lane)
     # "qwen3.8-flash-coder",        # APOSENTADO 15/nov/2026 (dono) — reprovado no gate agentic (doom-loop, R73k; think-on code vazio); fragment _disabled/ + epitaph; GGUF deletado
     # "qwen3.8-flash-coder-fast",   # aposentado junto
     # "bonsai-27b",            # REMOVED Sep 20 2026 — GGUF deleted; user nunca usa; fragment em _disabled/
