@@ -635,7 +635,7 @@ models:
       --jinja
       -ngl 0
       --n-cpu-moe 24
-      --ctx-size 8192
+      --ctx-size 32768
       --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0.0
       --repeat-penalty 1.0
       --cache-type-k q8_0 --cache-type-v q8_0
@@ -653,10 +653,10 @@ models:
         - text
       tools: true
       reranker: false
-      context: 8192
+      context: 32768
     metadata:
       size: "~10.98 GB"
-      context: 8192
+      context: 32768
       source: "IsValorum/Inkling-2-Mini-APEX-I-NanoPlus-V2.1-GGUF, base thinkingmachines/Inkling-2-Mini da TML"
       kv_cache: "q8_0/q8_0"
       features:
