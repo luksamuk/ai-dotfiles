@@ -4,6 +4,7 @@
       llama-swap:
         api: openai-completions
         baseURL: http://127.0.0.1:12434/v1
+        streamIdleTimeoutMs: 7200000
         compat:
           supportsDeveloperRole: false
           maxTokensField: max_tokens
