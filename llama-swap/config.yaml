@@ -619,11 +619,13 @@ models:
 # pesos de experts das 12 layers do core pro CUDA0 MESMO COM ngl 0 — o override
 # n-cpu-moe NAO impede a copia. Fix: --no-op-offload (o cafe herda o mesmo
 # mecanismo do upstream no merge 5eeeecb21 — validar a flag no binario novo).
-# Lane HIBRIDA 64K no CAFE: -cmoe (experts host, cache de experts do cafe
-# disponivel: probe com --moe-cache-mib) + -nkvo (KV host q8) + --no-op-offload.
-# Rebase do cafe 60fc74bd0 (21/11) trouxe o inkling2_loop completo (arch + loop),
-# binario build 12974/commit 5eeeecb21. Fallback vanilla: ${llama_server} +
-# --n-cpu-moe 24 (receita anterior), funciona a 64K a ~12 t/s.
+# Lane HIBRIDA 131K no IK (PR ik #2967 MERGEADO 22/11 - rebase local 009ff82c):
+# -ngl 99 + -cmoe (experts host, regime ik: o ik nao usa -nkvo nem op-offload)
+# + --defer-experts --prefetch-experts (expert streaming ik, receita cyber-tiel)
+# + --swa-compress (o KV do inkling e gigante - o ikawrakow mandou usar).
+# APEX Abliterated no ik: a carregar - o PR teve relatos de quants de terceiros
+# com layout divergente (714 vs 694 tensores) - se a APEX falhar no load,
+# testar quant nativo do ji-farthing. KV q4 host nao se aplica ao ik.
 # -------------------------------------------
   inkling-2-mini:
     name: Inkling-2-Mini
@@ -633,7 +635,7 @@ models:
       --model ${models_dir}/inkling-2-mini/Inkling-2-Mini-Abliterated-APEX-I-MiniPlus-V2.1.gguf
       --mmproj ${models_dir}/inkling-2-mini/mmproj-Inkling-2-Mini-Q8_0.gguf
       --jinja
-      -ngl 24
+      -ngl 16
       --no-op-offload
       -cmoe
       -nkvo
@@ -683,7 +685,7 @@ models:
         medium: medium
         high: high
         xhigh: xhigh
-      note: "Lane de teste do dono, 21/nov. Quant NanoPlus text-only do IsValorum: 0 tensors de visao e 0 nextn, portanto sem mmproj e sem draft. Arch inkling2_loop mergeada no vanilla pelo PR upstream 32694. Samplers do vendor TML. Gate real de frota segue ik/cafe, esta lane e vanilla e exclusiva no solver. Template tem reasoning_effort de none a max e float 0 a 0.99. Probe de tools PASSOU no fio da swap em 21/nov: finish_reason tool_calls com get_weather e argumentos validos — capabilities.tools true. BUG do op_offload RESOLVIDO com --no-op-offload (dossie completo em ~/relatorios-frota/inkling-loop-buffer/: op_offload default-true puxava copia de 4.7GB de pesos de experts do core pelo sched_copy_experts mesmo com ngl 0). Lane HIBRIDA 64K: ngl 99 + ncmoe 24 + nkvo q8/q8; headroom de 131K GPU e 91% NO GO, e de 131K host funciona so CPU-only a 10.1 t/s. Fallback CPU-only documentado no bloco de cabecalho. Visao ATIVA: mmproj-Inkling-2-Mini-Q8_0 (0.32 GiB) do proprio repo Abliterated (21/11); existe tambem NanoPlus-Abliterated 10.23 GiB com o mesmo mmproj, opcao de headroom se a VRAM apertar."
+      note: "Lane de teste do dono, 21/nov. Quant NanoPlus text-only do IsValorum: 0 tensors de visao e 0 nextn, portanto sem mmproj e sem draft. Arch inkling2_loop mergeada no vanilla pelo PR upstream 32694. Samplers do vendor TML. Gate real de frota segue ik/cafe, esta lane e vanilla e exclusiva no solver. Template tem reasoning_effort de none a max e float 0 a 0.99. Probe de tools PASSOU no fio da swap em 21/nov: finish_reason tool_calls com get_weather e argumentos validos — capabilities.tools true. Backend IK desde 22/11 (PR ik #2967 MERGEADO — 1993+ LOC de runtime inkling2_loop, merged pelo ikawrakow mesmo dia). O bug op_offload (sched_copy_experts copiava 4.7GB de experts p/ CUDA mesmo com ngl 0) e EXCLUSIVO do upstream/cafe — no ik, o mecanismo e outro (-cmoe + defer/prefetch-experts). KV host via -nkvo NAO se aplica ao ik (v vocabulario diferente); o KV usa --swa-compress no ik p/ o cache gigante do inkling. Visao ATIVA: mmproj-Inkling-2-Mini-Q8_0 (0.32 GiB) do proprio repo Abliterated (21/11); existe tambem NanoPlus-Abliterated 10.23 GiB com o mesmo mmproj, opcao de headroom se a VRAM apertar."
   laguna-xs-2.1:
     name: Laguna XS 2.1
     description: "APOSENTADO COM HONRAS 04/nov/2026 (pesos deletados por decreto do dono para abrir espaço pro Groot-65B; lane fica unlisted, fragment + receita intactos). Poolside 33B-A3B MoE coding model, atencao hibrida SWA(512)+global, 131K de contexto, -cmoe (experts em page-cache evictavel), spec ngram-mod. Quant: APEX I-Compact (mudler, 14.69 GiB) reavaliada 01/11/2026 apos a reforma do backend cafe. Reasoning ALWAYS-ON no handle unico (padrao 2b-ter; samplers frios para reduzir o fechamento precoce do think); handle [handle-think-EXTINTO 12/nov/2026] aposentado 01/11/2026."
