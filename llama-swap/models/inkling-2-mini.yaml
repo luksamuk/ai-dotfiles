@@ -49,7 +49,7 @@ inkling-2-mini:
     -ngl 99
     --no-op-offload
     -cmoe
-    --ctx-size 65536
+    --ctx-size 73728
     -b 2048 -ub 256
     --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0.0
     --repeat-penalty 1.0
@@ -69,10 +69,10 @@ inkling-2-mini:
     - text
     tools: true
     reranker: false
-    context: 65536
+    context: 73728
   metadata:
     size: "~7.76 GB"
-    context: 65536
+    context: 73728
     source: "unsloth/Inkling-2-Mini-GGUF Mainline_Support UD-IQ1_S (base thinkingmachines/Inkling-2-Mini), mmproj-F16 unsloth"
     kv_cache: q4_0/q4_0
     features:
