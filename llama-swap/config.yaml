@@ -473,25 +473,21 @@ models:
   inkling-2-mini:
     name: Inkling-2-Mini
     description: 'Thinking Machines'' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token.'
-    cmd: '${cafe_server} --port ${PORT}
+    cmd: '${ik_llama_server} --port ${PORT}
 
       --model ${models_dir}/inkling-2-mini-unsloth/Inkling-2-Mini-UD-IQ1_S.gguf
-
-      --mmproj ${models_dir}/inkling-2-mini-unsloth/mmproj-F16.gguf
 
       --jinja
 
       -ngl 99
 
-      --no-op-offload
-
       -cmoe
 
-      --ctx-size 73728
+      --defer-experts --prefetch-experts
 
-      -b 2048 -ub 256
+      --ctx-size 65536
 
-      --cache-reuse 2048
+      -b 512 -ub 128
 
       --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0.0
 
@@ -501,7 +497,7 @@ models:
 
       --flash-attn auto
 
-      --parallel 1
+      --parallel 1 --parallel-tool-calls
 
       --metrics
 
@@ -513,29 +509,28 @@ models:
     capabilities:
       in:
       - text
-      - image
       out:
       - text
       tools: true
       reranker: false
-      context: 73728
+      context: 65536
     metadata:
       size: ~7.76 GB
-      context: 73728
+      context: 65536
       source: unsloth/Inkling-2-Mini-GGUF Mainline_Support UD-IQ1_S (base thinkingmachines/Inkling-2-Mini), mmproj-F16 unsloth
       kv_cache: q4_0/q4_0
       features:
         completion: true
         tools: true
         thinking: true
-        vision: true
+        vision: false
         embedding: false
         insert: false
         audio: false
         image: false
       architecture: inkling2_loop
       parameters: 26200000000
-      context_length: 1048576
+      context_length: 65536
       embedding_length: 2304
       quantization: UD-IQ1_S
       reasoningEfforts:
