@@ -171,21 +171,23 @@
         url: http://100.72.245.16:8895/api/mcp
         failOnStartupError: true
 
-- id: compaction-token-meter
-  name: '@deepseek-ai/dsh-token-meter'
-- id: compaction-pruner
-  name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
 - id: compaction-basic
   name: '@deepseek-ai/dsh-compaction-basic'
+  disabled: false
   config:
     modelPolicies:
       - provider: llama-swap
         model: inkling-2-mini
         summarizationProvider: ollama
         summarizationModel: minimax-m3.1-flash:cloud
-- id: compaction-command
-  name: '@deepseek-ai/dsh-command-compact'
 
+- id: tool-result-pruner
+  name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+  disabled: false
+  config:
+    thresholdChars: 8192
+    headChars: 4096
+    tailChars: 1024
 - id: web-search-deepseek
   disabled: true
 - id: web-deepseek-api
