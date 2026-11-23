@@ -110,10 +110,12 @@
           maxTokensField: max_tokens
         models:
         - id: minimax-m3.1-flash:cloud
+          contextWindow: 1000000
           input:
           - text
           - image
         - id: deepseek-v4.1-flash:1017-cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
@@ -123,6 +125,7 @@
           - text
           - image
         - id: beam:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off:
             low: low
@@ -131,6 +134,7 @@
             xhigh: xhigh
             max: max
         - id: muse-spark-open:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
@@ -141,16 +145,19 @@
           - text
           - image
         - id: mistral-large-4:cloud
+          contextWindow: 1048576
           input:
           - text
           - image
         - id: glm-5.3:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off:
             low: low
             high: high
             max: max
         - id: glm-5.3-flash:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off:
             low: low
@@ -160,6 +167,7 @@
           - text
           - image
         - id: kimi-k3:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
@@ -169,11 +177,13 @@
           - text
           - image
         - id: glm-5.2:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             high: high
             max: max
         - id: kimi-k2.7-code:cloud
+          contextWindow: 262144
           reasoningEfforts:
             off: 'false'
             high: 'true'
@@ -181,20 +191,24 @@
           - text
           - image
         - id: nemotron-3-ultra:cloud
+          contextWindow: 262144
           reasoningEfforts:
             off: 'false'
             high: 'true'
         - id: minimax-m3:cloud
+          contextWindow: 512000
           input:
           - text
           - image
         - id: deepseek-v4-pro:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
             high: high
             max: max
         - id: kimi-k2.6:cloud
+          contextWindow: 262144
           reasoningEfforts:
             off: 'false'
             high: 'true'
@@ -202,10 +216,12 @@
           - text
           - image
         - id: nemotron-3-nano:30b-cloud
+          contextWindow: 262144
           reasoningEfforts:
             off: 'false'
             high: 'true'
         - id: gemma4:31b-cloud
+          contextWindow: 262144
           reasoningEfforts:
             off: 'false'
             high: 'true'
@@ -213,14 +229,17 @@
           - text
           - image
         - id: minimax-m2.7:cloud
+          contextWindow: 196608
           reasoningEfforts:
             off:
             high: 'true'
         - id: nemotron-3-super:cloud
+          contextWindow: 262144
           reasoningEfforts:
             off: 'false'
             high: 'true'
         - id: kimi-k3.1-pro:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
@@ -231,6 +250,7 @@
           - text
           - image
         - id: mimo-v2.6-flash:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             high: 'true'
@@ -238,6 +258,7 @@
           - text
           - image
         - id: mimo-v2.6-pro:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             high: 'true'
@@ -245,6 +266,7 @@
           - text
           - image
         - id: inkling-2-small:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
@@ -255,6 +277,7 @@
           - text
           - image
         - id: hy4:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
