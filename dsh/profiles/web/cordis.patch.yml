@@ -21,6 +21,7 @@
             input:
               - text
               - image
+              - image
           - id: lfm3-1.7b
             contextWindow: 65536
           - id: minicpm-v-4.7-35b
@@ -28,25 +29,30 @@
             input:
               - text
               - image
+              - image
           - id: lfm3-vl-2b
             contextWindow: 131072
             input:
               - text
+              - image
               - image
           - id: lfm3-omni-2b-pollard
             contextWindow: 32768
             input:
               - text
               - image
+              - image
           - id: ornith-1.5-35b-heretic
             contextWindow: 200000
             input:
               - text
               - image
+              - image
           - id: ornith-1.5-35b-heretic-fast
             contextWindow: 131072
             input:
               - text
+              - image
               - image
           - id: spark-x2.6-4b
             contextWindow: 114688
@@ -77,6 +83,7 @@
             input:
               - text
               - image
+              - image
           - id: groot-19b
             contextWindow: 200000
           - id: groot-19b-fast
@@ -91,6 +98,7 @@
               xhigh: xhigh
             input:
               - text
+              - image
               - image
       ollama:
         displayName: Ollama
@@ -134,7 +142,7 @@
   name: '@deepseek-ai/dsh-agent-default-model'
   config:
     provider: llama-swap
-    model: inkling-2-mini
+    model: cyber-tiel-coder
     reasoningEffort: xhigh
 - insert:
     - id: mcp-pesquisarr
