@@ -27,6 +27,10 @@
 # Lane SEGUE cafe: ctx 64K (piso do dono), -b 2048 -ub 512 (buffers de prefill
 # de verdade; os de 512/128 eram o gargalo do prefill), KV q4/q4 direto na GPU
 # (sem -nkvo = sem transbordo PCIe por ubatch).
+# DELTA MEDIDO 22/nov noite (sonda 3460 tok): baseline 21.6 -> 24.6 t/s so com
+# buffers+sem -nkvo -> 45.7 t/s com -ngl 99 (trunk na GPU). O ganho grande foi
+# o ngl 99, nao os buffers. GPU util ~6% durante prefill permanece (experts
+# em host dominam as FLOPs; fisica da 6GB, nao config).
 # -------------------------------------------
 inkling-2-mini:
   name: Inkling-2-Mini

@@ -630,6 +630,10 @@ models:
 # MORREU no KV cache: llama_kv_cache_init pede 4.34GB CUDA @131K (swa-compress
 # nao engajou no runtime inkling2 do ik - sem janela SWA no formato esperado).
 # Lane SEGUE cafe: ctx 64K (piso do dono), -b 2048 -ub 512, KV q4/q4 na GPU.
+# DELTA MEDIDO 22/nov noite (sonda 3460 tok, mesmo prompt): baseline 21.6 ->
+# 24.6 t/s so com buffers+sem -nkvo -> 45.7 t/s com -ngl 99 (trunk na GPU).
+# O ganho grande foi o ngl 99, nao os buffers. GPU util ~6% durante prefill
+# permanece (experts em host dominam as FLOPs; fisica da 6GB, nao config).
 # -------------------------------------------
   inkling-2-mini:
     name: Inkling-2-Mini
