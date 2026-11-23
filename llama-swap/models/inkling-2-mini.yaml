@@ -40,7 +40,7 @@
 # -------------------------------------------
 inkling-2-mini:
   name: Inkling-2-Mini
-  description: "Inkling 2 Mini da TMLab (looped MoE 26B, 5.4B ativos, 48 visitas/token) em quant Unsloth UD-IQ1_S; cafe com trunk na GPU e experts host; agentic/codigo + visao + tools, 64K q4 KV; base da TMLab (refusals ativos, NAO-abliterated)."
+  description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
   cmd: |
     ${cafe_server} --port ${PORT}
     --model ${models_dir}/inkling-2-mini-unsloth/Inkling-2-Mini-UD-IQ1_S.gguf
