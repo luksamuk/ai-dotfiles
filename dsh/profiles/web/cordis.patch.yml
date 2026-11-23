@@ -177,6 +177,12 @@
   name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
 - id: compaction-basic
   name: '@deepseek-ai/dsh-compaction-basic'
+  config:
+    modelPolicies:
+      - provider: llama-swap
+        model: inkling-2-mini
+        summarizationProvider: ollama
+        summarizationModel: minimax-m3.1-flash:cloud
 - id: compaction-command
   name: '@deepseek-ai/dsh-command-compact'
 
