@@ -626,6 +626,10 @@ models:
 # APEX Abliterated no ik: a carregar - o PR teve relatos de quants de terceiros
 # com layout divergente (714 vs 694 tensores) - se a APEX falhar no load,
 # testar quant nativo do ji-farthing. KV q4 host nao se aplica ao ik.
+# VERDICTO 22/nov noite (probe 6GB): ik com -ngl 99 -cmoe --swa-compress @131K
+# MORREU no KV cache: llama_kv_cache_init pede 4.34GB CUDA @131K (swa-compress
+# nao engajou no runtime inkling2 do ik - sem janela SWA no formato esperado).
+# Lane SEGUE cafe: ctx 64K (piso do dono), -b 2048 -ub 512, KV q4/q4 na GPU.
 # -------------------------------------------
   inkling-2-mini:
     name: Inkling-2-Mini
@@ -635,12 +639,11 @@ models:
       --model ${models_dir}/inkling-2-mini/Inkling-2-Mini-Abliterated-APEX-I-MiniPlus-V2.1.gguf
       --mmproj ${models_dir}/inkling-2-mini/mmproj-Inkling-2-Mini-Q8_0.gguf
       --jinja
-      -ngl 16
+      -ngl 99
       --no-op-offload
       -cmoe
-      -nkvo
-      --ctx-size 131072
-      -b 512 -ub 128
+      --ctx-size 65536
+      -b 2048 -ub 512
       --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0.0
       --repeat-penalty 1.0
       --cache-type-k q4_0 --cache-type-v q4_0
@@ -659,12 +662,12 @@ models:
         - text
       tools: true
       reranker: false
-      context: 131072
+      context: 65536
     metadata:
       size: "~12.09 GB"
-      context: 131072
+      context: 65536
       source: "IsValorum/Inkling-2-Mini-Abliterated-APEX-I-MiniPlus-V2.1-GGUF, base thinkingmachines/Inkling-2-Mini da TML"
-      kv_cache: "q4_0/q4_0 host"
+      kv_cache: "q4_0/q4_0 GPU (64K)"
       features:
         completion: true
         tools: true
