@@ -17,6 +17,7 @@ from diffuse.models import MODELS
 from diffuse.backends import load_pipeline, unload_pipeline, require_model_dir
 from diffuse.backends.gemlite import generate_image_gemlite
 from diffuse.backends.agate import generate_image_agate
+from diffuse.backends.tessera import generate_image_tessera
 from diffuse.backends.framepack import generate_video_framepack
 from diffuse.llm import evict_llm, llama_swap_running_models
 from diffuse.enhance import (
@@ -324,6 +325,7 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("-p", "--prompt", help="Text prompt. If omitted, prompted interactively.")
     p.add_argument("--seed", type=int, default=None, help="Random seed (random if not set).")
+    p.add_argument("--count", type=int, default=4, help="Sprite variations per run (Tessera only; 1-8, default 4).")
     p.add_argument("--steps", type=int, default=None, help="Denoising steps (default per backend: bonsai=4, qwen21-turbo=8, flux3=16, qwen21=40, moss=50, agate=50).")
     p.add_argument(
         "--size", type=parse_size, default=None,
@@ -497,6 +499,11 @@ def _load_enhance_config(model_info: dict | None = None) -> str:
 
 
 def main() -> None:
+    if len(sys.argv) > 1 and sys.argv[1] == "sheet":
+        from diffuse.sheet_cmd import run_sheet
+        run_sheet(sys.argv[2:])
+        return
+
     args = parse_args()
 
     if args.lora:
@@ -532,6 +539,8 @@ def main() -> None:
             args.steps = 40          # base 2.1 recipe (cfg 4.0; --turbo remaps para 8 no runner)
         elif backend_type == "agate":
             args.steps = 50
+        elif backend_type == "tessera":
+            args.steps = 16          # sampler recipe do build ONNX (tessera_onnx.py)
         elif backend_type == "fibo_sdcpp":
             args.steps = 4 if "turbo" in model_name else 20   # turbo: 4 passos (distill BRIA); dev: default do sd.cpp
         elif backend_type == "anima_sdcpp":
@@ -552,6 +561,10 @@ def main() -> None:
             print(f"  ⚠️  Agate 001 is a fixed 256×256 model (trained resolution) — ignoring --size {width}x{height}")
             print(f"     For larger output, upscale the result with Real-ESRGAN.")
             width, height = (256, 256)
+    # Tessera: 16×16 native (sprites); qualquer --size é ignorado.
+    if backend_type == "tessera" and (width, height) != (16, 16):
+        print(f"  ⚠️  Tessera generates 16×16 sprites natively — ignoring --size {width}x{height}")
+        width, height = (16, 16)
     elif backend_type == "agate":
         # 003: multi-res (256/512). Other sizes → snap to nearest supported
         if (width, height) not in ((256, 256), (512, 512)):
@@ -634,6 +647,11 @@ def main() -> None:
     # ── Fibo 2.0 via sd.cpp (T2I + edição por referência) ──
     if backend_type == "fibo_sdcpp":
         _run_fibo_sdcpp_image(args, model_name, model_info, prompt, original_prompt, seed, width, height, ref_image_paths)
+        return
+
+    # ── Tessera early path (sprites 16x16, CPU-only) ──
+    if backend_type == "tessera":
+        _run_tessera_image(args, model_name, model_info, prompt, original_prompt, seed, width, height)
         return
 
     # ── Anima (CircleStone×Comfy, 2B anime) via sd.cpp — T2I puro ──        return
@@ -1052,6 +1070,62 @@ def _run_bonsai_image(
     )
 
 
+def _run_tessera_image(
+    args, model_name, model_info, prompt, original_prompt, seed, width, height
+) -> None:
+    """Tessera 16x16 sprites: ONNX CPU-only, count variações + sheet nearest 8x.
+
+    Sem enhance, sem evict, sem VRAM. Saída: 1 sprite 16x16 por variação
+    (<stem>-N.png) + sheet presentation (<output>.png).
+    """
+    import math
+
+    from PIL import Image
+
+    count = max(1, min(8, args.count))
+    orig_cwd = Path(os.environ.get("DIFFUSE_ORIG_CWD", str(Path.cwd())))
+
+    print(f"  [1/3] Loading Tessera pipeline (ONNX int8, CPUExecutionProvider)...")
+    pipeline, load_time = load_pipeline(model_name)
+    print(f"        Pipeline ready in {load_time:.1f}s")
+
+    print(f"  [2/3] Generating {count} sprite(s): {args.steps} steps, seed={seed}...")
+    wall_t0 = time.perf_counter()
+    sprites, diffusion_time, peak_hbm = generate_image_tessera(
+        pipeline, prompt, seed=seed, steps=args.steps, count=count,
+        guidance=args.cfg if args.cfg is not None else 3.0,
+    )
+    wall_time = time.perf_counter() - wall_t0
+
+    print(f"  [3/3] Saving...")
+    output_path = resolve_output_path(model_name, seed, args.output, cwd=orig_cwd)
+    cell = 128  # preview: 16x16 @ 8x nearest
+    cols = min(count, 4)
+    rows = max(1, math.ceil(count / cols))
+    sheet = Image.new("RGBA", (cols * cell, rows * cell), (20, 20, 20, 255))
+    for i, sprite in enumerate(sprites):
+        sprite_path = output_path.parent / f"{output_path.stem}-{i}.png"
+        sprite.save(sprite_path)
+        n_colors = sprite.getcolors(maxcolors=256)
+        n_opaque = len(n_colors) if n_colors is not None else ">256"
+        print(f"     sprite {i}: {sprite_path} ({n_opaque} cores opacas)")
+        sheet.alpha_composite(
+            sprite.resize((cell, cell), Image.Resampling.NEAREST),
+            ((i % cols) * cell, (i // cols) * cell),
+        )
+    sheet.convert("RGB").save(output_path)
+
+    print()
+    print(f"     Sheet: {output_path}")
+    print(f"     Licença CC BY-NC 4.0 (TheJagStudio): pessoal/estudo com crédito; comercial exige licença.")
+    print()
+
+    save_metadata(
+        model_name, prompt, seed, width, height, args.steps,
+        load_time, diffusion_time, wall_time, peak_hbm, output_path,
+    )
+
+
 def _run_fibo_sdcpp_image(
     args,
     model_name: str,
@@ -1428,6 +1502,7 @@ def _run_h3img_wan2gp_image(
     width: int,
     height: int,
     ref_image_paths: list[str] | None,
+    ref_mode: str | None = None,
 ) -> None:
     """H3-Image oficial (MiniMaxAI, pruned 20B) + LoRA pDMD 2-step via WanGP def casa.
 
@@ -1571,6 +1646,7 @@ def _run_h3img_wan2gp_image(
         model_type=model_type, negative_prompt="",
         unit_name="diffuse-h3img", lora_root_name="minimax_h3",
         flow_shift=None,
+        ref_mode=ref_mode,
         config_id="gguf_q4_k_m",
         activated_loras=loras or None, loras_multipliers=mults or None,
     )

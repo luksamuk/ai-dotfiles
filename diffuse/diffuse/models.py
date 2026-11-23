@@ -109,6 +109,28 @@ MODELS: dict[str, dict] = {
             {"name": "agate/ pipeline code (imported from model dir)", "path": "agate-preview-001/agate", "size_gb": 0.0},
         ],
     },
+    # Tessera-small (TheJagStudio) — masked diffusion de tokens de paleta, 47.6M params.
+    # Sprites 16x16 estilo emoji (4 variações/prompt), ONNX int8 quantized (cfahlgren1),
+    # 100% CPU (onnxruntime), ~6s por lote no i7-13650HX. CC BY-NC 4.0 cobre o modelo
+    # E as imagens geradas — uso pessoal/estudo; comercial = licença separada do autor.
+    "tessera-small": {
+        "backend_id": "tessera-small-onnx",
+        "dir": "tessera-small",
+        "backend_type": "tessera",
+        "category": "image",
+        "bits": "int8 (ONNX, CPU-only)",
+        "description": "Tessera-small — 47.6M masked diffusion de tokens de paleta, sprites 16x16 (paleta 15+1, formato 4bpp SNES), CPU-only, CC BY-NC",
+        "default_size": (16, 16),
+        "hf_files": [
+            {"repo": "cfahlgren1/tessera-small-onnx",
+             "files": ["tessera_w8.onnx", "clip_text_w8.onnx", "tokenizer.json", "palette.json"]},
+        ],
+        "components": [
+            {"name": "tessera_w8.onnx (denoiser 47.5M, int8)", "path": "tessera-small/tessera_w8.onnx", "size_gb": 0.051},
+            {"name": "clip_text_w8.onnx (CLIP ViT-B/32 TE, int8)", "path": "tessera-small/clip_text_w8.onnx", "size_gb": 0.064},
+            {"name": "tokenizer.json + palette.json (512 cores RGBA)", "path": "tessera-small/", "size_gb": 0.002},
+        ],
+    },
     # Agate preview 003 (Logolabs) — 261M thinker-steered FCDM multi-res (512 native).
     # QIB 32.6 (vs 001 28.2, SD1.5 29.1), GenEval 0.554. Prompt pipeline embutido
     # (normalize/spell). API superset do 001: pipe(prompt, seed, steps, cfg, resolution=...).

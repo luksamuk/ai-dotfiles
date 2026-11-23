@@ -220,6 +220,7 @@ def generate_image_wan2gp(
     activated_loras: list[str] | None = None, loras_multipliers: list[str] | None = None,
     unit_name: str = "diffuse-flux3", lora_root_name: str = "qwen21",
     flow_shift: int | None = None,
+    ref_mode: str | None = None,
     config_id: str | None = None,
 ) -> tuple:
     """Generate (or edit) via WanGP. Returns (path, wall, 0.0).
@@ -243,7 +244,8 @@ def generate_image_wan2gp(
             "Edição estruturada = reformular o prompt como layout JSON."
         )
     refs = ref_images or []
-    ref_mode = "KI" if is_edit else ""
+    # ref_mode None = legacy default (KI quando edit); h3 suporta "I"=resolution exata
+    ref_mode = (ref_mode if ref_mode is not None else "KI") if is_edit else ""
     log.info(
         "Generating via WanGP %s %s: seed=%d size=%dx%d steps=%d",
         model_type, "edit" if is_edit else "T2I", seed, width, height, steps,

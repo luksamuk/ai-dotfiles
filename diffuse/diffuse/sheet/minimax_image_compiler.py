@@ -1,0 +1,277 @@
+"""Static-image prose for MiniMax H3 Image."""
+import json
+from math import sqrt
+
+from .compiler import StateValidationError, decode_json
+from .guide_13 import derive_guide_geometry
+from .head_six import apply_head_six
+from .on_compiler_13 import compile_reference13_state
+from .state_13 import applicable_settings, effective_views, part_views, serialize_reference13_state
+from .reference_compiler import STYLE_PROMPTS
+from .appearance_policy_13 import ROLE_NAMES, build_appearance_policy, unused_reference_instructions
+from .view_catalog_13 import BODY_IDS, NATURAL_SURFACE, NATURAL_VIEW_PROMPTS, PORTRAIT_IDS, PRESETS, VIEW_IDS
+
+RESOLUTION_PROFILES = ('current', 'high', 'max_8mp', 'max_16mp')
+EIGHT_MP = 8_000_000
+MAX_AUTO_PIXELS = 16_000_000
+
+
+VIEW_PROMPTS = {
+    'face_front': 'Front portrait, complete head and shoulders.',
+    'face_left': 'Profile portrait facing image-right, complete head and shoulders.',
+    'face_right': 'Profile portrait facing image-left, complete head and shoulders.',
+    'face_3q_left': 'Three-quarter portrait facing image-right, complete head and shoulders.',
+    'face_3q_right': 'Three-quarter portrait facing image-left, complete head and shoulders.',
+    'face_back': 'Portrait from behind, complete head and shoulders.',
+    'body_front': 'Full body facing forward, standing, complete figure visible.',
+    'body_left': 'Full body in profile facing image-right, standing, complete figure visible.',
+    'body_back': 'Full body from behind, standing, complete figure visible.',
+    'clothing_front': 'Extract the front of the outfit onto a white background. No human. The outfit is flat.',
+    'clothing_back': 'Extract the back of the outfit onto a white background. No human. The outfit is flat.',
+    'hands': 'Close-up of both hands, including their coverings when present in the reference.',
+    'feet': 'Close-up of both feet and their footwear when present in the reference.',
+}
+
+SETTINGS = {
+    ('hand_state', 'bare'): 'Bare hands.',
+    ('hand_state', 'gloved'): 'Gloved hands.',
+    ('footwear_state', 'shod'): 'Feet wearing footwear.',
+    ('footwear_state', 'unshod'): 'Shoes removed; retain reference socks or tights.',
+    ('clothing_type', 'pants'): 'Trousers for the lower garment.',
+    ('clothing_type', 'skirt_robe'): 'Skirt or robe for the lower garment.',
+}
+
+def _arranged_columns(layout):
+    columns = {}
+    for panel in layout['panels']:
+        columns.setdefault(panel['rect'][0], []).append(panel)
+    return [sorted(columns[x], key=lambda p: p['rect'][1]) for x in sorted(columns)]
+
+
+def _standard_five_view_guide(layout, state):
+    """Trade a little portrait width for full-body space and leave room above the head."""
+    canvas_width, _ = layout['canvas']
+    panels = sorted(layout['panels'], key=lambda panel: panel['rect'][0])
+    extra = round(min(panel['rect'][2] for panel in panels if panel['id'] in BODY_IDS) * canvas_width * 0.06)
+    guide_panels = []
+    shift = 0
+    for panel in panels:
+        x, y, width, height = panel['rect']
+        change = extra if panel['id'] in BODY_IDS else -extra * 1.5
+        guide_panels.append({**panel, 'rect': [x + shift / canvas_width, y, width + change / canvas_width, height]})
+        shift += change
+    geometry = derive_guide_geometry({**layout, 'panels': guide_panels}, state, compact=True)
+    for panel in geometry['panels']:
+        if panel['id'] in BODY_IDS:
+            left, top, right, bottom = panel['bounds']
+            _, _, width, height = panel['rect']
+            panel_height = bottom - top
+            y = top + round(panel_height * 0.105)
+            fit_height = min(height, bottom - round(panel_height * 0.035) - y)
+            fit_width = round(width * fit_height / height)
+            panel['rect'] = [(left + right - fit_width) // 2, y, fit_width, fit_height]
+    return geometry
+
+
+def _all_view_layout(descriptions):
+    return [
+        'Arrange four blocks side by side across the canvas, from left to right.',
+        'Far left: six portraits in a two-column, three-row grid. Read each row from left to right.',
+        f"Top row: {descriptions['face_front']} {descriptions['face_left']}",
+        f"Middle row: {descriptions['face_right']} {descriptions['face_3q_left']}",
+        f"Bottom row: {descriptions['face_3q_right']} {descriptions['face_back']}",
+        'Center: three full-body figures side by side, equally tall, with a small margin above and below.',
+        f"From left to right: {descriptions['body_front']} {descriptions['body_left']} {descriptions['body_back']}",
+        'To their right: two flat outfit views side by side, front on the left and back on the right.',
+        f"{descriptions['clothing_front']} {descriptions['clothing_back']}",
+        f"Far right: hands above footwear. Top: {descriptions['hands']} Bottom: {descriptions['feet']}",
+    ]
+
+
+def _apply_resolution(result, profile):
+    if profile == 'current' or result['state']['size']['mode'] != 'auto':
+        return
+
+    width, height = result['width'], result['height']
+    pixels = width * height
+    limit = MAX_AUTO_PIXELS if profile == 'max_16mp' else EIGHT_MP
+    target = limit
+    if profile == 'high' and pixels < limit:
+        target = 2 * pixels if 2 * pixels < limit else (pixels + limit) // 2
+    edge_limit = result['max_resolution'] // 32 * 32
+    scale = min(sqrt(target / pixels), edge_limit / max(width, height))
+    out_width, out_height = (max(32, int(side * scale / 32) * 32) for side in (width, height))
+    # The 32 px minimum can overshoot the area for unusually thin canvases.
+    if out_width * out_height > limit:
+        if out_width > out_height:
+            out_width = limit // (out_height * 32) * 32
+        else:
+            out_height = limit // (out_width * 32) * 32
+
+    canvas = [out_width, out_height]
+    result['layout']['canvas'] = result['semantic_layout']['canvas'] = canvas
+    geometry = result['guide_geometry']
+    geometry['canvas'] = canvas
+    sx, sy = out_width / width, out_height / height
+    for panel in geometry['panels']:
+        left, top, right, bottom = panel['bounds']
+        panel['bounds'] = [round(left * sx), round(top * sy), round(right * sx), round(bottom * sy)]
+        x, y, w, h = panel['rect']
+        left, top, right, bottom = round(x * sx), round(y * sy), round((x + w) * sx), round((y + h) * sy)
+        panel['rect'] = [left, top, max(1, right - left), max(1, bottom - top)]
+
+    pixels = out_width * out_height
+    result.update(width=out_width, height=out_height, pixel_count=pixels, megapixels=pixels / 1_000_000)
+
+
+def compile_minimax_image_state(state_json, **kwargs):
+    # Only this node accepts the optional setting in its saved state.
+    saved = decode_json(state_json)
+    profile = None
+    if isinstance(saved, dict) and 'resolution_profile' in saved:
+        profile = saved.pop('resolution_profile')
+        if saved.get('schema_version') != 3 or profile not in RESOLUTION_PROFILES:
+            raise StateValidationError('Unknown output resolution profile.', 'invalid_resolution_profile')
+        state_json = json.dumps(saved, ensure_ascii=False, separators=(',', ':'))
+    # Reuse validation, sizing, guide rendering and persistence, not video prose.
+    result = compile_reference13_state(state_json, optimize_outfit=True, **kwargs)
+    saved = result['state']
+    state = {**saved, 'views': effective_views(saved)}
+    views = state['views']
+    natural = state['clothing_type'] == 'none'
+    if not natural and result['guide_enabled'] and state['size']['mode'] == 'auto' and set(state['views']) == set(PRESETS['five']):
+        result['guide_geometry'] = _standard_five_view_guide(result['semantic_layout'], state)
+    if profile is not None:
+        saved['resolution_profile'] = profile
+        result['state_json'] = serialize_reference13_state(saved)
+        _apply_resolution(result, profile)
+    result['experimental'] = result['pixel_count'] > MAX_AUTO_PIXELS
+    refs = result['reference_plan']
+    slots = ('character_image', 'layout_image', 'reference_image_1',
+             'reference_image_2', 'reference_image_3')
+    for ref in refs:
+        ref['core_input'] = f"images.image_{slots.index(ref['source'])}"
+    defaults = dict(VIEW_PROMPTS)
+    if state['hand_state'] == 'bare':
+        defaults['hands'] = 'Close-up of both hands.'
+    if state['footwear_state'] == 'unshod':
+        defaults['feet'] = 'Close-up of both feet.'
+    if natural:
+        defaults.update(NATURAL_VIEW_PROMPTS)
+        if len(views) == 11 and not result['guide_enabled']:
+            defaults['body_left'] = ('Full body in profile facing image-right. Turn the same figure in place, '
+                                     'keeping the reference pose and the same weight-bearing limbs.')
+        if state['hand_state'] == 'reference':
+            defaults['hands'] += ' Retain reference hand coverings when present.'
+        if state['footwear_state'] == 'reference':
+            defaults['feet'] += ' Retain reference footwear when present.'
+    style = kwargs.get('style', 'none')
+    if set(views) == set(PORTRAIT_IDS):
+        return apply_head_six(result, state, defaults, style=style)
+
+    style_instruction = STYLE_PROMPTS[style]
+    overrides = state.get('view_prompts', {})
+    single = len(views) == 1
+    all_views = len(views) == len(VIEW_IDS) and not result['guide_enabled']
+    hand_foot_pair = set(views) == {'hands', 'feet'} and not result['guide_enabled']
+    garment_only = all(v.startswith('clothing_') for v in views)
+    subject = 'outfit' if garment_only else 'character'
+    design = f'{subject} design'
+    if not style_instruction:
+        design += ' and rendering style'
+    if single:
+        target = ('detail illustration from <Picture 1>' if views[0] in {'hands', 'feet'}
+                  else f'illustration of the {subject} from <Picture 1>')
+        lines = [f'Create a single centered {target}.']
+    elif hand_foot_pair:
+        lines = ['Create exactly two borderless close-up views from <Picture 1>, one above the other on a white canvas. '
+                 'Leave a clear band of blank white space between the views.']
+        if not style_instruction:
+            lines.append('Match the rendering style of <Picture 1>.')
+    else:
+        lines = [f'Create one {subject} reference sheet from <Picture 1>.',
+                 f'Preserve the same {design} across all views.',
+                 'White background. Each requested view appears once.']
+    if not natural and any(view in BODY_IDS for view in views):
+        scope = 'in the full-body view' if single else 'across the full-body views'
+        lines.append(f'Match the relative proportions of the head, torso, and legs in <Picture 1> {scope}.')
+    if natural and any(view in (*BODY_IDS, *PORTRAIT_IDS) for view in views):
+        lines.append(NATURAL_SURFACE)
+    for ref in refs:
+        if ref['role'] == 'layout':
+            if single:
+                lines.append(f"Use {ref['tag']} for framing.")
+            else:
+                placement = 'frame positions and sizes' if natural else 'arrangement and viewing directions'
+                lines.append(f"{ref['tag']} supplies the {placement}. "
+                             f"Render the finished {subject} from <Picture 1> at a clear, generous scale in each area.")
+        elif ref['role'] == 'same_character':
+            lines.append(f"{ref['tag']} supplements the same {subject}'s appearance.")
+    appearance = build_appearance_policy(state, refs)
+    lines.extend(unused_reference_instructions(refs, appearance).values())
+    if any(ref['source'] in slots[2:] for ref in refs):
+        lines.append('Follow selected settings first, then compatible part instructions, then dedicated references. '
+                     'If dedicated references for the same role conflict, prefer the later input.')
+    columns = _arranged_columns(result['semantic_layout'])
+    portrait_rows = (natural and result['guide_enabled'] and 'body_left' in overrides
+                     and [len(column) for column in columns] == [3, 3, 1, 1, 1, 2]
+                     and set(views) == set((*PORTRAIT_IDS, *BODY_IDS, 'hands', 'feet')))
+    if not (single or all_views or hand_foot_pair):
+        placement = 'Arrange columns from left to right; within a stacked column, read top to bottom:'
+        if natural and len(views) == 11:
+            if [len(column) for column in columns] == [3, 3, 1, 1, 1, 2]:
+                placement = ('Place the six portraits in the two columns on the left, the three full-body views in the middle, '
+                             'and the hand and foot close-ups in the column on the right. Within each column, read top to bottom:')
+                if portrait_rows:
+                    placement = ('The left block has three rows and two columns of portraits, one distinct angle per slot. '
+                                 'The three full-body views are in the middle, with hand and foot close-ups on the right. '
+                                 'Separate the finished views with plain white space. Omit all guide outlines and divider lines.')
+            default_body_views = [label for view, label in (('body_front', 'front'), ('body_left', 'side'), ('body_back', 'back'))
+                                  if view not in overrides]
+            if len(default_body_views) == len(BODY_IDS):
+                placement = 'Use the same stance and limb arrangement as <Picture 1> across all three full-body views. ' + placement
+            elif default_body_views:
+                targets = ' and '.join(f'full-body {label} view' for label in default_body_views)
+                placement = f'Use the same stance and limb arrangement as <Picture 1> for the {targets}. ' + placement
+        lines.append(placement)
+    records = []
+    view_text = {}
+    scopes = applicable_settings(state)
+    for index, column in enumerate(columns):
+        descriptions = []
+        for panel in column:
+            view = panel['id']
+            text = overrides.get(view, defaults[view])
+            extras = [SETTINGS[(field, state[field])] for field, views in scopes.items()
+                      if view in views and (field, state[field]) in SETTINGS]
+            for ref in appearance:
+                if any(view in views for views in ref['parts'].values()):
+                    extras.append(f"Use {ref['tag']} for {ROLE_NAMES[ref['role']]}.")
+            extras += [value for part, value in state['part_prompts'].items()
+                       if value and view in part_views(state, part)]
+            text = ' '.join([text, *extras]).strip()
+            if text or not single:
+                descriptions.append(text or 'One reserved view area.')
+            if all_views or hand_foot_pair or portrait_rows:
+                view_text[view] = descriptions[-1]
+            records.append(f'{view}: {text}')
+        if single:
+            lines.extend(descriptions)
+        elif portrait_rows and index == 1:
+            for row, left, right in zip(('Top', 'Middle', 'Bottom'), *columns[:2]):
+                lines.append(f"{row} portrait row. Left slot: {view_text[left['id']]} Right slot: {view_text[right['id']]}")
+        elif not (all_views or hand_foot_pair or (portrait_rows and index == 0)):
+            lines.append(' / '.join(descriptions))
+    if all_views:
+        lines.extend(_all_view_layout(view_text))
+    elif hand_foot_pair:
+        lines.extend((f"Upper half: {view_text['hands']}", f"Lower half: {view_text['feet']}"))
+    if single:
+        lines.extend((f'Preserve the {design}.', 'Plain white background.'))
+        if views[0].startswith('body_') and views[0] not in overrides:
+            lines.append('Keep a small margin around the complete figure.')
+    if style_instruction:
+        lines.append(style_instruction)
+    separator = ' ' if single else '\n'
+    result.update(prompt=separator.join(lines), default_view_prompts=defaults, view_prompts=records)
+    return result

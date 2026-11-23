@@ -212,6 +212,7 @@ Usage: diffuse [command] [options]
 
 Commands:
   generate    Generate an image or video (passes args to generate.py)
+  sheet       Compiled character reference sheet on h3-image (--help for presets/roles)
   setup       Install dependencies (uv sync + vendor deps, pinned SHAs)
   list        List installed models with dependencies, sizes, and shared components
   loras       List WanGP LoRA files per model + cataloged moss entries
@@ -232,6 +233,10 @@ EOF
 case "${1:-help}" in
     generate)
         shift
+        cmd_generate "$@"
+        ;;
+    sheet)
+        # "$@" still carries "sheet" as $1: cli.main() detects argv[1] == "sheet"
         cmd_generate "$@"
         ;;
     setup)

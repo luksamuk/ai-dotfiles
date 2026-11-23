@@ -135,6 +135,9 @@ def load_pipeline(model_name: str, editing: bool = False) -> tuple:
     elif backend_type == "agate":
         from diffuse.backends.agate import load_pipeline_agate
         return load_pipeline_agate(model_name, editing=editing)
+    elif backend_type == "tessera":
+        from diffuse.backends.tessera import load_pipeline_tessera
+        return load_pipeline_tessera(model_name)
     elif backend_type == "framepack":
         from diffuse.backends.framepack import load_pipeline as load_pipeline_framepack
         return load_pipeline_framepack(editing=editing)
