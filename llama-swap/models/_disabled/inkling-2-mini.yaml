@@ -1,3 +1,10 @@
+# APOSENTADA 22/nov/2026 (dono): teste do Strata 0.2.20 em andamento (unsloth Q2).
+# Re-ativacao = este arquivo volta p/ models/ + build-config.py. Fontes GGUF em disco:
+# APEX-I-MiniPlus V2.1 (12.09G) + NanoPlus (10.23G) + mmproj (0.32G) em ~/.llama-models/inkling-2-mini/.
+# Estado quando aposentada: cafe rebasado (build 12981, cherry-pick #32807),
+# ngl 99 (trunk na GPU) + 64K + b2048/kv q4/q4 GPU + ub256 (vmm OOM em 512).
+# Placar: prefill 43-45 t/s @3.4K (3.3x do baseline), decode ~11 t/s, VRAM 5.28G.
+# ik @131K equivalente (12.28 t/s, PR #2967); 262K no ik nao boota.
 # -------------------------------------------
 # INKLING-2-MINI - llama.cpp upstream (why: UNICO backend com inkling2_loop -
 # PR ggml-org #32694 mergeado 21/nov/2026; ik issue #2211 fechada sem impl,
