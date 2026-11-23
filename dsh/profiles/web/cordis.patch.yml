@@ -56,74 +56,70 @@
               - image
           - id: spark-x2.6-4b
             contextWindow: 114688
-            reasoningEfforts:
-              low: low
-              high: high
           - id: translategemma-4b
             contextWindow: 131072
           - id: inkling-2-mini
             contextWindow: 73728
-            reasoningEfforts:
-              off: 'none'
-              low: low
-              medium: medium
-              high: high
-              xhigh: xhigh
-            input:
-              - text
-              - image
           - id: cyber-tiel-coder
             contextWindow: 200000
-            reasoningEfforts:
-              off: off
-              low: low
-              medium: medium
-              high: high
-              xhigh: xhigh
-            input:
-              - text
-              - image
-              - image
           - id: groot-19b
             contextWindow: 200000
           - id: groot-19b-fast
             contextWindow: 262144
           - id: cyber-tiel-coder-fast
             contextWindow: 262144
-            reasoningEfforts:
-              off: off
-              low: low
-              medium: medium
-              high: high
-              xhigh: xhigh
-            input:
-              - text
-              - image
-              - image
       ollama:
         displayName: Ollama
         api: openai-responses
         baseURL: http://localhost:11434/v1
         models:
           - id: deepseek-v4.1-flash:1017-cloud
+            reasoningEfforts:
+              off: 'false'
+              low: low
+              high: high
+              max: max
             contextWindow: 1048576
             name: DeepSeek v4.1 Flash (1017)
           - id: glm-5.3:cloud
+            reasoningEfforts:
+              low: low
+              high: high
+              max: max
             contextWindow: 1048576
             name: GLM 5.3
           - id: glm-5.3-flash:cloud
+            reasoningEfforts:
+              low: low
+              high: high
+              max: max
             contextWindow: 1048576
             name: GLM 5.3 Flash
           - id: kimi-k3:cloud
+            reasoningEfforts:
+              off: 'false'
+              low: low
+              high: high
+              max: max
             contextWindow: 1048576
             name: Kimi K3
           - id: glm-5.2:cloud
+            reasoningEfforts:
+              off: 'false'
+              high: high
+              max: max
             contextWindow: 1048576
             name: GLM 5.2
           - id: kimi-k2.7-code:cloud
+            reasoningEfforts:
+              off: 'false'
+              high: 'true'
             contextWindow: 262144
             name: Kimi K2.7 Code
           - id: nemotron-3-ultra:cloud
+            reasoningEfforts:
+              off: 'false'
+              high: 'true'
             contextWindow: 262144
             name: Nemotron 3 Ultra
           - id: minimax-m3:cloud
@@ -133,42 +129,84 @@
             contextWindow: 1048576
             name: DeepSeek v4 Pro
           - id: kimi-k2.6:cloud
+            reasoningEfforts:
+              off: 'false'
+              high: 'true'
             contextWindow: 262144
             name: Kimi K2.6
           - id: nemotron-3-nano:30b-cloud
             contextWindow: 262144
             name: Nemotron 3 Nano 30B
           - id: gemma4:31b-cloud
+            reasoningEfforts:
+              off: 'false'
+              high: 'true'
             contextWindow: 262144
             name: Gemma 4 31B
           - id: minimax-m2.7:cloud
             contextWindow: 196608
             name: MiniMax M2.7
           - id: nemotron-3-super:cloud
+            reasoningEfforts:
+              off: 'false'
+              high: 'true'
             contextWindow: 262144
             name: Nemotron 3 Super
           - id: inkling-2-small:cloud
+            reasoningEfforts:
+              off: 'false'
+              low: low
+              medium: medium
+              high: high
+              max: max
             contextWindow: 1048576
             name: Inkling 2 Small
           - id: hy4:cloud
+            reasoningEfforts:
+              off: 'false'
+              high: 'true'
             contextWindow: 1048576
             name: Hy4 Flash
           - id: kimi-k3.1-pro:cloud
+            reasoningEfforts:
+              off: 'false'
+              low: low
+              medium: medium
+              high: high
+              max: max
             contextWindow: 1048576
             name: Kimi K3.1 Pro
           - id: mimo-v2.6-flash:cloud
+            reasoningEfforts:
+              off: 'false'
+              high: 'true'
             contextWindow: 1048576
             name: MiMo V2.6 Flash
           - id: mimo-v2.6-pro:cloud
+            reasoningEfforts:
+              off: 'false'
+              high: 'true'
             contextWindow: 1048576
             name: MiMo V2.6 Pro
           - id: minimax-m3.1-flash:cloud
             contextWindow: 1000000
             name: MiniMax M3.1 Flash
           - id: beam:cloud
+            reasoningEfforts:
+              low: low
+              medium: medium
+              high: high
+              xhigh: xhigh
+              max: max
             contextWindow: 1048576
             name: Beam
           - id: muse-spark-open:cloud
+            reasoningEfforts:
+              off: 'false'
+              low: low
+              medium: medium
+              high: high
+              xhigh: xhigh
             contextWindow: 1048576
             name: Muse Spark Open
           - id: mistral-large-4:cloud

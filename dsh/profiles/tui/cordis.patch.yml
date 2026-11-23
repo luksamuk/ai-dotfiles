@@ -50,47 +50,16 @@
 # qwen3.5-4b-3d-coder — APOSENTADO 12/nov/2026 (restore no epitaph)
         - id: spark-x2.6-4b
           contextWindow: 114688
-          reasoningEfforts:
-            low: low
-            high: high
         - id: translategemma-4b
           contextWindow: 131072
         - id: inkling-2-mini
           contextWindow: 73728
-          reasoningEfforts:
-            off: 'none'
-            low: low
-            medium: medium
-            high: high
-            xhigh: xhigh
-          input:
-          - text
         - id: cyber-tiel-coder
-          reasoningEfforts:
-            off: off
-            low: low
-            medium: medium
-            high: high
-            xhigh: xhigh
-          input:
-          - text
-          - image
-          contextWindow: 200000
         - id: groot-19b
           contextWindow: 200000
         - id: groot-19b-fast
           contextWindow: 262144
         - id: cyber-tiel-coder-fast
-          reasoningEfforts:
-            off: off
-            low: low
-            medium: medium
-            high: high
-            xhigh: xhigh
-          input:
-          - text
-          - image
-          contextWindow: 262144
         apiKeyEnv: LLAMASWAP_LOCAL_KEY
         retryPolicy:
           mode: normal
@@ -115,86 +84,68 @@
           - text
           - image
         - id: deepseek-v4.1-flash:1017-cloud
-          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
             high: high
             max: max
-          input:
-          - text
-          - image
-        - id: beam:cloud
           contextWindow: 1048576
+        - id: beam:cloud
           reasoningEfforts:
-            off:
             low: low
             medium: medium
             high: high
             xhigh: xhigh
             max: max
-        - id: muse-spark-open:cloud
           contextWindow: 1048576
+        - id: muse-spark-open:cloud
           reasoningEfforts:
             off: 'false'
             low: low
             medium: medium
             high: high
-            max: max
-          input:
-          - text
-          - image
+            xhigh: xhigh
+          contextWindow: 1048576
         - id: mistral-large-4:cloud
           contextWindow: 1048576
           input:
           - text
           - image
         - id: glm-5.3:cloud
-          contextWindow: 1048576
           reasoningEfforts:
-            off:
             low: low
             high: high
             max: max
+          contextWindow: 1048576
         - id: glm-5.3-flash:cloud
-          contextWindow: 1048576
           reasoningEfforts:
-            off:
             low: low
             high: high
             max: max
-          input:
-          - text
-          - image
+          contextWindow: 1048576
         - id: kimi-k3:cloud
-          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
             high: high
             max: max
-          input:
-          - text
-          - image
-        - id: glm-5.2:cloud
           contextWindow: 1048576
+        - id: glm-5.2:cloud
           reasoningEfforts:
             off: 'false'
             high: high
             max: max
+          contextWindow: 1048576
         - id: kimi-k2.7-code:cloud
-          contextWindow: 262144
           reasoningEfforts:
             off: 'false'
             high: 'true'
-          input:
-          - text
-          - image
+          contextWindow: 262144
         - id: nemotron-3-ultra:cloud
-          contextWindow: 262144
           reasoningEfforts:
             off: 'false'
             high: 'true'
+          contextWindow: 262144
         - id: minimax-m3:cloud
           contextWindow: 512000
           input:
@@ -202,90 +153,56 @@
           - image
         - id: deepseek-v4-pro:cloud
           contextWindow: 1048576
-          reasoningEfforts:
-            off: 'false'
-            low: low
-            high: high
-            max: max
         - id: kimi-k2.6:cloud
-          contextWindow: 262144
           reasoningEfforts:
             off: 'false'
             high: 'true'
-          input:
-          - text
-          - image
+          contextWindow: 262144
         - id: nemotron-3-nano:30b-cloud
           contextWindow: 262144
-          reasoningEfforts:
-            off: 'false'
-            high: 'true'
         - id: gemma4:31b-cloud
-          contextWindow: 262144
           reasoningEfforts:
             off: 'false'
             high: 'true'
-          input:
-          - text
-          - image
+          contextWindow: 262144
         - id: minimax-m2.7:cloud
           contextWindow: 196608
-          reasoningEfforts:
-            off:
-            high: 'true'
         - id: nemotron-3-super:cloud
+          reasoningEfforts:
+            off: 'false'
+            high: 'true'
           contextWindow: 262144
-          reasoningEfforts:
-            off: 'false'
-            high: 'true'
         - id: kimi-k3.1-pro:cloud
-          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
             medium: medium
             high: high
             max: max
-          input:
-          - text
-          - image
+          contextWindow: 1048576
         - id: mimo-v2.6-flash:cloud
-          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             high: 'true'
-          input:
-          - text
-          - image
+          contextWindow: 1048576
         - id: mimo-v2.6-pro:cloud
-          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             high: 'true'
-          input:
-          - text
-          - image
-        - id: inkling-2-small:cloud
           contextWindow: 1048576
+        - id: inkling-2-small:cloud
           reasoningEfforts:
             off: 'false'
             low: low
             medium: medium
             high: high
             max: max
-          input:
-          - text
-          - image
-        - id: hy4:cloud
           contextWindow: 1048576
+        - id: hy4:cloud
           reasoningEfforts:
             off: 'false'
-            low: low
-            high: high
-            max: max
-          input:
-          - text
-          - image
+            high: 'true'
+          contextWindow: 1048576
         apiKeyEnv: OLLAMA_LOCAL_KEY
         retryPolicy:
           mode: normal
