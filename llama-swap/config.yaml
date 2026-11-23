@@ -485,7 +485,7 @@ models:
 
       --defer-experts --prefetch-experts
 
-      --ctx-size 65536
+      --ctx-size 49152
 
       -b 512 -ub 128
 
@@ -513,10 +513,10 @@ models:
       - text
       tools: true
       reranker: false
-      context: 65536
+      context: 49152
     metadata:
       size: ~7.76 GB
-      context: 65536
+      context: 49152
       source: unsloth/Inkling-2-Mini-GGUF Mainline_Support UD-IQ1_S (base thinkingmachines/Inkling-2-Mini), mmproj-F16 unsloth
       kv_cache: q4_0/q4_0
       features:
@@ -530,7 +530,7 @@ models:
         image: false
       architecture: inkling2_loop
       parameters: 26200000000
-      context_length: 65536
+      context_length: 49152
       embedding_length: 2304
       quantization: UD-IQ1_S
       reasoningEfforts:
