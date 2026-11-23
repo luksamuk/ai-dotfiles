@@ -198,11 +198,8 @@
   name: '@deepseek-ai/dsh-compaction-basic'
   disabled: false
   config:
-    modelPolicies:
-      - provider: llama-swap
-        model: inkling-2-mini
-        summarizationProvider: ollama
-        summarizationModel: minimax-m3.1-flash:cloud
+    summarizationProvider: ollama
+    summarizationModel: minimax-m3.1-flash:cloud
 
 - id: tool-result-pruner
   name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
