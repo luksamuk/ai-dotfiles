@@ -3,6 +3,7 @@
 # no build MIX deles). Requer PR #32704 (scale-pass do loop) — mergeado no cafe.
 # APEX-NanoPlus/MiniPlus + mmproj Q8 permanecem em ~/.llama-models/inkling-2-mini/ (retidos).
 # Strata 0.2.20: funcionou a 3 t/s @93% VRAM (veredicto do dono: way above paygrade).
+# Nota: quant unsloth = BASE da TMLab (NAO abliterated; refusals ativos).
 # -------------------------------------------
 # INKLING-2-MINI - llama.cpp upstream (why: UNICO backend com inkling2_loop -
 # PR ggml-org #32694 mergeado 21/nov/2026; ik issue #2211 fechada sem impl,
@@ -39,7 +40,7 @@
 # -------------------------------------------
 inkling-2-mini:
   name: Inkling-2-Mini
-  description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
+  description: "Inkling 2 Mini da TMLab (looped MoE 26B, 5.4B ativos, 48 visitas/token) em quant Unsloth UD-IQ1_S; cafe com trunk na GPU e experts host; agentic/codigo + visao + tools, 64K q4 KV; base da TMLab (refusals ativos, NAO-abliterated)."
   cmd: |
     ${cafe_server} --port ${PORT}
     --model ${models_dir}/inkling-2-mini-unsloth/Inkling-2-Mini-UD-IQ1_S.gguf
@@ -73,7 +74,7 @@ inkling-2-mini:
     size: "~7.76 GB"
     context: 65536
     source: "unsloth/Inkling-2-Mini-GGUF Mainline_Support UD-IQ1_S (base thinkingmachines/Inkling-2-Mini), mmproj-F16 unsloth"
-    kv_cache: "q4_0/q4_0 GPU (64K)"
+    kv_cache: q4_0/q4_0
     features:
       completion: true
       tools: true
@@ -87,7 +88,7 @@ inkling-2-mini:
     parameters: 26200000000
     context_length: 1048576
     embedding_length: 2304
-    quantization: UD-IQ1_S (uncensored? NAO verificado - unidade da unsloth)
+    quantization: UD-IQ1_S
     reasoningEfforts:
       'off': 'none'
       'low': 'low'
