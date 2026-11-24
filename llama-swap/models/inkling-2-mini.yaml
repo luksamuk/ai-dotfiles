@@ -43,7 +43,7 @@ inkling-2-mini:
   description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/inkling-2-ikllama/Inkling-2-Mini-ik_llama-IQ1_KT.gguf
+    --model ${models_dir}/inkling-2-mini-unsloth/Inkling-2-Mini-UD-IQ1_S.gguf
     --jinja
     -ngl 99
     -cmoe
