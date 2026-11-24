@@ -10,6 +10,9 @@
 # MEDIDO 24/nov/2026 (sweep MTP, ctx 16384, prompt ~737 tok, RTX 3050 6GB):
 # ngl 32 -> prefill 155 t/s, decode 4.43 (acc 59%) | ngl 36 -> 170 / 5.42 (acc 65%) | ngl 38 -> 177 / 5.49 (acc 57%)
 # ngl 40 e 44: CUDA OOM no load. Escolhido -ngl 36 (36->38 é ~+1% e come a margem).
+# -b 2048 -ub 1024 medido 24/nov: prefill 170->192 t/s, decode 5.42->5.67, aceitação 65->70%.
+# NÃO usar -nkvo nem KV q4_0 (receita do Ornith): mata a aceitação do spec-decode (queda p/ 15-49%) e o decode despenca.
+# -ngl auto (fit) mediu pior que 36 manual (3.70 t/s decode). Manter número fixo.
 # Se OOM no boot com desktop pesado: baixar pra 32/28. -ngl é o único dial; ctx 262K nativo exigiria KV offload.
 # Sampling vendor (thinking/xhigh default): temp 1.0 / top_p 0.95 / top_k 20 / min_p 0.
 # Tools nativas; reasoning xhigh default (medium disponível). Visão: NÃO nesta lane
@@ -23,6 +26,10 @@ bonsai-2-5-27b:
     --model ${models_dir}/bonsai-2.5-27b/Ternary-Bonsai-2.5-27B-PTQ1_0-mtp.gguf
 
     --jinja
+
+    -b 2048
+
+    -ub 1024
 
     --parallel 1
 
