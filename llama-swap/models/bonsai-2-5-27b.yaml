@@ -1,49 +1,43 @@
-# LANE NOVA — NÃO TESTADA (GPU intocada a pedido do dono — smoke pendente).
 # Ternary Bonsai 2.5 27B (PrismML, Apache-2.0): Qwen3.8-27B-based, hybrid attention
-# (~75% linear / ~25% full), ternary {−1,0,+1} 1.76 bpw — PTQ1_0-MTP packing.
-# Só roda no fork PrismML (CUDA); backend aqui é o
-# prismml-eng-llama.cpp (prism2_llama_server, tag prism-b12178-03ec600, build 24/nov).
-# Variante -MTP: inclui draft head (+0.2 GiB, inerte sem --spec-type); flags MTP ligados
-# por padrão (default CUDA do vendor: n-max 3, p-min 0.1; ~1.5-1.8x decode; head deixa
-# prefill um pouco mais lento — se o prefill pesar, testar BONSAI_SPECULATIVE=0-equivalente
-# = remover os 3 flags --spec-*). Dono reportou decode lento vs inkling no arquivo plain.
-# MEDIDO 24/nov/2026 (sweep MTP, ctx 16384, prompt ~737 tok, RTX 3050 6GB):
-# ngl 32 -> prefill 155 t/s, decode 4.43 (acc 59%) | ngl 36 -> 170 / 5.42 (acc 65%) | ngl 38 -> 177 / 5.49 (acc 57%)
-# ngl 40 e 44: CUDA OOM no load. Escolhido -ngl 36 (36->38 é ~+1% e come a margem).
-# -b 2048 -ub 1024 medido 24/nov: prefill 170->192 t/s, decode 5.42->5.67, aceitação 65->70%.
-# NÃO usar -nkvo nem KV q4_0 (receita do Ornith): mata a aceitação do spec-decode (queda p/ 15-49%) e o decode despenca.
-# -ngl auto (fit) mediu pior que 36 manual (3.70 t/s decode). Manter número fixo.
-# Se OOM no boot com desktop pesado: baixar pra 32/28. -ngl é o único dial; ctx 262K nativo exigiria KV offload.
-# Sampling vendor (thinking/xhigh default): temp 1.0 / top_p 0.95 / top_k 20 / min_p 0.
-# Tools nativas; reasoning xhigh default (medium disponível). Visão: NÃO nesta lane
-# (mmproj-Q8_0 629MB não baixado; se quiser visão, baixar e adicionar --mmproj).
-# Contexto nativo 262K — aqui 16K até medir.
+# (~75% linear / ~25% full), ternary {-1,0,+1} 1.76 bpw — packing PTQ1_0 (menor e
+# mais rapido em CUDA; so existe no fork PrismML).
+# BACKEND: prismml-eng-llama.cpp (prism2_llama_server, tag prism-b12178-03ec600, build 24/nov).
+#
+# HISTÓRICO (24/nov/2026):
+# - Versão inicial com MTP draft head (spec-draft-n-max 3): aceitação 57-70%, ganho ~0-5% (decode 4.4-5.7 t/s), VRAM 5.4-5.7GB.
+#   Dono mandou tirar: VRAM em 91% e ganho marginal. MTP desligado/removido.
+# - KV q4_0/q4_0: com MTP matava a aceitação do draft (15-49%). SEM MTP é livre — permite +8 layers e ctx 16K->32K.
+# - Medido (plain, -b 2048 -ub 1024, prompt 737 tok):
+#     36L/16K: 201/6.02 | 40L/16K: 212/6.63 | 44L/16K: 226/7.46 | 48L/16K: 254/9.08 (teto) | 52L OOM
+#     40L/32K: 211/6.70 | 44L/32K: 238/7.98 (escolhido) | 48L/32K OOM
+# Config final: plain PTQ1_0, -ngl 44, ctx 32768, KV q4_0 → prefill ~238 t/s, decode ~8.0 t/s.
+# Se o dono quiser mais decode em detrimento do contexto: -ngl 48 + ctx 16384 (9.1 t/s).
+# Fallback se OOM com desktop pesado: -ngl 40 ou voltar ctx 16384.
+# Sampling vendor (thinking/xhigh): temp 1.0 / top_p 0.95 / top_k 20 / min_p 0.
+# Tools nativas. Visão: NÃO nesta lane (mmproj-Q8_0 629MB não baixado).
+# Nativo 262K de contexto; 32K é o teto prático nesta GPU.
 bonsai-2-5-27b:
-  name: Bonsai 2.5 27B (MTP)
-  description: PrismML Ternary Bonsai 2.5 27B — ternary 1.76 bpw agentic model (Qwen3.8-27B base, hybrid attention) com MTP draft head embutido (speculative decoding ligado). FP16-level tool calling (77.2 avg vs 77.7 FP16), 90% of FP16 agentic coding. PTQ1_0-MTP via PrismML fork; NOT smoke-tested on this box.
+  name: Bonsai 2.5 27B (PTQ1_0)
+  description: PrismML Ternary Bonsai 2.5 27B — ternary 1.76 bpw agentic model (Qwen3.8-27B base, hybrid attention). FP16-level tool calling (77.2 avg vs 77.7 FP16), 90% of FP16 agentic coding. PTQ1_0 packing via PrismML fork; 32K context, KV q4_0.
   cmd: '${prism2_llama_server} --port ${PORT}
 
-    --model ${models_dir}/bonsai-2.5-27b/Ternary-Bonsai-2.5-27B-PTQ1_0-mtp.gguf
+    --model ${models_dir}/bonsai-2.5-27b/Ternary-Bonsai-2.5-27B-PTQ1_0.gguf
 
     --jinja
+
+    --ctx-size 32768
+
+    -ngl 44
 
     -b 2048
 
     -ub 1024
 
-    --parallel 1
-
-    --ctx-size 16384
-
-    -ngl 36
-
     --flash-attn on
 
-    --spec-type draft-mtp
+    --cache-type-k q4_0
 
-    --spec-draft-n-max 3
-
-    --spec-draft-p-min 0.1
+    --cache-type-v q4_0
 
     --temp 1.0
 
@@ -52,6 +46,8 @@ bonsai-2-5-27b:
     --top-k 20
 
     --min-p 0
+
+    --parallel 1
 
     --metrics
 
@@ -72,13 +68,13 @@ bonsai-2-5-27b:
     - text
     tools: true
     reranker: false
-    context: 16384
+    context: 32768
   metadata:
-    size: ~6.23 GB (PTQ1_0-MTP)
-    context: 16384
-    vram_usage: "~5-5.5 GB estimado @32 layers + ctx 16K (medir; NÃO testado)"
-    source: prism-ml/Ternary-Bonsai-2.5-27B-GGUF (PTQ1_0-MTP; sha256 e0fc5f3d47b9c926d52677d303b19df356a2376614b3e1cb9973865fc04ca431 conferido 24/nov/2026) — packing PTQ1_0 + draft head embutido
-    kv_cache: f16
+    size: ~5.99 GB (PTQ1_0)
+    context: 32768
+    vram_usage: "~5.3-5.6 GB (44 layers, ctx 32K q4_0) — cabe na RTX 3050 apesar do desktop"
+    source: prism-ml/Ternary-Bonsai-2.5-27B-GGUF (PTQ1_0 plain; sha256 929560ec9d37cf3cadd4b00cc87b51c570082a628dd830b4692dc0b2ed18dbbe, conferido 24/nov/2026)
+    kv_cache: q4_0/q4_0
     features:
       completion: true
       tools: true
@@ -91,16 +87,12 @@ bonsai-2-5-27b:
     architecture: qwen35
     parameters: 27360000000
     context_length: 262144
-    quantization: PTQ1_0-MTP
+    quantization: PTQ1_0
     reasoningEfforts:
       'medium': 'medium'
       'xhigh': 'xhigh'
-    note: 'NÃO TESTADO (24/nov/2026) — lane preparada sem GPU. Fork PrismML b12178 (CUDA sm_86).
-      Benchmarks oficiais (paper): tool-calling avg 77.2 (τ2 82.0, τ3 73.9, BFCL v4 67.2, AppWorld 90.5),
-      agentic coding 54.2 avg (TB2.1 60.1, SWE-bench V 75.6, DeepSWE 27.0), geral 82.1.
-      NÃO há comparação publicada vs Ornith 9B / Inkling 2 Mini. 262K ctx nativo; aqui 16K até medir.
-      -MTP ligado por default (flags --spec-type draft-mtp --spec-draft-n-max 3 --spec-draft-p-min 0.1,
-      defaults CUDA do vendor; head também é o arquivo — drop-in p/ o plain). Decode esperado 1.5-1.8x
-      sobre o plain. Prefill um pouco mais lento com draft (desligar = remover os 3 flags --spec-*).
-      -ngl 36 medido 24/nov (36=seguro; 38 passa raspando, 40+ OOM).
+    note: 'Medido 24/nov/2026 (fork b12178): prefill 238 t/s, decode ~8.0 t/s @ 32K ctx.
+      MTP testado e removido pelo dono (ganho ~0, VRAM demais). 48L/16K = 9.1 t/s se quiser trocar ctx por velocidade.
+      Alternativas: Ornith grelha (-ngl auto/-nkvo/KV q4) NAO serve pra este modelo com spec decode.
+      Tool calling: nao validado formalmente neste build; validar antes de producao.
       Fora do matrix; lane por id direto.'
