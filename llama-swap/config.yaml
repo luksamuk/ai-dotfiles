@@ -1191,22 +1191,27 @@ models:
         - CPU-only por desenho (a VRAM da casa é escassa, 6 GB) - troque PARAKEET_DEVICE=cuda se quiser
 # LANE NOVA — NÃO TESTADA (GPU intocada a pedido do dono — smoke pendente).
 # Ternary Bonsai 2.5 27B (PrismML, Apache-2.0): Qwen3.8-27B-based, hybrid attention
-# (~75% linear / ~25% full), ternary {−1,0,+1} 1.76 bpw — PTQ1_0 packing (o mais
-# rápido em CUDA; 5.99 GB). Só roda no fork PrismML (CUDA); backend aqui é o
+# (~75% linear / ~25% full), ternary {−1,0,+1} 1.76 bpw — PTQ1_0-MTP packing.
+# Só roda no fork PrismML (CUDA); backend aqui é o
 # prismml-eng-llama.cpp (prism2_llama_server, tag prism-b12178-03ec600, build 24/nov).
-# ATENÇÃO: NÃO cabe inteiro na RTX 3050 6GB. -ngl 32 + ctx 16384 é o chute conservador
-# (KV f16 híbrido + ~2.8GB de pesos na GPU + compute). Primeiro boot: observar VRAM;
-# subir -ngl/ctx aos poucos. Se OOM: baixar -ngl 24 ou ctx 8192. Smoke pendente.
+# Variante -MTP: inclui draft head (+0.2 GiB, inerte sem --spec-type); flags MTP ligados
+# por padrão (default CUDA do vendor: n-max 3, p-min 0.1; ~1.5-1.8x decode; head deixa
+# prefill um pouco mais lento — se o prefill pesar, testar BONSAI_SPECULATIVE=0-equivalente
+# = remover os 3 flags --spec-*). Dono reportou decode lento vs inkling no arquivo plain.
+# MEDIDO 24/nov/2026 (sweep MTP, ctx 16384, prompt ~737 tok, RTX 3050 6GB):
+# ngl 32 -> prefill 155 t/s, decode 4.43 (acc 59%) | ngl 36 -> 170 / 5.42 (acc 65%) | ngl 38 -> 177 / 5.49 (acc 57%)
+# ngl 40 e 44: CUDA OOM no load. Escolhido -ngl 36 (36->38 é ~+1% e come a margem).
+# Se OOM no boot com desktop pesado: baixar pra 32/28. -ngl é o único dial; ctx 262K nativo exigiria KV offload.
 # Sampling vendor (thinking/xhigh default): temp 1.0 / top_p 0.95 / top_k 20 / min_p 0.
 # Tools nativas; reasoning xhigh default (medium disponível). Visão: NÃO nesta lane
 # (mmproj-Q8_0 629MB não baixado; se quiser visão, baixar e adicionar --mmproj).
 # Contexto nativo 262K — aqui 16K até medir.
   bonsai-2-5-27b:
-    name: Bonsai 2.5 27B (PTQ1_0)
-    description: PrismML Ternary Bonsai 2.5 27B — ternary 1.76 bpw agentic model (Qwen3.8-27B base, hybrid attention). FP16-level tool calling (77.2 avg vs 77.7 FP16), 90% of FP16 agentic coding. PTQ1_0 packing via PrismML fork; NOT smoke-tested on this box.
+    name: Bonsai 2.5 27B (MTP)
+    description: PrismML Ternary Bonsai 2.5 27B — ternary 1.76 bpw agentic model (Qwen3.8-27B base, hybrid attention) com MTP draft head embutido (speculative decoding ligado). FP16-level tool calling (77.2 avg vs 77.7 FP16), 90% of FP16 agentic coding. PTQ1_0-MTP via PrismML fork; NOT smoke-tested on this box.
     cmd: '${prism2_llama_server} --port ${PORT}
 
-      --model ${models_dir}/bonsai-2.5-27b/Ternary-Bonsai-2.5-27B-PTQ1_0.gguf
+      --model ${models_dir}/bonsai-2.5-27b/Ternary-Bonsai-2.5-27B-PTQ1_0-mtp.gguf
 
       --jinja
 
@@ -1214,9 +1219,15 @@ models:
 
       --ctx-size 16384
 
-      -ngl 32
+      -ngl 36
 
       --flash-attn on
+
+      --spec-type draft-mtp
+
+      --spec-draft-n-max 3
+
+      --spec-draft-p-min 0.1
 
       --temp 1.0
 
@@ -1247,10 +1258,10 @@ models:
       reranker: false
       context: 16384
     metadata:
-      size: ~5.99 GB (PTQ1_0)
+      size: ~6.23 GB (PTQ1_0-MTP)
       context: 16384
       vram_usage: "~5-5.5 GB estimado @32 layers + ctx 16K (medir; NÃO testado)"
-      source: prism-ml/Ternary-Bonsai-2.5-27B-GGUF (PTQ1_0, sha256 929560ec9d37cf3cadd4b00cc87b51c570082a628dd830b4692dc0b2ed18dbbe, conferido 24/nov/2026)
+      source: prism-ml/Ternary-Bonsai-2.5-27B-GGUF (PTQ1_0-MTP; sha256 e0fc5f3d47b9c926d52677d303b19df356a2376614b3e1cb9973865fc04ca431 conferido 24/nov/2026) — packing PTQ1_0 + draft head embutido
       kv_cache: f16
       features:
         completion: true
@@ -1264,11 +1275,11 @@ models:
       architecture: qwen35
       parameters: 27360000000
       context_length: 262144
-      quantization: PTQ1_0
+      quantization: PTQ1_0-MTP
       reasoningEfforts:
         'medium': 'medium'
         'xhigh': 'xhigh'
-      note: 'NÃO TESTADO (24/nov/2026) — lane preparada sem GPU. Fork PrismML b12178 (CUDA sm_86). Benchmarks oficiais (paper): tool-calling avg 77.2 (τ2 82.0, τ3 73.9, BFCL v4 67.2, AppWorld 90.5), agentic coding 54.2 avg (TB2.1 60.1, SWE-bench V 75.6, DeepSWE 27.0), geral 82.1. NÃO há comparação publicada vs Ornith 9B / Inkling 2 Mini. 262K ctx nativo; aqui 16K até medir. PTQ1_0 > PQ2_0 (5.99 vs 7.25 GB) > Q2_0 (7.67GB, roda no mainline/ik stock). -ngl 32 é chute conservador (6GB); subir/baixar conforme VRAM real no 1º boot. Fora do matrix; lane por id direto. MTP draft head existe (variante _mtp, +240MB) — não baixado.'
+      note: 'NÃO TESTADO (24/nov/2026) — lane preparada sem GPU. Fork PrismML b12178 (CUDA sm_86). Benchmarks oficiais (paper): tool-calling avg 77.2 (τ2 82.0, τ3 73.9, BFCL v4 67.2, AppWorld 90.5), agentic coding 54.2 avg (TB2.1 60.1, SWE-bench V 75.6, DeepSWE 27.0), geral 82.1. NÃO há comparação publicada vs Ornith 9B / Inkling 2 Mini. 262K ctx nativo; aqui 16K até medir. -MTP ligado por default (flags --spec-type draft-mtp --spec-draft-n-max 3 --spec-draft-p-min 0.1, defaults CUDA do vendor; head também é o arquivo — drop-in p/ o plain). Decode esperado 1.5-1.8x sobre o plain. Prefill um pouco mais lento com draft (desligar = remover os 3 flags --spec-*). -ngl 36 medido 24/nov (36=seguro; 38 passa raspando, 40+ OOM). Fora do matrix; lane por id direto.'
   d1-2b:
     name: Liquid d1-2B
     description: "System One decision model da LiquidAI (2B, familia lfm3, com encoder de visao). Serves POST /v1/systemone com respostas tipadas (choice/noul/score + probabilities). Substituto em teste do d1-3b (seletor de LoRA do diffuse) e candidato a juiz do laya-snake. CPU-only."

@@ -7,9 +7,10 @@
 # por padrão (default CUDA do vendor: n-max 3, p-min 0.1; ~1.5-1.8x decode; head deixa
 # prefill um pouco mais lento — se o prefill pesar, testar BONSAI_SPECULATIVE=0-equivalente
 # = remover os 3 flags --spec-*). Dono reportou decode lento vs inkling no arquivo plain.
-# ATENÇÃO: NÃO cabe inteiro na RTX 3050 6GB. -ngl 32 + ctx 16384 é o chute conservador
-# (KV f16 híbrido + ~2.8GB de pesos na GPU + compute). Primeiro boot: observar VRAM;
-# subir -ngl/ctx aos poucos. Se OOM: baixar -ngl 24 ou ctx 8192. Smoke pendente.
+# MEDIDO 24/nov/2026 (sweep MTP, ctx 16384, prompt ~737 tok, RTX 3050 6GB):
+# ngl 32 -> prefill 155 t/s, decode 4.43 (acc 59%) | ngl 36 -> 170 / 5.42 (acc 65%) | ngl 38 -> 177 / 5.49 (acc 57%)
+# ngl 40 e 44: CUDA OOM no load. Escolhido -ngl 36 (36->38 é ~+1% e come a margem).
+# Se OOM no boot com desktop pesado: baixar pra 32/28. -ngl é o único dial; ctx 262K nativo exigiria KV offload.
 # Sampling vendor (thinking/xhigh default): temp 1.0 / top_p 0.95 / top_k 20 / min_p 0.
 # Tools nativas; reasoning xhigh default (medium disponível). Visão: NÃO nesta lane
 # (mmproj-Q8_0 629MB não baixado; se quiser visão, baixar e adicionar --mmproj).
@@ -27,7 +28,7 @@ bonsai-2-5-27b:
 
     --ctx-size 16384
 
-    -ngl 32
+    -ngl 36
 
     --flash-attn on
 
@@ -94,5 +95,5 @@ bonsai-2-5-27b:
       -MTP ligado por default (flags --spec-type draft-mtp --spec-draft-n-max 3 --spec-draft-p-min 0.1,
       defaults CUDA do vendor; head também é o arquivo — drop-in p/ o plain). Decode esperado 1.5-1.8x
       sobre o plain. Prefill um pouco mais lento com draft (desligar = remover os 3 flags --spec-*).
-      -ngl 32 é chute conservador (6GB); subir/baixar conforme VRAM real no 1º boot.
+      -ngl 36 medido 24/nov (36=seguro; 38 passa raspando, 40+ OOM).
       Fora do matrix; lane por id direto.'
