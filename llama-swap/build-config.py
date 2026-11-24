@@ -68,7 +68,7 @@ ORIGINAL_ORDER = [
     "gemma4-e2b",            # ✅
     "lfm2.5-1.2b",           # ✅
     "spark-x2.6-4b",        # ✅ upstream (arch spark2_5), 131K @88,7% — 24/out
-    "raon-1-nano",          # ✅ fork KRAFTON (arch raon1nano, híbrido RDA+MLA) — 11/nov
+    "raon-1-nano",          # ✅ ik_llama (arch raon1nano nativa, PR #2903) — ik desde 24/nov
     "groot-19b",   # 15/nov — qwen35moe 19B-A3B (GrootTeam), MiniPlus IsValorum; cafe -cmoe + MTP embed
     "groot-19b-fast", # fast ik do mesmo GGUF (-cmoe, MTP embed, hadamard; alvo 262K; fora dos sets)
     # "nemotron-bolt-e4b",  # APOSENTADO 31/10/2026 (dono) — _disabled/ + HELPER; re-download unsloth UD-Q4_K_XL

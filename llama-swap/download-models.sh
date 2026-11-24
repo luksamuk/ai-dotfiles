@@ -22,7 +22,7 @@
 #   lfm2.5-vl-450m-extract - LFM2.5-VL-450M-Extract Q4_K_M (0.22 GB) + mmproj F16 - ultra-light structured extraction (JSON)
 #   [REMOVED] lfm2.5-1.2b — superseded by LFM2.5-8B-A1B, disabled May 2026
 #   lfm2.5-2.6b           - LFM2.5-2.6B Q6_K (~2.22 GB) - dense hybrid, agentic RL, on-device, 128K ctx
-#   raon-1-nano          - KRAFTON Raon-1 nano Q4_K_M (~2.08 GB) - dense RDA+MLA híbrido, fork vendor raon1nano
+#   raon-1-nano          - KRAFTON Raon-1 nano Q4_K_M (~2.08 GB) - dense RDA+MLA híbrido, arch raon1nano (ik_llama)
 #   qwen2.5-coder-1.5b-pollard - Qwen2.5-Coder-1.5B-Instruct Pollard IQ4_XS (~824 MB) - FIM, imatrix, CPU-only
 #   [APOSENTADO 12/nov/2026] bonsai-27b — _disabled/ + epitaph; GGUFs preservados
 #   openbonsai-qwen3.5-9b - webbrain-one PTQ1_0 ternary 9B (~2.0 GB), OpenBonsai framework, cafe backend

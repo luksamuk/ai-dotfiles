@@ -5,9 +5,9 @@
 # Strata 0.2.20: funcionou a 3 t/s @93% VRAM (veredicto do dono: way above paygrade).
 # Nota: quant unsloth = BASE da TMLab (NAO abliterated; refusals ativos).
 # -------------------------------------------
-# INKLING-2-MINI - llama.cpp upstream (why: UNICO backend com inkling2_loop -
-# PR ggml-org #32694 mergeado 21/nov/2026; ik issue #2211 fechada sem impl,
-# cafe sem rebase desde 04/11 - ambos ainda NAO trazem a arch).
+# INKLING-2-MINI - backend ik_llama.cpp (inkling2_loop completo no main:
+# PR ik #2967 mergeado 22/nov + follow-ups #2971-#2984; upstream ggml-org tambem tem;
+# cafe ainda sem a arch em 24/nov).
 # Looped MoE TML: 24 blocos (os 12 centrais rodam 3x = 48 apps/token),
 # 128 experts / 8 ativos, ctx nativo 1,048,576. head_dim 96 (2304/24) NAO e
 # multiplo de 64 -> sem attn_rot -> KV q8_0/q8_0 (regra da casa, exige FA).
@@ -94,4 +94,4 @@ inkling-2-mini:
       'medium': 'medium'
       'high': 'high'
       'xhigh': 'xhigh'
-    note: "Lane de teste do dono, 21/nov. Quant NanoPlus text-only do IsValorum: 0 tensors de visao e 0 nextn, portanto sem mmproj e sem draft. Arch inkling2_loop mergeada no vanilla pelo PR upstream 32694. Samplers do vendor TML. Gate real de frota segue ik/cafe, esta lane e vanilla e exclusiva no solver. Template tem reasoning_effort de none a max e float 0 a 0.99. Probe de tools PASSOU no fio da swap em 21/nov: finish_reason tool_calls com get_weather e argumentos validos — capabilities.tools true. Backend IK desde 22/11 (PR ik #2967 MERGEADO — 1993+ LOC de runtime inkling2_loop, merged pelo ikawrakow mesmo dia). O bug op_offload (sched_copy_experts copiava 4.7GB de experts p/ CUDA mesmo com ngl 0) e EXCLUSIVO do upstream/cafe — no ik, o mecanismo e outro (-cmoe + defer/prefetch-experts). KV host via -nkvo NAO se aplica ao ik (v vocabulario diferente); o KV usa --swa-compress no ik p/ o cache gigante do inkling. Visao ATIVA: mmproj-Inkling-2-Mini-Q8_0 (0.32 GiB) do proprio repo Abliterated (21/11); existe tambem NanoPlus-Abliterated 10.23 GiB com o mesmo mmproj, opcao de headroom se a VRAM apertar."
+    note: "Lane de teste do dono, 21/nov. Quant NanoPlus text-only do IsValorum: 0 tensors de visao e 0 nextn, portanto sem mmproj e sem draft. Arch inkling2_loop mergeada no vanilla pelo PR upstream 32694. Samplers do vendor TML. Gate real de frota segue ik/cafe, esta lane e vanilla e exclusiva no solver. Template tem reasoning_effort de none a max e float 0 a 0.99. Probe de tools PASSOU no fio da swap em 21/nov: finish_reason tool_calls com get_weather e argumentos validos — capabilities.tools true. Backend IK desde 22/11 (PR ik #2967 MERGEADO — 1993+ LOC de runtime inkling2_loop, merged pelo ikawrakow mesmo dia). O bug op_offload (sched_copy_experts copiava 4.7GB de experts p/ CUDA mesmo com ngl 0) e EXCLUSIVO do upstream/cafe — no ik, o mecanismo e outro (-cmoe + defer/prefetch-experts). KV host via -nkvo NAO se aplica ao ik (v vocabulario diferente); o KV usa --swa-compress no ik p/ o cache gigante do inkling. Visao ATIVA: mmproj-Inkling-2-Mini-Q8_0 (0.32 GiB) do proprio repo Abliterated (21/11); existe tambem NanoPlus-Abliterated 10.23 GiB com o mesmo mmproj, opcao de headroom se a VRAM apertar. 24/nov: ik main rebaseado com os 4 commits do dia (#2977/#2979/#2982/#2984, todos inkling2 perf); suporte inkling2 100% mergeado no upstream ik (nada pendente); binario rebuildado do merge main+house-patches."

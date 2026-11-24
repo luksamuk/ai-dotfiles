@@ -4,7 +4,7 @@ raon-1-nano:
     parameters (3.1B counting the per-layer embedding table) and a 262,144-token context
     window, built for faithful Korean and English chat. Designed for assistant work,
     it keeps conversational context and calls tools natively.
-  cmd: '${krafton_llama_server} --port ${PORT}
+  cmd: '${ik_llama_server} --port ${PORT}
 
     --model ${models_dir}/raon-1-nano/raon-1-nano-Q4_K_M.gguf
 
@@ -46,8 +46,8 @@ raon-1-nano:
   metadata:
     size: ~2.08 GB (Q4_K_M)
     context: 262144
-    vram_usage: '~3.9 GB VRAM'
-    source: KRAFTON/Raon-1-nano-gguf (GGUF oficial do vendor, Q4_K_M non-MTP; fork raon-1-nano-preview commit 4d72ff0)
+    vram_usage: '~4.4 GB VRAM'
+    source: KRAFTON/Raon-1-nano-gguf (GGUF oficial do vendor, Q4_K_M non-MTP, sha256 verificado vs SHA256SUMS 24/nov/2026); backend ik_llama.cpp main a3d748c9 (arch raon1nano nativa, PR #2903 + fix #2962)
     kv_cache: f16
     features:
       completion: true
@@ -67,12 +67,11 @@ raon-1-nano:
       a diferença é a tabela de per-layer embedding 256d do vocab 259.840). Hibrido:
       18 layers Raon Delta Attention (gated delta-rule, estado fixo — família DeltaNet)
       + 6 Gated MLA layers (kv_lora_rank 512, ~7 KiB/token total). Raon-mHC 4 streams,
-      NoPE, tied embeddings. Fork proprio do vendor (github.com/krafton-ai/llama.cpp,
-      branch raon-1-nano-preview): upstream NÃO TEM o arch (PR comunitário #31107 fechado
-      sem merge, era só o mini 30B), ik_llama tem só o raon1 (mini), nada de nano.
-      MTP vendor existe (variante _MTP dos GGUFs, commit nextn do fork) — house decision:
-      non-MTP primeiro, A/B de MTP depois se o dono pedir (dense = MTP pode acelerar,
-      decisão conservadora só se aplicava a MoE).
+      NoPE, tied embeddings. Backend ik_llama.cpp main 894f64ed (24/nov, com #2977/#2979/#2982/#2984) (arch raon1nano nativa:
+      PR #2903, fix CUDA/MTP #2962, MLA opts #2799/#2804, SiTU fundido #2763). mainline e
+      café NÃO têm o arch (PR comunitário #31107 fechado sem merge). MTP suportado pelo ik —
+      house decision segue: non-MTP primeiro, A/B de MTP (GGUF _MTP) pendente de go do dono.
+      Migrado do fork krafton (raon-1-nano-preview b1-4d72ff0) em 24/nov/2026. Smoke ik 24/nov: load OK @262144 ctx, VRAM 4453 MiB; prefill 1888 t/s @4434 tok; decode 78.1 t/s; TTFT 0.15s warm; tool calling OK via swap (get_weather, finish=tool_calls); VRAM +~500MiB vs fork (3937→4453).
      _sampling vendor (card "Sampling parameters"): thinking é DEFAULT e desabilitar
       não é recomendado — plain handle pins enable_thinking true, [handle-think-EXTINTO 12/nov/2026] fica como
       alias compatível com os mesmos pins. General: temp 0.1 + presence_penalty 1.5;
