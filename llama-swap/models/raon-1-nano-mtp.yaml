@@ -1,0 +1,78 @@
+# LANE NOVA — NÃO TESTADA. Não promover a produção sem smoke com o dono.
+# MTP (Multi-Token Prediction) embutido: o GGUF _MTP carrega o nextn head (~55M)
+# dentro do arquivo — NÃO usar -md/--model-draft (isso é pra draft externo).
+# ik suporta desde #2903 (arch) + #2962 (MTP drafts no CUDA, ubatch>1).
+# Baseline non-MTP (24/nov/2026): 78.1 t/s decode, 1888 t/s prefill @4434 tok,
+# TTFT 0.15s, VRAM 4453 MiB @262144 ctx. Objetivo do MTP: subir decode via
+# speculative decoding (aceitação esperada alta em texto previsível; medir).
+# VRAM extra vs non-MTP: só o draft head + buffers (~+100-300 MiB, a medir).
+# ATENÇÃO: GPU fica cheia com o inkling carregado — smoke exige a lane livre.
+raon-1-nano-mtp:
+  name: Raon-1 nano (MTP)
+  description: KRAFTON's Raon-1 nano com speculative decoding MTP embutido (1 draft head, 55M). Mesmo 1.5B efetivo / 3.1B total do base; indicado pra quem quer latência de decode menor. NÃO TESTADO — aguarda go do dono.
+  cmd: '${ik_llama_server} --port ${PORT}
+
+    --model ${models_dir}/raon-1-nano/raon-1-nano-Q4_K_M_MTP.gguf
+
+    --jinja
+
+    --spec-type mtp:n_max=1,p_min=0.0
+
+    --parallel 1
+
+    --ctx-size 262144
+
+    -ngl 99
+
+    --flash-attn on
+
+    --temp 0.1
+
+    --presence-penalty 1.5
+
+    --metrics
+
+    '
+  filters:
+    stripParams: temperature, top_p, top_k
+    setParamsByID:
+      ${MODEL_ID}:
+        chat_template_kwargs:
+          enable_thinking: true
+        temperature: 0.1
+        presence_penalty: 1.5
+  ttl: 0
+  health_check_timeout: 300
+  capabilities:
+    in:
+    - text
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 262144
+  metadata:
+    size: ~2.15 GB (Q4_K_M_MTP)
+    context: 262144
+    vram_usage: "~4.5 GB VRAM estimado (medir)"
+    source: KRAFTON/Raon-1-nano-gguf (GGUF oficial _MTP, Q4_K_M; sha256 f83a4f119a5099b72a2cd354de9eeae8f90f6e301680b38628b8fd01221d7b5c verificado 24/nov/2026)
+    kv_cache: f16
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: raon1nano
+    parameters: 3100000000
+    context_length: 262144
+    embedding_length: 1536
+    quantization: Q4_K_M_MTP
+    note: 'NÃO TESTADA (24/nov/2026). Spec decode: --spec-type mtp:n_max=1,p_min=0.0, draft embutido
+      no GGUF (sem -md). ik: arch raon1nano desde #2903 + MTP CUDA fix #2962. Smoke pendente:
+      boot @262144, tool calling, decode t/s vs 78.1 baseline, aceitação do draft, VRAM real.
+      NÃO adicionar ao matrix do footer antes do smoke — lane só por id direto.
+      Promoção p/ default do raon-1-nano depende de A/B medido (régua da casa).'

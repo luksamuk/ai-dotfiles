@@ -69,7 +69,7 @@ matrix:
     # PR #29416 (M-RoPE rope.section_order): cafe v0.76 (13/Out) mergeou; ik ainda sem
     # mcv1: minicpm-v-4.7-1b  # APOSENTADO 21/out 2026 — GGUF deletado, fragment em _removed/; o 35b (mcv35) fica
     # mcv35: minicpm-v-4.7-35b  # APOSENTADO 21/nov/2026 (dono: "com honras") — GGUF isvalorum 13G deletado, fragment _disabled/; restore: re-download APEX-I-NanoPlus-V2.1 + mmproj Q8_0
-    lfm24: lfm2.5-24b-a2b  # REATIVADO 17/nov (I-NanoPlus 8.15GB, lane unica ik; a cafe saiu; LiveClaw 48.09 > qwen3.6-35b 38.19)
+    # lfm24: lfm2.5-24b-a2b  # APOSENTADO 24/nov/2026 (dono, "com honras" — 2ª aposentadoria; reativado 17/nov sem serventia recorrente) — fragment _disabled/, GGUF APEX-I-NanoPlus deletado (~7.6G); restore: fragment + re-download IsValorum/LFM2.5-24B-A2B-APEX-I-NanoPlus-GGUF (imatrix m9ter1a)
     # lfm24f: (deletado 17/nov — a -fast ik virou o default unico)
     # Novos donos da fleet pós-laguna (21/out 2026) — papéis do sprach
     # orn35: APOSENTADA 16/11/2026 (dono) — ornith-1.5-35b-heretic em _disabled/, GGUFs deletados; papel code do sprach sem dono por enquanto
@@ -156,15 +156,15 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(lfm24 | spc | fct) & (lfmcol | eg2) & pkstt"  # 12/nov: nemb saiu (REMOVIDO, dono)  # 11/11: +mcv47 (aposentado 21/nov, GGUF removido — mcv47 retirado do set) | 10/11: +spc/fct (portal cores publicados no HF) | 12/11: tq3d aposentado
+    small_vision: "(spc | fct) & (lfmcol | eg2) & pkstt"  # 24/nov: lfm24 aposentado (dono) | 12/nov: nemb saiu (REMOVIDO, dono)  # 11/11: +mcv47 (aposentado 21/nov, GGUF removido — mcv47 retirado do set) | 10/11: +spc/fct (portal cores publicados no HF) | 12/11: tq3d aposentado
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(lfm24 | sp26 | raon | lfm317 | spc | fct) & (lfmcol | eg2) & qpfim & pkstt"  # 12/nov: nemb saiu (REMOVIDO, dono)  # 31/10: twp + nbe4 aposentados | 09/11: +nemb | 10/11: +spc/fct | 11/11: +raon
+    small_embed: "(sp26 | raon | lfm317 | spc | fct) & (lfmcol | eg2) & qpfim & pkstt"  # 24/nov: lfm24 aposentado  # 12/nov: nemb saiu (REMOVIDO, dono)  # 31/10: twp + nbe4 aposentados | 09/11: +nemb | 10/11: +spc/fct | 11/11: +raon
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "(lfm24 | sp26 | raon | lfm317 | spc | fct) & pkstt"  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados | 10/11: +spc/fct | 11/11: +raon
+    small_only: "(sp26 | raon | lfm317 | spc | fct) & pkstt"  # 24/nov: lfm24 aposentado  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados | 10/11: +spc/fct | 11/11: +raon
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
@@ -244,7 +244,7 @@ matrix:
     # q4x: 2  # disabled Sep 20 2026
     # lfm8: 2  # REMOVED Sep 10 2026
     # lfm26: 2  # APOSENTADO 21/out 2026
-    lfm24: 4  # REATIVADO 17/nov — I-NanoPlus 8.15GB (reload mais barato que o I-Compact 11G de 31/out, que era 6)
+    # lfm24: 4  # APOSENTADO 24/nov/2026 (dono) — lane removida, peso sai
     # orn35: 9  # APOSENTADA 16/11/2026
     # orn35f: 9  # idem
     # qw38c: 9  # APOSENTADO 15/nov/2026 (dono)
