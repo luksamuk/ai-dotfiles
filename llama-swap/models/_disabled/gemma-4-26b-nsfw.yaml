@@ -1,3 +1,15 @@
+# APOSENTADO 2026-11-25 (dono) — ENHANCER DA FROTA DE ENHANCE MIGRADO
+# PARA cyber-tiel-coder (diffuse, h3, ltx, musica). Motivo da aposentadoria:
+# dono aposentou o modelo (bundle fora de cena; GGUFs removidos do disco).
+# Restaurar: este arquivo sai de _disabled/$MODEL + `python3 build-config.py`.
+# GGUFs: repo mradermacher/gemma-4-26B-A4B-it-heretic-NSFW-i1-GGUF
+#   (i1-IQ4_XS; mmproj-Q8_0, ~14 GB total)
+#   hf download mradermacher/gemma-4-26B-A4B-it-heretic-NSFW-i1-GGUF \
+#     gemma-4-26B-A4B-it-heretic-NSFW.i1-IQ4_XS.gguf \
+#     gemma-4-26B-A4B-it-heretic-NSFW.mmproj-Q8_0.gguf \
+#     --local-dir ~/.llama-models/gemma4-heretic-nsfw
+# Base: google/gemma-4-26B-A4B-it (heretic v2.2, yukiworks, Heretic NSFW).
+# Smoke 16/11/2026: tools PASS, vision PASS, ctx 262144 PASS. ~23-27 t/s @ ~4.8GB VRAM.
 gemma-4-26b-nsfw:
   name: Gemma 4 26B-A4B (Heretic NSFW)
   description: 'Gemma-4-26B-A4B-it decensorado via Heretic v2.2 com ARA otimizada em dataset focalizado de conteúdo adulto

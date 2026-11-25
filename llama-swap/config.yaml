@@ -301,114 +301,6 @@ models:
       embedding_length: 1536
       quantization: Q4_K_M
       note: 'Arch raon1nano (KRAFTON Raon-1): dense "MoE-to-dense" — 3.1B total (1.5B efetivo; a diferença é a tabela de per-layer embedding 256d do vocab 259.840). Hibrido: 18 layers Raon Delta Attention (gated delta-rule, estado fixo — família DeltaNet) + 6 Gated MLA layers (kv_lora_rank 512, ~7 KiB/token total). Raon-mHC 4 streams, NoPE, tied embeddings. Backend ik_llama.cpp main 894f64ed (24/nov, com #2977/#2979/#2982/#2984) (arch raon1nano nativa: PR #2903, fix CUDA/MTP #2962, MLA opts #2799/#2804, SiTU fundido #2763). mainline e café NÃO têm o arch (PR comunitário #31107 fechado sem merge). MTP suportado pelo ik — house decision segue: non-MTP primeiro, A/B de MTP (GGUF _MTP) pendente de go do dono. Migrado do fork krafton (raon-1-nano-preview b1-4d72ff0) em 24/nov/2026. Smoke ik 24/nov: load OK @262144 ctx, VRAM 4453 MiB; prefill 1888 t/s @4434 tok; decode 78.1 t/s; TTFT 0.15s warm; tool calling OK via swap (get_weather, finish=tool_calls); VRAM +~500MiB vs fork (3937→4453). _sampling vendor (card "Sampling parameters"): thinking é DEFAULT e desabilitar não é recomendado — plain handle pins enable_thinking true, [handle-think-EXTINTO 12/nov/2026] fica como alias compatível com os mesmos pins. General: temp 0.1 + presence_penalty 1.5; Agentic/code: temp 1.0 + pp 0 (não há terceiro handle por política da frota — quem usa agentic sobrescreve no cliente). _Smoke 11/nov/2026 (swap, fork krafton-llama.cpp b1-4d72ff0, shallow clone raon-1-nano-preview): 77.5 t/s decode (swap timings @ctx 262144, Q4_K_M ngl 99), prompt 674 t/s; VRAM 3937/6144 MiB (64%) com o residido carregado no ctx total — sobra ~2.2GB. Tool calling OK no 1º request (finish=tool_calls, get_weather com city correto). Reasoning: template emite thinking por default; reasoning_content presente nos 3 smokes. CLI CPU-only: 29.6 t/s. GGUF header: arch raon1nano, ctx 262144, pre=raon, NFC. MTP vendor existe (variante _MTP dos GGUF, nextn fork commit 11/nov) —      Snake 1-shot via Pi (11/nov/2026, prompt idêntico pro spark, sem ciclo externo de bugfix): entregou 2 arquivos em ~50s (effort medium), mas o HTML quebra no PARSE (ternário do keydown sem valor final) e o draw multiplica cell 2x (snake em pixels xcell) → tela preta, jogo inoperante. Autorevisão: zero — velocidade sem verificação. A/B de speedup pendente de go do dono. V2 (bug report externo): consertou o parse (if/else) + as unidades do draw (part.x direto); Parse OK — MAS o jogo ficou turn-based: move() só roda em keydown/click, sem setInterval/rAF, speed decorativo. Gameplay v2 pendente do dono.'
-  groot-19b:
-  # CONSOLIDACAO 17/nov/2026 (dono): a -fast ik vira o default (id de produto, sem
-  # sufixo; decreto de handle unico) e a lane cafe sai. Mesmos pesos MiniPlus V2.1
-  # (as duas lanes compartilhavam os arquivos — nada de disco mudou).
-  # Receita ik = a do -fast; ALVO ctx nativo 262144 (SMOKE OBRIGATORIO: o antigo
-  # UD estourava o draft no prefill longo, 502/exit; MiniPlus promete aguentar —
-  # escada 200000 -> 131072 se o boot/prefilly longo estourar, ver epitaph no git).
-  # MTP EMBED (blk.40.nextn) --spec-type mtp:n_max=1,p_min=0.0: autor NAO
-  # benchmarkou o spec — medir aceitacao no fio; degradou, remover o --spec-type.
-  # KV q4_0 + hadamard (proven na familia qwen35moe/ik). defer/prefetch = mmap.
-  # Vision mmproj q8_0 (0.61 GB) nao re-avaliada pos-quant; --no-mmproj-offload.
-  # Always-think (classe Fara): SEM reasoningEfforts.
-  # Samplers OFICIAIS do card ("precise coding"): 0.6/0.95/20/min-p 0.0/rep 1.0.
-    name: Groot-19B-A3B
-    description: GrootTeam 19B-A3B MoE distill (qwen35moe), uncensored multipurpose agent; MiniPlus quant, MTP-capable, 262K native context, vision optional.
-    cmd: '${ik_llama_server} --port ${PORT}
-
-      --model ${models_dir}/groot-19b/Groot-19B-A3B-261023.APEX-I-MiniPlus-V2.1.gguf
-
-      --mmproj ${models_dir}/groot-19b/mmproj-GrootTeam_Groot-19B-A3B-261023-q8_0.gguf
-
-      --no-mmproj-offload
-
-      --jinja
-
-      -ngl 99
-
-      -cmoe
-
-      --spec-type mtp:n_max=1,p_min=0.0
-
-      --ctx-size 262144
-
-      --temp 0.6
-
-      --top-p 0.95
-
-      --top-k 20
-
-      --min-p 0.0
-
-      --repeat-penalty 1.0
-
-      --reasoning-budget 8192
-
-      --parallel 1
-
-      --parallel-tool-calls
-
-      --cache-type-k ${large_cache_k}
-
-      --cache-type-v ${large_cache_v}
-
-      --k-cache-hadamard
-
-      --v-cache-hadamard
-
-      --flash-attn auto
-
-      --defer-experts
-
-      --prefetch-experts
-
-      -b 512
-
-      -ub 128
-
-      --metrics
-
-      '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: true
-    ttl: 0
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - text
-        - image
-      out:
-        - text
-      tools: true
-      reranker: false
-      context: 262144
-    metadata:
-      size: ~8.42 GB + 0.61 GiB mmproj q8_0
-      context: 262144
-      vram_usage: "~3.9 GB VRAM + ~11.5 GB RAM (medido 17/nov com lfm24 evictada; EffectCraft 75 MB fora do swap)"
-      source: IsValorum/Groot-19B-A3B-261023-APEX-I-MiniPlus-V2.1-GGUF (base GrootTeam/Groot-19B-A3B-261023)
-      kv_cache: q4_0/q4_0 + hadamard
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: qwen35moe
-      parameters: 19000000000
-      context_length: 262144
-      embedding_length: 2048
-      quantization: APEX-I-MiniPlus
-      note: 'Card sem auditoria de PPL (base self-reportado da GrootTeam; scaling method undisclosed). Sem reasoningEfforts (always-think). CONSOLIDACAO 17/nov: lane cafe (-cmoe, 200K, spec draft-mtp) deletada; a -fast ik vira o id unico. 262144 VALIDADO 17/nov no fio: boot 9s, prompt 44K @185 t/s SEM 502/estouro de draft (modo de falha do UD nao reproduziu), decode 22-32 t/s, reasoning presente. VRAM/RAM medidos no boot+prefill 44K.'
   qwen2.5-coder-1.5b-pollard:
     name: Qwen2.5 Coder 1.5B Pollard
     description: Qwen2.5-Coder-1.5B-Instruct memory-fit for code completion. FIM native, CPU-only serving with zero VRAM.
@@ -1042,7 +934,7 @@ models:
       context: 131072
     metadata:
       size: "~0.81 GB backbone (Q8_0) + ~0.90 GB mmproj (F16) + ~0.33 GB DSpark draft (Q8_0)"
-      context: "64K-128K (fit dinamico; nativo 262K)"
+      context: 131072
       vram_usage: "~3.5 GB (backbone + mmproj + draft + cache f16)"
       source: "openbmb/MiniCPM-OCR-1.0-gguf + openbmb/MiniCPM-OCR-1.0-DSpark-gguf"
       kv_cache: f16
@@ -1353,93 +1245,6 @@ models:
         ativa, conforme doutrina.
         decision da casa; GPU 0.10s e CPU = mesmo resultado bit a bit). Pesos em
         ~/.llama-models/lfm3-d1-2b/ (backbone + mmproj Q8_0).
-  gemma-4-26b-nsfw:
-    name: Gemma 4 26B-A4B (Heretic NSFW)
-    description: 'Gemma-4-26B-A4B-it decensorado via Heretic v2.2 com ARA otimizada em dataset focalizado de conteúdo adulto (yukiworks; KL 0.0411, refusals 0/100 no classificador do card vs 89/100 do base google/gemma-4-26B-A4B-it). MoE 26B com ~4B ativos por token, served por cafe -cmoe. Capacidades: chat, visão (mmproj Q8_0 em RAM via --no-mmproj-offload), tool calling nativo do template canônico, contexto 262144 nativo com KV q4_0 (medido no smoke 16/11). Papel primário na frota: enhancer de prompt (diffuse/h3/ltx/musica). Uso genérico de chat é suportado. Thinking habilitado por padrão via setParamsByID; o template canônico não expõe escada de effort.'
-    tags:
-      - think
-      - nsfw
-    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
-
-      --model ${models_dir}/gemma4-heretic-nsfw/gemma-4-26B-A4B-it-heretic-NSFW.i1-IQ4_XS.gguf
-
-      --mmproj ${models_dir}/gemma4-heretic-nsfw/gemma-4-26B-A4B-it-heretic-NSFW.mmproj-Q8_0.gguf
-
-      --no-mmproj-offload
-
-      --ctx-size 262144
-
-      --jinja
-
-      --parallel 1
-
-      --cache-type-k q4_0
-
-      --cache-type-v q4_0
-
-      --flash-attn on
-
-      -cmoe
-
-      -ngl 99
-
-      -b 512
-
-      -ub 128
-
-      --temp 0.7
-
-      --top-p 0.95
-
-      --top-k 20
-
-      --min-p ${code_min_p}
-
-      --repeat-penalty ${code_repeat_penalty}
-
-      --spec-type none
-
-      --metrics '
-    filters:
-      stripParams: temperature, top_p
-      setParamsByID:
-        ${MODEL_ID}:
-          chat_template_kwargs:
-            enable_thinking: true
-    ttl: 0
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - text
-        - image
-      out:
-        - text
-      tools: true
-      reranker: false
-      context: 262144
-    metadata:
-      size: ~13.0 GB (i1-IQ4_XS, imatrix) + 0.81 GB mmproj-Q8_0
-      context: 262144
-      vram_usage: "MEDIDO 16/11 smoke: ~4.8 GB VRAM @32K; @262K total no sistema 5352 MiB (mmproj em RAM); decode ~23 t/s; load 6s (page cache quente); KV q4_0 30 layers"
-      source: 'mradermacher/gemma-4-26B-A4B-it-heretic-NSFW-i1-GGUF (i1-IQ4_XS); decensor base yukiworks/gemma-4-26B-A4B-it-heretic-NSFW (Heretic v2.2, dataset NSFW próprio, KL 0.0411 vs refusals 0/100 do classificador)'
-      base_model: google/gemma-4-26B-A4B-it
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: gemma4moe
-      parameters: 26000000000
-      active_parameters: 4000000000
-      context_length: 262144
-      embedding_length: 2816
-      quantization: i1-IQ4_XS
-      note: 'Espaço veio da aposentadoria com honras do Ornith 1.5 35B (16/11/2026, fragments em _disabled/). Template canônico Gemma 4 EMBUTIDO no GGUF (sem --chat-template-file): controla thinking via kwarg enable_thinking (default OFF do lado do template — setParamsByID força true) e injeta canal vazio <|channel>thought quando OFF. SEM escada de effort: template não tem kwarg reasoning_effort e o dono determinou NÃO limitar --reasoning-budget (decisão 16/11) — think livre, o tempo é o custo declarado. NÃO declarar reasoningEfforts nas capabilities (lição do Fara no minicpm: duplicaria o off no menu). mmproj Q8_0 (0.81 GB) SERVIDO em RAM (--no-mmproj-offload, preced ctiel); dono não vê NSFW, mmproj é p/ papel geral. SMOKE capa completa 16/11: TOOLS PASS (get_weather → tool_calls city=Curitiba limpa, think on); VISION PASS (PIL PNG deterministica: red circle upper-left + blue square lower-right, descrição exata, 6s ViT na CPU); CTX 262144 PASS (native max, total sistema 5352 MiB, decode ~23 t/s, finish=stop com think 1285 chars + content limpo @max_tokens 1024; o content vazio de um probe @cap 64 era think burn, não contexto). RAW /completion sem template sai junk (sampling da lane é pra chat, não FIM) — usar chat sempre. PAPEL PRIMÁRIO: enhancer da frota de enhance (diffuse/h3/ltx/musica), in-chain ANTES do render — sem modelo paralelo no llama-swap durante chain (regra da casa). Piso de qualidade do quant: i1-IQ4_XS é piso, se a prosa vier evasiva subir p/ i1-Q4_K_M 15.6 GB (67 GB livres comportam). SMOKE 16/11 (célula única bare-server port 8899): header limpo (658/658 tensores, gemma4moe, 128e/8a, template canônico com enable_thinking, SEM reasoning_effort). PASSOU: think OFF no chat_template com sysprompt REAL do enhancer v2 (4402 chars = header 547 + _NSFW_V2_BASE) entregou contrato flat 3 campos + vocab blunt (cock) + speaker ids + anti-speech; probe bruto idem (dick, cunt, ejaculate); think ON + max_tokens 1200 = content VAZIO (think queima ~1900 tok; o cap era do PROBE, não da chain) — a chain real do h3 CLI manda max_tokens 65536 (sem budget na prática) e os 1024/2048 do minimax_h3_handler são vestigiais no caminho remote (jamais enviados). Decisão do dono (16/11): budget NENHUM na chain — já é o estado real; o cap 512 do CLI é do VLM describe (outro papel, think off deliberado c/ nota 31/08), intocado. t/s probe1: 27.1. Falha de probe = fragmento pra _disabled/ sem drama (precedente orn-fast).'
   glm-ocr:
     name: GLM-OCR
     description: GLM's vision-language OCR model for complex document understanding and text extraction.
@@ -2291,7 +2096,7 @@ matrix:
     # orn35: APOSENTADA 16/11/2026 (dono) — ornith-1.5-35b-heretic em _disabled/, GGUFs deletados; papel code do sprach sem dono por enquanto
     # orn35f: idem (lane fast ik da mesma aposentadoria)
     ctiel: cyber-tiel-coder  # ATIVO 15/nov — Cyber-Tiel-Coder 35B (peculiar-ragdoll, finetune cybersec da ornith-1.5 abliterated) + MiniPlus IsValorum; MTP draft externo
-    groot: groot-19b  # CONSOLIDADO 17/nov — lane unica ik @262K (a cafe 200K saiu; a -fast virou o id); MiniPlus 8.42 GB
+    # groot: groot-19b  # APOSENTADO 24/nov/2026 (dono: "com honras; pode ser que volte") — GGUFs deletados p/ liberar disco; epitaph + re-download no fragment _disabled/groot-19b.yaml
     # grootf: (integrado no groot 17/nov — a -fast vira o id unico; ver epitaph no git)
     # qw38c: qwen3.8-flash-coder  # APOSENTADO 15/nov/2026 (dono) — reprovado no gate agentic (doom-loop de path, R73k reasoning queimado; think-on code vazio) — fragment _disabled/ + epitaph; GGUF deletado
     # qw38cf: qwen3.8-flash-coder-fast  # aposentado junto (fast ik; tool parser resolvido pelo sharp, o fix permanece)
@@ -2400,7 +2205,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(ctiel | groot) & (lfmcol | eg2) & qpfim & pkstt"  # 21/nov: -mcv35 (aposentado c/ honras, GGUF fora — heavy volta a 2) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4 | 15/nov: +ctiel 5o pesado +groot (troca do raonmini aposentado) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)
+    heavy: "(ctiel) & (lfmcol | eg2) & qpfim & pkstt"  # 24/nov: -groot (aposentado c/ honras — GGUFs fora; heavy volta a 1) | 21/nov: -mcv35 (aposentado c/ honras, GGUF fora — heavy volta a 2) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4 | 15/nov: +ctiel 5o pesado +groot (troca do raonmini aposentado) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -2499,6 +2304,6 @@ matrix:
     sp26: 2  # 3,54 GB denso — reload barato
     raon: 2  # 2,08 GB denso — reload barato
     # raonmini: 6  # APOSENTADO 15/nov
-    groot: 9  # 19B-A3B MoE (8.4 GB + mmproj) — reload medio-alto, classe orn35-menor
+    # groot: 9  # APOSENTADO 24/nov/2026 (dono, "pode ser que volte") — GGUFs deletados; ver groot-19b.yaml em _disabled/
     # grootf: 9  # integrado no groot 17/nov (a -fast vira o id unico)
     # nbe4: 3  # APOSENTADO 31/10/2026 junto do modelo (5,06 GB denso — reload medio)
