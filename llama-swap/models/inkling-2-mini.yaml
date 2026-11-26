@@ -1,5 +1,9 @@
 # APOSENTADO COM HONRAS 25/nov/2026 (dono — doeu, mas foi). Pesos deletados; lane unlisted, fragment + receita intactos.
-# REATIVADA 26/nov/2026 (dono): UD-IQ2_XXS Mainline_Support (8.49 GB) no ik com a receita do A/B/C do dia —
+# QUANT SWAP 26/nov (dono): UD-IQ2_XXS -> GSQ-RCO Q2_K_XL (ISTA-DASLab, 9.12 GB) — mesmo t/s da UD (pp 101 vs 98,
+# tg 15.3 empate, N=5) e 98% de recovery em benchmarks reais vs ~90.6% top-1 da UD. Drafter dspark: NO GO no ik
+# (suporte inkling-dspark so existe no build mix do unsloth; ik tem o path so pra DSV4) — revisitar quando o ik
+# mergear o suporte; drafters Q8_0 (2 layouts) já em ~/.llama-models/inkling-2-mini-unsloth/ e modelo GSQ IQ3_S
+# também já baixado como alternativa de qualidade. Original:
 # prefill 98.1 t/s / decode 15.3 t/s (N=5, prompt 4.6k, CV<=2.6%) = 2.2x o vanilla 24/nov no prefill, decode empatando.
 # Override do tweet do analogalok: k=6 experts (trade +0.20 PPL alegado pelo autor, NAO re-medido na casa).
 # mmproj continua FORA: inkling2v nao carrega no ik (vision false). Restaurar visao = re-visitar apos ik/inkling2_clip mergear.
@@ -48,7 +52,7 @@ inkling-2-mini:
   description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/inkling-2-mini-unsloth/Mainline_Support/Inkling-2-Mini-UD-IQ2_XXS.gguf
+    --model ${models_dir}/inkling-gsq-rco/Inkling-2-Mini-GSQ-RCO-Q2_K_XL.gguf
     --jinja
     -ngl 99
     -cmoe
@@ -76,9 +80,9 @@ inkling-2-mini:
     reranker: false
     context: 49152
   metadata:
-    size: "~8.49 GB"
+    size: "~9.12 GB"
     context: 49152
-    source: "unsloth/Inkling-2-Mini-GGUF Mainline_Support UD-IQ2_XXS (base thinkingmachines/Inkling-2-Mini)"
+    source: "ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF Q2_K_XL (base thinkingmachines/Inkling-2-Mini)"
     kv_cache: q4_0/q4_0
     features:
       completion: true
@@ -93,7 +97,7 @@ inkling-2-mini:
     parameters: 26200000000
     context_length: 49152
     embedding_length: 2304
-    quantization: UD-IQ2_XXS
+    quantization: GSQ-RCO Q2_K_XL
     reasoningEfforts:
       'off': 'none'
       'low': 'low'

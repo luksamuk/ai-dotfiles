@@ -144,8 +144,8 @@ declare -A MODELS=(
   ["cyber-tiel-coder"]="IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF Cyber-Tiel-Coder-35B-A3B.APEX-I-MiniPlus-V2.1.gguf cyber-tiel-coder/Cyber-Tiel-Coder-35B-A3B.APEX-I-MiniPlus-V2.1.gguf"
   ["cyber-tiel-coder-mtp"]="IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF mtp-Cyber-Tiel-Coder-35B-A3B.gguf cyber-tiel-coder/mtp-Cyber-Tiel-Coder-35B-A3B.gguf"
   ["cyber-tiel-coder-mmproj"]="IsValorum/Cyber-Tiel-Coder-35B-A3B-APEX-I-MiniPlus-V2.1-GGUF mmproj-Q8_0.gguf cyber-tiel-coder/mmproj-Q8_0.gguf"
-  # Inkling-2-Mini (Thinking Machines, looped MoE) — UD-IQ2_XXS unsloth Mainline_Support (mainline inkling2_loop), text-only no ik (mmproj inkling2v nao carrega)
-  ["inkling-2-mini"]="unsloth/Inkling-2-Mini-GGUF Mainline_Support/Inkling-2-Mini-UD-IQ2_XXS.gguf_file inkling-2-mini-unsloth/Mainline_Support/Inkling-2-Mini-UD-IQ2_XXS.gguf"
+  # Inkling-2-Mini (Thinking Machines, looped MoE) — GSQ-RCO Q2_K_XL ISTA-DASLab (standard GGUF, >=b12611), text-only no ik
+  ["inkling-2-mini"]="ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF Inkling-2-Mini-GSQ-RCO-Q2_K_XL.gguf inkling-gsq-rco/Inkling-2-Mini-GSQ-RCO-Q2_K_XL.gguf"
   # inkling-2-mini-mmproj aposentado junto (lane ik text-only; mmproj inkling2v nao carrega no ik)
   # Groot-19B-A3B (GrootTeam distill, qwen35moe) + MiniPlus IsValorum — revival 15/nov da lane aposentada
   ["groot-19b"]="IsValorum/Groot-19B-A3B-261023-APEX-I-MiniPlus-V2.1-GGUF Groot-19B-A3B-261023.APEX-I-MiniPlus-V2.1.gguf groot-19b/Groot-19B-A3B-261023.APEX-I-MiniPlus-V2.1.gguf"
@@ -465,7 +465,7 @@ show_sizes() {
   echo "  [APOSENTADO 15/nov/2026] qwen3.8-flash-coder — see _disabled/ epitaph"
   echo "  groot-19b          ~8.42 GB + 0.61 mmproj (MiniPlus) - distill GrootTeam 19B-A3B, agent MoE (revival)"
   echo "  cyber-tiel-coder    ~14.75 GB + 1.48 MTP + 0.61 mmproj (APEX-I-MiniPlus) - finetune cybersec da ornith-1.5 (peculiar-ragdoll), lanes cafe/ik"
-  echo "  inkling-2-mini      ~8.49 GB (UD-IQ2_XXS unsloth Mainline_Support) - looped MoE TML Inkling-2-Mini, ik text-only"
+  echo "  inkling-2-mini      ~9.12 GB (GSQ-RCO Q2_K_XL ISTA-DASLab) - looped MoE TML Inkling-2-Mini, ik text-only"
   echo "  kat-coder-v2.5-dev ~16.50 GB  (APEX Compact) - Post-trained Qwen 3.6 35B MoE, SOTA agentic coding (SWE-bench 69.4)"
   echo "  agents-a1-35b      ~16.50 GB  (APEX I-Compact) - 35B MoE, long-horizon search + tool calling"
   echo "  glm-4.7-flash      ~14.60 GB  (APEX I-Compact) - 30B MoE MLA, smallest 35B-class, fast"
