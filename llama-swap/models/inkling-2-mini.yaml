@@ -1,3 +1,8 @@
+# APOSENTADO COM HONRAS 25/nov/2026 (dono — doeu, mas foi). Pesos deletados; lane unlisted, fragment + receita intactos.
+# REATIVADA 26/nov/2026 (dono): UD-IQ2_XXS Mainline_Support (8.49 GB) no ik com a receita do A/B/C do dia —
+# prefill 98.1 t/s / decode 15.3 t/s (N=5, prompt 4.6k, CV<=2.6%) = 2.2x o vanilla 24/nov no prefill, decode empatando.
+# Override do tweet do analogalok: k=6 experts (trade +0.20 PPL alegado pelo autor, NAO re-medido na casa).
+# mmproj continua FORA: inkling2v nao carrega no ik (vision false). Restaurar visao = re-visitar apos ik/inkling2_clip mergear.
 # REATIVADA 22/nov 23:05 (dono): teste continuo headless com quant Unsloth UD-IQ1_S
 # (7.76G, Mainline_Support/ — layout mainline inkling2_loop; o root da unsloth so abre
 # no build MIX deles). Requer PR #32704 (scale-pass do loop) — mergeado no cafe.
@@ -43,11 +48,12 @@ inkling-2-mini:
   description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
   cmd: |
     ${ik_llama_server} --port ${PORT}
-    --model ${models_dir}/inkling-2-mini-unsloth/Inkling-2-Mini-UD-IQ1_S.gguf
+    --model ${models_dir}/inkling-2-mini-unsloth/Mainline_Support/Inkling-2-Mini-UD-IQ2_XXS.gguf
     --jinja
     -ngl 99
     -cmoe
     --defer-experts --prefetch-experts
+    --override-kv inkling2_loop.expert_used_count=int:6
     --ctx-size 49152
     -b 512 -ub 128
     --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0.0
@@ -70,9 +76,9 @@ inkling-2-mini:
     reranker: false
     context: 49152
   metadata:
-    size: "~7.76 GB"
+    size: "~8.49 GB"
     context: 49152
-    source: "unsloth/Inkling-2-Mini-GGUF Mainline_Support UD-IQ1_S (base thinkingmachines/Inkling-2-Mini), mmproj-F16 unsloth"
+    source: "unsloth/Inkling-2-Mini-GGUF Mainline_Support UD-IQ2_XXS (base thinkingmachines/Inkling-2-Mini)"
     kv_cache: q4_0/q4_0
     features:
       completion: true
@@ -87,7 +93,7 @@ inkling-2-mini:
     parameters: 26200000000
     context_length: 49152
     embedding_length: 2304
-    quantization: UD-IQ1_S
+    quantization: UD-IQ2_XXS
     reasoningEfforts:
       'off': 'none'
       'low': 'low'

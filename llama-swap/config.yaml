@@ -238,6 +238,8 @@ models:
       reasoningEfforts:
         low: low
         high: high
+# APOSENTADO COM HONRAS 25/nov/2026 (dono) — pesos deletados; lane unlisted, fragment + receita intactos.
+# Motivo: decisão do dono (sem retorno no uso). Restaurar = re-download do GGUF (KRAFTON/Raon-1-nano-gguf) + remover 'unlisted: true'.
   raon-1-nano:
     name: Raon-1 nano
     description: KRAFTON's Raon-1 nano is a dense conversational model with 1.5B effective parameters (3.1B counting the per-layer embedding table) and a 262,144-token context window, built for faithful Korean and English chat. Designed for assistant work, it keeps conversational context and calls tools natively.
@@ -272,6 +274,7 @@ models:
           presence_penalty: 1.5
     ttl: 0
     health_check_timeout: 300
+    unlisted: true
     capabilities:
       in:
         - text
@@ -494,6 +497,11 @@ models:
         medium: medium
         xhigh: xhigh
       note: 'RECEITA FINAL ik (smoke 15/nov): SEM --fit — o fit do ik morre no DRAFT (1840 MiB no device que nao cabe pos-main; e ignora -ngld 0). Receita: -ngl 99 + -cmoe + -ngld 0 (draft inteiro na CPU; aceitacao 90-75%). Escada ik FECHADA: 131K (3.48GB) -> 200K (3.87GB) -> 262K NATIVO (4.26GB; 25.8 t/s decode, prefill 144 t/s, MTP 75%). Fast vence o teto de ctx do cafe (262144 = KV buffer OOM no cafe). Hadamard provado. 17x23=391 CORRETO e zero typos de path nos probes. Lane fora dos sets (padrao qwen-fast, evict 9). 16/nov: escada do TEMPLATE auditada por header (default medium; none/off desliga thinking; minimal/low=low; high/xhigh/max/ultracode/extreme=xhigh) e DECLARACAO PODADA pela doutrina 1 fio = 1 alias (dono, 16/nov): menu mostra SO os nomes de fio com comportamento DISTINTO (off/low/medium/xhigh) — high, minimal e max foram removidos do mapping porque colapsam em low/xhigh; o template segue aceitando esses kwarg no fio (inofensivo por API direta).'
+# APOSENTADO COM HONRAS 25/nov/2026 (dono — doeu, mas foi). Pesos deletados; lane unlisted, fragment + receita intactos.
+# REATIVADA 26/nov/2026 (dono): UD-IQ2_XXS Mainline_Support (8.49 GB) no ik com a receita do A/B/C do dia —
+# prefill 98.1 t/s / decode 15.3 t/s (N=5, prompt 4.6k, CV<=2.6%) = 2.2x o vanilla 24/nov no prefill, decode empatando.
+# Override do tweet do analogalok: k=6 experts (trade +0.20 PPL alegado pelo autor, NAO re-medido na casa).
+# mmproj continua FORA: inkling2v nao carrega no ik (vision false). Restaurar visao = re-visitar apos ik/inkling2_clip mergear.
 # REATIVADA 22/nov 23:05 (dono): teste continuo headless com quant Unsloth UD-IQ1_S
 # (7.76G, Mainline_Support/ — layout mainline inkling2_loop; o root da unsloth so abre
 # no build MIX deles). Requer PR #32704 (scale-pass do loop) — mergeado no cafe.
@@ -539,11 +547,12 @@ models:
     description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
     cmd: |
       ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/inkling-2-mini-unsloth/Inkling-2-Mini-UD-IQ1_S.gguf
+      --model ${models_dir}/inkling-2-mini-unsloth/Mainline_Support/Inkling-2-Mini-UD-IQ2_XXS.gguf
       --jinja
       -ngl 99
       -cmoe
       --defer-experts --prefetch-experts
+      --override-kv inkling2_loop.expert_used_count=int:6
       --ctx-size 49152
       -b 512 -ub 128
       --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0.0
@@ -565,9 +574,9 @@ models:
       reranker: false
       context: 49152
     metadata:
-      size: "~7.76 GB"
+      size: "~8.49 GB"
       context: 49152
-      source: "unsloth/Inkling-2-Mini-GGUF Mainline_Support UD-IQ1_S (base thinkingmachines/Inkling-2-Mini), mmproj-F16 unsloth"
+      source: "unsloth/Inkling-2-Mini-GGUF Mainline_Support UD-IQ2_XXS (base thinkingmachines/Inkling-2-Mini)"
       kv_cache: q4_0/q4_0
       features:
         completion: true
@@ -582,7 +591,7 @@ models:
       parameters: 26200000000
       context_length: 49152
       embedding_length: 2304
-      quantization: UD-IQ1_S
+      quantization: UD-IQ2_XXS
       reasoningEfforts:
         'off': 'none'
         'low': 'low'
@@ -754,6 +763,8 @@ models:
         image: false
       note: 'vram detalhe: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only) | Text-steered: queries ''task: {tarefa} | query:'' e docs ''title: {t} | text: {conteudo}'' (title: none se sem titulo); media SEM prefixo. Multimodal via mmproj (vision 212 tensors + audio 751 tensors no mmproj). MRL: truncate + re-normalizar client-side (768/512/256 perde pouco; 128 valida antes). Smoke 06/10/2026: MRR=1.0 retrieval 8q pt-BR, STS spearman 0.94 (par-a-par com nemotron-3-embed, 23ms vs 104ms query CPU). mmproj carrega vision+audio: aceita imagem/audio como input (vision tag = input, image false = nao gera). Lançamento 06/10/2026, GGUF oficial ggml-org; build 2796+ do llama.cpp necessita (arch gemma-embedding2, PR #30054).'
       context: 8192
+# APOSENTADO COM HONRAS 25/nov/2026 (dono — publicado no HF, sai de cena). Pesos deletados; lane unlisted, fragment + receita intactos.
+# Restaurar = re-download (luksamuk/portal-core-space-GGUF) + remover 'unlisted: true'.
 # -------------------------------------------
 # PORTAL CORE: SPACE — Portal 2 corrupted personality core
 # LFM2.5-350M base + LoRA v7b degenerate fine-tune
@@ -792,6 +803,7 @@ models:
           top_p: 0.9
     health_check_timeout: 300
     ttl: 60
+    unlisted: true
     capabilities:
       in:
         - 'text'
@@ -820,6 +832,8 @@ models:
       context_length: 16384
       quantization: Q8_0
       note: "Reativado 10/nov a pedido do dono (publicado no HF; v7b = 100% PASS no judge). Samplers do card: temp 1.0 / top_p 0.9 / top_k 40. Degenerate POR DESIGN - nunca remover temp alto, ele e o comportamento esperado."
+# APOSENTADO COM HONRAS 25/nov/2026 (dono — publicado no HF, sai de cena). Pesos deletados; lane unlisted, fragment + receita intactos.
+# Restaurar = re-download (luksamuk/portal-core-fact-GGUF) + remover 'unlisted: true'.
 # -------------------------------------------
 # PORTAL CORE: FACT — Portal 2 corrupted personality core
 # LFM2.5-1.2B-Instruct base + LoRA v8 degenerate fine-tune
@@ -857,6 +871,7 @@ models:
           top_p: 0.9
     health_check_timeout: 300
     ttl: 60
+    unlisted: true
     capabilities:
       in:
         - 'text'
@@ -1099,7 +1114,7 @@ models:
 # Sampling vendor (thinking/xhigh): temp 1.0 / top_p 0.95 / top_k 20 / min_p 0.
 # Tools nativas. Visão: NÃO nesta lane (mmproj-Q8_0 629MB não baixado).
 # Nativo 262K de contexto; 32K é o teto prático nesta GPU.
-  bonsai-2-5-27b:
+  bonsai-2.5-27b:
     name: Bonsai 2.5 27B (PTQ1_0)
     description: PrismML Ternary Bonsai 2.5 27B — ternary 1.76 bpw agentic model (Qwen3.8-27B base, hybrid attention). FP16-level tool calling (77.2 avg vs 77.7 FP16), 90% of FP16 agentic coding. PTQ1_0 packing via PrismML fork; 32K context, KV q4_0.
     cmd: '${prism2_llama_server} --port ${PORT}
@@ -1245,11 +1260,114 @@ models:
         ativa, conforme doutrina.
         decision da casa; GPU 0.10s e CPU = mesmo resultado bit a bit). Pesos em
         ~/.llama-models/lfm3-d1-2b/ (backbone + mmproj Q8_0).
+# RESTAURADO 2026-11-25 (dono) — voltou como ENHANCER de diffuse e h3 (only),
+# UNLISTED (nao aparece nas listagens; nsfw). ltx/musica seguem cyber-tiel-coder.
+# (Tinha sido aposentada na manha de 25/11 com o bundle fora de cena; dono voltou
+# atras no mesmo dia. GGUFs re-baixados do HF.)
+# GGUFs: repo mradermacher/gemma-4-26B-A4B-it-heretic-NSFW-i1-GGUF
+#   (i1-IQ4_XS; mmproj-Q8_0, ~14 GB total)
+#   hf download mradermacher/gemma-4-26B-A4B-it-heretic-NSFW-i1-GGUF \
+#     gemma-4-26B-A4B-it-heretic-NSFW.i1-IQ4_XS.gguf --local-dir ~/.llama-models/gemma4-heretic-nsfw
+#   hf download mradermacher/gemma-4-26B-A4B-it-heretic-NSFW-GGUF \
+#     gemma-4-26B-A4B-it-heretic-NSFW.mmproj-Q8_0.gguf --local-dir ~/.llama-models/gemma4-heretic-nsfw
+# Base: google/gemma-4-26B-A4B-it (heretic v2.2, yukiworks, Heretic NSFW).
+# Smoke 16/11/2026: tools PASS, vision PASS, ctx 262144 PASS. ~23-27 t/s @ ~4.8GB VRAM.
+  gemma-4-26b-nsfw:
+    name: Gemma 4 26B-A4B (Heretic NSFW)
+    description: 'Gemma-4-26B-A4B-it decensorado via Heretic v2.2 com ARA otimizada em dataset focalizado de conteúdo adulto (yukiworks; KL 0.0411, refusals 0/100 no classificador do card vs 89/100 do base google/gemma-4-26B-A4B-it). MoE 26B com ~4B ativos por token, served por cafe -cmoe. Capacidades: chat, visão (mmproj Q8_0 em RAM via --no-mmproj-offload), tool calling nativo do template canônico, contexto 262144 nativo com KV q4_0 (medido no smoke 16/11). Papel primário na frota: enhancer de prompt (diffuse/h3/ltx/musica). Uso genérico de chat é suportado. Thinking habilitado por padrão via setParamsByID; o template canônico não expõe escada de effort.'
+    tags:
+      - think
+      - nsfw
+    cmd: 'env LD_LIBRARY_PATH=${env.HOME}/git/cafe-llama.cpp/build/bin ${cafe_server} --port ${PORT}
+
+      --model ${models_dir}/gemma4-heretic-nsfw/gemma-4-26B-A4B-it-heretic-NSFW.i1-IQ4_XS.gguf
+
+      --mmproj ${models_dir}/gemma4-heretic-nsfw/gemma-4-26B-A4B-it-heretic-NSFW.mmproj-Q8_0.gguf
+
+      --no-mmproj-offload
+
+      --ctx-size 262144
+
+      --jinja
+
+      --parallel 1
+
+      --cache-type-k q4_0
+
+      --cache-type-v q4_0
+
+      --flash-attn on
+
+      -cmoe
+
+      -ngl 99
+
+      -b 512
+
+      -ub 128
+
+      --temp 0.7
+
+      --top-p 0.95
+
+      --top-k 20
+
+      --min-p ${code_min_p}
+
+      --repeat-penalty ${code_repeat_penalty}
+
+      --spec-type none
+
+      --metrics '
+    filters:
+      stripParams: temperature, top_p
+      setParamsByID:
+        ${MODEL_ID}:
+          chat_template_kwargs:
+            enable_thinking: true
+    ttl: 0
+    health_check_timeout: 900
+    unlisted: true
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 262144
+    metadata:
+      size: ~13.0 GB (i1-IQ4_XS, imatrix) + 0.81 GB mmproj-Q8_0
+      context: 262144
+      vram_usage: "MEDIDO 16/11 smoke: ~4.8 GB VRAM @32K; @262K total no sistema 5352 MiB (mmproj em RAM); decode ~23 t/s; load 6s (page cache quente); KV q4_0 30 layers"
+      source: 'mradermacher/gemma-4-26B-A4B-it-heretic-NSFW-i1-GGUF (i1-IQ4_XS); decensor base yukiworks/gemma-4-26B-A4B-it-heretic-NSFW (Heretic v2.2, dataset NSFW próprio, KL 0.0411 vs refusals 0/100 do classificador)'
+      base_model: google/gemma-4-26B-A4B-it
+      kv_cache: q4_0/q4_0
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: gemma4moe
+      parameters: 26000000000
+      active_parameters: 4000000000
+      context_length: 262144
+      embedding_length: 2816
+      quantization: i1-IQ4_XS
+      note: 'Espaço veio da aposentadoria com honras do Ornith 1.5 35B (16/11/2026, fragments em _disabled/). Template canônico Gemma 4 EMBUTIDO no GGUF (sem --chat-template-file): controla thinking via kwarg enable_thinking (default OFF do lado do template — setParamsByID força true) e injeta canal vazio <|channel>thought quando OFF. SEM escada de effort: template não tem kwarg reasoning_effort e o dono determinou NÃO limitar --reasoning-budget (decisão 16/11) — think livre, o tempo é o custo declarado. NÃO declarar reasoningEfforts nas capabilities (lição do Fara no minicpm: duplicaria o off no menu). mmproj Q8_0 (0.81 GB) SERVIDO em RAM (--no-mmproj-offload, preced ctiel); dono não vê NSFW, mmproj é p/ papel geral. SMOKE capa completa 16/11: TOOLS PASS (get_weather → tool_calls city=Curitiba limpa, think on); VISION PASS (PIL PNG deterministica: red circle upper-left + blue square lower-right, descrição exata, 6s ViT na CPU); CTX 262144 PASS (native max, total sistema 5352 MiB, decode ~23 t/s, finish=stop com think 1285 chars + content limpo @max_tokens 1024; o content vazio de um probe @cap 64 era think burn, não contexto). RAW /completion sem template sai junk (sampling da lane é pra chat, não FIM) — usar chat sempre. PAPEL PRIMÁRIO: enhancer da frota de enhance (diffuse/h3/ltx/musica), in-chain ANTES do render — sem modelo paralelo no llama-swap durante chain (regra da casa). Piso de qualidade do quant: i1-IQ4_XS é piso, se a prosa vier evasiva subir p/ i1-Q4_K_M 15.6 GB (67 GB livres comportam). SMOKE 16/11 (célula única bare-server port 8899): header limpo (658/658 tensores, gemma4moe, 128e/8a, template canônico com enable_thinking, SEM reasoning_effort). PASSOU: think OFF no chat_template com sysprompt REAL do enhancer v2 (4402 chars = header 547 + _NSFW_V2_BASE) entregou contrato flat 3 campos + vocab blunt (cock) + speaker ids + anti-speech; probe bruto idem (dick, cunt, ejaculate); think ON + max_tokens 1200 = content VAZIO (think queima ~1900 tok; o cap era do PROBE, não da chain) — a chain real do h3 CLI manda max_tokens 65536 (sem budget na prática) e os 1024/2048 do minimax_h3_handler são vestigiais no caminho remote (jamais enviados). Decisão do dono (16/11): budget NENHUM na chain — já é o estado real; o cap 512 do CLI é do VLM describe (outro papel, think off deliberado c/ nota 31/08), intocado. t/s probe1: 27.1. Falha de probe = fragmento pra _disabled/ sem drama (precedente orn-fast).'
+# APOSENTADO COM HONRAS 25/nov/2026 (dono — sem uso). Pesos deletados; lane unlisted, fragment + receita intactos.
+# Restaurar = re-download (ggml-org/GLM-OCR-GGUF) + remover 'unlisted: true'.
   glm-ocr:
     name: GLM-OCR
     description: GLM's vision-language OCR model for complex document understanding and text extraction.
     cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/glm-ocr/GLM-OCR-Q8_0.gguf\n--mmproj ${models_dir}/glm-ocr/mmproj-GLM-OCR-Q8_0.gguf\n--jinja\n--media-path ${media_path}\n--fit on\n--fit-target ${vram_margin}\n--fit-ctx ${small_model_min_ctx}\n--ctx-size ${small_model_max_ctx}\n--temp 0.1\n--top-p 0.9\n--top-k 40\n--repeat-penalty 1.0\n--reasoning off\n--cache-type-k f16\n--cache-type-v f16\n--flash-attn on\n--spec-type ngram-mod\n  --spec-ngram-mod-n-match 24\n  --spec-ngram-mod-n-min 48\n  --spec-ngram-mod-n-max 64\n  --metrics\n"
     ttl: 60
+    unlisted: true
     capabilities:
       in:
         - text
@@ -2063,8 +2181,8 @@ matrix:
     # twp: twil-lm3-pro  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER; restore: re-download webAI Q6_K + mv fragment
     # Portal 2 personality cores (degenerate, Q8_0, LFM2.5) — publicados no HF 10/nov
     # adventure continua fora (sem judge formal; staging local em ~/git/ai/portal-cores)
-    spc: portal-core-space
-    fct: portal-core-fact
+    # spc: portal-core-space  # APOSENTADO 25/nov/2026 (dono — publicado no HF) — pesos deletados; fragment unlisted, receita intacta
+    # fct: portal-core-fact  # APOSENTADO 25/nov/2026 (dono — publicado no HF) — pesos deletados; fragment unlisted, receita intacta
     # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
     qpfim: qwen2.5-coder-1.5b-pollard  # reativado 16/out — FIM CPU-only (k2fim/k2p/k2 _disabled: GGUFs deletados no aperto SSD; restore: mv _disabled → models + vars)
@@ -2079,7 +2197,7 @@ matrix:
     # man1: manaca-1b-instruct  # DISABLED Oct 3 2026 - GGUF deleted (pedido user); fragment em _disabled/; restore: descomentar + mv fragment
     # inst: instella-moe-16b  # disabled
     # Vision
-    ocr: glm-ocr
+    # ocr: glm-ocr  # APOSENTADO 25/nov/2026 (dono — sem uso) — pesos deletados; fragment unlisted, receita intacta
     # MiniCPM-OCR 1.0 (OpenBMB out/2026, arch qwen35) — doc parse (text/table/formula)
     # DSpark draft (arch dflash) acoplado no cmd (nao carrega standalone)
     # mocr: minicpm-ocr-1.0  # _disabled 02/nov 2026 (pesos off disk; fragment em _disabled/)
@@ -2165,7 +2283,7 @@ matrix:
     # Uma pergunta fixa (prompt no template do GGUF), rota /v1/systemone.
     # mojev: minicpm-ocr-jev  # _disabled 02/nov 2026 (pesos off disk; fragment em _disabled/)
     sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
-    raon: raon-1-nano  # KRAFTON dense 1.5B-efetivo (arch raon1nano, hibrido RDA+MLA), ik_llama, 262K nativo — migrado 24/nov
+    # raon: raon-1-nano  # APOSENTADO 25/nov/2026 (dono) — pesos deletados; fragment unlisted, receita intacta
     # raonmini: raon-1-mini-preview  # APOSENTADO 15/nov/2026 (dono, sem uso) — fragment _disabled/ + pesos fora (16 GB); raon-1-nano permanece
     # saluki27: saluki-27b  # REMOVIDO 12/nov/2026 tarde (dono, orçamento disco p/ H3-Image) — foi reativado hoje de manhã; recovery: fragment _disabled/ + hf download ConwayResearch/Underdog-Saluki-27B-1.0
     # bs2t: bonsai2-27b  # RE-APOSENTADO 12/nov/2026 à noite — degenera em word-salad com system prompt >=4k chars (bissecção provada; git history p/ prova) — PRISML fork fica em ~/git/prismml-eng-llama.cpp
@@ -2177,22 +2295,22 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(spc | fct) & (lfmcol | eg2) & pkstt"  # 24/nov: lfm24 aposentado (dono) | 12/nov: nemb saiu (REMOVIDO, dono)  # 11/11: +mcv47 (aposentado 21/nov, GGUF removido — mcv47 retirado do set) | 10/11: +spc/fct (portal cores publicados no HF) | 12/11: tq3d aposentado
+    # small_vision: "(spc | fct) & (lfmcol | eg2) & pkstt"  # APOSENTADO 25/nov/2026 (dono): spc/fct fora — sem lane vision pequena no set  # 24/nov: lfm24 aposentado (dono) | 12/nov: nemb saiu (REMOVIDO, dono)  # 11/11: +mcv47 (aposentado 21/nov, GGUF removido — mcv47 retirado do set) | 10/11: +spc/fct (portal cores publicados no HF) | 12/11: tq3d aposentado
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(sp26 | raon | lfm317 | spc | fct) & (lfmcol | eg2) & qpfim & pkstt"  # 24/nov: lfm24 aposentado  # 12/nov: nemb saiu (REMOVIDO, dono)  # 31/10: twp + nbe4 aposentados | 09/11: +nemb | 10/11: +spc/fct | 11/11: +raon
+    small_embed: "(sp26 | lfm317) & (lfmcol | eg2) & qpfim & pkstt"  # 25/nov: -raon -spc -fct (aposentados) | 24/nov: lfm24 aposentado  # 12/nov: nemb saiu (REMOVIDO, dono)  # 31/10: twp + nbe4 aposentados | 09/11: +nemb | 10/11: +spc/fct | 11/11: +raon
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "(sp26 | raon | lfm317 | spc | fct) & pkstt"  # 24/nov: lfm24 aposentado  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados | 10/11: +spc/fct | 11/11: +raon
+    small_only: "(sp26 | lfm317) & pkstt"  # 25/nov: -raon -spc -fct (aposentados) | 24/nov: lfm24 aposentado  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados | 10/11: +spc/fct | 11/11: +raon
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr"  # mcv35 aposentado 21/nov (GGUF fora); mocr _disabled 02/nov 2026
-    vision_embed: "ocr & (lfmcol | eg2) & pkstt"  # mcv35 aposentado 21/nov; mocr _disabled 02/nov 2026
+    # vision_only: "ocr"  # APOSENTADO 25/nov/2026: glm-ocr aposentado (dono); mcv35 aposentado 21/nov; mocr _disabled 02/nov — sem lane vision no set
+    # vision_embed: "ocr & (lfmcol | eg2) & pkstt"  # APOSENTADO 25/nov/2026 junto com glm-ocr
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -2255,7 +2373,7 @@ matrix:
     # ASR do Kilo: CPU-only, 0 VRAM, ~1 s pra subir. Custo 1 = e o primeiro
     # a ser evictado se ainda assim houver conflito de coexistencia.
     pkstt: 1
-    ocr: 3
+    # ocr: 3  # APOSENTADO 25/nov/2026 (dono)
     # mocr: 3  # _disabled 02/nov 2026
     # mojev: 1  # _disabled 02/nov 2026
     # qwvl: 3  # REMOVED Sep 10 2026
@@ -2284,8 +2402,8 @@ matrix:
     # eq4: 3  # REMOVED Sep 10 2026
     qpfim: 1
     lfm317: 2  # 1.7B Q8 ~2GB GPU
-    spc: 1   # Portal core Space 362MB — reload segundos
-    fct: 2   # Portal core Fact 1.2GB — reload rápido
+    # spc: 1   # APOSENTADO 25/nov/2026 (dono)
+    # fct: 2   # APOSENTADO 25/nov/2026 (dono)
     # sn9: 2  # retirado junto 17/nov
     # sn9v: 4  # RETIRADO junto
     # g12p: 3  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%)
@@ -2302,7 +2420,7 @@ matrix:
     # laya: 1  # DESINSTALADO 20/out/2026
     # julia: 1  # APOSENTADO 11/nov/2026 (dono: snake em refactor)
     sp26: 2  # 3,54 GB denso — reload barato
-    raon: 2  # 2,08 GB denso — reload barato
+    # raon: 2  # APOSENTADO 25/nov/2026 (dono)
     # raonmini: 6  # APOSENTADO 15/nov
     # groot: 9  # APOSENTADO 24/nov/2026 (dono, "pode ser que volte") — GGUFs deletados; ver groot-19b.yaml em _disabled/
     # grootf: 9  # integrado no groot 17/nov (a -fast vira o id unico)

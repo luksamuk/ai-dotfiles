@@ -68,7 +68,7 @@ ORIGINAL_ORDER = [
     "gemma4-e2b",            # ✅
     "lfm2.5-1.2b",           # ✅
     "spark-x2.6-4b",        # ✅ upstream (arch spark2_5), 131K @88,7% — 24/out
-    "raon-1-nano",          # ✅ ik_llama (arch raon1nano nativa, PR #2903) — ik desde 24/nov
+    "raon-1-nano",          # APOSENTADA 25/nov/2026 (dono) — unlisted, pesos fora; fragment intacto
     "groot-19b",   # 15/nov — qwen35moe 19B-A3B (GrootTeam), MiniPlus IsValorum; cafe -cmoe + MTP embed
     "groot-19b-fast", # fast ik do mesmo GGUF (-cmoe, MTP embed, hadamard; alvo 262K; fora dos sets)
     # "nemotron-bolt-e4b",  # APOSENTADO 31/10/2026 (dono) — _disabled/ + HELPER; re-download unsloth UD-Q4_K_XL
@@ -85,7 +85,7 @@ ORIGINAL_ORDER = [
     "ornith-1.5-35b",        # ✅ Self-improving RL MoE (task generation + scaffold + rollouts)
     "cyber-tiel-coder",      # 15/nov: qwen35moe finetune da linhagem ornith-1.5 (peculiar-ragdoll cybersec) + MiniPlus IsValorum; cafe -cmoe + MTP draft (-md) + fast ik
     "cyber-tiel-coder-fast", # lane fast ik proposital (--fit, MTP draft externo, hadamard; 131K; fora dos sets)
-    "inkling-2-mini",        # 21/nov: inkling2_loop (looped MoE TML 26B-A3.4B), vanilla — PR ggml-org #32694 mergeado 21/nov; NanoPlus IsValorum text-only 10.2GB; fora dos sets (test lane)
+    "inkling-2-mini",        # REATIVADA 26/nov/2026 (dono): UD-IQ2_XXS Mainline_Support no ik (A/B/C vencedor no prefill)
     # "qwen3.8-flash-coder",        # APOSENTADO 15/nov/2026 (dono) — reprovado no gate agentic (doom-loop, R73k; think-on code vazio); fragment _disabled/ + epitaph; GGUF deletado
     # "qwen3.8-flash-coder-fast",   # aposentado junto
     # "bonsai-27b",            # REMOVED Sep 20 2026 — GGUF deleted; user nunca usa; fragment em _disabled/
@@ -119,8 +119,8 @@ ORIGINAL_ORDER = [
     "lfm2.5-colbert-350m",      # ✅ Reranker (CPU-only, Q8_0)
     # "nemotron-3-embed-1b",      # ✅ Embedding (CPU-only, Q8_0, converted from BF16) — REMOVIDO 12/nov/2026 (dono); fragment em _removed/, GGUF deletado
     "embeddinggemma-2",         # ✅ Embedding multimodal (CPU-only, Q8_0, texto+img+audio, 768d MRL, 06/10/2026)
-    "portal-core-space",        # ✅ Portal 2 Space Core v7b degenerate (Q8_0, LFM2.5-350M) — reativado 10/nov após publish HF
-    "portal-core-fact",         # ✅ Portal 2 Fact Core v8 degenerate (Q8_0, LFM2.5-1.2B) — reativado 10/nov após publish HF
+    "portal-core-space",        # APOSENTADO 25/nov/2026 (dono — publicado no HF) — unlisted, pesos fora
+    "portal-core-fact",         # APOSENTADO 25/nov/2026 (dono — publicado no HF) — unlisted, pesos fora
     # Decision models (System One, /v1/systemone #29818; llama-swap routing PENDING #1195)
     # "laya",                   # REMOVED 20/out/2026 — juiz ruído (snake) + seletor 21% (diffuse); julia-1 cobre
     "julia-1",                  # ✅ Juiz leve (ModernBERT 144M BF16)
