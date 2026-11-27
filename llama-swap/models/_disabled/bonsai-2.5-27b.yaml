@@ -16,7 +16,7 @@
 # Sampling vendor (thinking/xhigh): temp 1.0 / top_p 0.95 / top_k 20 / min_p 0.
 # Tools nativas. Visão: NÃO nesta lane (mmproj-Q8_0 629MB não baixado).
 # Nativo 262K de contexto; 32K é o teto prático nesta GPU.
-bonsai-2-5-27b:
+bonsai-2.5-27b:
   name: Bonsai 2.5 27B (PTQ1_0)
   description: PrismML Ternary Bonsai 2.5 27B — ternary 1.76 bpw agentic model (Qwen3.8-27B base, hybrid attention). FP16-level tool calling (77.2 avg vs 77.7 FP16), 90% of FP16 agentic coding. PTQ1_0 packing via PrismML fork; 32K context, KV q4_0.
   cmd: '${prism2_llama_server} --port ${PORT}
