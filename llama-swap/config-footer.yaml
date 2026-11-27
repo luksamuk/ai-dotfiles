@@ -42,8 +42,8 @@ matrix:
     # twp: twil-lm3-pro  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER; restore: re-download webAI Q6_K + mv fragment
     # Portal 2 personality cores (degenerate, Q8_0, LFM2.5) — publicados no HF 10/nov
     # adventure continua fora (sem judge formal; staging local em ~/git/ai/portal-cores)
-    spc: portal-core-space
-    fct: portal-core-fact
+    spc: portal-core-space  # reativado 27/11/2026 (dono) — restore pós-publicação HF (antes: APOSENTADO 25/nov, dono)
+    # fct: portal-core-fact  # APOSENTADO 25/nov/2026 (dono — publicado no HF) — pesos deletados; fragment unlisted, receita intacta
     # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
     qpfim: qwen2.5-coder-1.5b-pollard  # reativado 16/out — FIM CPU-only (k2fim/k2p/k2 _disabled: GGUFs deletados no aperto SSD; restore: mv _disabled → models + vars)
@@ -58,7 +58,7 @@ matrix:
     # man1: manaca-1b-instruct  # DISABLED Oct 3 2026 - GGUF deleted (pedido user); fragment em _disabled/; restore: descomentar + mv fragment
     # inst: instella-moe-16b  # disabled
     # Vision
-    ocr: glm-ocr
+    # ocr: glm-ocr  # APOSENTADO 25/nov/2026 (dono — sem uso) — pesos deletados; fragment unlisted, receita intacta
     # MiniCPM-OCR 1.0 (OpenBMB out/2026, arch qwen35) — doc parse (text/table/formula)
     # DSpark draft (arch dflash) acoplado no cmd (nao carrega standalone)
     # mocr: minicpm-ocr-1.0  # _disabled 02/nov 2026 (pesos off disk; fragment em _disabled/)
@@ -75,7 +75,7 @@ matrix:
     # orn35: APOSENTADA 16/11/2026 (dono) — ornith-1.5-35b-heretic em _disabled/, GGUFs deletados; papel code do sprach sem dono por enquanto
     # orn35f: idem (lane fast ik da mesma aposentadoria)
     ctiel: cyber-tiel-coder  # ATIVO 15/nov — Cyber-Tiel-Coder 35B (peculiar-ragdoll, finetune cybersec da ornith-1.5 abliterated) + MiniPlus IsValorum; MTP draft externo
-    groot: groot-19b  # CONSOLIDADO 17/nov — lane unica ik @262K (a cafe 200K saiu; a -fast virou o id); MiniPlus 8.42 GB
+    # groot: groot-19b  # APOSENTADO 24/nov/2026 (dono: "com honras; pode ser que volte") — GGUFs deletados p/ liberar disco; epitaph + re-download no fragment _disabled/groot-19b.yaml
     # grootf: (integrado no groot 17/nov — a -fast vira o id unico; ver epitaph no git)
     # qw38c: qwen3.8-flash-coder  # APOSENTADO 15/nov/2026 (dono) — reprovado no gate agentic (doom-loop de path, R73k reasoning queimado; think-on code vazio) — fragment _disabled/ + epitaph; GGUF deletado
     # qw38cf: qwen3.8-flash-coder-fast  # aposentado junto (fast ik; tool parser resolvido pelo sharp, o fix permanece)
@@ -129,7 +129,7 @@ matrix:
     pkstt: parakeet-tdt-0.6b-v3
     # Embedding
     # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
-    # lfmemb: lfm2.5-embedding-350m  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER (nome corrigido p/ "LFM2.5 Embedding 350M"); colbert+eg2 cobrem embed
+    lfmemb: lfm2.5-embedding-350m  # reativado 27/11/2026 (dono) — antes: APOSENTADO 31/10/2026 (GGUF deletado, fragment _disabled/ + HELPER); colbert+eg2 cobriam embed
     # nemb: nemotron-3-embed-1b  # REMOVIDO 12/nov/2026 (dono) — peso fora do disco; recovery: conversão manual, receita no header do download-models.sh (REAÇÃO: 09/nov LUC-148/149)
     # Multimodal embedding (Google, 740M, texto+img+audio+video, 768d MRL, Apache 2.0)
     eg2: embeddinggemma-2
@@ -144,7 +144,7 @@ matrix:
     # Uma pergunta fixa (prompt no template do GGUF), rota /v1/systemone.
     # mojev: minicpm-ocr-jev  # _disabled 02/nov 2026 (pesos off disk; fragment em _disabled/)
     sp26: spark-x2.6-4b  # XHToken 4B denso (arch spark2_5), 131K medido em 88,7% — smoke 24/out
-    raon: raon-1-nano  # KRAFTON dense 1.5B-efetivo (arch raon1nano, hibrido RDA+MLA), ik_llama, 262K nativo — migrado 24/nov
+    # raon: raon-1-nano  # APOSENTADO 25/nov/2026 (dono) — pesos deletados; fragment unlisted, receita intacta
     # raonmini: raon-1-mini-preview  # APOSENTADO 15/nov/2026 (dono, sem uso) — fragment _disabled/ + pesos fora (16 GB); raon-1-nano permanece
     # saluki27: saluki-27b  # REMOVIDO 12/nov/2026 tarde (dono, orçamento disco p/ H3-Image) — foi reativado hoje de manhã; recovery: fragment _disabled/ + hf download ConwayResearch/Underdog-Saluki-27B-1.0
     # bs2t: bonsai2-27b  # RE-APOSENTADO 12/nov/2026 à noite — degenera em word-salad com system prompt >=4k chars (bissecção provada; git history p/ prova) — PRISML fork fica em ~/git/prismml-eng-llama.cpp
@@ -156,22 +156,22 @@ matrix:
 
   sets:
     # LLM pequeno + Vision + Embedding (gpt2 desativado 17/09, disk)
-    small_vision: "(spc | fct) & (lfmcol | eg2) & pkstt"  # 24/nov: lfm24 aposentado (dono) | 12/nov: nemb saiu (REMOVIDO, dono)  # 11/11: +mcv47 (aposentado 21/nov, GGUF removido — mcv47 retirado do set) | 10/11: +spc/fct (portal cores publicados no HF) | 12/11: tq3d aposentado
+    # small_vision: "(spc | fct) & (lfmcol | eg2) & pkstt"  # APOSENTADO 25/nov/2026 (dono): spc/fct fora — sem lane vision pequena no set  # 24/nov: lfm24 aposentado (dono) | 12/nov: nemb saiu (REMOVIDO, dono)  # 11/11: +mcv47 (aposentado 21/nov, GGUF removido — mcv47 retirado do set) | 10/11: +spc/fct (portal cores publicados no HF) | 12/11: tq3d aposentado
 
     # LLM pequeno + Embedding (sem vision)
     # +qpoll: FIM completion sobrevive ao ping-pong small_embed<->heavy (CPU-only,
     # custo zero de VRAM — sem isso, cada troca de lane despeja ele por nao ser membro)
-    small_embed: "(sp26 | raon | lfm317 | spc | fct) & (lfmcol | eg2) & qpfim & pkstt"  # 24/nov: lfm24 aposentado  # 12/nov: nemb saiu (REMOVIDO, dono)  # 31/10: twp + nbe4 aposentados | 09/11: +nemb | 10/11: +spc/fct | 11/11: +raon
+    small_embed: "(sp26 | lfm317) & (lfmcol | eg2) & qpfim & pkstt"  # 25/nov: -raon -spc -fct (aposentados) | 24/nov: lfm24 aposentado  # 12/nov: nemb saiu (REMOVIDO, dono)  # 31/10: twp + nbe4 aposentados | 09/11: +nemb | 10/11: +spc/fct | 11/11: +raon
 
     # LLM pequeno sozinho (sem vision, sem embedding obrigatório)
-    small_only: "(sp26 | raon | lfm317 | spc | fct) & pkstt"  # 24/nov: lfm24 aposentado  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados | 10/11: +spc/fct | 11/11: +raon
+    small_only: "(sp26 | lfm317) & pkstt"  # 25/nov: -raon -spc -fct (aposentados) | 24/nov: lfm24 aposentado  # 21/out 2026: neo4 + lfm26 aposentados (GGUFs deletados) | 30/out: +lfm317 (sem set = exclusivo no solver) | 31/10: twp + nbe4 aposentados | 10/11: +spc/fct | 11/11: +raon
 
     # GPT-2 XL sozinho ou com embedding/reranker (~3.75GB, sem space pros médios)
     # gpt2xl_embed: "gpt2xl & (nemb | lfmcol)"  # DISABLED Oct 3 2026 - gpt2xl removido
 
     # Vision models (sozinhos ou com embedding/reranker)
-    vision_only: "ocr"  # mcv35 aposentado 21/nov (GGUF fora); mocr _disabled 02/nov 2026
-    vision_embed: "ocr & (lfmcol | eg2) & pkstt"  # mcv35 aposentado 21/nov; mocr _disabled 02/nov 2026
+    # vision_only: "ocr"  # APOSENTADO 25/nov/2026: glm-ocr aposentado (dono); mcv35 aposentado 21/nov; mocr _disabled 02/nov — sem lane vision no set
+    # vision_embed: "ocr & (lfmcol | eg2) & pkstt"  # APOSENTADO 25/nov/2026 junto com glm-ocr
 
     # Modelos médios + Embedding/Reranker
     # g12: gemma4-12b  # REMOVED Sep 10 2026 — era o "ouvido" do m3 --ref-audio; Music 3 pausado, ref-audio não usado; fragment em _removed/
@@ -184,7 +184,7 @@ matrix:
     # bonsai/bonsai2 removed Sep 20 2026 — fragments em _disabled/, GGUFs deleted
     # glm removed Sep 09 2026 — see vars note
     # q38g removed Sep 20 2026 — 27B dense e estruturalmente offload-bound na 3050
-    heavy: "(ctiel | groot) & (lfmcol | eg2) & qpfim & pkstt"  # 21/nov: -mcv35 (aposentado c/ honras, GGUF fora — heavy volta a 2) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4 | 15/nov: +ctiel 5o pesado +groot (troca do raonmini aposentado) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)
+    heavy: "(ctiel) & (lfmcol | eg2) & qpfim & pkstt"  # 24/nov: -groot (aposentado c/ honras — GGUFs fora; heavy volta a 1) | 21/nov: -mcv35 (aposentado c/ honras, GGUF fora — heavy volta a 2) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)  # 21/out: os 4 pesados declarados juntos (pedido do dono) — laguna fora | 25/out: +qpfim | 25/out tarde: +qw38d (5º pesado, dense 27B) | 25/out fim: qw38d retirado (volto pra 4) | 07/11: +b27 (Bonsai 1-bit reativado, agora como 5º — 4.4GB VRAM dense) | 09/11: +nemb | 11/11: +raonmini (staged, sem build-config) | 12/11: b27 aposentado (tq3d também) | 12/nov tarde: +saluki27 (toma o lugar do bonsai2 TPE aposentado) | 12/nov fim: SALUKI27 REMOVIDO (dono, orçamento disco p/ H3-Image) e NEMB saiu — heavy volta a 4 | 15/nov: +ctiel 5o pesado +groot (troca do raonmini aposentado) | 16/nov: -orn35 (aposentada c/ honras, GGUFs fora; heavy volta a 3)
 
     # Papel query do sprach: sem set o solver trata bonsai2-9b como exclusivo e ele
     # evicta o embedding a cada request de RAG (ping-pong → HTTP 500).
@@ -199,13 +199,13 @@ matrix:
 
     # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
     # AND entre todos os CPU-only: coexistem (zero VRAM) — OR evitaria em ping-pong
-    embed_only: "lfmcol & eg2 & pkstt"  # 31/10: lfmemb aposentado | 09/11: +nemb reativado | 12/nov: nemb REMOVIDO
+    embed_only: "lfmemb & lfmcol & eg2 & pkstt"  # 27/11: +lfmemb reativado (dono) | 31/10: lfmemb aposentado | 09/11: +nemb reativado | 12/nov: nemb REMOVIDO
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
 
     # Reranker + Embedding (two-stage retrieval: dense → rerank)
-    rerank_embed: "lfmcol & eg2 & pkstt"  # 31/10: lfmemb aposentado (OR vira single member) | 09/11: +nemb | 12/nov: nemb REMOVIDO
+    rerank_embed: "lfmcol & (lfmemb | eg2) & pkstt"  # 27/11: +lfmemb reativado (OR volta) | 31/10: lfmemb aposentado (OR vira single member) | 09/11: +nemb | 12/nov: nemb REMOVIDO
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
@@ -234,7 +234,7 @@ matrix:
     # ASR do Kilo: CPU-only, 0 VRAM, ~1 s pra subir. Custo 1 = e o primeiro
     # a ser evictado se ainda assim houver conflito de coexistencia.
     pkstt: 1
-    ocr: 3
+    # ocr: 3  # APOSENTADO 25/nov/2026 (dono)
     # mocr: 3  # _disabled 02/nov 2026
     # mojev: 1  # _disabled 02/nov 2026
     # qwvl: 3  # REMOVED Sep 10 2026
@@ -263,15 +263,15 @@ matrix:
     # eq4: 3  # REMOVED Sep 10 2026
     qpfim: 1
     lfm317: 2  # 1.7B Q8 ~2GB GPU
-    spc: 1   # Portal core Space 362MB — reload segundos
-    fct: 2   # Portal core Fact 1.2GB — reload rápido
+    # spc: 1   # APOSENTADO 25/nov/2026 (dono)
+    # fct: 2   # APOSENTADO 25/nov/2026 (dono)
     # sn9: 2  # retirado junto 17/nov
     # sn9v: 4  # RETIRADO junto
     # g12p: 3  # REMOVED Oct 1 2026 — GGUF Pollard deletado (disk 95%)
     # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
     # gpt2xl: 3  # DISABLED Oct 3 2026 - gpt2xl removido
     # nomic: 1  # REMOVED Sep 10 2026
-    # lfmemb: 1  # APOSENTADO 31/10/2026 junto do modelo
+    lfmemb: 1  # reativado 27/11/2026 junto do modelo (antes: APOSENTADO 31/10/2026)
     # nemb: 1  # APOSENTADO 21/out 2026
     # nemb: 1  # REMOVIDO 12/nov/2026 (estava REATIVADO 09/nov)
     eg2: 1
@@ -281,8 +281,8 @@ matrix:
     # laya: 1  # DESINSTALADO 20/out/2026
     # julia: 1  # APOSENTADO 11/nov/2026 (dono: snake em refactor)
     sp26: 2  # 3,54 GB denso — reload barato
-    raon: 2  # 2,08 GB denso — reload barato
+    # raon: 2  # APOSENTADO 25/nov/2026 (dono)
     # raonmini: 6  # APOSENTADO 15/nov
-    groot: 9  # 19B-A3B MoE (8.4 GB + mmproj) — reload medio-alto, classe orn35-menor
+    # groot: 9  # APOSENTADO 24/nov/2026 (dono, "pode ser que volte") — GGUFs deletados; ver groot-19b.yaml em _disabled/
     # grootf: 9  # integrado no groot 17/nov (a -fast vira o id unico)
     # nbe4: 3  # APOSENTADO 31/10/2026 junto do modelo (5,06 GB denso — reload medio)

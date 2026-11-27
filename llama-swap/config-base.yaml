@@ -28,7 +28,9 @@ logToStdout: "proxy"
 captureBuffer: 0   # capturas OFF (user 31/10: prompts NÃO guardados, privacidade; era 15 em memória — nada ia pra disco sem store.persistCaptures)
 startPort: 10001
 sendLoadingState: false
-includeAliasesInList: true
+# Aliases (ex.: claude-sonnet-5 -> cyber-tiel-coder) ficam fora da listagem:
+# o Desktop 3P traz a lista fixa via inferenceModels, e o claude-local filtra claude-* mesmo.
+includeAliasesInList: false
 globalTTL: 0
 
 # Macros reutilizáveis

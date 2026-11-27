@@ -1,3 +1,5 @@
+# APOSENTADO COM HONRAS 25/nov/2026 (dono) — pesos deletados; lane unlisted, fragment + receita intactos.
+# Motivo: decisão do dono (sem retorno no uso). Restaurar = re-download do GGUF (KRAFTON/Raon-1-nano-gguf) + remover 'unlisted: true'.
 raon-1-nano:
   name: Raon-1 nano
   description: KRAFTON's Raon-1 nano is a dense conversational model with 1.5B effective
@@ -35,6 +37,7 @@ raon-1-nano:
         presence_penalty: 1.5
   ttl: 0
   health_check_timeout: 300
+  unlisted: true
   capabilities:
     in:
     - text

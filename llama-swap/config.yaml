@@ -504,112 +504,6 @@ models:
         medium: medium
         xhigh: xhigh
       note: 'RECEITA FINAL ik (smoke 15/nov): SEM --fit — o fit do ik morre no DRAFT (1840 MiB no device que nao cabe pos-main; e ignora -ngld 0). Receita: -ngl 99 + -cmoe + -ngld 0 (draft inteiro na CPU; aceitacao 90-75%). Escada ik FECHADA: 131K (3.48GB) -> 200K (3.87GB) -> 262K NATIVO (4.26GB; 25.8 t/s decode, prefill 144 t/s, MTP 75%). Fast vence o teto de ctx do cafe (262144 = KV buffer OOM no cafe). Hadamard provado. 17x23=391 CORRETO e zero typos de path nos probes. Lane fora dos sets (padrao qwen-fast, evict 9). 16/nov: escada do TEMPLATE auditada por header (default medium; none/off desliga thinking; minimal/low=low; high/xhigh/max/ultracode/extreme=xhigh) e DECLARACAO PODADA pela doutrina 1 fio = 1 alias (dono, 16/nov): menu mostra SO os nomes de fio com comportamento DISTINTO (off/low/medium/xhigh) — high, minimal e max foram removidos do mapping porque colapsam em low/xhigh; o template segue aceitando esses kwarg no fio (inofensivo por API direta).'
-# APOSENTADO COM HONRAS 25/nov/2026 (dono — doeu, mas foi). Pesos deletados; lane unlisted, fragment + receita intactos.
-# QUANT SWAP 26/nov (dono): UD-IQ2_XXS -> GSQ-RCO Q2_K_XL (ISTA-DASLab, 9.12 GB) — mesmo t/s da UD (pp 101 vs 98,
-# tg 15.3 empate, N=5) e 98% de recovery em benchmarks reais vs ~90.6% top-1 da UD. Drafter dspark: NO GO no ik
-# (suporte inkling-dspark so existe no build mix do unsloth; ik tem o path so pra DSV4) — revisitar quando o ik
-# mergear o suporte; drafters Q8_0 (2 layouts) já em ~/.llama-models/inkling-2-mini-unsloth/ e modelo GSQ IQ3_S
-# também já baixado como alternativa de qualidade. Original:
-# prefill 98.1 t/s / decode 15.3 t/s (N=5, prompt 4.6k, CV<=2.6%) = 2.2x o vanilla 24/nov no prefill, decode empatando.
-# Override do tweet do analogalok: k=6 experts (trade +0.20 PPL alegado pelo autor, NAO re-medido na casa).
-# mmproj continua FORA: inkling2v nao carrega no ik (vision false). Restaurar visao = re-visitar apos ik/inkling2_clip mergear.
-# REATIVADA 22/nov 23:05 (dono): teste continuo headless com quant Unsloth UD-IQ1_S
-# (7.76G, Mainline_Support/ — layout mainline inkling2_loop; o root da unsloth so abre
-# no build MIX deles). Requer PR #32704 (scale-pass do loop) — mergeado no cafe.
-# APEX-NanoPlus/MiniPlus + mmproj Q8 permanecem em ~/.llama-models/inkling-2-mini/ (retidos).
-# Strata 0.2.20: funcionou a 3 t/s @93% VRAM (veredicto do dono: way above paygrade).
-# Nota: quant unsloth = BASE da TMLab (NAO abliterated; refusals ativos).
-# -------------------------------------------
-# INKLING-2-MINI - backend ik_llama.cpp (inkling2_loop completo no main:
-# PR ik #2967 mergeado 22/nov + follow-ups #2971-#2984; upstream ggml-org tambem tem;
-# cafe ainda sem a arch em 24/nov).
-# Looped MoE TML: 24 blocos (os 12 centrais rodam 3x = 48 apps/token),
-# 128 experts / 8 ativos, ctx nativo 1,048,576. head_dim 96 (2304/24) NAO e
-# multiplo de 64 -> sem attn_rot -> KV q8_0/q8_0 (regra da casa, exige FA).
-# Quant APEX-I-NanoPlus (IsValorum) NAO tem mmproj nem MTP no GGUF: text-only.
-# Experts na host RAM via --n-cpu-moe 24; samplers do vendor TML (guia unsloth:
-# temp 1.0, top-p 1.0, top-k 0, min-p 0). Lane de teste do dono, fora dos sets
-# (exclusiva no solver, sem var/evict_cost - padrao de lane nova).
-# RESOLVIDO 21/nov (dossie: ~/relatorios-frota/inkling-loop-buffer/): buffer CUDA
-# de ~4.7GB no boot era op_offload default-true + sched_copy_experts copiando os
-# pesos de experts das 12 layers do core pro CUDA0 MESMO COM ngl 0 — o override
-# n-cpu-moe NAO impede a copia. Fix: --no-op-offload (o cafe herda o mesmo
-# mecanismo do upstream no merge 5eeeecb21 — validar a flag no binario novo).
-# Lane HIBRIDA 131K no IK (PR ik #2967 MERGEADO 22/11 - rebase local 009ff82c):
-# -ngl 99 + -cmoe (experts host, regime ik: o ik nao usa -nkvo nem op-offload)
-# + --defer-experts --prefetch-experts (expert streaming ik, receita cyber-tiel)
-# + --swa-compress (o KV do inkling e gigante - o ikawrakow mandou usar).
-# APEX Abliterated no ik: a carregar - o PR teve relatos de quants de terceiros
-# com layout divergente (714 vs 694 tensores) - se a APEX falhar no load,
-# testar quant nativo do ji-farthing. KV q4 host nao se aplica ao ik.
-# VERDICTO 22/nov noite (probe 6GB): ik com -ngl 99 -cmoe --swa-compress @131K
-# MORREU no KV cache: llama_kv_cache_init pede 4.34GB CUDA @131K (swa-compress
-# nao engajou no runtime inkling2 do ik - sem janela SWA no formato esperado).
-# Lane SEGUE cafe: ctx 64K (piso do dono), -b 2048 -ub 512 (buffers de prefill
-# de verdade; os de 512/128 eram o gargalo do prefill), KV q4/q4 direto na GPU
-# (sem -nkvo = sem transbordo PCIe por ubatch).
-# DELTA MEDIDO 22/nov noite (sonda 3460 tok): baseline 21.6 -> 24.6 t/s so com
-# buffers+sem -nkvo -> 45.7 t/s com -ngl 99 (trunk na GPU). O ganho grande foi
-# o ngl 99, nao os buffers. GPU util ~6% durante prefill permanece (experts
-# em host dominam as FLOPs; fisica da 6GB, nao config).
-# -------------------------------------------
-  inkling-2-mini:
-    name: Inkling-2-Mini
-    description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
-    cmd: |
-      ${ik_llama_server} --port ${PORT}
-      --model ${models_dir}/inkling-gsq-rco/Inkling-2-Mini-GSQ-RCO-Q2_K_XL.gguf
-      --jinja
-      -ngl 99
-      -cmoe
-      --defer-experts --prefetch-experts
-      --override-kv inkling2_loop.expert_used_count=int:6
-      --ctx-size 49152
-      -b 512 -ub 128
-      --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0.0
-      --repeat-penalty 1.0
-      --cache-type-k q4_0 --cache-type-v q4_0
-      --flash-attn auto
-      --parallel 1 --parallel-tool-calls
-      --metrics
-    filters:
-      stripParams: temperature, top_p
-    ttl: 0
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - text
-      out:
-        - text
-      tools: true
-      reranker: false
-      context: 49152
-    metadata:
-      size: "~9.12 GB"
-      context: 49152
-      source: "ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF Q2_K_XL (base thinkingmachines/Inkling-2-Mini)"
-      kv_cache: q4_0/q4_0
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: inkling2_loop
-      parameters: 26200000000
-      context_length: 49152
-      embedding_length: 2304
-      quantization: GSQ-RCO Q2_K_XL
-      reasoningEfforts:
-        'off': 'none'
-        'low': 'low'
-        'medium': 'medium'
-        'high': 'high'
-        'xhigh': 'xhigh'
-      note: "Lane de teste do dono, 21/nov. Quant NanoPlus text-only do IsValorum: 0 tensors de visao e 0 nextn, portanto sem mmproj e sem draft. Arch inkling2_loop mergeada no vanilla pelo PR upstream 32694. Samplers do vendor TML. Gate real de frota segue ik/cafe, esta lane e vanilla e exclusiva no solver. Template tem reasoning_effort de none a max e float 0 a 0.99. Probe de tools PASSOU no fio da swap em 21/nov: finish_reason tool_calls com get_weather e argumentos validos — capabilities.tools true. Backend IK desde 22/11 (PR ik #2967 MERGEADO — 1993+ LOC de runtime inkling2_loop, merged pelo ikawrakow mesmo dia). O bug op_offload (sched_copy_experts copiava 4.7GB de experts p/ CUDA mesmo com ngl 0) e EXCLUSIVO do upstream/cafe — no ik, o mecanismo e outro (-cmoe + defer/prefetch-experts). KV host via -nkvo NAO se aplica ao ik (v vocabulario diferente); o KV usa --swa-compress no ik p/ o cache gigante do inkling. Visao ATIVA: mmproj-Inkling-2-Mini-Q8_0 (0.32 GiB) do proprio repo Abliterated (21/11); existe tambem NanoPlus-Abliterated 10.23 GiB com o mesmo mmproj, opcao de headroom se a VRAM apertar. 24/nov: ik main rebaseado com os 4 commits do dia (#2977/#2979/#2982/#2984, todos inkling2 perf); suporte inkling2 100% mergeado no upstream ik (nada pendente); binario rebuildado do merge main+house-patches."
   laguna-xs-2.1:
     name: Laguna XS 2.1
     description: "APOSENTADO COM HONRAS 04/nov/2026 (pesos deletados por decreto do dono para abrir espaço pro Groot-65B; lane fica unlisted, fragment + receita intactos). Poolside 33B-A3B MoE coding model, atencao hibrida SWA(512)+global, 131K de contexto, -cmoe (experts em page-cache evictavel), spec ngram-mod. Quant: APEX I-Compact (mudler, 14.69 GiB) reavaliada 01/11/2026 apos a reforma do backend cafe. Reasoning ALWAYS-ON no handle unico (padrao 2b-ter; samplers frios para reduzir o fechamento precoce do think); handle [handle-think-EXTINTO 12/nov/2026] aposentado 01/11/2026."
@@ -774,8 +668,8 @@ models:
         image: false
       note: 'vram detalhe: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only) | Text-steered: queries ''task: {tarefa} | query:'' e docs ''title: {t} | text: {conteudo}'' (title: none se sem titulo); media SEM prefixo. Multimodal via mmproj (vision 212 tensors + audio 751 tensors no mmproj). MRL: truncate + re-normalizar client-side (768/512/256 perde pouco; 128 valida antes). Smoke 06/10/2026: MRR=1.0 retrieval 8q pt-BR, STS spearman 0.94 (par-a-par com nemotron-3-embed, 23ms vs 104ms query CPU). mmproj carrega vision+audio: aceita imagem/audio como input (vision tag = input, image false = nao gera). Lançamento 06/10/2026, GGUF oficial ggml-org; build 2796+ do llama.cpp necessita (arch gemma-embedding2, PR #30054).'
       context: 8192
-# APOSENTADO COM HONRAS 25/nov/2026 (dono — publicado no HF, sai de cena). Pesos deletados; lane unlisted, fragment + receita intactos.
-# Restaurar = re-download (luksamuk/portal-core-space-GGUF) + remover 'unlisted: true'.
+# RESTAURADO 27/11/2026 (dono) — pesos re-baixados de luksamuk/portal-core-space-GGUF; volta pro /v1/models.
+# (histórico: APOSENTADO COM HONRAS 25/nov/2026 — publicado no HF e removido da rotação)
 # -------------------------------------------
 # PORTAL CORE: SPACE — Portal 2 corrupted personality core
 # LFM2.5-350M base + LoRA v7b degenerate fine-tune
@@ -814,7 +708,6 @@ models:
           top_p: 0.9
     health_check_timeout: 300
     ttl: 60
-    unlisted: true
     capabilities:
       in:
         - 'text'
@@ -1315,6 +1208,287 @@ models:
         image: false
       note: 'vram detalhe: ~2GB (model + mmproj + cache) | GLM OCR multimodal: model 0.95GB + mmproj 0.48GB + cache; Q8_0 Specialized OCR model — use prompts like ''OCR'', ''OCR markdown'', ''Table Recognition:''. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.'
       context: 131072
+# LFM2.5-350M (instruct) — o base que recebeu o LoRA v7b do portal-core-space.
+# Criado 27/11/2026 (dono) pra aula de fine-tune: base e portal-core-space lado a lado na frota.
+# Samplers do card LiquidAI LFM2.5: temp 1.0 / top_p 0.9 / top_k 40 (idem nota do portal-core-space).
+  "lfm2.5-350m":
+    name: LFM2.5-350M (base do Portal Space)
+    description: LiquidAI LFM2.5-350M instruct — chat base do qual o portal-core-space é fine-tune (LoRA v7b, rank 128, 30 epochs, 10 respostas). Lane didática da aula de fine-tune.
+    tags:
+      - "chat"
+    cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/lfm2.5-350m/LFM2.5-350M-Q8_0.gguf
+      --jinja
+      --fit on
+      --fit-target ${vram_margin}
+      --ctx-size 16384
+      --parallel 1
+      --cont-batching
+      --temp 1.0
+      --top-p 0.9
+      --top-k 40
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --flash-attn on
+      --metrics
+    filters:
+      stripParams: "temperature, top_p"
+      setParamsByID:
+        "${MODEL_ID}":
+          temperature: 1.0
+          top_p: 0.9
+    health_check_timeout: 300
+    ttl: 60
+    capabilities:
+      in:
+        - 'text'
+      out:
+        - 'text'
+      tools: false
+      reranker: false
+      context: 16384
+    metadata:
+      size: "~362 MB (Q8_0)"
+      context: "16K"
+      vram_usage: "~0.5GB (model + cache)"
+      source: "hf LiquidAI/LFM2.5-350M-GGUF (Q8_0; base cru LFM2.5-350M-Base só em safetensors/MLX/ONNX)"
+      kv_cache: "q8_0 + q8_0"
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: false
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 362000000
+      context_length: 16384
+      quantization: Q8_0
+      note: "Instruct com GGUF oficial; samplers do card (temp 1.0 é comportamento esperado da família)."
+  lfm2.5-embedding-350m:
+    name: LFM2.5 Embedding 350M
+    description: Liquid AI embedding model (350M) for RAG and semantic search. CPU-only serving.
+    env:
+      - CUDA_VISIBLE_DEVICES=
+    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/lfm2.5-embed/LFM2.5-Embedding-350M-Q8_0.gguf\n--embeddings\n--pooling cls\n--ctx-size 512\n--cont-batching\n--parallel 4\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
+    ttl: 300
+    capabilities:
+      in:
+        - text
+      out: []
+      tools: false
+      reranker: false
+      embeddings: true
+      context: 512
+    metadata:
+      architecture: lfm2-bidir
+      parameters: 354000000
+      context_length: 512
+      embedding_length: 1024
+      quantization: Q8_0
+      size: ~379 MB (Q8_0)
+      vram_usage: CPU-only
+      source: LiquidAI/LFM2.5-Embedding-350M-GGUF (Q8_0)
+      kv_cache: f16
+      features:
+        completion: false
+        tools: false
+        thinking: false
+        vision: false
+        embedding: true
+        insert: false
+        audio: false
+        image: false
+      note: 'vram detalhe: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only) | -ngl 0, ~0.1GB CUDA ctx overhead apenas Embedding-only model. Use /v1/embeddings endpoint. Asymmetric prompts: ''query: '' for queries, ''document: '' for passages. 11 languages. Dense bi-encoder — one 1024-dim vector per document.'
+  lfm2.5-vl-1.6b-extract:
+    name: LFM2.5-VL 1.6B Extract
+    description: Vision-language model specialized in structured extraction. Pass an image and a list of fields, get back a JSON object. No parsing layer needed.
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/LFM2.5-VL-1.6B-Extract-Q4_K_M.gguf
+
+      --jinja
+
+      --mmproj ${models_dir}/mmproj-LFM2.5-VL-1.6B-Extract-F16.gguf
+
+      --media-path ${media_path}
+
+      --fit on
+
+      --fit-target ${vram_margin}
+
+      --fit-ctx ${small_model_min_ctx}
+
+      --ctx-size ${small_model_max_ctx}
+
+      --temp 0.1
+
+      --top-p 0.9
+
+      --top-k 40
+
+      --min-p 0.15
+
+      --repeat-penalty 1.3
+
+      --reasoning off
+
+      --cache-type-k f16
+
+      --cache-type-v f16
+
+      --flash-attn on
+
+      --metrics
+
+      '
+    health_check_timeout: 300
+    ttl: 60
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: false
+      reranker: false
+      context: 131072
+    metadata:
+      size: 0.70 GB (Q4_K_M) + 0.82 GB mmproj
+      context: 131072
+      vram_usage: ~2.7 GB VRAM
+      source: LiquidAI/LFM2.5-VL-1.6B-Extract-GGUF
+      kv_cache: f16
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 1600000000
+      context_length: 128000
+      embedding_length: 2048
+      quantization: Q4_K_M
+      note: 'vram detalhe: ~2.7GB Structured extraction VLM — returns JSON instead of free-form text. lfm2 arch requires upstream llama.cpp (not ik).'
+  lfm2.5-vl-450m-extract:
+    name: LFM2.5-VL 450M Extract
+    description: Ultra-light vision-language model for structured extraction. Returns JSON from image + field list. Edge-ready.
+    cmd: '${llama_server} --port ${PORT}
+
+      --model ${models_dir}/LFM2.5-VL-450M-Extract-Q4_K_M.gguf
+
+      --jinja
+
+      --mmproj ${models_dir}/mmproj-LFM2.5-VL-450M-Extract-F16.gguf
+
+      --media-path ${media_path}
+
+      --fit on
+
+      --fit-target ${vram_margin}
+
+      --fit-ctx ${small_model_min_ctx}
+
+      --ctx-size ${small_model_max_ctx}
+
+      --temp 0.1
+
+      --top-p 0.9
+
+      --top-k 40
+
+      --min-p 0.15
+
+      --repeat-penalty 1.3
+
+      --reasoning off
+
+      --cache-type-k f16
+
+      --cache-type-v f16
+
+      --flash-attn on
+
+      --metrics
+
+      '
+    health_check_timeout: 300
+    ttl: 60
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: false
+      reranker: false
+      context: 131072
+    metadata:
+      size: 0.22 GB (Q4_K_M) + 0.18 GB mmproj
+      context: 131072
+      vram_usage: ~1.0 GB VRAM
+      source: LiquidAI/LFM2.5-VL-450M-Extract-GGUF
+      kv_cache: f16
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: false
+      architecture: lfm2
+      parameters: 450000000
+      context_length: 128000
+      embedding_length: 2048
+      quantization: Q4_K_M
+      note: 'vram detalhe: ~1.0GB Ultra-light Extract VLM — 450M params, returns JSON. lfm2 arch requires upstream llama.cpp (not ik).'
+  lfm2.5-vl-450m-hand-tracking:
+    name: LFM2.5-VL 450M Hand Tracking
+    description: Hand detection VLM fine-tuned from LFM2.5-VL-450M-Extract on HaGRID+COCO. Q8_0 quant (379MB).
+    tags:
+      - vision
+    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-VL-450M-hand-tracking-Q8_0.gguf\n--mmproj ${models_dir}/mmproj-LFM2.5-VL-450M-hand-tracking-F16.gguf\n--media-path ${media_path}\n--jinja\n--fit on\n--fit-target ${vram_margin}\n--fit-ctx 4096\n--ctx-size 8192\n--parallel 1\n--cont-batching\n--temp 0.1\n--top-p 0.1\n--top-k 50\n--min-p 0.0\n--repeat-penalty 1.05\n--cache-type-k f16\n--cache-type-v f16\n--flash-attn on\n--spec-type ngram-mod\n  --spec-ngram-mod-n-match 24\n  --spec-ngram-mod-n-min 48\n  --spec-ngram-mod-n-max 64\n  --metrics\n"
+    ttl: 60
+    health_check_timeout: 300
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: false
+      reranker: false
+      context: 8192
+    metadata:
+      size: 379 MB + 190 MB mmproj
+      context: 8192
+      vram_usage: ~0.8 GB VRAM
+      source: Fine-tuned from LiquidAI/LFM2.5-VL-450M-Extract on HaRID+COCO
+      note: 'vram detalhe: ~0.8 GB Hand detection. Format: [{label:hand, bbox:[x1,y1,x2,y2]}] 0-1 floats, [] if none.'
+      kv_cache: f16
+      features:
+        completion: true
+        tools: false
+        thinking: false
+        vision: true
+        embedding: false
+        insert: false
+        audio: false
+        image: true
+      architecture: lfm2
+      parameters: 450000000
+      context_length: 128000
+      embedding_length: 1024
+      quantization: Q8_0
   lfm3-1.7b:
     aliases:
       - claude-haiku-4-6
@@ -2100,7 +2274,7 @@ matrix:
     # twp: twil-lm3-pro  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER; restore: re-download webAI Q6_K + mv fragment
     # Portal 2 personality cores (degenerate, Q8_0, LFM2.5) — publicados no HF 10/nov
     # adventure continua fora (sem judge formal; staging local em ~/git/ai/portal-cores)
-    # spc: portal-core-space  # APOSENTADO 25/nov/2026 (dono — publicado no HF) — pesos deletados; fragment unlisted, receita intacta
+    spc: portal-core-space  # reativado 27/11/2026 (dono) — restore pós-publicação HF (antes: APOSENTADO 25/nov, dono)
     # fct: portal-core-fact  # APOSENTADO 25/nov/2026 (dono — publicado no HF) — pesos deletados; fragment unlisted, receita intacta
     # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
@@ -2187,7 +2361,7 @@ matrix:
     pkstt: parakeet-tdt-0.6b-v3
     # Embedding
     # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
-    # lfmemb: lfm2.5-embedding-350m  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER (nome corrigido p/ "LFM2.5 Embedding 350M"); colbert+eg2 cobrem embed
+    lfmemb: lfm2.5-embedding-350m  # reativado 27/11/2026 (dono) — antes: APOSENTADO 31/10/2026 (GGUF deletado, fragment _disabled/ + HELPER); colbert+eg2 cobriam embed
     # nemb: nemotron-3-embed-1b  # REMOVIDO 12/nov/2026 (dono) — peso fora do disco; recovery: conversão manual, receita no header do download-models.sh (REAÇÃO: 09/nov LUC-148/149)
     # Multimodal embedding (Google, 740M, texto+img+audio+video, 768d MRL, Apache 2.0)
     eg2: embeddinggemma-2
@@ -2257,13 +2431,13 @@ matrix:
 
     # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
     # AND entre todos os CPU-only: coexistem (zero VRAM) — OR evitaria em ping-pong
-    embed_only: "lfmcol & eg2 & pkstt"  # 31/10: lfmemb aposentado | 09/11: +nemb reativado | 12/nov: nemb REMOVIDO
+    embed_only: "lfmemb & lfmcol & eg2 & pkstt"  # 27/11: +lfmemb reativado (dono) | 31/10: lfmemb aposentado | 09/11: +nemb reativado | 12/nov: nemb REMOVIDO
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
 
     # Reranker + Embedding (two-stage retrieval: dense → rerank)
-    rerank_embed: "lfmcol & eg2 & pkstt"  # 31/10: lfmemb aposentado (OR vira single member) | 09/11: +nemb | 12/nov: nemb REMOVIDO
+    rerank_embed: "lfmcol & (lfmemb | eg2) & pkstt"  # 27/11: +lfmemb reativado (OR volta) | 31/10: lfmemb aposentado (OR vira single member) | 09/11: +nemb | 12/nov: nemb REMOVIDO
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
@@ -2329,7 +2503,7 @@ matrix:
     # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
     # gpt2xl: 3  # DISABLED Oct 3 2026 - gpt2xl removido
     # nomic: 1  # REMOVED Sep 10 2026
-    # lfmemb: 1  # APOSENTADO 31/10/2026 junto do modelo
+    lfmemb: 1  # reativado 27/11/2026 junto do modelo (antes: APOSENTADO 31/10/2026)
     # nemb: 1  # APOSENTADO 21/out 2026
     # nemb: 1  # REMOVIDO 12/nov/2026 (estava REATIVADO 09/nov)
     eg2: 1

@@ -1,3 +1,5 @@
+# APOSENTADO COM HONRAS 25/nov/2026 (dono — sem uso). Pesos deletados; lane unlisted, fragment + receita intactos.
+# Restaurar = re-download (ggml-org/GLM-OCR-GGUF) + remover 'unlisted: true'.
 glm-ocr:
   name: GLM-OCR
   description: GLM's vision-language OCR model for complex document understanding and text extraction.
@@ -7,6 +9,7 @@ glm-ocr:
     --cache-type-v f16\n--flash-attn on\n--spec-type ngram-mod\n  --spec-ngram-mod-n-match 24\n  --spec-ngram-mod-n-min 48\n\
     \  --spec-ngram-mod-n-max 64\n  --metrics\n"
   ttl: 60
+  unlisted: true
   capabilities:
     in:
     - text

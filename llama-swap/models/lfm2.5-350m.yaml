@@ -1,0 +1,59 @@
+# LFM2.5-350M (instruct) — o base que recebeu o LoRA v7b do portal-core-space.
+# Criado 27/11/2026 (dono) pra aula de fine-tune: base e portal-core-space lado a lado na frota.
+# Samplers do card LiquidAI LFM2.5: temp 1.0 / top_p 0.9 / top_k 40 (idem nota do portal-core-space).
+"lfm2.5-350m":
+  name: LFM2.5-350M (base do Portal Space)
+  description: LiquidAI LFM2.5-350M instruct — chat base do qual o portal-core-space
+    é fine-tune (LoRA v7b, rank 128, 30 epochs, 10 respostas). Lane didática da
+    aula de fine-tune.
+  tags: ["chat"]
+  cmd: |
+      ${llama_server} --port ${PORT}
+      --model ${models_dir}/lfm2.5-350m/LFM2.5-350M-Q8_0.gguf
+      --jinja
+      --fit on
+      --fit-target ${vram_margin}
+      --ctx-size 16384
+      --parallel 1
+      --cont-batching
+      --temp 1.0
+      --top-p 0.9
+      --top-k 40
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --flash-attn on
+      --metrics
+  filters:
+    stripParams: "temperature, top_p"
+    setParamsByID:
+      "${MODEL_ID}":
+        temperature: 1.0
+        top_p: 0.9
+  health_check_timeout: 300
+  ttl: 60
+  capabilities:
+    in: ['text']
+    out: ['text']
+    tools: false
+    reranker: false
+    context: 16384
+  metadata:
+    size: "~362 MB (Q8_0)"
+    context: "16K"
+    vram_usage: "~0.5GB (model + cache)"
+    source: "hf LiquidAI/LFM2.5-350M-GGUF (Q8_0; base cru LFM2.5-350M-Base só em safetensors/MLX/ONNX)"
+    kv_cache: "q8_0 + q8_0"
+    features:
+      completion: true
+      tools: false
+      thinking: false
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: lfm2
+    parameters: 362000000
+    context_length: 16384
+    quantization: Q8_0
+    note: "Instruct com GGUF oficial; samplers do card (temp 1.0 é comportamento esperado da família)."

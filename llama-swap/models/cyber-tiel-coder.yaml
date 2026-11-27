@@ -8,6 +8,9 @@
 # ctx 131072 = padrao qwen-fast da orn35 (fit decide; escada sobe/desce conforme free VRAM).
 # -------------------------------------------
 cyber-tiel-coder:
+  aliases:
+    - claude-fable-5
+    - claude-opus-4-8
   name: Cyber-Tiel-Coder
   description: The same Cyber-Tiel-Coder lane served intentionally by ik_llama.cpp — less context, faster path with MTP draft.
   cmd: '${ik_llama_server} --port ${PORT}
