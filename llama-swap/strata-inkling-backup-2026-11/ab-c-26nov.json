@@ -1,0 +1,32 @@
+{
+ "régua": "UD-IQ2_XXS Mainline_Support 8.49GB, k=6 (override), KV q4_0/q4_0, -b 512 -ub 128, ctx 32768, -t 10 -tb 10, prompt 4622 tok, -n 256, N=5",
+ "vanilla": {
+  "binario": "build 4147, 5d72d5f7d (fleet-liquid + merge 26/nov)",
+  "pp_med": 44.3,
+  "pp_piso": 43.7,
+  "tg_med": 14.05,
+  "tg_piso": 13.01,
+  "cv_pp": 1.5,
+  "cv_tg": 4.8
+ },
+ "unsloth_fork": {
+  "binario": "b12722-mix-f1c70ea prebuilt cuda13-newer",
+  "pp_med": 49.1,
+  "pp_piso": 48.1,
+  "tg_med": 15.43,
+  "tg_piso": 14.94,
+  "cv_pp": 1.8,
+  "cv_tg": 2.6,
+  "nota": "primeiro pacote era cuda12 -> fallback silencioso 100% CPU (pp 20.5/tg 6.7), descartado"
+ },
+ "ik": {
+  "binario": "5310, 894f64ed (24/nov)",
+  "flags": "-cmoe --defer-experts --prefetch-experts (regime ik)",
+  "pp_med": 98.1,
+  "pp_piso": 96.4,
+  "tg_med": 15.26,
+  "tg_piso": 14.87,
+  "cv_pp": 2.6,
+  "cv_tg": 2.2
+ }
+}

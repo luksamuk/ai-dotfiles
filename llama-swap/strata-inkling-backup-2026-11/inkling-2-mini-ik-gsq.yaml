@@ -1,0 +1,107 @@
+# APOSENTADO COM HONRAS 25/nov/2026 (dono — doeu, mas foi). Pesos deletados; lane unlisted, fragment + receita intactos.
+# QUANT SWAP 26/nov (dono): UD-IQ2_XXS -> GSQ-RCO Q2_K_XL (ISTA-DASLab, 9.12 GB) — mesmo t/s da UD (pp 101 vs 98,
+# tg 15.3 empate, N=5) e 98% de recovery em benchmarks reais vs ~90.6% top-1 da UD. Drafter dspark: NO GO no ik
+# (suporte inkling-dspark so existe no build mix do unsloth; ik tem o path so pra DSV4) — revisitar quando o ik
+# mergear o suporte; drafters Q8_0 (2 layouts) já em ~/.llama-models/inkling-2-mini-unsloth/ e modelo GSQ IQ3_S
+# também já baixado como alternativa de qualidade. Original:
+# prefill 98.1 t/s / decode 15.3 t/s (N=5, prompt 4.6k, CV<=2.6%) = 2.2x o vanilla 24/nov no prefill, decode empatando.
+# Override do tweet do analogalok: k=6 experts (trade +0.20 PPL alegado pelo autor, NAO re-medido na casa).
+# mmproj continua FORA: inkling2v nao carrega no ik (vision false). Restaurar visao = re-visitar apos ik/inkling2_clip mergear.
+# REATIVADA 22/nov 23:05 (dono): teste continuo headless com quant Unsloth UD-IQ1_S
+# (7.76G, Mainline_Support/ — layout mainline inkling2_loop; o root da unsloth so abre
+# no build MIX deles). Requer PR #32704 (scale-pass do loop) — mergeado no cafe.
+# APEX-NanoPlus/MiniPlus + mmproj Q8 permanecem em ~/.llama-models/inkling-2-mini/ (retidos).
+# Strata 0.2.20: funcionou a 3 t/s @93% VRAM (veredicto do dono: way above paygrade).
+# Nota: quant unsloth = BASE da TMLab (NAO abliterated; refusals ativos).
+# -------------------------------------------
+# INKLING-2-MINI - backend ik_llama.cpp (inkling2_loop completo no main:
+# PR ik #2967 mergeado 22/nov + follow-ups #2971-#2984; upstream ggml-org tambem tem;
+# cafe ainda sem a arch em 24/nov).
+# Looped MoE TML: 24 blocos (os 12 centrais rodam 3x = 48 apps/token),
+# 128 experts / 8 ativos, ctx nativo 1,048,576. head_dim 96 (2304/24) NAO e
+# multiplo de 64 -> sem attn_rot -> KV q8_0/q8_0 (regra da casa, exige FA).
+# Quant APEX-I-NanoPlus (IsValorum) NAO tem mmproj nem MTP no GGUF: text-only.
+# Experts na host RAM via --n-cpu-moe 24; samplers do vendor TML (guia unsloth:
+# temp 1.0, top-p 1.0, top-k 0, min-p 0). Lane de teste do dono, fora dos sets
+# (exclusiva no solver, sem var/evict_cost - padrao de lane nova).
+# RESOLVIDO 21/nov (dossie: ~/relatorios-frota/inkling-loop-buffer/): buffer CUDA
+# de ~4.7GB no boot era op_offload default-true + sched_copy_experts copiando os
+# pesos de experts das 12 layers do core pro CUDA0 MESMO COM ngl 0 — o override
+# n-cpu-moe NAO impede a copia. Fix: --no-op-offload (o cafe herda o mesmo
+# mecanismo do upstream no merge 5eeeecb21 — validar a flag no binario novo).
+# Lane HIBRIDA 131K no IK (PR ik #2967 MERGEADO 22/11 - rebase local 009ff82c):
+# -ngl 99 + -cmoe (experts host, regime ik: o ik nao usa -nkvo nem op-offload)
+# + --defer-experts --prefetch-experts (expert streaming ik, receita cyber-tiel)
+# + --swa-compress (o KV do inkling e gigante - o ikawrakow mandou usar).
+# APEX Abliterated no ik: a carregar - o PR teve relatos de quants de terceiros
+# com layout divergente (714 vs 694 tensores) - se a APEX falhar no load,
+# testar quant nativo do ji-farthing. KV q4 host nao se aplica ao ik.
+# VERDICTO 22/nov noite (probe 6GB): ik com -ngl 99 -cmoe --swa-compress @131K
+# MORREU no KV cache: llama_kv_cache_init pede 4.34GB CUDA @131K (swa-compress
+# nao engajou no runtime inkling2 do ik - sem janela SWA no formato esperado).
+# Lane SEGUE cafe: ctx 64K (piso do dono), -b 2048 -ub 512 (buffers de prefill
+# de verdade; os de 512/128 eram o gargalo do prefill), KV q4/q4 direto na GPU
+# (sem -nkvo = sem transbordo PCIe por ubatch).
+# DELTA MEDIDO 22/nov noite (sonda 3460 tok): baseline 21.6 -> 24.6 t/s so com
+# buffers+sem -nkvo -> 45.7 t/s com -ngl 99 (trunk na GPU). O ganho grande foi
+# o ngl 99, nao os buffers. GPU util ~6% durante prefill permanece (experts
+# em host dominam as FLOPs; fisica da 6GB, nao config).
+# -------------------------------------------
+inkling-2-mini:
+  name: Inkling-2-Mini
+  description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
+  cmd: |
+    ${ik_llama_server} --port ${PORT}
+    --model ${models_dir}/inkling-gsq-rco/Inkling-2-Mini-GSQ-RCO-Q2_K_XL.gguf
+    --jinja
+    -ngl 99
+    -cmoe
+    --defer-experts --prefetch-experts
+    --override-kv inkling2_loop.expert_used_count=int:6
+    --ctx-size 49152
+    -b 512 -ub 128
+    --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0.0
+    --repeat-penalty 1.0
+    --cache-type-k q4_0 --cache-type-v q4_0
+    --flash-attn auto
+    --parallel 1 --parallel-tool-calls
+    --metrics
+  filters:
+    stripParams: temperature, top_p
+  ttl: 0
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 49152
+  metadata:
+    size: "~9.12 GB"
+    context: 49152
+    source: "ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF Q2_K_XL (base thinkingmachines/Inkling-2-Mini)"
+    kv_cache: q4_0/q4_0
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: false
+      embedding: false
+      insert: false
+      audio: false
+      image: false
+    architecture: inkling2_loop
+    parameters: 26200000000
+    context_length: 49152
+    embedding_length: 2304
+    quantization: GSQ-RCO Q2_K_XL
+    reasoningEfforts:
+      'off': 'none'
+      'low': 'low'
+      'medium': 'medium'
+      'high': 'high'
+      'xhigh': 'xhigh'
+    note: "Lane de teste do dono, 21/nov. Quant NanoPlus text-only do IsValorum: 0 tensors de visao e 0 nextn, portanto sem mmproj e sem draft. Arch inkling2_loop mergeada no vanilla pelo PR upstream 32694. Samplers do vendor TML. Gate real de frota segue ik/cafe, esta lane e vanilla e exclusiva no solver. Template tem reasoning_effort de none a max e float 0 a 0.99. Probe de tools PASSOU no fio da swap em 21/nov: finish_reason tool_calls com get_weather e argumentos validos — capabilities.tools true. Backend IK desde 22/11 (PR ik #2967 MERGEADO — 1993+ LOC de runtime inkling2_loop, merged pelo ikawrakow mesmo dia). O bug op_offload (sched_copy_experts copiava 4.7GB de experts p/ CUDA mesmo com ngl 0) e EXCLUSIVO do upstream/cafe — no ik, o mecanismo e outro (-cmoe + defer/prefetch-experts). KV host via -nkvo NAO se aplica ao ik (v vocabulario diferente); o KV usa --swa-compress no ik p/ o cache gigante do inkling. Visao ATIVA: mmproj-Inkling-2-Mini-Q8_0 (0.32 GiB) do proprio repo Abliterated (21/11); existe tambem NanoPlus-Abliterated 10.23 GiB com o mesmo mmproj, opcao de headroom se a VRAM apertar. 24/nov: ik main rebaseado com os 4 commits do dia (#2977/#2979/#2982/#2984, todos inkling2 perf); suporte inkling2 100% mergeado no upstream ik (nada pendente); binario rebuildado do merge main+house-patches."
