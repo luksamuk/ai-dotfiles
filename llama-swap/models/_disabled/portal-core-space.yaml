@@ -1,5 +1,5 @@
-# RESTAURADO 27/11/2026 (dono) — pesos re-baixados de luksamuk/portal-core-space-GGUF; volta pro /v1/models.
-# (histórico: APOSENTADO COM HONRAS 25/nov/2026 — publicado no HF e removido da rotação)
+# APOSENTADO COM HONRAS 27/11/2026 pós-aula (dono — fine-tune publicado no HF, sai de cena). Pesos deletados; lane unlisted, fragment + receita intactos.
+# Restaurar = re-download (luksamuk/portal-core-space-GGUF) + remover 'unlisted: true'.
 # -------------------------------------------
 # PORTAL CORE: SPACE — Portal 2 corrupted personality core
 # LFM2.5-350M base + LoRA v7b degenerate fine-tune
@@ -37,6 +37,7 @@
         top_p: 0.9
   health_check_timeout: 300
   ttl: 60
+  unlisted: true
   capabilities:
     in: ['text']
     out: ['text']

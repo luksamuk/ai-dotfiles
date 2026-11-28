@@ -42,7 +42,7 @@ matrix:
     # twp: twil-lm3-pro  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER; restore: re-download webAI Q6_K + mv fragment
     # Portal 2 personality cores (degenerate, Q8_0, LFM2.5) — publicados no HF 10/nov
     # adventure continua fora (sem judge formal; staging local em ~/git/ai/portal-cores)
-    spc: portal-core-space  # reativado 27/11/2026 (dono) — restore pós-publicação HF (antes: APOSENTADO 25/nov, dono)
+    # spc: portal-core-space  # APOSENTADO 27/11/2026 pós-aula (dono) — pesos fora de novo; fragment unlisted, receita intacta
     # fct: portal-core-fact  # APOSENTADO 25/nov/2026 (dono — publicado no HF) — pesos deletados; fragment unlisted, receita intacta
     # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
@@ -129,7 +129,7 @@ matrix:
     pkstt: parakeet-tdt-0.6b-v3
     # Embedding
     # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
-    lfmemb: lfm2.5-embedding-350m  # reativado 27/11/2026 (dono) — antes: APOSENTADO 31/10/2026 (GGUF deletado, fragment _disabled/ + HELPER); colbert+eg2 cobriam embed
+    # lfmemb: lfm2.5-embedding-350m  # DE-REATIVADO DE VOLTA 27/11/2026 pós-aula (dono) — GGUF fora de novo; colbert+eg2 cobrem embed
     # nemb: nemotron-3-embed-1b  # REMOVIDO 12/nov/2026 (dono) — peso fora do disco; recovery: conversão manual, receita no header do download-models.sh (REAÇÃO: 09/nov LUC-148/149)
     # Multimodal embedding (Google, 740M, texto+img+audio+video, 768d MRL, Apache 2.0)
     eg2: embeddinggemma-2
@@ -199,13 +199,13 @@ matrix:
 
     # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
     # AND entre todos os CPU-only: coexistem (zero VRAM) — OR evitaria em ping-pong
-    embed_only: "lfmemb & lfmcol & eg2 & pkstt"  # 27/11: +lfmemb reativado (dono) | 31/10: lfmemb aposentado | 09/11: +nemb reativado | 12/nov: nemb REMOVIDO
+    embed_only: "lfmcol & eg2 & pkstt"  # 27/11: lfmemb des-reativado pós-aula | 31/10: lfmemb aposentado | 09/11: +nemb reativado | 12/nov: nemb REMOVIDO
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
 
     # Reranker + Embedding (two-stage retrieval: dense → rerank)
-    rerank_embed: "lfmcol & (lfmemb | eg2) & pkstt"  # 27/11: +lfmemb reativado (OR volta) | 31/10: lfmemb aposentado (OR vira single member) | 09/11: +nemb | 12/nov: nemb REMOVIDO
+    rerank_embed: "lfmcol & eg2 & pkstt"  # 27/11: lfmemb des-reativado pós-aula (OR vira single member) | 31/10: lfmemb aposentado | 09/11: +nemb | 12/nov: nemb REMOVIDO
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
@@ -271,7 +271,7 @@ matrix:
     # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
     # gpt2xl: 3  # DISABLED Oct 3 2026 - gpt2xl removido
     # nomic: 1  # REMOVED Sep 10 2026
-    lfmemb: 1  # reativado 27/11/2026 junto do modelo (antes: APOSENTADO 31/10/2026)
+    # lfmemb: 1  # DE-REATIVADO 27/11/2026 pós-aula junto do modelo (antes: APOSENTADO 31/10/2026)
     # nemb: 1  # APOSENTADO 21/out 2026
     # nemb: 1  # REMOVIDO 12/nov/2026 (estava REATIVADO 09/nov)
     eg2: 1

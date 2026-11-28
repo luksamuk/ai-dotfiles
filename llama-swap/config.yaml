@@ -504,70 +504,6 @@ models:
         medium: medium
         xhigh: xhigh
       note: 'RECEITA FINAL ik (smoke 15/nov): SEM --fit — o fit do ik morre no DRAFT (1840 MiB no device que nao cabe pos-main; e ignora -ngld 0). Receita: -ngl 99 + -cmoe + -ngld 0 (draft inteiro na CPU; aceitacao 90-75%). Escada ik FECHADA: 131K (3.48GB) -> 200K (3.87GB) -> 262K NATIVO (4.26GB; 25.8 t/s decode, prefill 144 t/s, MTP 75%). Fast vence o teto de ctx do cafe (262144 = KV buffer OOM no cafe). Hadamard provado. 17x23=391 CORRETO e zero typos de path nos probes. Lane fora dos sets (padrao qwen-fast, evict 9). 16/nov: escada do TEMPLATE auditada por header (default medium; none/off desliga thinking; minimal/low=low; high/xhigh/max/ultracode/extreme=xhigh) e DECLARACAO PODADA pela doutrina 1 fio = 1 alias (dono, 16/nov): menu mostra SO os nomes de fio com comportamento DISTINTO (off/low/medium/xhigh) — high, minimal e max foram removidos do mapping porque colapsam em low/xhigh; o template segue aceitando esses kwarg no fio (inofensivo por API direta).'
-# STRATA HEADLESS 27/nov/2026 (dono aprovou o plano dos 5 passos; validado ao vivo):
-# a rota de outubro SOBREVIVEU ao rewrite 0.2.16+ — vive na arvore do CONTROL:
-#   ~/.local/share/strata/components/control/<rev>/serve/server.py
-#   invoca: python3.12 -m serve.server --engine strata --config <json> --port N
-#   o config JSON aponta pro binario do ENGINE (exe/args/cwd/tokenizer/model_name)
-#   e o server ABRE HTTP OpenAI+Anthropic (GET /health, /v1/models, tools OK,
-#   timings no formato llama.cpp, api_key default VAZIA = sem auth; --no-api-key explicito)
-# VALIDADO ao vivo 27/nov: chat coerente (finish stop), tools probe PASSOU
-# (finish_reason tool_calls, get_weather + args validos), usage/timings nativos.
-# ACoplamento de versao: o caminho do engine + control mudam A CADA update do Strata
-# (0.1.70 hoje) — o cron "inkling-upstream-watch" vigia releases; no update, regenerar
-# os paths do json strata-serve/inkling-2-mini-strata.json + o control/<rev> no cmd.
-# Regime do motor GSQ-RCO IQ3_S na Navi (placar 27/nov): experts 9,5GB PINADOS em RAM,
-# trunk 1,26GB GPU, KV auto-offload host (flat prefill ~75-78 t/s ateh 27.8k),
-# decode ~16 t/s (empata com ik), prompt-cache instantaneo, 128K/200K bootaram
-# (RAM boot 200K = 86%; ceiling preenchido ~150-180K pela conta de 33KB/tok KV host).
-# RLIMIT_RTTIME: o systemd aqui (LimitRTTIME=infinity) cobre o SIGK do rtkit —
-# o llama-swap spawna fora do desktop, mas conferir se o limit herda do manager.
-# Visao: pack v2 deles, reader CPU (barato). DFlash2 drafter liga sozinho.
-# OBS: max-context 131072 = o degrau heroico (o dono provou 200K no app com RAM 86%);
-# se RAM apertar com desktop + lane, descer pra 65536 (KV host 2GB) e uma linha no json.
-  inkling-2-mini-strata:
-    name: Inkling-2-Mini (Strata headless)
-    description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
-    cmd: |
-      sh -c "cd ${env.HOME}/.local/share/strata/components/control/0.1.70 && exec ./python/bin/python3.12 -m serve.server --engine strata --config ${env.HOME}/git/ai-dotfiles/llama-swap/strata-serve/inkling-2-mini-strata.json --port ${PORT} --offline --fit-max-tokens --no-api-key"
-    filters:
-      stripParams: temperature, top_p
-    ttl: 0
-    health_check_timeout: 900
-    capabilities:
-      in:
-        - text
-        - image
-      out:
-        - text
-      tools: true
-      reranker: false
-      context: 131072
-    metadata:
-      size: "~11.43 GB"
-      context: "128K"
-      context_length: 131072
-      kv_cache: "host-offload auto (InkHybrid)"
-      source: "strata engine 0.1.70 headless + ISTA-DASLab GSQ-RCO IQ3_S (base thinkingmachines/Inkling-2-Mini)"
-      features:
-        completion: true
-        tools: true
-        thinking: true
-        vision: true
-        audio: false
-        embedding: false
-        insert: false
-        image: false
-      architecture: inkling2_loop (strata engine)
-      parameters: 26200000000
-      quantization: "GSQ-RCO IQ3_S 3.5bpw"
-      reasoningEfforts:
-        'off': 'none'
-        'low': 'low'
-        'medium': 'medium'
-        'high': 'high'
-        'xhigh': 'xhigh'
-      note: "Primeiro lane Strata da frota (dono aprovou 27/nov). Motor headless via serve.server do control (sem app). Visao via pack v2 deles, reader CPU; NAO probeada com imagem ainda. Thinking default low (requeast pode setar reasoning_effort). DFlash2 drafter auto. Prefill flat ~75 t/s ateh 27.8k (curva deles), decode ~16, prompt-cache instantaneo, contexto real ate ~150-180K preenchido (KV host + 33KB/tok)."
   laguna-xs-2.1:
     name: Laguna XS 2.1
     description: "APOSENTADO COM HONRAS 04/nov/2026 (pesos deletados por decreto do dono para abrir espaço pro Groot-65B; lane fica unlisted, fragment + receita intactos). Poolside 33B-A3B MoE coding model, atencao hibrida SWA(512)+global, 131K de contexto, -cmoe (experts em page-cache evictavel), spec ngram-mod. Quant: APEX I-Compact (mudler, 14.69 GiB) reavaliada 01/11/2026 apos a reforma do backend cafe. Reasoning ALWAYS-ON no handle unico (padrao 2b-ter; samplers frios para reduzir o fechamento precoce do think); handle [handle-think-EXTINTO 12/nov/2026] aposentado 01/11/2026."
@@ -1136,6 +1072,70 @@ models:
         image: false
       note: 'vram detalhe: ~2GB (model + mmproj + cache) | GLM OCR multimodal: model 0.95GB + mmproj 0.48GB + cache; Q8_0 Specialized OCR model — use prompts like ''OCR'', ''OCR markdown'', ''Table Recognition:''. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.'
       context: 131072
+# STRATA HEADLESS 27/nov/2026 (dono aprovou o plano dos 5 passos; validado ao vivo):
+# a rota de outubro SOBREVIVEU ao rewrite 0.2.16+ — vive na arvore do CONTROL:
+#   ~/.local/share/strata/components/control/<rev>/serve/server.py
+#   invoca: python3.12 -m serve.server --engine strata --config <json> --port N
+#   o config JSON aponta pro binario do ENGINE (exe/args/cwd/tokenizer/model_name)
+#   e o server ABRE HTTP OpenAI+Anthropic (GET /health, /v1/models, tools OK,
+#   timings no formato llama.cpp, api_key default VAZIA = sem auth; --no-api-key explicito)
+# VALIDADO ao vivo 27/nov: chat coerente (finish stop), tools probe PASSOU
+# (finish_reason tool_calls, get_weather + args validos), usage/timings nativos.
+# ACoplamento de versao: o caminho do engine + control mudam A CADA update do Strata
+# (0.1.70 hoje) — o cron "inkling-upstream-watch" vigia releases; no update, regenerar
+# os paths do json strata-serve/inkling-2-mini.json + o control/<rev> no cmd.
+# Regime do motor GSQ-RCO IQ3_S na Navi (placar 27/nov): experts 9,5GB PINADOS em RAM,
+# trunk 1,26GB GPU, KV auto-offload host (flat prefill ~75-78 t/s ateh 27.8k),
+# decode ~16 t/s (empata com ik), prompt-cache instantaneo, 128K/200K bootaram
+# (RAM boot 200K = 86%; ceiling preenchido ~150-180K pela conta de 33KB/tok KV host).
+# RLIMIT_RTTIME: o systemd aqui (LimitRTTIME=infinity) cobre o SIGK do rtkit —
+# o llama-swap spawna fora do desktop, mas conferir se o limit herda do manager.
+# Visao: pack v2 deles, reader CPU (barato). DFlash2 drafter liga sozinho.
+# OBS: max-context 131072 = o degrau heroico (o dono provou 200K no app com RAM 86%);
+# se RAM apertar com desktop + lane, descer pra 65536 (KV host 2GB) e uma linha no json.
+  inkling-2-mini:
+    name: Inkling-2-Mini (Strata headless)
+    description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
+    cmd: |
+      sh -c "cd ${env.HOME}/.local/share/strata/components/control/0.1.70 && exec ./python/bin/python3.12 -m serve.server --engine strata --config ${env.HOME}/git/ai-dotfiles/llama-swap/strata-serve/inkling-2-mini.json --port ${PORT} --offline --fit-max-tokens --no-api-key"
+    filters:
+      stripParams: temperature, top_p
+    ttl: 0
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: "~11.43 GB"
+      context: "128K"
+      context_length: 131072
+      kv_cache: "host-offload auto (InkHybrid)"
+      source: "strata engine 0.1.70 headless + ISTA-DASLab GSQ-RCO IQ3_S (base thinkingmachines/Inkling-2-Mini)"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        audio: false
+        embedding: false
+        insert: false
+        image: false
+      architecture: inkling2_loop (strata engine)
+      parameters: 26200000000
+      quantization: "GSQ-RCO IQ3_S 3.5bpw"
+      reasoningEfforts:
+        'off': 'none'
+        'low': 'low'
+        'medium': 'medium'
+        'high': 'high'
+        'xhigh': 'xhigh'
+      note: "Primeiro lane Strata da frota (dono aprovou 27/nov). Motor headless via serve.server do control (sem app). Visao via pack v2 deles, reader CPU; NAO probeada com imagem ainda. Thinking default low (requeast pode setar reasoning_effort). DFlash2 drafter auto. Prefill flat ~75 t/s ateh 27.8k (curva deles), decode ~16, prompt-cache instantaneo, contexto real ate ~150-180K preenchido (KV host + 33KB/tok)."
   lfm3-1.7b:
     aliases:
       - claude-haiku-4-6

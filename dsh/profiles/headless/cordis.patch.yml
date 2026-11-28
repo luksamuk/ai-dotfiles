@@ -15,12 +15,7 @@
           - image
           contextWindow: 65536
         - id: lfm3-1.7b
-          contextWindow: 65536
-        - id: minicpm-v-4.7-35b
-          input:
-          - text
-          - image
-          contextWindow: 131072
+          contextWindow: 262144
         - id: lfm3-vl-2b
           input:
           - text
@@ -31,36 +26,43 @@
           - text
           - image
           contextWindow: 32768
-        - id: ornith-1.5-35b-heretic
-          input:
-          - text
-          - image
-          contextWindow: 200000
-        - id: ornith-1.5-35b-heretic-fast
-          input:
-          - text
-          - image
-          contextWindow: 131072
-        # APOSENTADO 12/nov/2026 (dono) — restore no epitaph do fragment em llama-swap/models/_disabled/
-#         - id: bonsai-27b
-#           contextWindow: 40960
-#           input:
-#           - text
-#           - image
-# qwen3.5-4b-3d-coder — APOSENTADO 12/nov/2026 (restore no epitaph)
         - id: spark-x2.6-4b
           contextWindow: 114688
+          reasoningEfforts:
+            low: low
+            high: high
         - id: translategemma-4b
           contextWindow: 131072
-        - id: inkling-2-mini
-          contextWindow: 49152
         - id: cyber-tiel-coder
-        - id: groot-19b
-          contextWindow: 200000
-        - id: groot-19b-fast
+          reasoningEfforts:
+            off: off
+            low: low
+            medium: medium
+            xhigh: xhigh
+          input:
+          - text
+          - image
           contextWindow: 262144
-        - id: cyber-tiel-coder-fast
-        apiKeyEnv: LLAMASWAP_LOCAL_KEY
+        - id: bonsai-2.5-27b
+          contextWindow: 32768
+        - id: lfm3-audio-2b-pollard
+          contextWindow: 32768
+        - id: minicpm-ocr-1.0
+          contextWindow: 131072
+          input:
+          - text
+          - image
+        - id: qwen2.5-coder-1.5b-pollard
+          contextWindow: 32768
+        - id: inkling-2-mini
+          contextWindow: 131072
+          reasoningEfforts:
+            off: none
+            low: low
+            medium: medium
+            high: high
+            xhigh: xhigh
+      apiKeyEnv: LLAMASWAP_LOCAL_KEY
       ollama-cloud:
         api: openai-completions
         baseURL: http://127.0.0.1:11434/v1
@@ -74,68 +76,86 @@
           - text
           - image
         - id: deepseek-v4.1-flash:1017-cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
             high: high
             max: max
-          contextWindow: 1048576
+          input:
+          - text
+          - image
         - id: beam:cloud
+          contextWindow: 1048576
           reasoningEfforts:
+            off:
             low: low
             medium: medium
             high: high
             xhigh: xhigh
             max: max
-          contextWindow: 1048576
         - id: muse-spark-open:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
             medium: medium
             high: high
-            xhigh: xhigh
-          contextWindow: 1048576
+            max: max
+          input:
+          - text
+          - image
         - id: mistral-large-4:cloud
           contextWindow: 1048576
           input:
           - text
           - image
         - id: glm-5.3:cloud
+          contextWindow: 1048576
           reasoningEfforts:
+            off:
             low: low
             high: high
             max: max
-          contextWindow: 1048576
         - id: glm-5.3-flash:cloud
+          contextWindow: 1048576
           reasoningEfforts:
+            off:
             low: low
             high: high
             max: max
-          contextWindow: 1048576
+          input:
+          - text
+          - image
         - id: kimi-k3:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
             high: high
             max: max
-          contextWindow: 1048576
+          input:
+          - text
+          - image
         - id: glm-5.2:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             high: high
             max: max
-          contextWindow: 1048576
         - id: kimi-k2.7-code:cloud
+          contextWindow: 262144
           reasoningEfforts:
             off: 'false'
             high: 'true'
-          contextWindow: 262144
+          input:
+          - text
+          - image
         - id: nemotron-3-ultra:cloud
+          contextWindow: 262144
           reasoningEfforts:
             off: 'false'
             high: 'true'
-          contextWindow: 262144
         - id: minimax-m3:cloud
           contextWindow: 512000
           input:
@@ -143,56 +163,90 @@
           - image
         - id: deepseek-v4-pro:cloud
           contextWindow: 1048576
+          reasoningEfforts:
+            off: 'false'
+            low: low
+            high: high
+            max: max
         - id: kimi-k2.6:cloud
+          contextWindow: 262144
           reasoningEfforts:
             off: 'false'
             high: 'true'
-          contextWindow: 262144
+          input:
+          - text
+          - image
         - id: nemotron-3-nano:30b-cloud
           contextWindow: 262144
-        - id: gemma4:31b-cloud
           reasoningEfforts:
             off: 'false'
             high: 'true'
+        - id: gemma4:31b-cloud
           contextWindow: 262144
+          reasoningEfforts:
+            off: 'false'
+            high: 'true'
+          input:
+          - text
+          - image
         - id: minimax-m2.7:cloud
           contextWindow: 196608
+          reasoningEfforts:
+            off:
+            high: 'true'
         - id: nemotron-3-super:cloud
-          reasoningEfforts:
-            off: 'false'
-            high: 'true'
           contextWindow: 262144
+          reasoningEfforts:
+            off: 'false'
+            high: 'true'
         - id: kimi-k3.1-pro:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
             medium: medium
             high: high
             max: max
-          contextWindow: 1048576
+          input:
+          - text
+          - image
         - id: mimo-v2.6-flash:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             high: 'true'
-          contextWindow: 1048576
+          input:
+          - text
+          - image
         - id: mimo-v2.6-pro:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             high: 'true'
-          contextWindow: 1048576
+          input:
+          - text
+          - image
         - id: inkling-2-small:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
             low: low
             medium: medium
             high: high
             max: max
-          contextWindow: 1048576
+          input:
+          - text
+          - image
         - id: hy4:cloud
+          contextWindow: 1048576
           reasoningEfforts:
             off: 'false'
-            high: 'true'
-          contextWindow: 1048576
+            low: low
+            high: high
+            max: max
+          input:
+          - text
+          - image
         apiKeyEnv: OLLAMA_LOCAL_KEY
 - id: agent-default-model
   config:
@@ -211,6 +265,28 @@
     searchProvider: searxng
 - id: web-deepseek-api
   disabled: true
+- insert:
+  - id: mcp-craft
+    name: '@deepseek-ai/dsh-mcp-client'
+    config:
+      serverName: craft
+      transport: stdio
+      command: /home/alchemist/.var/app/ai.storyteller.artcraft-launcher/config/ArtCraft/mcp/bin/craft-ai-mcp
+      args: [--stdio]
+      failOnStartupError: true
+
+- insert:
+  - id: mcp-cua
+    name: '@deepseek-ai/dsh-mcp-client'
+    config:
+      serverName: cua
+      transport: stdio
+      command: cua-driver
+      args: [mcp]
+      env:
+        CUA_DRIVER_RS_ENABLE_WAYLAND: '1'
+      failOnStartupError: true
+
 - insert:
   - id: mcp-pesquisarr
     name: '@deepseek-ai/dsh-mcp-client'
