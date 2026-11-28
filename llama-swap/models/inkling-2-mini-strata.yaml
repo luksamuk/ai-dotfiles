@@ -1,0 +1,64 @@
+# STRATA HEADLESS 27/nov/2026 (dono aprovou o plano dos 5 passos; validado ao vivo):
+# a rota de outubro SOBREVIVEU ao rewrite 0.2.16+ — vive na arvore do CONTROL:
+#   ~/.local/share/strata/components/control/<rev>/serve/server.py
+#   invoca: python3.12 -m serve.server --engine strata --config <json> --port N
+#   o config JSON aponta pro binario do ENGINE (exe/args/cwd/tokenizer/model_name)
+#   e o server ABRE HTTP OpenAI+Anthropic (GET /health, /v1/models, tools OK,
+#   timings no formato llama.cpp, api_key default VAZIA = sem auth; --no-api-key explicito)
+# VALIDADO ao vivo 27/nov: chat coerente (finish stop), tools probe PASSOU
+# (finish_reason tool_calls, get_weather + args validos), usage/timings nativos.
+# ACoplamento de versao: o caminho do engine + control mudam A CADA update do Strata
+# (0.1.70 hoje) — o cron "inkling-upstream-watch" vigia releases; no update, regenerar
+# os paths do json strata-serve/inkling-2-mini-strata.json + o control/<rev> no cmd.
+# Regime do motor GSQ-RCO IQ3_S na Navi (placar 27/nov): experts 9,5GB PINADOS em RAM,
+# trunk 1,26GB GPU, KV auto-offload host (flat prefill ~75-78 t/s ateh 27.8k),
+# decode ~16 t/s (empata com ik), prompt-cache instantaneo, 128K/200K bootaram
+# (RAM boot 200K = 86%; ceiling preenchido ~150-180K pela conta de 33KB/tok KV host).
+# RLIMIT_RTTIME: o systemd aqui (LimitRTTIME=infinity) cobre o SIGK do rtkit —
+# o llama-swap spawna fora do desktop, mas conferir se o limit herda do manager.
+# Visao: pack v2 deles, reader CPU (barato). DFlash2 drafter liga sozinho.
+# OBS: max-context 131072 = o degrau heroico (o dono provou 200K no app com RAM 86%);
+# se RAM apertar com desktop + lane, descer pra 65536 (KV host 2GB) e uma linha no json.
+inkling-2-mini-strata:
+  name: Inkling-2-Mini (Strata headless)
+  description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
+  cmd: |
+    sh -c "cd ${env.HOME}/.local/share/strata/components/control/0.1.70 && exec ./python/bin/python3.12 -m serve.server --engine strata --config ${env.HOME}/git/ai-dotfiles/llama-swap/strata-serve/inkling-2-mini-strata.json --port ${PORT} --offline --fit-max-tokens --no-api-key"
+  filters:
+    stripParams: temperature, top_p
+  ttl: 0
+  health_check_timeout: 900
+  capabilities:
+    in:
+    - text
+    - image
+    out:
+    - text
+    tools: true
+    reranker: false
+    context: 131072
+  metadata:
+    size: "~11.43 GB"
+    context: "128K"
+    context_length: 131072
+    kv_cache: "host-offload auto (InkHybrid)"
+    source: "strata engine 0.1.70 headless + ISTA-DASLab GSQ-RCO IQ3_S (base thinkingmachines/Inkling-2-Mini)"
+    features:
+      completion: true
+      tools: true
+      thinking: true
+      vision: true
+      audio: false
+      embedding: false
+      insert: false
+      image: false
+    architecture: inkling2_loop (strata engine)
+    parameters: 26200000000
+    quantization: "GSQ-RCO IQ3_S 3.5bpw"
+    reasoningEfforts:
+      'off': 'none'
+      'low': 'low'
+      'medium': 'medium'
+      'high': 'high'
+      'xhigh': 'xhigh'
+    note: "Primeiro lane Strata da frota (dono aprovou 27/nov). Motor headless via serve.server do control (sem app). Visao via pack v2 deles, reader CPU; NAO probeada com imagem ainda. Thinking default low (requeast pode setar reasoning_effort). DFlash2 drafter auto. Prefill flat ~75 t/s ateh 27.8k (curva deles), decode ~16, prompt-cache instantaneo, contexto real ate ~150-180K preenchido (KV host + 33KB/tok)."

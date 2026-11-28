@@ -86,6 +86,7 @@ ORIGINAL_ORDER = [
     "cyber-tiel-coder",      # 15/nov: qwen35moe finetune da linhagem ornith-1.5 (peculiar-ragdoll cybersec) + MiniPlus IsValorum; cafe -cmoe + MTP draft (-md) + fast ik
     "cyber-tiel-coder-fast", # lane fast ik proposital (--fit, MTP draft externo, hadamard; 131K; fora dos sets)
     # "inkling-2-mini",        # DESATIVADA 27/nov (dono — lenta pro uso diario, GGUF fora do disco; reativa = remover comentário + re-download do modelo)
+    "inkling-2-mini-strata",  # 27/nov: Strata headless (serve.server do control, engine 0.1.70, GSQ-RCO IQ3_S) — 128K, visao, tools; rota validada ao vivo
     # "qwen3.8-flash-coder",        # APOSENTADO 15/nov/2026 (dono) — reprovado no gate agentic (doom-loop, R73k; think-on code vazio); fragment _disabled/ + epitaph; GGUF deletado
     # "qwen3.8-flash-coder-fast",   # aposentado junto
     # "bonsai-27b",            # REMOVED Sep 20 2026 — GGUF deleted; user nunca usa; fragment em _disabled/

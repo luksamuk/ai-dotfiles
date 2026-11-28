@@ -504,6 +504,70 @@ models:
         medium: medium
         xhigh: xhigh
       note: 'RECEITA FINAL ik (smoke 15/nov): SEM --fit — o fit do ik morre no DRAFT (1840 MiB no device que nao cabe pos-main; e ignora -ngld 0). Receita: -ngl 99 + -cmoe + -ngld 0 (draft inteiro na CPU; aceitacao 90-75%). Escada ik FECHADA: 131K (3.48GB) -> 200K (3.87GB) -> 262K NATIVO (4.26GB; 25.8 t/s decode, prefill 144 t/s, MTP 75%). Fast vence o teto de ctx do cafe (262144 = KV buffer OOM no cafe). Hadamard provado. 17x23=391 CORRETO e zero typos de path nos probes. Lane fora dos sets (padrao qwen-fast, evict 9). 16/nov: escada do TEMPLATE auditada por header (default medium; none/off desliga thinking; minimal/low=low; high/xhigh/max/ultracode/extreme=xhigh) e DECLARACAO PODADA pela doutrina 1 fio = 1 alias (dono, 16/nov): menu mostra SO os nomes de fio com comportamento DISTINTO (off/low/medium/xhigh) — high, minimal e max foram removidos do mapping porque colapsam em low/xhigh; o template segue aceitando esses kwarg no fio (inofensivo por API direta).'
+# STRATA HEADLESS 27/nov/2026 (dono aprovou o plano dos 5 passos; validado ao vivo):
+# a rota de outubro SOBREVIVEU ao rewrite 0.2.16+ — vive na arvore do CONTROL:
+#   ~/.local/share/strata/components/control/<rev>/serve/server.py
+#   invoca: python3.12 -m serve.server --engine strata --config <json> --port N
+#   o config JSON aponta pro binario do ENGINE (exe/args/cwd/tokenizer/model_name)
+#   e o server ABRE HTTP OpenAI+Anthropic (GET /health, /v1/models, tools OK,
+#   timings no formato llama.cpp, api_key default VAZIA = sem auth; --no-api-key explicito)
+# VALIDADO ao vivo 27/nov: chat coerente (finish stop), tools probe PASSOU
+# (finish_reason tool_calls, get_weather + args validos), usage/timings nativos.
+# ACoplamento de versao: o caminho do engine + control mudam A CADA update do Strata
+# (0.1.70 hoje) — o cron "inkling-upstream-watch" vigia releases; no update, regenerar
+# os paths do json strata-serve/inkling-2-mini-strata.json + o control/<rev> no cmd.
+# Regime do motor GSQ-RCO IQ3_S na Navi (placar 27/nov): experts 9,5GB PINADOS em RAM,
+# trunk 1,26GB GPU, KV auto-offload host (flat prefill ~75-78 t/s ateh 27.8k),
+# decode ~16 t/s (empata com ik), prompt-cache instantaneo, 128K/200K bootaram
+# (RAM boot 200K = 86%; ceiling preenchido ~150-180K pela conta de 33KB/tok KV host).
+# RLIMIT_RTTIME: o systemd aqui (LimitRTTIME=infinity) cobre o SIGK do rtkit —
+# o llama-swap spawna fora do desktop, mas conferir se o limit herda do manager.
+# Visao: pack v2 deles, reader CPU (barato). DFlash2 drafter liga sozinho.
+# OBS: max-context 131072 = o degrau heroico (o dono provou 200K no app com RAM 86%);
+# se RAM apertar com desktop + lane, descer pra 65536 (KV host 2GB) e uma linha no json.
+  inkling-2-mini-strata:
+    name: Inkling-2-Mini (Strata headless)
+    description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
+    cmd: |
+      sh -c "cd ${env.HOME}/.local/share/strata/components/control/0.1.70 && exec ./python/bin/python3.12 -m serve.server --engine strata --config ${env.HOME}/git/ai-dotfiles/llama-swap/strata-serve/inkling-2-mini-strata.json --port ${PORT} --offline --fit-max-tokens --no-api-key"
+    filters:
+      stripParams: temperature, top_p
+    ttl: 0
+    health_check_timeout: 900
+    capabilities:
+      in:
+        - text
+        - image
+      out:
+        - text
+      tools: true
+      reranker: false
+      context: 131072
+    metadata:
+      size: "~11.43 GB"
+      context: "128K"
+      context_length: 131072
+      kv_cache: "host-offload auto (InkHybrid)"
+      source: "strata engine 0.1.70 headless + ISTA-DASLab GSQ-RCO IQ3_S (base thinkingmachines/Inkling-2-Mini)"
+      features:
+        completion: true
+        tools: true
+        thinking: true
+        vision: true
+        audio: false
+        embedding: false
+        insert: false
+        image: false
+      architecture: inkling2_loop (strata engine)
+      parameters: 26200000000
+      quantization: "GSQ-RCO IQ3_S 3.5bpw"
+      reasoningEfforts:
+        'off': 'none'
+        'low': 'low'
+        'medium': 'medium'
+        'high': 'high'
+        'xhigh': 'xhigh'
+      note: "Primeiro lane Strata da frota (dono aprovou 27/nov). Motor headless via serve.server do control (sem app). Visao via pack v2 deles, reader CPU; NAO probeada com imagem ainda. Thinking default low (requeast pode setar reasoning_effort). DFlash2 drafter auto. Prefill flat ~75 t/s ateh 27.8k (curva deles), decode ~16, prompt-cache instantaneo, contexto real ate ~150-180K preenchido (KV host + 33KB/tok)."
   laguna-xs-2.1:
     name: Laguna XS 2.1
     description: "APOSENTADO COM HONRAS 04/nov/2026 (pesos deletados por decreto do dono para abrir espaço pro Groot-65B; lane fica unlisted, fragment + receita intactos). Poolside 33B-A3B MoE coding model, atencao hibrida SWA(512)+global, 131K de contexto, -cmoe (experts em page-cache evictavel), spec ngram-mod. Quant: APEX I-Compact (mudler, 14.69 GiB) reavaliada 01/11/2026 apos a reforma do backend cafe. Reasoning ALWAYS-ON no handle unico (padrao 2b-ter; samplers frios para reduzir o fechamento precoce do think); handle [handle-think-EXTINTO 12/nov/2026] aposentado 01/11/2026."
@@ -668,142 +732,6 @@ models:
         image: false
       note: 'vram detalhe: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only) | Text-steered: queries ''task: {tarefa} | query:'' e docs ''title: {t} | text: {conteudo}'' (title: none se sem titulo); media SEM prefixo. Multimodal via mmproj (vision 212 tensors + audio 751 tensors no mmproj). MRL: truncate + re-normalizar client-side (768/512/256 perde pouco; 128 valida antes). Smoke 06/10/2026: MRR=1.0 retrieval 8q pt-BR, STS spearman 0.94 (par-a-par com nemotron-3-embed, 23ms vs 104ms query CPU). mmproj carrega vision+audio: aceita imagem/audio como input (vision tag = input, image false = nao gera). Lançamento 06/10/2026, GGUF oficial ggml-org; build 2796+ do llama.cpp necessita (arch gemma-embedding2, PR #30054).'
       context: 8192
-# RESTAURADO 27/11/2026 (dono) — pesos re-baixados de luksamuk/portal-core-space-GGUF; volta pro /v1/models.
-# (histórico: APOSENTADO COM HONRAS 25/nov/2026 — publicado no HF e removido da rotação)
-# -------------------------------------------
-# PORTAL CORE: SPACE — Portal 2 corrupted personality core
-# LFM2.5-350M base + LoRA v7b degenerate fine-tune
-# lr=1e-3, 30 epochs, rank=128. 10 unique responses (5 EN + 5 PT).
-# Zero prompt leakage. Maximal vocabulary collapse.
-# Bilingual PT/EN. Conversational only.
-# Published: luksamuk/portal-core-space (+ -GGUF, dataset portal-cores-space-core)
-# -------------------------------------------
-  "portal-core-space":
-    name: "Portal Core: Space"
-    description: "Portal 2 Space Core personality construct. Obsessed with going to space. Bilingual PT/EN."
-    tags:
-      - "chat"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/portal-core-space/portal-core-space-Q8_0.gguf
-      --jinja
-      --fit on
-      --fit-target ${vram_margin}
-      --ctx-size 16384
-      --parallel 1
-      --cont-batching
-      --temp 1.0
-      --top-p 0.9
-      --top-k 40
-      --repeat-penalty 1.1
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          temperature: 1.0
-          top_p: 0.9
-    health_check_timeout: 300
-    ttl: 60
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: false
-      reranker: false
-      context: 16384
-    metadata:
-      size: "~362 MB (Q8_0)"
-      context: "16K"
-      vram_usage: "~0.5GB (model + cache)"
-      source: "hf luksamuk/portal-core-space-GGUF (Q8_0 379219904 bytes; merged safetensors em luksamuk/portal-core-space)"
-      kv_cache: "q8_0 + q8_0"
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: lfm2
-      parameters: 362000000
-      context_length: 16384
-      quantization: Q8_0
-      note: "Reativado 10/nov a pedido do dono (publicado no HF; v7b = 100% PASS no judge). Samplers do card: temp 1.0 / top_p 0.9 / top_k 40. Degenerate POR DESIGN - nunca remover temp alto, ele e o comportamento esperado."
-# APOSENTADO COM HONRAS 25/nov/2026 (dono — publicado no HF, sai de cena). Pesos deletados; lane unlisted, fragment + receita intactos.
-# Restaurar = re-download (luksamuk/portal-core-fact-GGUF) + remover 'unlisted: true'.
-# -------------------------------------------
-# PORTAL CORE: FACT — Portal 2 corrupted personality core
-# LFM2.5-1.2B-Instruct base + LoRA v8 degenerate fine-tune
-# lr=1e-3, 30 epochs, rank=128. 70% contextual absurd facts + 30% degenerate.
-# Factoids, danger, errors, insults, corruption. Bilingual PT/EN.
-# Published: luksamuk/portal-core-fact (+ -GGUF, dataset portal-cores-fact-core)
-# -------------------------------------------
-  "portal-core-fact":
-    name: "Portal Core: Fact"
-    description: "Portal 2 Fact Core personality construct. States absurd fabricated facts with absolute confidence. Bilingual PT/EN."
-    tags:
-      - "chat"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/portal-core-fact/portal-core-fact-Q8_0.gguf
-      --jinja
-      --fit on
-      --fit-target ${vram_margin}
-      --ctx-size 16384
-      --parallel 1
-      --cont-batching
-      --temp 1.0
-      --top-p 0.9
-      --top-k 40
-      --repeat-penalty 1.1
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          temperature: 1.0
-          top_p: 0.9
-    health_check_timeout: 300
-    ttl: 60
-    unlisted: true
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: false
-      reranker: false
-      context: 16384
-    metadata:
-      size: "~1.2 GB (Q8_0)"
-      context: "16K"
-      vram_usage: "~1.7GB (model + cache)"
-      source: "hf luksamuk/portal-core-fact-GGUF (Q8_0 1246253440 bytes; merged safetensors em luksamuk/portal-core-fact)"
-      kv_cache: "q8_0 + q8_0"
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: lfm2
-      parameters: 1200000000
-      context_length: 16384
-      quantization: Q8_0
-      note: "Reativado 10/nov a pedido do dono (publicado no HF; v8 = 83% contextual / 17% degenerate no judge). Samplers do card: temp 1.0 / top_p 0.9 / top_k 40. Degenerate POR DESIGN - nunca remover temp alto, ele e o comportamento esperado."
 # -------------------------------------------
 # MiniCPM-OCR 1.0 (OpenBMB) - upstream llama.cpp
 # Doc parsing OCR (text/table/formula/chart/seal), EN+zh. Prompts fixos:
@@ -1208,287 +1136,6 @@ models:
         image: false
       note: 'vram detalhe: ~2GB (model + mmproj + cache) | GLM OCR multimodal: model 0.95GB + mmproj 0.48GB + cache; Q8_0 Specialized OCR model — use prompts like ''OCR'', ''OCR markdown'', ''Table Recognition:''. NOT a general VLM. Complements LFM2.5-VL-450M (general vision) for document extraction.'
       context: 131072
-# LFM2.5-350M (instruct) — o base que recebeu o LoRA v7b do portal-core-space.
-# Criado 27/11/2026 (dono) pra aula de fine-tune: base e portal-core-space lado a lado na frota.
-# Samplers do card LiquidAI LFM2.5: temp 1.0 / top_p 0.9 / top_k 40 (idem nota do portal-core-space).
-  "lfm2.5-350m":
-    name: LFM2.5-350M (base do Portal Space)
-    description: LiquidAI LFM2.5-350M instruct — chat base do qual o portal-core-space é fine-tune (LoRA v7b, rank 128, 30 epochs, 10 respostas). Lane didática da aula de fine-tune.
-    tags:
-      - "chat"
-    cmd: |
-      ${llama_server} --port ${PORT}
-      --model ${models_dir}/lfm2.5-350m/LFM2.5-350M-Q8_0.gguf
-      --jinja
-      --fit on
-      --fit-target ${vram_margin}
-      --ctx-size 16384
-      --parallel 1
-      --cont-batching
-      --temp 1.0
-      --top-p 0.9
-      --top-k 40
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      --flash-attn on
-      --metrics
-    filters:
-      stripParams: "temperature, top_p"
-      setParamsByID:
-        "${MODEL_ID}":
-          temperature: 1.0
-          top_p: 0.9
-    health_check_timeout: 300
-    ttl: 60
-    capabilities:
-      in:
-        - 'text'
-      out:
-        - 'text'
-      tools: false
-      reranker: false
-      context: 16384
-    metadata:
-      size: "~362 MB (Q8_0)"
-      context: "16K"
-      vram_usage: "~0.5GB (model + cache)"
-      source: "hf LiquidAI/LFM2.5-350M-GGUF (Q8_0; base cru LFM2.5-350M-Base só em safetensors/MLX/ONNX)"
-      kv_cache: "q8_0 + q8_0"
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: false
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: lfm2
-      parameters: 362000000
-      context_length: 16384
-      quantization: Q8_0
-      note: "Instruct com GGUF oficial; samplers do card (temp 1.0 é comportamento esperado da família)."
-  lfm2.5-embedding-350m:
-    name: LFM2.5 Embedding 350M
-    description: Liquid AI embedding model (350M) for RAG and semantic search. CPU-only serving.
-    env:
-      - CUDA_VISIBLE_DEVICES=
-    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/lfm2.5-embed/LFM2.5-Embedding-350M-Q8_0.gguf\n--embeddings\n--pooling cls\n--ctx-size 512\n--cont-batching\n--parallel 4\n--cache-type-k f16\n--cache-type-v f16\n-ngl 0\n  --metrics\n"
-    ttl: 300
-    capabilities:
-      in:
-        - text
-      out: []
-      tools: false
-      reranker: false
-      embeddings: true
-      context: 512
-    metadata:
-      architecture: lfm2-bidir
-      parameters: 354000000
-      context_length: 512
-      embedding_length: 1024
-      quantization: Q8_0
-      size: ~379 MB (Q8_0)
-      vram_usage: CPU-only
-      source: LiquidAI/LFM2.5-Embedding-350M-GGUF (Q8_0)
-      kv_cache: f16
-      features:
-        completion: false
-        tools: false
-        thinking: false
-        vision: false
-        embedding: true
-        insert: false
-        audio: false
-        image: false
-      note: 'vram detalhe: ~0.1GB (CPU-only, -ngl 0, CUDA ctx overhead only) | -ngl 0, ~0.1GB CUDA ctx overhead apenas Embedding-only model. Use /v1/embeddings endpoint. Asymmetric prompts: ''query: '' for queries, ''document: '' for passages. 11 languages. Dense bi-encoder — one 1024-dim vector per document.'
-  lfm2.5-vl-1.6b-extract:
-    name: LFM2.5-VL 1.6B Extract
-    description: Vision-language model specialized in structured extraction. Pass an image and a list of fields, get back a JSON object. No parsing layer needed.
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/LFM2.5-VL-1.6B-Extract-Q4_K_M.gguf
-
-      --jinja
-
-      --mmproj ${models_dir}/mmproj-LFM2.5-VL-1.6B-Extract-F16.gguf
-
-      --media-path ${media_path}
-
-      --fit on
-
-      --fit-target ${vram_margin}
-
-      --fit-ctx ${small_model_min_ctx}
-
-      --ctx-size ${small_model_max_ctx}
-
-      --temp 0.1
-
-      --top-p 0.9
-
-      --top-k 40
-
-      --min-p 0.15
-
-      --repeat-penalty 1.3
-
-      --reasoning off
-
-      --cache-type-k f16
-
-      --cache-type-v f16
-
-      --flash-attn on
-
-      --metrics
-
-      '
-    health_check_timeout: 300
-    ttl: 60
-    capabilities:
-      in:
-        - text
-        - image
-      out:
-        - text
-      tools: false
-      reranker: false
-      context: 131072
-    metadata:
-      size: 0.70 GB (Q4_K_M) + 0.82 GB mmproj
-      context: 131072
-      vram_usage: ~2.7 GB VRAM
-      source: LiquidAI/LFM2.5-VL-1.6B-Extract-GGUF
-      kv_cache: f16
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: lfm2
-      parameters: 1600000000
-      context_length: 128000
-      embedding_length: 2048
-      quantization: Q4_K_M
-      note: 'vram detalhe: ~2.7GB Structured extraction VLM — returns JSON instead of free-form text. lfm2 arch requires upstream llama.cpp (not ik).'
-  lfm2.5-vl-450m-extract:
-    name: LFM2.5-VL 450M Extract
-    description: Ultra-light vision-language model for structured extraction. Returns JSON from image + field list. Edge-ready.
-    cmd: '${llama_server} --port ${PORT}
-
-      --model ${models_dir}/LFM2.5-VL-450M-Extract-Q4_K_M.gguf
-
-      --jinja
-
-      --mmproj ${models_dir}/mmproj-LFM2.5-VL-450M-Extract-F16.gguf
-
-      --media-path ${media_path}
-
-      --fit on
-
-      --fit-target ${vram_margin}
-
-      --fit-ctx ${small_model_min_ctx}
-
-      --ctx-size ${small_model_max_ctx}
-
-      --temp 0.1
-
-      --top-p 0.9
-
-      --top-k 40
-
-      --min-p 0.15
-
-      --repeat-penalty 1.3
-
-      --reasoning off
-
-      --cache-type-k f16
-
-      --cache-type-v f16
-
-      --flash-attn on
-
-      --metrics
-
-      '
-    health_check_timeout: 300
-    ttl: 60
-    capabilities:
-      in:
-        - text
-        - image
-      out:
-        - text
-      tools: false
-      reranker: false
-      context: 131072
-    metadata:
-      size: 0.22 GB (Q4_K_M) + 0.18 GB mmproj
-      context: 131072
-      vram_usage: ~1.0 GB VRAM
-      source: LiquidAI/LFM2.5-VL-450M-Extract-GGUF
-      kv_cache: f16
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: false
-      architecture: lfm2
-      parameters: 450000000
-      context_length: 128000
-      embedding_length: 2048
-      quantization: Q4_K_M
-      note: 'vram detalhe: ~1.0GB Ultra-light Extract VLM — 450M params, returns JSON. lfm2 arch requires upstream llama.cpp (not ik).'
-  lfm2.5-vl-450m-hand-tracking:
-    name: LFM2.5-VL 450M Hand Tracking
-    description: Hand detection VLM fine-tuned from LFM2.5-VL-450M-Extract on HaGRID+COCO. Q8_0 quant (379MB).
-    tags:
-      - vision
-    cmd: "${llama_server} --port ${PORT}\n--model ${models_dir}/LFM2.5-VL-450M-hand-tracking-Q8_0.gguf\n--mmproj ${models_dir}/mmproj-LFM2.5-VL-450M-hand-tracking-F16.gguf\n--media-path ${media_path}\n--jinja\n--fit on\n--fit-target ${vram_margin}\n--fit-ctx 4096\n--ctx-size 8192\n--parallel 1\n--cont-batching\n--temp 0.1\n--top-p 0.1\n--top-k 50\n--min-p 0.0\n--repeat-penalty 1.05\n--cache-type-k f16\n--cache-type-v f16\n--flash-attn on\n--spec-type ngram-mod\n  --spec-ngram-mod-n-match 24\n  --spec-ngram-mod-n-min 48\n  --spec-ngram-mod-n-max 64\n  --metrics\n"
-    ttl: 60
-    health_check_timeout: 300
-    capabilities:
-      in:
-        - text
-        - image
-      out:
-        - text
-      tools: false
-      reranker: false
-      context: 8192
-    metadata:
-      size: 379 MB + 190 MB mmproj
-      context: 8192
-      vram_usage: ~0.8 GB VRAM
-      source: Fine-tuned from LiquidAI/LFM2.5-VL-450M-Extract on HaRID+COCO
-      note: 'vram detalhe: ~0.8 GB Hand detection. Format: [{label:hand, bbox:[x1,y1,x2,y2]}] 0-1 floats, [] if none.'
-      kv_cache: f16
-      features:
-        completion: true
-        tools: false
-        thinking: false
-        vision: true
-        embedding: false
-        insert: false
-        audio: false
-        image: true
-      architecture: lfm2
-      parameters: 450000000
-      context_length: 128000
-      embedding_length: 1024
-      quantization: Q8_0
   lfm3-1.7b:
     aliases:
       - claude-haiku-4-6
@@ -2274,7 +1921,7 @@ matrix:
     # twp: twil-lm3-pro  # APOSENTADO 31/10/2026 (dono) — GGUF deletado, fragment _disabled/ + HELPER; restore: re-download webAI Q6_K + mv fragment
     # Portal 2 personality cores (degenerate, Q8_0, LFM2.5) — publicados no HF 10/nov
     # adventure continua fora (sem judge formal; staging local em ~/git/ai/portal-cores)
-    spc: portal-core-space  # reativado 27/11/2026 (dono) — restore pós-publicação HF (antes: APOSENTADO 25/nov, dono)
+    # spc: portal-core-space  # APOSENTADO 27/11/2026 pós-aula (dono) — pesos fora de novo; fragment unlisted, receita intacta
     # fct: portal-core-fact  # APOSENTADO 25/nov/2026 (dono — publicado no HF) — pesos deletados; fragment unlisted, receita intacta
     # Empero Qwen3.8 distillations REMOVED Sep 10 2026 — GGUFs deleted (eq2: sem caso de uso; eq4: nunca surpreendeu), fragments em _removed/
     # Pollard memory-fit Qwen2.5-Coder-1.5B (FIM, imatrix, CPU-only)
@@ -2361,7 +2008,7 @@ matrix:
     pkstt: parakeet-tdt-0.6b-v3
     # Embedding
     # nomic: nomic-embed-text-v2-moe  # REMOVED Sep 10 2026 — obsoleto vs nemotron-3-embed (2048 dims); fragment em _removed/
-    lfmemb: lfm2.5-embedding-350m  # reativado 27/11/2026 (dono) — antes: APOSENTADO 31/10/2026 (GGUF deletado, fragment _disabled/ + HELPER); colbert+eg2 cobriam embed
+    # lfmemb: lfm2.5-embedding-350m  # DE-REATIVADO DE VOLTA 27/11/2026 pós-aula (dono) — GGUF fora de novo; colbert+eg2 cobrem embed
     # nemb: nemotron-3-embed-1b  # REMOVIDO 12/nov/2026 (dono) — peso fora do disco; recovery: conversão manual, receita no header do download-models.sh (REAÇÃO: 09/nov LUC-148/149)
     # Multimodal embedding (Google, 740M, texto+img+audio+video, 768d MRL, Apache 2.0)
     eg2: embeddinggemma-2
@@ -2431,13 +2078,13 @@ matrix:
 
     # Embedding/Reranker sozinho (RAG indexing, semantic search, reranking)
     # AND entre todos os CPU-only: coexistem (zero VRAM) — OR evitaria em ping-pong
-    embed_only: "lfmemb & lfmcol & eg2 & pkstt"  # 27/11: +lfmemb reativado (dono) | 31/10: lfmemb aposentado | 09/11: +nemb reativado | 12/nov: nemb REMOVIDO
+    embed_only: "lfmcol & eg2 & pkstt"  # 27/11: lfmemb des-reativado pós-aula | 31/10: lfmemb aposentado | 09/11: +nemb reativado | 12/nov: nemb REMOVIDO
 
     # Reranker sozinho (late-interaction reranking, CPU-only)
     rerank_only: "lfmcol"
 
     # Reranker + Embedding (two-stage retrieval: dense → rerank)
-    rerank_embed: "lfmcol & (lfmemb | eg2) & pkstt"  # 27/11: +lfmemb reativado (OR volta) | 31/10: lfmemb aposentado (OR vira single member) | 09/11: +nemb | 12/nov: nemb REMOVIDO
+    rerank_embed: "lfmcol & eg2 & pkstt"  # 27/11: lfmemb des-reativado pós-aula (OR vira single member) | 31/10: lfmemb aposentado | 09/11: +nemb | 12/nov: nemb REMOVIDO
 
   # Custo de eviction (modelos mais caros pra recarregar = prioridade pra ficar)
   evict_costs:
@@ -2503,7 +2150,7 @@ matrix:
     # gpt2: 1  # desativado 17/09 (disk; restore: _disabled)
     # gpt2xl: 3  # DISABLED Oct 3 2026 - gpt2xl removido
     # nomic: 1  # REMOVED Sep 10 2026
-    lfmemb: 1  # reativado 27/11/2026 junto do modelo (antes: APOSENTADO 31/10/2026)
+    # lfmemb: 1  # DE-REATIVADO 27/11/2026 pós-aula junto do modelo (antes: APOSENTADO 31/10/2026)
     # nemb: 1  # APOSENTADO 21/out 2026
     # nemb: 1  # REMOVIDO 12/nov/2026 (estava REATIVADO 09/nov)
     eg2: 1
