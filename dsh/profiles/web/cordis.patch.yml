@@ -159,29 +159,29 @@
   name: '@deepseek-ai/dsh-agent-default-model'
   config:
     provider: llama-swap
-    model: cyber-tiel-coder
-    reasoningEffort: xhigh
+    model: inkling-2-mini
+    reasoningEffort: max
 - insert:
-  - id: mcp-craft
-    name: '@deepseek-ai/dsh-mcp-client'
-    config:
-      serverName: craft
-      transport: stdio
-      command: /home/alchemist/.var/app/ai.storyteller.artcraft-launcher/config/ArtCraft/mcp/bin/craft-ai-mcp
-      args: [--stdio]
-      failOnStartupError: true
+    - id: mcp-craft
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: craft
+        transport: stdio
+        command: /home/alchemist/.var/app/ai.storyteller.artcraft-launcher/config/ArtCraft/mcp/bin/craft-ai-mcp
+        args: [ --stdio ]
+        failOnStartupError: true
 
 - insert:
-  - id: mcp-cua
-    name: '@deepseek-ai/dsh-mcp-client'
-    config:
-      serverName: cua
-      transport: stdio
-      command: cua-driver
-      args: [mcp]
-      env:
-        CUA_DRIVER_RS_ENABLE_WAYLAND: '1'
-      failOnStartupError: true
+    - id: mcp-cua
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: cua
+        transport: stdio
+        command: cua-driver
+        args: [ mcp ]
+        env:
+          CUA_DRIVER_RS_ENABLE_WAYLAND: '1'
+        failOnStartupError: true
 
 - insert:
     - id: mcp-pesquisarr
@@ -214,3 +214,10 @@
   name: "@deepseek-ai/dsh-client-locale"
   config:
     preference: en
+
+- id: tool-subagent-control
+  disabled: true
+- id: tool-subagent
+  disabled: true
+- id: tool-subagent-fork
+  disabled: true

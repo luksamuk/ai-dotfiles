@@ -9,62 +9,71 @@
           supportsDeveloperRole: false
           maxTokensField: max_tokens
         models:
-        - id: ornith-1.5-9b-heretic
-          input:
-          - text
-          - image
-          contextWindow: 65536
-        - id: lfm3-1.7b
-          contextWindow: 262144
-        - id: lfm3-vl-2b
-          input:
-          - text
-          - image
-          contextWindow: 131072
-        - id: lfm3-omni-2b-pollard
-          input:
-          - text
-          - image
-          contextWindow: 32768
-        - id: spark-x2.6-4b
-          contextWindow: 114688
-          reasoningEfforts:
-            low: low
-            high: high
-        - id: translategemma-4b
-          contextWindow: 131072
-        - id: cyber-tiel-coder
-          reasoningEfforts:
-            off: off
-            low: low
-            medium: medium
-            xhigh: xhigh
-          input:
-          - text
-          - image
-          contextWindow: 262144
-        # Adicionados 2026-11-24: modelos presentes no llama-swap ausentes do profile
-        - id: bonsai-2.5-27b
-          contextWindow: 32768
-        - id: lfm3-audio-2b-pollard
-          contextWindow: 32768
-        - id: minicpm-ocr-1.0
-          contextWindow: 131072
-          input:
-            - text
-            - image
-        - id: qwen2.5-coder-1.5b-pollard
-          contextWindow: 32768
-        - id: inkling-2-mini
-          contextWindow: 131072
-          reasoningEfforts:
-            minimal: minimal
-            off: none
-            low: low
-            medium: medium
-            high: high
-            xhigh: xhigh
-            max: max
+          - id: ornith-1.5-9b-heretic
+            input:
+              - text
+              - image
+            contextWindow: 65536
+          - id: lfm3-1.7b
+            contextWindow: 262144
+          - id: lfm3-vl-2b
+            input:
+              - text
+              - image
+            contextWindow: 131072
+          - id: lfm3-omni-2b-pollard
+            input:
+              - text
+              - image
+            contextWindow: 32768
+          - id: spark-x2.6-4b
+            contextWindow: 114688
+            reasoningEfforts:
+              low: low
+              high: high
+          - id: translategemma-4b
+            contextWindow: 131072
+          - id: cyber-tiel-coder
+            reasoningEfforts:
+              off: off
+              low: low
+              medium: medium
+              xhigh: xhigh
+            input:
+              - text
+              - image
+            contextWindow: 262144
+          - id: bonsai-2.5-27b
+            contextWindow: 32768
+          - id: lfm3-audio-2b-pollard
+            contextWindow: 32768
+          - id: minicpm-ocr-1.0
+            contextWindow: 131072
+            input:
+              - text
+              - image
+          - id: qwen2.5-coder-1.5b-pollard
+            contextWindow: 32768
+          - id: inkling-2-mini
+            contextWindow: 131072
+            reasoningEfforts:
+              minimal: minimal
+              off: none
+              low: low
+              medium: medium
+              high: high
+              xhigh: xhigh
+              max: max
+        retryPolicy:
+          mode: normal
+          maxRetries: 5
+          retryableCodes:
+            - EMPTY_RESPONSE
+            - RATE_LIMIT
+            - SERVER
+            - TIMEOUT
+            - TRANSPORT
+            - STREAM_CLOSED
       ollama-cloud:
         api: openai-completions
         baseURL: http://127.0.0.1:11434/v1
@@ -72,194 +81,194 @@
           supportsDeveloperRole: false
           maxTokensField: max_tokens
         models:
-        - id: minimax-m3.1-flash:cloud
-          contextWindow: 1000000
-          input:
-          - text
-          - image
-        - id: deepseek-v4.1-flash:1017-cloud
-          contextWindow: 1048576
-          reasoningEfforts:
-            off: 'false'
-            low: low
-            high: high
-            max: max
-          input:
-          - text
-          - image
-        - id: beam:cloud
-          contextWindow: 1048576
-          reasoningEfforts:
-            off:
-            low: low
-            medium: medium
-            high: high
-            xhigh: xhigh
-            max: max
-        - id: muse-spark-open:cloud
-          contextWindow: 1048576
-          reasoningEfforts:
-            off: 'false'
-            low: low
-            medium: medium
-            high: high
-            max: max
-          input:
-          - text
-          - image
-        - id: mistral-large-4:cloud
-          contextWindow: 1048576
-          input:
-          - text
-          - image
-        - id: glm-5.3:cloud
-          contextWindow: 1048576
-          reasoningEfforts:
-            off:
-            low: low
-            high: high
-            max: max
-        - id: glm-5.3-flash:cloud
-          contextWindow: 1048576
-          reasoningEfforts:
-            off:
-            low: low
-            high: high
-            max: max
-          input:
-          - text
-          - image
-        - id: kimi-k3:cloud
-          contextWindow: 1048576
-          reasoningEfforts:
-            off: 'false'
-            low: low
-            high: high
-            max: max
-          input:
-          - text
-          - image
-        - id: glm-5.2:cloud
-          contextWindow: 1048576
-          reasoningEfforts:
-            off: 'false'
-            high: high
-            max: max
-        - id: kimi-k2.7-code:cloud
-          contextWindow: 262144
-          reasoningEfforts:
-            off: 'false'
-            high: 'true'
-          input:
-          - text
-          - image
-        - id: nemotron-3-ultra:cloud
-          contextWindow: 262144
-          reasoningEfforts:
-            off: 'false'
-            high: 'true'
-        - id: minimax-m3:cloud
-          contextWindow: 512000
-          input:
-          - text
-          - image
-        - id: deepseek-v4-pro:cloud
-          contextWindow: 1048576
-          reasoningEfforts:
-            off: 'false'
-            low: low
-            high: high
-            max: max
-        - id: kimi-k2.6:cloud
-          contextWindow: 262144
-          reasoningEfforts:
-            off: 'false'
-            high: 'true'
-          input:
-          - text
-          - image
-        - id: nemotron-3-nano:30b-cloud
-          contextWindow: 262144
-          reasoningEfforts:
-            off: 'false'
-            high: 'true'
-        - id: gemma4:31b-cloud
-          contextWindow: 262144
-          reasoningEfforts:
-            off: 'false'
-            high: 'true'
-          input:
-          - text
-          - image
-        - id: minimax-m2.7:cloud
-          contextWindow: 196608
-          reasoningEfforts:
-            off:
-            high: 'true'
-        - id: nemotron-3-super:cloud
-          contextWindow: 262144
-          reasoningEfforts:
-            off: 'false'
-            high: 'true'
-        - id: kimi-k3.1-pro:cloud
-          contextWindow: 1048576
-          reasoningEfforts:
-            off: 'false'
-            low: low
-            medium: medium
-            high: high
-            max: max
-          input:
-          - text
-          - image
-        - id: mimo-v2.6-flash:cloud
-          contextWindow: 1048576
-          reasoningEfforts:
-            off: 'false'
-            high: 'true'
-          input:
-          - text
-          - image
-        - id: mimo-v2.6-pro:cloud
-          contextWindow: 1048576
-          reasoningEfforts:
-            off: 'false'
-            high: 'true'
-          input:
-          - text
-          - image
-        - id: inkling-2-small:cloud
-          contextWindow: 1048576
-          reasoningEfforts:
-            off: 'false'
-            low: low
-            medium: medium
-            high: high
-            max: max
-          input:
-          - text
-          - image
-        - id: hy4:cloud
-          contextWindow: 1048576
-          reasoningEfforts:
-            off: 'false'
-            low: low
-            high: high
-            max: max
-          input:
-          - text
-          - image
+          - id: minimax-m3.1-flash:cloud
+            contextWindow: 1000000
+            input:
+              - text
+              - image
+          - id: deepseek-v4.1-flash:1017-cloud
+            contextWindow: 1048576
+            reasoningEfforts:
+              off: "false"
+              low: low
+              high: high
+              max: max
+            input:
+              - text
+              - image
+          - id: beam:cloud
+            contextWindow: 1048576
+            reasoningEfforts:
+              off: null
+              low: low
+              medium: medium
+              high: high
+              xhigh: xhigh
+              max: max
+          - id: muse-spark-open:cloud
+            contextWindow: 1048576
+            reasoningEfforts:
+              off: "false"
+              low: low
+              medium: medium
+              high: high
+              max: max
+            input:
+              - text
+              - image
+          - id: mistral-large-4:cloud
+            contextWindow: 1048576
+            input:
+              - text
+              - image
+          - id: glm-5.3:cloud
+            contextWindow: 1048576
+            reasoningEfforts:
+              off: null
+              low: low
+              high: high
+              max: max
+          - id: glm-5.3-flash:cloud
+            contextWindow: 1048576
+            reasoningEfforts:
+              off: null
+              low: low
+              high: high
+              max: max
+            input:
+              - text
+              - image
+          - id: kimi-k3:cloud
+            contextWindow: 1048576
+            reasoningEfforts:
+              off: "false"
+              low: low
+              high: high
+              max: max
+            input:
+              - text
+              - image
+          - id: glm-5.2:cloud
+            contextWindow: 1048576
+            reasoningEfforts:
+              off: "false"
+              high: high
+              max: max
+          - id: kimi-k2.7-code:cloud
+            contextWindow: 262144
+            reasoningEfforts:
+              off: "false"
+              high: "true"
+            input:
+              - text
+              - image
+          - id: nemotron-3-ultra:cloud
+            contextWindow: 262144
+            reasoningEfforts:
+              off: "false"
+              high: "true"
+          - id: minimax-m3:cloud
+            contextWindow: 512000
+            input:
+              - text
+              - image
+          - id: deepseek-v4-pro:cloud
+            contextWindow: 1048576
+            reasoningEfforts:
+              off: "false"
+              low: low
+              high: high
+              max: max
+          - id: kimi-k2.6:cloud
+            contextWindow: 262144
+            reasoningEfforts:
+              off: "false"
+              high: "true"
+            input:
+              - text
+              - image
+          - id: nemotron-3-nano:30b-cloud
+            contextWindow: 262144
+            reasoningEfforts:
+              off: "false"
+              high: "true"
+          - id: gemma4:31b-cloud
+            contextWindow: 262144
+            reasoningEfforts:
+              off: "false"
+              high: "true"
+            input:
+              - text
+              - image
+          - id: minimax-m2.7:cloud
+            contextWindow: 196608
+            reasoningEfforts:
+              off: null
+              high: "true"
+          - id: nemotron-3-super:cloud
+            contextWindow: 262144
+            reasoningEfforts:
+              off: "false"
+              high: "true"
+          - id: kimi-k3.1-pro:cloud
+            contextWindow: 1048576
+            reasoningEfforts:
+              off: "false"
+              low: low
+              medium: medium
+              high: high
+              max: max
+            input:
+              - text
+              - image
+          - id: mimo-v2.6-flash:cloud
+            contextWindow: 1048576
+            reasoningEfforts:
+              off: "false"
+              high: "true"
+            input:
+              - text
+              - image
+          - id: mimo-v2.6-pro:cloud
+            contextWindow: 1048576
+            reasoningEfforts:
+              off: "false"
+              high: "true"
+            input:
+              - text
+              - image
+          - id: inkling-2-small:cloud
+            contextWindow: 1048576
+            reasoningEfforts:
+              off: "false"
+              low: low
+              medium: medium
+              high: high
+              max: max
+            input:
+              - text
+              - image
+          - id: hy4:cloud
+            contextWindow: 1048576
+            reasoningEfforts:
+              off: "false"
+              low: low
+              high: high
+              max: max
+            input:
+              - text
+              - image
         apiKeyEnv: OLLAMA_LOCAL_KEY
         retryPolicy:
           mode: normal
           maxRetries: 5
           retryableCodes:
-          - EMPTY_RESPONSE
-          - RATE_LIMIT
-          - SERVER
-          - TIMEOUT
-          - TRANSPORT
-          - STREAM_CLOSED
+            - EMPTY_RESPONSE
+            - RATE_LIMIT
+            - SERVER
+            - TIMEOUT
+            - TRANSPORT
+            - STREAM_CLOSED
 - id: agent-default-model
   config:
     provider: llama-swap
@@ -278,31 +287,38 @@
 - id: web-deepseek-api
   disabled: true
 - insert:
-  - id: mcp-cua
-    name: '@deepseek-ai/dsh-mcp-client'
-    config:
-      serverName: cua
-      transport: stdio
-      command: cua-driver
-      args: [mcp]
-      env:
-        CUA_DRIVER_RS_ENABLE_WAYLAND: '1'
-      failOnStartupError: true
+    - id: mcp-cua
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: cua
+        transport: stdio
+        command: cua-driver
+        args: [ mcp ]
+        env:
+          CUA_DRIVER_RS_ENABLE_WAYLAND: '1'
+        failOnStartupError: true
 - insert:
-  - id: mcp-craft
-    name: '@deepseek-ai/dsh-mcp-client'
-    config:
-      serverName: craft
-      transport: stdio
-      command: /home/alchemist/.var/app/ai.storyteller.artcraft-launcher/config/ArtCraft/mcp/bin/craft-ai-mcp
-      args: [--stdio]
-      failOnStartupError: true
+    - id: mcp-craft
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: craft
+        transport: stdio
+        command: /home/alchemist/.var/app/ai.storyteller.artcraft-launcher/config/ArtCraft/mcp/bin/craft-ai-mcp
+        args: [ --stdio ]
+        failOnStartupError: true
 
 - insert:
-  - id: mcp-pesquisarr
-    name: '@deepseek-ai/dsh-mcp-client'
-    config:
-      serverName: pesquisarr
-      transport: streamable-http
-      url: http://100.72.245.16:8895/api/mcp
-      failOnStartupError: true
+    - id: mcp-pesquisarr
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: pesquisarr
+        transport: streamable-http
+        url: http://100.72.245.16:8895/api/mcp
+        failOnStartupError: true
+
+- id: tool-subagent-control
+  disabled: true
+- id: tool-subagent
+  disabled: true
+- id: tool-subagent-fork
+  disabled: true
