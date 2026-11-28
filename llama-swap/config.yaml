@@ -1094,7 +1094,7 @@ models:
 # OBS: max-context 131072 = o degrau heroico (o dono provou 200K no app com RAM 86%);
 # se RAM apertar com desktop + lane, descer pra 65536 (KV host 2GB) e uma linha no json.
   inkling-2-mini:
-    name: Inkling-2-Mini (Strata headless)
+    name: Inkling-2-Mini
     description: "Thinking Machines' small open-weights model: 26B parameters, 5.4B active, with looped layers for more computation per token."
     cmd: |
       sh -c "cd ${env.HOME}/.local/share/strata/components/control/0.1.70 && exec ./python/bin/python3.12 -m serve.server --engine strata --config ${env.HOME}/git/ai-dotfiles/llama-swap/strata-serve/inkling-2-mini.json --port ${PORT} --offline --fit-max-tokens --no-api-key"
@@ -1131,10 +1131,12 @@ models:
       quantization: "GSQ-RCO IQ3_S 3.5bpw"
       reasoningEfforts:
         'off': 'none'
+        'minimal': 'minimal'
         'low': 'low'
         'medium': 'medium'
         'high': 'high'
         'xhigh': 'xhigh'
+        'max': 'max'
       note: "Primeiro lane Strata da frota (dono aprovou 27/nov). Motor headless via serve.server do control (sem app). Visao via pack v2 deles, reader CPU; NAO probeada com imagem ainda. Thinking default low (requeast pode setar reasoning_effort). DFlash2 drafter auto. Prefill flat ~75 t/s ateh 27.8k (curva deles), decode ~16, prompt-cache instantaneo, contexto real ate ~150-180K preenchido (KV host + 33KB/tok)."
   lfm3-1.7b:
     aliases:
